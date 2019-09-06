@@ -1,0 +1,6 @@
+[submodule "source/vendor/cereal"]
+	path = source/vendor/cereal
+	url = https://github.com/USCiLab/cereal.git
+[submodule "source/vendor/ctti"]
+	path = source/vendor/ctti
+	url = https://github.com/Manu343726/ctti.git
