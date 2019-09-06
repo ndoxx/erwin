@@ -31,20 +31,25 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
   )
 
+set(SRC_MATH
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
+  )
+
 set(SRC_LOG
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/color.cpp
   )
 
 set(SRC_RENDERER
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render_queue.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render_thread.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/vertex_layout.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/mesh.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/wmesh.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/vertex_layout.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )
 
 add_definitions(-D__DEBUG__)
@@ -57,6 +62,7 @@ endif()
 
 add_library(erwin SHARED
             ${SRC_CORE}
+            ${SRC_MATH}
             ${SRC_LOG}
             ${SRC_RENDERER})
 

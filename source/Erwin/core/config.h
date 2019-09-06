@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../wtypes.h"
+#include "wtypes.h"
 
 namespace erwin
 {

@@ -1,5 +1,5 @@
-#include "clock.hpp"
-#include "event.h"
+#include "core/clock.hpp"
+#include "event/event.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 

@@ -6,8 +6,8 @@
 #include "logger_thread.h"
 #include "logger.h"
 #include "stack_trace.h"
-#include "../math3d.h"
-#include "../color.h"
+#include "../math/math3d.h"
+#include "../math/color.h"
 
 namespace erwin
 {

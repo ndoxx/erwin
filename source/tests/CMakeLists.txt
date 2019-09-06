@@ -16,6 +16,8 @@ endif()
 
 set(SRC_TEST_LOGGER
     ${SRC_LOG}
+    ${SRC_MATH}
+    ${SRC_CORE}
     test_logger.cpp
    )
 
@@ -41,6 +43,8 @@ cotire(test_logger)
 
 set(SRC_TEST_SERIAL
     ${SRC_LOG}
+    ${SRC_MATH}
+    ${SRC_CORE}
     test_serial.cpp
    )
 
@@ -68,8 +72,9 @@ cotire(test_serial)
 # -------- CONFIGURATION TEST -------- #
 
 set(SRC_TEST_CONFIG
-    ${SRC_CORE}
     ${SRC_LOG}
+    ${SRC_MATH}
+    ${SRC_CORE}
     test_config.cpp
    )
 

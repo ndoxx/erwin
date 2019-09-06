@@ -5,7 +5,7 @@
 #include <cstring>
 
 #include "math_structures.hpp"
-#include "wtypes.h"
+#include "../core/wtypes.h"
 
 namespace erwin
 {

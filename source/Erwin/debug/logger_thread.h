@@ -13,7 +13,7 @@
 #include "ctti/type_id.hpp"
 
 #include "logger_common.h"
-#include "../event.h"
+#include "../event/event.h"
 
 namespace erwin
 {
