@@ -68,7 +68,7 @@ cotire(test_serial)
 # -------- CONFIGURATION TEST -------- #
 
 set(SRC_TEST_CONFIG
-    ${SRC_CFG}
+    ${SRC_CORE}
     ${SRC_LOG}
     test_config.cpp
    )
