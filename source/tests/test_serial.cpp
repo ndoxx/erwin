@@ -8,7 +8,8 @@
 #include "cereal/archives/xml.hpp"
 #include "cereal/archives/json.hpp"
 
-#include "../debug/logger.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
 
 using namespace erwin;
 namespace fs = std::filesystem;

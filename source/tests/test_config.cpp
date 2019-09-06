@@ -1,7 +1,8 @@
-#include "../core/config.h"
-#include "../debug/logger.h"
+#include "core/config.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
 
-#include "../core/hetero.hpp"
+#include "core/hetero.hpp"
 
 using namespace erwin;
 

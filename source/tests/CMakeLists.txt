@@ -21,6 +21,7 @@ set(SRC_TEST_LOGGER
 
 add_executable(test_logger ${SRC_TEST_LOGGER})
 
+target_include_directories(test_logger PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(test_logger PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 
 set_target_properties(test_logger
@@ -45,6 +46,7 @@ set(SRC_TEST_SERIAL
 
 add_executable(test_serial ${SRC_TEST_SERIAL})
 
+target_include_directories(test_serial PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(test_serial PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(test_serial PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
 
@@ -73,6 +75,7 @@ set(SRC_TEST_CONFIG
 
 add_executable(test_config ${SRC_TEST_CONFIG})
 
+target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
 

@@ -1,7 +1,7 @@
-#include "../clock.hpp"
-#include "../event.h"
-#include "../debug/logger.h"
-#include "../debug/logger_thread.h"
+#include "clock.hpp"
+#include "event.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
 
 using namespace erwin;
 
