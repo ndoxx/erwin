@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include "core.h"
+#include "window.h"
 
 namespace erwin
 {
@@ -14,6 +17,7 @@ public:
 	void run();
 
 private:
+	std::unique_ptr<Window> window_;
 	bool is_running_;
 };
 

@@ -8,6 +8,7 @@ namespace erwin
 
 
 Application::Application():
+window_(std::unique_ptr<Window>(Window::create())),
 is_running_(true)
 {
 	
@@ -38,13 +39,14 @@ void Application::run()
 
 	while(is_running_)
 	{
-		// Start clock
 		// For each layer, update
 		// Update window
 
         auto frame_d = frame_clock.restart();
         auto sleep_duration = frame_duration_ns_ - frame_d;
         std::this_thread::sleep_for(sleep_duration);
+
+        window_->update();
 
 		WLOGGER.flush();
 	}

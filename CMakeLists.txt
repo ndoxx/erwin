@@ -52,6 +52,10 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )
 
+set(SRC_PLATFORM
+    ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
+  )
+
 add_definitions(-D__DEBUG__)
 add_definitions(-DLOGGING_ENABLED=1)
 
@@ -64,7 +68,8 @@ add_library(erwin SHARED
             ${SRC_CORE}
             ${SRC_MATH}
             ${SRC_LOG}
-            ${SRC_RENDERER})
+            ${SRC_RENDERER}
+            ${SRC_PLATFORM})
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
@@ -80,3 +85,20 @@ set_target_properties(erwin
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 target_compile_definitions(erwin PRIVATE W_BUILD_LIB=1)
+
+
+# GLFW library as a static import
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glfw/include")
+add_library(glfw STATIC IMPORTED)
+set_target_properties(glfw PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglfw3.a"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
+)
+
+target_link_libraries(erwin
+                      m
+                      stdc++fs
+                      pthread
+                      X11
+                      GL
+                      glfw)

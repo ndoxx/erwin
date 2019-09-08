@@ -4,3 +4,6 @@
 [submodule "source/vendor/ctti"]
 	path = source/vendor/ctti
 	url = https://github.com/Manu343726/ctti.git
+[submodule "source/vendor/glfw"]
+	path = source/vendor/glfw
+	url = https://github.com/glfw/glfw.git

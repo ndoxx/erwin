@@ -37,6 +37,7 @@ Features:
 	* ostream syntax
 	* Event tracking
 	* Multiple sinks with channel subscription system
+    * Zero cost macro stripping
 
 Les streams de la STL ne sont pas thread-safe: quand deux threads tentent d'écrire sur std::cout par exemple, il est possible que les messages apparaissent entrelassés sur le terminal, car le flux est en accès concurrent. Rendre un flux synchronisable demande pas mal d'architecture.
 
@@ -90,14 +91,14 @@ static inline LoggerStream& get_log()
 ```
 Noter qu'en plus de celà, _LoggerStream_ doit posséder un état, afin d'enregistrer les informations supplémentaires au texte (canal, type de message, timestamp, sévérité, numéro de ligne, fichier). Ces paramètres sont passés en paramètres à la fonction get_log() qui les transmet au stream via sa fonction prepare(). Un ensemble de macros qui appèlent get_log() en sous-main me permet cependant d'écourter largement la syntaxe pour tous les cas d'utilisations que j'ai rencontrés avec WCore.
 
-La classe _LoggerThread_ fonctionne véritablement sur le principe de _RenderThread_. Un état atomique et deux variables de condition implémentent une machine à état très simple qui tourne dans la boucle principale de la fonction run(). Quand _LoggerThread_ est dans l'état STATE_IDLE, un producer thread peut venir verrouiller un mutex et pousser un message dans la queue avant de le déverrouiller. Un autre producer thread devra alors attendre sur ce mutex avant de pouvoir pousser un message. Un appel à flush() engendre l'état STATE_FLUSH dans lequel la queue est vidée (on verra dans quoi juste après), et kill() provoque un flush et l'état STATE_KILLED dans lequel le thread va simplement join().
+La classe _LoggerThread_ fonctionne véritablement sur le principe de _RenderThread_. Un état atomique et deux variables de condition implémentent une machine à état très simple qui tourne dans la boucle principale de la fonction run(). Quand _LoggerThread_ est dans l'état STATE_IDLE, un producer thread peut venir verrouiller un mutex et pousser un message dans la queue avant de le déverrouiller. Un autre producer thread devra alors attendre sur ce mutex avant de pouvoir pousser un message. Un appel à flush() engendre l'état STATE_FLUSH dans lequel la queue est triée par timestamp et vidée (on verra dans quoi juste après), et kill() provoque un flush et l'état STATE_KILLED dans lequel le thread va simplement join().
 
 Alors, dans quoi ais-je bien pu vider ma queue ? J'ai écrit une interface _Sink_ qui représente une voie de traitement (et un end-point) pour les messages de la queue. Le _LoggerThread_ peut enregistrer plusieurs _Sink_ spécialisés (un pour la console, un pour un fichier log, un pour mon futur web-viewer...), qui souscrivent aux canaux qui les intéressent. Lors du flush(), quand un message passe le test de verbosité, il se retrouve propagé dans tous les sinks qui ont souscrit au canal sur lequel il a été émis. Chaque sink fait ensuite ce qu'il veut avec le message.
 Des sinks spécialisés _ConsoleSink_ et _LogFileSink_ ont été écrits et testés.
 
 
 Comment on s'en sert ?
-logger.h définit un _LoggerThread_ statique du nom de WLOGGER. Le logger est d'abord initialisé (création de canaux, ajout de sinks, event tracking...), puis le thread est lancé via spawn() :
+logger_thread.h définit un _LoggerThread_ statique du nom de WLOGGER. Le logger est d'abord initialisé (création de canaux, ajout de sinks, event tracking...), puis le thread est lancé via spawn() :
 ```cpp
     WLOGGER.create_channel("TEST", 3);
     WLOGGER.create_channel("material", 2);
@@ -124,6 +125,8 @@ logger.h définit un _LoggerThread_ statique du nom de WLOGGER. Le logger est d'
     WLOGGER.flush();
 ```
 
+Le header logger.h définit les macros d'accès au flux (DLOG, DLOGI, DLOGW...). Cette séparation est jugée nécessaire, car un seul système a besoin de configurer, lancer et flusher le _LoggerThread_ (et doit donc inclure logger_thread.h), mais tout le reste du moteur peut se contenter d'inclure logger.h pour faire du logging, évitant d'avoir à inclure toute la bête à chaque fois.
+
 L'ajout de couleurs se fait au moyen d'une structure _WCC_ qui est évaluée en séquence d'échappement ANSI lorsque passée à un flux ostream. Donc plus de parsing de balises lourdingue. J'ai conservé les mêmes mnémoniques pour les couleurs que dans WCore, mais aussi ajouté un constructeur généraliste. L'envoi d'un WCC(0) est supposé restaurer le style précédent, mais ne restaure que le style *par défaut* pour l'instant.
 ```cpp
     DLOG("core",1) << "This " << WCC('i') << "word" << WCC(0) << " is orange." << std::endl;
@@ -139,9 +142,125 @@ L'ajout de couleurs se fait au moyen d'une structure _WCC_ qui est évaluée en 
 
 Le fichier tests/test_logger.h implémente une fonction test complète, dont un test de concurrence avec plusieurs worker threads qui poussent plein de messages en même temps. Le résultat est impeccable, si je peux me permettre.
 
+
+###Disable logging
+Le define LOGGING_ENABLED permet magiquement de supprimer toutes les instructions de log quand initialisé à 0. Ceci est possible grâce à une conditionnelle constexpr présente dans chaque macro DLOGx :
+
+```cpp
+    #define DLOG(C,S) if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::NORMAL, (S) )
+```
+Ceci est inspiré de [2]-(deuxième meilleure réponse). Si LOGGING_ENABLED est à 0, l'expression 
+```cpp
+    DLOG("core",1) << "Hello " << 1+1 << std::endl;
+```
+est l'instruction vide :
+```cpp
+    if constexpr(true);
+```
+Et les arguments ne sont même pas évalués (ce qui est bien plus intéressant du point de vue des performances que d'utiliser un Null Stream). Sinon la macro évalue à :
+```cpp
+    if constexpr(false); else get_log("core"_h, ...) << "Hello " << 1+1 << std::endl;
+```
+Ce qui est immédiatement optimisé par le compilateur en 
+```cpp
+    get_log("core"_h, ...) << "Hello " << 1+1 << std::endl;
+```
+
+La macro WLOGGER est similaire, et le logging thread n'est instancié que si LOGGING_ENABLED est à 1. En définitive, on peut faire complètement disparaître toutes les macros de logging en changeant une valeur à la compilation, en mode zero cost. On peut imaginer proposer au client deux versions binaires de la lib : une avec logging et une sans, et la question d'activer le logging devient un simple choix de lib dynamique.
+
 ###Sources:
 	[1] https://www.techrepublic.com/article/use-stl-streams-for-easy-c-plus-plus-thread-safe-logging/#
+    [2] https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 
 ###TODO:
-	[ ] Pimpl the shit out of the interface
+	[X] Pimpl the shit out of the interface
 	[ ] Write _NetSink_
+
+
+#[07-09-19]
+##Entry point
+WCore séparait très mal le code client du code moteur, toute mon API était une vaste blague et le concept même d'application level était en suspens. J'ai adpoté pour ce projet une approche à la TheCherno sur son moteur Hazel. Le client hérite d'une classe _Application_ et la spécialise pour ses besoin, puis définit une fonction erwin::create_application() exportée par la lib qui retourne le type dérivé. C'est la lib qui génère la fonction main, crée l'application au moyen de la fonction create_application(), la fait tourner puis la détruit.
+
+La classe _Application_ est déclarée dans application.h ainsi que la fonction create_application() :
+```cpp
+namespace erwin
+{
+
+class W_API Application
+{
+public:
+    Application();
+    virtual ~Application();
+
+    void run();
+
+private:
+    bool is_running_;
+};
+
+// Defined in the client
+Application* create_application();
+
+} // namespace erwin
+```
+Noter l'attribut macro W_API qui sous Windows (W_PLATFORM_WINDOWS defined) évalue à 
+```cpp
+__declspec(dllexport)
+// ou bien
+__declspec(dllimport)
+```
+selon que W_BUILD_LIB est définit ou non (W_BUILD_LIB définit lors de la compilation de la liberwin, mais pas lors de la compilation du code client). Sous Linux, W_API est une macro vide. Voir core.h :
+```cpp
+#ifdef W_PLATFORM_WINDOWS
+    #ifdef W_BUILD_LIB
+        #define W_API __declspec(dllexport)
+    #else
+        #define W_API __declspec(dllimport)
+    #endif
+#else
+    #define W_API
+#endif
+```
+
+Le header entry_point.h est simplement :
+```cpp
+extern erwin::Application* erwin::create_application();
+
+int main(int argc, char** argv)
+{
+    auto app = erwin::create_application();
+    app->run();
+    delete app;
+}
+```
+
+Côté client on n'a qu'à inclure l'unique header erwin.h (qui regroupe toutes les inclusions core/event pertinentes de l'API), à spécialiser _Application_ et à définir create_application() :
+
+```cpp
+#include "erwin.h"
+
+class Sandbox: public erwin::Application
+{
+public:
+    Sandbox(){ }
+    ~Sandbox(){ }
+};
+
+erwin::Application* erwin::create_application()
+{
+    return new Sandbox();
+}
+```
+Et hop, notre application est maintenant gérée par la lib. Il reste bien entendu à définir du contenu fonctionnel pour l'application : un système de Layers et la gestion des events.
+
+Pour l'instant, la fonction run() configure et spawn le logger thread, puis lance une boucle vide cadencée à 60fps (le logger est flushé en fin de boucle). Plus tard, chaque layer sera updaté itérativement dans cette boucle.
+
+
+##glfw submodule
+>> cd source/vendor
+>> git submodule add https://github.com/glfw/glfw.git glfw
+>> sudo apt-get install xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev 
+>> cd glfw;mkdir build;cd build
+>> cmake ..
+>> make
+>> cp src/libglfw3.a ../../../../lib/

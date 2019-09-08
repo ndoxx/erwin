@@ -72,13 +72,15 @@ public:
         EVENTBUS.subscribe(this, &Subscriber::on_item_found_event);
     }
 
-    void on_damage_event(const DamageEvent& event)
+    bool on_damage_event(const DamageEvent& event)
     {
         DLOGN("event") << "Subscriber: event received: " << event.source << "->" << event.target << ": " << event.value << std::endl;
+        return false;
     }
-    void on_item_found_event(const ItemFoundEvent& event)
+    bool on_item_found_event(const ItemFoundEvent& event)
     {
         DLOGN("event") << "Subscriber: event received: " << event.ent << ": " << event.name << "(" << event.num << ")" << std::endl;
+        return false;
     }
 };
 
@@ -137,7 +139,7 @@ struct VictimThread
         DLOG("core",0) << WCC('g') << "VictimThread " << name << WCC(0) << " done." << std::endl;
     }
 
-    void on_kill_event(const KillEvent& event)
+    bool on_kill_event(const KillEvent& event)
     {
         if(event.target == name)
         {
@@ -145,6 +147,7 @@ struct VictimThread
             thread_state.store(true, std::memory_order_release);
             cv.notify_one();
         }
+        return false;
     }
 
     char name;

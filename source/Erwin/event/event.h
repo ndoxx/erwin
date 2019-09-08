@@ -41,10 +41,10 @@ class AbstractDelegate
 {
 public:
     virtual ~AbstractDelegate() = default;
-    inline void exec(const WEvent& event) { call(event); }
+    inline bool exec(const WEvent& event) { return call(event); }
 
 private:
-    virtual void call(const WEvent& event) = 0;
+    virtual bool call(const WEvent& event) = 0;
 };
 
 // Member function wrapper, to allow classes to register their member functions as event handlers
@@ -53,14 +53,14 @@ class MemberDelegate: public AbstractDelegate
 {
 public:
     virtual ~MemberDelegate() = default;
-    typedef void (T::*MemberFunction)(const EventT&);
+    typedef bool (T::*MemberFunction)(const EventT&);
 
     MemberDelegate(T* instance, MemberFunction memberFunction): instance{ instance }, memberFunction{ memberFunction } {};
 
     // Cast event to the correct type and call member function
-    inline void call(const WEvent& event)
+    inline bool call(const WEvent& event)
     {
-        (instance->*memberFunction)(static_cast<const EventT&>(event));
+        return (instance->*memberFunction)(static_cast<const EventT&>(event));
     }
 
 private:
@@ -87,12 +87,13 @@ public:
 
         for(auto&& handler: *delegates)
             if(handler != nullptr)
-                handler->exec(event);
+                if(handler->exec(event)) // If handler returns true, event is not propagated further
+                    break;
     }
 
     // Register a member function as an event handler
     template<class T, class EventT>
-    void subscribe(T* instance, void (T::*memberFunction)(const EventT&))
+    void subscribe(T* instance, bool (T::*memberFunction)(const EventT&))
     {
         DelegateList* delegates = subscribers[ctti::type_id<EventT>()];
 
