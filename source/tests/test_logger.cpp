@@ -1,4 +1,5 @@
 #include "core/clock.hpp"
+#include "core/window.h"
 #include "event/event.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
@@ -24,12 +25,13 @@ std::ostream& operator<< (std::ostream& stream, const vec3stub& value)
 
 struct DamageEvent: public WEvent
 {
+    EVENT_NAME(DamageEvent)
+
     DamageEvent(char src, char tgt, int val): source(src), target(tgt), value(val) {}
     virtual void print(std::ostream& stream) const override
     {
         stream << source << " hit target " << target << " (" << value << ")";
     }
-    virtual const char* get_name() const override { return "DamageEvent"; }
     
     char source;
     char target;
@@ -38,12 +40,13 @@ struct DamageEvent: public WEvent
 
 struct ItemFoundEvent: public WEvent
 {
+    EVENT_NAME(ItemFoundEvent)
+
     ItemFoundEvent(char ent, const std::string& name, int num): ent(ent), name(name), num(num) {}
     virtual void print(std::ostream& stream) const override
     {
         stream << ent << " found item \"" << name << "\" x" << num;
     }
-    virtual const char* get_name() const override { return "ItemFoundEvent"; }
     
     char ent;
     std::string name;
@@ -93,13 +96,14 @@ void thread_exec()
 
 struct KillEvent: public WEvent
 {
+    EVENT_NAME(KillEvent)
+
     KillEvent(char target): target(target) {}
 
     virtual void print(std::ostream& stream) const override
     {
         stream << "KILL: " << target;
     }
-    virtual const char* get_name() const override { return "KillEvent"; }
 
     char target;
 };
@@ -155,6 +159,11 @@ struct VictimThread
     std::condition_variable cv;
     std::atomic<bool> thread_state;
 };
+
+Window* Window::create(const WindowProps& props)
+{
+    return nullptr;
+}
 
 int main()
 {

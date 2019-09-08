@@ -12,12 +12,11 @@ window_(std::unique_ptr<Window>(Window::create())),
 is_running_(true)
 {
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
-	EVENTBUS.subscribe(this, &Application::on_key_pressed_event);
 }
 
 Application::~Application()
 {
-	
+	//EventBus::Kill(); // Can segfault
 }
 
 void Application::run()
@@ -70,15 +69,6 @@ void Application::run()
 bool Application::on_window_close_event(const WindowCloseEvent& e)
 {
 	is_running_ = false;
-	return false;
-}
-
-bool Application::on_key_pressed_event(const KeyPressedEvent& e)
-{
-	// TMP
-	if(e.key == 256) // ESCAPE
-		EVENTBUS.publish(WindowCloseEvent());
-
 	return false;
 }
 

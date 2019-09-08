@@ -1,21 +1,25 @@
 #pragma once
 
 #include "event.h"
+#include "keys.h"
 
 namespace erwin
 {
 
 struct WindowCloseEvent: public WEvent
 {
+	EVENT_NAME(WindowCloseEvent)
+
     virtual void print(std::ostream& stream) const override
     {
         stream << "(void)";
     }
-    virtual const char* get_name() const override { return "WindowCloseEvent"; }
 };
 
 struct WindowResizeEvent: public WEvent
 {
+	EVENT_NAME(WindowResizeEvent)
+
 	WindowResizeEvent(int width, int height):
 	width(width),
 	height(height)
@@ -27,7 +31,6 @@ struct WindowResizeEvent: public WEvent
     {
         stream << "new size: " << width << "x" << height;
     }
-    virtual const char* get_name() const override { return "WindowResizeEvent"; }
 
     int width;
     int height;
@@ -35,8 +38,11 @@ struct WindowResizeEvent: public WEvent
 
 struct KeyPressedEvent: public WEvent
 {
-	KeyPressedEvent(int key, bool repeat):
+	EVENT_NAME(KeyPressedEvent)
+
+	KeyPressedEvent(keymap::WKEY key, int mods, bool repeat):
 	key(key),
+	mods(mods),
 	repeat(repeat)
 	{
 		
@@ -44,33 +50,63 @@ struct KeyPressedEvent: public WEvent
 
     virtual void print(std::ostream& stream) const override
     {
-        stream << "key: " << key << " repeat: " << repeat;
+    	if(key == keymap::WKEY::LEFT_CONTROL  ||
+    	   key == keymap::WKEY::LEFT_SHIFT    ||
+    	   key == keymap::WKEY::LEFT_ALT      ||
+    	   key == keymap::WKEY::RIGHT_CONTROL ||
+    	   key == keymap::WKEY::RIGHT_SHIFT   ||
+    	   key == keymap::WKEY::RIGHT_ALT)
+    	{
+        	stream << keymap::KEY_NAMES.at(key) << (repeat ? " (r)" : "");
+        }
+        else
+        {
+        	stream << keymap::modifier_string(mods) << keymap::KEY_NAMES.at(key)
+                   << (repeat ? " (r)" : "");
+        }
     }
-    virtual const char* get_name() const override { return "KeyPressedEvent"; }
 
-    int key;
+    keymap::WKEY key;
+    int mods;
     bool repeat;
 };
 
 struct KeyReleasedEvent: public WEvent
 {
-	KeyReleasedEvent(int key):
-	key(key)
+	EVENT_NAME(KeyReleasedEvent)
+
+	KeyReleasedEvent(keymap::WKEY key, int mods):
+	key(key),
+	mods(mods)
 	{
 		
 	}
 
     virtual void print(std::ostream& stream) const override
     {
-        stream << "key: " << key;
+    	if(key == keymap::WKEY::LEFT_CONTROL  ||
+    	   key == keymap::WKEY::LEFT_SHIFT    ||
+    	   key == keymap::WKEY::LEFT_ALT      ||
+    	   key == keymap::WKEY::RIGHT_CONTROL ||
+    	   key == keymap::WKEY::RIGHT_SHIFT   ||
+    	   key == keymap::WKEY::RIGHT_ALT)
+    	{
+        	stream << keymap::KEY_NAMES.at(key);
+        }
+        else
+        {
+        	stream << keymap::modifier_string(mods) << keymap::KEY_NAMES.at(key);
+        }
     }
-    virtual const char* get_name() const override { return "KeyReleasedEvent"; }
 
-    int key;
+    keymap::WKEY key;
+    int mods;
 };
 
 struct MouseButtonPressedEvent: public WEvent
 {
+	EVENT_NAME(MouseButtonPressedEvent)
+
 	MouseButtonPressedEvent(int button, float x, float y):
 	button(button), x(x), y(y)
 	{
@@ -81,7 +117,6 @@ struct MouseButtonPressedEvent: public WEvent
     {
         stream << "button: " << button << " @ (" << x << "," << y << ")";
     }
-    virtual const char* get_name() const override { return "MouseButtonPressedEvent"; }
 
     int button;
     float x;
@@ -90,6 +125,8 @@ struct MouseButtonPressedEvent: public WEvent
 
 struct MouseButtonReleasedEvent: public WEvent
 {
+	EVENT_NAME(MouseButtonReleasedEvent)
+
 	MouseButtonReleasedEvent(int button, float x, float y):
 	button(button), x(x), y(y)
 	{
@@ -100,7 +137,6 @@ struct MouseButtonReleasedEvent: public WEvent
     {
         stream << "button: " << button << " @ (" << x << "," << y << ")";
     }
-    virtual const char* get_name() const override { return "MouseButtonReleasedEvent"; }
 
     int button;
     float x;
@@ -109,6 +145,8 @@ struct MouseButtonReleasedEvent: public WEvent
 
 struct MouseMovedEvent: public WEvent
 {
+	EVENT_NAME(MouseMovedEvent)
+
 	MouseMovedEvent(float x, float y):
 	x(x), y(y)
 	{
@@ -119,7 +157,6 @@ struct MouseMovedEvent: public WEvent
     {
         stream << "cursor " << " @ (" << x << "," << y << ")";
     }
-    virtual const char* get_name() const override { return "MouseMovedEvent"; }
 
     float x;
     float y;
@@ -127,6 +164,8 @@ struct MouseMovedEvent: public WEvent
 
 struct MouseScrollEvent: public WEvent
 {
+	EVENT_NAME(MouseScrollEvent)
+	
 	MouseScrollEvent(float x_offset, float y_offset):
 	x_offset(x_offset), y_offset(y_offset)
 	{
@@ -137,7 +176,6 @@ struct MouseScrollEvent: public WEvent
     {
         stream << "(" << x_offset << "," << y_offset << ")";
     }
-    virtual const char* get_name() const override { return "MouseScrollEvent"; }
 
     float x_offset;
     float y_offset;

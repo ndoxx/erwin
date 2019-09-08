@@ -1,4 +1,6 @@
 #include "glfw_window.h"
+#include "glfw_keymap.h"
+
 #include "GLFW/glfw3.h"
 #include "../Erwin/debug/logger.h"
 #include "../Erwin/core/core.h"
@@ -15,10 +17,18 @@ Window* Window::create(const WindowProps& props)
 	return new GLFWWindow(props);
 }
 
+static void GLFW_error_callback(int error, const char* description)
+{
+	DLOGE("core") << "GLFW Error (" << error << "): " << description << std::endl;
+}
+
 struct GLFWWindow::GLFWWindowDataImpl
 {
 	GLFWwindow* window;
 	bool vsync;
+	int width;
+	int height;
+	std::string title;
 };
 
 GLFWWindow::GLFWWindow(const WindowProps& props):
@@ -68,6 +78,10 @@ void GLFWWindow::init(const WindowProps& props)
     else
         data_->window = glfwCreateWindow(props.width, props.height, props.title.c_str(), NULL, NULL);
 
+    data_->width = props.width;
+    data_->height = props.height;
+    data_->title = props.title;
+
     if(data_->window == NULL)
     {
         DLOGF("core") << "Failed to open GLFW window." << std::endl;
@@ -89,11 +103,17 @@ void GLFWWindow::init(const WindowProps& props)
     if(data_->vsync)
         glfwSwapInterval(1); // Enable vsync
 
+    // Send GLFW a raw pointer to our data structure so we can act on it from callbacks
+    glfwSetWindowUserPointer(data_->window, &(*data_));
+
     set_event_callbacks();
 }
 
 void GLFWWindow::set_event_callbacks()
 {
+	// Error callback
+	glfwSetErrorCallback(GLFW_error_callback);
+
 	// Window close event
 	glfwSetWindowCloseCallback(data_->window, [](GLFWwindow* window)
 	{
@@ -103,27 +123,31 @@ void GLFWWindow::set_event_callbacks()
 	// Window resize event
 	glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
 	{
+		auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+		data->width = width;
+		data->height = height;
 		EVENTBUS.publish(WindowResizeEvent(width, height));
 	});
 
 	// Keyboard event
 	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
+		keymap::WKEY wkey = keymap::GLFW_KEY_TO_WKEY.at(key);
 		switch(action)
 		{
 			case GLFW_PRESS:
 			{
-				EVENTBUS.publish(KeyPressedEvent(key, false));
+				EVENTBUS.publish(KeyPressedEvent(wkey, mods, false));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EVENTBUS.publish(KeyReleasedEvent(key));
+				EVENTBUS.publish(KeyReleasedEvent(wkey, mods));
 				break;
 			}
 			case GLFW_REPEAT:
 			{
-				EVENTBUS.publish(KeyPressedEvent(key, true));
+				EVENTBUS.publish(KeyPressedEvent(wkey, mods, true));
 				break;
 			}
 		}
@@ -172,6 +196,8 @@ void GLFWWindow::set_event_callbacks()
 void GLFWWindow::cleanup()
 {
 	glfwDestroyWindow(data_->window);
+	// Will need to remove this in case of multi-window application
+    glfwTerminate();
 }
 
 

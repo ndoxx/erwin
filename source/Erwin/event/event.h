@@ -24,7 +24,7 @@ struct WEvent
     WEvent(): timestamp(TimeBase::timestamp()) {}
 
 #ifdef __DEBUG__
-    virtual const char* get_name() const { return ""; }
+    virtual std::string get_name() const { return ""; }
     virtual void print(std::ostream& stream) const {}
     friend std::ostream& operator <<(std::ostream& stream, const WEvent& event)
     {
@@ -112,6 +112,7 @@ private:
     EventBus()=default;
     ~EventBus()
     {
+        // TODO: Correct problem here, can segfault
         for(auto&& [key, delegates]: subscribers)
         {
             for(auto&& handler: *delegates)
@@ -125,5 +126,7 @@ private:
 };
 
 #define EVENTBUS EventBus::Instance()
+
+#define EVENT_NAME(C) virtual std::string get_name() const override { return #C; }
 
 } // namespace erwin
