@@ -11,7 +11,8 @@ Application::Application():
 window_(std::unique_ptr<Window>(Window::create())),
 is_running_(true)
 {
-	
+	EVENTBUS.subscribe(this, &Application::on_window_close_event);
+	EVENTBUS.subscribe(this, &Application::on_key_pressed_event);
 }
 
 Application::~Application()
@@ -27,6 +28,16 @@ void Application::run()
     WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
     // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
     WLOGGER.set_backtrace_on_error(true);
+
+    WLOGGER.track_event<WindowCloseEvent>();
+    WLOGGER.track_event<WindowResizeEvent>();
+    WLOGGER.track_event<KeyPressedEvent>();
+    WLOGGER.track_event<KeyReleasedEvent>();
+    WLOGGER.track_event<MouseButtonPressedEvent>();
+    WLOGGER.track_event<MouseButtonReleasedEvent>();
+    //WLOGGER.track_event<MouseMovedEvent>();
+    WLOGGER.track_event<MouseScrollEvent>();
+
     WLOGGER.spawn();
 
     DLOG("application",1) << "Application started." << std::endl;
@@ -54,6 +65,21 @@ void Application::run()
     DLOG("application",1) << "Application stopped." << std::endl;
 
     WLOGGER.kill();
+}
+
+bool Application::on_window_close_event(const WindowCloseEvent& e)
+{
+	is_running_ = false;
+	return false;
+}
+
+bool Application::on_key_pressed_event(const KeyPressedEvent& e)
+{
+	// TMP
+	if(e.key == 256) // ESCAPE
+		EVENTBUS.publish(WindowCloseEvent());
+
+	return false;
 }
 
 

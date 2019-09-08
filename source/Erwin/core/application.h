@@ -16,6 +16,9 @@ public:
 
 	void run();
 
+	bool on_window_close_event(const WindowCloseEvent& e);
+	bool on_key_pressed_event(const KeyPressedEvent& e);
+
 private:
 	std::unique_ptr<Window> window_;
 	bool is_running_;

@@ -3,6 +3,8 @@
 #include "../Erwin/debug/logger.h"
 #include "../Erwin/core/core.h"
 
+#include "../Erwin/event/window_events.h"
+
 namespace erwin
 {
 
@@ -41,6 +43,8 @@ void GLFWWindow::init(const WindowProps& props)
 			fatal();
 		}
 
+		DLOG("core",0) << "Initialized GLFW." << std::endl;
+
 		glGetError(); // Hide glfwInit's errors
 		glfw_initialized = true;
 	}
@@ -78,12 +82,91 @@ void GLFWWindow::init(const WindowProps& props)
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(data_->window, GLFW_STICKY_KEYS, GL_TRUE);
     // [BUG][glfw] glfwGetCursorPos does not update if cursor visible ???!!!
-    glfwSetInputMode(data_->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(data_->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     //VSync
     data_->vsync = props.vsync;
     if(data_->vsync)
         glfwSwapInterval(1); // Enable vsync
+
+    set_event_callbacks();
+}
+
+void GLFWWindow::set_event_callbacks()
+{
+	// Window close event
+	glfwSetWindowCloseCallback(data_->window, [](GLFWwindow* window)
+	{
+		EVENTBUS.publish(WindowCloseEvent());
+	});
+
+	// Window resize event
+	glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+	{
+		EVENTBUS.publish(WindowResizeEvent(width, height));
+	});
+
+	// Keyboard event
+	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+	{
+		switch(action)
+		{
+			case GLFW_PRESS:
+			{
+				EVENTBUS.publish(KeyPressedEvent(key, false));
+				break;
+			}
+			case GLFW_RELEASE:
+			{
+				EVENTBUS.publish(KeyReleasedEvent(key));
+				break;
+			}
+			case GLFW_REPEAT:
+			{
+				EVENTBUS.publish(KeyPressedEvent(key, true));
+				break;
+			}
+		}
+	});
+
+	// Key typed event
+	/*glfwSetCharCallback(data_->window, [](GLFWwindow* window, unsigned int keycode)
+	{
+		DLOGW("event") << "GLFW char callback not implemented." << std::endl;
+	});*/
+
+	// Mouse event
+	glfwSetMouseButtonCallback(data_->window, [](GLFWwindow* window, int button, int action, int mods)
+	{
+		double x,y;
+    	glfwGetCursorPos(window, &x, &y);
+
+		switch(action)
+		{
+			case GLFW_PRESS:
+			{
+				EVENTBUS.publish(MouseButtonPressedEvent(button,x,y));
+				break;
+			}
+			case GLFW_RELEASE:
+			{
+				EVENTBUS.publish(MouseButtonReleasedEvent(button,x,y));
+				break;
+			}
+		}
+	});
+
+	// Cursor moving event
+	glfwSetCursorPosCallback(data_->window, [](GLFWwindow* window, double x, double y)
+	{
+		EVENTBUS.publish(MouseMovedEvent(x, y));
+	});
+
+	// Mouse scroll event
+	glfwSetScrollCallback(data_->window, [](GLFWwindow* window, double x_offset, double y_offset)
+	{
+		EVENTBUS.publish(MouseScrollEvent(x_offset, y_offset));
+	});
 }
 
 void GLFWWindow::cleanup()
@@ -94,7 +177,8 @@ void GLFWWindow::cleanup()
 
 void GLFWWindow::update()
 {
-
+	glfwSwapBuffers(data_->window);
+	glfwPollEvents();
 }
 
 uint32_t GLFWWindow::get_width() const

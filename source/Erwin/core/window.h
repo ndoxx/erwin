@@ -3,6 +3,7 @@
 #include <string>
 
 #include "../core/core.h"
+#include "../event/window_events.h"
 
 namespace erwin
 {
