@@ -12,11 +12,30 @@ window_(std::unique_ptr<Window>(Window::create())),
 is_running_(true)
 {
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
+
+	layer_stack_.track_event<KeyboardEvent>();
+	layer_stack_.track_event<MouseButtonEvent>();
+	layer_stack_.track_event<MouseScrollEvent>();
+	layer_stack_.track_event<WindowResizeEvent>();
 }
 
 Application::~Application()
 {
 	//EventBus::Kill(); // Can segfault
+}
+
+size_t Application::push_layer(Layer* layer)
+{
+	size_t index = layer_stack_.push_layer(layer);
+	//DLOGR("core") << layer_stack_ << std::endl;
+	return index;
+}
+
+size_t Application::push_overlay(Layer* layer)
+{
+	size_t index = layer_stack_.push_overlay(layer);
+	//DLOGR("core") << layer_stack_ << std::endl;
+	return index;
 }
 
 void Application::run()
@@ -30,10 +49,8 @@ void Application::run()
 
     WLOGGER.track_event<WindowCloseEvent>();
     WLOGGER.track_event<WindowResizeEvent>();
-    WLOGGER.track_event<KeyPressedEvent>();
-    WLOGGER.track_event<KeyReleasedEvent>();
-    WLOGGER.track_event<MouseButtonPressedEvent>();
-    WLOGGER.track_event<MouseButtonReleasedEvent>();
+    WLOGGER.track_event<KeyboardEvent>();
+    WLOGGER.track_event<MouseButtonEvent>();
     //WLOGGER.track_event<MouseMovedEvent>();
     WLOGGER.track_event<MouseScrollEvent>();
 
@@ -50,12 +67,14 @@ void Application::run()
 	while(is_running_)
 	{
 		// For each layer, update
-		// Update window
+		for(auto* layer: layer_stack_)
+			layer->update();
 
         auto frame_d = frame_clock.restart();
         auto sleep_duration = frame_duration_ns_ - frame_d;
         std::this_thread::sleep_for(sleep_duration);
 
+		// Update window
         window_->update();
 
 		WLOGGER.flush();

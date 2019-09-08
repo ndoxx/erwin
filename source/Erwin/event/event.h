@@ -85,6 +85,7 @@ public:
 
         if(delegates == nullptr) return;
 
+        // TODO: make it non-blocking (events handled in an event phase)
         for(auto&& handler: *delegates)
             if(handler != nullptr)
                 if(handler->exec(event)) // If handler returns true, event is not propagated further

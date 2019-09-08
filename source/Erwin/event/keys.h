@@ -133,7 +133,27 @@ enum class WKEY: uint8_t
 };
 
 
-static const std::map<WKEY, std::string> KEY_NAMES =
+enum class WMOUSE: uint8_t
+{
+	BUTTON_0,
+	BUTTON_1,
+	BUTTON_2,
+	BUTTON_3,
+	BUTTON_4,
+	BUTTON_5,
+	BUTTON_6,
+	BUTTON_7,
+	BUTTON_8,
+};
+
+enum WKEYMOD: uint8_t
+{
+	SHIFT   = 1,
+	CONTROL = 2,
+	ALT     = 4
+};
+
+static const std::unordered_map<WKEY, std::string> KEY_NAMES =
 {
 	{WKEY::SPACE, 			"SPACE"},
 	{WKEY::APOSTROPHE, 		"APOSTROPHE"},
@@ -258,18 +278,44 @@ static const std::map<WKEY, std::string> KEY_NAMES =
 	{WKEY::LAST, 			"LAST"},
 };
 
+static const std::unordered_map<WMOUSE, std::string> MB_NAMES =
+{
+	{WMOUSE::BUTTON_0, "LMB"},
+	{WMOUSE::BUTTON_1, "RMB"},
+	{WMOUSE::BUTTON_2, "MMB"},
+	{WMOUSE::BUTTON_3, "BUTTON_3"},
+	{WMOUSE::BUTTON_4, "BUTTON_4"},
+	{WMOUSE::BUTTON_5, "BUTTON_5"},
+	{WMOUSE::BUTTON_6, "BUTTON_6"},
+	{WMOUSE::BUTTON_7, "BUTTON_7"},
+	{WMOUSE::BUTTON_8, "BUTTON_8"},
+};
+
+static bool is_modifier_key(WKEY key)
+{
+	return (key == keymap::WKEY::LEFT_CONTROL  ||
+            key == keymap::WKEY::LEFT_SHIFT    ||
+            key == keymap::WKEY::LEFT_ALT      ||
+            key == keymap::WKEY::RIGHT_CONTROL ||
+            key == keymap::WKEY::RIGHT_SHIFT   ||
+            key == keymap::WKEY::RIGHT_ALT);
+}
+
 static std::string modifier_string(int mods)
 {
+	if(mods==0)
+		return "";
+
 	std::string ret;
 
-	if(mods & 1)
+	if(mods & WKEYMOD::SHIFT)
 		ret += "SHIFT";
-	if(mods & 2)
+	if(mods & WKEYMOD::CONTROL)
 	{
 		if(ret.size()) ret += "+";
 		ret += "CTRL";
 	}
-	if(mods & 4)
+	if(mods & WKEYMOD::ALT)
 	{
 		if(ret.size()) ret += "+";
 		ret += "ALT";

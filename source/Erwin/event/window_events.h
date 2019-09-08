@@ -36,13 +36,14 @@ struct WindowResizeEvent: public WEvent
     int height;
 };
 
-struct KeyPressedEvent: public WEvent
+struct KeyboardEvent: public WEvent
 {
-	EVENT_NAME(KeyPressedEvent)
+	EVENT_NAME(KeyboardEvent)
 
-	KeyPressedEvent(keymap::WKEY key, int mods, bool repeat):
+	KeyboardEvent(keymap::WKEY key, uint8_t mods, bool pressed, bool repeat):
 	key(key),
 	mods(mods),
+    pressed(pressed),
 	repeat(repeat)
 	{
 		
@@ -50,12 +51,8 @@ struct KeyPressedEvent: public WEvent
 
     virtual void print(std::ostream& stream) const override
     {
-    	if(key == keymap::WKEY::LEFT_CONTROL  ||
-    	   key == keymap::WKEY::LEFT_SHIFT    ||
-    	   key == keymap::WKEY::LEFT_ALT      ||
-    	   key == keymap::WKEY::RIGHT_CONTROL ||
-    	   key == keymap::WKEY::RIGHT_SHIFT   ||
-    	   key == keymap::WKEY::RIGHT_ALT)
+        stream << (pressed ? "PRE " : "REL ");
+    	if(is_modifier_key(key))
     	{
         	stream << keymap::KEY_NAMES.at(key) << (repeat ? " (r)" : "");
         }
@@ -67,78 +64,30 @@ struct KeyPressedEvent: public WEvent
     }
 
     keymap::WKEY key;
-    int mods;
+    uint8_t mods;
+    bool pressed;
     bool repeat;
 };
 
-struct KeyReleasedEvent: public WEvent
+struct MouseButtonEvent: public WEvent
 {
-	EVENT_NAME(KeyReleasedEvent)
+	EVENT_NAME(MouseButtonEvent)
 
-	KeyReleasedEvent(keymap::WKEY key, int mods):
-	key(key),
-	mods(mods)
+	MouseButtonEvent(keymap::WMOUSE button, uint8_t mods, bool pressed, float x, float y):
+	button(button), mods(mods), pressed(pressed), x(x), y(y)
 	{
 		
 	}
 
     virtual void print(std::ostream& stream) const override
     {
-    	if(key == keymap::WKEY::LEFT_CONTROL  ||
-    	   key == keymap::WKEY::LEFT_SHIFT    ||
-    	   key == keymap::WKEY::LEFT_ALT      ||
-    	   key == keymap::WKEY::RIGHT_CONTROL ||
-    	   key == keymap::WKEY::RIGHT_SHIFT   ||
-    	   key == keymap::WKEY::RIGHT_ALT)
-    	{
-        	stream << keymap::KEY_NAMES.at(key);
-        }
-        else
-        {
-        	stream << keymap::modifier_string(mods) << keymap::KEY_NAMES.at(key);
-        }
+        stream << (pressed ? "PRE " : "REL ");
+        stream << keymap::modifier_string(mods) << keymap::MB_NAMES.at(button) << " @ (" << x << "," << y << ")";
     }
 
-    keymap::WKEY key;
-    int mods;
-};
-
-struct MouseButtonPressedEvent: public WEvent
-{
-	EVENT_NAME(MouseButtonPressedEvent)
-
-	MouseButtonPressedEvent(int button, float x, float y):
-	button(button), x(x), y(y)
-	{
-		
-	}
-
-    virtual void print(std::ostream& stream) const override
-    {
-        stream << "button: " << button << " @ (" << x << "," << y << ")";
-    }
-
-    int button;
-    float x;
-    float y;
-};
-
-struct MouseButtonReleasedEvent: public WEvent
-{
-	EVENT_NAME(MouseButtonReleasedEvent)
-
-	MouseButtonReleasedEvent(int button, float x, float y):
-	button(button), x(x), y(y)
-	{
-		
-	}
-
-    virtual void print(std::ostream& stream) const override
-    {
-        stream << "button: " << button << " @ (" << x << "," << y << ")";
-    }
-
-    int button;
+    keymap::WMOUSE button;
+    uint8_t mods;
+    bool pressed;
     float x;
     float y;
 };

@@ -137,17 +137,17 @@ void GLFWWindow::set_event_callbacks()
 		{
 			case GLFW_PRESS:
 			{
-				EVENTBUS.publish(KeyPressedEvent(wkey, mods, false));
+				EVENTBUS.publish(KeyboardEvent(wkey, mods, true, false));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EVENTBUS.publish(KeyReleasedEvent(wkey, mods));
+				EVENTBUS.publish(KeyboardEvent(wkey, mods, false, false));
 				break;
 			}
 			case GLFW_REPEAT:
 			{
-				EVENTBUS.publish(KeyPressedEvent(wkey, mods, true));
+				EVENTBUS.publish(KeyboardEvent(wkey, mods, true, true));
 				break;
 			}
 		}
@@ -165,16 +165,18 @@ void GLFWWindow::set_event_callbacks()
 		double x,y;
     	glfwGetCursorPos(window, &x, &y);
 
+    	keymap::WMOUSE wbutton = keymap::GLFW_MB_TO_WMOUSE.at(button);
+
 		switch(action)
 		{
 			case GLFW_PRESS:
 			{
-				EVENTBUS.publish(MouseButtonPressedEvent(button,x,y));
+				EVENTBUS.publish(MouseButtonEvent(wbutton,mods,true,x,y));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EVENTBUS.publish(MouseButtonReleasedEvent(button,x,y));
+				EVENTBUS.publish(MouseButtonEvent(wbutton,mods,false,x,y));
 				break;
 			}
 		}
