@@ -85,6 +85,7 @@ add_library(erwin SHARED
             )
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
+target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")

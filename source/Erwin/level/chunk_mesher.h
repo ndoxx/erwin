@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mesh.h"
+#include "mesh.h"
 
 namespace erwin
 {

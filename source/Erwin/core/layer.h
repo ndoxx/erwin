@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "../event/window_events.h"
+#include "event/window_events.h"
 
 namespace erwin
 {

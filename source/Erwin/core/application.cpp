@@ -1,8 +1,8 @@
 #include "application.h"
 #include "clock.hpp"
-#include "../debug/logger.h"
-#include "../debug/logger_thread.h"
-#include "../imgui/imgui_layer.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
+#include "imgui/imgui_layer.h"
 
 namespace erwin
 {
@@ -87,6 +87,7 @@ void Application::run()
 		for(auto* layer: layer_stack_)
 			layer->update();
 
+		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();
 		for(auto* layer: layer_stack_)
 			layer->on_imgui_render();

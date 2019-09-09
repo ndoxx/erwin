@@ -2,9 +2,9 @@
 
 #include <string>
 
-#include "../core/core.h"
-#include "../event/window_events.h"
-#include "../render/gfx_context.h"
+#include "core/core.h"
+#include "event/window_events.h"
+#include "render/gfx_context.h"
 
 namespace erwin
 {

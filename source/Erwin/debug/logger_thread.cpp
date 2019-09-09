@@ -3,11 +3,11 @@
 #include <fstream>
 #include <regex>
 
-#include "logger_thread.h"
-#include "logger.h"
-#include "stack_trace.h"
-#include "../math/math3d.h"
-#include "../math/color.h"
+#include "debug/logger_thread.h"
+#include "debug/logger.h"
+#include "debug/stack_trace.h"
+#include "math/math3d.h"
+#include "math/color.h"
 
 namespace erwin
 {

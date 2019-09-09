@@ -2,8 +2,8 @@
 
 #include <map>
 
-#include "../core/wtypes.h"
-#include "../core/time_base.h"
+#include "core/wtypes.h"
+#include "core/time_base.h"
 
 namespace erwin
 {

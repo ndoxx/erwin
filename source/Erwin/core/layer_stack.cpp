@@ -1,5 +1,5 @@
-#include "layer_stack.h"
-#include "../debug/logger.h"
+#include "core/layer_stack.h"
+#include "debug/logger.h"
 
 namespace erwin
 {

@@ -1,6 +1,6 @@
 #include "imgui_layer.h"
-#include "../core/application.h"
-#include "../debug/logger.h"
+#include "core/application.h"
+#include "debug/logger.h"
 
 #include "imgui.h"
 #include "examples/imgui_impl_glfw.h"
@@ -90,6 +90,7 @@ void ImGuiLayer::on_attach()
 	Application& app = Application::get_instance();
 	GLFWwindow* window = static_cast<GLFWwindow*>(app.get_window().get_native());
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
+
 	ImGui_ImplOpenGL3_Init("#version 410");
 }
 
@@ -132,5 +133,32 @@ void ImGuiLayer::on_imgui_render()
 	static bool show = true;
 	ImGui::ShowDemoWindow(&show);
 }
+
+bool ImGuiLayer::on_event(const KeyboardEvent& event)
+{
+	// Don't propagate event if ImGui wants to handle it
+	ImGuiIO& io = ImGui::GetIO();
+	return io.WantCaptureKeyboard;
+}
+
+bool ImGuiLayer::on_event(const KeyTypedEvent& event)
+{
+	// Don't propagate event if ImGui wants to handle it
+	ImGuiIO& io = ImGui::GetIO();
+	return io.WantTextInput;
+}
+
+bool ImGuiLayer::on_event(const MouseButtonEvent& event)
+{
+	// Don't propagate event if ImGui wants to handle it
+	ImGuiIO& io = ImGui::GetIO();
+	return io.WantCaptureMouse;
+}
+
+bool ImGuiLayer::on_event(const MouseScrollEvent& event)
+{
+	return false;
+}
+
 
 } // namespace erwin

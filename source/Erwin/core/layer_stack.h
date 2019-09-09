@@ -3,8 +3,8 @@
 #include <vector>
 #include <ostream>
 
-#include "layer.h"
-#include "../event/event.h"
+#include "core/layer.h"
+#include "event/event.h"
 
 namespace erwin
 {

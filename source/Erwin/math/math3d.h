@@ -4,8 +4,8 @@
 #include <string>
 #include <cstring>
 
-#include "math_structures.hpp"
-#include "../core/wtypes.h"
+#include "math/math_structures.hpp"
+#include "core/wtypes.h"
 
 namespace erwin
 {

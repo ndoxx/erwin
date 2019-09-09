@@ -12,8 +12,8 @@
 
 #include "ctti/type_id.hpp"
 
-#include "../core/time_base.h"
-#include "../core/singleton.hpp"
+#include "core/time_base.h"
+#include "core/singleton.hpp"
 
 namespace erwin
 {
