@@ -373,3 +373,14 @@ public:
 };
 ```
 Je pense pouvoir me satisfaire de cette approche dans la mesure où mes layers n'ont vraisemblablement besoin de réagir qu'à un nombre très restreint de types d'événements.
+
+##ImGui Docking
+J'ai ajouté ImGui en git submodule. Pour profiter des features expérimentaux de la branche "docking" je dois changer le tag :
+>> cd source/vendor
+>> git submodule add https://github.com/ocornut/imgui.git imgui
+>> cd imgui
+>> git status
+    On branch master
+>> git checkout docking
+>> cd ..
+>> git add imgui

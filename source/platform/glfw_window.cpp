@@ -155,10 +155,10 @@ void GLFWWindow::set_event_callbacks()
 	});
 
 	// Key typed event
-	/*glfwSetCharCallback(data_->window, [](GLFWwindow* window, unsigned int keycode)
+	glfwSetCharCallback(data_->window, [](GLFWwindow* window, unsigned int codepoint)
 	{
-		DLOGW("event") << "GLFW char callback not implemented." << std::endl;
-	});*/
+		EVENTBUS.publish(KeyTypedEvent(codepoint));
+	});
 
 	// Mouse event
 	glfwSetMouseButtonCallback(data_->window, [](GLFWwindow* window, int button, int action, int mods)

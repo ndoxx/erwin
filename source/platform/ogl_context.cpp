@@ -36,6 +36,7 @@ void OGLContext::init()
 	DLOGI << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 	DLOGI << "Version:  " << glGetString(GL_VERSION) << std::endl;
 
+	// Pop any GL error that would have been caused by say... GLFW init
 	glGetError();
 }
 

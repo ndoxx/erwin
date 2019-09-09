@@ -69,6 +69,24 @@ struct KeyboardEvent: public WEvent
     bool repeat;
 };
 
+struct KeyTypedEvent: public WEvent
+{
+    EVENT_NAME(KeyTypedEvent)
+
+    KeyTypedEvent(unsigned int codepoint):
+    codepoint(codepoint)
+    {
+
+    }
+
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << codepoint;
+    }
+
+    unsigned int codepoint;
+};
+
 struct MouseButtonEvent: public WEvent
 {
 	EVENT_NAME(MouseButtonEvent)

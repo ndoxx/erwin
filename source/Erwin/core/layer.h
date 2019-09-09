@@ -25,8 +25,10 @@ public:
 	virtual void on_detach() { }
 
 	REACT(KeyboardEvent)
+	REACT(KeyTypedEvent)
 	REACT(MouseButtonEvent)
 	REACT(MouseScrollEvent)
+	REACT(MouseMovedEvent)
 	REACT(WindowResizeEvent)
 
 protected:

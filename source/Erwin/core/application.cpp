@@ -14,8 +14,10 @@ is_running_(true)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
 
 	layer_stack_.track_event<KeyboardEvent>();
+	layer_stack_.track_event<KeyTypedEvent>();
 	layer_stack_.track_event<MouseButtonEvent>();
 	layer_stack_.track_event<MouseScrollEvent>();
+	layer_stack_.track_event<MouseMovedEvent>();
 	layer_stack_.track_event<WindowResizeEvent>();
 }
 
