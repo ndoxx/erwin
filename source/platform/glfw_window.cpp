@@ -1,7 +1,9 @@
+#include "GLFW/glfw3.h"
+
 #include "glfw_window.h"
 #include "glfw_keymap.h"
+#include "ogl_context.h"
 
-#include "GLFW/glfw3.h"
 #include "../Erwin/debug/logger.h"
 #include "../Erwin/core/core.h"
 
@@ -53,18 +55,16 @@ void GLFWWindow::init(const WindowProps& props)
 			fatal();
 		}
 
-		DLOG("core",0) << "Initialized GLFW." << std::endl;
+		DLOG("core",0) << "[GLFW]" << std::endl;
+		// Show GLFW version
+	    {
+	        int major, minor, rev;
+	        glfwGetVersion(&major, &minor, &rev);
+	        DLOGI << "Version:  " << major << "." << minor << "." << rev << std::endl;
+	    }
 
-		glGetError(); // Hide glfwInit's errors
 		glfw_initialized = true;
 	}
-
-	// Show GLFW version
-    {
-        int major, minor, rev;
-        glfwGetVersion(&major, &minor, &rev);
-        DLOG("core",0) << "GLFW version is: " << major << "." << minor << "." << rev << std::endl;
-    }
 
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -92,7 +92,8 @@ void GLFWWindow::init(const WindowProps& props)
     if(!props.full_screen && props.always_on_top)
         glfwSetWindowAttrib(data_->window, GLFW_FLOATING, GLFW_TRUE);
 
-    glfwMakeContextCurrent(data_->window);
+    context_ = new OGLContext(data_->window);
+
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(data_->window, GLFW_STICKY_KEYS, GL_TRUE);
     // [BUG][glfw] glfwGetCursorPos does not update if cursor visible ???!!!
@@ -205,7 +206,7 @@ void GLFWWindow::cleanup()
 
 void GLFWWindow::update()
 {
-	glfwSwapBuffers(data_->window);
+	context_->swap_buffers();
 	glfwPollEvents();
 }
 

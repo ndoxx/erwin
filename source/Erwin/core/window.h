@@ -4,6 +4,7 @@
 
 #include "../core/core.h"
 #include "../event/window_events.h"
+#include "../render/gfx_context.h"
 
 namespace erwin
 {
@@ -22,7 +23,7 @@ struct WindowProps
 class W_API Window
 {
 public:
-	virtual ~Window() {}
+	virtual ~Window() { delete context_; }
 
 	virtual void update() = 0;
 	virtual uint32_t get_width() const = 0; 
@@ -34,6 +35,9 @@ public:
 	virtual void* get_native() const = 0;
 
 	static Window* create(const WindowProps& props = WindowProps());
+
+protected:
+	GFXContext* context_ = nullptr;
 };
 
 

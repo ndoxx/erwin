@@ -17,8 +17,9 @@ public:
 
 	inline const std::string& get_name() const { return debug_name_; }
 	inline void set_enabled(bool value) { enabled_ = value; }
+	inline bool is_enabled() const { return enabled_; }
 
-	void update();
+	inline void update() { if(enabled_) on_update(); }
 
 	virtual void on_attach() { }
 	virtual void on_detach() { }
@@ -28,7 +29,7 @@ public:
 	REACT(MouseScrollEvent)
 	REACT(WindowResizeEvent)
 
-private:
+protected:
 	virtual void on_update() = 0;
 
 private:

@@ -16,11 +16,5 @@ Layer::~Layer()
 	
 }
 
-void Layer::update()
-{
-	if(enabled_)
-		on_update();
-}
-
 
 } // namespace erwin

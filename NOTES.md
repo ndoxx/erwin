@@ -256,7 +256,9 @@ Et hop, notre application est maintenant gérée par la lib. Il reste bien enten
 Pour l'instant, la fonction run() configure et spawn le logger thread, puis lance une boucle vide cadencée à 60fps (le logger est flushé en fin de boucle). Plus tard, chaque layer sera updaté itérativement dans cette boucle.
 
 
-##glfw submodule
+#[09-09-19]
+##GLFW & event callbacks
+J'ai cette fois intégré GLFW3 en tant que sous-module git :
 >> cd source/vendor
 >> git submodule add https://github.com/glfw/glfw.git glfw
 >> sudo apt-get install xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev 
@@ -264,3 +266,110 @@ Pour l'instant, la fonction run() configure et spawn le logger thread, puis lanc
 >> cmake ..
 >> make
 >> cp src/libglfw3.a ../../../../lib/
+
+GLFW ne sera vraisemblablement utilisé qu'avec OpenGL (ne fonctionne pas avec DX à ma connaissance), et j'ai donc créé une abstraction pour la gestion de la fenêtre. L'interface core _Window_ permet de masquer l'implémentation sous-jacente. _GLFWWindow_ hérite de cette interface et définit la fonction statique create() déclarée par _Window_ pour retourner le type dérivé. A la construction, GLFW est initialisé ainsi que les propriétés de la fenêtre.
+
+Contrairement à ce que je faisais dans WCore, j'utilise massivement les callbacks de GLFW pour propager mes événements custom dans le moteur. Chaque callback publie un événement sur l'_EventBus_, et modifie éventuellement l'état de la fenêtre au moyen d'un user pointer (un pour chaque fenêtre) que GLFW nous laisse préciser :
+
+```cpp
+    glfwSetWindowUserPointer(data_->window, &(*data_));
+    // ...
+    // Window resize event
+    glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+    {
+        auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        data->width = width;
+        data->height = height;
+        EVENTBUS.publish(WindowResizeEvent(width, height));
+    });
+```
+Ici, data_ est une structure pimpl de type _GLFWWindowDataImpl_ qui possède un pointeur sur la fenêtre ainsi que ses variables d'état (taille, vsync...).
+
+Pour l'instant, j'intercepte les événements souris (clic, scroll et mouvement), clavier, redimensionnement de la fenêtre et fermeture de la fenêtre. Tous ces événements sont définis dans event/window_events.h.
+
+
+##Layers & LayerStack
+Comme je choisis une approche de type "layered rendering" pour ce moteur, j'ai codé de nouvelles classes. Un _Layer_ représente une couche graphique (ou purement abstraite), activable/désactivable, qui peut réagir à des événements. Tous les layers sont possédés par un conteneur spécialisé : la _LayerStack_. On distingue un type particulier de layers : les overlays, qui sont toujours ajoutés en fin de stack.
+
+La _LayerStack_ est possédée par la classe _Application_ qui définit des méthodes pour ajouter des layers/overlays. A chaque frame, la boucle principale itère sur tous les _Layers_ contenus dans la _LayerStack_ et exécute leurs fonctions update(), dans l'ordre croissant des indices :
+
+```cpp
+    while(is_running_)
+    {
+        // For each layer, update
+        for(auto* layer: layer_stack_)
+            layer->update();
+
+        // ...
+        window_->update();
+    }
+```
+Les événements en revanche doivent être propagés dans le sens inverse. En effet, le dernier layer de la stack est celui qui est affiché en dernier, et par conséquent au dessus de tous les autres. Si ce dernier layer est par exemple un GUI d'inventaire avec un bouton, un clic sur le bouton ne doit pas être propagé aux layers du dessous. Si c'était le cas, un clic sur le bouton de l'inventaire pourrait faire tirer le gros flingue du joueur...
+
+L'ennui est que mon _EventBus_ propage les événements dans l'ordre de souscription, ce qui n'est pas adapté dans le cas présent. J'ai rectifié le tir en faisant de _LayerStack_ un subscriber, et je le laisse gérer le dispatching dans sa fonction de handling :
+
+```cpp
+    template <typename EventT>
+    void track_event()
+    {
+        EVENTBUS.subscribe(this, &LayerStack::dispatch<EventT>);
+    }
+
+    template <typename EventT>
+    bool dispatch(const EventT& event)
+    {
+        bool handled = false;
+        for(auto it=layers_.end(); it!=layers_.begin();)
+        {
+            Layer* layer = *--it;
+            if(!layer->is_enabled()) continue;
+            if(layer->on_event(event))
+            {
+                handled = true;
+                break;
+            }
+        }
+
+        return handled;
+    }
+```
+La fonction template track_event() va (comme chez le _LoggerThread_) enregistrer une fonction de handling (template aussi) du nom de dispatch(). dispatch() va parcourir les layers en sens inverse et appeler les fonctions pertinentes de l'overload set on_event(). La classe _Layer_ va en effet définir plusieurs fonctions du nom de on_event() avec un type d'argument par événement géré. Comme mon système ne permet pas de propager des événements sous la forme de la classe de base _WEvent_, c'est le meilleur moyen que j'ai trouvé.
+L'approche "casting" de TheCherno pour son event system m'a pour le coup semblé trop boilerplate intensive et peu flexible : mon système laisse le client définir des événements customs s'il le souhaite, sans besoin d'altérer d'éventuelles enums nécessaires au transtypage depuis/vers un type de base...
+
+Pour qu'un layer puisse gérer un événement de type _SomeEvent_ il faut donc deux choses :
+    * Appeler la fonction LayerStack::track_event<SomeEvent>() dans le constructeur de _Application_.
+    * Définir une fonction virtuelle Layer::on_event(const SomeEvent&).
+Les layers spécialisés héritant de la classe _Layer_ peuvent ou non surcharger les fonctions on_event() au gré de leurs besoins :
+
+```cpp
+class TestLayer: public Layer
+{
+public:
+    virtual bool on_event(const MouseButtonEvent& event) override
+    {
+        DLOGN("event") << get_name() << " -> Handled event: " << event << std::endl;
+        return true;
+    }
+
+protected:
+    virtual void on_update() override { /* ... */ }
+};
+```
+
+Noter qu'au sein de la classe _Layer_, on peut utiliser la macro REACT(SomeEvent) pour définir automatiquement une telle fonction virtuelle avec un comportement par défaut :
+
+```cpp
+#define REACT(EVENT) virtual bool on_event(const EVENT& event) { return false; }
+
+class Layer
+{
+public:
+    // ...
+    REACT(KeyboardEvent)
+    REACT(MouseButtonEvent)
+    REACT(MouseScrollEvent)
+    REACT(WindowResizeEvent)
+    // ...
+};
+```
+Je pense pouvoir me satisfaire de cette approche dans la mesure où mes layers n'ont vraisemblablement besoin de réagir qu'à un nombre très restreint de types d'événements.

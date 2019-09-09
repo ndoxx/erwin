@@ -24,8 +24,8 @@ size_t LayerStack::push_layer(Layer* layer)
 
 	size_t index = overlay_pos_-1;
 
-	DLOG("core",1) << "Pushed layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
-	DLOG("core",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
+	DLOG("application",1) << "Pushed layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
+	DLOG("application",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
 	
 	return index;
 }
@@ -35,7 +35,7 @@ size_t LayerStack::push_overlay(Layer* layer)
 	layers_.emplace_back(layer);
 	size_t index = layers_.size()-1;
 
-	DLOG("core",1) << "Pushed overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
+	DLOG("application",1) << "Pushed overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 
 	return index;
 }
@@ -46,13 +46,13 @@ void LayerStack::pop_layer(size_t index)
 	{
 		Layer* layer = layers_.at(index);
 		layer->on_detach();
-		DLOG("core",1) << "Popped layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
+		DLOG("application",1) << "Popped layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 		
 		delete layer;
 		layers_.erase(layers_.begin() + index);
 		--overlay_pos_;
 
-		DLOG("core",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
+		DLOG("application",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
 	}
 }
 
@@ -62,7 +62,7 @@ void LayerStack::pop_overlay(size_t index)
 	{
 		Layer* layer = layers_.at(index);
 		layer->on_detach();
-		DLOG("core",1) << "Popped overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
+		DLOG("application",1) << "Popped overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 
 		delete layer;
 		layers_.erase(layers_.begin() + index);

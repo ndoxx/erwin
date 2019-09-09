@@ -31,24 +31,27 @@ public:
 	template <typename EventT>
 	void track_event()
 	{
-		EVENTBUS.subscribe(this, &LayerStack::propagate<EventT>);
+		EVENTBUS.subscribe(this, &LayerStack::dispatch<EventT>);
 	}
 
 private:
 	template <typename EventT>
-	bool propagate(const EventT& event)
+	bool dispatch(const EventT& event)
 	{
 		bool handled = false;
 		for(auto it=layers_.end(); it!=layers_.begin();)
 		{
-			if((*--it)->on_event(event))
+			Layer* layer = *--it;
+			if(!layer->is_enabled()) continue;
+			if(layer->on_event(event))
 			{
 				handled = true;
 				break;
 			}
 		}
 
-        return handled;
+        //return handled;
+        return false;
 	}
 
 	std::vector<Layer*> layers_;

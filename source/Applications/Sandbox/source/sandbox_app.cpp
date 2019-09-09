@@ -20,7 +20,7 @@ public:
 		return true;
 	}
 
-private:
+protected:
 	virtual void on_update() override
 	{
 
