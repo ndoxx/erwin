@@ -23,6 +23,7 @@ public:
 
 	virtual void on_attach() { }
 	virtual void on_detach() { }
+	virtual void on_imgui_render() { }
 
 	REACT(KeyboardEvent)
 	REACT(KeyTypedEvent)

@@ -1,3 +1,4 @@
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
 #include "glfw_window.h"
@@ -68,7 +69,7 @@ void GLFWWindow::init(const WindowProps& props)
 
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -203,11 +204,13 @@ void GLFWWindow::cleanup()
     glfwTerminate();
 }
 
-
 void GLFWWindow::update()
 {
 	context_->swap_buffers();
 	glfwPollEvents();
+
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 uint32_t GLFWWindow::get_width() const

@@ -19,9 +19,13 @@ public:
 	size_t push_overlay(Layer* layer);
 	void run();
 
+	static inline Application& get_instance() { return *pinstance_; }
+	inline const Window& get_window() { return *window_; }
+
 	bool on_window_close_event(const WindowCloseEvent& e);
 
 private:
+	static Application* pinstance_;
 	std::unique_ptr<Window> window_;
 	bool is_running_;
 

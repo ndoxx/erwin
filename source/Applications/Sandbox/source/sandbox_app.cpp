@@ -35,12 +35,6 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
 
 		push_layer(new TestLayer("A"));
-		push_overlay(new TestLayer("O1"));
-		push_layer(new TestLayer("B"));
-		push_overlay(new TestLayer("O2"));
-		push_overlay(new TestLayer("O3"));
-		push_layer(new TestLayer("C"));
-		push_layer(new TestLayer("D"));
 	}
 
 	~Sandbox()

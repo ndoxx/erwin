@@ -2,15 +2,30 @@
 #include "clock.hpp"
 #include "../debug/logger.h"
 #include "../debug/logger_thread.h"
+#include "../imgui/imgui_layer.h"
 
 namespace erwin
 {
 
+Application* Application::pinstance_ = nullptr;
+
+static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 Application::Application():
 window_(std::unique_ptr<Window>(Window::create())),
 is_running_(true)
 {
+	if(Application::pinstance_)
+	{
+		DLOGF("application") << "Application already exists!" << std::endl;
+		fatal();
+	}
+
+	Application::pinstance_ = this;
+	IMGUI_LAYER = new ImGuiLayer();
+
+	push_overlay(IMGUI_LAYER);
+
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
 
 	layer_stack_.track_event<KeyboardEvent>();
@@ -71,6 +86,11 @@ void Application::run()
 		// For each layer, update
 		for(auto* layer: layer_stack_)
 			layer->update();
+
+		IMGUI_LAYER->begin();
+		for(auto* layer: layer_stack_)
+			layer->on_imgui_render();
+		IMGUI_LAYER->end();
 
         auto frame_d = frame_clock.restart();
         auto sleep_duration = frame_duration_ns_ - frame_d;

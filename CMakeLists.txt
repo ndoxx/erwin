@@ -31,6 +31,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
 
 set(SRC_MATH
@@ -59,6 +60,13 @@ set(SRC_PLATFORM
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
   )
 
+set(SRC_IMGUI
+    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp)
+
 add_definitions(-D__DEBUG__)
 add_definitions(-DLOGGING_ENABLED=1)
 
@@ -72,11 +80,13 @@ add_library(erwin SHARED
             ${SRC_MATH}
             ${SRC_LOG}
             ${SRC_RENDERER}
-            ${SRC_PLATFORM})
+            ${SRC_PLATFORM}
+            ${SRC_IMGUI}
+            )
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-# target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 set_target_properties(erwin PROPERTIES PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/source/erwin.h")
 set_target_properties(erwin PROPERTIES VERSION ${PROJECT_VERSION})

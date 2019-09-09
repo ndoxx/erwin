@@ -5,7 +5,8 @@ namespace erwin
 {
 
 
-LayerStack::LayerStack()
+LayerStack::LayerStack():
+overlay_pos_(0)
 {
 	
 }
@@ -34,6 +35,7 @@ size_t LayerStack::push_overlay(Layer* layer)
 {
 	layers_.emplace_back(layer);
 	size_t index = layers_.size()-1;
+	layer->on_attach();
 
 	DLOG("application",1) << "Pushed overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 
