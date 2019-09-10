@@ -49,7 +49,7 @@ public:
 
 private:
     uint32_t rd_handle_;
-    uint32_t vb_index_;
+    uint32_t vb_index_ = 0;
 };
 
 } // namespace erwin

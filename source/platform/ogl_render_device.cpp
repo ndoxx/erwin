@@ -20,17 +20,6 @@ inline bool is_power_of_2(int value)
     return bool((value) && ((value &(value - 1)) == 0));
 }
 
-OGLRenderDevice::OGLRenderDevice():
-default_framebuffer_(0)
-{
-
-}
-
-OGLRenderDevice::~OGLRenderDevice()
-{
-
-}
-
 void OGLRenderDevice::viewport(float xx, float yy, float width, float height)
 {
     glViewport(xx, yy, width, height);
@@ -58,16 +47,15 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
     set_pack_alignment(4);
 }
 
-void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArray)
+void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+								   DrawPrimitive prim,
+								   std::size_t offset)
 {
-    /*glDrawElements(OGLPrimitive[primitive],
-                   uint32_t(primitive)*n_elements,
-                   GL_UNSIGNED_INT,
-                   (void*)(offset * sizeof(GLuint)));*/
-	glDrawElements(GL_TRIANGLES, 
+	vertexArray->bind();
+	glDrawElements(OGLPrimitive[prim], 
 				   vertexArray->get_index_buffer().get_count(),
 				   GL_UNSIGNED_INT,
-				   nullptr);
+				   (void*)(offset * sizeof(GLuint)));
 }
 
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)

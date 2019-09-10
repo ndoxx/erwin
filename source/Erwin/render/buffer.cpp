@@ -7,6 +7,7 @@
 namespace erwin
 {
 
+// Return size (in bytes) of specified data type
 static uint32_t data_type_to_size(ShaderDataType type)
 {
     switch(type)
@@ -68,6 +69,8 @@ stride_(0)
 
 void BufferLayout::compute_offset_and_stride()
 {
+	// Each element offset is determined by previous elements' sizes
+	// Stride is the total size of each element
     uint32_t offset = 0;
     stride_ = 0;
     for(auto&& element: elements_)

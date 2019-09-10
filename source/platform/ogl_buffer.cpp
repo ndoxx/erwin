@@ -8,7 +8,7 @@ namespace erwin
 {
 
 OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, std::size_t size, const BufferLayout& layout, bool dynamic):
-VertexBuffer(layout),
+VertexBuffer(layout, size),
 rd_handle_(0)
 {
     GLenum draw_type = dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
@@ -17,7 +17,7 @@ rd_handle_(0)
     bind();
     glBufferData(GL_ARRAY_BUFFER, size, vertex_data, draw_type);
 
-    DLOG("render",1) << "OpenGL VBO created. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL Vertex Buffer created. id=" << rd_handle_ << std::endl;
 }
 
 OGLVertexBuffer::~OGLVertexBuffer()
@@ -26,7 +26,7 @@ OGLVertexBuffer::~OGLVertexBuffer()
     unbind();
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL VBO destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL Vertex Buffer destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLVertexBuffer::bind() const
@@ -55,9 +55,9 @@ rd_handle_(0)
 
     glGenBuffers(1, &rd_handle_);
     bind();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count*sizeof(uint32_t), index_data, draw_type);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, draw_type);
 
-    DLOG("render",1) << "OpenGL IBO created. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL Index Buffer created. id=" << rd_handle_ << std::endl;
 }
 
 OGLIndexBuffer::~OGLIndexBuffer()
@@ -66,7 +66,7 @@ OGLIndexBuffer::~OGLIndexBuffer()
     unbind();
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL IBO destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL Index Buffer destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLIndexBuffer::bind() const
@@ -110,14 +110,14 @@ static GLenum to_ogl_base_type(ShaderDataType type)
 
 OGLVertexArray::OGLVertexArray()
 {
-    glGenVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL VAO created. id=" << rd_handle_ << std::endl;
+    glCreateVertexArrays(1, &rd_handle_);
+    DLOG("render",1) << "OpenGL Vertex Array created. id=" << rd_handle_ << std::endl;
 }
 
 OGLVertexArray::~OGLVertexArray()
 {
     glDeleteVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL VAO destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL Vertex Array destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLVertexArray::bind() const
@@ -132,15 +132,19 @@ void OGLVertexArray::unbind() const
 
 void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 {
-	if(!p_vb->get_layout().get_size())
+	// Make sure buffer layout is meaningful
+	if(!p_vb->get_layout().get_count())
 	{
 		DLOGF("render") << "Vertex buffer has empty layout!" << std::endl;
 		fatal();
 	}
 
-	glBindVertexArray(rd_handle_);
+	// Bind vertex array then vertex buffer
+	bind();
 	p_vb->bind();
 
+	// For each element in layout, enable attribute array and push 
+	// data layout description to OpenGL
 	const auto& layout = p_vb->get_layout();
 	for(auto&& element: layout)
 	{
@@ -159,7 +163,7 @@ void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 
 void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
 {
-	glBindVertexArray(rd_handle_);
+	bind();
 	p_ib->bind();
 	index_buffer_ = p_ib;
 }

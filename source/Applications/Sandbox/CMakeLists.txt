@@ -4,6 +4,7 @@ set(SRC_SANDBOX
 
 add_executable(sandbox ${SRC_SANDBOX})
 target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
+target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
 target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 
 

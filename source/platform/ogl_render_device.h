@@ -8,9 +8,6 @@ namespace erwin
 class OGLRenderDevice: public RenderDevice
 {
 public:
-    OGLRenderDevice();
-    virtual ~OGLRenderDevice();
-
     // * Framebuffer
     // TODO: return a handle instead
     // Get an index to default framebuffer
@@ -24,7 +21,9 @@ public:
 
     // * Draw commands
     // Draw content of specified vertex array
-    virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray) override;
+    virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+    						  DrawPrimitive prim = DrawPrimitive::Triangles,
+    						  std::size_t offset = 0) override;
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) override;
     // Clear currently bound framebuffer
@@ -83,7 +82,7 @@ public:
     virtual void assert_no_error() override;
 
 private:
-    uint32_t default_framebuffer_;
+    uint32_t default_framebuffer_ = 0;
 };
 
 } // namespace erwin

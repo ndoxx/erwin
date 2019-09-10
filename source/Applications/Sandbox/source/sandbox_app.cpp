@@ -1,5 +1,6 @@
 #include "erwin.h"
 #include "event/window_events.h"
+#include "imgui.h"
 
 using namespace erwin;
 
@@ -18,6 +19,15 @@ public:
 	{
 		DLOGN("event") << get_name() << " -> Handled event: " << event << std::endl;
 		return true;
+	}
+
+	virtual void on_imgui_render() override
+	{
+	    if(!ImGui::Begin("Test Widget"))
+	    {
+	        ImGui::End();
+	        return;
+	    }
 	}
 
 protected:

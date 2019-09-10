@@ -52,6 +52,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )
@@ -60,6 +61,7 @@ set(SRC_PLATFORM
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_context.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_buffer.cpp
+    ${CMAKE_SOURCE_DIR}/source/platform/ogl_query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_input.cpp
   )
