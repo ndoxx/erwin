@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 
 namespace erwin
 {
@@ -9,6 +9,7 @@ namespace keymap
 
 enum class WKEY: uint8_t
 {
+	NONE = 0,
 	SPACE,
 	APOSTROPHE,
 	COMMA,
@@ -135,6 +136,7 @@ enum class WKEY: uint8_t
 
 enum class WMOUSE: uint8_t
 {
+	NONE = 0,
 	BUTTON_0,
 	BUTTON_1,
 	BUTTON_2,
@@ -148,6 +150,7 @@ enum class WMOUSE: uint8_t
 
 enum WKEYMOD: uint8_t
 {
+	NONE    = 0,
 	SHIFT   = 1,
 	CONTROL = 2,
 	ALT     = 4
@@ -155,6 +158,7 @@ enum WKEYMOD: uint8_t
 
 static const std::unordered_map<WKEY, std::string> KEY_NAMES =
 {
+	{WKEY::NONE, 			"<NONE>"},
 	{WKEY::SPACE, 			"SPACE"},
 	{WKEY::APOSTROPHE, 		"APOSTROPHE"},
 	{WKEY::COMMA, 			"COMMA"},
@@ -280,6 +284,7 @@ static const std::unordered_map<WKEY, std::string> KEY_NAMES =
 
 static const std::unordered_map<WMOUSE, std::string> MB_NAMES =
 {
+	{WMOUSE::NONE, 	   "<NONE>"},
 	{WMOUSE::BUTTON_0, "LMB"},
 	{WMOUSE::BUTTON_1, "RMB"},
 	{WMOUSE::BUTTON_2, "MMB"},

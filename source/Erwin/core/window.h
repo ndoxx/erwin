@@ -12,8 +12,8 @@ namespace erwin
 struct WindowProps
 {
 	std::string title   = "ErwinEngine";
-	unsigned int width  = 1024;
-	unsigned int height = 768;
+	unsigned int width  = 1280;
+	unsigned int height = 1024;
 	bool full_screen    = false;
 	bool always_on_top  = false;
 	bool vsync          = true;

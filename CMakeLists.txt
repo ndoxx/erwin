@@ -58,6 +58,7 @@ set(SRC_RENDERER
 set(SRC_PLATFORM
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_context.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
+    ${CMAKE_SOURCE_DIR}/source/platform/glfw_input.cpp
   )
 
 set(SRC_IMGUI

@@ -134,7 +134,7 @@ void GLFWWindow::set_event_callbacks()
 	// Keyboard event
 	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
-		keymap::WKEY wkey = keymap::GLFW_KEY_TO_WKEY.at(key);
+		keymap::WKEY wkey = keymap::GLFW_KEY_to_WKEY(key);
 		switch(action)
 		{
 			case GLFW_PRESS:
@@ -167,7 +167,7 @@ void GLFWWindow::set_event_callbacks()
 		double x,y;
     	glfwGetCursorPos(window, &x, &y);
 
-    	keymap::WMOUSE wbutton = keymap::GLFW_MB_TO_WMOUSE.at(button);
+    	keymap::WMOUSE wbutton = keymap::GLFW_MB_to_WMOUSE(button);
 
 		switch(action)
 		{
@@ -209,7 +209,7 @@ void GLFWWindow::update()
 	context_->swap_buffers();
 	glfwPollEvents();
 
-    glClearColor(0, 0, 0, 1);
+    glClearColor(0.2f, 0.2f, 0.2f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
