@@ -5,7 +5,7 @@
 #include <istream>
 
 #include "wmesh.h"
-#include "vertex_layout.h"
+#include "buffer.h"
 
 namespace erwin
 {
@@ -22,7 +22,6 @@ struct Submesh
 class Mesh
 {
 public:
-    Mesh();
     Mesh(const BufferLayout& layout);
     ~Mesh();
 

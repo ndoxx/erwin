@@ -1,12 +1,11 @@
-#include "vertex_layout.h"
+#include "render/buffer.h"
+#include "debug/logger.h"
+
+#include "render/render_device.h"
+#include "platform/ogl_buffer.h"
 
 namespace erwin
 {
-
-BufferLayoutElement::BufferLayoutElement()
-{
-
-}
 
 static uint32_t data_type_to_size(ShaderDataType type)
 {
@@ -22,8 +21,10 @@ static uint32_t data_type_to_size(ShaderDataType type)
         case ShaderDataType::IVec2: return sizeof(int) * 2;
         case ShaderDataType::IVec3: return sizeof(int) * 3;
         case ShaderDataType::IVec4: return sizeof(int) * 4;
+        case ShaderDataType::Bool:  return sizeof(bool);
     }
 
+    DLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
     return 0;
 }
 
@@ -51,8 +52,10 @@ uint32_t BufferLayoutElement::get_component_count() const
         case ShaderDataType::IVec2: return 2;
         case ShaderDataType::IVec3: return 3;
         case ShaderDataType::IVec4: return 4;
+        case ShaderDataType::Bool:  return 1;
     }
 
+    DLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
     return 0;
 }
 
@@ -75,68 +78,43 @@ void BufferLayout::compute_offset_and_stride()
     }
 }
 
-BufferLayout Vertex3P3N2U4C::Layout =
+VertexBuffer* VertexBuffer::create(float* vertex_data, std::size_t size, const BufferLayout& layout, bool dynamic)
 {
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_normal"_h,   ShaderDataType::Vec3},
-    {"a_texCoord"_h, ShaderDataType::Vec2},
-    {"a_color"_h,    ShaderDataType::Vec4}
-};
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "VertexBuffer: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
 
-BufferLayout Vertex3P3N3T2U::Layout =
+        case GfxAPI::OpenGL:
+            return new OGLVertexBuffer(vertex_data, size, layout, dynamic);
+    }
+}
+
+IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, bool dynamic)
 {
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_normal"_h,   ShaderDataType::Vec3},
-    {"a_tangent"_h,  ShaderDataType::Vec3},
-    {"a_texCoord"_h, ShaderDataType::Vec2}
-};
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "IndexBuffer: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
 
-BufferLayout VertexAnim::Layout =
+        case GfxAPI::OpenGL:
+            return new OGLIndexBuffer(index_data, count, dynamic);
+    }
+}
+
+VertexArray* VertexArray::create()
 {
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_normal"_h,   ShaderDataType::Vec3},
-    {"a_tangent"_h,  ShaderDataType::Vec3},
-    {"a_texCoord"_h, ShaderDataType::Vec2},
-    {"a_weights"_h,  ShaderDataType::Vec4},
-    {"a_boneIDs"_h,  ShaderDataType::IVec4},
-};
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "VertexArray: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
 
-BufferLayout Vertex3P3N2U::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_normal"_h,   ShaderDataType::Vec3},
-    {"a_texCoord"_h, ShaderDataType::Vec2}
-};
-
-BufferLayout Vertex3P3N::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_normal"_h,   ShaderDataType::Vec3}
-};
-
-BufferLayout Vertex3P2U::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_texCoord"_h, ShaderDataType::Vec2}
-};
-
-BufferLayout Vertex3P::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec3}
-};
-
-BufferLayout Vertex3P3C::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec3},
-    {"a_color"_h,    ShaderDataType::Vec3}
-};
-
-BufferLayout Vertex2P2U::Layout =
-{
-    {"a_position"_h, ShaderDataType::Vec2},
-    {"a_texCoord"_h, ShaderDataType::Vec2}
-};
-
-
+        case GfxAPI::OpenGL:
+            return new OGLVertexArray();
+    }
+}
 
 } // namespace erwin

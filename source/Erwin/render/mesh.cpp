@@ -5,11 +5,6 @@
 namespace erwin
 {
 
-Mesh::Mesh()
-{
-
-}
-
 Mesh::Mesh(const BufferLayout& layout):
 layout_(layout)
 {
