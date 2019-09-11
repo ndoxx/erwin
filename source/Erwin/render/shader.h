@@ -3,6 +3,9 @@
 #include <istream>
 #include <string>
 #include <memory>
+#include <map>
+
+#include "core/wtypes.h"
 
 namespace erwin
 {

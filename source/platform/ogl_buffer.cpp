@@ -1,3 +1,5 @@
+#include <string>
+
 #include "platform/ogl_buffer.h"
 #include "core/core.h"
 #include "debug/logger.h"
@@ -7,6 +9,24 @@
 namespace erwin
 {
 
+static std::string to_string(ShaderDataType type)
+{
+	switch(type)
+	{
+		case ShaderDataType::Float: return "Float";
+		case ShaderDataType::Vec2:  return "Vec2";
+		case ShaderDataType::Vec3:  return "Vec3";
+		case ShaderDataType::Vec4:  return "Vec4";
+		case ShaderDataType::Mat3:  return "Mat3";
+		case ShaderDataType::Mat4:  return "Mat4";
+		case ShaderDataType::Int:   return "Int";
+		case ShaderDataType::IVec2: return "IVec2";
+		case ShaderDataType::IVec3: return "IVec3";
+		case ShaderDataType::IVec4: return "IVec4";
+		case ShaderDataType::Bool:  return "Bool";
+	}
+}
+
 OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic):
 VertexBuffer(layout, count),
 rd_handle_(0)
@@ -15,9 +35,17 @@ rd_handle_(0)
 
     glGenBuffers(1, &rd_handle_);
     bind();
-    glBufferData(GL_ARRAY_BUFFER, count*sizeof(float), vertex_data, draw_type);
+    glBufferData(GL_ARRAY_BUFFER, count_*sizeof(float), vertex_data, draw_type);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+    DLOGI << "Vertex count: " << count_ << std::endl;
+    DLOGI << "Size:         " << count_*sizeof(float) << "B" << std::endl;
+	DLOGI << "Layout:       ";
+	for(auto&& element: layout)
+	{
+		DLOGI << "[" << to_string(element.type) << "]";
+	}
+	DLOGI << std::endl;
 }
 
 OGLVertexBuffer::~OGLVertexBuffer()
@@ -58,6 +86,8 @@ rd_handle_(0)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, draw_type);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+    DLOGI << "Vertex count: " << count_ << std::endl;
+    DLOGI << "Size:         " << count_*sizeof(float) << "B" << std::endl;
 }
 
 OGLIndexBuffer::~OGLIndexBuffer()
@@ -133,11 +163,7 @@ void OGLVertexArray::unbind() const
 void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 {
 	// Make sure buffer layout is meaningful
-	if(!p_vb->get_layout().get_count())
-	{
-		DLOGF("render") << "Vertex buffer has empty layout!" << std::endl;
-		fatal();
-	}
+	W_ASSERT(p_vb->get_layout().get_count(), "Vertex buffer has empty layout!");
 
 	// Bind vertex array then vertex buffer
 	bind();
@@ -159,6 +185,9 @@ void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 	}
 
 	vertex_buffers_.push_back(p_vb);
+
+	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: added vertex buffer ["
+					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
 }
 
 void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
@@ -166,6 +195,9 @@ void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
 	bind();
 	p_ib->bind();
 	index_buffer_ = p_ib;
+
+	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
+					 << std::static_pointer_cast<OGLIndexBuffer>(p_ib)->get_handle() << "]" << std::endl;
 }
 
 } // namespace erwin

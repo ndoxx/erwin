@@ -16,6 +16,8 @@ public:
 
     virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) const override;
 
+    inline uint32_t get_handle() const { return rd_handle_; }
+
 private:
     uint32_t rd_handle_;
 };
@@ -30,6 +32,8 @@ public:
     virtual void unbind() const override;
 
     virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) const override;
+    
+    inline uint32_t get_handle() const { return rd_handle_; }
 
 private:
     uint32_t rd_handle_;
@@ -46,6 +50,8 @@ public:
 
     virtual void add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb) override;
     virtual void set_index_buffer(std::shared_ptr<IndexBuffer> p_ib) override;
+    
+    inline uint32_t get_handle() const { return rd_handle_; }
 
 private:
     uint32_t rd_handle_;

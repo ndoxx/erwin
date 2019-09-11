@@ -36,6 +36,59 @@ static GLenum to_gl_shader_type(ShaderType type)
 	}
 }
 
+static std::string to_string(ShaderType type)
+{
+	switch(type)
+	{
+		case ShaderType::Vertex:   return "Vertex shader";
+		case ShaderType::Geometry: return "Geometry shader";
+		case ShaderType::Fragment: return "Fragment shader";
+		case ShaderType::None:     return "[UNKNOWN TYPE] shader";
+	}
+}
+
+static std::string ogl_attribute_type_to_string(GLenum type)
+{
+	switch(type)
+	{
+		case GL_FLOAT: 				return "GL_FLOAT";
+		case GL_FLOAT_VEC2: 		return "GL_FLOAT_VEC2";
+		case GL_FLOAT_VEC3: 		return "GL_FLOAT_VEC3";
+		case GL_FLOAT_VEC4: 		return "GL_FLOAT_VEC4";
+		case GL_FLOAT_MAT2: 		return "GL_FLOAT_MAT2";
+		case GL_FLOAT_MAT3: 		return "GL_FLOAT_MAT3";
+		case GL_FLOAT_MAT4: 		return "GL_FLOAT_MAT4";
+		case GL_FLOAT_MAT2x3: 		return "GL_FLOAT_MAT2x3";
+		case GL_FLOAT_MAT2x4: 		return "GL_FLOAT_MAT2x4";
+		case GL_FLOAT_MAT3x2: 		return "GL_FLOAT_MAT3x2";
+		case GL_FLOAT_MAT3x4: 		return "GL_FLOAT_MAT3x4";
+		case GL_FLOAT_MAT4x2: 		return "GL_FLOAT_MAT4x2";
+		case GL_FLOAT_MAT4x3: 		return "GL_FLOAT_MAT4x3";
+		case GL_INT: 				return "GL_INT";
+		case GL_INT_VEC2: 			return "GL_INT_VEC2";
+		case GL_INT_VEC3: 			return "GL_INT_VEC3";
+		case GL_INT_VEC4: 			return "GL_INT_VEC4";
+		case GL_UNSIGNED_INT: 		return "GL_UNSIGNED_INT";
+		case GL_UNSIGNED_INT_VEC2: 	return "GL_UNSIGNED_INT_VEC2";
+		case GL_UNSIGNED_INT_VEC3: 	return "GL_UNSIGNED_INT_VEC3";
+		case GL_UNSIGNED_INT_VEC4: 	return "GL_UNSIGNED_INT_VEC4";
+		case GL_DOUBLE: 			return "GL_DOUBLE";
+		case GL_DOUBLE_VEC2: 		return "GL_DOUBLE_VEC2";
+		case GL_DOUBLE_VEC3: 		return "GL_DOUBLE_VEC3";
+		case GL_DOUBLE_VEC4: 		return "GL_DOUBLE_VEC4";
+		case GL_DOUBLE_MAT2: 		return "GL_DOUBLE_MAT2";
+		case GL_DOUBLE_MAT3: 		return "GL_DOUBLE_MAT3";
+		case GL_DOUBLE_MAT4: 		return "GL_DOUBLE_MAT4";
+		case GL_DOUBLE_MAT2x3: 		return "GL_DOUBLE_MAT2x3";
+		case GL_DOUBLE_MAT2x4: 		return "GL_DOUBLE_MAT2x4";
+		case GL_DOUBLE_MAT3x2: 		return "GL_DOUBLE_MAT3x2";
+		case GL_DOUBLE_MAT3x4: 		return "GL_DOUBLE_MAT3x4";
+		case GL_DOUBLE_MAT4x2: 		return "GL_DOUBLE_MAT4x2";
+		case GL_DOUBLE_MAT4x3: 		return "GL_DOUBLE_MAT4x3";
+		default:					return "[[UNKNOWN TYPE]]";
+	}
+}
+
 static void shader_error_report(GLuint ShaderID, std::set<int>& errlines)
 {
     char* log = nullptr;
@@ -94,6 +147,7 @@ Shader(name)
     auto sources = parse(std::string((std::istreambuf_iterator<char>(source_stream)),
                                       std::istreambuf_iterator<char>()));
     build(sources);
+    setup_uniform_registry();
 }
 
 OGLShader::OGLShader(const std::string& name, const std::string& source_string):
@@ -101,6 +155,7 @@ Shader(name)
 {
 	auto sources = parse(source_string);
 	build(sources);
+	setup_uniform_registry();
 }
 
 OGLShader::~OGLShader()
@@ -146,14 +201,15 @@ std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::stri
 
 bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)
 {
+	DLOGN("shader") << "Building OpenGL Shader program: \"" << name_ << "\" " << std::endl;
+
 	std::vector<GLuint> shader_ids;
 
 	// * Compile each shader
 	int n_previous_lines = 0;
 	for(auto&& [type, source]: sources)
 	{
-		//DLOG("shader",1) << "-------- type: " << int(type) << "--------" << std::endl;
-		//DLOGR("shader") << source << std::endl;
+		DLOGI << "Compiling " << to_string(type) << "." << std::endl;
 		
 		// Compile shader from source
     	GLuint shader_id = glCreateShader(to_gl_shader_type(type));
@@ -199,6 +255,7 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	}
 
 	// * Link program
+	DLOGI << "Linking program." << std::endl;
 	rd_handle_ = glCreateProgram();
 	for(auto&& shader_id: shader_ids)
     	glAttachShader(rd_handle_, shader_id);
@@ -227,7 +284,53 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	for(auto&& shader_id: shader_ids)
     	glDetachShader(rd_handle_, shader_id);
 
+	DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
+
 	return true;
+}
+
+void OGLShader::setup_uniform_registry()
+{
+#ifdef __DEBUG__
+	// * Program active report: show detected active attributes
+    GLint active_attribs;
+    glGetProgramiv(rd_handle_, GL_ACTIVE_ATTRIBUTES, &active_attribs);
+    DLOGN("shader") << "Detected " << active_attribs << " active attributes:" << std::endl;
+
+    for(GLint ii=0; ii<active_attribs; ++ii)
+    {
+        char name[33];
+        GLsizei length;
+        GLint   size;
+        GLenum  type;
+
+        glGetActiveAttrib(rd_handle_, ii, 32, &length, &size, &type, name);
+        GLint loc = glGetAttribLocation(rd_handle_, name);
+
+    	DLOGI << ogl_attribute_type_to_string(type) << " " << WCC('u') << name << WCC(0) << " loc= " << loc << std::endl;
+    }
+#endif
+
+    // Get number of active uniforms
+    GLint num_active_uniforms;
+    glGetProgramiv(rd_handle_, GL_ACTIVE_UNIFORMS, &num_active_uniforms);
+
+    if(num_active_uniforms)
+    {
+    	DLOGN("shader") << "Detected " << num_active_uniforms << " active uniforms:" << std::endl;
+    }
+    // For each uniform register name in map
+    for(unsigned int ii=0; ii<num_active_uniforms; ++ii)
+    {
+        GLchar name[33];
+        GLsizei length=0;
+
+        glGetActiveUniformName(rd_handle_, ii, 32, &length, name);
+        GLint location = glGetUniformLocation(rd_handle_, name);
+        uniform_locations_.insert(std::make_pair(H_(name), location));
+
+        DLOGI << WCC('u') << name << WCC(0) << " [" << location << "] " << std::endl;
+    }
 }
 
 } // namespace erwin

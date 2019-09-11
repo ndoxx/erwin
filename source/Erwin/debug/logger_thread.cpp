@@ -21,7 +21,7 @@ static std::map<MsgType, std::string> STYLES =
     {MsgType::NORMAL,    "\033[1;38;2;255;255;255m"},
     {MsgType::ITEM,      "\033[1;38;2;255;255;255m"},
     {MsgType::EVENT,     "\033[1;38;2;255;255;255m"},
-    {MsgType::NOTIFY,    "\033[1;38;2;75;75;255m"},
+    {MsgType::NOTIFY,    "\033[1;38;2;150;130;255m"},
     {MsgType::WARNING,   "\033[1;38;2;255;175;0m"},
     {MsgType::ERROR,     "\033[1;38;2;255;90;90m"},
     {MsgType::FATAL,     "\033[1;38;2;255;0;0m"},

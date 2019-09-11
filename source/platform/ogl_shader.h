@@ -22,9 +22,12 @@ private:
 	std::vector<std::pair<ShaderType, std::string>> parse(const std::string& full_source);
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
+	// Helper function to construct the uniform registry
+	void setup_uniform_registry();
 
 private:
     uint32_t rd_handle_;
+    std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
 };
 
 } // namespace erwin
