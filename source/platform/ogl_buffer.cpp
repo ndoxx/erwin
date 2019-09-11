@@ -7,17 +7,17 @@
 namespace erwin
 {
 
-OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, std::size_t size, const BufferLayout& layout, bool dynamic):
-VertexBuffer(layout, size),
+OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic):
+VertexBuffer(layout, count),
 rd_handle_(0)
 {
     GLenum draw_type = dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 
     glGenBuffers(1, &rd_handle_);
     bind();
-    glBufferData(GL_ARRAY_BUFFER, size, vertex_data, draw_type);
+    glBufferData(GL_ARRAY_BUFFER, count*sizeof(float), vertex_data, draw_type);
 
-    DLOG("render",1) << "OpenGL Vertex Buffer created. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
 }
 
 OGLVertexBuffer::~OGLVertexBuffer()
@@ -26,7 +26,7 @@ OGLVertexBuffer::~OGLVertexBuffer()
     unbind();
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL Vertex Buffer destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLVertexBuffer::bind() const
@@ -39,10 +39,10 @@ void OGLVertexBuffer::unbind() const
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void OGLVertexBuffer::stream(float* vertex_data, std::size_t size, std::size_t offset) const
+void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset) const
 {
     bind();
-    glBufferSubData(GL_ARRAY_BUFFER, (GLuint)offset, size, vertex_data);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLuint)offset, count*sizeof(float), vertex_data);
 }
 
 // ----------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ rd_handle_(0)
     bind();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, draw_type);
 
-    DLOG("render",1) << "OpenGL Index Buffer created. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
 }
 
 OGLIndexBuffer::~OGLIndexBuffer()
@@ -66,7 +66,7 @@ OGLIndexBuffer::~OGLIndexBuffer()
     unbind();
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL Index Buffer destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLIndexBuffer::bind() const
@@ -110,14 +110,14 @@ static GLenum to_ogl_base_type(ShaderDataType type)
 
 OGLVertexArray::OGLVertexArray()
 {
-    glCreateVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL Vertex Array created. id=" << rd_handle_ << std::endl;
+    glGenVertexArrays(1, &rd_handle_);
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
 }
 
 OGLVertexArray::~OGLVertexArray()
 {
     glDeleteVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL Vertex Array destroyed. id=" << rd_handle_ << std::endl;
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
 }
 
 void OGLVertexArray::bind() const

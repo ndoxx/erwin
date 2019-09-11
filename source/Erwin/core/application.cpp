@@ -27,6 +27,7 @@ is_running_(true)
 	// Initialize logger
     WLOGGER.create_channel("application", 3);
     WLOGGER.create_channel("render", 3);
+    WLOGGER.create_channel("shader", 3);
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
     WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
     // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});

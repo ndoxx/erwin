@@ -1,7 +1,7 @@
 #include <map>
-#include <cassert>
 
 #include "platform/ogl_render_device.h"
+#include "core/core.h"
 #include "render/buffer.h"
 #include "glad/glad.h"
 
@@ -204,18 +204,18 @@ uint32_t OGLRenderDevice::get_error()
 
 void OGLRenderDevice::assert_no_error()
 {
-    assert(glGetError()==0);
+    W_ASSERT(glGetError()==0, "OpenGL error occurred!");
 }
 
 void OGLRenderDevice::set_pack_alignment(uint32_t value)
 {
-    assert(is_power_of_2(value) && "OGLRenderDevice::set_pack_alignment: arg must be a power of 2.");
+    W_ASSERT(is_power_of_2(value), "OGLRenderDevice::set_pack_alignment: arg must be a power of 2.");
     glPixelStorei(GL_PACK_ALIGNMENT, value);
 }
 
 void OGLRenderDevice::set_unpack_alignment(uint32_t value)
 {
-    assert(is_power_of_2(value) && "OGLRenderDevice::set_pack_alignment: arg must be a power of 2.");
+    W_ASSERT(is_power_of_2(value), "OGLRenderDevice::set_pack_alignment: arg must be a power of 2.");
     glPixelStorei(GL_UNPACK_ALIGNMENT, value);
 }
 

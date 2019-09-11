@@ -81,7 +81,7 @@ void BufferLayout::compute_offset_and_stride()
     }
 }
 
-VertexBuffer* VertexBuffer::create(float* vertex_data, std::size_t size, const BufferLayout& layout, bool dynamic)
+VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic)
 {
     switch(Gfx::get_api())
     {
@@ -90,7 +90,7 @@ VertexBuffer* VertexBuffer::create(float* vertex_data, std::size_t size, const B
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLVertexBuffer(vertex_data, size, layout, dynamic);
+            return new OGLVertexBuffer(vertex_data, count, layout, dynamic);
     }
 }
 

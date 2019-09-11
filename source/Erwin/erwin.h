@@ -7,4 +7,7 @@
 #include "core/wtypes.h"
 #include "core/layer.h"
 #include "event/event.h"
+#include "event/window_events.h"
 #include "debug/logger.h"
+
+#include "imgui.h"

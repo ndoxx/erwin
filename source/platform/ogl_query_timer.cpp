@@ -28,13 +28,13 @@ void OGLQueryTimer::start()
     glBeginQuery(GL_TIME_ELAPSED, query_ID_[query_back_buffer_]);
 }
 
-float OGLQueryTimer::stop()
+std::chrono::duration<float> OGLQueryTimer::stop()
 {
     glEndQuery(GL_TIME_ELAPSED);
     glGetQueryObjectuiv(query_ID_[query_front_buffer_], GL_QUERY_RESULT, (GLuint*)&timer_);
     swap_query_buffers();
 
-    return timer_ / 1000000000.f;
+    return std::chrono::nanoseconds(timer_);
 }
 
 void OGLQueryTimer::swap_query_buffers()

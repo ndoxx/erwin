@@ -212,6 +212,11 @@ void LoggerThread::kill()
 
 void LoggerThread::enqueue(LogStatement&& stmt)
 {
+	// Avoid ackward deadlock on cv_update when thread is killed 
+	// but another thread wants to push some log data
+	if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
+		return;
+
     // Wait for logger thread to be idle
     std::unique_lock<std::mutex> lock(mutex_);
     cv_update_.wait(lock, [this]()
@@ -223,6 +228,11 @@ void LoggerThread::enqueue(LogStatement&& stmt)
 
 void LoggerThread::enqueue(const LogStatement& stmt)
 {
+	// Avoid ackward deadlock on cv_update when thread is killed 
+	// but another thread wants to push some log data
+	if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
+		return;
+
     // Wait for logger thread to be idle
     std::unique_lock<std::mutex> lock(mutex_);
     cv_update_.wait(lock, [this]()

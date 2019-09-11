@@ -70,25 +70,27 @@ private:
 class VertexBuffer
 {
 public:
-    VertexBuffer(const BufferLayout& layout, std::size_t size): layout_(layout), size_(size) {}
+    VertexBuffer(const BufferLayout& layout, uint32_t count): layout_(layout), count_(count) {}
     virtual ~VertexBuffer() {}
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(float* vertex_data, std::size_t size, std::size_t offset) const = 0;
+    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) const = 0;
 
     // Return the buffer layout
 	inline const BufferLayout& get_layout() const { return layout_; }
+    // Return the vertex count of this vertex buffer
+    inline std::size_t get_count() const { return count_; }
     // Return the size (in bytes) of this vertex buffer
-    inline std::size_t get_count() const { return size_; }
+    inline std::size_t get_size() const  { return count_*sizeof(float); }
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static VertexBuffer* create(float* vertex_data, std::size_t size, const BufferLayout& layout, bool dynamic=false);
+    static VertexBuffer* create(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic=false);
 
 protected:
     BufferLayout layout_;
-    std::size_t size_;
+    std::size_t count_;
 };
 
 class IndexBuffer

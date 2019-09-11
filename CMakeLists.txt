@@ -18,8 +18,8 @@ set(CMAKE_CXX_STANDARD 17)
 # include_directories(BEFORE "/usr/include/c++/8/")
 # include_directories(AFTER "/usr/include/x86_64-linux-gnu/c++/8/")
 
-set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 # set(CMAKE_BUILD_TYPE MinSizeRel)
 # set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
@@ -52,6 +52,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
@@ -61,6 +62,7 @@ set(SRC_PLATFORM
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_context.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_buffer.cpp
+    ${CMAKE_SOURCE_DIR}/source/platform/ogl_shader.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_input.cpp
@@ -74,6 +76,7 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp)
 
 add_definitions(-D__DEBUG__)
+add_definitions(-DW_ENABLE_ASSERT)
 add_definitions(-DLOGGING_ENABLED=1)
 
 if(DEFINED __DEBUG__)
