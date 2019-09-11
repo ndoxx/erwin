@@ -26,6 +26,7 @@ set(CMAKE_BUILD_TYPE Debug)
 subdirs(source)
 
 set(SRC_CORE
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
@@ -40,7 +41,7 @@ set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )
 
-set(SRC_LOG
+set(SRC_DEBUG
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
@@ -87,7 +88,7 @@ endif()
 add_library(erwin SHARED
             ${SRC_CORE}
             ${SRC_MATH}
-            ${SRC_LOG}
+            ${SRC_DEBUG}
             ${SRC_RENDERER}
             ${SRC_PLATFORM}
             ${SRC_IMGUI}

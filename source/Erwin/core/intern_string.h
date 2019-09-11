@@ -1,42 +1,32 @@
-#ifndef INTERN_STRING_H
-#define INTERN_STRING_H
+#pragma once
 
 #include <string>
-#include <map>
+#include <unordered_map>
 
-#include "singleton.hpp"
-#include "vendor/rapidxml/rapidxml.hpp"
+#include "core/singleton.hpp"
 
 namespace erwin
 {
 
 typedef unsigned long long hash_t;
-class XMLParser;
 
-class InternStringLocator : public Singleton<InternStringLocator>
+class InternStringLocator: public Singleton<InternStringLocator>
 {
 public:
     friend InternStringLocator& Singleton<InternStringLocator>::Instance();
     friend void Singleton<InternStringLocator>::Kill();
 
     std::string operator()(hash_t hashname);
-    void init();
+    void init(const std::string& filepath);
     void add_intern_string(const std::string& str);
 
 private:
-    InternStringLocator();
-   ~InternStringLocator();
+    void parse(std::istream& stream);
 
-    void retrieve_table(rapidxml::xml_node<>* node);
-
-    XMLParser* xml_parser_;
-    std::map<hash_t, std::string> intern_strings_;
+    std::unordered_map<hash_t, std::string> intern_strings_;
 };
 
 
 #define HRESOLVE InternStringLocator::Instance()
 
 } // namespace erwin
-
-
-#endif // INTERN_STRING_H

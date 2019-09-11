@@ -79,8 +79,5 @@ std::string to_string(const T& x)
 }
 
 }
-/*
-#ifndef __IS_TOOL__
-#include "include/intern_string.h" // for HRESOLVE
-#endif
-*/
+
+// #include "core/intern_string.h" // for HRESOLVE

@@ -7,7 +7,9 @@
 #include "core/core.h"
 #include "core/wtypes.h"
 #include "core/string_utils.h"
+#include "core/intern_string.h"
 #include "debug/logger.h"
+#include "math/math3d.h"
 
 #include "glad/glad.h"
 
@@ -331,6 +333,148 @@ void OGLShader::setup_uniform_registry()
 
         DLOGI << WCC('u') << name << WCC(0) << " [" << location << "] " << std::endl;
     }
+}
+
+
+static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
+{
+#ifdef __DEBUG__
+	static std::set<hash_t> marked; // So that we don't warn twice for the same uniform
+    hash_t id = H_(shader_name.c_str()) ^ u_name;
+
+	if(marked.find(id) == marked.end())
+    {
+		DLOGW("shader") << "Unknown uniform submitted to \"" << shader_name << "\": \"" << HRESOLVE(u_name) << "\"" << std::endl;
+		marked.insert(id);
+	}
+#endif
+}
+
+template <>
+bool OGLShader::send_uniform<bool>(hash_t name, const bool& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform1i(it->second, value);
+    return true;
+}
+
+
+template <>
+bool OGLShader::send_uniform<float>(hash_t name, const float& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform1f(it->second, value);
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<int>(hash_t name, const int& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform1i(it->second, value);
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::vec2>(hash_t name, const math::vec2& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform2fv(it->second, 1, (const GLfloat*)&value);
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::vec3>(hash_t name, const math::vec3& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform3fv(it->second, 1, (const GLfloat*)&value);
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::vec4>(hash_t name, const math::vec4& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniform4fv(it->second, 1, (const GLfloat*)&value);
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::mat2>(hash_t name, const math::mat2& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniformMatrix2fv(it->second, 1, GL_FALSE, value.get_pointer());
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::mat3>(hash_t name, const math::mat3& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniformMatrix3fv(it->second, 1, GL_FALSE, value.get_pointer());
+    return true;
+}
+
+template <>
+bool OGLShader::send_uniform<math::mat4>(hash_t name, const math::mat4& value) const
+{
+    auto it = uniform_locations_.find(name);
+    if(it == uniform_locations_.end())
+    {
+        warn_unknown_uniform(name_, name);
+        return false;
+    }
+
+    glUniformMatrix4fv(it->second, 1, GL_FALSE, value.get_pointer());
+    return true;
 }
 
 } // namespace erwin

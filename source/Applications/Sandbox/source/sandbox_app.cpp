@@ -7,6 +7,9 @@
 #include "render/shader.h"
 #include "render/render_device.h"
 
+#include "platform/ogl_shader.h"
+
+
 using namespace erwin;
 
 class TestLayer: public Layer

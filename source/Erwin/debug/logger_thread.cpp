@@ -201,6 +201,15 @@ void LoggerThread::spawn()
     logger_thread_ = std::thread(&LoggerThread::thread_run, this);
 }
 
+void LoggerThread::sync()
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv_update_.wait(lock, [this]()
+    {
+        return thread_state_.load(std::memory_order_acquire) == STATE_IDLE;
+    });
+}
+
 void LoggerThread::kill()
 {
     // Terminate logger thread execution and join

@@ -26,7 +26,7 @@ size_t LayerStack::push_layer(Layer* layer)
 	size_t index = overlay_pos_-1;
 
 	DLOG("application",1) << "Pushed layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
-	DLOG("application",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
+	DLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
 	
 	return index;
 }
@@ -54,7 +54,7 @@ void LayerStack::pop_layer(size_t index)
 		layers_.erase(layers_.begin() + index);
 		--overlay_pos_;
 
-		DLOG("application",1) << "Overlay position is at: " << overlay_pos_ << std::endl;
+		DLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
 	}
 }
 

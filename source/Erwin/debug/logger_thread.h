@@ -96,6 +96,8 @@ public:
 
     // Launch logger thread
     void spawn();
+    // Wait for logger thread to be in idle state
+    void sync();
     // Stop thread execution (waits for pending statements to be processed)
     void kill();
     // Push a single log statement into the queue

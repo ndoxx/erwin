@@ -4,6 +4,7 @@
 #include "debug/logger_thread.h"
 #include "imgui/imgui_layer.h"
 #include "core/input.h"
+#include "core/intern_string.h"
 
 namespace erwin
 {
@@ -28,6 +29,7 @@ is_running_(true)
     WLOGGER.create_channel("application", 3);
     WLOGGER.create_channel("render", 3);
     WLOGGER.create_channel("shader", 3);
+    WLOGGER.create_channel("util", 3);
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
     WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
     // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
@@ -42,6 +44,10 @@ is_running_(true)
     WLOGGER.track_event<MouseScrollEvent>();
 
     WLOGGER.spawn();
+    WLOGGER.sync();
+
+    // Parse intern strings
+    HRESOLVE.init("../config/dbg_intern_strings.txt");
 
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
@@ -113,6 +119,7 @@ void Application::run()
     DLOG("application",1) << "Application stopped." << std::endl;
 
     Input::kill();
+    InternStringLocator::Kill();
     WLOGGER.kill();
 }
 
