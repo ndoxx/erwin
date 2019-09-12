@@ -7,7 +7,7 @@
 namespace erwin
 {
 
-void InternStringLocator::init(const std::string& filepath)
+void InternStringLocator::init(const fs::path& filepath)
 {
     DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
     std::ifstream ifs(filepath);

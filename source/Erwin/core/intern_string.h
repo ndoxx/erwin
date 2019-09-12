@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "core/singleton.hpp"
+#include "core/file_system.h"
 
 namespace erwin
 {
@@ -17,7 +18,7 @@ public:
     friend void Singleton<InternStringLocator>::Kill();
 
     std::string operator()(hash_t hashname);
-    void init(const std::string& filepath);
+    void init(const fs::path& filepath);
     void add_intern_string(const std::string& str);
 
 private:

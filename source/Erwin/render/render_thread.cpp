@@ -34,6 +34,11 @@ void RenderThread::kill()
 
 void RenderThread::enqueue(RenderKey key, RenderCommand&& command)
 {
+    // Avoid ackward deadlock on cv_update_ when thread is killed 
+    // but another thread wants to push some draw commands
+    if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
+        return;
+
     // Wait for render thread to be idle
     std::unique_lock<std::mutex> lock(mutex_);
     cv_update_.wait(lock, [this]()
@@ -46,6 +51,11 @@ void RenderThread::enqueue(RenderKey key, RenderCommand&& command)
 void RenderThread::enqueue(const std::vector<RenderKey>& keys,
                            std::vector<RenderCommand>&& commands)
 {
+    // Avoid ackward deadlock on cv_update_ when thread is killed 
+    // but another thread wants to push some draw commands
+    if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
+        return;
+
     // Wait for render thread to be idle
     std::unique_lock<std::mutex> lock(mutex_);
     cv_update_.wait(lock, [this]()
@@ -54,7 +64,6 @@ void RenderThread::enqueue(const std::vector<RenderKey>& keys,
     });
     render_queue_.push(keys, std::forward<std::vector<RenderCommand>>(commands));
 }
-
 
 void RenderThread::flush()
 {

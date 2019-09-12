@@ -22,7 +22,7 @@ set_target_properties(ierwin PROPERTIES
 )
 
 # TMP --------------------
-target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
+# target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
 # TMP --------------------
 
 

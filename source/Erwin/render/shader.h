@@ -3,7 +3,7 @@
 #include <istream>
 #include <string>
 #include <memory>
-#include <map>
+#include <unordered_map>
 
 #include "core/wtypes.h"
 
@@ -41,5 +41,23 @@ protected:
 	std::string name_;
 };
 
+// The shader bank holds references to multiple shaders and makes them accessible by name
+class ShaderBank
+{
+public:
+	// Add an existing shader to the bank
+	void add(std::shared_ptr<Shader> p_shader);
+	// Load shader in bank from stream
+	void load(const std::string& name, std::istream& source_stream);
+	// Load shader in bank from string
+	void load(const std::string& name, const std::string& source_string);
+	// Get shader by hash name
+	const Shader& get(hash_t name) const;
+	// Check whether a shader is registered to this name
+	bool exists(hash_t name) const;
+
+private:
+	std::unordered_map<hash_t, std::shared_ptr<Shader>> bank_;
+};
 
 } // namespace erwin

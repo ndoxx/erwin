@@ -15,6 +15,8 @@ public:
 	Application();
 	virtual ~Application();
 
+	virtual void on_load() { }
+
 	size_t push_layer(Layer* layer);
 	size_t push_overlay(Layer* layer);
 	void run();

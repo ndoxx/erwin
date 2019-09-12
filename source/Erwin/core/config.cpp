@@ -4,14 +4,4 @@ namespace erwin
 {
 
 
-Config::Config()
-{
-	
-}
-
-Config::~Config()
-{
-	
-}
-
 } // namespace erwin

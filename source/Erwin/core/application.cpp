@@ -5,6 +5,7 @@
 #include "imgui/imgui_layer.h"
 #include "core/input.h"
 #include "core/intern_string.h"
+#include "core/file_system.h"
 
 namespace erwin
 {
@@ -30,6 +31,7 @@ is_running_(true)
     WLOGGER.create_channel("render", 3);
     WLOGGER.create_channel("shader", 3);
     WLOGGER.create_channel("util", 3);
+    WLOGGER.create_channel("config", 3);
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
     WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
     // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
@@ -46,8 +48,11 @@ is_running_(true)
     WLOGGER.spawn();
     WLOGGER.sync();
 
+    // Initialize file system
+    filesystem::init();
+
     // Parse intern strings
-    HRESOLVE.init("../config/dbg_intern_strings.txt");
+    HRESOLVE.init(filesystem::get_config_dir() / "dbg_intern_strings.txt");
 
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
@@ -63,6 +68,8 @@ is_running_(true)
 
 	// React to window close events (and shutdown application)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
+
+	on_load();
 }
 
 Application::~Application()

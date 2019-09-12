@@ -1,6 +1,7 @@
-#include "glad/glad.h"
+// #include "glad/glad.h"
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include "erwin.h"
 
 #include "render/buffer.h"
@@ -65,37 +66,11 @@ public:
 		va_->set_index_buffer(ib_);
 		va_->add_vertex_buffer(vb_);
 
-    	std::string shader_source = R"(
-    		#type vertex
-			#version 410 core
-
-			layout(location = 0) in vec3 in_position;
-			layout(location = 1) in vec3 in_color;
-
-			out vec3 v_color;
-
-			void main()
-			{
-    			gl_Position = vec4(in_position, 1.f);
-    			v_color = in_color;
-			}
-
-			#type fragment
-			#version 410 core
-
-			in vec3 v_color;
-			layout(location = 0) out vec4 out_color;
-
-			void main()
-			{
-				out_color = vec4(v_color,1.0f);
-			}
-    	)";
-
-    	shader_ = Shader::create("test_shader", shader_source);
+		auto stream = filesystem::get_asset_stream("shaders/test_shader.glsl");
+		shader_ = Shader::create("test_shader", stream);
 
 		Gfx::device->bind_default_frame_buffer();
-		Gfx::device->set_cull_mode(CullMode::None);
+		//Gfx::device->set_cull_mode(CullMode::None);
 	}
 
 	virtual void on_detach() override
@@ -124,6 +99,7 @@ public:
 	{
 		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
 
+		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new TestLayer("A"));
 	}
 

@@ -13,7 +13,7 @@ Quand tous les layers ont été itérés, la queue est triée et dispatchée via
 ##Shaders
 
 on change:
-    * _Shader_ est une interface du moteur de rendu, et masque des implémentations gfx-driver-dependent
+    * _Shader_ est une interface API-agnostic du moteur de rendu, et masque des implémentations API-specific
     * un _Shader_ est une des ressources référencées par _Material_
     * 1 seul fichier par shader, utiliser une directive custom pour la segmentation
     * a priori, les variantes dégagent
@@ -179,7 +179,7 @@ La macro WLOGGER est similaire, et le logging thread n'est instancié que si LOG
 
 #[07-09-19]
 ##Entry point
-WCore séparait très mal le code client du code moteur, toute mon API était une vaste blague et le concept même d'application level était en suspens. J'ai adpoté pour ce projet une approche à la TheCherno sur son moteur Hazel. Le client hérite d'une classe _Application_ et la spécialise pour ses besoin, puis définit une fonction erwin::create_application() exportée par la lib qui retourne le type dérivé. C'est la lib qui génère la fonction main, crée l'application au moyen de la fonction create_application(), la fait tourner puis la détruit.
+WCore séparait très mal le code client du code moteur, toute mon API était une vaste blague et le concept même d'application level était en suspens. J'ai adpoté pour ce projet une approche à la TheCherno sur son moteur Hazel. Le client hérite d'une classe _Application_ et la spécialise pour ses besoin, puis définit une fonction erwin::create_application() exportée par la lib qui retourne le type dérivé. C'est la lib qui génère la fonction main(), crée l'application au moyen de la fonction create_application(), la fait tourner puis la détruit.
 
 La classe _Application_ est déclarée dans application.h ainsi que la fonction create_application() :
 ```cpp
@@ -209,7 +209,7 @@ __declspec(dllexport)
 // ou bien
 __declspec(dllimport)
 ```
-selon que W_BUILD_LIB est définit ou non (W_BUILD_LIB définit lors de la compilation de la liberwin, mais pas lors de la compilation du code client). Sous Linux, W_API est une macro vide. Voir core.h :
+selon que W_BUILD_LIB est défini ou non (W_BUILD_LIB définit lors de la compilation de la liberwin, mais pas lors de la compilation du code client). Sous Linux, W_API est une macro vide. Voir core.h :
 ```cpp
 #ifdef W_PLATFORM_WINDOWS
     #ifdef W_BUILD_LIB
@@ -384,3 +384,171 @@ J'ai ajouté ImGui en git submodule. Pour profiter des features expérimentaux d
 >> git checkout docking
 >> cd ..
 >> git add imgui
+
+NOTE : A l'avenir, pour éviter des galères quand le programme segfault à cause de ImGui, penser à bien tout compiler en mode debug, les assertions d'ImGui sont un bon outil de diagnostique.
+
+La classe _ImGuiLayer_ qui hérite de l'interface _Layer_, est un overlay spécial de l'application possédant les fonctions ImGuiLayer::begin() et ImGuiLayer::end() qui encadrent le rendu de widgets dans la main loop. Chaque layer peut surcharger une fonction Layer::on_imgui_render() qui sera appelée entre begin() et end() dans la main loop :
+
+```cpp
+    while(is_running_)
+    {
+        // For each layer, update
+        for(auto* layer: layer_stack_)
+            layer->update();
+
+        // TODO: move this to render thread when we have one
+        IMGUI_LAYER->begin();
+        for(auto* layer: layer_stack_)
+            layer->on_imgui_render();
+        IMGUI_LAYER->end();
+
+        // ...
+    }
+``` 
+Ainsi, chaque layer peut définir un petit widget de debug facilement (à la manière des GameSystem::generate_widget() de WCore) :
+
+```cpp
+class TestLayer: public Layer
+{
+public:
+    // ...
+    virtual void on_imgui_render() override
+    {
+        ImGui::Begin("Test Widget");
+        // ... ImGui code ...
+        ImGui::End();
+    }
+    // ...
+}
+```
+
+_ImGuiLayer_ surcharge quelques fonctions on_event() de sorte à stopper la propagation des événements à travers les layers quand ImGui les a déjà dispatchés :
+```cpp
+bool ImGuiLayer::on_event(const KeyboardEvent& event)
+{
+    // Don't propagate event if ImGui wants to handle it
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureKeyboard;
+}
+```
+
+#[11-09-19]
+##Asserts
+La macro W_ASSERT de core/core.h permet conditionnellement d'afficher un message d'erreur et de poser un breakpoint pour faciliter le debugging :
+
+```cpp
+// Sous linux :
+#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); raise(SIGTRAP); } }
+// Sous windows
+#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); __debugbreak(); } }
+// Avec :
+#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
+```
+
+##Render device
+J'ai une interface abstraite pour l'API graphique : _RenderDevice_. L'implémentation _OGLRenderDevice_ est spécifique à OpenGL. La classe statique _Gfx_ permet de sélectionner l'implémentation sous-jacente via Gfx::set_api() et un type énuméré, ou récupérer l'implémentation courante via Gfx::get_api(). Ce mécanisme permet aux factory methods create() des classes graphiques abstraites de renvoyer le type pertinent. Par exemple, l'interface _VertexBuffer_ possède une fonction statique VertexBuffer::create() qui renvoie un VertexBuffer* upcasté depuis un _OGLVertexBuffer_ si l'API courante est OpenGL.
+Les fonctions élémentaires du _RenderDevice_ sont accessibles depuis un pointeur unique de la classe _Gfx_, et plusieurs types énumérés subsument ceux de l'API graphique :
+
+```cpp
+    Gfx::device->set_clear_color(0.2f, 0.2f, 0.2f, 1.0f);
+    Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG);
+    Gfx::device->set_cull_mode(CullMode::Back);
+    // ...
+```
+
+##Buffers
+J'ai des couples interface/implémentation OpenGL pour les vertex buffers, les index buffers et les vertex arrays dans le header "render/buffer.h", reprenant l'abstraction déjà commencée dans WCore. Leur utilisation est aisée :
+
+```cpp
+    BufferLayout vertex_color_layout =
+    {
+        {"a_position"_h, ShaderDataType::Vec3},
+        {"a_color"_h,    ShaderDataType::Vec3},
+    };
+
+    float* vertex_data = // ...
+    uint32_t* index_data = // ...
+
+    auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(vertex_data, vertex_data_size, vertex_color_layout));
+
+    auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(index_data, index_data_size));
+
+    auto va = std::shared_ptr<VertexArray>(VertexArray::create());
+    va->set_index_buffer(ib);
+    va->add_vertex_buffer(vb);
+```
+
+##Shaders
+J'ai un couple interface/implémentation _Shader_/_OGLShader_ pour les shaders. Deux factory methods permettent la génération d'une instance de shader depuis soit un flux std::istream, soit une string contenant la source.
+J'ai bien écrit LA source. D'expérience, je ne gagne rien à séparer les sources des vertex / geometry / fragment / ... shaders, donc maintenant, tous sont écrits dans le même fichiers avec des balises de section #type :
+
+```c
+    #type vertex
+    #version 410 core
+
+    layout(location = 0) in vec3 in_position;
+    layout(location = 1) in vec3 in_color;
+
+    out vec3 v_color;
+
+    void main()
+    {
+        gl_Position = vec4(in_position, 1.f);
+        v_color = in_color;
+    }
+
+    #type fragment
+    #version 410 core
+
+    in vec3 v_color;
+    layout(location = 0) out vec4 out_color;
+
+    void main()
+    {
+        out_color = vec4(v_color,1.0f);
+    }
+```
+L'implémentation gère le parsing de cette unique source en produisant un vecteur de paires <ShaderType, source>, lequel est itéré pour compiler tour à tour chaque shader du programme. Ensuite le programme est linké et le registre des uniformes est créé. J'ai repris le code d'error reporting de WCore et amélioré l'aspect logging :
+
+    [0.212466][sha]  ⁕  Building OpenGL Shader program: "test_shader" 
+    [0.212476][sha]      ↳ Compiling Vertex shader.
+    [0.212525][sha]      ↳ Compiling Fragment shader.
+    [0.212536][sha]      ↳ Linking program.
+    [0.212733][sha]      ↳ Program "test_shader" is ready.
+    [0.212740][sha]  ⁕  Detected 2 active attributes:
+    [0.212743][sha]      ↳ GL_FLOAT_VEC3 in_color loc= 1
+    [0.212748][sha]      ↳ GL_FLOAT_VEC3 in_position loc= 0
+
+L'envoi d'uniformes est défini au niveau de l'implémentation, via des méthodes templates, comme dans WCore.
+
+En poursuivant l'exemple précédent, pour afficher le "contenu" du vertex array on ferait :
+```cpp
+    auto shader = Shader::create("test_shader", shader_source);
+    // Dans la fonction update
+    Gfx::device->bind_default_frame_buffer();
+    shader->bind();
+    Gfx::device->draw_indexed(va);
+```
+
+J'affiche ainsi mon premier triangle coloré depuis du code client !
+
+
+TODO:
+    [ ] Gérer les includes.
+    [ ] Gérer le hotswap / reload
+        -> Plutôt depuis la _ShaderBank_ quand celle-ci sera construite
+
+
+##QueryTimer
+J'ai repris le bon vieux GPU query timer de WCore, et lui ai fait une interface API-agnostic avec une factory method. Son type de sortie est un std::chrono::duration pour plus de rigueur.
+
+```cpp
+    QueryTimer* GPU_timer = QueryTimer::create();
+    GPU_timer.start();
+    // ... code to profile ...
+    auto duration = GPU_timer.stop();
+    std::cout << std::chrono::microseconds(duration).count() << std::endl;
+```
+
+##Intern strings
+Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de parsing des sources. J'ai viré toutes les dépendances à TinyXML, l'output est un simple fichier .txt clé/valeur\n parsé par le _InternStringLocator_.

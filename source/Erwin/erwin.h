@@ -6,6 +6,7 @@
 #include "core/entry_point.h"
 #include "core/wtypes.h"
 #include "core/layer.h"
+#include "core/file_system.h"
 #include "event/event.h"
 #include "event/window_events.h"
 #include "debug/logger.h"
