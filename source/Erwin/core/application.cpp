@@ -30,6 +30,7 @@ is_running_(true)
     WLOGGER.create_channel("application", 3);
     WLOGGER.create_channel("render", 3);
     WLOGGER.create_channel("shader", 3);
+    WLOGGER.create_channel("texture", 3);
     WLOGGER.create_channel("util", 3);
     WLOGGER.create_channel("config", 3);
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
@@ -50,9 +51,8 @@ is_running_(true)
 
     // Initialize file system
     filesystem::init();
-
     // Parse intern strings
-    HRESOLVE.init(filesystem::get_config_dir() / "dbg_intern_strings.txt");
+    istr::init("intern_strings.txt");
 
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
@@ -126,7 +126,6 @@ void Application::run()
     DLOG("application",1) << "Application stopped." << std::endl;
 
     Input::kill();
-    InternStringLocator::Kill();
     WLOGGER.kill();
 }
 

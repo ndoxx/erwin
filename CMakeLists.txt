@@ -50,7 +50,9 @@ set(SRC_DEBUG
   )
 
 set(SRC_RENDERER
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
@@ -64,6 +66,7 @@ set(SRC_PLATFORM
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_context.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_buffer.cpp
+    ${CMAKE_SOURCE_DIR}/source/platform/ogl_texture.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_shader.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/ogl_query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp

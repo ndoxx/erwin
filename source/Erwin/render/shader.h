@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "core/wtypes.h"
+#include "core/file_system.h"
 
 namespace erwin
 {
@@ -47,6 +48,8 @@ class ShaderBank
 public:
 	// Add an existing shader to the bank
 	void add(std::shared_ptr<Shader> p_shader);
+	// Load shader in bank from path (relative to the asset directory)
+	void load(const fs::path& path);
 	// Load shader in bank from stream
 	void load(const std::string& name, std::istream& source_stream);
 	// Load shader in bank from string
@@ -59,5 +62,8 @@ public:
 private:
 	std::unordered_map<hash_t, std::shared_ptr<Shader>> bank_;
 };
+
+// TMP: shader bank instance will be owned by renderer
+static ShaderBank SHADER_BANK;
 
 } // namespace erwin

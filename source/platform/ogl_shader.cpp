@@ -334,8 +334,6 @@ void OGLShader::setup_uniform_registry()
         DLOGI << WCC('u') << name << WCC(0) << " [" << location << "] " << std::endl;
     }
 }
-
-
 static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
 {
 #ifdef __DEBUG__
@@ -344,7 +342,7 @@ static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u
 
 	if(marked.find(id) == marked.end())
     {
-		DLOGW("shader") << "Unknown uniform submitted to \"" << shader_name << "\": \"" << HRESOLVE(u_name) << "\"" << std::endl;
+		DLOGW("shader") << "Unknown uniform submitted to \"" << shader_name << "\": \"" << istr::resolve(u_name) << "\"" << std::endl;
 		marked.insert(id);
 	}
 #endif

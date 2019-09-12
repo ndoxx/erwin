@@ -1,33 +1,22 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
 
-#include "core/singleton.hpp"
 #include "core/file_system.h"
 
 namespace erwin
 {
+namespace istr
+{
 
 typedef unsigned long long hash_t;
 
-class InternStringLocator: public Singleton<InternStringLocator>
-{
-public:
-    friend InternStringLocator& Singleton<InternStringLocator>::Instance();
-    friend void Singleton<InternStringLocator>::Kill();
+// Read intern string file and initialize registry
+extern void init(const fs::path& filepath);
+// Add an intern string to the registry
+extern void add(const std::string& str);
+// Resolve an intern string to a full string
+extern const std::string& resolve(hash_t hname);
 
-    std::string operator()(hash_t hashname);
-    void init(const fs::path& filepath);
-    void add_intern_string(const std::string& str);
-
-private:
-    void parse(std::istream& stream);
-
-    std::unordered_map<hash_t, std::string> intern_strings_;
-};
-
-
-#define HRESOLVE InternStringLocator::Instance()
-
+} // namespace istr
 } // namespace erwin

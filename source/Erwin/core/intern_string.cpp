@@ -1,21 +1,18 @@
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 #include "intern_string.h"
 #include "debug/logger.h"
 
 namespace erwin
 {
-
-void InternStringLocator::init(const fs::path& filepath)
+namespace istr
 {
-    DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
-    std::ifstream ifs(filepath);
-    parse(ifs);
-}
 
+static std::unordered_map<hash_t, std::string> s_intern_strings;
 
-void InternStringLocator::parse(std::istream& stream)
+static void parse(std::istream& stream)
 {
     std::string line;
     while (std::getline(stream, line))
@@ -25,26 +22,34 @@ void InternStringLocator::parse(std::istream& stream)
         std::string value;
         
         iss >> key >> value;
-        intern_strings_.insert(std::make_pair(key,value));
+        s_intern_strings.insert(std::make_pair(key, value));
     }
+
+    s_intern_strings.insert(std::make_pair("???"_h, "???"));
 }
 
-
-std::string InternStringLocator::operator()(hash_t hashname)
+void init(const fs::path& filepath)
 {
-    auto it = intern_strings_.find(hashname);
-    if(it!=intern_strings_.end())
+    DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
+    std::ifstream ifs(filesystem::get_config_dir() / filepath);
+    parse(ifs);
+}
+
+const std::string& resolve(hash_t hname)
+{
+    auto it = s_intern_strings.find(hname);
+    if(it!=s_intern_strings.end())
         return it->second;
     else
-        return std::string("???");
+        return s_intern_strings.at("???"_h);
 }
 
-void InternStringLocator::add_intern_string(const std::string& str)
+void add(const std::string& str)
 {
     hash_t hname = H_(str.c_str());
-    if(intern_strings_.find(hname)==intern_strings_.end())
-        intern_strings_.insert(std::make_pair(hname,str));
+    if(s_intern_strings.find(hname)==s_intern_strings.end())
+        s_intern_strings.insert(std::make_pair(hname,str));
 }
 
-
+} // namespace istr
 } // namespace erwin

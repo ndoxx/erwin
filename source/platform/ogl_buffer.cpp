@@ -140,7 +140,8 @@ static GLenum to_ogl_base_type(ShaderDataType type)
 
 OGLVertexArray::OGLVertexArray()
 {
-    glGenVertexArrays(1, &rd_handle_);
+    //glGenVertexArrays(1, &rd_handle_);
+    glCreateVertexArrays(1, &rd_handle_);
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
 }
 

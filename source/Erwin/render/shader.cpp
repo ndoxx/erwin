@@ -40,6 +40,12 @@ void ShaderBank::add(std::shared_ptr<Shader> p_shader)
     bank_.insert(std::make_pair(H_(p_shader->get_name().c_str()), p_shader));
 }
 
+void ShaderBank::load(const fs::path& path)
+{
+    auto stream = filesystem::get_asset_stream(path);
+    load(path.stem().string(), stream);
+}
+
 void ShaderBank::load(const std::string& name, std::istream& source_stream)
 {
     bank_.insert(std::make_pair(H_(name.c_str()), Shader::create(name, source_stream)));
