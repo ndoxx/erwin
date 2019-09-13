@@ -165,16 +165,16 @@ public:
 	virtual void on_imgui_render() override
 	{
 	    ImGui::Begin("BatchRenderer2D");
-/*
+
         if(ImGui::Checkbox("Profile", &enable_profiling_))
         	batch_renderer_2D_->set_profiling_enabled(enable_profiling_);
-*/
+
 	    ImGui::End();
 	}
 
 	virtual void on_attach() override
 	{
-		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(16,100);
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(16,1000);
 	}
 
 protected:
@@ -188,17 +188,16 @@ protected:
 			render_state.blend_state = BlendState::Opaque;
 			batch_renderer_2D_->submit(render_state);
 
-
 			// Draw a grid of quads
-			for(int xx=0; xx<10; ++xx)
+			uint32_t len = 100;
+			for(int xx=0; xx<len; ++xx)
 			{
-				for(int yy=0; yy<10; ++yy)
+				for(int yy=0; yy<len; ++yy)
 				{
-					//std::cout << "(" << xx << "," << yy << ")" << std::endl;
 					batch_renderer_2D_->draw_quad(
-					math::vec2(0.f + xx*0.5f, 0.f + yy*0.5f),
-					math::vec2(0.1f,0.1f),
-					math::vec3(1.f,0.f,0.f));
+					math::vec2(-0.9f + 1.8*xx/float(len-1), -0.9f + 1.8*yy/float(len-1)),
+					math::vec2(0.99f/len,0.99f/len),
+					math::vec3(xx/float(len-1),yy/float(len-1),1.f-xx/float(len-1)));
 				}
 			}
 		}

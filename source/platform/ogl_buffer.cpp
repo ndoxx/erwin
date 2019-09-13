@@ -7,6 +7,8 @@
 
 #include "glad/glad.h"
 
+#include <iostream>
+
 namespace erwin
 {
 
@@ -46,16 +48,14 @@ rd_handle_(0)
 
     glGenBuffers(1, &rd_handle_);
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferData(GL_ARRAY_BUFFER, count_*layout.get_stride(), vertex_data, gl_draw_mode);
+    glBufferData(GL_ARRAY_BUFFER, count_*layout_.get_stride(), vertex_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
-    DLOGI << "Size:         " << count_*layout.get_stride() << "B" << std::endl;
+    DLOGI << "Size:         " << count_*layout_.get_stride() << "B" << std::endl;
 	DLOGI << "Layout:       ";
-	for(auto&& element: layout)
-	{
+	for(auto&& element: layout_)
 		DLOGI << "[" << to_string(element.type) << "]";
-	}
 	DLOGI << std::endl;
 }
 
@@ -81,7 +81,7 @@ void OGLVertexBuffer::unbind() const
 void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset)
 {
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(offset*sizeof(float)), count*sizeof(float), vertex_data);
+    glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(float), count*sizeof(float), vertex_data);
 }
 
 void OGLVertexBuffer::map(float* vertex_data, uint32_t count)
@@ -131,7 +131,7 @@ void OGLIndexBuffer::unbind() const
 void OGLIndexBuffer::stream(uint32_t* index_data, uint32_t count, std::size_t offset)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)offset, count*sizeof(uint32_t), index_data);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*sizeof(uint32_t), count*sizeof(uint32_t), index_data);
 }
 
 void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count)

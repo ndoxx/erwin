@@ -91,9 +91,6 @@ public:
     // Return the size (in bytes) of this vertex buffer
     inline std::size_t get_size() const  { return count_*sizeof(float); }
 
-
-    inline void invalidate() { }
-
     // Factory method to create the correct implementation
     // for the current renderer API
     static VertexBuffer* create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
@@ -121,9 +118,6 @@ public:
     inline uint32_t get_size() const  { return count_*sizeof(uint32_t); }
     // Return the intended draw primitive
     inline DrawPrimitive get_primitive() const { return primitive_; }
-
-
-    inline void invalidate() { }
 
     // Factory method to create the correct implementation
     // for the current renderer API
@@ -167,14 +161,6 @@ public:
     inline const std::vector<std::shared_ptr<VertexBuffer>>& get_vertex_buffers() const { return vertex_buffers_; }
     inline const IndexBuffer& get_index_buffer() const { return *index_buffer_; }
     inline IndexBuffer& get_index_buffer() { return *index_buffer_; }
-
-    // UNSAFE invalidate all data in all buffers
-    inline void invalidate()
-    {
-        index_buffer_->invalidate();
-        for(auto&& vb: vertex_buffers_)
-            vb->invalidate();
-    }
 
     // Factory method to create the correct implementation
     // for the current renderer API

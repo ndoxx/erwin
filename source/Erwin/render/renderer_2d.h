@@ -49,6 +49,8 @@ public:
 	void draw_quad(const math::vec2& position, 
 				   const math::vec2& scale,
 				   const math::vec3& color);
+	
+	inline void set_profiling_enabled(bool value = true) { profiling_enabled_ = value; }
 
 	static ShaderBank shader_bank;
 
@@ -60,6 +62,9 @@ private:
 	uint32_t current_batch_count_ = 0;
 	uint32_t current_batch_v_offset_ = 0;
 	uint32_t current_batch_i_offset_ = 0;
+
+	bool profiling_enabled_ = false;
+	QueryTimer* query_timer_;
 };
 
 } // namespace erwin

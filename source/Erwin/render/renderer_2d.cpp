@@ -134,16 +134,15 @@ max_batches_(num_batches)
 		quad_batch_vas_.push_back(va);
 	}
 
-	std::cout << "num_v: " << num_vertices << std::endl;
-	std::cout << "num_i: " << num_indices << std::endl;
-
 	// Load shader
 	shader_bank.load("shaders/color_shader.glsl");
+
+	query_timer_ = QueryTimer::create();
 }
 
 BatchRenderer2D::~BatchRenderer2D()
 {
-
+	delete query_timer_;
 }
 
 void BatchRenderer2D::begin_scene(uint32_t layer_index)
@@ -153,9 +152,9 @@ void BatchRenderer2D::begin_scene(uint32_t layer_index)
 	current_batch_count_ = 0;
 	current_batch_v_offset_ = 0;
 	current_batch_i_offset_ = 0;
-	// Invalidate all batches
-	for(auto&& batch: quad_batch_vas_)
-		batch->invalidate();
+
+	if(profiling_enabled_)
+		query_timer_->start();
 }
 
 void BatchRenderer2D::end_scene()
@@ -165,6 +164,13 @@ void BatchRenderer2D::end_scene()
 	shader.bind();
     Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count_*6);
 	shader.unbind();
+
+	if(profiling_enabled_)
+	{
+		auto render_duration = query_timer_->stop();
+		// TMP: display curve in widget instead
+		DLOG("render",1) << std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count() << "µs" << std::endl;
+	}
 }
 
 void BatchRenderer2D::submit(const RenderState& state)
@@ -203,11 +209,11 @@ void BatchRenderer2D::draw_quad(const math::vec2& position,
 {
 	// * Select a batch vertex array
 	// Check that current batch has enough space, if not, draw current and start to fill next batch
-	if(current_batch_count_ >= max_batch_count_)
+	if(current_batch_count_ == max_batch_count_)
 	{
 		const Shader& shader = shader_bank.get("color_shader"_h);
 		shader.bind();
-    	Gfx::device->draw_indexed(quad_batch_vas_[current_batch_]);
+    	Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count_*6);
 		shader.unbind();
 
 		++current_batch_;
@@ -221,30 +227,39 @@ void BatchRenderer2D::draw_quad(const math::vec2& position,
 	auto& vb = quad_batch_vas_[current_batch_]->get_vertex_buffer();
 	auto& ib = quad_batch_vas_[current_batch_]->get_index_buffer();
 
-	float vdata[24] = 
+	static const int VERT_FLOAT_COUNT = 24;
+	static const int IND_UINT_COUNT = 6;
+
+	float vdata[VERT_FLOAT_COUNT] = 
 	{
 		position.x()-0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
 		position.x()+0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
 		position.x()+0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
 		position.x()-0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
 	};
-	current_batch_v_offset_ += 24;
 
-	uint32_t idata[6] = 
+	uint32_t v_offset = current_batch_count_ * 4;
+	uint32_t idata[IND_UINT_COUNT] = 
 	{
-		current_batch_i_offset_ + 0, 
-		current_batch_i_offset_ + 1, 
-		current_batch_i_offset_ + 2, 
-		current_batch_i_offset_ + 2, 
-		current_batch_i_offset_ + 3, 
-		current_batch_i_offset_ + 0
+		v_offset + 0, 
+		v_offset + 1, 
+		v_offset + 2, 
+		v_offset + 2, 
+		v_offset + 3, 
+		v_offset + 0
 	};
-	current_batch_i_offset_ += 6;
 
-	vb.stream(vdata, 24, current_batch_v_offset_);
-	ib.stream(idata, 6, current_batch_i_offset_);
+	quad_batch_vas_[current_batch_]->bind();
+	vb.stream(vdata, VERT_FLOAT_COUNT, current_batch_v_offset_);
+	ib.stream(idata, IND_UINT_COUNT, current_batch_i_offset_);
+	quad_batch_vas_[current_batch_]->unbind();
 
+	// Update batch variables
+	current_batch_v_offset_ += VERT_FLOAT_COUNT;
+	current_batch_i_offset_ += IND_UINT_COUNT;
 	++current_batch_count_;
+
+	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
 }
 
 
