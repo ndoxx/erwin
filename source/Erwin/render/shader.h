@@ -19,6 +19,14 @@ enum class ShaderType: uint8_t
 	Fragment,
 };
 
+class Texture2D;
+struct ShaderParameters
+{
+	void set_texture_slot(hash_t sampler_name, std::shared_ptr<Texture2D> texture);
+
+	std::unordered_map<hash_t, std::shared_ptr<Texture2D>> texture_slots;
+};
+
 class Shader
 {
 public:
@@ -62,9 +70,17 @@ public:
 	bool exists(hash_t name) const;
 	// Get number of loaded shaders
 	inline std::size_t get_size() const { return bank_.size(); }
+	// Get shader index for input name
+	inline uint32_t get_index(hash_t name) const { return indices_.at(name); }
+
+private:
+	// Helper func for index map update
+	void next_index(hash_t hname);
 
 private:
 	std::unordered_map<hash_t, std::shared_ptr<Shader>> bank_;
+	std::unordered_map<hash_t, uint32_t> indices_;
+	uint32_t current_index_ = 0;
 };
 
 } // namespace erwin

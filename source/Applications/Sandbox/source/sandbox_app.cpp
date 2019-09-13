@@ -6,7 +6,6 @@
 
 #include "render/buffer.h"
 #include "render/shader.h"
-#include "render/render_device.h"
 
 #include "platform/ogl_shader.h"
 #include "platform/ogl_texture.h"
@@ -100,22 +99,25 @@ public:
 protected:
 	virtual void on_update() override
 	{
-		Renderer2D::begin_scene();
+		Renderer2D::begin_scene(get_index());
 		{
 			// TODO: group shader hname & ShaderParameters in Material class
 			// TODO: handle transforms
 			// TODO: group material & transform in Mesh class
 
-			// Batch render state mutations
-			Renderer2D::set_render_target(Renderer2D::RenderTarget::DEFAULT);
-			Renderer2D::set_cull_mode(CullMode::Back);
+			// Per-batch render state mutations
+			RenderState render_state;
+			render_state.render_target = RenderTarget::Default;
+			render_state.rasterizer_state = CullMode::Back;
+			render_state.blend_state = BlendState::Opaque;
+			Renderer2D::submit(render_state);
 
-			// Per instance draw commands
-			Renderer2D::ShaderParameters sq_params;
+			// Per-instance draw commands
+			ShaderParameters sq_params;
 			sq_params.set_texture_slot("us_albedo"_h, dirt_tex_);
 			Renderer2D::submit(sq_va_, "tex_shader"_h, sq_params);
 
-			Renderer2D::ShaderParameters tri_params;
+			ShaderParameters tri_params;
 			Renderer2D::submit(tri_va_, "color_shader"_h, tri_params);
 		}
 		Renderer2D::end_scene();

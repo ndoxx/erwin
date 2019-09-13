@@ -28,7 +28,7 @@ void RenderQueue::sort()
 {
     std::sort(order_.begin(), order_.end(), [](OrderPair p1, OrderPair p2)
     {
-        return p1.first < p2.first;
+        return p1.first <= p2.first; // Weak ordering to allow multiple same key
     });
 }
 

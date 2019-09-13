@@ -208,9 +208,6 @@ void GLFWWindow::update()
 {
 	context_->swap_buffers();
 	glfwPollEvents();
-
-    glClearColor(0.2f, 0.2f, 0.2f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 uint32_t GLFWWindow::get_width() const

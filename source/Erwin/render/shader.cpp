@@ -7,6 +7,11 @@
 namespace erwin
 {
 
+void ShaderParameters::set_texture_slot(hash_t sampler_name, std::shared_ptr<Texture2D> texture)
+{
+    texture_slots.insert(std::make_pair(sampler_name, texture));
+}
+
 std::shared_ptr<Shader> Shader::create(const std::string& name, std::istream& source_stream)
 {
 	switch(Gfx::get_api())
@@ -37,7 +42,9 @@ std::shared_ptr<Shader> Shader::create(const std::string& name, const std::strin
 
 void ShaderBank::add(std::shared_ptr<Shader> p_shader)
 {
-    bank_.insert(std::make_pair(H_(p_shader->get_name().c_str()), p_shader));
+    hash_t hname = H_(p_shader->get_name().c_str());
+    bank_.insert(std::make_pair(hname, p_shader));
+    next_index(hname);
 }
 
 void ShaderBank::load(const fs::path& path)
@@ -48,12 +55,16 @@ void ShaderBank::load(const fs::path& path)
 
 void ShaderBank::load(const std::string& name, std::istream& source_stream)
 {
-    bank_.insert(std::make_pair(H_(name.c_str()), Shader::create(name, source_stream)));
+    hash_t hname = H_(name.c_str());
+    bank_.insert(std::make_pair(hname, Shader::create(name, source_stream)));
+    next_index(hname);
 }
 
 void ShaderBank::load(const std::string& name, const std::string& source_string)
 {
-    bank_.insert(std::make_pair(H_(name.c_str()), Shader::create(name, source_string)));
+    hash_t hname = H_(name.c_str());
+    bank_.insert(std::make_pair(hname, Shader::create(name, source_string)));
+    next_index(hname);
 }
 
 const Shader& ShaderBank::get(hash_t name) const
@@ -66,6 +77,11 @@ const Shader& ShaderBank::get(hash_t name) const
 bool ShaderBank::exists(hash_t name) const
 {
     return (bank_.find(name) != bank_.end());
+}
+
+void ShaderBank::next_index(hash_t hname)
+{
+    indices_.insert(std::make_pair(hname, ++current_index_));
 }
 
 

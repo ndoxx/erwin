@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 
+#include "render/render_state.h"
+
 namespace erwin
 {
 
@@ -10,44 +12,6 @@ enum class GfxAPI
 {
     None = 0,
     OpenGL = 1
-};
-
-enum class DrawPrimitive
-{
-    Lines = 2,
-    Triangles = 3,
-    Quads = 4
-};
-
-enum class CullMode
-{
-    None = 0,
-    Front = 1,
-    Back = 2
-};
-
-enum class DepthFunc
-{
-    Less = 0,
-    LEqual = 1
-};
-
-enum class StencilFunc
-{
-    Always = 0,
-    NotEqual = 1
-};
-
-enum class StencilOperator
-{
-    LightVolume = 0
-};
-
-enum ClearFlags
-{
-    CLEAR_COLOR_FLAG = 1,
-    CLEAR_DEPTH_FLAG = 2,
-    CLEAR_STENCIL_FLAG = 4
 };
 
 class VertexArray;

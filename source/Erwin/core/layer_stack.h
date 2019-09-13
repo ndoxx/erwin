@@ -53,6 +53,9 @@ private:
         return false;//handled;
 	}
 
+	void update_layer_indices();
+
+private:
 	std::vector<Layer*> layers_;
 	size_t overlay_pos_;
 };

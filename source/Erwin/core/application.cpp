@@ -7,6 +7,8 @@
 #include "core/intern_string.h"
 #include "core/file_system.h"
 
+#include "render/render_device.h"
+
 namespace erwin
 {
 
@@ -101,8 +103,11 @@ void Application::run()
     nanoClock frame_clock;
     frame_clock.restart();
 
+	Gfx::device->set_clear_color(0.2f,0.2f,0.2f,1.f);
 	while(is_running_)
 	{
+		Gfx::device->clear(CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG);
+
 		// For each layer, update
 		for(auto* layer: layer_stack_)
 			layer->update();

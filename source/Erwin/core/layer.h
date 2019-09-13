@@ -16,10 +16,11 @@ public:
 	virtual ~Layer();
 
 	inline const std::string& get_name() const { return debug_name_; }
-	inline void set_enabled(bool value) { enabled_ = value; }
-	inline bool is_enabled() const { return enabled_; }
-
-	inline void update() { if(enabled_) on_update(); }
+	inline void set_enabled(bool value)        { enabled_ = value; }
+	inline void set_index(uint32_t index)      { index_ = index; }
+	inline uint32_t get_index() const          { return index_; }
+	inline bool is_enabled() const             { return enabled_; }
+	inline void update()                       { if(enabled_) on_update(); }
 
 	virtual void on_attach() { }
 	virtual void on_detach() { }
@@ -38,6 +39,7 @@ protected:
 private:
 	std::string debug_name_;
 	bool enabled_;
+	uint32_t index_;
 };
 
 #undef REACT
