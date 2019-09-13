@@ -1,4 +1,5 @@
 #include <string>
+#include <cstring>
 
 #include "platform/ogl_buffer.h"
 #include "core/core.h"
@@ -27,15 +28,25 @@ static std::string to_string(ShaderDataType type)
 	}
 }
 
-OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic):
+static GLenum to_ogl_draw_mode(DrawMode mode)
+{
+	switch(mode)
+    {
+    	case DrawMode::Static:  return GL_STATIC_DRAW;
+    	case DrawMode::Stream:  return GL_STREAM_DRAW;
+    	case DrawMode::Dynamic: return GL_DYNAMIC_DRAW;
+    }
+}
+
+OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode):
 VertexBuffer(layout, count),
 rd_handle_(0)
 {
-    GLenum draw_type = dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
+    GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
     glGenBuffers(1, &rd_handle_);
-    bind();
-    glBufferData(GL_ARRAY_BUFFER, count_*sizeof(float), vertex_data, draw_type);
+    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
+    glBufferData(GL_ARRAY_BUFFER, count_*sizeof(float), vertex_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
@@ -51,7 +62,7 @@ rd_handle_(0)
 OGLVertexBuffer::~OGLVertexBuffer()
 {
     // Unbind and delete
-    unbind();
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
@@ -69,21 +80,29 @@ void OGLVertexBuffer::unbind() const
 
 void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset) const
 {
-    bind();
+    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
     glBufferSubData(GL_ARRAY_BUFFER, (GLuint)offset, count*sizeof(float), vertex_data);
+}
+
+void OGLVertexBuffer::map(float* vertex_data, uint32_t count) const
+{
+    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
+	void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	memcpy(ptr, vertex_data, count*sizeof(float));
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
 // ----------------------------------------------------------------------------------
 
-OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, bool dynamic):
-IndexBuffer(count),
+OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode):
+IndexBuffer(count, primitive),
 rd_handle_(0)
 {
-    GLenum draw_type = dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
+    GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
     glGenBuffers(1, &rd_handle_);
-    bind();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, draw_type);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
@@ -93,7 +112,7 @@ rd_handle_(0)
 OGLIndexBuffer::~OGLIndexBuffer()
 {
     // Unbind and delete
-    unbind();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
@@ -111,9 +130,18 @@ void OGLIndexBuffer::unbind() const
 
 void OGLIndexBuffer::stream(uint32_t* index_data, uint32_t count, std::size_t offset) const
 {
-    bind();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLuint)offset, count*sizeof(uint32_t), index_data);
 }
+
+void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count) const
+{
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
+	void* ptr = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+	memcpy(ptr, index_data, count*sizeof(uint32_t));
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+}
+
 
 // ----------------------------------------------------------------------------------
 
@@ -167,7 +195,7 @@ void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 	W_ASSERT(p_vb->get_layout().get_count(), "Vertex buffer has empty layout!");
 
 	// Bind vertex array then vertex buffer
-	bind();
+    glBindVertexArray(rd_handle_);
 	p_vb->bind();
 
 	// For each element in layout, enable attribute array and push 
@@ -193,7 +221,7 @@ void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 
 void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
 {
-	bind();
+    glBindVertexArray(rd_handle_);
 	p_ib->bind();
 	index_buffer_ = p_ib;
 

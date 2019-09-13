@@ -48,14 +48,14 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
 }
 
 void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
-								   DrawPrimitive prim,
 								   std::size_t offset)
 {
 	vertexArray->bind();
-	glDrawElements(OGLPrimitive[prim], 
+	glDrawElements(OGLPrimitive[vertexArray->get_index_buffer().get_primitive()], 
 				   vertexArray->get_index_buffer().get_count(),
 				   GL_UNSIGNED_INT,
 				   (void*)(offset * sizeof(GLuint)));
+    vertexArray->unbind();
 }
 
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)

@@ -14,7 +14,7 @@ public:
     // Start query timer
     virtual void start() = 0;
     // Stop timer and get elapsed GPU time
-    virtual std::chrono::duration<float> stop() = 0;
+    virtual std::chrono::nanoseconds stop() = 0;
 
     // Factory method for the creation of a graphics API specific timer
     static QueryTimer* create();

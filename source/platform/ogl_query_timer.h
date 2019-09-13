@@ -16,7 +16,7 @@ public:
     // Start query timer
     virtual void start() override;
     // Stop timer and get elapsed GPU time
-    virtual std::chrono::duration<float> stop() override;
+    virtual std::chrono::nanoseconds stop() override;
 
 private:
     // Helper func to swap query buffers

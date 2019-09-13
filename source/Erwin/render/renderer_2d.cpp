@@ -12,7 +12,6 @@
 namespace erwin
 {
 
-uint32_t Renderer2D::s_current_layer_ = 0;
 ShaderBank Renderer2D::shader_bank;
 
 [[maybe_unused]] static uint32_t make_key(bool is_state_mutation,
@@ -24,21 +23,40 @@ ShaderBank Renderer2D::shader_bank;
 		  | (layer_index << 8);
 }
 
+Renderer2D::Renderer2D()
+{
+	query_timer_ = QueryTimer::create();
+}
+
+Renderer2D::~Renderer2D()
+{
+	delete query_timer_;
+}
+
 void Renderer2D::begin_scene(uint32_t layer_index)
 {
 	//DLOG("render",1) << "--------" << std::endl;
-	s_current_layer_ = layer_index; // For queue item key creation
+	current_layer_ = layer_index; // For queue item key creation
+
+	if(profiling_enabled_)
+		query_timer_->start();
 }
 
 void Renderer2D::end_scene()
 {
-	// * Flush all state mutations / draw commands as
-	//   QueueItems in RenderThread
+	// * Flush render thread
+
+	if(profiling_enabled_)
+	{
+		auto render_duration = query_timer_->stop();
+		// TMP: display curve in widget instead
+		DLOG("render",1) << std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count() << "µs" << std::endl;
+	}
 }
 
 void Renderer2D::submit(const RenderState& state)
 {
-	[[maybe_unused]] uint64_t key = make_key(true, s_current_layer_);
+	[[maybe_unused]] uint64_t key = make_key(true, current_layer_);
 	//DLOG("render",1) << "sta: " << std::bitset<32>(key) << std::endl;
 
 	// TMP: direct rendering for now, will submit to render thread then
@@ -68,7 +86,7 @@ void Renderer2D::submit(const RenderState& state)
 
 void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, const ShaderParameters& params)
 {
-	[[maybe_unused]] uint64_t key = make_key(false, s_current_layer_, shader_bank.get_index(shader_name));
+	[[maybe_unused]] uint64_t key = make_key(false, current_layer_, shader_bank.get_index(shader_name));
 	//DLOG("render",1) << "cmd: " << std::bitset<32>(key) << std::endl;
 
 	// TMP: direct rendering for now, will submit to render thread then
@@ -86,6 +104,48 @@ void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, con
 
 	// * Draw
     Gfx::device->draw_indexed(va);
+}
+
+
+
+// --------------------------------------------------------------
+
+BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
+max_batch_count_(max_batch_count)
+{
+	BufferLayout vertex_color_layout =
+	{
+	    {"a_position"_h, ShaderDataType::Vec3},
+	    {"a_color"_h,    ShaderDataType::Vec3},
+	};
+
+	uint32_t num_vertices = max_batch_count_ * 4; // Quads
+	uint32_t num_indices = max_batch_count_ * 6;  // 2 triangles
+
+	for(int ii=0; ii<num_batches; ++ii)
+	{
+		auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, vertex_color_layout, DrawMode::Dynamic));
+		auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Dynamic));
+		auto va = std::shared_ptr<VertexArray>(VertexArray::create());
+		va->set_vertex_buffer(vb);
+		va->set_index_buffer(ib);
+		quad_batch_vas_.push_back(va);
+	}
+}
+
+BatchRenderer2D::~BatchRenderer2D()
+{
+
+}
+
+void BatchRenderer2D::begin_scene(uint32_t layer_index)
+{
+
+}
+
+void BatchRenderer2D::end_scene()
+{
+
 }
 
 

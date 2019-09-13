@@ -8,13 +8,14 @@ namespace erwin
 class OGLVertexBuffer: public VertexBuffer
 {
 public:
-    OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic=false);
+    OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode);
     virtual ~OGLVertexBuffer();
 
     virtual void bind() const override;
     virtual void unbind() const override;
 
     virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) const override;
+    virtual void map(float* vertex_data, uint32_t count) const override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
@@ -25,14 +26,15 @@ private:
 class OGLIndexBuffer: public IndexBuffer
 {
 public:
-    OGLIndexBuffer(uint32_t* index_data, uint32_t count, bool dynamic=false);
+    OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode);
     virtual ~OGLIndexBuffer();
 
     virtual void bind() const override;
     virtual void unbind() const override;
 
     virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) const override;
-    
+    virtual void map(uint32_t* index_data, uint32_t count) const override;
+
     inline uint32_t get_handle() const { return rd_handle_; }
 
 private:

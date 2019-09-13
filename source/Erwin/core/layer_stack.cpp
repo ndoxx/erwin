@@ -24,7 +24,7 @@ size_t LayerStack::push_layer(Layer* layer)
 	layer->on_attach();
 
 	size_t index = overlay_pos_-1;
-	update_layer_indices();
+	update_layer_priorities();
 
 	DLOG("application",1) << "Pushed layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 	DLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
@@ -38,7 +38,7 @@ size_t LayerStack::push_overlay(Layer* layer)
 	layer->on_attach();
 
 	size_t index = layers_.size()-1;
-	update_layer_indices();
+	update_layer_priorities();
 
 	DLOG("application",1) << "Pushed overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 
@@ -57,7 +57,7 @@ void LayerStack::pop_layer(size_t index)
 		layers_.erase(layers_.begin() + index);
 		--overlay_pos_;
 
-		update_layer_indices();
+		update_layer_priorities();
 
 		DLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
 	}
@@ -74,15 +74,15 @@ void LayerStack::pop_overlay(size_t index)
 		delete layer;
 		layers_.erase(layers_.begin() + index);
 
-		update_layer_indices();
+		update_layer_priorities();
 	}
 }
 
-void LayerStack::update_layer_indices()
+void LayerStack::update_layer_priorities()
 {
 	uint32_t current_index = 0;
 	for(Layer* layer: layers_)
-		layer->set_index(layers_.size()-current_index++);
+		layer->set_priority(layers_.size()-current_index++);
 }
 
 void LayerStack::set_layer_enabled(size_t index, bool value)

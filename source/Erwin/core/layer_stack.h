@@ -53,7 +53,7 @@ private:
         return false;//handled;
 	}
 
-	void update_layer_indices();
+	void update_layer_priorities();
 
 private:
 	std::vector<Layer*> layers_;

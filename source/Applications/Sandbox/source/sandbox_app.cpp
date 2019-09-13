@@ -13,16 +13,18 @@
 
 using namespace erwin;
 
-class TestLayer: public Layer
+static std::unique_ptr<Renderer2D> s_renderer_2D;
+
+class Layer2D: public Layer
 {
 public:
-	TestLayer(const std::string& name):
-	Layer("TestLayer_" + name)
+	Layer2D(const std::string& name):
+	Layer("Layer2D_" + name)
 	{
 
 	}
 
-	~TestLayer()
+	~Layer2D()
 	{ 
 
 	}
@@ -35,13 +37,18 @@ public:
 
 	virtual void on_imgui_render() override
 	{
-	    ImGui::Begin("Test Widget");
+	    ImGui::Begin("Renderer2D");
+
+        if(ImGui::Checkbox("Profile", &enable_profiling_))
+        	s_renderer_2D->set_profiling_enabled(enable_profiling_);
 
 	    ImGui::End();
 	}
 
 	virtual void on_attach() override
 	{
+		s_renderer_2D = std::make_unique<Renderer2D>();
+
 		// Colored triangle
 		BufferLayout vertex_color_layout =
 		{
@@ -60,10 +67,10 @@ public:
 		};
 
 		tri_vb_ = std::shared_ptr<VertexBuffer>(VertexBuffer::create(tri_vdata, 18, vertex_color_layout));
-		tri_ib_ = std::shared_ptr<IndexBuffer>(IndexBuffer::create(tri_idata, 3));
+		tri_ib_ = std::shared_ptr<IndexBuffer>(IndexBuffer::create(tri_idata, 3, DrawPrimitive::Triangles));
 		tri_va_ = std::shared_ptr<VertexArray>(VertexArray::create());
 		tri_va_->set_index_buffer(tri_ib_);
-		tri_va_->add_vertex_buffer(tri_vb_);
+		tri_va_->set_vertex_buffer(tri_vb_);
 
 		// Textured square
 		BufferLayout vertex_tex_layout =
@@ -84,10 +91,10 @@ public:
 		};
 
 		sq_vb_ = std::shared_ptr<VertexBuffer>(VertexBuffer::create(sq_vdata, 20, vertex_tex_layout));
-		sq_ib_ = std::shared_ptr<IndexBuffer>(IndexBuffer::create(sq_idata, 6));
+		sq_ib_ = std::shared_ptr<IndexBuffer>(IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles));
 		sq_va_ = std::shared_ptr<VertexArray>(VertexArray::create());
 		sq_va_->set_index_buffer(sq_ib_);
-		sq_va_->add_vertex_buffer(sq_vb_);
+		sq_va_->set_vertex_buffer(sq_vb_);
 
 		dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 
@@ -99,7 +106,7 @@ public:
 protected:
 	virtual void on_update() override
 	{
-		Renderer2D::begin_scene(get_index());
+		s_renderer_2D->begin_scene(get_priority());
 		{
 			// TODO: group shader hname & ShaderParameters in Material class
 			// TODO: handle transforms
@@ -110,17 +117,17 @@ protected:
 			render_state.render_target = RenderTarget::Default;
 			render_state.rasterizer_state = CullMode::Back;
 			render_state.blend_state = BlendState::Opaque;
-			Renderer2D::submit(render_state);
+			s_renderer_2D->submit(render_state);
 
 			// Per-instance draw commands
 			ShaderParameters sq_params;
 			sq_params.set_texture_slot("us_albedo"_h, dirt_tex_);
-			Renderer2D::submit(sq_va_, "tex_shader"_h, sq_params);
+			s_renderer_2D->submit(sq_va_, "tex_shader"_h, sq_params);
 
 			ShaderParameters tri_params;
-			Renderer2D::submit(tri_va_, "color_shader"_h, tri_params);
+			s_renderer_2D->submit(tri_va_, "color_shader"_h, tri_params);
 		}
-		Renderer2D::end_scene();
+		s_renderer_2D->end_scene();
 	}
 
 private:
@@ -133,6 +140,8 @@ private:
 	std::shared_ptr<VertexArray>  sq_va_;
 
 	std::shared_ptr<Texture2D> dirt_tex_;
+
+	bool enable_profiling_ = false;
 };
 
 class Sandbox: public Application
@@ -143,7 +152,7 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		push_layer(new TestLayer("A"));
+		push_layer(new Layer2D("A"));
 	}
 
 	~Sandbox()

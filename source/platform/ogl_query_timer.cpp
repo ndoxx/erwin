@@ -28,7 +28,7 @@ void OGLQueryTimer::start()
     glBeginQuery(GL_TIME_ELAPSED, query_ID_[query_back_buffer_]);
 }
 
-std::chrono::duration<float> OGLQueryTimer::stop()
+std::chrono::nanoseconds OGLQueryTimer::stop()
 {
     glEndQuery(GL_TIME_ELAPSED);
     glGetQueryObjectuiv(query_ID_[query_front_buffer_], GL_QUERY_RESULT, (GLuint*)&timer_);

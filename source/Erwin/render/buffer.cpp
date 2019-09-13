@@ -81,7 +81,7 @@ void BufferLayout::compute_offset_and_stride()
     }
 }
 
-VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const BufferLayout& layout, bool dynamic)
+VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -90,11 +90,11 @@ VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const Buf
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLVertexBuffer(vertex_data, count, layout, dynamic);
+            return new OGLVertexBuffer(vertex_data, count, layout, mode);
     }
 }
 
-IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, bool dynamic)
+IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -103,7 +103,7 @@ IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, bool dyna
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLIndexBuffer(index_data, count, dynamic);
+            return new OGLIndexBuffer(index_data, count, primitive, mode);
     }
 }
 
