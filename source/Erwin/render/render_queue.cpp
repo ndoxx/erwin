@@ -3,20 +3,20 @@
 namespace erwin
 {
 
-void RenderQueue::push(RenderKey key, RenderCommand&& command)
+void RenderQueue::push(RenderKey key, QueueItem&& item)
 {
-    commands_.push_back(std::forward<RenderCommand>(command));
-    order_.push_back(std::make_pair(key, commands_.size()-1));
+    items_.push_back(std::forward<QueueItem>(item));
+    order_.push_back(std::make_pair(key, items_.size()-1));
 }
 
-void RenderQueue::push(const std::vector<RenderKey>& keys, std::vector<RenderCommand>&& commands)
+void RenderQueue::push(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items)
 {
-    std::size_t offset = commands_.size();
-    commands_.insert
+    std::size_t offset = items_.size();
+    items_.insert
     (
-        commands_.end(),
-        std::make_move_iterator(commands.begin()),
-        std::make_move_iterator(commands.end())
+        items_.end(),
+        std::make_move_iterator(items.begin()),
+        std::make_move_iterator(items.end())
     );
 
     std::size_t ii = 0;
@@ -32,13 +32,13 @@ void RenderQueue::sort()
     });
 }
 
-void RenderQueue::flush(std::function<void(const RenderCommand&)> visit)
+void RenderQueue::flush(std::function<void(const QueueItem&)> visit)
 {
     sort();
 
     for(auto&& [key,index]: order_)
-        visit(commands_[index]);
-    commands_.clear();
+        visit(items_[index]);
+    items_.clear();
     order_.clear();
 }
 

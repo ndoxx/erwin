@@ -93,21 +93,32 @@ public:
 		dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 
 		// Load shaders
-		SHADER_BANK.load("shaders/color_shader.glsl");
-		SHADER_BANK.load("shaders/tex_shader.glsl");
-
-		Gfx::device->bind_default_frame_buffer();
-		//Gfx::device->set_cull_mode(CullMode::None);
+		Renderer2D::shader_bank.load("shaders/color_shader.glsl");
+		Renderer2D::shader_bank.load("shaders/tex_shader.glsl");
 	}
 
 protected:
 	virtual void on_update() override
 	{
-    	SHADER_BANK.get("color_shader"_h).bind();
-    	Gfx::device->draw_indexed(tri_va_);
-    	SHADER_BANK.get("tex_shader"_h).bind();
-    	dirt_tex_->bind();
-    	Gfx::device->draw_indexed(sq_va_);
+		Renderer2D::begin_scene();
+		{
+			// TODO: group shader hname & ShaderParameters in Material class
+			// TODO: handle transforms
+			// TODO: group material & transform in Mesh class
+
+			// Batch render state mutations
+			Renderer2D::set_render_target(Renderer2D::RenderTarget::DEFAULT);
+			Renderer2D::set_cull_mode(CullMode::Back);
+
+			// Per instance draw commands
+			Renderer2D::ShaderParameters sq_params;
+			sq_params.set_texture_slot("us_albedo"_h, dirt_tex_);
+			Renderer2D::submit(sq_va_, "tex_shader"_h, sq_params);
+
+			Renderer2D::ShaderParameters tri_params;
+			Renderer2D::submit(tri_va_, "color_shader"_h, tri_params);
+		}
+		Renderer2D::end_scene();
 	}
 
 private:

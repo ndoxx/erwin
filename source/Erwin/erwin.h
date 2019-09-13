@@ -11,4 +11,6 @@
 #include "event/window_events.h"
 #include "debug/logger.h"
 
+#include "render/renderer_2d.h"
+
 #include "imgui.h"

@@ -29,6 +29,8 @@ public:
 	virtual void bind() const = 0;
 	// Stop using this program
 	virtual void unbind() const = 0;
+	// Get texture slot associated to hash sampler name (uniform name)
+	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
 
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }
@@ -58,12 +60,11 @@ public:
 	const Shader& get(hash_t name) const;
 	// Check whether a shader is registered to this name
 	bool exists(hash_t name) const;
+	// Get number of loaded shaders
+	inline std::size_t get_size() const { return bank_.size(); }
 
 private:
 	std::unordered_map<hash_t, std::shared_ptr<Shader>> bank_;
 };
-
-// TMP: shader bank instance will be owned by renderer
-static ShaderBank SHADER_BANK;
 
 } // namespace erwin

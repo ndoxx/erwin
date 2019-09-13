@@ -13,10 +13,10 @@
 using namespace erwin;
 
 std::vector<RenderKey> keys = { 1, 5000, 498, 632, 0, 455, 456, 798, 222, 101};
-std::vector<RenderCommand> commands = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}};
-void fill_commands(std::reference_wrapper<RenderThread> rthread)
+std::vector<QueueItem> items = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}};
+void fill_items(std::reference_wrapper<RenderThread> rthread)
 {
-    std::vector<RenderCommand> cmds(commands);
+    std::vector<QueueItem> cmds(items);
     rthread.get().enqueue(keys, std::move(cmds));
 }
 
@@ -42,10 +42,10 @@ int main()
         if(t_tot>2.f)
             running = false;
 
-        // Feed the render thread with draw commands
-        fill_commands(rthread);
+        // Feed the render thread with draw items
+        fill_items(rthread);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        fill_commands(rthread);
+        fill_items(rthread);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         auto frame_d = frame_clock.restart();

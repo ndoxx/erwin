@@ -20,11 +20,11 @@ public:
     void spawn();
     // Stop render thread execution (waits for pending commands to be processed)
     void kill();
-    // Push a single command into the queue (inefficient)
-    void enqueue(RenderKey key, RenderCommand&& command);
-    // Push a group of commands into the queue
-    void enqueue(const std::vector<RenderKey>& keys, std::vector<RenderCommand>&& commands);
-    // Sort queue and dispatch commands
+    // Push a single item into the queue (inefficient)
+    void enqueue(RenderKey key, QueueItem&& item);
+    // Push a group of items into the queue
+    void enqueue(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items);
+    // Sort queue and dispatch items
     void flush();
 
 protected:
@@ -39,7 +39,7 @@ protected:
     void thread_run();
     void thread_cleanup();
 
-    void dispatch(const RenderCommand& command);
+    void dispatch(const QueueItem& item);
 
 private:
     RenderQueue render_queue_;

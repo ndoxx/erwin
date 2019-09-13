@@ -17,6 +17,7 @@ public:
 
 	virtual void bind() const override;
 	virtual void unbind() const override;
+	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 
     // Uniform management
     template <typename T>
@@ -31,12 +32,14 @@ private:
 	std::vector<std::pair<ShaderType, std::string>> parse(const std::string& full_source);
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
-	// Helper function to construct the uniform registry
+	// Helper function to construct the uniform location and texture slot registries
 	void setup_uniform_registry();
 
 private:
     uint32_t rd_handle_;
-    std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
+    uint32_t current_slot_ = 0;
+    std::unordered_map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
+    std::unordered_map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
 };
 
 namespace math

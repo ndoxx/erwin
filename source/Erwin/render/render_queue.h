@@ -7,9 +7,19 @@
 namespace erwin
 {
 
-struct RenderCommand
+enum class QueueItemType: uint8_t
 {
-    int id;
+    STATE_MUTATION,
+    DRAW_COMMAND
+};
+
+struct QueueItem
+{
+    QueueItemType type;         // Is this queue item to be understood as a state mutation or instance draw command?
+    const void* render_state;   // Relevant when queue item is a per-batch state mutation
+    const void* instance_data;  // Relevant when queue item is a per-instance draw command
+
+    uint32_t id; // TMP for tests
 };
 
 typedef uint64_t RenderKey;
@@ -17,12 +27,12 @@ typedef uint64_t RenderKey;
 class RenderQueue
 {
 public:
-    // Push a single command together with a key for later command sorting
-    void push(RenderKey key, RenderCommand&& command);
+    // Push a single item together with a key for later draw command/state mutation sorting
+    void push(RenderKey key, QueueItem&& item);
     // Push a group of commands with associated keys
-    void push(const std::vector<RenderKey>& keys, std::vector<RenderCommand>&& commands);
-    // Sort queue, visit each command in order, then clear
-    void flush(std::function<void(const RenderCommand&)> visit);
+    void push(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& item);
+    // Sort queue, visit each item in order, then clear
+    void flush(std::function<void(const QueueItem&)> visit);
     // Get the current queue length
     inline std::size_t size() const { return order_.size(); }
 
@@ -32,7 +42,7 @@ protected:
 
 private:
     typedef std::pair<RenderKey, std::size_t> OrderPair;
-    std::vector<RenderCommand> commands_;
+    std::vector<QueueItem> items_;
     std::vector<OrderPair> order_;
 };
 

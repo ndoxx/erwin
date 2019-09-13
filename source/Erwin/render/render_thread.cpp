@@ -32,10 +32,10 @@ void RenderThread::kill()
     render_thread_.join();
 }
 
-void RenderThread::enqueue(RenderKey key, RenderCommand&& command)
+void RenderThread::enqueue(RenderKey key, QueueItem&& item)
 {
     // Avoid ackward deadlock on cv_update_ when thread is killed 
-    // but another thread wants to push some draw commands
+    // but another thread wants to push some draw items
     if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
         return;
 
@@ -45,14 +45,14 @@ void RenderThread::enqueue(RenderKey key, RenderCommand&& command)
     {
         return thread_state_.load(std::memory_order_acquire) == STATE_IDLE;
     });
-    render_queue_.push(key, std::forward<RenderCommand>(command));
+    render_queue_.push(key, std::forward<QueueItem>(item));
 }
 
 void RenderThread::enqueue(const std::vector<RenderKey>& keys,
-                           std::vector<RenderCommand>&& commands)
+                           std::vector<QueueItem>&& items)
 {
     // Avoid ackward deadlock on cv_update_ when thread is killed 
-    // but another thread wants to push some draw commands
+    // but another thread wants to push some draw items
     if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
         return;
 
@@ -62,7 +62,7 @@ void RenderThread::enqueue(const std::vector<RenderKey>& keys,
     {
         return thread_state_.load(std::memory_order_acquire) == STATE_IDLE;
     });
-    render_queue_.push(keys, std::forward<std::vector<RenderCommand>>(commands));
+    render_queue_.push(keys, std::forward<std::vector<QueueItem>>(items));
 }
 
 void RenderThread::flush()
@@ -73,9 +73,9 @@ void RenderThread::flush()
     cv_consume_.notify_one();
 }
 
-void RenderThread::dispatch(const RenderCommand& command)
+void RenderThread::dispatch(const QueueItem& item)
 {
-    std::cout << command.id << " ";
+    std::cout << item.id << " ";
 }
 
 void RenderThread::thread_run()
@@ -86,7 +86,7 @@ void RenderThread::thread_run()
     {
         std::unique_lock<std::mutex> lck(mutex_);
         // Notify producer thread(s) the render thread is idle and
-        // can accept commands in its queue
+        // can accept items in its queue
         cv_update_.notify_all();
         // Wait for a state change
         cv_consume_.wait(lck, [this]()
@@ -97,7 +97,7 @@ void RenderThread::thread_run()
         // Here: STATE_FLUSH or STATE_KILLED
         // Acquire state
         int state = thread_state_.load(std::memory_order_acquire);
-        // Flush the queue and dispatch commands
+        // Flush the queue and dispatch items
         render_queue_.flush(std::bind(&RenderThread::dispatch, this, std::placeholders::_1));
         std::cout << std::endl;
 

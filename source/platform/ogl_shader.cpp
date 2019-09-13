@@ -91,6 +91,31 @@ static std::string ogl_attribute_type_to_string(GLenum type)
 	}
 }
 
+static std::string ogl_uniform_type_to_string(GLenum type)
+{
+    switch(type)
+    {
+        case GL_FLOAT:          return "GL_FLOAT";
+        case GL_FLOAT_VEC2:     return "GL_FLOAT_VEC2";
+        case GL_FLOAT_VEC3:     return "GL_FLOAT_VEC3";
+        case GL_FLOAT_VEC4:     return "GL_FLOAT_VEC4";
+        case GL_INT:            return "GL_INT";
+        case GL_INT_VEC2:       return "GL_INT_VEC2";
+        case GL_INT_VEC3:       return "GL_INT_VEC3";
+        case GL_INT_VEC4:       return "GL_INT_VEC4";
+        case GL_BOOL:           return "GL_BOOL";
+        case GL_BOOL_VEC2:      return "GL_BOOL_VEC2";
+        case GL_BOOL_VEC3:      return "GL_BOOL_VEC3";
+        case GL_BOOL_VEC4:      return "GL_BOOL_VEC4";
+        case GL_FLOAT_MAT2:     return "GL_FLOAT_MAT2";
+        case GL_FLOAT_MAT3:     return "GL_FLOAT_MAT3";
+        case GL_FLOAT_MAT4:     return "GL_FLOAT_MAT4";
+        case GL_SAMPLER_2D:     return "GL_SAMPLER_2D";
+        case GL_SAMPLER_CUBE:   return "GL_SAMPLER_CUBE";
+        default:                return "[[UNKNOWN TYPE]]";
+    }
+}
+
 static void shader_error_report(GLuint ShaderID, std::set<int>& errlines)
 {
     char* log = nullptr;
@@ -174,6 +199,13 @@ void OGLShader::unbind() const
 {
     glUseProgram(0);
 }
+
+uint32_t OGLShader::get_texture_slot(hash_t sampler) const
+{
+    W_ASSERT(texture_slots_.find(sampler)!=texture_slots_.end(), "Unknown sampler name!");
+    return texture_slots_.at(sampler);
+}
+
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
 {
@@ -297,7 +329,7 @@ void OGLShader::setup_uniform_registry()
 	// * Program active report: show detected active attributes
     GLint active_attribs;
     glGetProgramiv(rd_handle_, GL_ACTIVE_ATTRIBUTES, &active_attribs);
-    DLOGN("shader") << "Detected " << active_attribs << " active attributes:" << std::endl;
+    DLOG("shader",1) << "Detected " << active_attribs << " active attributes:" << std::endl;
 
     for(GLint ii=0; ii<active_attribs; ++ii)
     {
@@ -309,7 +341,7 @@ void OGLShader::setup_uniform_registry()
         glGetActiveAttrib(rd_handle_, ii, 32, &length, &size, &type, name);
         GLint loc = glGetAttribLocation(rd_handle_, name);
 
-    	DLOGI << ogl_attribute_type_to_string(type) << " " << WCC('u') << name << WCC(0) << " loc= " << loc << std::endl;
+    	DLOGI << "[" << loc << "] " << ogl_attribute_type_to_string(type) << " " << WCC('u') << name << WCC(0) << std::endl;
     }
 #endif
 
@@ -319,19 +351,26 @@ void OGLShader::setup_uniform_registry()
 
     if(num_active_uniforms)
     {
-    	DLOGN("shader") << "Detected " << num_active_uniforms << " active uniforms:" << std::endl;
+    	DLOG("shader",1) << "Detected " << num_active_uniforms << " active uniforms:" << std::endl;
     }
     // For each uniform register name in map
     for(unsigned int ii=0; ii<num_active_uniforms; ++ii)
     {
         GLchar name[33];
         GLsizei length=0;
+        GLint   size;
+        GLenum  type;
 
-        glGetActiveUniformName(rd_handle_, ii, 32, &length, name);
-        GLint location = glGetUniformLocation(rd_handle_, name);
-        uniform_locations_.insert(std::make_pair(H_(name), location));
+        glGetActiveUniform(rd_handle_, ii, 32, &length, &size, &type, name);
+        GLint loc = glGetUniformLocation(rd_handle_, name);
+        
+        hash_t hname = H_(name);
+        uniform_locations_.insert(std::make_pair(hname, loc));
 
-        DLOGI << WCC('u') << name << WCC(0) << " [" << location << "] " << std::endl;
+        if(type == GL_SAMPLER_2D || type == GL_SAMPLER_CUBE)
+            texture_slots_.insert(std::make_pair(hname, current_slot_++));
+
+        DLOGI << "[" << loc << "] " << ogl_uniform_type_to_string(type) << " " << WCC('u') << name << WCC(0) << std::endl;
     }
 }
 static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
