@@ -144,6 +144,72 @@ private:
 	bool enable_profiling_ = false;
 };
 
+
+class LayerBatch2D: public Layer
+{
+public:
+	LayerBatch2D(const std::string& name):
+	Layer("LayerBatch2D_" + name)
+	{
+
+	}
+
+	~LayerBatch2D() = default;
+
+	virtual bool on_event(const MouseButtonEvent& event) override
+	{
+		DLOGN("event") << get_name() << " -> Handled event: " << event << std::endl;
+		return true;
+	}
+
+	virtual void on_imgui_render() override
+	{
+	    ImGui::Begin("BatchRenderer2D");
+/*
+        if(ImGui::Checkbox("Profile", &enable_profiling_))
+        	batch_renderer_2D_->set_profiling_enabled(enable_profiling_);
+*/
+	    ImGui::End();
+	}
+
+	virtual void on_attach() override
+	{
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(16,100);
+	}
+
+protected:
+	virtual void on_update() override
+	{
+		batch_renderer_2D_->begin_scene(get_priority());
+		{
+			RenderState render_state;
+			render_state.render_target = RenderTarget::Default;
+			render_state.rasterizer_state = CullMode::None;
+			render_state.blend_state = BlendState::Opaque;
+			batch_renderer_2D_->submit(render_state);
+
+
+			// Draw a grid of quads
+			for(int xx=0; xx<10; ++xx)
+			{
+				for(int yy=0; yy<10; ++yy)
+				{
+					//std::cout << "(" << xx << "," << yy << ")" << std::endl;
+					batch_renderer_2D_->draw_quad(
+					math::vec2(0.f + xx*0.5f, 0.f + yy*0.5f),
+					math::vec2(0.1f,0.1f),
+					math::vec3(1.f,0.f,0.f));
+				}
+			}
+		}
+		batch_renderer_2D_->end_scene();
+	}
+
+private:
+	std::unique_ptr<BatchRenderer2D> batch_renderer_2D_;
+	bool enable_profiling_ = false;
+};
+
 class Sandbox: public Application
 {
 public:
@@ -152,7 +218,8 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		push_layer(new Layer2D("A"));
+		//push_layer(new Layer2D("A"));
+		push_layer(new LayerBatch2D("A"));
 	}
 
 	~Sandbox()

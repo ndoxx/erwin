@@ -35,6 +35,7 @@ public:
     // * Draw commands
     // Draw content of specified vertex array
     virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray, 
+                              uint32_t count = 0,
                               std::size_t offset = 0) = 0;
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) = 0;

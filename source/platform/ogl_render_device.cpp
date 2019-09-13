@@ -48,11 +48,12 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
 }
 
 void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+                                   uint32_t count,
 								   std::size_t offset)
 {
 	vertexArray->bind();
 	glDrawElements(OGLPrimitive[vertexArray->get_index_buffer().get_primitive()], 
-				   vertexArray->get_index_buffer().get_count(),
+				   (bool(count) ? count : vertexArray->get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
 				   (void*)(offset * sizeof(GLuint)));
     vertexArray->unbind();

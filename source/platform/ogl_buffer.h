@@ -14,8 +14,8 @@ public:
     virtual void bind() const override;
     virtual void unbind() const override;
 
-    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) const override;
-    virtual void map(float* vertex_data, uint32_t count) const override;
+    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) override;
+    virtual void map(float* vertex_data, uint32_t count) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
@@ -32,8 +32,8 @@ public:
     virtual void bind() const override;
     virtual void unbind() const override;
 
-    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) const override;
-    virtual void map(uint32_t* index_data, uint32_t count) const override;
+    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) override;
+    virtual void map(uint32_t* index_data, uint32_t count) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 

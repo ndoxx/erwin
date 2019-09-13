@@ -8,6 +8,7 @@
 #include "render/render_device.h" // TMP: API access pushed to render thread at some point
 
 #include <bitset>
+#include <iostream>
 
 namespace erwin
 {
@@ -106,12 +107,13 @@ void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, con
     Gfx::device->draw_indexed(va);
 }
 
-
-
 // --------------------------------------------------------------
 
+ShaderBank BatchRenderer2D::shader_bank;
+
 BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
-max_batch_count_(max_batch_count)
+max_batch_count_(max_batch_count),
+max_batches_(num_batches)
 {
 	BufferLayout vertex_color_layout =
 	{
@@ -122,7 +124,7 @@ max_batch_count_(max_batch_count)
 	uint32_t num_vertices = max_batch_count_ * 4; // Quads
 	uint32_t num_indices = max_batch_count_ * 6;  // 2 triangles
 
-	for(int ii=0; ii<num_batches; ++ii)
+	for(int ii=0; ii<max_batches_; ++ii)
 	{
 		auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, vertex_color_layout, DrawMode::Dynamic));
 		auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Dynamic));
@@ -131,6 +133,12 @@ max_batch_count_(max_batch_count)
 		va->set_index_buffer(ib);
 		quad_batch_vas_.push_back(va);
 	}
+
+	std::cout << "num_v: " << num_vertices << std::endl;
+	std::cout << "num_i: " << num_indices << std::endl;
+
+	// Load shader
+	shader_bank.load("shaders/color_shader.glsl");
 }
 
 BatchRenderer2D::~BatchRenderer2D()
@@ -140,12 +148,103 @@ BatchRenderer2D::~BatchRenderer2D()
 
 void BatchRenderer2D::begin_scene(uint32_t layer_index)
 {
-
+	// Reset
+	current_batch_ = 0;
+	current_batch_count_ = 0;
+	current_batch_v_offset_ = 0;
+	current_batch_i_offset_ = 0;
+	// Invalidate all batches
+	for(auto&& batch: quad_batch_vas_)
+		batch->invalidate();
 }
 
 void BatchRenderer2D::end_scene()
 {
+	// Draw last batch
+	const Shader& shader = shader_bank.get("color_shader"_h);
+	shader.bind();
+    Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count_*6);
+	shader.unbind();
+}
 
+void BatchRenderer2D::submit(const RenderState& state)
+{
+	//[[maybe_unused]] uint64_t key = make_key(true, current_layer_);
+	//DLOG("render",1) << "sta: " << std::bitset<32>(key) << std::endl;
+
+	// TMP: direct rendering for now, will submit to render thread then
+	if(state.render_target == RenderTarget::Default)
+		Gfx::device->bind_default_frame_buffer();
+	else
+		W_ASSERT(false, "Only default render target supported for now!");
+
+	Gfx::device->set_cull_mode(state.rasterizer_state);
+
+	if(state.blend_state == BlendState::Alpha)
+		Gfx::device->set_std_blending();
+	else
+		Gfx::device->disable_blending();
+
+	Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
+	if(state.depth_stencil_state.stencil_test_enabled)
+	{
+		Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
+		Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
+	}
+
+	Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
+	if(state.depth_stencil_state.depth_test_enabled)
+		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+}
+
+void BatchRenderer2D::draw_quad(const math::vec2& position, 
+				   			    const math::vec2& scale,
+				   			    const math::vec3& color)
+{
+	// * Select a batch vertex array
+	// Check that current batch has enough space, if not, draw current and start to fill next batch
+	if(current_batch_count_ >= max_batch_count_)
+	{
+		const Shader& shader = shader_bank.get("color_shader"_h);
+		shader.bind();
+    	Gfx::device->draw_indexed(quad_batch_vas_[current_batch_]);
+		shader.unbind();
+
+		++current_batch_;
+		W_ASSERT(current_batch_<=max_batches_, "[BatchRenderer2D] Batch index exceeds max batch number.");
+		current_batch_count_    = 0;
+		current_batch_v_offset_ = 0;
+		current_batch_i_offset_ = 0;
+	}
+
+	// * Push vertices and indices to current batch
+	auto& vb = quad_batch_vas_[current_batch_]->get_vertex_buffer();
+	auto& ib = quad_batch_vas_[current_batch_]->get_index_buffer();
+
+	float vdata[24] = 
+	{
+		position.x()-0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
+		position.x()+0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
+		position.x()+0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
+		position.x()-0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
+	};
+	current_batch_v_offset_ += 24;
+
+	uint32_t idata[6] = 
+	{
+		current_batch_i_offset_ + 0, 
+		current_batch_i_offset_ + 1, 
+		current_batch_i_offset_ + 2, 
+		current_batch_i_offset_ + 2, 
+		current_batch_i_offset_ + 3, 
+		current_batch_i_offset_ + 0
+	};
+	current_batch_i_offset_ += 6;
+
+	vb.stream(vdata, 24, current_batch_v_offset_);
+	ib.stream(idata, 6, current_batch_i_offset_);
+
+	++current_batch_count_;
 }
 
 

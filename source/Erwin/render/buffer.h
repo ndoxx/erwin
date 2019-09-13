@@ -81,8 +81,8 @@ public:
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) const = 0;
-    virtual void map(float* vertex_data, uint32_t count) const = 0;
+    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) = 0;
+    virtual void map(float* vertex_data, uint32_t count) = 0;
 
     // Return the buffer layout
 	inline const BufferLayout& get_layout() const { return layout_; }
@@ -90,6 +90,9 @@ public:
     inline std::size_t get_count() const { return count_; }
     // Return the size (in bytes) of this vertex buffer
     inline std::size_t get_size() const  { return count_*sizeof(float); }
+
+
+    inline void invalidate() { }
 
     // Factory method to create the correct implementation
     // for the current renderer API
@@ -109,8 +112,8 @@ public:
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) const = 0;
-    virtual void map(uint32_t* index_data, uint32_t count) const = 0;
+    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) = 0;
+    virtual void map(uint32_t* index_data, uint32_t count) = 0;
 
     // Return the number of indices
     inline uint32_t get_count() const { return count_; }
@@ -118,6 +121,9 @@ public:
     inline uint32_t get_size() const  { return count_*sizeof(uint32_t); }
     // Return the intended draw primitive
     inline DrawPrimitive get_primitive() const { return primitive_; }
+
+
+    inline void invalidate() { }
 
     // Factory method to create the correct implementation
     // for the current renderer API
@@ -153,8 +159,22 @@ public:
         W_ASSERT(index<vertex_buffers_.size(), "[VertexArray] Vertex buffer index out of bounds");
         return *vertex_buffers_[index];
     }
+    inline VertexBuffer& get_vertex_buffer(uint32_t index=0)
+    {
+        W_ASSERT(index<vertex_buffers_.size(), "[VertexArray] Vertex buffer index out of bounds");
+        return *vertex_buffers_[index];
+    }
     inline const std::vector<std::shared_ptr<VertexBuffer>>& get_vertex_buffers() const { return vertex_buffers_; }
     inline const IndexBuffer& get_index_buffer() const { return *index_buffer_; }
+    inline IndexBuffer& get_index_buffer() { return *index_buffer_; }
+
+    // UNSAFE invalidate all data in all buffers
+    inline void invalidate()
+    {
+        index_buffer_->invalidate();
+        for(auto&& vb: vertex_buffers_)
+            vb->invalidate();
+    }
 
     // Factory method to create the correct implementation
     // for the current renderer API

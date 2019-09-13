@@ -46,11 +46,11 @@ rd_handle_(0)
 
     glGenBuffers(1, &rd_handle_);
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferData(GL_ARRAY_BUFFER, count_*sizeof(float), vertex_data, gl_draw_mode);
+    glBufferData(GL_ARRAY_BUFFER, count_*layout.get_stride(), vertex_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
-    DLOGI << "Size:         " << count_*sizeof(float) << "B" << std::endl;
+    DLOGI << "Size:         " << count_*layout.get_stride() << "B" << std::endl;
 	DLOGI << "Layout:       ";
 	for(auto&& element: layout)
 	{
@@ -78,13 +78,13 @@ void OGLVertexBuffer::unbind() const
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset) const
+void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset)
 {
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ARRAY_BUFFER, (GLuint)offset, count*sizeof(float), vertex_data);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(offset*sizeof(float)), count*sizeof(float), vertex_data);
 }
 
-void OGLVertexBuffer::map(float* vertex_data, uint32_t count) const
+void OGLVertexBuffer::map(float* vertex_data, uint32_t count)
 {
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
 	void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
@@ -105,7 +105,7 @@ rd_handle_(0)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Vertex count: " << count_ << std::endl;
+    DLOGI << "Index count:  " << count_ << std::endl;
     DLOGI << "Size:         " << count_*sizeof(float) << "B" << std::endl;
 }
 
@@ -128,13 +128,13 @@ void OGLIndexBuffer::unbind() const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void OGLIndexBuffer::stream(uint32_t* index_data, uint32_t count, std::size_t offset) const
+void OGLIndexBuffer::stream(uint32_t* index_data, uint32_t count, std::size_t offset)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLuint)offset, count*sizeof(uint32_t), index_data);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)offset, count*sizeof(uint32_t), index_data);
 }
 
-void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count) const
+void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
 	void* ptr = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
