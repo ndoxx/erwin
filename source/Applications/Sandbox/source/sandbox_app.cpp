@@ -174,7 +174,7 @@ public:
 
 	virtual void on_attach() override
 	{
-		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(16,1000);
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,4096);
 	}
 
 protected:
@@ -189,14 +189,14 @@ protected:
 			batch_renderer_2D_->submit(render_state);
 
 			// Draw a grid of quads
-			uint32_t len = 100;
+			uint32_t len = 150;
 			for(int xx=0; xx<len; ++xx)
 			{
 				for(int yy=0; yy<len; ++yy)
 				{
 					batch_renderer_2D_->draw_quad(
 					math::vec2(-0.9f + 1.8*xx/float(len-1), -0.9f + 1.8*yy/float(len-1)),
-					math::vec2(0.99f/len,0.99f/len),
+					math::vec2(1.0f/len,1.0f/len),
 					math::vec3(xx/float(len-1),yy/float(len-1),1.f-xx/float(len-1)));
 				}
 			}

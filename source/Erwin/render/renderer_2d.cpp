@@ -111,28 +111,23 @@ void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, con
 
 ShaderBank BatchRenderer2D::shader_bank;
 
-BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
-max_batch_count_(max_batch_count),
-max_batches_(num_batches)
+static const BufferLayout s_vertex_color_layout =
 {
-	BufferLayout vertex_color_layout =
-	{
-	    {"a_position"_h, ShaderDataType::Vec3},
-	    {"a_color"_h,    ShaderDataType::Vec3},
-	};
+    {"a_position"_h, ShaderDataType::Vec3},
+    {"a_color"_h,    ShaderDataType::Vec3},
+};
 
-	uint32_t num_vertices = max_batch_count_ * 4; // Quads
-	uint32_t num_indices = max_batch_count_ * 6;  // 2 triangles
+static const int VERT_FLOAT_COUNT = 4*6; // Num vertex float component per quad (4 vertex * 6 components)
+static const int IND_UINT_COUNT = 6;     // Num indices per quad (2 triangles * 3 vertices per triangle)
 
-	for(int ii=0; ii<max_batches_; ++ii)
-	{
-		auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, vertex_color_layout, DrawMode::Dynamic));
-		auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Dynamic));
-		auto va = std::shared_ptr<VertexArray>(VertexArray::create());
-		va->set_vertex_buffer(vb);
-		va->set_index_buffer(ib);
-		quad_batch_vas_.push_back(va);
-	}
+BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
+max_batch_count_(max_batch_count)
+{
+	vertex_list_.reserve(max_batch_count * VERT_FLOAT_COUNT);
+	index_list_.reserve(max_batch_count * IND_UINT_COUNT);
+
+	for(int ii=0; ii<num_batches; ++ii)
+		create_batch(s_vertex_color_layout);
 
 	// Load shader
 	shader_bank.load("shaders/color_shader.glsl");
@@ -145,31 +140,64 @@ BatchRenderer2D::~BatchRenderer2D()
 	delete query_timer_;
 }
 
+void BatchRenderer2D::create_batch(const BufferLayout& layout)
+{
+	uint32_t num_vertices = max_batch_count_ * 4; // 4 vertices per quad
+	uint32_t num_indices  = max_batch_count_ * 6; // 3 indices * 2 triangles per quad
+
+	auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, layout, DrawMode::Stream));
+	auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Stream));
+	auto va = std::shared_ptr<VertexArray>(VertexArray::create());
+	va->set_vertex_buffer(vb);
+	va->set_index_buffer(ib);
+	quad_batch_vas_.push_back(va);
+}
+
+void BatchRenderer2D::flush()
+{
+	// Map vertex / index lists to GPU buffers
+	quad_batch_vas_[current_batch_]->bind();
+	auto& vb = quad_batch_vas_[current_batch_]->get_vertex_buffer();
+	auto& ib = quad_batch_vas_[current_batch_]->get_index_buffer();
+	vb.map(vertex_list_.data(), vertex_list_.size());
+	ib.map(index_list_.data(), index_list_.size());
+
+	// Clear lists for next batches
+	vertex_list_.clear();
+	index_list_.clear();
+}
+
 void BatchRenderer2D::begin_scene(uint32_t layer_index)
 {
 	// Reset
 	current_batch_ = 0;
-	current_batch_count_ = 0;
-	current_batch_v_offset_ = 0;
-	current_batch_i_offset_ = 0;
-
-	if(profiling_enabled_)
-		query_timer_->start();
 }
 
 void BatchRenderer2D::end_scene()
 {
-	// Draw last batch
+	// Flush last batch
+	flush();
+
+	// * DRAW
+	if(profiling_enabled_)
+		query_timer_->start();
+
 	const Shader& shader = shader_bank.get("color_shader"_h);
 	shader.bind();
-    Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count_*6);
+
+	// Draw all full batches plus the last one
+	uint32_t current_batch_count = index_list_.size() / 6;
+	for(int ii=0; ii<current_batch_; ++ii)
+    	Gfx::device->draw_indexed(quad_batch_vas_[ii], max_batch_count_*6);
+    Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count*6);
+	
 	shader.unbind();
 
 	if(profiling_enabled_)
 	{
 		auto render_duration = query_timer_->stop();
 		// TMP: display curve in widget instead
-		DLOG("render",1) << std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count() << "µs" << std::endl;
+		std::cout << std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count() << "µs" << std::endl;
 	}
 }
 
@@ -209,27 +237,25 @@ void BatchRenderer2D::draw_quad(const math::vec2& position,
 {
 	// * Select a batch vertex array
 	// Check that current batch has enough space, if not, draw current and start to fill next batch
-	if(current_batch_count_ == max_batch_count_)
+	uint32_t current_batch_count = index_list_.size() / 6;
+	if(current_batch_count == max_batch_count_)
 	{
-		const Shader& shader = shader_bank.get("color_shader"_h);
-		shader.bind();
-    	Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count_*6);
-		shader.unbind();
+		flush();
+
+		// If current batch is the last one in list, add new batch
+		if(current_batch_ == quad_batch_vas_.size()-1)
+		{
+			create_batch(s_vertex_color_layout);
+
+			DLOGW("render") << "[BatchRenderer2D] New batch generated." << std::endl;
+			DLOGI << "#batches: " << quad_batch_vas_.size() << std::endl;
+		}
 
 		++current_batch_;
-		W_ASSERT(current_batch_<=max_batches_, "[BatchRenderer2D] Batch index exceeds max batch number.");
-		current_batch_count_    = 0;
-		current_batch_v_offset_ = 0;
-		current_batch_i_offset_ = 0;
+		current_batch_count = 0;
 	}
 
 	// * Push vertices and indices to current batch
-	auto& vb = quad_batch_vas_[current_batch_]->get_vertex_buffer();
-	auto& ib = quad_batch_vas_[current_batch_]->get_index_buffer();
-
-	static const int VERT_FLOAT_COUNT = 24;
-	static const int IND_UINT_COUNT = 6;
-
 	float vdata[VERT_FLOAT_COUNT] = 
 	{
 		position.x()-0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
@@ -238,7 +264,7 @@ void BatchRenderer2D::draw_quad(const math::vec2& position,
 		position.x()-0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
 	};
 
-	uint32_t v_offset = current_batch_count_ * 4;
+	uint32_t v_offset = current_batch_count * 4;
 	uint32_t idata[IND_UINT_COUNT] = 
 	{
 		v_offset + 0, 
@@ -249,15 +275,8 @@ void BatchRenderer2D::draw_quad(const math::vec2& position,
 		v_offset + 0
 	};
 
-	quad_batch_vas_[current_batch_]->bind();
-	vb.stream(vdata, VERT_FLOAT_COUNT, current_batch_v_offset_);
-	ib.stream(idata, IND_UINT_COUNT, current_batch_i_offset_);
-	quad_batch_vas_[current_batch_]->unbind();
-
-	// Update batch variables
-	current_batch_v_offset_ += VERT_FLOAT_COUNT;
-	current_batch_i_offset_ += IND_UINT_COUNT;
-	++current_batch_count_;
+	vertex_list_.insert(vertex_list_.end(), vdata, vdata + VERT_FLOAT_COUNT);
+	index_list_.insert(index_list_.end(), idata, idata + IND_UINT_COUNT);
 
 	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
 }

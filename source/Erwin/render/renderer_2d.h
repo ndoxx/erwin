@@ -49,19 +49,25 @@ public:
 	void draw_quad(const math::vec2& position, 
 				   const math::vec2& scale,
 				   const math::vec3& color);
-	
+
 	inline void set_profiling_enabled(bool value = true) { profiling_enabled_ = value; }
 
 	static ShaderBank shader_bank;
 
 private:
+	// Add a new batch (vertex array) to the list
+	void create_batch(const BufferLayout& layout);
+	// Draw current batch and empty vertex / index list
+	void flush();
+
+private:
 	std::vector<std::shared_ptr<VertexArray>> quad_batch_vas_;
-	uint32_t max_batch_count_; // max number of quads in a batch
-	uint32_t max_batches_;     // max number of batches
+
+	std::vector<float> vertex_list_;
+	std::vector<uint32_t> index_list_;
+
+	uint32_t max_batch_count_;   // max number of quads in a batch
 	uint32_t current_batch_ = 0;
-	uint32_t current_batch_count_ = 0;
-	uint32_t current_batch_v_offset_ = 0;
-	uint32_t current_batch_i_offset_ = 0;
 
 	bool profiling_enabled_ = false;
 	QueryTimer* query_timer_;
