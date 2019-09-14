@@ -128,6 +128,27 @@ protected:
     DrawPrimitive primitive_;
 };
 
+// SSBO / UAV
+class ShaderStorageBuffer
+{
+public:
+    ShaderStorageBuffer(uint32_t count, uint32_t struct_size): count_(count), struct_size_(struct_size) { }
+    virtual ~ShaderStorageBuffer() = default;
+
+    virtual void bind() const = 0;
+    virtual void unbind() const = 0;
+    virtual void attach(uint32_t slot) const = 0;
+    virtual void stream(void* data, uint32_t count, std::size_t offset) = 0;
+    virtual void map(void* data, uint32_t count) = 0;
+
+    // Factory method to create the correct implementation
+    static ShaderStorageBuffer* create(void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+
+protected:
+    uint32_t count_;
+    uint32_t struct_size_;
+};
+
 class VertexArray
 {
 public:

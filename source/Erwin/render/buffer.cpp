@@ -120,4 +120,18 @@ VertexArray* VertexArray::create()
     }
 }
 
+ShaderStorageBuffer* ShaderStorageBuffer::create(void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "ShaderStorageBuffer: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+            return new OGLShaderStorageBuffer(data, count, struct_size, mode);
+    }
+}
+
+
 } // namespace erwin

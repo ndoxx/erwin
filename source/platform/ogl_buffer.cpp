@@ -154,6 +154,59 @@ void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 }
 
+// ----------------------------------------------------------------------------------
+
+OGLShaderStorageBuffer::OGLShaderStorageBuffer(void* data, uint32_t count, uint32_t struct_size, DrawMode mode):
+ShaderStorageBuffer(count, struct_size)
+{
+    GLenum gl_draw_mode = to_ogl_draw_mode(mode);
+
+    glGenBuffers(1, &rd_handle_);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, count_*struct_size_, data, gl_draw_mode);
+
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+    DLOGI << "Element count: " << count_ << std::endl;
+    DLOGI << "Size:          " << count_*struct_size_ << "B" << std::endl;
+}
+
+OGLShaderStorageBuffer::~OGLShaderStorageBuffer()
+{
+    // Unbind and delete
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glDeleteBuffers(1, &rd_handle_);
+
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+}
+
+void OGLShaderStorageBuffer::bind() const
+{
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
+}
+
+void OGLShaderStorageBuffer::attach(uint32_t slot) const
+{
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, rd_handle_);
+}
+
+void OGLShaderStorageBuffer::unbind() const
+{
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void OGLShaderStorageBuffer::stream(void* data, uint32_t count, std::size_t offset)
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset*struct_size_, count*struct_size_, data);
+}
+
+void OGLShaderStorageBuffer::map(void* data, uint32_t count)
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
+	void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+	memcpy(ptr, data, count*struct_size_);
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+}
 
 // ----------------------------------------------------------------------------------
 
@@ -240,5 +293,7 @@ void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
 					 << std::static_pointer_cast<OGLIndexBuffer>(p_ib)->get_handle() << "]" << std::endl;
 }
+
+// ----------------------------------------------------------------------------------
 
 } // namespace erwin

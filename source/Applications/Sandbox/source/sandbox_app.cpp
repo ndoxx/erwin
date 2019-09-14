@@ -13,8 +13,6 @@
 
 using namespace erwin;
 
-static std::unique_ptr<Renderer2D> s_renderer_2D;
-
 class Layer2D: public Layer
 {
 public:
@@ -40,14 +38,14 @@ public:
 	    ImGui::Begin("Renderer2D");
 
         if(ImGui::Checkbox("Profile", &enable_profiling_))
-        	s_renderer_2D->set_profiling_enabled(enable_profiling_);
+        	batch_renderer_2D_->set_profiling_enabled(enable_profiling_);
 
 	    ImGui::End();
 	}
 
 	virtual void on_attach() override
 	{
-		s_renderer_2D = std::make_unique<Renderer2D>();
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,8192);
 
 		// Colored triangle
 		BufferLayout vertex_color_layout =
@@ -99,14 +97,14 @@ public:
 		dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 
 		// Load shaders
-		Renderer2D::shader_bank.load("shaders/color_shader.glsl");
-		Renderer2D::shader_bank.load("shaders/tex_shader.glsl");
+		BatchRenderer2D::shader_bank.load("shaders/color_shader.glsl");
+		BatchRenderer2D::shader_bank.load("shaders/tex_shader.glsl");
 	}
 
 protected:
 	virtual void on_update() override
 	{
-		s_renderer_2D->begin_scene(get_priority());
+		batch_renderer_2D_->begin_scene(get_priority());
 		{
 			// TODO: group shader hname & ShaderParameters in Material class
 			// TODO: handle transforms
@@ -117,20 +115,22 @@ protected:
 			render_state.render_target = RenderTarget::Default;
 			render_state.rasterizer_state = CullMode::Back;
 			render_state.blend_state = BlendState::Opaque;
-			s_renderer_2D->submit(render_state);
+			batch_renderer_2D_->submit(render_state);
 
 			// Per-instance draw commands
 			ShaderParameters sq_params;
 			sq_params.set_texture_slot("us_albedo"_h, dirt_tex_);
-			s_renderer_2D->submit(sq_va_, "tex_shader"_h, sq_params);
+			batch_renderer_2D_->submit(sq_va_, "tex_shader"_h, sq_params);
 
 			ShaderParameters tri_params;
-			s_renderer_2D->submit(tri_va_, "color_shader"_h, tri_params);
+			batch_renderer_2D_->submit(tri_va_, "color_shader"_h, tri_params);
 		}
-		s_renderer_2D->end_scene();
+		batch_renderer_2D_->end_scene();
 	}
 
 private:
+	std::unique_ptr<BatchRenderer2D> batch_renderer_2D_;
+
 	std::shared_ptr<VertexBuffer> tri_vb_;
 	std::shared_ptr<IndexBuffer>  tri_ib_;
 	std::shared_ptr<VertexArray>  tri_va_;
@@ -189,7 +189,7 @@ public:
 
 	virtual void on_attach() override
 	{
-		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,4096);
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,8192);
 	}
 
 protected:
@@ -204,7 +204,7 @@ protected:
 			batch_renderer_2D_->submit(render_state);
 
 			// Draw a grid of quads
-			uint32_t len = 100;
+			uint32_t len = 300;
 			for(int xx=0; xx<len; ++xx)
 			{
 				for(int yy=0; yy<len; ++yy)
@@ -236,8 +236,8 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		//push_layer(new Layer2D("A"));
 		push_layer(new LayerBatch2D("A"));
+		// push_layer(new Layer2D("A"));
 	}
 
 	~Sandbox()

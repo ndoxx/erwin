@@ -552,3 +552,8 @@ J'ai repris le bon vieux GPU query timer de WCore, et lui ai fait une interface 
 
 ##Intern strings
 Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de parsing des sources. J'ai viré toutes les dépendances à TinyXML, l'output est un simple fichier .txt clé/valeur\n parsé par le _InternStringLocator_.
+
+
+#[14-09-19]
+
+NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai générer les UVs depuis le geometry shader, pas la peine de les stocker en attributs de vertex !

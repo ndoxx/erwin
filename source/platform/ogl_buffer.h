@@ -60,4 +60,20 @@ private:
     uint32_t vb_index_ = 0;
 };
 
+class OGLShaderStorageBuffer: public ShaderStorageBuffer
+{
+public:
+    OGLShaderStorageBuffer(void* data, uint32_t count, uint32_t struct_size, DrawMode mode);
+    virtual ~OGLShaderStorageBuffer();
+
+    virtual void bind() const override;
+    virtual void unbind() const override;
+    virtual void attach(uint32_t slot) const override;
+    virtual void stream(void* data, uint32_t count, std::size_t offset) override;
+    virtual void map(void* data, uint32_t count) override;
+
+protected:
+    uint32_t rd_handle_;
+};
+
 } // namespace erwin

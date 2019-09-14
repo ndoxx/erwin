@@ -20,10 +20,15 @@ public:
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) override;
 
     // * Draw commands
-    // Draw content of specified vertex array
+    // Draw content of specified vertex array using indices
     virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
                               uint32_t count = 0,
     						  std::size_t offset = 0) override;
+    // Draw content of vertex array using only vertex buffer data
+    virtual void draw_array(const std::shared_ptr<VertexArray>& vertexArray,
+                            DrawPrimitive prim = DrawPrimitive::Triangles,
+                            uint32_t count = 0,
+                            std::size_t offset = 0) override;
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) override;
     // Clear currently bound framebuffer
