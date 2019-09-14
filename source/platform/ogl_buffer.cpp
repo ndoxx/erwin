@@ -30,6 +30,16 @@ static std::string to_string(ShaderDataType type)
 	}
 }
 
+static std::string to_string(DrawMode mode)
+{
+	switch(mode)
+    {
+    	case DrawMode::Static:  return "Static";
+    	case DrawMode::Stream:  return "Stream";
+    	case DrawMode::Dynamic: return "Dynamic";
+    }
+}
+
 static GLenum to_ogl_draw_mode(DrawMode mode)
 {
 	switch(mode)
@@ -53,6 +63,7 @@ rd_handle_(0)
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
     DLOGI << "Size:         " << count_*layout_.get_stride() << "B" << std::endl;
+    DLOGI << "Draw mode:    " << to_string(mode) << std::endl;
 	DLOGI << "Layout:       ";
 	for(auto&& element: layout_)
 		DLOGI << "[" << to_string(element.type) << "]";
@@ -107,6 +118,7 @@ rd_handle_(0)
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Index count:  " << count_ << std::endl;
     DLOGI << "Size:         " << count_*sizeof(float) << "B" << std::endl;
+    DLOGI << "Draw mode:    " << to_string(mode) << std::endl;
 }
 
 OGLIndexBuffer::~OGLIndexBuffer()

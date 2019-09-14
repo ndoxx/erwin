@@ -4,7 +4,8 @@
 #include "render/shader.h"
 #include "render/render_state.h" // For access to enums
 #include "render/query_timer.h" // TMP, will be moved to render thread
-#include "math/math3d.h"
+
+#include "glm/glm.hpp"
 
 namespace erwin
 {
@@ -34,6 +35,11 @@ private:
 	QueryTimer* query_timer_;
 };
 
+struct RenderStats
+{
+	float render_time = 0.f;
+	uint32_t batches = 0;
+};
 
 class BatchRenderer2D
 {
@@ -46,11 +52,15 @@ public:
 
 	void submit(const RenderState& state);
 
-	void draw_quad(const math::vec2& position, 
-				   const math::vec2& scale,
-				   const math::vec3& color);
+	void draw_quad(const glm::vec2& position, 
+				   const glm::vec2& scale,
+				   const glm::vec3& color);
 
 	inline void set_profiling_enabled(bool value = true) { profiling_enabled_ = value; }
+	RenderStats get_stats() const
+	{
+		return {last_render_time_, current_batch_};
+	}
 
 	static ShaderBank shader_bank;
 
@@ -71,6 +81,7 @@ private:
 
 	bool profiling_enabled_ = false;
 	QueryTimer* query_timer_;
+	float last_render_time_ = 0.f;
 };
 
 } // namespace erwin

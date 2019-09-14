@@ -170,6 +170,21 @@ public:
         	batch_renderer_2D_->set_profiling_enabled(enable_profiling_);
 
 	    ImGui::End();
+
+	    if(enable_profiling_)
+	    {
+	    	ImGui::Begin("Stats");
+            	ImGui::Text("#Batches: %d", render_stats_.batches);
+            	ImGui::Separator();
+            	ImGui::PlotVar("Draw time (µs)", render_stats_.render_time, 0.0f, 16660.f);
+	    	
+	            if(++frame_cnt_>200)
+	            {
+	                frame_cnt_ = 0;
+	                ImGui::PlotVarFlushOldEntries();
+	            }
+	    	ImGui::End();
+	    }
 	}
 
 	virtual void on_attach() override
@@ -189,24 +204,28 @@ protected:
 			batch_renderer_2D_->submit(render_state);
 
 			// Draw a grid of quads
-			uint32_t len = 150;
+			uint32_t len = 100;
 			for(int xx=0; xx<len; ++xx)
 			{
 				for(int yy=0; yy<len; ++yy)
 				{
 					batch_renderer_2D_->draw_quad(
-					math::vec2(-0.9f + 1.8*xx/float(len-1), -0.9f + 1.8*yy/float(len-1)),
-					math::vec2(1.0f/len,1.0f/len),
-					math::vec3(xx/float(len-1),yy/float(len-1),1.f-xx/float(len-1)));
+					{-0.95f + 1.9f*xx/float(len-1), -0.95f + 1.9f*yy/float(len-1)},
+					{1.0f/len,1.0f/len},
+					{xx/float(len-1),yy/float(len-1),1.f-xx/float(len-1)});
 				}
 			}
 		}
 		batch_renderer_2D_->end_scene();
+
+		render_stats_ = batch_renderer_2D_->get_stats();
 	}
 
 private:
 	std::unique_ptr<BatchRenderer2D> batch_renderer_2D_;
+	RenderStats render_stats_;
 	bool enable_profiling_ = false;
+	uint32_t frame_cnt_ = 0;
 };
 
 class Sandbox: public Application

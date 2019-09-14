@@ -79,6 +79,7 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_demo.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_draw.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp)
 
 add_definitions(-D__DEBUG__)
@@ -102,6 +103,7 @@ add_library(erwin SHARED
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 set_target_properties(erwin PROPERTIES PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/source/erwin.h")

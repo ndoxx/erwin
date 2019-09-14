@@ -117,8 +117,8 @@ static const BufferLayout s_vertex_color_layout =
     {"a_color"_h,    ShaderDataType::Vec3},
 };
 
-static const int VERT_FLOAT_COUNT = 4*6; // Num vertex float component per quad (4 vertex * 6 components)
-static const int IND_UINT_COUNT = 6;     // Num indices per quad (2 triangles * 3 vertices per triangle)
+static const int VERT_FLOAT_COUNT = 3*6;//4*6; // Num vertex float component per quad (4 vertex * 6 components)
+static const int IND_UINT_COUNT = 3;//6;     // Num indices per quad (2 triangles * 3 vertices per triangle)
 
 BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
 max_batch_count_(max_batch_count)
@@ -130,7 +130,7 @@ max_batch_count_(max_batch_count)
 		create_batch(s_vertex_color_layout);
 
 	// Load shader
-	shader_bank.load("shaders/color_shader.glsl");
+	shader_bank.load("shaders/color_dup_shader.glsl");
 
 	query_timer_ = QueryTimer::create();
 }
@@ -142,8 +142,10 @@ BatchRenderer2D::~BatchRenderer2D()
 
 void BatchRenderer2D::create_batch(const BufferLayout& layout)
 {
-	uint32_t num_vertices = max_batch_count_ * 4; // 4 vertices per quad
-	uint32_t num_indices  = max_batch_count_ * 6; // 3 indices * 2 triangles per quad
+	DLOGN("render") << "[BatchRenderer2D] Generating new batch." << std::endl;
+	
+	uint32_t num_vertices = max_batch_count_ * 3; // 3 vertices per triangle
+	uint32_t num_indices  = max_batch_count_ * 3; // 3 indices per triangle
 
 	auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, layout, DrawMode::Stream));
 	auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Stream));
@@ -151,6 +153,8 @@ void BatchRenderer2D::create_batch(const BufferLayout& layout)
 	va->set_vertex_buffer(vb);
 	va->set_index_buffer(ib);
 	quad_batch_vas_.push_back(va);
+
+	DLOG("render",1) << "New batch size is: " << quad_batch_vas_.size() << std::endl;
 }
 
 void BatchRenderer2D::flush()
@@ -176,28 +180,28 @@ void BatchRenderer2D::begin_scene(uint32_t layer_index)
 void BatchRenderer2D::end_scene()
 {
 	// Flush last batch
+	uint32_t current_batch_count = index_list_.size() / 3;
 	flush();
 
 	// * DRAW
 	if(profiling_enabled_)
 		query_timer_->start();
 
-	const Shader& shader = shader_bank.get("color_shader"_h);
+	const Shader& shader = shader_bank.get("color_dup_shader"_h);
 	shader.bind();
 
-	// Draw all full batches plus the last one
-	uint32_t current_batch_count = index_list_.size() / 6;
+	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
-    	Gfx::device->draw_indexed(quad_batch_vas_[ii], max_batch_count_*6);
-    Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count*6);
+    	Gfx::device->draw_indexed(quad_batch_vas_[ii], max_batch_count_*3);
+    if(current_batch_count)
+    	Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count*3);
 	
 	shader.unbind();
 
 	if(profiling_enabled_)
 	{
 		auto render_duration = query_timer_->stop();
-		// TMP: display curve in widget instead
-		std::cout << std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count() << "µs" << std::endl;
+		last_render_time_ = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 }
 
@@ -231,48 +235,40 @@ void BatchRenderer2D::submit(const RenderState& state)
 		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
 }
 
-void BatchRenderer2D::draw_quad(const math::vec2& position, 
-				   			    const math::vec2& scale,
-				   			    const math::vec3& color)
+void BatchRenderer2D::draw_quad(const glm::vec2& position, 
+				   			    const glm::vec2& scale,
+				   			    const glm::vec3& color)
 {
 	// * Select a batch vertex array
 	// Check that current batch has enough space, if not, draw current and start to fill next batch
-	uint32_t current_batch_count = index_list_.size() / 6;
+	uint32_t current_batch_count = index_list_.size() / 3;
 	if(current_batch_count == max_batch_count_)
 	{
 		flush();
 
 		// If current batch is the last one in list, add new batch
 		if(current_batch_ == quad_batch_vas_.size()-1)
-		{
 			create_batch(s_vertex_color_layout);
-
-			DLOGW("render") << "[BatchRenderer2D] New batch generated." << std::endl;
-			DLOGI << "#batches: " << quad_batch_vas_.size() << std::endl;
-		}
 
 		++current_batch_;
 		current_batch_count = 0;
 	}
 
 	// * Push vertices and indices to current batch
+	// We only need to store the lower right triangle as we can regenerate the other one in the geometry shader
 	float vdata[VERT_FLOAT_COUNT] = 
 	{
-		position.x()-0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
-		position.x()+0.5f*scale.x(), position.y()-0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
-		position.x()+0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
-		position.x()-0.5f*scale.x(), position.y()+0.5f*scale.y(), 0.0f,   color.r(), color.g(), color.b(),
+		position.x-0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
+		position.x+0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
+		position.x+0.5f*scale.x, position.y+0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
 	};
 
-	uint32_t v_offset = current_batch_count * 4;
+	uint32_t v_offset = current_batch_count * 3;
 	uint32_t idata[IND_UINT_COUNT] = 
 	{
 		v_offset + 0, 
 		v_offset + 1, 
-		v_offset + 2, 
-		v_offset + 2, 
-		v_offset + 3, 
-		v_offset + 0
+		v_offset + 2
 	};
 
 	vertex_list_.insert(vertex_list_.end(), vdata, vdata + VERT_FLOAT_COUNT);
