@@ -33,6 +33,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
 

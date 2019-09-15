@@ -14,6 +14,7 @@ namespace erwin
 {
 
 static const uint32_t s_num_batches_init = 1;
+static const uint32_t s_max_batches = 32;
 
 ShaderBank BatchRenderer2D::shader_bank;
 
@@ -34,7 +35,9 @@ static const BufferLayout s_vertex_color_layout =
 
 static const int VERT_FLOAT_COUNT = 3*6; // Num vertex float component per quad (4 vertex * 6 components)
 
-Renderer2D::Renderer2D()
+Renderer2D::Renderer2D(uint32_t max_batch_count):
+max_batch_count_(max_batch_count),
+current_batch_(0)
 {
 	query_timer_ = QueryTimer::create();
 }
@@ -46,7 +49,7 @@ Renderer2D::~Renderer2D()
 
 
 BatchRenderer2D::BatchRenderer2D(uint32_t max_batch_count):
-max_batch_count_(max_batch_count)
+Renderer2D(max_batch_count)
 {
 	vertex_list_.reserve(max_batch_count * VERT_FLOAT_COUNT);
 
@@ -68,13 +71,10 @@ void BatchRenderer2D::create_batch(const BufferLayout& layout)
 	DLOGN("render") << "[BatchRenderer2D] Generating new batch." << std::endl;
 	
 	uint32_t num_vertices = max_batch_count_ * 3; // 3 vertices per triangle
-	//uint32_t num_indices  = max_batch_count_ * 3; // 3 indices per triangle
 
 	auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, layout, DrawMode::Stream));
-	//auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(nullptr, num_indices, DrawPrimitive::Triangles, DrawMode::Stream));
 	auto va = std::shared_ptr<VertexArray>(VertexArray::create());
 	va->set_vertex_buffer(vb);
-	//va->set_index_buffer(ib);
 	quad_batch_vas_.push_back(va);
 
 	DLOG("render",1) << "New batch size is: " << quad_batch_vas_.size() << std::endl;
@@ -82,14 +82,13 @@ void BatchRenderer2D::create_batch(const BufferLayout& layout)
 
 void BatchRenderer2D::flush()
 {
-	// Map vertex / index lists to GPU buffers
+	// Map vertex list to GPU buffer
 	quad_batch_vas_[current_batch_]->bind();
 	auto& vb = quad_batch_vas_[current_batch_]->get_vertex_buffer();
 	vb.map(vertex_list_.data(), vertex_list_.size());
 
 	// Clear lists for next batches
 	vertex_list_.clear();
-	//index_list_.clear();
 }
 
 void BatchRenderer2D::begin_scene(uint32_t layer_index)
@@ -115,13 +114,11 @@ void BatchRenderer2D::end_scene()
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
-    	// Gfx::device->draw_indexed(quad_batch_vas_[ii], max_batch_count_*3);
     	Gfx::device->draw_array(quad_batch_vas_[ii], DrawPrimitive::Triangles, max_batch_count_*3);
 		++stats_.batches;
 	}
     if(current_batch_count)
     {
-    	//Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count*3);
     	Gfx::device->draw_array(quad_batch_vas_[current_batch_], DrawPrimitive::Triangles, current_batch_count*3);
 		++stats_.batches;
     }
@@ -191,14 +188,21 @@ void BatchRenderer2D::draw_quad(const glm::vec2& position,
 	// * Select a batch vertex array
 	// Check that current batch has enough space, if not, flush and start to fill next batch
 	uint32_t current_batch_count = vertex_list_.size() / VERT_FLOAT_COUNT;
-	// uint32_t current_batch_count = index_list_.size() / 3;
 	if(current_batch_count == max_batch_count_)
 	{
 		flush();
 
 		// If current batch is the last one in list, add new batch
 		if(current_batch_ >= quad_batch_vas_.size()-1)
-			create_batch(s_vertex_color_layout);
+		{
+			if(current_batch_ < s_max_batches-1)
+				create_batch(s_vertex_color_layout);
+			else
+			{
+				DLOGW("render") << "[BatchRenderer2D] Hitting max batch number." << std::endl;
+				return;
+			}
+		}
 
 		++current_batch_;
 		current_batch_count = 0;
@@ -218,13 +222,34 @@ void BatchRenderer2D::draw_quad(const glm::vec2& position,
 	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
 }
 
+void BatchRenderer2D::set_batch_size(uint32_t value)
+{
+	if(value<200)
+		return;
+
+	// Avoid lowering the batch size when the number of batches is already maximal
+	uint32_t num_batches = quad_batch_vas_.size();
+	if(num_batches>=s_max_batches && value<max_batch_count_)
+		return;
+
+	max_batch_count_ = value;
+	quad_batch_vas_.clear();
+	for(int ii=0; ii<num_batches; ++ii)
+		create_batch(s_vertex_color_layout);
+
+	vertex_list_.clear();
+	vertex_list_.reserve(max_batch_count_);
+
+	current_batch_ = 0;
+}
+
+
 // ----------------------------------------------------------------------------------------
 
 ShaderBank InstanceRenderer2D::shader_bank;
 
-
 InstanceRenderer2D::InstanceRenderer2D(uint32_t max_batch_count):
-max_batch_count_(max_batch_count)
+Renderer2D(max_batch_count)
 {
 	instance_data_.reserve(max_batch_count_);
 
@@ -366,7 +391,15 @@ void InstanceRenderer2D::draw_quad(const glm::vec2& position,
 
 		// If current batch is the last one in list, add new batch
 		if(current_batch_ >= batches_.size()-1)
-			create_batch(current_batch_+1);
+		{
+			if(current_batch_ < s_max_batches-1)
+				create_batch(current_batch_+1);
+			else
+			{
+				DLOGW("render") << "[InstanceRenderer2D] Hitting max batch number." << std::endl;
+				return;
+			}
+		}
 
 		++current_batch_;
 		current_batch_count = 0;
@@ -377,6 +410,28 @@ void InstanceRenderer2D::draw_quad(const glm::vec2& position,
 	// instance_data_.push_back({{0.f,0.f},{1.f,1.f},{1.f,0.5f,0.f}});
 
 	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
+}
+
+void InstanceRenderer2D::set_batch_size(uint32_t value)
+{
+	if(value<200)
+		return;
+
+	// Avoid lowering the batch size when the number of batches is already maximal
+	uint32_t num_batches = batches_.size();
+	if(num_batches>=s_max_batches && value<max_batch_count_)
+		return;
+
+	max_batch_count_ = value;
+
+	batches_.clear();
+	for(int ii=0; ii<num_batches; ++ii)
+		create_batch(ii);
+
+	instance_data_.clear();
+	instance_data_.reserve(max_batch_count_);
+
+	current_batch_ = 0;
 }
 
 } // namespace erwin

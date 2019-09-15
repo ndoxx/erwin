@@ -3,6 +3,7 @@
 #include <string>
 
 #include "event/window_events.h"
+#include "core/game_clock.h"
 
 namespace erwin
 {
@@ -20,7 +21,7 @@ public:
 	inline void set_priority(uint32_t priority) { priority_ = priority; }
 	inline uint32_t get_priority() const        { return priority_; }
 	inline bool is_enabled() const              { return enabled_; }
-	inline void update()                        { if(enabled_) on_update(); }
+	inline void update(GameClock& clock)        { if(enabled_) on_update(clock); }
 
 	virtual void on_attach() { }
 	virtual void on_detach() { }
@@ -34,7 +35,7 @@ public:
 	REACT(WindowResizeEvent)
 
 protected:
-	virtual void on_update() = 0;
+	virtual void on_update(GameClock& clock) = 0;
 
 private:
 	std::string debug_name_;

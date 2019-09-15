@@ -9,6 +9,8 @@
 
 #include "render/render_device.h"
 
+#include <iostream>
+
 namespace erwin
 {
 
@@ -104,13 +106,20 @@ void Application::run()
     frame_clock.restart();
 
 	Gfx::device->set_clear_color(0.2f,0.2f,0.2f,1.f);
+
+	std::chrono::nanoseconds frame_d(16666666);
 	while(is_running_)
 	{
 		Gfx::device->clear(CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG);
 
+	    if(game_clock_.is_paused())
+	        continue;
+
+	    game_clock_.update(frame_d);
+
 		// For each layer, update
 		for(auto* layer: layer_stack_)
-			layer->update();
+			layer->update(game_clock_);
 
 		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();
@@ -118,9 +127,12 @@ void Application::run()
 			layer->on_imgui_render();
 		IMGUI_LAYER->end();
 
-        auto frame_d = frame_clock.restart();
+        frame_d = frame_clock.restart();
         auto sleep_duration = frame_duration_ns_ - frame_d;
         std::this_thread::sleep_for(sleep_duration);
+
+    	// To allow frame by frame update
+    	game_clock_.release_flags();
 
 		// Update window
         window_->update();

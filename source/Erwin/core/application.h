@@ -2,9 +2,10 @@
 
 #include <memory>
 
-#include "core.h"
-#include "window.h"
-#include "layer_stack.h"
+#include "core/core.h"
+#include "core/window.h"
+#include "core/layer_stack.h"
+#include "core/game_clock.h"
 
 namespace erwin
 {
@@ -32,6 +33,7 @@ private:
 	bool is_running_;
 
 	LayerStack layer_stack_;
+	GameClock game_clock_;
 };
 
 // Defined in the client

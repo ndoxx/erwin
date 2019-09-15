@@ -20,7 +20,7 @@ struct RenderStats
 class Renderer2D
 {
 public:
-	Renderer2D();
+	Renderer2D(uint32_t max_batch_count=8192);
 	virtual ~Renderer2D();
 
 	virtual void begin_scene(uint32_t layer_index) = 0;
@@ -36,6 +36,9 @@ public:
 				   	 	   const glm::vec2& scale,
 				   	 	   const glm::vec3& color) = 0;
 
+	virtual void set_batch_size(uint32_t value) = 0;
+
+
 	inline void set_profiling_enabled(bool value = true) { profiling_enabled_ = value; }
 	inline const RenderStats& get_stats() const          { return stats_; }
 
@@ -43,6 +46,9 @@ protected:
 	inline void reset_stats() { stats_.render_time = 0.f; stats_.batches = 0; }
 
 protected:
+	uint32_t max_batch_count_;   // max number of quads in a batch
+	uint32_t current_batch_;
+
 	bool profiling_enabled_ = false;
 	QueryTimer* query_timer_;
 	RenderStats stats_;
@@ -65,6 +71,8 @@ public:
 				   		   const glm::vec2& scale,
 				   		   const glm::vec3& color) override;
 
+	virtual void set_batch_size(uint32_t value) override;
+
 	static ShaderBank shader_bank;
 
 private:
@@ -75,11 +83,7 @@ private:
 
 private:
 	std::vector<std::shared_ptr<VertexArray>> quad_batch_vas_;
-
 	std::vector<float> vertex_list_;
-
-	uint32_t max_batch_count_;   // max number of quads in a batch
-	uint32_t current_batch_ = 0;
 };
 
 class InstanceRenderer2D: public Renderer2D
@@ -98,6 +102,8 @@ public:
 	virtual void draw_quad(const glm::vec2& position, 
 				   		   const glm::vec2& scale,
 				   		   const glm::vec3& color) override;
+
+	virtual void set_batch_size(uint32_t value) override;
 
 	static ShaderBank shader_bank;
 
@@ -118,9 +124,6 @@ private:
 	std::shared_ptr<VertexArray> quad_va_;
 	std::vector<std::shared_ptr<ShaderStorageBuffer>> batches_;
 	std::vector<InstanceData> instance_data_;
-
-	uint32_t max_batch_count_;   // max number of quads in a batch
-	uint32_t current_batch_ = 0;
 };
 
 } // namespace erwin

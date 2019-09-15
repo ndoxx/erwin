@@ -14,7 +14,7 @@ struct InstanceData
     vec4 color;
 };
 
-layout(std430, binding = 0) buffer instance_data
+layout(std430) buffer instance_data
 {
     InstanceData inst[];
 };

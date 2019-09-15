@@ -102,7 +102,7 @@ public:
 	}
 
 protected:
-	virtual void on_update() override
+	virtual void on_update(GameClock& clock) override
 	{
 		batch_renderer_2D_->begin_scene(get_priority());
 		{
@@ -168,8 +168,9 @@ public:
 	    
 	    ImGui::Begin("BatchRenderer2D");
 
-        if(ImGui::Checkbox("Profile", &enable_profiling_))
-        	renderer_2D_->set_profiling_enabled(enable_profiling_);
+        	if(ImGui::Checkbox("Profile", &enable_profiling_))
+        		renderer_2D_->set_profiling_enabled(enable_profiling_);
+
             ImGui::Separator();
 
             static int s_renderer_impl = 0;
@@ -178,19 +179,21 @@ public:
             {
             	switch(s_renderer_impl)
             	{
-            		case 0: renderer_2D_ = std::make_unique<BatchRenderer2D>(8192); break;
-            		case 1: renderer_2D_ = std::make_unique<InstanceRenderer2D>(8192); break;
+            		case 0: renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_); break;
+            		case 1: renderer_2D_ = std::make_unique<InstanceRenderer2D>(batch_size_); break;
             		default: break;
             	}
             	renderer_2D_->set_profiling_enabled(enable_profiling_);
             }
             ImGui::Separator();
 
-            if(ImGui::SliderInt("Grid size", &len_grid_, 10, 500))
+            ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
+            if(ImGui::SliderInt("Batch size", &batch_size_, 200, 10000))
             {
-
+				renderer_2D_->set_batch_size(batch_size_);
             }
-
+        	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
+        	ImGui::Checkbox("Trippy mode", &trippy_mode_);
 
 	    ImGui::End();
 
@@ -199,7 +202,8 @@ public:
 	    	ImGui::Begin("Stats");
             	ImGui::Text("#Batches: %d", render_stats_.batches);
             	ImGui::Separator();
-            	ImGui::PlotVar("Draw time (µs)", render_stats_.render_time, 0.0f, 16660.f);
+            	ImGui::PlotVar("Draw time (µs)", render_stats_.render_time, 0.0f, 7000.f);
+            	ImGui::PlotVar("FPS (Hz)", fps_, 0.0f, 100.f);
 	    	
 	            if(++frame_cnt_>200)
 	            {
@@ -212,12 +216,19 @@ public:
 
 	virtual void on_attach() override
 	{
-		renderer_2D_ = std::make_unique<BatchRenderer2D>(8192);
+		renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
 	}
 
 protected:
-	virtual void on_update() override
+	virtual void on_update(GameClock& clock) override
 	{
+		float dt = clock.get_frame_duration();
+		fps_ = 1.f/dt;
+
+		tt_ += dt;
+		if(tt_>=5.f)
+			tt_ = 0.f;
+
 		renderer_2D_->begin_scene(get_priority());
 		{
 			RenderState render_state;
@@ -229,10 +240,14 @@ protected:
 			// Draw a grid of quads
 			for(int xx=0; xx<len_grid_; ++xx)
 			{
+				float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
+
 				for(int yy=0; yy<len_grid_; ++yy)
 				{
+					float yy_offset = trippy_mode_ ? 3.0f/len_grid_ * sin(2*2*M_PI*yy/(1.f+len_grid_))*cos(0.2f*2*M_PI*tt_) : 0.f;
+
 					renderer_2D_->draw_quad(
-					{-0.95f + 1.9f*xx/float(len_grid_-1), -0.95f + 1.9f*yy/float(len_grid_-1)},
+					{-0.95f + 1.9f*xx/float(len_grid_-1) + xx_offset, -0.95f + 1.9f*yy/float(len_grid_-1) + yy_offset},
 					{1.0f/len_grid_,1.0f/len_grid_},
 					{xx/float(len_grid_-1),yy/float(len_grid_-1),1.f-xx/float(len_grid_-1)});
 				}
@@ -248,8 +263,12 @@ private:
 	RenderStats render_stats_;
 	bool enable_profiling_ = false;
 	uint32_t frame_cnt_ = 0;
+	float fps_ = 60.f;
+	float tt_ = 0.f;
 
 	int len_grid_ = 100;
+	int batch_size_ = 8192;
+	bool trippy_mode_ = false;
 };
 
 class Sandbox: public Application
