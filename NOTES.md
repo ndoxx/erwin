@@ -557,3 +557,13 @@ Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de pa
 #[14-09-19]
 
 NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai générer les UVs depuis le geometry shader, pas la peine de les stocker en attributs de vertex !
+
+TODO: Instanced 2D renderer
+
+
+GLuint ssbo;
+glGenBuffers(1, &ssbo);
+glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(data), data​, GLenum usage); //sizeof(data) only works for statically sized C/C++ arrays.
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo);
+glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind

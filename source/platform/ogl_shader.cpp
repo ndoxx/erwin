@@ -9,7 +9,6 @@
 #include "core/string_utils.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
-#include "math/math3d.h"
 
 #include "glad/glad.h"
 
@@ -206,6 +205,11 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
     return texture_slots_.at(sampler);
 }
 
+void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, const std::string& name) const
+{
+    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, name.c_str());
+    glShaderStorageBlockBinding(rd_handle_, block_index, buffer.get_slot());
+}
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
 {
@@ -373,6 +377,7 @@ void OGLShader::setup_uniform_registry()
         DLOGI << "[" << loc << "] " << ogl_uniform_type_to_string(type) << " " << WCC('u') << name << WCC(0) << std::endl;
     }
 }
+
 static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
 {
 #ifdef __DEBUG__
@@ -431,7 +436,7 @@ bool OGLShader::send_uniform<int>(hash_t name, const int& value) const
 }
 
 template <>
-bool OGLShader::send_uniform<math::vec2>(hash_t name, const math::vec2& value) const
+bool OGLShader::send_uniform<glm::vec2>(hash_t name, const glm::vec2& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -445,7 +450,7 @@ bool OGLShader::send_uniform<math::vec2>(hash_t name, const math::vec2& value) c
 }
 
 template <>
-bool OGLShader::send_uniform<math::vec3>(hash_t name, const math::vec3& value) const
+bool OGLShader::send_uniform<glm::vec3>(hash_t name, const glm::vec3& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -459,7 +464,7 @@ bool OGLShader::send_uniform<math::vec3>(hash_t name, const math::vec3& value) c
 }
 
 template <>
-bool OGLShader::send_uniform<math::vec4>(hash_t name, const math::vec4& value) const
+bool OGLShader::send_uniform<glm::vec4>(hash_t name, const glm::vec4& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -473,7 +478,7 @@ bool OGLShader::send_uniform<math::vec4>(hash_t name, const math::vec4& value) c
 }
 
 template <>
-bool OGLShader::send_uniform<math::mat2>(hash_t name, const math::mat2& value) const
+bool OGLShader::send_uniform<glm::mat2>(hash_t name, const glm::mat2& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -482,12 +487,12 @@ bool OGLShader::send_uniform<math::mat2>(hash_t name, const math::mat2& value) c
         return false;
     }
 
-    glUniformMatrix2fv(it->second, 1, GL_FALSE, value.get_pointer());
+    glUniformMatrix2fv(it->second, 1, GL_FALSE, &value[0][0]);
     return true;
 }
 
 template <>
-bool OGLShader::send_uniform<math::mat3>(hash_t name, const math::mat3& value) const
+bool OGLShader::send_uniform<glm::mat3>(hash_t name, const glm::mat3& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -496,12 +501,12 @@ bool OGLShader::send_uniform<math::mat3>(hash_t name, const math::mat3& value) c
         return false;
     }
 
-    glUniformMatrix3fv(it->second, 1, GL_FALSE, value.get_pointer());
+    glUniformMatrix3fv(it->second, 1, GL_FALSE, &value[0][0]);
     return true;
 }
 
 template <>
-bool OGLShader::send_uniform<math::mat4>(hash_t name, const math::mat4& value) const
+bool OGLShader::send_uniform<glm::mat4>(hash_t name, const glm::mat4& value) const
 {
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
@@ -510,7 +515,7 @@ bool OGLShader::send_uniform<math::mat4>(hash_t name, const math::mat4& value) c
         return false;
     }
 
-    glUniformMatrix4fv(it->second, 1, GL_FALSE, value.get_pointer());
+    glUniformMatrix4fv(it->second, 1, GL_FALSE, &value[0][0]);
     return true;
 }
 

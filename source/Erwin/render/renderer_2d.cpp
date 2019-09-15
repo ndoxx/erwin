@@ -13,6 +13,8 @@
 namespace erwin
 {
 
+static const uint32_t s_num_batches_init = 1;
+
 ShaderBank BatchRenderer2D::shader_bank;
 
 [[maybe_unused]] static uint32_t make_key(bool is_state_mutation,
@@ -32,23 +34,33 @@ static const BufferLayout s_vertex_color_layout =
 
 static const int VERT_FLOAT_COUNT = 3*6; // Num vertex float component per quad (4 vertex * 6 components)
 
-BatchRenderer2D::BatchRenderer2D(uint32_t num_batches, uint32_t max_batch_count):
+Renderer2D::Renderer2D()
+{
+	query_timer_ = QueryTimer::create();
+}
+
+Renderer2D::~Renderer2D()
+{
+	delete query_timer_;
+}
+
+
+BatchRenderer2D::BatchRenderer2D(uint32_t max_batch_count):
 max_batch_count_(max_batch_count)
 {
 	vertex_list_.reserve(max_batch_count * VERT_FLOAT_COUNT);
 
-	for(int ii=0; ii<num_batches; ++ii)
+	for(int ii=0; ii<s_num_batches_init; ++ii)
 		create_batch(s_vertex_color_layout);
 
 	// Load shader
 	shader_bank.load("shaders/color_dup_shader.glsl");
 
-	query_timer_ = QueryTimer::create();
 }
 
 BatchRenderer2D::~BatchRenderer2D()
 {
-	delete query_timer_;
+
 }
 
 void BatchRenderer2D::create_batch(const BufferLayout& layout)
@@ -84,6 +96,7 @@ void BatchRenderer2D::begin_scene(uint32_t layer_index)
 {
 	// Reset
 	current_batch_ = 0;
+	reset_stats();
 }
 
 void BatchRenderer2D::end_scene()
@@ -104,11 +117,13 @@ void BatchRenderer2D::end_scene()
 	{
     	// Gfx::device->draw_indexed(quad_batch_vas_[ii], max_batch_count_*3);
     	Gfx::device->draw_array(quad_batch_vas_[ii], DrawPrimitive::Triangles, max_batch_count_*3);
+		++stats_.batches;
 	}
     if(current_batch_count)
     {
     	//Gfx::device->draw_indexed(quad_batch_vas_[current_batch_], current_batch_count*3);
     	Gfx::device->draw_array(quad_batch_vas_[current_batch_], DrawPrimitive::Triangles, current_batch_count*3);
+		++stats_.batches;
     }
 	
 	shader.unbind();
@@ -116,7 +131,7 @@ void BatchRenderer2D::end_scene()
 	if(profiling_enabled_)
 	{
 		auto render_duration = query_timer_->stop();
-		last_render_time_ = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
+		stats_.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 }
 
@@ -174,7 +189,7 @@ void BatchRenderer2D::draw_quad(const glm::vec2& position,
 				   			    const glm::vec3& color)
 {
 	// * Select a batch vertex array
-	// Check that current batch has enough space, if not, draw current and start to fill next batch
+	// Check that current batch has enough space, if not, flush and start to fill next batch
 	uint32_t current_batch_count = vertex_list_.size() / VERT_FLOAT_COUNT;
 	// uint32_t current_batch_count = index_list_.size() / 3;
 	if(current_batch_count == max_batch_count_)
@@ -182,7 +197,7 @@ void BatchRenderer2D::draw_quad(const glm::vec2& position,
 		flush();
 
 		// If current batch is the last one in list, add new batch
-		if(current_batch_ == quad_batch_vas_.size()-1)
+		if(current_batch_ >= quad_batch_vas_.size()-1)
 			create_batch(s_vertex_color_layout);
 
 		++current_batch_;
@@ -203,5 +218,165 @@ void BatchRenderer2D::draw_quad(const glm::vec2& position,
 	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
 }
 
+// ----------------------------------------------------------------------------------------
+
+ShaderBank InstanceRenderer2D::shader_bank;
+
+
+InstanceRenderer2D::InstanceRenderer2D(uint32_t max_batch_count):
+max_batch_count_(max_batch_count)
+{
+	instance_data_.reserve(max_batch_count_);
+
+	// Load shader
+	shader_bank.load("shaders/color_inst_shader.glsl");
+
+	// Create vertex array with a quad
+	BufferLayout vertex_tex_layout =
+	{
+	    {"a_position"_h, ShaderDataType::Vec3},
+	    {"a_uv"_h,       ShaderDataType::Vec2},
+	};
+	float sq_vdata[20] = 
+	{
+		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,
+		-0.5f,  0.5f, 0.0f,   0.0f, 1.0f
+	};
+	uint32_t sq_idata[6] =
+	{
+		0, 1, 2,   2, 3, 0
+	};
+	auto quad_vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(sq_vdata, 20, vertex_tex_layout));
+	auto quad_ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles));
+	quad_va_ = std::shared_ptr<VertexArray>(VertexArray::create());
+	quad_va_->set_index_buffer(quad_ib);
+	quad_va_->set_vertex_buffer(quad_vb);
+
+	for(int ii=0; ii<s_num_batches_init; ++ii)
+		create_batch(ii);
+}
+
+InstanceRenderer2D::~InstanceRenderer2D()
+{
+
+}
+
+void InstanceRenderer2D::create_batch(uint32_t binding_point)
+{
+	DLOGN("render") << "[InstanceRenderer2D] Generating new batch." << std::endl;
+	
+	auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create(binding_point, nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic));
+	batches_.push_back(ssbo);
+
+	DLOG("render",1) << "New batch size is: " << batches_.size() << std::endl;
+}
+
+void InstanceRenderer2D::flush()
+{
+	// Map instance data to SSBO
+	batches_[current_batch_]->map(instance_data_.data(), instance_data_.size());
+	instance_data_.clear();
+}
+
+void InstanceRenderer2D::begin_scene(uint32_t layer_index)
+{
+	// Reset
+	current_batch_ = 0;
+	reset_stats();
+}
+
+void InstanceRenderer2D::end_scene()
+{
+	// Flush last batch
+	uint32_t current_batch_count = instance_data_.size();
+	flush();
+
+	// * DRAW
+	if(profiling_enabled_)
+		query_timer_->start();
+
+	const Shader& shader = shader_bank.get("color_inst_shader"_h);
+	shader.bind();
+
+	// Draw all full batches plus the last one if not empty
+	for(int ii=0; ii<current_batch_; ++ii)
+	{
+		shader.attach_shader_storage(*batches_[ii], "instance_data");
+    	Gfx::device->draw_indexed_instanced(quad_va_, max_batch_count_);
+		++stats_.batches;
+	}
+    if(current_batch_count)
+    {
+		shader.attach_shader_storage(*batches_[current_batch_], "instance_data");
+    	Gfx::device->draw_indexed_instanced(quad_va_, current_batch_count);
+		++stats_.batches;
+    }
+	
+	shader.unbind();
+
+	if(profiling_enabled_)
+	{
+		auto render_duration = query_timer_->stop();
+		stats_.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
+	}
+}
+
+void InstanceRenderer2D::submit(const RenderState& state)
+{
+	//[[maybe_unused]] uint64_t key = make_key(true, current_layer_);
+	//DLOG("render",1) << "sta: " << std::bitset<32>(key) << std::endl;
+
+	// TMP: direct rendering for now, will submit to render thread then
+	if(state.render_target == RenderTarget::Default)
+		Gfx::device->bind_default_frame_buffer();
+	else
+		W_ASSERT(false, "Only default render target supported for now!");
+
+	Gfx::device->set_cull_mode(state.rasterizer_state);
+
+	if(state.blend_state == BlendState::Alpha)
+		Gfx::device->set_std_blending();
+	else
+		Gfx::device->disable_blending();
+
+	Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
+	if(state.depth_stencil_state.stencil_test_enabled)
+	{
+		Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
+		Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
+	}
+
+	Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
+	if(state.depth_stencil_state.depth_test_enabled)
+		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+}
+
+void InstanceRenderer2D::draw_quad(const glm::vec2& position, 
+				   			       const glm::vec2& scale,
+				   			       const glm::vec3& color)
+{
+	// * Select a batch vector
+	// Check that current batch has enough space, if not, flush and start to fill next batch
+	uint32_t current_batch_count = instance_data_.size();
+	if(current_batch_count == max_batch_count_)
+	{
+		flush();
+
+		// If current batch is the last one in list, add new batch
+		if(current_batch_ >= batches_.size()-1)
+			create_batch(current_batch_+1);
+
+		++current_batch_;
+		current_batch_count = 0;
+	}
+
+	// Push instance data
+	instance_data_.push_back({position, scale, {color, 1.f}});
+	// instance_data_.push_back({{0.f,0.f},{1.f,1.f},{1.f,0.5f,0.f}});
+
+	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
+}
 
 } // namespace erwin

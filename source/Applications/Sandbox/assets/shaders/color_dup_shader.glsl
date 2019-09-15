@@ -53,17 +53,6 @@ void main()
 in vec3 f_color;
 layout(location = 0) out vec4 out_color;
 
-/*struct SSBOValues
-{
-    float val;
-};*/
-
-layout(std430, binding = 0) buffer color_ssbo
-{
-    //SSBOValues vals[];
-    vec3 color[];
-};
-
 void main()
 {
 	out_color = vec4(f_color,1.0f);

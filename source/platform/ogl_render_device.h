@@ -29,6 +29,12 @@ public:
                             DrawPrimitive prim = DrawPrimitive::Triangles,
                             uint32_t count = 0,
                             std::size_t offset = 0) override;
+    // Draw instance_count instances of content of vertex array using index buffer
+    virtual void draw_indexed_instanced(const std::shared_ptr<VertexArray>& vertexArray,
+                                        uint32_t instance_count,
+                                        uint32_t elements_count = 0,
+                                        std::size_t offset = 0) override;
+
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) override;
     // Clear currently bound framebuffer

@@ -45,7 +45,7 @@ public:
 
 	virtual void on_attach() override
 	{
-		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,8192);
+		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(8192);
 
 		// Colored triangle
 		BufferLayout vertex_color_layout =
@@ -164,10 +164,33 @@ public:
 
 	virtual void on_imgui_render() override
 	{
+		static const char* rd_items[] = {"Batch renderer", "Instanced renderer"};
+	    
 	    ImGui::Begin("BatchRenderer2D");
 
         if(ImGui::Checkbox("Profile", &enable_profiling_))
-        	batch_renderer_2D_->set_profiling_enabled(enable_profiling_);
+        	renderer_2D_->set_profiling_enabled(enable_profiling_);
+            ImGui::Separator();
+
+            static int s_renderer_impl = 0;
+            ImGui::WCombo("##renderersel", "Renderer", s_renderer_impl, 2, rd_items);
+            if(ImGui::Button("Swap implementation"))
+            {
+            	switch(s_renderer_impl)
+            	{
+            		case 0: renderer_2D_ = std::make_unique<BatchRenderer2D>(8192); break;
+            		case 1: renderer_2D_ = std::make_unique<InstanceRenderer2D>(8192); break;
+            		default: break;
+            	}
+            	renderer_2D_->set_profiling_enabled(enable_profiling_);
+            }
+            ImGui::Separator();
+
+            if(ImGui::SliderInt("Grid size", &len_grid_, 10, 500))
+            {
+
+            }
+
 
 	    ImGui::End();
 
@@ -189,43 +212,44 @@ public:
 
 	virtual void on_attach() override
 	{
-		batch_renderer_2D_ = std::make_unique<BatchRenderer2D>(1,8192);
+		renderer_2D_ = std::make_unique<BatchRenderer2D>(8192);
 	}
 
 protected:
 	virtual void on_update() override
 	{
-		batch_renderer_2D_->begin_scene(get_priority());
+		renderer_2D_->begin_scene(get_priority());
 		{
 			RenderState render_state;
 			render_state.render_target = RenderTarget::Default;
 			render_state.rasterizer_state = CullMode::None;
 			render_state.blend_state = BlendState::Opaque;
-			batch_renderer_2D_->submit(render_state);
+			renderer_2D_->submit(render_state);
 
 			// Draw a grid of quads
-			uint32_t len = 300;
-			for(int xx=0; xx<len; ++xx)
+			for(int xx=0; xx<len_grid_; ++xx)
 			{
-				for(int yy=0; yy<len; ++yy)
+				for(int yy=0; yy<len_grid_; ++yy)
 				{
-					batch_renderer_2D_->draw_quad(
-					{-0.95f + 1.9f*xx/float(len-1), -0.95f + 1.9f*yy/float(len-1)},
-					{1.0f/len,1.0f/len},
-					{xx/float(len-1),yy/float(len-1),1.f-xx/float(len-1)});
+					renderer_2D_->draw_quad(
+					{-0.95f + 1.9f*xx/float(len_grid_-1), -0.95f + 1.9f*yy/float(len_grid_-1)},
+					{1.0f/len_grid_,1.0f/len_grid_},
+					{xx/float(len_grid_-1),yy/float(len_grid_-1),1.f-xx/float(len_grid_-1)});
 				}
 			}
 		}
-		batch_renderer_2D_->end_scene();
+		renderer_2D_->end_scene();
 
-		render_stats_ = batch_renderer_2D_->get_stats();
+		render_stats_ = renderer_2D_->get_stats();
 	}
 
 private:
-	std::unique_ptr<BatchRenderer2D> batch_renderer_2D_;
+	std::unique_ptr<Renderer2D> renderer_2D_;
 	RenderStats render_stats_;
 	bool enable_profiling_ = false;
 	uint32_t frame_cnt_ = 0;
+
+	int len_grid_ = 100;
 };
 
 class Sandbox: public Application

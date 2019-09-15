@@ -7,6 +7,7 @@
 
 #include "core/wtypes.h"
 #include "core/file_system.h"
+#include "render/buffer.h"
 
 namespace erwin
 {
@@ -39,6 +40,8 @@ public:
 	virtual void unbind() const = 0;
 	// Get texture slot associated to hash sampler name (uniform name)
 	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
+	// Attach a shader buffer storage
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, const std::string& name) const = 0;
 
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }

@@ -71,6 +71,20 @@ void OGLRenderDevice::draw_array(const std::shared_ptr<VertexArray>& vertexArray
     vertexArray->unbind();
 }
 
+void OGLRenderDevice::draw_indexed_instanced(const std::shared_ptr<VertexArray>& vertexArray,
+                                             uint32_t instance_count,
+                                             uint32_t elements_count,
+                                             std::size_t offset)
+{
+    vertexArray->bind();
+    glDrawElementsInstanced(OGLPrimitive[vertexArray->get_index_buffer().get_primitive()],
+                            (bool(elements_count) ? elements_count : vertexArray->get_index_buffer().get_count()),
+                            GL_UNSIGNED_INT,
+                            (void*)(offset * sizeof(GLuint)),
+                            instance_count);
+    vertexArray->unbind();
+}
+
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)
 {
     glClearColor(r, g, b, a);
