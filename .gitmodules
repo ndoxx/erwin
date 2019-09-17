@@ -16,3 +16,9 @@
 [submodule "source/vendor/glm"]
 	path = source/vendor/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "source/vendor/freetype"]
+	path = source/vendor/freetype
+	url = git://git.sv.nongnu.org/freetype/freetype2.git
+[submodule "source/vendor/rectpack2D"]
+	path = source/vendor/rectpack2D
+	url = https://github.com/TeamHypersomnia/rectpack2D.git

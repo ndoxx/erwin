@@ -555,6 +555,8 @@ Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de pa
 
 
 #[15-09-19]
+En visionnant un VLOG de Cherno qui montre une de ses journées de travail sur un renderer 2D (dont il ne donnait que peu de détails sur le fonctionnement interne, ce n'était pas le but de la vidéo), j'ai été super motivé à l'idée de coder un renderer 2D ultra-rapide moi-aussi. J'en ai donc codé deux.
+
 ##Shader Storage Buffer Objects
 Erwin engine supporte maintenant les SSBOs, buffers similaires aux Uniform Buffer Objects mais en read/write et sans la contrainte de taille débile à 64kB. Un SSBO peut être assez énorme.
 
@@ -567,10 +569,114 @@ En OpenGL, pour générer un SSBO on fait :
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 ```
+"binding_point" est un nombre fixé à l'avance, et "data" est typiquement un array de structs :
+```cpp
+    struct InstanceData
+    {
+        glm::vec2 offset;
+        glm::vec2 scale;
+        glm::vec4 color;
+    };
+    std::vector<InstanceData> data;
+```
 
+Puis pour le lier à un shader :
+```cpp
+    GLuint block_index = glGetProgramResourceIndex(program_id, GL_SHADER_STORAGE_BLOCK, layout_name);
+    glShaderStorageBlockBinding(program_id, block_index, binding_point);
+
+```
+La deuxième ligne a pour effet de modifier le binding point. Côté shader on a par exemple :
+```c
+struct InstanceData
+{
+    vec2 offset;
+    vec2 scale;
+    vec4 color;
+};
+
+layout(std430) buffer instance_data
+{
+    InstanceData inst[];
+};
+
+void main()
+{
+    vec3 offset = vec3(inst[gl_InstanceID].offset, 0.f);
+    vec3 scale  = vec3(inst[gl_InstanceID].scale, 1.f);
+    // ...
+}
+```
+
+J'ai codé une interface API-agnostic _ShaderStorageBuffer_ et une implémentation OpenGL _OGLShaderStorageBuffer_, même délire que n'importe quel buffer dans buffer.h. La classe _Shader_ possède une méthode virtuelle attach_shader_storage() qui permet de lier un buffer donné au shader :
+```cpp
+    auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create(binding_point, nullptr, count, sizeof(InstanceData), DrawMode::Dynamic));
+    // ...
+    ssbo->map(data.data(), data.size());
+    // ...
+    shader.attach_shader_storage(ssbo, "instance_data");
+```
+
+##2D Batch Renderer
+Dans renderer_2d.h/cpp j'ai codé deux renderers 2D très rapides. Tous deux répondent à la même interface _Renderer2D_. Tous les render calls doivent être placés entre Renderer2D::begin_scene() et Renderer2D::end_scene().
+
+Le premier, _BatchRenderer2D_ possède une méthode draw_quad(3) qui prend en argument une position, une échelle et une couleur. Cette méthode va pousser le triangle inférieur droit du quad dans un vector de vertices (on verra pourquoi juste ce triangle suffit). Quand ce vector atteint une taille spécifique après plusieurs appels à draw_quad, il est entièrement copié dans un vertex buffer via la fonction map(). Si un autre quad doit être créé alors que le vertex buffer est plein, un autre vertex buffer est créé dynamiquement et il recevra le contenu du vector de vertices quand celui-ci sera plein, etc. Lors de l'appel à end_scene(), tous les vertex buffers sont dessinés via la fonction draw_array() du _RenderDevice_. J'ai remarqué que c'est plus rapide de remplir plusieurs vertex buffer que de flush à chaque fois qu'un unique vertex buffer est plein. L'utilisation de la fonction map() est aussi plus avantageux que des appels répétés à stream().
+De fait on a autant de draw calls que de vertex buffers, toute la géométrie a été condensée dans quelques gros objets, c'est du batching.
+
+Une petite optimisation a lieu dans un geometry shader : j'y duplique le triangle inférieur pour construire le triangle supérieur. C'est la raison pour laquelle je n'ai besoin de soumettre que la moitié du quad :
+
+```c
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 6) out;
+
+in vec3 v_color[];
+out vec3 f_color;
+
+void main()
+{
+    for(int ii=0; ii<gl_in.length(); ii++)
+    {
+        gl_Position = gl_in[ii].gl_Position;
+        f_color = v_color[ii];
+
+        EmitVertex();
+    }
+    EndPrimitive();
+
+    gl_Position = gl_in[2].gl_Position;
+    f_color = v_color[2];
+    EmitVertex();
+
+    gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[2].gl_Position.y, 0.f, 1.f);
+    f_color = v_color[1];
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position;
+    f_color = v_color[0];
+    EmitVertex();
+    EndPrimitive();
+}
+```
+
+##2D Instance Renderer
+Le deuxième renderer que j'ai codé utilise une approche différente : l'instanciation. _InstanceRenderer2D_ fonctionne sur le même genre de dynamique que le précédent, mais crée un SSBO par batch. A chaque appel à draw_quad, les données en argument (la position, l'échelle et la couleur) sont simplement empilées dans un vector de struct _InstanceData_. Quand ce vector est plein, il est déchargé dans un SSBO via la fonction map(). Le batch suivant est créé, rempli, déchargé dans un autre SSBO etc.
+Lors de end_scene(), pour chaque SSBO qu'on attache au shader, un SEUL quad (contenu dans un vertex buffer) est soumis au _RenderDevice_ via draw_indexed_instanced() (qui en sous-main appèle glDrawElementsInstanced()).
+Dans le shader on peut accéder aux données par-instance via l'indice gl_InstanceID.
+
+J'ai eu une grosse emmerde dans un premier temps (affichage décalé / buggé), que j'ai bien mis 30 minutes à piger. En remarquant que le premier quad était toujours bien dessiné mais jamais les suivants, j'ai compris que **l'alignement des données dans le layout du SSBO est méga important** C'est la raison pour laquelle le membre color est un vec4 et non un vec3, pour que la taille totale d'une struct tienne sur 32 bytes (padding).
+
+###Comparaison
+L'application sandbox possède un GUI minimaliste qui permet d'ajuster dynamiquement la taille de la grille de quads, la taille maximale des batchs et l'implémentation de _Renderer2D_ utilisée ! Elle affiche des statistiques sous forme de courbes et de texte. J'ai aussi un mode qui permet de faire bouger chaque quad indépendamment (en mode onde stationnaire) côté CPU, ce qui n'a aucun effet sur le temps de rendu.
+
+Il me faudra faire des mesures plus précises, mais en gros, le deuxième est un peu plus lent que le premier mais beaucoup plus robuste à un grand nombre de quads (le premier fait chuter les FPS parce qu'il semble CPU-bound !).
+On s'attend à environ 300µs et 2 draw calls (batch size=8192) pour 10 000 quads dans les deux cas, pour 50 000 c'est 7 draw calls, le _BatchRenderer2D_ prend 500µs contre 1000µs pour le _InstanceRenderer2D_. Au-delà de 50 000 quads le _BatchRenderer2D_ est CPU-bound et fait chuter les FPS tandis que le second tient bon jusqu'à environ 140 000 quads qu'il peut rendre en environ 1.5ms avec 17 draw calls.
+
+Côté mémoire, c'est l'instanciation qui l'emporte haut la main. Cette méthode est aussi beaucoup plus adaptée pour le passage de données par-instance au shader.
 
 
 NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai générer les UVs depuis le geometry shader, pas la peine de les stocker en attributs de vertex !
 
 
-
+###Sources:
+    [1] https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
+    [2] https://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3-shader-storage-buffers-objects-ssbo-demo/
