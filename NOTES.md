@@ -557,6 +557,10 @@ Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de pa
 #[15-09-19]
 En visionnant un VLOG de Cherno qui montre une de ses journées de travail sur un renderer 2D (dont il ne donnait que peu de détails sur le fonctionnement interne, ce n'était pas le but de la vidéo), j'ai été super motivé à l'idée de coder un renderer 2D ultra-rapide moi-aussi. J'en ai donc codé deux.
 
+Les deux renderers utilisent des stratégies différentes de batching pour diminuer au maximum le nombre de draw calls, mais leur fonctionnement dynamique est semblable. Je les ai donc regroupés derrière une même classe de base _Renderer2D_. Toutes les render requests doivent être placées entre Renderer2D::begin_scene() et Renderer2D::end_scene().
+Le batching consiste à conserver les données par instance dans des buffers, et de soumettre ces données en fin d'envoi (end_scene()), plutôt que d'effectuer un draw call à chaque requête.
+Le nombre de batches est géré dynamiquement, en particulier la suppression de batches inutilisés est effectuée de manière "intelligente", en attribuant un TTL à chaque batch. Les batches actifs ont toujours un TTL de 0, chaque batch inactif voit son TTL incrémenté à chaque frame. L'indice du premier batch à dépasser un TTL maximum est utilisé pour supprimer tous les batches à partir de cet indice. Ainsi un batch inactif est conservé un certain temps avant d'être supprimé, au cas où on en aurait besoin la frame d'après, évitant ainsi de supprimer et recréer des batches intempestivement si le nombre de draw requests oscille autour d'un multiple de la taille maximale d'un batch.
+
 ##Shader Storage Buffer Objects
 Erwin engine supporte maintenant les SSBOs, buffers similaires aux Uniform Buffer Objects mais en read/write et sans la contrainte de taille débile à 64kB. Un SSBO peut être assez énorme.
 
@@ -618,8 +622,6 @@ J'ai codé une interface API-agnostic _ShaderStorageBuffer_ et une implémentati
 ```
 
 ##2D Batch Renderer
-Dans renderer_2d.h/cpp j'ai codé deux renderers 2D très rapides. Tous deux répondent à la même interface _Renderer2D_. Tous les render calls doivent être placés entre Renderer2D::begin_scene() et Renderer2D::end_scene().
-
 Le premier, _BatchRenderer2D_ possède une méthode draw_quad(3) qui prend en argument une position, une échelle et une couleur. Cette méthode va pousser le triangle inférieur droit du quad dans un vector de vertices (on verra pourquoi juste ce triangle suffit). Quand ce vector atteint une taille spécifique après plusieurs appels à draw_quad, il est entièrement copié dans un vertex buffer via la fonction map(). Si un autre quad doit être créé alors que le vertex buffer est plein, un autre vertex buffer est créé dynamiquement et il recevra le contenu du vector de vertices quand celui-ci sera plein, etc. Lors de l'appel à end_scene(), tous les vertex buffers sont dessinés via la fonction draw_array() du _RenderDevice_. J'ai remarqué que c'est plus rapide de remplir plusieurs vertex buffer que de flush à chaque fois qu'un unique vertex buffer est plein. L'utilisation de la fonction map() est aussi plus avantageux que des appels répétés à stream().
 De fait on a autant de draw calls que de vertex buffers, toute la géométrie a été condensée dans quelques gros objets, c'est du batching.
 

@@ -22,3 +22,6 @@
 [submodule "source/vendor/rectpack2D"]
 	path = source/vendor/rectpack2D
 	url = https://github.com/TeamHypersomnia/rectpack2D.git
+[submodule "source/vendor/inih"]
+	path = source/vendor/inih
+	url = https://github.com/benhoyt/inih.git

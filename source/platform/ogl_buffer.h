@@ -60,16 +60,34 @@ private:
     uint32_t vb_index_ = 0;
 };
 
+class OGLUniformBuffer: public UniformBuffer
+{
+public:
+    OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, DrawMode mode);
+    virtual ~OGLUniformBuffer();
+
+    virtual void bind() const override;
+    virtual void unbind() const override;
+    virtual void map(void* data) override;
+
+    inline uint32_t get_handle() const { return rd_handle_; }
+
+protected:
+    uint32_t rd_handle_;
+};
+
 class OGLShaderStorageBuffer: public ShaderStorageBuffer
 {
 public:
-    OGLShaderStorageBuffer(uint32_t slot, void* data, uint32_t count, uint32_t struct_size, DrawMode mode);
+    OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode);
     virtual ~OGLShaderStorageBuffer();
 
     virtual void bind() const override;
     virtual void unbind() const override;
     virtual void stream(void* data, uint32_t count, std::size_t offset) override;
     virtual void map(void* data, uint32_t count) override;
+
+    inline uint32_t get_handle() const { return rd_handle_; }
 
 protected:
     uint32_t rd_handle_;

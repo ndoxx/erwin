@@ -156,19 +156,60 @@ void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count)
 
 // ----------------------------------------------------------------------------------
 
-OGLShaderStorageBuffer::OGLShaderStorageBuffer(uint32_t slot, void* data, uint32_t count, uint32_t struct_size, DrawMode mode):
-ShaderStorageBuffer(slot, count, struct_size)
+OGLUniformBuffer::OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, DrawMode mode):
+UniformBuffer(name, struct_size)
+{
+    GLenum gl_draw_mode = to_ogl_draw_mode(mode);
+
+    glGenBuffers(1, &rd_handle_);
+    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
+    glBufferData(GL_UNIFORM_BUFFER, struct_size_, data, gl_draw_mode);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+    DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
+}
+
+OGLUniformBuffer::~OGLUniformBuffer()
+{
+    // Unbind and delete
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glDeleteBuffers(1, &rd_handle_);
+
+    DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+}
+
+void OGLUniformBuffer::bind() const
+{
+	glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
+}
+
+void OGLUniformBuffer::unbind() const
+{
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void OGLUniformBuffer::map(void* data)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
+	void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+	memcpy(ptr, data, struct_size_);
+	glUnmapBuffer(GL_UNIFORM_BUFFER);
+}
+
+// ----------------------------------------------------------------------------------
+
+OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode):
+ShaderStorageBuffer(name, count, struct_size)
 {
     GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
     glGenBuffers(1, &rd_handle_);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, count_*struct_size_, data, gl_draw_mode);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, rd_handle_);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Slot:          " << slot_ << std::endl;
     DLOGI << "Element count: " << count_ << std::endl;
     DLOGI << "Data size:     " << struct_size_ << "B" << std::endl;
     DLOGI << "Total size:    " << count_*struct_size_ << "B" << std::endl;

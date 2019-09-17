@@ -20,7 +20,8 @@ public:
 	virtual void bind() const override;
 	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, const std::string& name) const override;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const override;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t binding_point) const override;
 
     // Uniform management
     template <typename T>

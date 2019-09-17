@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "platform/ogl_shader.h"
+#include "platform/ogl_buffer.h"
 #include "core/core.h"
 #include "core/wtypes.h"
 #include "core/string_utils.h"
@@ -205,10 +206,18 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
     return texture_slots_.at(sampler);
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, const std::string& name) const
+void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const
 {
-    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, name.c_str());
-    glShaderStorageBlockBinding(rd_handle_, block_index, buffer.get_slot());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
+    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, buffer.get_name().c_str());
+    glShaderStorageBlockBinding(rd_handle_, block_index, binding_point);
+}
+
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t binding_point) const
+{
+    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
+    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_UNIFORM_BLOCK, buffer.get_name().c_str());
+    glUniformBlockBinding(rd_handle_, block_index, binding_point);
 }
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)

@@ -41,7 +41,9 @@ public:
 	// Get texture slot associated to hash sampler name (uniform name)
 	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
 	// Attach a shader buffer storage
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, const std::string& name) const = 0;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const = 0;
+	// Attach a uniform buffer
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t binding_point) const = 0;
 
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }

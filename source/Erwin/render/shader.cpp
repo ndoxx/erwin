@@ -43,6 +43,11 @@ std::shared_ptr<Shader> Shader::create(const std::string& name, const std::strin
 void ShaderBank::add(std::shared_ptr<Shader> p_shader)
 {
     hash_t hname = H_(p_shader->get_name().c_str());
+    if(exists(hname))
+    {
+        DLOGW("shader") << "Shader " << p_shader->get_name() << " already loaded." << std::endl;
+        return;
+    }
     bank_.insert(std::make_pair(hname, p_shader));
     next_index(hname);
 }
@@ -56,6 +61,11 @@ void ShaderBank::load(const fs::path& path)
 void ShaderBank::load(const std::string& name, std::istream& source_stream)
 {
     hash_t hname = H_(name.c_str());
+    if(exists(hname))
+    {
+        DLOGW("shader") << "Shader " << name << " already loaded." << std::endl;
+        return;
+    }
     bank_.insert(std::make_pair(hname, Shader::create(name, source_stream)));
     next_index(hname);
 }
@@ -63,6 +73,11 @@ void ShaderBank::load(const std::string& name, std::istream& source_stream)
 void ShaderBank::load(const std::string& name, const std::string& source_string)
 {
     hash_t hname = H_(name.c_str());
+    if(exists(hname))
+    {
+        DLOGW("shader") << "Shader " << name << " already loaded." << std::endl;
+        return;
+    }
     bank_.insert(std::make_pair(hname, Shader::create(name, source_string)));
     next_index(hname);
 }

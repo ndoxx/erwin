@@ -128,11 +128,33 @@ protected:
     DrawPrimitive primitive_;
 };
 
+// UBO
+class UniformBuffer
+{
+public:
+    UniformBuffer(const std::string& name, uint32_t struct_size): name_(name), struct_size_(struct_size) { }
+    virtual ~UniformBuffer() = default;
+
+    virtual void bind() const = 0;
+    virtual void unbind() const = 0;
+    virtual void map(void* data) = 0;
+
+    inline const std::string& get_name() const { return name_; }
+    inline uint32_t get_data_size() const      { return struct_size_; }
+
+    // Factory method to create the correct implementation
+    static UniformBuffer* create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+
+protected:
+    std::string name_;
+    uint32_t struct_size_;
+};
+
 // SSBO / UAV
 class ShaderStorageBuffer
 {
 public:
-    ShaderStorageBuffer(uint32_t slot, uint32_t count, uint32_t struct_size): slot_(slot), count_(count), struct_size_(struct_size) { }
+    ShaderStorageBuffer(const std::string& name, uint32_t count, uint32_t struct_size): name_(name), count_(count), struct_size_(struct_size) { }
     virtual ~ShaderStorageBuffer() = default;
 
     virtual void bind() const = 0;
@@ -140,15 +162,15 @@ public:
     virtual void stream(void* data, uint32_t count, std::size_t offset) = 0;
     virtual void map(void* data, uint32_t count) = 0;
 
-    inline uint32_t get_slot() const      { return slot_; } // TMP: implementation dependent
-    inline uint32_t get_count() const     { return count_; }
-    inline uint32_t get_data_size() const { return struct_size_; }
+    inline const std::string& get_name() const { return name_; }
+    inline uint32_t get_count() const          { return count_; }
+    inline uint32_t get_data_size() const      { return struct_size_; }
 
     // Factory method to create the correct implementation
-    static ShaderStorageBuffer* create(uint32_t slot, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+    static ShaderStorageBuffer* create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
 
 protected:
-    uint32_t slot_; // TMP: implementation dependent
+    std::string name_;
     uint32_t count_;
     uint32_t struct_size_;
 };

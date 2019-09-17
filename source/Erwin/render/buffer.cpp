@@ -120,7 +120,20 @@ VertexArray* VertexArray::create()
     }
 }
 
-ShaderStorageBuffer* ShaderStorageBuffer::create(uint32_t slot, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
+UniformBuffer* UniformBuffer::create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "UniformBuffer: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+            return new OGLUniformBuffer(name, data, struct_size, mode);
+    }
+}
+
+ShaderStorageBuffer* ShaderStorageBuffer::create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -129,7 +142,7 @@ ShaderStorageBuffer* ShaderStorageBuffer::create(uint32_t slot, void* data, uint
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLShaderStorageBuffer(slot, data, count, struct_size, mode);
+            return new OGLShaderStorageBuffer(name, data, count, struct_size, mode);
     }
 }
 

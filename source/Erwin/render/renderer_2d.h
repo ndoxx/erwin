@@ -29,11 +29,11 @@ public:
 	void end_scene();
 	// Setup render state
 	void submit(const RenderState& state);
-	// TMP: DO NOT USE, for compat with one test layer in sandbox app
+	// INEFFICIENT draw a quad immediately
 	void submit(std::shared_ptr<VertexArray> va, 
 			    hash_t shader_name, 
 			    const ShaderParameters& params);
-	// Push a quad in current batch
+	// Request the renderer implementation to push a quad to current batch
 	void draw_quad(const glm::vec2& position, 
 				   const glm::vec2& scale,
 				   const glm::vec3& color);

@@ -73,7 +73,8 @@ void Renderer2D::end_scene()
 		stats_.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 
-	/*int ii=0;
+	// Update unused batches' time to live, remove dead batches
+	int ii=0;
 	for(; ii<s_max_batches; ++ii)
 	{
 		if(ii<=current_batch_)
@@ -81,8 +82,8 @@ void Renderer2D::end_scene()
 		else
 			if(++batch_ttl_[ii]>s_max_batch_ttl)
 				break;
-	}*/
-	remove_unused_batches(current_batch_+1);
+	}
+	remove_unused_batches(ii);
 }
 
 void Renderer2D::submit(const RenderState& state)
@@ -316,8 +317,7 @@ void InstanceRenderer2D::create_batch()
 {
 	DLOGN("render") << "[InstanceRenderer2D] Generating new batch." << std::endl;
 	
-	uint32_t binding_point = batches_.size();
-	auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create(binding_point, nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic));
+	auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic));
 	batches_.push_back(ssbo);
 
 	DLOG("render",1) << "New batch size is: " << batches_.size() << std::endl;
@@ -338,13 +338,13 @@ void InstanceRenderer2D::flush()
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
-		shader.attach_shader_storage(*batches_[ii], "instance_data");
+		shader.attach_shader_storage(*batches_[ii], ii);
     	Gfx::device->draw_indexed_instanced(quad_va_, max_batch_count_);
 		++stats_.batches;
 	}
     if(current_batch_count_)
     {
-		shader.attach_shader_storage(*batches_[current_batch_], "instance_data");
+		shader.attach_shader_storage(*batches_[current_batch_], current_batch_);
     	Gfx::device->draw_indexed_instanced(quad_va_, current_batch_count_);
 		++stats_.batches;
     }
