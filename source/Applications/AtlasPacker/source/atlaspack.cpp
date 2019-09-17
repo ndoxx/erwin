@@ -13,6 +13,7 @@
 #include "inih/cpp/INIReader.h"
 #include "rectpack2D/src/finders_interface.h"
 #include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
 
 using namespace rectpack2D;
 
@@ -29,6 +30,7 @@ struct ImageData
     int width;
     int height;
     int channels;
+    std::string name;
 };
 
 // Get path to executable
@@ -82,9 +84,9 @@ static bool read_conf(const fs::path& path)
     return true;
 }
 
-static bool make_atlas(const fs::path& input_dir, const fs::path& output_file)
+static bool make_atlas(const fs::path& input_dir, const fs::path& out_atlas, const fs::path& out_remap)
 {
-    // Configure Rectpack2D
+    // * Configure Rectpack2D
     constexpr bool allow_flip = false;
     const auto max_side = 1000;
     const auto discard_step = 1;
@@ -104,15 +106,17 @@ static bool make_atlas(const fs::path& input_dir, const fs::path& output_file)
     std::vector<rect_type> rectangles;
     std::vector<ImageData> images;
 
-    // Iterate over all files
+    // * Iterate over all files
     for(auto& entry: fs::directory_iterator(input_dir))
     {
         if(entry.is_regular_file())
         {
             std::cout << "  * [" << images.size() << "] " << entry.path().filename() << ": ";
 
+            // Load image, force 4 channels
             ImageData img;
-            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 0);
+            img.name = entry.path().stem().string();
+            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 4);
             if(!img.data)
             {
                 std::cout << std::endl << "Error while loading image." << std::endl;
@@ -126,7 +130,7 @@ static bool make_atlas(const fs::path& input_dir, const fs::path& output_file)
         }
     }
 
-    // Find best packing for images
+    // * Find best packing for images
     const auto result_size = find_best_packing<spaces_type>
     (
         rectangles,
@@ -140,19 +144,54 @@ static bool make_atlas(const fs::path& input_dir, const fs::path& output_file)
         )
     );
 
-    std::cout << "Resultant bin size: " << result_size.w << "x" << result_size.h << std::endl;
+    int out_w = result_size.w;
+    int out_h = result_size.h;
+    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
 
-    // Pack images in an atlas
+    // * Pack images in an atlas
+
+    // Allocate output data array
+    unsigned char* output = new unsigned char[4*out_w*out_h];
+    for(int ii=0; ii<4*out_w*out_h; ++ii)
+        output[ii] = 0;
+
+    // Open remapping file
+    std::ofstream ofs(out_remap);
+    // Write comment for column names
+    ofs << "# x: left to right, y: bottom to top, coords are for top left corner of sub-image" << std::endl;
+    ofs << "# name x y w h" << std::endl;
+
     for(int ii=0; ii<rectangles.size(); ++ii)
     {
         const rect_type& r = rectangles[ii];
-        std::cout << "  * [" << ii << "] " << r.x << " " << r.y << " " << r.w << " " << r.h << std::endl;
+        const ImageData& img = images[ii];
+        std::cout << "  * [" << ii << "] " << img.name << " " << r.x << " " << r.y << " " << r.w << " " << r.h << std::endl;
+        
+        // Set remapping file
+        ofs << img.name << " " << r.x << " " << out_h-r.y << " " << r.w << " " << r.h << std::endl;
+
+        // Set atlas image data
+        for(int xx=0; xx<r.w; ++xx)
+        {
+            int out_x = r.x + xx;
+            for(int yy=0; yy<r.h; ++yy)
+            {
+                int out_y = r.y + yy;
+                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * r.w + xx) + 0];
+                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * r.w + xx) + 1];
+                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * r.w + xx) + 2];
+                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * r.w + xx) + 3];
+            }
+        }
     }
+    ofs.close();
 
     // Export
-    std::cout << "-> export: " << fs::relative(output_file, root_path_) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_atlas, root_path_) << std::endl;
+    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
 
     // Cleanup
+    delete[] output;
     for(auto&& img: images)
         stbi_image_free(img.data);
 
@@ -191,8 +230,9 @@ int main()
             std::string dir_name = entry.path().stem().string();
             std::cout << "*  " << dir_name << std::endl;
 
-            fs::path output_file = asset_path_.parent_path() / (dir_name + ".png");
-            make_atlas(entry.path(), output_file);
+            fs::path out_atlas = asset_path_.parent_path() / (dir_name + ".png");
+            fs::path out_remap = asset_path_.parent_path() / (dir_name + ".txt");
+            make_atlas(entry.path(), out_atlas, out_remap);
         }
     }
 
