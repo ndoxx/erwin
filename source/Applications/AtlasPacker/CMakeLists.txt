@@ -15,8 +15,20 @@ set_target_properties(atlaspack
 )
 target_include_directories(atlaspack PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(atlaspack PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(atlaspack PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
+
+add_library(freetype STATIC IMPORTED)
+set_target_properties(freetype PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libfreetype.a"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/freetype"
+)
 
 target_link_libraries(atlaspack
                       stdc++fs
+                      png
+                      z
+                      bz2
+                      harfbuzz
+                      freetype
                       )
 cotire(atlaspack)
