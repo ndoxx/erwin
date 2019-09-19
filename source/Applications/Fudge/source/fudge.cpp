@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <filesystem>
 #include <string>
 
@@ -60,9 +61,10 @@ enum class Compression: uint8_t
 struct DXAHeader
 {
     uint32_t magic;
-    uint8_t version_major;
-    uint8_t version_minor;
-    uint16_t remapping_type;
+    uint16_t version_major;
+    uint16_t version_minor;
+    uint16_t texture_width;
+    uint16_t texture_height;
     uint64_t texture_blob_size;
     uint64_t remapping_blob_size;
 };
@@ -99,33 +101,33 @@ struct DXAFontAtlasRemapElement
     uint16_t bearing_y;
 };
 
-enum class RemappingType: uint8_t
+struct DXADescriptor
 {
-    Texture,
-    Font
+    fs::path output;
+    void* tex_blob;
+    void* remap_blob;
+    uint32_t tex_blob_size;
+    uint32_t remap_blob_size;
+    uint16_t texture_width;
+    uint16_t texture_height;
 };
 
-static void write_dxa(const fs::path& output, const unsigned char* tex_blob, uint32_t tex_blob_size, 
-                      RemappingType type, const unsigned char* remap_blob, uint32_t remap_blob_size)
+// Write a DXA file given a texture binary blob and a remapping binary blob
+static void write_dxa(const DXADescriptor& desc)
 {
     DXAHeaderWrapper header;
-    header.h.magic         = DXA_MAGIC;
-    header.h.version_major = DXA_VERSION_MAJOR;
-    header.h.version_minor = DXA_VERSION_MINOR;
+    header.h.magic               = DXA_MAGIC;
+    header.h.version_major       = DXA_VERSION_MAJOR;
+    header.h.version_minor       = DXA_VERSION_MINOR;
+    header.h.texture_width       = desc.texture_width;
+    header.h.texture_height      = desc.texture_height;
+    header.h.texture_blob_size   = desc.tex_blob_size;
+    header.h.remapping_blob_size = desc.remap_blob_size;
 
-    switch(type)
-    {
-        case(RemappingType::Texture): header.h.remapping_type = 0; break;
-        case(RemappingType::Font):    header.h.remapping_type = 1; break;
-    }
-    
-    header.h.texture_blob_size   = tex_blob_size;
-    header.h.remapping_blob_size = remap_blob_size;
-
-    std::ofstream ofs(output, std::ios::binary);
+    std::ofstream ofs(desc.output, std::ios::binary);
     ofs.write(reinterpret_cast<const char*>(&header), sizeof(header));
-    ofs.write(reinterpret_cast<const char*>(tex_blob), tex_blob_size);
-    ofs.write(reinterpret_cast<const char*>(remap_blob), remap_blob_size);
+    ofs.write(reinterpret_cast<const char*>(desc.tex_blob), desc.tex_blob_size);
+    ofs.write(reinterpret_cast<const char*>(desc.remap_blob), desc.remap_blob_size);
     ofs.close();
 }
 
@@ -136,7 +138,8 @@ static fs::path s_conf_path;  // Path to configuration directory
 static fs::path s_asset_path; // Path to parent directory of unpacked image files
 static fs::path s_fonts_path; // Path to fonts folder
 
-static Compression s_compression;
+static Compression s_tex_compression;
+static Compression s_fnt_compression;
 
 static FT_Library ft_;
 
@@ -197,14 +200,23 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    std::string comp_str = reader.Get("output", "compression", "UNKNOWN");
+    std::string comp_str = reader.Get("output", "texture_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
-        s_compression = Compression::None;
+        s_tex_compression = Compression::None;
     else if(!comp_str.compare("DXT5"))
-        s_compression = Compression::DXT5;
+        s_tex_compression = Compression::DXT5;
     else
     {
-        std::cout << "Unrecognized compression specifier: " << comp_str << std::endl;
+        std::cout << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
+        return false;
+    }
+
+    comp_str = reader.Get("output", "font_compression", "UNKNOWN");
+    if(!comp_str.compare("none"))
+        s_fnt_compression = Compression::None;
+    else
+    {
+        std::cout << "Unrecognized compression specifier for fonts: " << comp_str << std::endl;
         return false;
     }
 
@@ -247,7 +259,7 @@ static rect_wh pack(std::vector<rect_xywh>& rectangles, uint32_t max_side=1000)
 }
 
 // Export a texture atlas to PNG format with a text remapping file
-static void export_atlas(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
+static void export_atlas_png(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
     fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
@@ -268,7 +280,6 @@ static void export_atlas(const std::vector<ImageData>& images, const std::string
     for(int ii=0; ii<images.size(); ++ii)
     {
         const ImageData& img = images[ii];
-        std::cout << "  * [" << ii << "] " << img.name << " " << img.x << " " << img.y << " " << img.width << " " << img.height << std::endl;
         
         // Set remapping file
         ofs << img.name << " " << img.x << " " << out_h-img.y << " " << img.width << " " << img.height << std::endl;
@@ -371,8 +382,17 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
 
     // Export
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".dxa");
-    write_dxa(out_atlas, tex_blob, num_blocks*compr_size, 
-              RemappingType::Texture, reinterpret_cast<unsigned char*>(remap.data()), remap.size()*sizeof(DXAAtlasRemapElement));
+    std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
+    write_dxa(
+    {
+        out_atlas,
+        tex_blob,
+        remap.data(),
+        (uint32_t)(num_blocks*compr_size),
+        (uint32_t)(remap.size()*sizeof(DXAAtlasRemapElement)),
+        (uint16_t)out_w,
+        (uint16_t)out_h
+    });
 
     // Cleanup
     delete[] blocks;
@@ -380,7 +400,7 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
 }
 
 // Export a font atlas to PNG format with a text remapping file
-static void export_font_atlas(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
+static void export_font_atlas_png(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
     fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
@@ -430,93 +450,6 @@ static void export_font_atlas(const std::vector<Character>& characters, const st
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
 }
 
-// Export a font atlas to compressed DXA format (remapping information inside)
-static void export_font_atlas_dxt(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
-{
-    // * Pack characters in an atlas
-    // Pad size to multiple of 4
-    if(out_w%4)
-    {
-        out_w += (4-out_w%4);
-        std::cout << "Padded width to: " << out_w << std::endl;
-    }
-    if(out_h%4)
-    {
-        out_h += (4-out_h%4);
-        std::cout << "Padded height to: " << out_h << std::endl;
-    }
-
-    // Allocate block data array
-    unsigned char* blocks = new unsigned char[4*out_w*out_h];
-    for(int ii=0; ii<4*out_w*out_h; ++ii)
-        blocks[ii] = 0;
-
-    // Allocate remapping data array
-    std::vector<DXAFontAtlasRemapElement> remap;
-    remap.reserve(characters.size());
-
-    // Populate 4x4 blocks from characters data
-    for(int ii=0; ii<characters.size(); ++ii)
-    {
-        const Character& charac = characters[ii];
-
-        // Push remapping element
-        DXAFontAtlasRemapElement elt
-        {
-            (uint64_t)charac.index,        // index
-            (uint16_t)charac.x,            // x
-            (uint16_t)(out_h-charac.y),    // y
-            (uint16_t)charac.width,        // w
-            (uint16_t)charac.height,       // h
-            (uint32_t)(charac.advance>>6), // advance
-            (uint16_t)charac.bearing_x,    // bearing_x
-            (uint16_t)charac.bearing_y     // bearing_y
-        };
-        remap.push_back(elt);
-        
-        // Set atlas image data
-        for(int xx=0; xx<charac.width; ++xx)
-        {
-            int out_x = charac.x + xx;
-            for(int yy=0; yy<charac.height; ++yy)
-            {
-                int out_y = charac.y + yy;
-                // Calculate offset inside block container
-                int block_index = out_w * (out_y/4) + (out_x/4);
-                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
-                char value = charac.data[yy * charac.width + xx];
-                blocks[offset + 0] = value ? 255 : 0; // R channel
-                blocks[offset + 1] = value ? 255 : 0; // G channel
-                blocks[offset + 2] = value ? 255 : 0; // B channel
-                blocks[offset + 3] = value;           // A channel
-            }
-        }
-    }
-
-    // Allocate compressed data array
-    const int num_blocks = (out_w*out_h)/16;
-    static const int block_size = 16*4; // 4 bytes per-pixel, 16 pixel in a 4x4 block
-    static const int compr_size = 16;   // 128 bits compressed size per block
-    unsigned char* tex_blob = new unsigned char[num_blocks*compr_size];
-
-    // Compress each block
-    for(int ii=0; ii<num_blocks; ++ii)
-    {
-        int src_offset = ii*block_size;
-        int dst_offset = ii*compr_size;
-        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
-    }
-
-    // Export
-    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".dxa");
-    write_dxa(out_atlas, tex_blob, num_blocks*compr_size, 
-              RemappingType::Font, reinterpret_cast<unsigned char*>(remap.data()), remap.size()*sizeof(DXAFontAtlasRemapElement));
-
-    // Cleanup
-    delete[] blocks;
-    delete[] tex_blob;
-}
-
 // Create an atlas texture plus a remapping file. The atlas contains each sub-texture found in input directory.
 static void make_atlas(const fs::path& input_dir, Compression compr = Compression::None)
 {
@@ -563,7 +496,7 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
     std::string dir_name = input_dir.stem().string();
     switch(compr)
     {
-        case Compression::None: export_atlas(images, dir_name, out_w, out_h); break;
+        case Compression::None: export_atlas_png(images, dir_name, out_w, out_h); break;
         case Compression::DXT5: export_atlas_dxt(images, dir_name, out_w, out_h); break;
     }
 
@@ -659,11 +592,7 @@ static void make_font_atlas(const fs::path& input_font, Compression compr = Comp
 
     // * Export
     std::string font_name = input_font.stem().string();
-    switch(compr)
-    {
-        case Compression::None: export_font_atlas(characters, font_name, out_w, out_h); break;
-        case Compression::DXT5: export_font_atlas_dxt(characters, font_name, out_w, out_h); break;
-    }
+    export_font_atlas_png(characters, font_name, out_w, out_h);
 
     // Cleanup
     for(auto&& charac: characters)
@@ -672,12 +601,45 @@ static void make_font_atlas(const fs::path& input_font, Compression compr = Comp
     FT_Done_Face(face);
 }
 
+static std::string grad(float a)
+{
+    std::stringstream ss;
+    static const float R1 = 255.f; static const float R2 = 174.f;
+    static const float G1 = 200.f; static const float G2 = 7.f;
+    static const float B1 = 0.f;   static const float B2 = 7.f;
+
+    int R = int((1.f-a)*R1 + a*R2);
+    int G = int((1.f-a)*G1 + a*G2);
+    int B = int((1.f-a)*B1 + a*B2);
+
+    ss << "\033[1;38;2;" << R << ";" << G << ";" << B << "m";
+    return ss.str();
+}
+
+static const std::string S_SECTION = "\033[1;38;2;255;255;153m";
+static const std::string S_DEF     = "\033[0m";
+
+static void show_logo()
+{
+    std::cout << grad(0.0f) << " (                              (                                " << std::endl;
+    std::cout << grad(0.2f) << " )\\ )        (                  )\\ )               )             " << std::endl;
+    std::cout << grad(0.4f) << "(()/(   (    )\\ )  (  (     (  (()/(    )       ( /(    (   (    " << std::endl;
+    std::cout << grad(0.5f) << " /(_)) ))\\  (()/(  )\\))(   ))\\  /(_))( /(   (   )\\())  ))\\  )(   " << std::endl;
+    std::cout << grad(0.6f) << "(_))_|/((_)  ((_))((_))\\  /((_)(_))  )(_))  )\\ ((_)\\  /((_)(()\\  " << std::endl;
+    std::cout << grad(0.7f) << "| |_ (_))(   _| |  (()(_)(_))  | _ \\((_)_  ((_)| |(_)(_))   ((_) " << std::endl;
+    std::cout << grad(0.8f) << "| __|| || |/ _` | / _` | / -_) |  _// _` |/ _| | / / / -_) | '_| " << std::endl;
+    std::cout << grad(0.9f) << "|_|   \\_,_|\\__,_| \\__, | \\___| |_|  \\__,_|\\__| |_\\_\\ \\___| |_|   " << std::endl;
+    std::cout << grad(1.0f) << "                  |___/                                          \033[0m" << std::endl;
+    std::cout << "\033[1;48;2;153;0;0m                        Atlas packer tool                        \033[0m" << std::endl;
+    std::cout << std::endl;
+}
+
 int main(int argc, char const *argv[])
 {
-    std::cout << "Atlas Packer utilitary launched." << std::endl;
+    show_logo();
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
-    std::cout << "Locating unpacked assets." << std::endl;
+    std::cout << S_SECTION << "Locating unpacked assets." << S_DEF << std::endl;
     s_self_path = get_selfpath();
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
@@ -694,19 +656,26 @@ int main(int argc, char const *argv[])
     std::cout << "-> Unpacked assets: " << fs::relative(s_asset_path, s_root_path) << std::endl;
     std::cout << "-> Fonts:           " << fs::relative(s_fonts_path, s_root_path) << std::endl;
 
+    std::cout << std::endl;
+    std::cout << "--------------------------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
+
     // * For each sub-directory in upack directory, create an atlas containing every image in it,
     //   whose name is the sub-directory name
-    std::cout << "Iterating unpacked assets directories." << std::endl;
+    std::cout << S_SECTION << "Iterating unpacked assets directories." << S_DEF << std::endl;
     for(auto& entry: fs::directory_iterator(s_asset_path))
     {
         if(entry.is_directory())
         {
-            std::string dir_name = entry.path().stem().string();
-            std::cout << "*  " << dir_name << std::endl;
+            std::cout << "*  Processing directory: " << entry.path().stem() << std::endl;
 
-            make_atlas(entry.path(), s_compression);
+            make_atlas(entry.path(), s_tex_compression);
+            std::cout << std::endl;
         }
     }
+
+    std::cout << "--------------------------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
 
     // * Generate an atlas for each font in fonts directory
     // Init freetype
@@ -716,14 +685,15 @@ int main(int argc, char const *argv[])
         exit(0);
     }
 
-    std::cout << "Iterating fonts." << std::endl;
+    std::cout << S_SECTION << "Iterating fonts." << S_DEF << std::endl;
     for(auto& entry: fs::directory_iterator(s_fonts_path))
     {
         if(entry.is_regular_file() && entry.path().extension().string().compare("ttf"))
         {
-            std::cout << "Processing font: " << entry.path().filename() << std::endl;
+            std::cout << "*  Processing font: " << entry.path().filename() << std::endl;
             std::string font_name = entry.path().stem().string();
-            make_font_atlas(entry.path(), s_compression);
+            make_font_atlas(entry.path(), s_fnt_compression);
+            std::cout << std::endl;
         }
     }
 

@@ -1,3 +1,3 @@
 subdirs(InternString)
 subdirs(Sandbox)
-subdirs(AtlasPacker)
+subdirs(Fudge)
