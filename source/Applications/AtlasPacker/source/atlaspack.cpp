@@ -14,6 +14,7 @@
 #include "rectpack2D/src/finders_interface.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
+#include "stb/stb_dxt.h"
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -22,35 +23,52 @@ using namespace rectpack2D;
 
 namespace fs = std::filesystem;
 
-static fs::path self_path_;
-static fs::path root_path_;
-static fs::path conf_path_;
-static fs::path asset_path_;
-static fs::path fonts_path_;
-
-static FT_Library ft_;
-
 // For image texture atlas
 struct ImageData
 {
-    stbi_uc* data;
-    int width;
+    std::string name;   // Name of image
+    stbi_uc* data;      // Image data
+    int x;              // Image position in atlas
+    int y;
+    int width;          // Size of image
     int height;
-    int channels;
-    std::string name;
+    int channels;       // Number of color channels
 };
 
 // For font texture atlas
 struct Character
 {
-    unsigned long index;
-    unsigned char* data;
-    long advance;   // Offset to advance to next glyph
-    unsigned int size_w; // Size of glyph
-    unsigned int size_h;
-    int bearing_x; // Offset from baseline to left/top of glyph
+    unsigned long index; // Character index
+    unsigned char* data; // Bitmap data
+    int x;               // Character position in atlas
+    int y;
+    unsigned int width; // Size of glyph
+    unsigned int height;
+    long advance;        // Offset to advance to next glyph
+    int bearing_x;       // Offset from baseline to left/top of glyph
     int bearing_y;
 };
+
+enum class Compression: uint8_t
+{
+    None = 0,
+    DXT5
+};
+
+
+static fs::path s_self_path;  // Path to executable
+static fs::path s_root_path;  // Path to root directory of Erwin engine
+static fs::path s_conf_path;  // Path to configuration directory
+static fs::path s_asset_path; // Path to parent directory of unpacked image files
+static fs::path s_fonts_path; // Path to fonts folder
+
+static Compression s_compression;
+
+static FT_Library ft_;
+
+
+
+
 
 // Get path to executable
 static fs::path get_selfpath()
@@ -76,6 +94,7 @@ static fs::path get_selfpath()
 #endif
 }
 
+// Read configuration file (.ini) and setup paths
 static bool read_conf(const fs::path& path)
 {
     std::cout << "Reading atlas tool config file." << std::endl;
@@ -93,28 +112,41 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    asset_path_ = root_path_ / reader.Get("paths", "upack", "UNKNOWN");
-    if(!fs::exists(asset_path_))
+    s_asset_path = s_root_path / reader.Get("paths", "upack", "UNKNOWN");
+    if(!fs::exists(s_asset_path))
     {
-        std::cout << "Path " << asset_path_ << " does not exist." << std::endl;
+        std::cout << "Path " << s_asset_path << " does not exist." << std::endl;
         return false;
     }
 
-    fonts_path_ = root_path_ / reader.Get("paths", "fonts", "UNKNOWN");
-    if(!fs::exists(fonts_path_))
+    s_fonts_path = s_root_path / reader.Get("paths", "fonts", "UNKNOWN");
+    if(!fs::exists(s_fonts_path))
     {
-        std::cout << "Path " << fonts_path_ << " does not exist." << std::endl;
+        std::cout << "Path " << s_fonts_path << " does not exist." << std::endl;
+        return false;
+    }
+
+    std::string comp_str = reader.Get("output", "compression", "UNKNOWN");
+    if(!comp_str.compare("none"))
+        s_compression = Compression::None;
+    else if(!comp_str.compare("DXT5"))
+        s_compression = Compression::DXT5;
+    else
+    {
+        std::cout << "Unrecognized compression specifier: " << comp_str << std::endl;
         return false;
     }
 
     return true;
 }
 
-static rect_wh pack(std::vector<rect_xywh>& rectangles)
+// Find the optimal packing for a list of rectangles and return the resultant bin size
+// Rectangles coordinates (initially set to 0) are modified directly
+// max_side: maximal size of a side for the resultant bin
+static rect_wh pack(std::vector<rect_xywh>& rectangles, uint32_t max_side=1000)
 {
     // * Configure Rectpack2D
     constexpr bool allow_flip = false;
-    const auto max_side = 1000;
     const auto discard_step = 1;
     const auto runtime_flipping_mode = flipping_option::ENABLED;
     using spaces_type = rectpack2D::empty_spaces<allow_flip, default_empty_spaces>;
@@ -143,40 +175,10 @@ static rect_wh pack(std::vector<rect_xywh>& rectangles)
     );
 }
 
-static bool make_atlas(const fs::path& input_dir, const fs::path& out_atlas, const fs::path& out_remap)
+static void export_atlas(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
 {
-    std::vector<rect_xywh> rectangles;
-    std::vector<ImageData> images;
-
-    // * Iterate over all files
-    for(auto& entry: fs::directory_iterator(input_dir))
-    {
-        if(entry.is_regular_file())
-        {
-            //std::cout << "  * [" << images.size() << "] " << entry.path().filename() << ": ";
-
-            // Load image, force 4 channels
-            ImageData img;
-            img.name = entry.path().stem().string();
-            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 4);
-            if(!img.data)
-            {
-                std::cout << "Error while loading image." << std::endl;
-                return false;
-            }
-            //std::cout << img.width << "x" << img.height << " - " << img.channels << " channels" << std::endl;
-
-            // Insert image and rectangle at the same time so they have the same index (stupid rectpack2D lib)
-            images.push_back(img);
-            rectangles.push_back({0,0,img.width,img.height});
-        }
-    }
-
-    // * Find best packing for images
-    auto result_size = pack(rectangles);
-    int out_w = result_size.w;
-    int out_h = result_size.h;
-    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
+    fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
 
     // * Pack images in an atlas
     // Allocate output data array
@@ -190,108 +192,62 @@ static bool make_atlas(const fs::path& input_dir, const fs::path& out_atlas, con
     ofs << "# x: left to right, y: bottom to top, coords are for top left corner of sub-image" << std::endl;
     ofs << "# name x y w h" << std::endl;
 
-    for(int ii=0; ii<rectangles.size(); ++ii)
+    // Create the atlas texture
+    for(int ii=0; ii<images.size(); ++ii)
     {
-        const rect_xywh& r = rectangles[ii];
         const ImageData& img = images[ii];
-        std::cout << "  * [" << ii << "] " << img.name << " " << r.x << " " << r.y << " " << r.w << " " << r.h << std::endl;
+        std::cout << "  * [" << ii << "] " << img.name << " " << img.x << " " << img.y << " " << img.width << " " << img.height << std::endl;
         
         // Set remapping file
-        ofs << img.name << " " << r.x << " " << out_h-r.y << " " << r.w << " " << r.h << std::endl;
+        ofs << img.name << " " << img.x << " " << out_h-img.y << " " << img.width << " " << img.height << std::endl;
 
         // Set atlas image data
-        for(int xx=0; xx<r.w; ++xx)
+        for(int xx=0; xx<img.width; ++xx)
         {
-            int out_x = r.x + xx;
-            for(int yy=0; yy<r.h; ++yy)
+            int out_x = img.x + xx;
+            for(int yy=0; yy<img.height; ++yy)
             {
-                int out_y = r.y + yy;
-                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * r.w + xx) + 0];
-                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * r.w + xx) + 1];
-                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * r.w + xx) + 2];
-                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * r.w + xx) + 3];
+                int out_y = img.y + yy;
+                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
             }
         }
     }
     ofs.close();
 
     // Export
-    std::cout << "-> export: " << fs::relative(out_atlas, root_path_) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
 
     // Cleanup
     delete[] output;
-    for(auto&& img: images)
-        stbi_image_free(img.data);
-
-    return true;
 }
 
-static bool make_font_atlas(const fs::path& input_font, const fs::path& out_atlas, const fs::path& out_remap)
+static void export_atlas_dxt(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
 {
-    std::vector<rect_xywh> rectangles;
-
-    // Open font file as binary and load into freetype
-    std::ifstream ifs(input_font, std::ios::binary);
-    std::vector<char> buffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    FT_Face face;
-    if(FT_New_Memory_Face(ft_, reinterpret_cast<FT_Byte*>(&buffer[0]), buffer.size(), 0, &face))
+    // * Pack images in an atlas
+    // Pad size to multiple of 4
+    if(out_w%4)
     {
-        std::cout << "Failed to load font: " << input_font << std::endl;
-        return false;
+        out_w += (4-out_w%4);
+        std::cout << "Padded width to: " << out_w << std::endl;
+    }
+    if(out_h%4)
+    {
+        out_h += (4-out_h%4);
+        std::cout << "Padded height to: " << out_h << std::endl;
     }
 
-    // Set face size
-    uint32_t width = 0;
-    uint32_t height = 32;
-    FT_Set_Pixel_Sizes(face, width, height);
+    // Populate 4x4 blocks from images data
+}
 
-    // Iterate over each character
-    FT_UInt index;
-    FT_ULong cc = FT_Get_First_Char(face, &index);
-    std::vector<Character> characters;
-    while(true)
-    // for(unsigned char cc=0; cc<128; ++cc)
-    {
-        // Load character glyph
-        if(FT_Load_Char(face, cc, FT_LOAD_RENDER))
-        {
-            std::cout << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
-            continue;
-        }
-        if(face->glyph->bitmap.width == 0 && face->glyph->bitmap.rows == 0)
-        {
-            std::cout << "Glyph: \'" << std::to_string(cc) << "\' has null size." << std::endl;
-        }
-        Character character =
-        {
-            cc,
-            nullptr,
-            face->glyph->advance.x,
-            face->glyph->bitmap.width,
-            face->glyph->bitmap.rows,
-            face->glyph->bitmap_left,
-            face->glyph->bitmap_top,
-        };
-        // Copy bitmap buffer to new buffer, because next iteration will modify this data
-        character.data = new unsigned char[character.size_w*character.size_h];
-        memcpy(character.data, face->glyph->bitmap.buffer, character.size_w*character.size_h);
-
-        characters.push_back(character);
-        rectangles.push_back({0,0,(int)character.size_w,(int)character.size_h});
-
-        // std::cout << std::to_string(cc) << " " << character.size_w << "x" << character.size_h << std::endl;
-
-        cc = FT_Get_Next_Char(face, cc, &index);
-        if(!index)
-            break;
-    }
-
-    // * Find best packing for images
-    auto result_size = pack(rectangles);
-    int out_w = result_size.w;
-    int out_h = result_size.h;
-    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+static void export_font_atlas(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
+{
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
+    fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
 
     // * Pack images in an atlas
     // Allocate output data array
@@ -305,81 +261,232 @@ static bool make_font_atlas(const fs::path& input_font, const fs::path& out_atla
     ofs << "# x: left to right, y: bottom to top, coords are for top left corner of sub-image" << std::endl;
     ofs << "# index x y w h advance bearing_x bearing_y" << std::endl;
 
-    for(int ii=0; ii<rectangles.size(); ++ii)
+    // Create the atlas texture
+    for(int ii=0; ii<characters.size(); ++ii)
     {
-        const rect_xywh& r = rectangles[ii];
         const Character& charac = characters[ii];
         
         // Set remapping file
-        ofs << charac.index << " " << r.x << " " << out_h-r.y << " " << r.w << " " << r.h << " "
-            << (charac.advance>>6) << " " << charac.bearing_x << " " << charac.bearing_y << std::endl;
         // advance is bitshifted by 6 (2^6=64) to get value in pixels
+        ofs << charac.index << " " << charac.x << " " << out_h-charac.y << " " << charac.width << " " << charac.height << " "
+            << (charac.advance>>6) << " " << charac.bearing_x << " " << charac.bearing_y << std::endl;
 
         // Set atlas image data
-        for(int xx=0; xx<r.w; ++xx)
+        for(int xx=0; xx<charac.width; ++xx)
         {
-            int out_x = r.x + xx;
-            for(int yy=0; yy<r.h; ++yy)
+            int out_x = charac.x + xx;
+            for(int yy=0; yy<charac.height; ++yy)
             {
-                int out_y = r.y + yy;
-                char value = charac.data[yy * r.w + xx];
-                output[4 * (out_y * out_w + out_x) + 0] = value ? 255 : 0;
-                output[4 * (out_y * out_w + out_x) + 1] = value ? 255 : 0;
-                output[4 * (out_y * out_w + out_x) + 2] = value ? 255 : 0;
-                output[4 * (out_y * out_w + out_x) + 3] = value;
+                int out_y = charac.y + yy;
+                char value = charac.data[yy * charac.width + xx];
+                output[4 * (out_y * out_w + out_x) + 0] = value ? 255 : 0; // R channel
+                output[4 * (out_y * out_w + out_x) + 1] = value ? 255 : 0; // G channel
+                output[4 * (out_y * out_w + out_x) + 2] = value ? 255 : 0; // B channel
+                output[4 * (out_y * out_w + out_x) + 3] = value;           // A channel
             }
         }
     }
-
     ofs.close();
 
     // Export
-    std::cout << "-> export: " << fs::relative(out_atlas, root_path_) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
+}
+
+static void export_font_atlas_dxt(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
+{
+
+}
+
+// Create an atlas texture plus a remapping file. The atlas contains each sub-texture found in input directory.
+static void make_atlas(const fs::path& input_dir, Compression compr = Compression::None)
+{
+    std::vector<rect_xywh> rectangles;
+    std::vector<ImageData> images;
+
+    // * Iterate over all files
+    for(auto& entry: fs::directory_iterator(input_dir))
+    {
+        if(entry.is_regular_file())
+        {
+            // Load image, force 4 channels
+            ImageData img;
+            img.name = entry.path().stem().string();
+            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 4);
+            img.x = 0;
+            img.y = 0;
+            if(!img.data)
+            {
+                std::cout << "Error while loading image: " << entry.path().filename() << std::endl;
+                continue;
+            }
+
+            // Insert image and rectangle at the same time so they have the same index (stupid rectpack2D lib)
+            images.push_back(img);
+            rectangles.push_back({0,0,img.width,img.height});
+        }
+    }
+
+    // * Find best packing for images
+    auto result_size = pack(rectangles);
+    int out_w = result_size.w;
+    int out_h = result_size.h;
+    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+
+    // Update image positions
+    for(int ii=0; ii<rectangles.size(); ++ii)
+    {
+        images[ii].x = rectangles[ii].x;
+        images[ii].y = rectangles[ii].y;
+    }
+
+    // * Export
+    std::string dir_name = input_dir.stem().string();
+    switch(compr)
+    {
+        case Compression::None: export_atlas(images, dir_name, out_w, out_h); break;
+        case Compression::DXT5: export_atlas_dxt(images, dir_name, out_w, out_h); break;
+    }
+
+    // Cleanup
+    for(auto&& img: images)
+        stbi_image_free(img.data);
+}
+
+// Read a font file (.ttf) and export an atlas plus a remapping file. The atlas contains each character existing in the font file.
+// raster_size (px): allows to scale the characters.
+static void make_font_atlas(const fs::path& input_font, Compression compr = Compression::None, uint32_t raster_size=32)
+{
+    // * Create a new face using Freetype, and load each character
+    // Open font file as binary and load into freetype
+    std::ifstream ifs(input_font, std::ios::binary);
+    std::vector<char> buffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    FT_Face face;
+    if(FT_New_Memory_Face(ft_, reinterpret_cast<FT_Byte*>(&buffer[0]), buffer.size(), 0, &face))
+    {
+        std::cout << "Failed to load font: " << input_font << std::endl;
+        return;
+    }
+
+    // Set face size
+    uint32_t width = 0;
+    uint32_t height = raster_size;
+    FT_Set_Pixel_Sizes(face, width, height);
+
+    // Iterate over each character
+    FT_UInt index;
+    FT_ULong cc = FT_Get_First_Char(face, &index);
+    std::vector<Character> characters;
+    std::vector<rect_xywh> rectangles;
+    while(true)
+    {
+        // Load character glyph
+        if(FT_Load_Char(face, cc, FT_LOAD_RENDER))
+        {
+            std::cout << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
+            cc = FT_Get_Next_Char(face, cc, &index);
+            if(!index)
+                break;
+            continue;
+        }
+        // Null size characters (like space and DEL) have no pixel data, they will need special treatment in the engine,
+        // but we don't save them in the atlas.
+        if(face->glyph->bitmap.width == 0 && face->glyph->bitmap.rows == 0)
+        {
+            std::cout << "Glyph: \'" << std::to_string(cc) << "\' has null size." << std::endl;
+            cc = FT_Get_Next_Char(face, cc, &index);
+            if(!index)
+                break;
+            continue;
+        }
+
+        Character character =
+        {
+            cc,
+            nullptr,
+            0,
+            0,
+            face->glyph->bitmap.width,
+            face->glyph->bitmap.rows,
+            face->glyph->advance.x,
+            face->glyph->bitmap_left,
+            face->glyph->bitmap_top,
+        };
+        // Copy bitmap buffer to new buffer, because next iteration will modify this data
+        character.data = new unsigned char[character.width*character.height];
+        memcpy(character.data, face->glyph->bitmap.buffer, character.width*character.height);
+
+        characters.push_back(character);
+        rectangles.push_back({0,0,(int)character.width,(int)character.height});
+
+        // Get next character, if index is null it means that we don't have a next character
+        cc = FT_Get_Next_Char(face, cc, &index);
+        if(!index)
+            break;
+    }
+
+    // * Find best packing for characters
+    auto result_size = pack(rectangles,1000);
+    int out_w = result_size.w;
+    int out_h = result_size.h;
+    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+
+    // Update character positions
+    for(int ii=0; ii<rectangles.size(); ++ii)
+    {
+        characters[ii].x = rectangles[ii].x;
+        characters[ii].y = rectangles[ii].y;
+    }
+
+    // * Export
+    std::string font_name = input_font.stem().string();
+    switch(compr)
+    {
+        case Compression::None: export_font_atlas(characters, font_name, out_w, out_h); break;
+        case Compression::DXT5: export_font_atlas_dxt(characters, font_name, out_w, out_h); break;
+    }
 
     // Cleanup
     for(auto&& charac: characters)
         delete[] charac.data;
 
     FT_Done_Face(face);
-    return true;
 }
 
-
-int main()
+int main(int argc, char const *argv[])
 {
     std::cout << "Atlas Packer utilitary launched." << std::endl;
 
-    // * Locate executable path, root directory, config directory and asset directory
+    // * Locate executable path, root directory, config directory, asset and fonts directories
     std::cout << "Locating unpacked assets." << std::endl;
-    self_path_ = get_selfpath();
-    root_path_ = self_path_.parent_path().parent_path();
-    conf_path_ = root_path_ / "config";
+    s_self_path = get_selfpath();
+    s_root_path = s_self_path.parent_path().parent_path();
+    s_conf_path = s_root_path / "config";
 
-    std::cout << "-> Self path: " << self_path_ << std::endl;
-    std::cout << "-> Root path: " << root_path_ << std::endl;
-    std::cout << "-> Conf path: " << conf_path_ << std::endl;
+    std::cout << "-> Self path: " << s_self_path << std::endl;
+    std::cout << "-> Root path: " << s_root_path << std::endl;
+    std::cout << "-> Conf path: " << s_conf_path << std::endl;
 
-    if(!read_conf(conf_path_ / "atlas.ini"))
+    if(!read_conf(s_conf_path / "atlas.ini"))
     {
         std::cout << "Could not complete configuration step, exiting." << std::endl;
         exit(0);
     }
-    std::cout << "-> Unpacked assets: " << fs::relative(asset_path_, root_path_) << std::endl;
+    std::cout << "-> Unpacked assets: " << fs::relative(s_asset_path, s_root_path) << std::endl;
+    std::cout << "-> Fonts:           " << fs::relative(s_fonts_path, s_root_path) << std::endl;
 
     // * For each sub-directory in upack directory, create an atlas containing every image in it,
     //   whose name is the sub-directory name
     std::cout << "Iterating unpacked assets directories." << std::endl;
-    for(auto& entry: fs::directory_iterator(asset_path_))
+    for(auto& entry: fs::directory_iterator(s_asset_path))
     {
         if(entry.is_directory())
         {
             std::string dir_name = entry.path().stem().string();
             std::cout << "*  " << dir_name << std::endl;
 
-            fs::path out_atlas = asset_path_.parent_path() / (dir_name + ".png");
-            fs::path out_remap = asset_path_.parent_path() / (dir_name + ".txt");
-            make_atlas(entry.path(), out_atlas, out_remap);
+            make_atlas(entry.path(), s_compression);
         }
     }
 
@@ -391,20 +498,18 @@ int main()
         exit(0);
     }
 
-    for(auto& entry: fs::directory_iterator(fonts_path_))
+    std::cout << "Iterating fonts." << std::endl;
+    for(auto& entry: fs::directory_iterator(s_fonts_path))
     {
         if(entry.is_regular_file() && entry.path().extension().string().compare("ttf"))
         {
             std::cout << "Processing font: " << entry.path().filename() << std::endl;
             std::string font_name = entry.path().stem().string();
-            fs::path out_atlas = fonts_path_.parent_path() / (font_name + ".png");
-            fs::path out_remap = asset_path_.parent_path() / (font_name + ".txt");
-            make_font_atlas(entry.path(), out_atlas, out_remap);
+            make_font_atlas(entry.path(), s_compression);
         }
     }
 
     // Cleanup freetype
-
     FT_Done_FreeType(ft_);
 
 
