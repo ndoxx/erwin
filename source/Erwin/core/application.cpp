@@ -1,9 +1,9 @@
 #include "application.h"
-#include "clock.hpp"
+#include "core/clock.hpp"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "imgui/imgui_layer.h"
-#include "core/input.h"
+#include "input/input.h"
 #include "core/intern_string.h"
 #include "core/file_system.h"
 

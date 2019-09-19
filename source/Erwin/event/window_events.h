@@ -1,7 +1,7 @@
 #pragma once
 
-#include "event.h"
-#include "keys.h"
+#include "event/event.h"
+#include "input/keys.h"
 
 namespace erwin
 {

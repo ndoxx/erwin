@@ -21,27 +21,29 @@ layout(triangle_strip, max_vertices = 6) out;
 in vec3 v_color[];
 out vec3 f_color;
 
+uniform mat4 u_view_projection;
+
 void main()
 {
     for(int ii=0; ii<gl_in.length(); ii++)
     {
-    	gl_Position = gl_in[ii].gl_Position;
+    	gl_Position = u_view_projection*gl_in[ii].gl_Position;
     	f_color = v_color[ii];
 
    		EmitVertex();
     }
     EndPrimitive();
 
-    gl_Position = gl_in[2].gl_Position;
+    gl_Position = u_view_projection*gl_in[2].gl_Position;
     f_color = v_color[2];
    	EmitVertex();
 
-    gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[2].gl_Position.y, 0.f, 1.f);
+    gl_Position = u_view_projection*vec4(gl_in[0].gl_Position.x, gl_in[2].gl_Position.y, 0.f, 1.f);
     f_color = v_color[1];
     // Be sure to set UVs when we get there
    	EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position;
+    gl_Position = u_view_projection*gl_in[0].gl_Position;
     f_color = v_color[0];
    	EmitVertex();
     EndPrimitive();

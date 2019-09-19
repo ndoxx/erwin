@@ -50,8 +50,11 @@ Renderer2D::~Renderer2D()
 	delete query_timer_;
 }
 
-void Renderer2D::begin_scene(uint32_t layer_index)
+void Renderer2D::begin_scene(const OrthographicCamera2D& camera)
 {
+	// Set scene data
+	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
+
 	// Reset
 	current_batch_ = 0;
 	current_batch_count_ = 0;
@@ -213,6 +216,8 @@ void BatchRenderer2D::flush()
 	const Shader& shader = Renderer2D::shader_bank.get("color_dup_shader"_h);
 	shader.bind();
 
+	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
+
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
@@ -334,6 +339,7 @@ void InstanceRenderer2D::flush()
 {
 	const Shader& shader = Renderer2D::shader_bank.get("color_inst_shader"_h);
 	shader.bind();
+	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GLFW/glfw3.h"
-#include "../Erwin/event/keys.h"
+#include "input/keys.h"
 
 namespace erwin
 {

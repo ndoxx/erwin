@@ -4,11 +4,10 @@
 #include <fstream>
 #include "erwin.h"
 
-#include "render/buffer.h"
-#include "render/shader.h"
-
-#include "platform/ogl_shader.h"
-#include "platform/ogl_texture.h"
+// #include "render/buffer.h"
+// #include "render/shader.h"
+// #include "platform/ogl_shader.h"
+// #include "platform/ogl_texture.h"
 
 
 using namespace erwin;
@@ -17,7 +16,8 @@ class LayerBatch2D: public Layer
 {
 public:
 	LayerBatch2D():
-	Layer("LayerBatch2D")
+	Layer("LayerBatch2D"),
+	camera_ctl_(1280.f/1024.f, 1.f)
 	{
 
 	}
@@ -93,6 +93,10 @@ public:
 protected:
 	virtual void on_update(GameClock& clock) override
 	{
+		// Update
+		camera_ctl_.update(clock);
+
+		// Render submission
 		float dt = clock.get_frame_duration();
 		fps_ = 1.f/dt;
 
@@ -100,7 +104,7 @@ protected:
 		if(tt_>=5.f)
 			tt_ = 0.f;
 
-		renderer_2D_->begin_scene(get_priority());
+		renderer_2D_->begin_scene(camera_ctl_.get_camera());
 		{
 			RenderState render_state;
 			render_state.render_target = RenderTarget::Default;
@@ -140,6 +144,7 @@ protected:
 private:
 	std::unique_ptr<Renderer2D> renderer_2D_;
 	//std::shared_ptr<Texture2D> dirt_tex_;
+	OrthographicCamera2DController camera_ctl_;
 
 	RenderStats render_stats_;
 	bool enable_profiling_ = false;
@@ -157,7 +162,7 @@ class Sandbox: public Application
 public:
 	Sandbox()
 	{
-		EVENTBUS.subscribe(this, &Sandbox::on_key_pressed_event);
+		EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new LayerBatch2D());
@@ -168,7 +173,7 @@ public:
 
 	}
 
-	bool on_key_pressed_event(const KeyboardEvent& e)
+	bool on_keyboard_event(const KeyboardEvent& e)
 	{
 		// Terminate on ESCAPE
 		if(e.pressed && e.key == keymap::WKEY::ESCAPE)

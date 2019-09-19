@@ -58,10 +58,15 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
+  )
+
+set(SRC_INPUT
+    ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_2d_controller.cpp
   )
 
 set(SRC_PLATFORM
@@ -97,6 +102,7 @@ add_library(erwin SHARED
             ${SRC_MATH}
             ${SRC_DEBUG}
             ${SRC_RENDERER}
+            ${SRC_INPUT}
             ${SRC_PLATFORM}
             ${SRC_IMGUI}
             )

@@ -31,4 +31,4 @@ target_link_libraries(fudge
                       harfbuzz
                       freetype
                       )
-cotire(atlaspack)
+cotire(fudge)

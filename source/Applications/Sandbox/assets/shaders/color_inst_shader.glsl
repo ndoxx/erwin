@@ -19,12 +19,14 @@ layout(std430) buffer instance_data
     InstanceData inst[];
 };
 
+uniform mat4 u_view_projection;
+
 void main()
 {
     vec3 offset = vec3(inst[gl_InstanceID].offset, 0.f);
     vec3 scale  = vec3(inst[gl_InstanceID].scale, 1.f);
 
-    gl_Position = vec4(in_position*scale + offset, 1.f);
+    gl_Position = u_view_projection*vec4(in_position*scale + offset, 1.f);
   	v_uv = in_uv;
     v_color = inst[gl_InstanceID].color.rgb;
 }

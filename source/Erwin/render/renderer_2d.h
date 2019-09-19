@@ -4,6 +4,7 @@
 #include "render/shader.h"
 #include "render/render_state.h" // For access to enums
 #include "render/query_timer.h" // TMP, will be moved to render thread
+#include "render/camera_2d.h"
 
 #include "glm/glm.hpp"
 
@@ -16,6 +17,11 @@ struct RenderStats
 	uint32_t batches = 0;
 };
 
+struct SceneData
+{
+	glm::mat4 view_projection_matrix;
+};
+
 // Base class for 2D renderers
 class Renderer2D
 {
@@ -24,7 +30,7 @@ public:
 	virtual ~Renderer2D();
 
 	// Reset renderer flags for next submissions
-	void begin_scene(uint32_t layer_index);
+	void begin_scene(const OrthographicCamera2D& camera);
 	// Upload last batch and flush all batches
 	void end_scene();
 	// Setup render state
@@ -67,6 +73,7 @@ protected:
 	uint32_t current_batch_;
 	uint32_t current_batch_count_;
 	RenderStats stats_;
+	SceneData scene_data_;
 
 private:
 	std::vector<uint16_t> batch_ttl_;
