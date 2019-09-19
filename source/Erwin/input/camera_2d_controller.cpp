@@ -16,8 +16,7 @@ camera_rotation_speed_(50.f),
 camera_angle_(camera_.get_angle()),
 camera_position_(camera_.get_position())
 {
-	EVENTBUS.subscribe(this, &OrthographicCamera2DController::on_window_resize_event);
-	EVENTBUS.subscribe(this, &OrthographicCamera2DController::on_mouse_scroll_event);
+
 }
 
 OrthographicCamera2DController::~OrthographicCamera2DController()
@@ -49,13 +48,13 @@ void OrthographicCamera2DController::update(GameClock& clock)
 	}
 
 	// Rotation
-	if(Input::is_key_pressed(WKEY::Q)) // ROTATE CCW
+	if(Input::is_key_pressed(WKEY::E)) // ROTATE SCENE CC
 	{
 		camera_angle_ += dt*camera_rotation_speed_;
 		if(camera_angle_>360.f)
 			camera_angle_ -= 360.f;
 	}
-	if(Input::is_key_pressed(WKEY::E)) // ROTATE CW
+	if(Input::is_key_pressed(WKEY::Q)) // ROTATE SCENE CCW
 	{
 		camera_angle_ -= dt*camera_rotation_speed_;
 		if(camera_angle_<0.f)

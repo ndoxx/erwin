@@ -20,7 +20,7 @@ OrthographicCamera2D::~OrthographicCamera2D()
 void OrthographicCamera2D::set_projection(const Frustum2D& frustum)
 {
 	frustum_ = frustum;
-	projection_matrix_ = glm::ortho(frustum.left, frustum.right, frustum.top, frustum.bottom, -1.f, 1.f);
+	projection_matrix_ = glm::ortho(frustum.left, frustum.right, frustum.bottom, frustum.top, -1.f, 1.f);
 	update_view_matrix();
 }
 
@@ -41,6 +41,5 @@ glm::vec2 OrthographicCamera2D::get_right() const
 {
 	return glm::vec2(cos(glm::radians(angle_)), sin(glm::radians(angle_)));
 }
-
 
 } // namespace erwin

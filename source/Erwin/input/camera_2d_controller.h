@@ -18,7 +18,6 @@ public:
 	inline const OrthographicCamera2D& get_camera() const { return camera_; }
 	inline OrthographicCamera2D& get_camera()             { return camera_; }
 
-private:
 	bool on_window_resize_event(const WindowResizeEvent& event);
 	bool on_mouse_scroll_event(const MouseScrollEvent& event);
 

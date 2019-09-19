@@ -9,8 +9,8 @@ struct Frustum2D
 {
 	float left;
 	float right;
-	float top;
 	float bottom;
+	float top;
 };
 
 class OrthographicCamera2D

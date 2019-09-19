@@ -19,7 +19,8 @@ public:
 	Layer("LayerBatch2D"),
 	camera_ctl_(1280.f/1024.f, 1.f)
 	{
-
+		EVENTBUS.subscribe(this, &LayerBatch2D::on_window_resize_event);
+		EVENTBUS.subscribe(this, &LayerBatch2D::on_mouse_scroll_event);
 	}
 
 	~LayerBatch2D() = default;
@@ -140,6 +141,18 @@ protected:
 
 		render_stats_ = renderer_2D_->get_stats();
 	}
+
+bool on_window_resize_event(const WindowResizeEvent& event)
+{
+	camera_ctl_.on_window_resize_event(event);
+	return false;
+}
+
+bool on_mouse_scroll_event(const MouseScrollEvent& event)
+{
+	camera_ctl_.on_mouse_scroll_event(event);
+	return false;
+}
 
 private:
 	std::unique_ptr<Renderer2D> renderer_2D_;

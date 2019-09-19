@@ -45,10 +45,10 @@ is_running_(true)
     // Log events
     WLOGGER.track_event<WindowCloseEvent>();
     WLOGGER.track_event<WindowResizeEvent>();
-    WLOGGER.track_event<KeyboardEvent>();
+    //WLOGGER.track_event<KeyboardEvent>();
     WLOGGER.track_event<MouseButtonEvent>();
     //WLOGGER.track_event<MouseMovedEvent>();
-    WLOGGER.track_event<MouseScrollEvent>();
+    //WLOGGER.track_event<MouseScrollEvent>();
 
     WLOGGER.spawn();
     WLOGGER.sync();

@@ -36,6 +36,39 @@ static const BufferLayout s_vertex_color_layout =
 
 static const int VERT_FLOAT_COUNT = 3*6; // Num vertex float component per quad (4 vertex * 6 components)
 
+
+
+// TMP
+static bool is_in_frustum(const glm::vec2& position, const glm::vec2& scale, const glm::mat4 view, const Frustum2D& frustum)
+{
+	// Compute each point in world space
+	glm::vec4 points[4] =
+	{
+		glm::vec4(position.x-0.5f*scale.x, position.y-0.5f*scale.y, 0.0f, 1.0f),
+		glm::vec4(position.x+0.5f*scale.x, position.y-0.5f*scale.y, 0.0f, 1.0f),
+		glm::vec4(position.x+0.5f*scale.x, position.y+0.5f*scale.y, 0.0f, 1.0f),
+		glm::vec4(position.x-0.5f*scale.x, position.y+0.5f*scale.y, 0.0f, 1.0f)
+	};
+
+	// Transform each point to camera space
+	for(int ii=0; ii<4; ++ii)
+		points[ii] = view*points[ii];
+
+	// If all points are below the SAME frustum side, cull
+    // For each frustum side
+    bool all_out = true;
+    for(auto p: points) { if(p.x>frustum.left)   { all_out = false; break; } } if(all_out) return false;
+    all_out = true;
+    for(auto p: points) { if(p.x<frustum.right)  { all_out = false; break; } } if(all_out) return false;
+    all_out = true;
+    for(auto p: points) { if(p.y<frustum.top)    { all_out = false; break; } } if(all_out) return false;
+    all_out = true;
+    for(auto p: points) { if(p.y>frustum.bottom) { all_out = false; break; } } if(all_out) return false;
+
+	return true;
+}
+
+
 Renderer2D::Renderer2D(uint32_t max_batch_count):
 max_batch_count_(max_batch_count),
 current_batch_(0),
@@ -54,6 +87,8 @@ void Renderer2D::begin_scene(const OrthographicCamera2D& camera)
 {
 	// Set scene data
 	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
+	scene_data_.view_matrix = camera.get_view_matrix();
+	scene_data_.frustum = camera.get_frustum();
 
 	// Reset
 	current_batch_ = 0;
@@ -124,6 +159,7 @@ void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, con
 {
 	const Shader& shader = shader_bank.get(shader_name);
 	shader.bind();
+	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
 	// * Setup uniforms
 	// Setup samplers
@@ -142,6 +178,9 @@ void Renderer2D::draw_quad(const glm::vec2& position,
 				   		   const glm::vec2& scale,
 				   		   const glm::vec3& color)
 {
+	// * Frustum culling
+	if(!is_in_frustum(position, scale, scene_data_.view_matrix, scene_data_.frustum)) return;
+
 	// * Select a batch vertex array
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(current_batch_count_ == max_batch_count_)

@@ -20,6 +20,8 @@ struct RenderStats
 struct SceneData
 {
 	glm::mat4 view_projection_matrix;
+	glm::mat4 view_matrix;
+	Frustum2D frustum;
 };
 
 // Base class for 2D renderers
