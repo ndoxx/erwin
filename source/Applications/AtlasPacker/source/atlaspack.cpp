@@ -55,6 +55,80 @@ enum class Compression: uint8_t
     DXT5
 };
 
+// DXA file format
+//#pragma pack(push,1)
+struct DXAHeader
+{
+    uint32_t magic;
+    uint8_t version_major;
+    uint8_t version_minor;
+    uint16_t remapping_type;
+    uint64_t texture_blob_size;
+    uint64_t remapping_blob_size;
+};
+//#pragma pack(pop)
+#define DXA_HEADER_SIZE 128
+typedef union
+{
+    struct DXAHeader h;
+    uint8_t padding[DXA_HEADER_SIZE];
+} DXAHeaderWrapper;
+
+#define DXA_MAGIC 0x41584457 // ASCII(WDXA)
+#define DXA_VERSION_MAJOR 1
+#define DXA_VERSION_MINOR 0
+
+struct DXAAtlasRemapElement
+{
+    char     name[32];
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+};
+
+struct DXAFontAtlasRemapElement
+{
+    uint64_t index;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint32_t advance;
+    uint16_t bearing_x;
+    uint16_t bearing_y;
+};
+
+enum class RemappingType: uint8_t
+{
+    Texture,
+    Font
+};
+
+static void write_dxa(const fs::path& output, const unsigned char* tex_blob, uint32_t tex_blob_size, 
+                      RemappingType type, const unsigned char* remap_blob, uint32_t remap_blob_size)
+{
+    DXAHeaderWrapper header;
+    header.h.magic         = DXA_MAGIC;
+    header.h.version_major = DXA_VERSION_MAJOR;
+    header.h.version_minor = DXA_VERSION_MINOR;
+
+    switch(type)
+    {
+        case(RemappingType::Texture): header.h.remapping_type = 0; break;
+        case(RemappingType::Font):    header.h.remapping_type = 1; break;
+    }
+    
+    header.h.texture_blob_size   = tex_blob_size;
+    header.h.remapping_blob_size = remap_blob_size;
+
+    std::ofstream ofs(output, std::ios::binary);
+    ofs.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    ofs.write(reinterpret_cast<const char*>(tex_blob), tex_blob_size);
+    ofs.write(reinterpret_cast<const char*>(remap_blob), remap_blob_size);
+    ofs.close();
+}
+
 
 static fs::path s_self_path;  // Path to executable
 static fs::path s_root_path;  // Path to root directory of Erwin engine
@@ -65,9 +139,6 @@ static fs::path s_fonts_path; // Path to fonts folder
 static Compression s_compression;
 
 static FT_Library ft_;
-
-
-
 
 
 // Get path to executable
@@ -175,6 +246,7 @@ static rect_wh pack(std::vector<rect_xywh>& rectangles, uint32_t max_side=1000)
     );
 }
 
+// Export a texture atlas to PNG format with a text remapping file
 static void export_atlas(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
@@ -226,6 +298,7 @@ static void export_atlas(const std::vector<ImageData>& images, const std::string
     delete[] output;
 }
 
+// Export a texture atlas to compressed DXA format (remapping information inside)
 static void export_atlas_dxt(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
 {
     // * Pack images in an atlas
@@ -241,9 +314,72 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
         std::cout << "Padded height to: " << out_h << std::endl;
     }
 
+    // Allocate block data array
+    unsigned char* blocks = new unsigned char[4*out_w*out_h];
+    for(int ii=0; ii<4*out_w*out_h; ++ii)
+        blocks[ii] = 0;
+
+    // Allocate remapping data array
+    std::vector<DXAAtlasRemapElement> remap;
+    remap.reserve(images.size());
+
     // Populate 4x4 blocks from images data
+    for(int ii=0; ii<images.size(); ++ii)
+    {
+        const ImageData& img = images[ii];
+
+        // Push remapping element
+        DXAAtlasRemapElement elt;
+        memcpy(elt.name, img.name.c_str(), std::min(img.name.size(),31ul));
+        elt.x = img.x;
+        elt.y = out_h-img.y;
+        elt.w = img.width;
+        elt.h = img.height;
+        remap.push_back(elt);
+        
+        // Set atlas image data
+        for(int xx=0; xx<img.width; ++xx)
+        {
+            int out_x = img.x + xx;
+            for(int yy=0; yy<img.height; ++yy)
+            {
+                int out_y = img.y + yy;
+                // Calculate offset inside block container
+                int block_index = out_w * (out_y/4) + (out_x/4);
+                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
+                blocks[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                blocks[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                blocks[offset + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                blocks[offset + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
+            }
+        }
+    }
+
+    // Allocate compressed data array
+    const int num_blocks = (out_w*out_h)/16;
+    static const int block_size = 16*4; // 4 bytes per-pixel, 16 pixel in a 4x4 block
+    static const int compr_size = 16;   // 128 bits compressed size per block
+    unsigned char* tex_blob = new unsigned char[num_blocks*compr_size];
+
+    // Compress each block
+    for(int ii=0; ii<num_blocks; ++ii)
+    {
+        int src_offset = ii*block_size;
+        int dst_offset = ii*compr_size;
+        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
+    }
+
+    // Export
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".dxa");
+    write_dxa(out_atlas, tex_blob, num_blocks*compr_size, 
+              RemappingType::Texture, reinterpret_cast<unsigned char*>(remap.data()), remap.size()*sizeof(DXAAtlasRemapElement));
+
+    // Cleanup
+    delete[] blocks;
+    delete[] tex_blob;
 }
 
+// Export a font atlas to PNG format with a text remapping file
 static void export_font_atlas(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
@@ -294,9 +430,91 @@ static void export_font_atlas(const std::vector<Character>& characters, const st
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
 }
 
+// Export a font atlas to compressed DXA format (remapping information inside)
 static void export_font_atlas_dxt(const std::vector<Character>& characters, const std::string& out_name, int out_w, int out_h)
 {
+    // * Pack characters in an atlas
+    // Pad size to multiple of 4
+    if(out_w%4)
+    {
+        out_w += (4-out_w%4);
+        std::cout << "Padded width to: " << out_w << std::endl;
+    }
+    if(out_h%4)
+    {
+        out_h += (4-out_h%4);
+        std::cout << "Padded height to: " << out_h << std::endl;
+    }
 
+    // Allocate block data array
+    unsigned char* blocks = new unsigned char[4*out_w*out_h];
+    for(int ii=0; ii<4*out_w*out_h; ++ii)
+        blocks[ii] = 0;
+
+    // Allocate remapping data array
+    std::vector<DXAFontAtlasRemapElement> remap;
+    remap.reserve(characters.size());
+
+    // Populate 4x4 blocks from characters data
+    for(int ii=0; ii<characters.size(); ++ii)
+    {
+        const Character& charac = characters[ii];
+
+        // Push remapping element
+        DXAFontAtlasRemapElement elt
+        {
+            (uint64_t)charac.index,        // index
+            (uint16_t)charac.x,            // x
+            (uint16_t)(out_h-charac.y),    // y
+            (uint16_t)charac.width,        // w
+            (uint16_t)charac.height,       // h
+            (uint32_t)(charac.advance>>6), // advance
+            (uint16_t)charac.bearing_x,    // bearing_x
+            (uint16_t)charac.bearing_y     // bearing_y
+        };
+        remap.push_back(elt);
+        
+        // Set atlas image data
+        for(int xx=0; xx<charac.width; ++xx)
+        {
+            int out_x = charac.x + xx;
+            for(int yy=0; yy<charac.height; ++yy)
+            {
+                int out_y = charac.y + yy;
+                // Calculate offset inside block container
+                int block_index = out_w * (out_y/4) + (out_x/4);
+                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
+                char value = charac.data[yy * charac.width + xx];
+                blocks[offset + 0] = value ? 255 : 0; // R channel
+                blocks[offset + 1] = value ? 255 : 0; // G channel
+                blocks[offset + 2] = value ? 255 : 0; // B channel
+                blocks[offset + 3] = value;           // A channel
+            }
+        }
+    }
+
+    // Allocate compressed data array
+    const int num_blocks = (out_w*out_h)/16;
+    static const int block_size = 16*4; // 4 bytes per-pixel, 16 pixel in a 4x4 block
+    static const int compr_size = 16;   // 128 bits compressed size per block
+    unsigned char* tex_blob = new unsigned char[num_blocks*compr_size];
+
+    // Compress each block
+    for(int ii=0; ii<num_blocks; ++ii)
+    {
+        int src_offset = ii*block_size;
+        int dst_offset = ii*compr_size;
+        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
+    }
+
+    // Export
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".dxa");
+    write_dxa(out_atlas, tex_blob, num_blocks*compr_size, 
+              RemappingType::Font, reinterpret_cast<unsigned char*>(remap.data()), remap.size()*sizeof(DXAFontAtlasRemapElement));
+
+    // Cleanup
+    delete[] blocks;
+    delete[] tex_blob;
 }
 
 // Create an atlas texture plus a remapping file. The atlas contains each sub-texture found in input directory.
