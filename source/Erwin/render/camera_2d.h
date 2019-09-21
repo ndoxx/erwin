@@ -13,6 +13,15 @@ struct Frustum2D
 	float top;
 };
 
+// Contains the side line coefficients of a given frustum in world space
+struct FrustumSides
+{
+	FrustumSides();
+	FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_space);
+
+	glm::vec3 side[4]; // left, right, bottom, top
+};
+
 class OrthographicCamera2D
 {
 public:
@@ -26,6 +35,7 @@ public:
 	inline void set_angle(float value) { angle_ = value; update_view_matrix(); }
 
 	inline const Frustum2D& get_frustum() const 			   { return frustum_; }
+	inline const glm::mat4& get_transform() const              { return transform_; }
 	inline const glm::mat4& get_view_matrix() const            { return view_matrix_; }
 	inline const glm::mat4& get_projection_matrix() const      { return projection_matrix_; }
 	inline const glm::mat4& get_view_projection_matrix() const { return view_projection_matrix_; }
@@ -35,6 +45,8 @@ public:
 	glm::vec2 get_up() const;
 	glm::vec2 get_right() const;
 
+	inline FrustumSides get_frustum_sides() const { return FrustumSides(frustum_, transform_); }
+
 private:
 	void update_view_matrix();
 
@@ -42,6 +54,7 @@ private:
 	Frustum2D frustum_;
 	float angle_;
 	glm::vec2 position_;
+	glm::mat4 transform_;
 	glm::mat4 view_matrix_;
 	glm::mat4 projection_matrix_;
 	glm::mat4 view_projection_matrix_;

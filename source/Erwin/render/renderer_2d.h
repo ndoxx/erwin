@@ -21,7 +21,7 @@ struct SceneData
 {
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
-	Frustum2D frustum;
+	FrustumSides frustum_sides;
 };
 
 // Base class for 2D renderers

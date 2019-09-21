@@ -682,3 +682,156 @@ NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai
 ###Sources:
     [1] https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
     [2] https://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3-shader-storage-buffers-objects-ssbo-demo/
+
+
+
+#[20-09-19]
+##Texture atlas & Font atlas
+J'ai dev un petit outil d'atlas packing nommé FudgePacker (!) capable de contruire un atlas optimal depuis un ensemble d'images sources non-nécessairement carrées, ou bien d'une police de caractères. Fudge peut exporter les atlas en PNG avec un fichier texte pour les données de remapping : clé / cooronnées / tailles pour les texture atlases, ou bien clé / coordonnées / tailles / advance / bearing pour les font atlases. Alternativement pour les texture atlases, toutes ces donnée peuvent êtres exportées vers un format custom (DXA) qui gère la compression DXT5 pour la texture et possède une table de remapping. Fudge est configurable via le fichier fudge.ini  du dossier config (parsing avec la lib IniH), il suffit d'y préciser où se trouvent les assets à packer et le type de compression :
+
+```ini
+    [paths]
+    upack=source/Applications/Sandbox/assets/textures/atlas/upack
+    fonts=source/Applications/Sandbox/assets/textures/atlas/upack
+    [output]
+    texture_compression=DXT5
+    font_compression=none
+```
+La lib RectPack2D est utilisée pour établir le bin packing optimal pour un ensemble de rectangles donnés. Le font rasterizing est effectué au moyen de la lib Freetype. L'export PNG se fait grâce à la lib stb_image et stb_dxt permet la compression DXT5 de blocks de pixels 4x4.
+
+Algo pour la génération d'un atlas de textures :
+
+    * Pour chaque sous dossier D contenant des textures à packer dans un même atlas :
+        * Pour chaque fichier image I.png du dossier D :
+            * Charger les données bitmaps et la taille de I dans une structure s
+            * Pousser s dans un vecteur S<s>
+            * Pousser un rectangle r={0,0,w,h} dans un vecteur R<r> (même indice que s dans S<s>)
+                - Noter que les coordonnées x,y de r sont laissées à 0, elles seront modifiées par RectPack2D directement
+        * Chercher le meilleur bin packing depuis la collection R<r>
+            - Après cette étape, chaque r possède des coordonnées x et y initialisées
+        * Exporter les données
+
+Algo pour la génération d'un atlas de caractères :
+
+    * Charger une police F.ttf
+        * Pour chaque caractère c de taille non nulle de la police F :
+            * Charger les données bitmaps et les différents paramètres de c dans une structure s
+            * Pousser s dans un vecteur S<s>
+            * Pousser un rectangle r={0,0,w,h} dans un vecteur R<r> (même indice que s dans S<s>)
+        * Chercher le meilleur bin packing depuis la collection R<r>
+        * Exporter les données
+
+L'écriture du blob texture pour export avec stb_image au format PNG fonctionne comme suit :
+```cpp
+    for(int ii=0; ii<images.size(); ++ii)
+    {
+        const ImageData& img = images[ii];
+
+        for(int xx=0; xx<img.width; ++xx)
+        {
+            int out_x = img.x + xx;
+            for(int yy=0; yy<img.height; ++yy)
+            {
+                int out_y = img.y + yy;
+                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
+            }
+        }
+    }
+```
+Chaque pixel est au format RGBA (4 bytes per pixel), et l'offset de chaque pixel (x,y) dans une image de taille (w,h) est donné par 4 * (y * w + x).
+
+Pour la compression DXT c'est un peu plus subtil. L'image doit être découpée en blocks de pixels de 4x4. Ceci suppose un padding de l'image pour que w comme h soient des multiples de 4. Pour chacun de ces blocks spécifiés en row-major (ligne par ligne), on applique l'algo de compression en appelant stb_compress_dxt_block(dst, src, alpha, mode), qui garantie un résultat sur 128 bits (=16 octets). Un petit jeu d'indices permet de faire ceci avec le même genre de boucles que dans le cas précédent :
+
+    Soient xx (de gauche à droite) et yy (de haut en bas) les coordonnées dans l'image finale. Chaque block est identifié par une paire d'indices (i,j) tels que :
+        i = xx/4 (division entière)
+        j = yy/4 (division entière)
+    Et les coordonnées de pixels xb et yb dans un block sont :
+        xb = xx%4
+        yb = yy%4
+    L'indice linéaire du block (i,j) dans un tableau de blocks est :
+        w * j + i, avec w la largeur de l'image finale.
+    L'indice linéaire d'un pixel dans le block (i,j) est donné par :
+        4 * yb + xb
+    L'indice de ce pixel dans le tableau de blocks est donc l'indice du block plus l'indice du pixel par rapport au début du block :
+        (w * j + i) + (4 * yb + xb) = w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4)
+    Comme chaque pixel est codé sur 4 bytes, l'offset mémoire du pixel (xx,yy) est donc 4 fois l'indice :
+        4 * ( w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4) )
+
+```cpp
+    for(int ii=0; ii<images.size(); ++ii)
+    {
+        const ImageData& img = images[ii];
+
+        for(int xx=0; xx<img.width; ++xx)
+        {
+            int out_x = img.x + xx;
+            for(int yy=0; yy<img.height; ++yy)
+            {
+                int out_y = img.y + yy;
+                int block_index = out_w * (out_y/4) + (out_x/4);
+                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
+                blocks[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                blocks[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                blocks[offset + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                blocks[offset + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
+            }
+        }
+    }
+
+    // ...
+
+    for(int ii=0; ii<num_blocks; ++ii)
+    {
+        int src_offset = ii*block_size;
+        int dst_offset = ii*compr_size;
+        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
+    }
+```
+
+##Camera & Camera controller
+Contrairement à ce que je faisais dans WCore, j'applique ici une séparation rigoureuse entre la caméra (maths + data) et le contrôleur (wrapper autour de la caméra, réagit aux inputs/events). La classe _OrthographicCamera2D_ représente une caméra orthographique initialisée avec un frustum rectangulaire de type _Frustum2D_. Elle possède un ensemble de fonctions pour récupérer les matrices de vue et de projection. Sa fonction privée update_view_matrix() réalise la mise à jour des matrices vue et vue-projection lorsque la position où l'angle a changé. La fonction set_projection() permet de recalculer une projection depuis un nouveau frustum. Cette classe fait parti des classes de rendu, et doit être passée au renderer (_Renderer2D_) via begin_scene(). Le renderer se charge de lui faire crâcher ses matrices, les sauvegarde de côté, et les refile au shader lors du flush().
+_OrthographicCamera2DController_ est un wrapper sur _OrthographicCamera2D_. Cette classe est utilisable côté client. Elle track un aspect ratio et un zoom level, à partir desquels elle génère un nouveau frustum pour son membre caméra à l'appel d'update(). La fonction update() fait également de l'input polling pour réagir aux événements clavier. Elle possède également deux fonctions pour réagir aux événements de redimensionnement de la fenêtre et au scroll souris (pour le zoom). Rien de plus à ajouter, c'est assez basique.
+
+##2D Frustum culling
+La classe _OrthographicCamera2D_ peut renvoyer une structure _FrustumSides_ qui contient les coefficients des droites des côtés de son frustum (en world space). Côté _Renderer2D_, à chaque soumission d'un nouveau quad, on vérifie si ce dernier (donné en world space) est dans le frustum. L'algo est similaire à celui utilisé en 3D :
+
+    * Pour chaque côté du frustum, coefficients (a,b,c) :
+        * Si tous les points du quad sont au dessus du même côté
+            - On cull
+        * Sinon
+            - On pousse le quad
+
+La distance signée d'un point $(x_0,y_0)$ à une droite de coefficients $(a,b,c)$ (d'équation $ax+by+c=0$) est donnée par :
+    $\frac{ax_0+b_y0+c}{sqrt{a^2+b^2}}$
+Il suffit dont de vérifier le signe du numérateur, qui est le produit scalaire du vecteur $(a,b,c)$ avec le point en coordonnées homogènes 2D $(x_0,y_0,1)$ :
+
+```cpp
+    // For each frustum side
+    for(uint32_t ii=0; ii<4; ++ii)
+    {
+        // Quad is considered outside iif all its vertices are above the SAME side
+        bool all_out = true;
+        for(const auto& p: points)
+        {
+            // Check if point is above side
+            if(glm::dot(fs.side[ii],p)>0)
+            {
+                all_out = false;
+                break;
+            }
+        }
+        if(all_out)
+            return true;
+    }
+
+    return false;
+```
+Il m'a semblé plus économe de procéder ainsi, plutôt que de passer chaque quad en view space (les multiplications matricielles sur CPU sont à utiliser avec modération).
+
+
+
+TODO:
+    [ ] Fix aspect ratio bug on window resize.

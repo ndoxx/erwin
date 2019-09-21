@@ -30,36 +30,35 @@ void OrthographicCamera2DController::update(GameClock& clock)
 	float dt = clock.get_frame_duration();
 
 	// Translation
+	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 3.f : 1.f;
+
 	if(Input::is_key_pressed(WKEY::W)) // UP
-	{
-		camera_position_ += dt*camera_translation_speed_*camera_.get_up();
-	}
+		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_up();
+
 	if(Input::is_key_pressed(WKEY::A)) // LEFT
-	{
-		camera_position_ -= dt*camera_translation_speed_*camera_.get_right();
-	}
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
+
 	if(Input::is_key_pressed(WKEY::S)) // DOWN
-	{
-		camera_position_ -= dt*camera_translation_speed_*camera_.get_up();
-	}
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_up();
+	
 	if(Input::is_key_pressed(WKEY::D)) // RIGHT
-	{
-		camera_position_ += dt*camera_translation_speed_*camera_.get_right();
-	}
+		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 
 	// Rotation
-	if(Input::is_key_pressed(WKEY::E)) // ROTATE SCENE CC
+	if(Input::is_key_pressed(WKEY::E)) // ROTATE CCW
 	{
 		camera_angle_ += dt*camera_rotation_speed_;
 		if(camera_angle_>360.f)
 			camera_angle_ -= 360.f;
 	}
-	if(Input::is_key_pressed(WKEY::Q)) // ROTATE SCENE CCW
+	if(Input::is_key_pressed(WKEY::Q)) // ROTATE CW
 	{
 		camera_angle_ -= dt*camera_rotation_speed_;
 		if(camera_angle_<0.f)
 			camera_angle_ += 360.f;
 	}
+	if(Input::is_key_pressed(WKEY::R)) // RESET CAMERA ANGLE
+		camera_angle_ = 0.f;
 
 	// * Update camera
 	camera_.set_position(camera_position_);

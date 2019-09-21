@@ -182,7 +182,7 @@ static bool read_conf(const fs::path& path)
     INIReader reader(path.string().c_str());
     if(reader.ParseError() < 0)
     {
-        std::cout << "Can't load 'atlas.ini'" << std::endl;
+        std::cout << "Can't load 'fudge.ini'" << std::endl;
         return false;
     }
 
@@ -648,7 +648,7 @@ int main(int argc, char const *argv[])
     std::cout << "-> Root path: " << s_root_path << std::endl;
     std::cout << "-> Conf path: " << s_conf_path << std::endl;
 
-    if(!read_conf(s_conf_path / "atlas.ini"))
+    if(!read_conf(s_conf_path / "fudge.ini"))
     {
         std::cout << "Could not complete configuration step, exiting." << std::endl;
         exit(0);

@@ -1,3 +1,4 @@
 subdirs(InternString)
-subdirs(Sandbox)
 subdirs(Fudge)
+subdirs(Sandbox)
+subdirs(FractalExplorer)

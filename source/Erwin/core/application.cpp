@@ -19,7 +19,7 @@ Application* Application::pinstance_ = nullptr;
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 Application::Application():
-window_(std::unique_ptr<Window>(Window::create())),
+window_(std::unique_ptr<Window>(Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/))),
 is_running_(true)
 {
 	// Create application singleton
