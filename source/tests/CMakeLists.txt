@@ -15,9 +15,9 @@ endif()
 # -------- LOGGER TEST -------- #
 
 set(SRC_TEST_LOGGER
-    ${SRC_LOG}
+    ${SRC_DEBUG}
     ${SRC_MATH}
-    ${SRC_CORE}
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     test_logger.cpp
    )
 

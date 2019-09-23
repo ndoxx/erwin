@@ -54,6 +54,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
@@ -61,8 +62,8 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )
 
 set(SRC_INPUT

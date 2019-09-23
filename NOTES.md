@@ -106,21 +106,26 @@ logger_thread.h définit un _LoggerThread_ statique du nom de WLOGGER. Le logger
     WLOGGER.create_channel("render", 3);
     WLOGGER.create_channel("collision", 3);
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.attach("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"), {"core"_h, "material"_h, "render"_h, "collision"_h});
-    WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
+    WLOGGER.attach("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"), 
+        {"core"_h, "material"_h, "render"_h, "collision"_h});
+    WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), 
+        {"event"_h});
     WLOGGER.set_backtrace_on_error(true);
     WLOGGER.track_event<DamageEvent>();
     WLOGGER.track_event<ItemFoundEvent>();
     WLOGGER.spawn();
 
     BANG();
-    DLOGN("render") << "Notify: Trump threatened Iran with \'obliteration\'." << std::endl;
+    DLOGN("render") << "Notify: Trump threatened Iran with \'obliteration\'." 
+                    << std::endl;
     DLOGI           << "Item 1" << std::endl;
     DLOGI           << "Item 2" << std::endl;
     DLOGI           << "Item 3" << std::endl;
     DLOGW("core") << "Warning: Iran said \"Double dare you!\"" << std::endl;
-    DLOGE("core") << "Error 404: Nuclear war heads could not be found." << std::endl;
-    DLOGF("core") << "Fatal error: Index out of bounds in array: war_heads." << std::endl;
+    DLOGE("core") << "Error 404: Nuclear war heads could not be found." 
+                  << std::endl;
+    DLOGF("core") << "Fatal error: Index out of bounds in array: war_heads." 
+                  << std::endl;
 
     WLOGGER.flush();
 ```
@@ -129,7 +134,8 @@ Le header logger.h définit les macros d'accès au flux (DLOG, DLOGI, DLOGW...).
 
 L'ajout de couleurs se fait au moyen d'une structure _WCC_ qui est évaluée en séquence d'échappement ANSI lorsque passée à un flux ostream. Donc plus de parsing de balises lourdingue. J'ai conservé les mêmes mnémoniques pour les couleurs que dans WCore, mais aussi ajouté un constructeur généraliste. L'envoi d'un WCC(0) est supposé restaurer le style précédent, mais ne restaure que le style *par défaut* pour l'instant.
 ```cpp
-    DLOG("core",1) << "This " << WCC('i') << "word" << WCC(0) << " is orange." << std::endl;
+    DLOG("core",1) << "This " << WCC('i') << "word" << WCC(0) 
+                   << " is orange." << std::endl;
 
     for(int ii=0; ii<10; ++ii)
     {
@@ -142,12 +148,14 @@ L'ajout de couleurs se fait au moyen d'une structure _WCC_ qui est évaluée en 
 
 Le fichier tests/test_logger.h implémente une fonction test complète, dont un test de concurrence avec plusieurs worker threads qui poussent plein de messages en même temps. Le résultat est impeccable, si je peux me permettre.
 
+![Exemple d'output du logger.\label{figLogger}](../Erwin_rel/screens_erwin/erwin_0d_logger.png)
 
 ###Disable logging
 Le define LOGGING_ENABLED permet magiquement de supprimer toutes les instructions de log quand initialisé à 0. Ceci est possible grâce à une conditionnelle constexpr présente dans chaque macro DLOGx :
 
 ```cpp
-    #define DLOG(C,S) if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::NORMAL, (S) )
+    #define DLOG(C,S) if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), \
+                                                  dbg::MsgType::NORMAL, (S) )
 ```
 Ceci est inspiré de [2]-(deuxième meilleure réponse). Si LOGGING_ENABLED est à 0, l'expression 
 ```cpp
@@ -169,7 +177,8 @@ Ce qui est immédiatement optimisé par le compilateur en
 La macro WLOGGER est similaire, et le logging thread n'est instancié que si LOGGING_ENABLED est à 1. En définitive, on peut faire complètement disparaître toutes les macros de logging en changeant une valeur à la compilation, en mode zero cost. On peut imaginer proposer au client deux versions binaires de la lib : une avec logging et une sans, et la question d'activer le logging devient un simple choix de lib dynamique.
 
 ###Sources:
-	[1] https://www.techrepublic.com/article/use-stl-streams-for-easy-c-plus-plus-thread-safe-logging/#
+	[1] https://www.techrepublic.com/article/use-stl-streams-for-easy-c
+        -plus-plus-thread-safe-logging/#
     [2] https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 
 ###TODO:
@@ -259,13 +268,13 @@ Pour l'instant, la fonction run() configure et spawn le logger thread, puis lanc
 #[09-09-19]
 ##GLFW & event callbacks
 J'ai cette fois intégré GLFW3 en tant que sous-module git :
->> cd source/vendor
->> git submodule add https://github.com/glfw/glfw.git glfw
->> sudo apt-get install xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev 
->> cd glfw;mkdir build;cd build
->> cmake ..
->> make
->> cp src/libglfw3.a ../../../../lib/
+> cd source/vendor
+> git submodule add https://github.com/glfw/glfw.git glfw
+> sudo apt-get install xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev 
+> cd glfw;mkdir build;cd build
+> cmake ..
+> make
+> cp src/libglfw3.a ../../../../lib/
 
 GLFW ne sera vraisemblablement utilisé qu'avec OpenGL (ne fonctionne pas avec DX à ma connaissance), et j'ai donc créé une abstraction pour la gestion de la fenêtre. L'interface core _Window_ permet de masquer l'implémentation sous-jacente. _GLFWWindow_ hérite de cette interface et définit la fonction statique create() déclarée par _Window_ pour retourner le type dérivé. A la construction, GLFW est initialisé ainsi que les propriétés de la fenêtre.
 
@@ -376,14 +385,14 @@ Je pense pouvoir me satisfaire de cette approche dans la mesure où mes layers n
 
 ##ImGui Docking
 J'ai ajouté ImGui en git submodule. Pour profiter des features expérimentaux de la branche "docking" je dois changer le tag :
->> cd source/vendor
->> git submodule add https://github.com/ocornut/imgui.git imgui
->> cd imgui
->> git status
+> cd source/vendor
+> git submodule add https://github.com/ocornut/imgui.git imgui
+> cd imgui
+> git status
     On branch master
->> git checkout docking
->> cd ..
->> git add imgui
+> git checkout docking
+> cd ..
+> git add imgui
 
 NOTE : A l'avenir, pour éviter des galères quand le programme segfault à cause de ImGui, penser à bien tout compiler en mode debug, les assertions d'ImGui sont un bon outil de diagnostique.
 
@@ -438,9 +447,11 @@ La macro W_ASSERT de core/core.h permet conditionnellement d'afficher un message
 
 ```cpp
 // Sous linux :
-#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); raise(SIGTRAP); } }
+#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); \
+                                          raise(SIGTRAP); } }
 // Sous windows
-#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); __debugbreak(); } }
+#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); \
+                                          __debugbreak(); } }
 // Avec :
 #define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
 ```
@@ -469,7 +480,8 @@ J'ai des couples interface/implémentation OpenGL pour les vertex buffers, les i
     float* vertex_data = // ...
     uint32_t* index_data = // ...
 
-    auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(vertex_data, vertex_data_size, vertex_color_layout));
+    auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(vertex_data, 
+                                            vertex_data_size, vertex_color_layout));
 
     auto ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(index_data, index_data_size));
 
@@ -551,7 +563,7 @@ J'ai repris le bon vieux GPU query timer de WCore, et lui ai fait une interface 
 ```
 
 ##Intern strings
-Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de parsing des sources. J'ai viré toutes les dépendances à TinyXML, l'output est un simple fichier .txt clé/valeur\n parsé par le _InternStringLocator_.
+Le _InternStringLocator_ de WCore est réhabilité, ainsi que l'utilitaire de parsing des sources. J'ai viré toutes les dépendances à TinyXML, l'output est un simple fichier .txt clé/valeur parsé par le _InternStringLocator_.
 
 
 #[15-09-19]
@@ -586,7 +598,8 @@ En OpenGL, pour générer un SSBO on fait :
 
 Puis pour le lier à un shader :
 ```cpp
-    GLuint block_index = glGetProgramResourceIndex(program_id, GL_SHADER_STORAGE_BLOCK, layout_name);
+    GLuint block_index = glGetProgramResourceIndex(program_id, GL_SHADER_STORAGE_BLOCK, 
+                                                   layout_name);
     glShaderStorageBlockBinding(program_id, block_index, binding_point);
 
 ```
@@ -614,7 +627,8 @@ void main()
 
 J'ai codé une interface API-agnostic _ShaderStorageBuffer_ et une implémentation OpenGL _OGLShaderStorageBuffer_, même délire que n'importe quel buffer dans buffer.h. La classe _Shader_ possède une méthode virtuelle attach_shader_storage() qui permet de lier un buffer donné au shader :
 ```cpp
-    auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create(binding_point, nullptr, count, sizeof(InstanceData), DrawMode::Dynamic));
+    auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create(binding_point, 
+                                     nullptr, count, sizeof(InstanceData), DrawMode::Dynamic));
     // ...
     ssbo->map(data.data(), data.size());
     // ...
@@ -660,12 +674,16 @@ void main()
 }
 ```
 
+![Application Sandbox utilisant le batch renderer.\label{figBatchRendering}](../Erwin_rel/screens_erwin/erwin_0a_2d_batch_rendering.png)
+
 ##2D Instance Renderer
 Le deuxième renderer que j'ai codé utilise une approche différente : l'instanciation. _InstanceRenderer2D_ fonctionne sur le même genre de dynamique que le précédent, mais crée un SSBO par batch. A chaque appel à draw_quad, les données en argument (la position, l'échelle et la couleur) sont simplement empilées dans un vector de struct _InstanceData_. Quand ce vector est plein, il est déchargé dans un SSBO via la fonction map(). Le batch suivant est créé, rempli, déchargé dans un autre SSBO etc.
 Lors de end_scene(), pour chaque SSBO qu'on attache au shader, un SEUL quad (contenu dans un vertex buffer) est soumis au _RenderDevice_ via draw_indexed_instanced() (qui en sous-main appèle glDrawElementsInstanced()).
 Dans le shader on peut accéder aux données par-instance via l'indice gl_InstanceID.
 
 J'ai eu une grosse emmerde dans un premier temps (affichage décalé / buggé), que j'ai bien mis 30 minutes à piger. En remarquant que le premier quad était toujours bien dessiné mais jamais les suivants, j'ai compris que **l'alignement des données dans le layout du SSBO est méga important** C'est la raison pour laquelle le membre color est un vec4 et non un vec3, pour que la taille totale d'une struct tienne sur 32 bytes (padding).
+
+![Application Sandbox utilisant l'instanced renderer.\label{figInstancedRendering}](../Erwin_rel/screens_erwin/erwin_0b_2d_instanced_rendering.png)
 
 ###Comparaison
 L'application sandbox possède un GUI minimaliste qui permet d'ajuster dynamiquement la taille de la grille de quads, la taille maximale des batchs et l'implémentation de _Renderer2D_ utilisée ! Elle affiche des statistiques sous forme de courbes et de texte. J'ai aussi un mode qui permet de faire bouger chaque quad indépendamment (en mode onde stationnaire) côté CPU, ce qui n'a aucun effet sur le temps de rendu.
@@ -681,7 +699,8 @@ NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai
 
 ###Sources:
     [1] https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
-    [2] https://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3-shader-storage-buffers-objects-ssbo-demo/
+    [2] https://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3
+        -shader-storage-buffers-objects-ssbo-demo/
 
 
 
@@ -697,6 +716,9 @@ J'ai dev un petit outil d'atlas packing nommé FudgePacker (!) capable de contru
     texture_compression=DXT5
     font_compression=none
 ```
+
+![FudgePacker et les atlas qu'il génère.\label{figFudgePacker}](../Erwin_rel/screens_erwin/erwin_2a_fudge_packer.png)
+
 La lib RectPack2D est utilisée pour établir le bin packing optimal pour un ensemble de rectangles donnés. Le font rasterizing est effectué au moyen de la lib Freetype. L'export PNG se fait grâce à la lib stb_image et stb_dxt permet la compression DXT5 de blocks de pixels 4x4.
 
 Algo pour la génération d'un atlas de textures :
@@ -706,7 +728,8 @@ Algo pour la génération d'un atlas de textures :
             * Charger les données bitmaps et la taille de I dans une structure s
             * Pousser s dans un vecteur S<s>
             * Pousser un rectangle r={0,0,w,h} dans un vecteur R<r> (même indice que s dans S<s>)
-                - Noter que les coordonnées x,y de r sont laissées à 0, elles seront modifiées par RectPack2D directement
+                - Noter que les coordonnées x,y de r sont laissées à 0, elles 
+                seront modifiées par RectPack2D directement
         * Chercher le meilleur bin packing depuis la collection R<r>
             - Après cette étape, chaque r possède des coordonnées x et y initialisées
         * Exporter les données
@@ -733,10 +756,11 @@ L'écriture du blob texture pour export avec stb_image au format PNG fonctionne 
             for(int yy=0; yy<img.height; ++yy)
             {
                 int out_y = img.y + yy;
-                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
-                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
-                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
-                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
+                int offset = 4 * (out_y * out_w + out_x);
+                output[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                output[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                output[offset + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                output[offset + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
             }
         }
     }
@@ -745,7 +769,8 @@ Chaque pixel est au format RGBA (4 bytes per pixel), et l'offset de chaque pixel
 
 Pour la compression DXT c'est un peu plus subtil. L'image doit être découpée en blocks de pixels de 4x4. Ceci suppose un padding de l'image pour que w comme h soient des multiples de 4. Pour chacun de ces blocks spécifiés en row-major (ligne par ligne), on applique l'algo de compression en appelant stb_compress_dxt_block(dst, src, alpha, mode), qui garantie un résultat sur 128 bits (=16 octets). Un petit jeu d'indices permet de faire ceci avec le même genre de boucles que dans le cas précédent :
 
-    Soient xx (de gauche à droite) et yy (de haut en bas) les coordonnées dans l'image finale. Chaque block est identifié par une paire d'indices (i,j) tels que :
+    Soient xx (de gauche à droite) et yy (de haut en bas) les coordonnées dans l'image finale. 
+    Chaque block est identifié par une paire d'indices (i,j) tels que :
         i = xx/4 (division entière)
         j = yy/4 (division entière)
     Et les coordonnées de pixels xb et yb dans un block sont :
@@ -755,9 +780,11 @@ Pour la compression DXT c'est un peu plus subtil. L'image doit être découpée 
         w * j + i, avec w la largeur de l'image finale.
     L'indice linéaire d'un pixel dans le block (i,j) est donné par :
         4 * yb + xb
-    L'indice de ce pixel dans le tableau de blocks est donc l'indice du block plus l'indice du pixel par rapport au début du block :
+    L'indice de ce pixel dans le tableau de blocks est donc l'indice du block plus l'indice 
+    du pixel par rapport au début du block :
         (w * j + i) + (4 * yb + xb) = w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4)
-    Comme chaque pixel est codé sur 4 bytes, l'offset mémoire du pixel (xx,yy) est donc 4 fois l'indice :
+    Comme chaque pixel est codé sur 4 bytes, l'offset mémoire du pixel (xx,yy) est donc 4 
+    fois l'indice :
         4 * ( w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4) )
 
 ```cpp
@@ -787,7 +814,8 @@ Pour la compression DXT c'est un peu plus subtil. L'image doit être découpée 
     {
         int src_offset = ii*block_size;
         int dst_offset = ii*compr_size;
-        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
+        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, 
+                               STB_DXT_NORMAL);
     }
 ```
 
@@ -805,7 +833,7 @@ La classe _OrthographicCamera2D_ peut renvoyer une structure _FrustumSides_ qui 
             - On pousse le quad
 
 La distance signée d'un point $(x_0,y_0)$ à une droite de coefficients $(a,b,c)$ (d'équation $ax+by+c=0$) est donnée par :
-    $\frac{ax_0+b_y0+c}{sqrt{a^2+b^2}}$
+    $\frac{ax_0+by_0+c}{\sqrt{a^2+b^2}}$
 Il suffit dont de vérifier le signe du numérateur, qui est le produit scalaire du vecteur $(a,b,c)$ avec le point en coordonnées homogènes 2D $(x_0,y_0,1)$ :
 
 ```cpp
