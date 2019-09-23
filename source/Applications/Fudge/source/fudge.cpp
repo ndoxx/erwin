@@ -273,7 +273,7 @@ static void export_atlas_png(const std::vector<ImageData>& images, const std::st
     // Open remapping file
     std::ofstream ofs(out_remap);
     // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for top left corner of sub-image" << std::endl;
+    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
     ofs << "# name x y w h" << std::endl;
 
     // Create the atlas texture
@@ -282,7 +282,7 @@ static void export_atlas_png(const std::vector<ImageData>& images, const std::st
         const ImageData& img = images[ii];
         
         // Set remapping file
-        ofs << img.name << " " << img.x << " " << out_h-img.y << " " << img.width << " " << img.height << std::endl;
+        ofs << img.name << " " << img.x << " " << out_h-img.y - img.height << " " << img.width << " " << img.height << std::endl;
 
         // Set atlas image data
         for(int xx=0; xx<img.width; ++xx)
@@ -343,7 +343,7 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
         DXAAtlasRemapElement elt;
         memcpy(elt.name, img.name.c_str(), std::min(img.name.size(),31ul));
         elt.x = img.x;
-        elt.y = out_h-img.y;
+        elt.y = out_h-img.y - img.height;
         elt.w = img.width;
         elt.h = img.height;
         remap.push_back(elt);
@@ -414,7 +414,7 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
     // Open remapping file
     std::ofstream ofs(out_remap);
     // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for top left corner of sub-image" << std::endl;
+    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
     ofs << "# index x y w h advance bearing_x bearing_y" << std::endl;
 
     // Create the atlas texture
@@ -424,7 +424,7 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
         
         // Set remapping file
         // advance is bitshifted by 6 (2^6=64) to get value in pixels
-        ofs << charac.index << " " << charac.x << " " << out_h-charac.y << " " << charac.width << " " << charac.height << " "
+        ofs << charac.index << " " << charac.x << " " << out_h-charac.y - charac.height << " " << charac.width << " " << charac.height << " "
             << (charac.advance>>6) << " " << charac.bearing_x << " " << charac.bearing_y << std::endl;
 
         // Set atlas image data

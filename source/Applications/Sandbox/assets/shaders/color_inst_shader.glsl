@@ -11,7 +11,7 @@ struct InstanceData
 {
     vec2 offset;
     vec2 scale;
-    vec4 color;
+    vec4 uvs;
 };
 
 layout(std430) buffer instance_data
@@ -25,21 +25,23 @@ void main()
 {
     vec3 offset = vec3(inst[gl_InstanceID].offset, 0.f);
     vec3 scale  = vec3(inst[gl_InstanceID].scale, 1.f);
+    vec4 uvs    = inst[gl_InstanceID].uvs;
 
     gl_Position = u_view_projection*vec4(in_position*scale + offset, 1.f);
-  	v_uv = in_uv;
-    v_color = inst[gl_InstanceID].color.rgb;
+    v_uv.x = (in_uv.x < 0.5f) ? uvs.x : uvs.z;
+  	v_uv.y = (in_uv.y < 0.5f) ? uvs.y : uvs.w;
 }
 
 #type fragment
 #version 460 core
 
 in vec2 v_uv;
-in vec3 v_color;
 
 layout(location = 0) out vec4 out_color;
 
+uniform sampler2D us_atlas;
+
 void main()
 {
-	out_color = vec4(v_color,1.0f);
+    out_color = texture(us_atlas, v_uv);
 }

@@ -5,6 +5,8 @@
 #include "render/render_state.h" // For access to enums
 #include "render/query_timer.h" // TMP, will be moved to render thread
 #include "render/camera_2d.h"
+#include "render/texture_atlas.h"
+
 
 #include "glm/glm.hpp"
 
@@ -22,6 +24,7 @@ struct SceneData
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
+	std::shared_ptr<Texture2D> texture;
 };
 
 // Base class for 2D renderers
@@ -32,7 +35,7 @@ public:
 	virtual ~Renderer2D();
 
 	// Reset renderer flags for next submissions
-	void begin_scene(const OrthographicCamera2D& camera);
+	void begin_scene(const OrthographicCamera2D& camera, std::shared_ptr<Texture2D> texture);
 	// Upload last batch and flush all batches
 	void end_scene();
 	// Setup render state
@@ -44,7 +47,7 @@ public:
 	// Request the renderer implementation to push a quad to current batch
 	void draw_quad(const glm::vec2& position, 
 				   const glm::vec2& scale,
-				   const glm::vec3& color);
+				   const glm::vec4& uvs);
 	// Modify maximum batch size
 	virtual void set_batch_size(uint32_t value) = 0;
 
@@ -58,7 +61,7 @@ protected:
 	// Draw all batches
 	virtual void flush() = 0;
 	// Push a quad to current batch
-	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec3& color) = 0;
+	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs) = 0;
 	// Send current batch data to render device
 	virtual void upload_batch() = 0;
 	// Get rid of unused batches starting at index (called after flush())
@@ -93,7 +96,7 @@ public:
 
 protected:
 	virtual void flush() override;
-	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec3& color) override;
+	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs) override;
 	virtual void upload_batch() override;
 	virtual void remove_unused_batches(uint32_t index) override;
 	virtual uint32_t get_num_batches() override;
@@ -114,18 +117,18 @@ public:
 
 protected:
 	virtual void flush() override;
-	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec3& color) override;
+	virtual void push_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs) override;
 	virtual void upload_batch() override;
 	virtual void remove_unused_batches(uint32_t index) override;
 	virtual uint32_t get_num_batches() override;
 	virtual void create_batch() override;
 
 private:
-	struct InstanceData
+	struct InstanceData // Need correct alignment for SSBO data
 	{
 		glm::vec2 offset;
 		glm::vec2 scale;
-		glm::vec4 color; // Need a vec4 for alignment constraints
+		glm::vec4 uvs;
 	};
 
 	std::shared_ptr<VertexArray> quad_va_;

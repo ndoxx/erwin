@@ -31,10 +31,10 @@ ShaderBank Renderer2D::shader_bank;
 static const BufferLayout s_vertex_color_layout =
 {
     {"a_position"_h, ShaderDataType::Vec3},
-    {"a_color"_h,    ShaderDataType::Vec3},
+    {"a_uv"_h,       ShaderDataType::Vec2},
 };
 
-static const int VERT_FLOAT_COUNT = 3*6; // Num vertex float component per quad (4 vertex * 6 components)
+static const int VERT_FLOAT_COUNT = 3*5; // Num vertex float component per quad (4 vertex * 6 components)
 
 
 
@@ -85,12 +85,13 @@ Renderer2D::~Renderer2D()
 	delete query_timer_;
 }
 
-void Renderer2D::begin_scene(const OrthographicCamera2D& camera)
+void Renderer2D::begin_scene(const OrthographicCamera2D& camera, std::shared_ptr<Texture2D> texture)
 {
 	// Set scene data
 	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
 	scene_data_.view_matrix = camera.get_view_matrix();
 	scene_data_.frustum_sides = camera.get_frustum_sides();
+	scene_data_.texture = texture;
 
 	// Reset
 	current_batch_ = 0;
@@ -178,7 +179,7 @@ void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, con
 
 void Renderer2D::draw_quad(const glm::vec2& position, 
 				   		   const glm::vec2& scale,
-				   		   const glm::vec3& color)
+				   		   const glm::vec4& uvs)
 {
 	// * Frustum culling
 	if(frustum_cull(position, scale, scene_data_.frustum_sides)) return;
@@ -205,7 +206,7 @@ void Renderer2D::draw_quad(const glm::vec2& position,
 		current_batch_count_ = 0;
 	}
 
-	push_quad(position, scale, color);
+	push_quad(position, scale, uvs);
 
 	++current_batch_count_;
 
@@ -259,6 +260,10 @@ void BatchRenderer2D::flush()
 
 	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
+	uint32_t slot = shader.get_texture_slot("us_atlas"_h);
+	scene_data_.texture->bind(slot);
+	static_cast<const OGLShader&>(shader).send_uniform<int>("us_atlas"_h, slot);
+
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
@@ -287,15 +292,15 @@ uint32_t BatchRenderer2D::get_num_batches()
 
 void BatchRenderer2D::push_quad(const glm::vec2& position, 
 				   			    const glm::vec2& scale,
-				   			    const glm::vec3& color)
+				   			    const glm::vec4& uvs)
 {
 	// * Push vertices and indices to current batch
 	// We only need to store the lower right triangle as we can regenerate the other one in the geometry shader
 	float vdata[VERT_FLOAT_COUNT] = 
 	{
-		position.x-0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
-		position.x+0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
-		position.x+0.5f*scale.x, position.y+0.5f*scale.y, 0.0f,   color.r, color.g, color.b,
+		position.x-0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   uvs.x, uvs.y,
+		position.x+0.5f*scale.x, position.y-0.5f*scale.y, 0.0f,   uvs.z, uvs.y,
+		position.x+0.5f*scale.x, position.y+0.5f*scale.y, 0.0f,   uvs.z, uvs.w,
 	};
 
 	vertex_list_.insert(vertex_list_.end(), vdata, vdata + VERT_FLOAT_COUNT);
@@ -382,6 +387,10 @@ void InstanceRenderer2D::flush()
 	shader.bind();
 	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
+	uint32_t slot = shader.get_texture_slot("us_atlas"_h);
+	scene_data_.texture->bind(slot);
+	static_cast<const OGLShader&>(shader).send_uniform<int>("us_atlas"_h, slot);
+
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
@@ -412,10 +421,10 @@ uint32_t InstanceRenderer2D::get_num_batches()
 
 void InstanceRenderer2D::push_quad(const glm::vec2& position, 
 				   			       const glm::vec2& scale,
-				   			       const glm::vec3& color)
+				   			       const glm::vec4& uvs)
 {
 	// Push instance data
-	instance_data_.push_back({position, scale, {color, 1.f}});
+	instance_data_.push_back({position, scale, uvs});
 }
 
 void InstanceRenderer2D::set_batch_size(uint32_t value)

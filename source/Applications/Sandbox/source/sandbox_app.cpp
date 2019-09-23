@@ -9,6 +9,7 @@
 // #include "platform/ogl_shader.h"
 // #include "platform/ogl_texture.h"
 
+#include "render/texture_atlas.h"
 
 using namespace erwin;
 
@@ -86,6 +87,33 @@ public:
 	virtual void on_attach() override
 	{
 		renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
+		atlas_.load("textures/atlas/set2.png", "textures/atlas/set2.txt");
+
+		// List of random sub-textures to use
+		tiles_ =
+		{
+			"stonea32"_h,
+			"pavingd64"_h,
+			"paneling64"_h,
+			"dirt32"_h,
+			"pavingd32"_h,
+			"rockb32"_h,
+			"rockc64"_h,
+			"rocka64"_h,
+			"thatchb64"_h,
+			"rockd32"_h,
+			"sand64"_h,
+			"planks64"_h,
+			"rocke64"_h,
+			"planks32"_h,
+			"clover32"_h,
+			"grass32"_h,
+			"stonewalld64"_h,
+			"pavinge64"_h,
+			"stonec64"_h,
+			"snow64"_h,
+			"rockb64"_h
+		};
 
 		//dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 		//Renderer2D::shader_bank.load("shaders/tex_shader.glsl");
@@ -105,7 +133,7 @@ protected:
 		if(tt_>=5.f)
 			tt_ = 0.f;
 
-		renderer_2D_->begin_scene(camera_ctl_.get_camera());
+		renderer_2D_->begin_scene(camera_ctl_.get_camera(), atlas_.get_texture());
 		{
 			RenderState render_state;
 			render_state.render_target = RenderTarget::Default;
@@ -122,18 +150,16 @@ protected:
 			{
 				float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
 				float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.0f/len_grid_;
-				float red = xx/float(len_grid_-1);
-				float blue = 1.f-xx/float(len_grid_-1);
 				float pos_x = -0.95f + 1.9f*xx/float(len_grid_-1) + xx_offset;
 
 				for(int yy=0; yy<len_grid_; ++yy)
 				{
 					float yy_offset = trippy_mode_ ? 3.0f/len_grid_ * sin(2*2*M_PI*yy/(1.f+len_grid_))*cos(0.2f*2*M_PI*tt_) : 0.f;
 					float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.0f/len_grid_;
-					float green = yy/float(len_grid_-1);
 					float pos_y = -0.95f + 1.9f*yy/float(len_grid_-1) + yy_offset;
 
-					renderer_2D_->draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, {red,green,blue});
+					hash_t tile = (xx+yy)%(tiles_.size()-1);
+					renderer_2D_->draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, atlas_.get_uv(tiles_.at(tile)));
 				}
 			}
 		}
@@ -156,8 +182,10 @@ bool on_mouse_scroll_event(const MouseScrollEvent& event)
 
 private:
 	std::unique_ptr<Renderer2D> renderer_2D_;
-	//std::shared_ptr<Texture2D> dirt_tex_;
+	TextureAtlas atlas_;
 	OrthographicCamera2DController camera_ctl_;
+
+	std::vector<hash_t> tiles_;
 
 	RenderStats render_stats_;
 	bool enable_profiling_ = false;

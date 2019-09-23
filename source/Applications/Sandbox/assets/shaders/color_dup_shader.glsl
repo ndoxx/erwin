@@ -2,14 +2,14 @@
 #version 460 core
 
 layout(location = 0) in vec3 in_position;
-layout(location = 1) in vec3 in_color;
+layout(location = 1) in vec2 in_uv;
 
-out vec3 v_color;
+out vec2 v_uv;
 
 void main()
 {
 	gl_Position = vec4(in_position, 1.f);
-	v_color = in_color;
+	v_uv = in_uv;
 }
 
 #type geometry
@@ -18,8 +18,8 @@ void main()
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
 
-in vec3 v_color[];
-out vec3 f_color;
+in vec2 v_uv[];
+out vec2 f_uv;
 
 uniform mat4 u_view_projection;
 
@@ -28,23 +28,23 @@ void main()
     for(int ii=0; ii<gl_in.length(); ii++)
     {
     	gl_Position = u_view_projection*gl_in[ii].gl_Position;
-    	f_color = v_color[ii];
+    	f_uv = v_uv[ii];
 
    		EmitVertex();
     }
     EndPrimitive();
 
     gl_Position = u_view_projection*gl_in[2].gl_Position;
-    f_color = v_color[2];
+    f_uv = v_uv[2];
    	EmitVertex();
 
     gl_Position = u_view_projection*vec4(gl_in[0].gl_Position.x, gl_in[2].gl_Position.y, 0.f, 1.f);
-    f_color = v_color[1];
+    f_uv = vec2(v_uv[0].x, v_uv[2].y);
     // Be sure to set UVs when we get there
    	EmitVertex();
 
     gl_Position = u_view_projection*gl_in[0].gl_Position;
-    f_color = v_color[0];
+    f_uv = v_uv[0];
    	EmitVertex();
     EndPrimitive();
 }
@@ -52,10 +52,12 @@ void main()
 #type fragment
 #version 460 core
 
-in vec3 f_color;
+in vec2 f_uv;
 layout(location = 0) out vec4 out_color;
+
+uniform sampler2D us_atlas;
 
 void main()
 {
-	out_color = vec4(f_color,1.0f);
+    out_color = texture(us_atlas, f_uv);
 }
