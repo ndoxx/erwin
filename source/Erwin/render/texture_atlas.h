@@ -15,8 +15,7 @@ public:
 	TextureAtlas();
 	~TextureAtlas();
 
-	void load(const fs::path& png_file, const fs::path& remapping_file);
-	void load(const fs::path& dxa_file);
+	void load(const fs::path& filepath);
 
 	// Return lower left and upper right uv coordinates for the sub-texture at input key
 	inline const glm::vec4& get_uv(hash_t key) const { return remapping_.at(key); }

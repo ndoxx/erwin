@@ -22,4 +22,18 @@ std::shared_ptr<Texture2D> Texture2D::create(const fs::path& filepath)
     }
 }
 
+std::shared_ptr<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_t height, bool compressed)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("texture") << "Texture2D: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+            return std::make_shared<OGLTexture2D>(data, width, height, compressed);
+    }
+}
+
+
 } // namespace erwin

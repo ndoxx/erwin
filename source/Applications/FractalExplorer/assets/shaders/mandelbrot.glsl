@@ -66,11 +66,11 @@ void main()
     iter /= u_max_iter;
 
     float dist = length(z);
-    float frac_iter = log2(u_atten*log(dist)/log(u_escape_radius));
+    float frac_iter = log2(log(dist)/log(u_escape_radius));
 
     float m = sqrt(iter);
     vec4 col = 0.5f*(sin(vec4(u_palette,1.f)*m*20.f)+1.f);
-    col *= smoothstep(3.f,0.f,frac_iter);
+    col *= smoothstep(3.f,0.f,frac_iter*u_atten);
 
 	out_color = col;
 }

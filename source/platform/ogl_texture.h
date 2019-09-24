@@ -9,6 +9,7 @@ class OGLTexture2D: public Texture2D
 {
 public:
 	OGLTexture2D(const fs::path filepath);
+	OGLTexture2D(void* data, uint32_t width, uint32_t height, bool compressed);
 	~OGLTexture2D();
 
 	virtual uint32_t get_width() const override;

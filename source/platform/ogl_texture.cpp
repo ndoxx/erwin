@@ -1,4 +1,5 @@
 #include "platform/ogl_texture.h"
+#include "render/render_device.h"
 #include "core/core.h"
 #include "debug/logger.h"
 
@@ -55,28 +56,40 @@ filepath_(filepath)
 	glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, dataFormat, GL_UNSIGNED_BYTE, data);
 
-/*
-	glGenTextures(1, &rd_handle_);
-    glBindTexture(GL_TEXTURE_2D, rd_handle_);
-
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,
-                 internalFormat,
-                 width_,
-                 height_,
-                 0,
-                 dataFormat,
-                 GL_UNSIGNED_BYTE,
-                 data);
-
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-*/
-
 	DLOGI << "handle: " << rd_handle_ << std::endl;
 
 	// Cleanup
 	stbi_image_free(data);
+}
+
+OGLTexture2D::OGLTexture2D(void* data, uint32_t width, uint32_t height, bool compressed)
+{
+	DLOGN("texture") << "Loading texture from memory: " << std::endl;
+	
+	width_ = width;
+	height_ = height;
+
+	DLOGI << "WxH:    " << width_ << "x" << height_ << std::endl;
+	
+	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
+
+	if(compressed)
+	{
+		DLOGI << "COMPRESSED" << std::endl;
+		glTextureStorage2D(rd_handle_, 1, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width_, height_);
+		glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width*height, data);
+	}
+	else
+	{
+		// TMP: Asume 4 channels for now
+		glTextureStorage2D(rd_handle_, 1, GL_RGBA8, width_, height_);
+		glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+
+	glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	DLOGI << "handle: " << rd_handle_ << std::endl;
 }
 
 OGLTexture2D::~OGLTexture2D()
@@ -98,8 +111,6 @@ uint32_t OGLTexture2D::get_height() const
 void OGLTexture2D::bind(uint32_t slot)
 {
 	glBindTextureUnit(slot, rd_handle_);
-    //glActiveTexture(GL_TEXTURE0 + slot);
-    //glBindTexture(GL_TEXTURE_2D, rd_handle_);
 }
 
 void OGLTexture2D::unbind()

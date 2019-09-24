@@ -102,6 +102,7 @@ public:
     // * Debug
     // Get current error from graphics device
     virtual uint32_t get_error() = 0;
+    virtual const std::string& show_error() = 0;
     // Fail on graphics device error
     virtual void assert_no_error() = 0;
 };

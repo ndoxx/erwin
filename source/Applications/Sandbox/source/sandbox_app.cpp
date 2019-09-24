@@ -87,7 +87,8 @@ public:
 	virtual void on_attach() override
 	{
 		renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
-		atlas_.load("textures/atlas/set2.png", "textures/atlas/set2.txt");
+		atlas_.load("textures/atlas/set2.png");
+		// atlas_.load("textures/atlas/set2.dxa");
 
 		// List of random sub-textures to use
 		tiles_ =
@@ -149,17 +150,17 @@ protected:
 			for(int xx=0; xx<len_grid_; ++xx)
 			{
 				float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
-				float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.0f/len_grid_;
-				float pos_x = -0.95f + 1.9f*xx/float(len_grid_-1) + xx_offset;
+				float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 2.f/float(len_grid_-1);
+				float pos_x = -1.f + 2.f*xx/float(len_grid_-1) + xx_offset;
 
 				for(int yy=0; yy<len_grid_; ++yy)
 				{
 					float yy_offset = trippy_mode_ ? 3.0f/len_grid_ * sin(2*2*M_PI*yy/(1.f+len_grid_))*cos(0.2f*2*M_PI*tt_) : 0.f;
-					float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.0f/len_grid_;
-					float pos_y = -0.95f + 1.9f*yy/float(len_grid_-1) + yy_offset;
+					float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 2.f/float(len_grid_-1);
+					float pos_y = -1.f + 2.f*yy/float(len_grid_-1) + yy_offset;
 
-					hash_t tile = (xx+yy)%(tiles_.size()-1);
-					renderer_2D_->draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, atlas_.get_uv(tiles_.at(tile)));
+					hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
+					renderer_2D_->draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, atlas_.get_uv(tile));
 				}
 			}
 		}

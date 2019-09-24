@@ -1,6 +1,9 @@
 #include "render/texture_atlas.h"
+#include "core/dxa_file.h"
+#include "debug/logger.h"
 
 #include <random>
+#include <iostream>
 
 namespace erwin
 {
@@ -16,34 +19,74 @@ TextureAtlas::~TextureAtlas()
 	
 }
 
-void TextureAtlas::load(const fs::path& png_file, const fs::path& remapping_file)
+void TextureAtlas::load(const fs::path& filepath)
 {
-	texture_ = Texture2D::create(png_file);
+	DLOGN("texture") << "Loading texture atlas: " << std::endl;
 
-	float width = texture_->get_width();
-	float height = texture_->get_height();
-
-	std::ifstream ifs(filesystem::get_asset_dir() / remapping_file);
-	std::string line;
-	while(std::getline(ifs, line))
+	// Check file type
+	std::string extension = filepath.extension().string();
+	if(!extension.compare(".png"))
 	{
-	    if(line[0] != '#')
-	    {
-	    	// Get sub-texture name, position and dimensions
-	        std::istringstream iss(line);
-	        std::string key;
-	        int x, y, w, h;
-	        iss >> key >> x >> y >> w >> h;
+		// Path to remapping file
+		std::string stem = filepath.stem().string();
+		fs::path remapping_file = filepath.parent_path() / (stem + ".txt");
 
-	        // Calculate UVs and save in remapping table
-	        remapping_.insert(std::make_pair(H_(key.c_str()), glm::vec4{x/width, y/height, (x+w)/width, (y+h)/height}));
-	    }
+		if(!fs::exists(filesystem::get_asset_dir() / remapping_file))
+		{
+			DLOGW("texture") << "Missing remapping file!" << std::endl;
+			return;
+		}
+
+		DLOGI << "png:   " << WCC('p') << filepath << WCC(0) << std::endl;
+		DLOGI << "remap: " << WCC('p') << remapping_file << WCC(0) << std::endl;
+
+		texture_ = Texture2D::create(filepath);
+
+		float width = texture_->get_width();
+		float height = texture_->get_height();
+
+		std::ifstream ifs(filesystem::get_asset_dir() / remapping_file);
+		std::string line;
+		while(std::getline(ifs, line))
+		{
+		    if(line[0] != '#')
+		    {
+		    	// Get sub-texture name, position and dimensions
+		        std::istringstream iss(line);
+		        std::string key;
+		        int x, y, w, h;
+		        iss >> key >> x >> y >> w >> h;
+
+		        // Calculate UVs for bottom left and top right and save in remapping table
+		        remapping_.insert(std::make_pair(H_(key.c_str()), glm::vec4{x/width, y/height, (x+w)/width, (y+h)/height}));
+		    }
+		}
 	}
-}
+	else if(!extension.compare(".dxa"))
+	{
+		DLOGI << "dxa: " << WCC('p') << filepath << WCC(0) << std::endl;
 
-void TextureAtlas::load(const fs::path& dxa_file)
-{
+		DXADescriptor desc;
+		desc.filepath = filesystem::get_asset_dir() / filepath;
 
+		read_dxa(desc);
+
+		texture_ = Texture2D::create(desc.texture_blob,
+								     desc.texture_width,
+								     desc.texture_height,
+								     true);
+		float width = texture_->get_width();
+		float height = texture_->get_height();
+
+		traverse_remapping(desc, [&](const DXAAtlasRemapElement& remap)
+		{
+		    remapping_.insert(std::make_pair(H_(remap.name), glm::vec4{remap.x/width, remap.y/height, (remap.x+remap.w)/width, (remap.y+remap.h)/height}));
+		});
+
+		desc.release();
+	}
+
+	DLOG("texture",1) << "Found " << remapping_.size() << " sub-textures in atlas." << std::endl;
 }
 
 static int rand_between(int low, int high)

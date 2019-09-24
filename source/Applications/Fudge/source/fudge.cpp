@@ -11,6 +11,8 @@
 
 #endif
 
+#include "core/dxa_file.h"
+
 #include "inih/cpp/INIReader.h"
 #include "rectpack2D/src/finders_interface.h"
 #include "stb/stb_image.h"
@@ -21,6 +23,7 @@
 #include FT_FREETYPE_H
 
 using namespace rectpack2D;
+using namespace erwin;
 
 namespace fs = std::filesystem;
 
@@ -55,82 +58,6 @@ enum class Compression: uint8_t
     None = 0,
     DXT5
 };
-
-// DXA file format
-//#pragma pack(push,1)
-struct DXAHeader
-{
-    uint32_t magic;
-    uint16_t version_major;
-    uint16_t version_minor;
-    uint16_t texture_width;
-    uint16_t texture_height;
-    uint64_t texture_blob_size;
-    uint64_t remapping_blob_size;
-};
-//#pragma pack(pop)
-#define DXA_HEADER_SIZE 128
-typedef union
-{
-    struct DXAHeader h;
-    uint8_t padding[DXA_HEADER_SIZE];
-} DXAHeaderWrapper;
-
-#define DXA_MAGIC 0x41584457 // ASCII(WDXA)
-#define DXA_VERSION_MAJOR 1
-#define DXA_VERSION_MINOR 0
-
-struct DXAAtlasRemapElement
-{
-    char     name[32];
-    uint16_t x;
-    uint16_t y;
-    uint16_t w;
-    uint16_t h;
-};
-
-struct DXAFontAtlasRemapElement
-{
-    uint64_t index;
-    uint16_t x;
-    uint16_t y;
-    uint16_t w;
-    uint16_t h;
-    uint32_t advance;
-    uint16_t bearing_x;
-    uint16_t bearing_y;
-};
-
-struct DXADescriptor
-{
-    fs::path output;
-    void* tex_blob;
-    void* remap_blob;
-    uint32_t tex_blob_size;
-    uint32_t remap_blob_size;
-    uint16_t texture_width;
-    uint16_t texture_height;
-};
-
-// Write a DXA file given a texture binary blob and a remapping binary blob
-static void write_dxa(const DXADescriptor& desc)
-{
-    DXAHeaderWrapper header;
-    header.h.magic               = DXA_MAGIC;
-    header.h.version_major       = DXA_VERSION_MAJOR;
-    header.h.version_minor       = DXA_VERSION_MINOR;
-    header.h.texture_width       = desc.texture_width;
-    header.h.texture_height      = desc.texture_height;
-    header.h.texture_blob_size   = desc.tex_blob_size;
-    header.h.remapping_blob_size = desc.remap_blob_size;
-
-    std::ofstream ofs(desc.output, std::ios::binary);
-    ofs.write(reinterpret_cast<const char*>(&header), sizeof(header));
-    ofs.write(reinterpret_cast<const char*>(desc.tex_blob), desc.tex_blob_size);
-    ofs.write(reinterpret_cast<const char*>(desc.remap_blob), desc.remap_blob_size);
-    ofs.close();
-}
-
 
 static fs::path s_self_path;  // Path to executable
 static fs::path s_root_path;  // Path to root directory of Erwin engine
@@ -341,7 +268,12 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
 
         // Push remapping element
         DXAAtlasRemapElement elt;
-        memcpy(elt.name, img.name.c_str(), std::min(img.name.size(),31ul));
+        unsigned long str_size = std::min(img.name.size(),31ul);
+        // TODO: make sure name is less than 32 characters
+        memcpy(elt.name, img.name.c_str(), str_size);
+        elt.name[str_size] = '\0';
+
+
         elt.x = img.x;
         elt.y = out_h-img.y - img.height;
         elt.w = img.width;
@@ -388,10 +320,10 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
         out_atlas,
         tex_blob,
         remap.data(),
-        (uint32_t)(num_blocks*compr_size),
-        (uint32_t)(remap.size()*sizeof(DXAAtlasRemapElement)),
         (uint16_t)out_w,
-        (uint16_t)out_h
+        (uint16_t)out_h,
+        (uint32_t)(num_blocks*compr_size),
+        (uint32_t)(remap.size()*sizeof(DXAAtlasRemapElement))
     });
 
     // Cleanup

@@ -89,6 +89,7 @@ public:
     // * Debug
     // Get current error from graphics device
     virtual uint32_t get_error() override;
+    virtual const std::string& show_error() override;
     // Fail on graphics device error
     virtual void assert_no_error() override;
 

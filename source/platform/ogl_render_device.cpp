@@ -224,6 +224,28 @@ void OGLRenderDevice::flush()
     glFlush();
 }
 
+static const std::map<GLenum, std::string> s_gl_errors =
+{
+    {GL_NO_ERROR,          "No error"},
+    {GL_INVALID_OPERATION, "Invalid operation"},
+    {GL_INVALID_ENUM,      "Invalid enum"},
+    {GL_INVALID_VALUE,     "Invalid value"},
+    {GL_STACK_OVERFLOW,    "Stack overflow"},
+    {GL_STACK_UNDERFLOW,   "Stack underflow"},
+    {GL_OUT_OF_MEMORY,     "Out of memory"}
+};
+
+static const std::string s_gl_unknown_error = "Unknown error";
+
+const std::string& OGLRenderDevice::show_error()
+{
+    auto it = s_gl_errors.find(glGetError());
+    if(it!=s_gl_errors.end())
+        return it->second;
+    else
+        return s_gl_unknown_error;
+}
+
 uint32_t OGLRenderDevice::get_error()
 {
     return glGetError();

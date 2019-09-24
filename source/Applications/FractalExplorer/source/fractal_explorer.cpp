@@ -18,10 +18,12 @@ class FractalLayer: public Layer
 public:
 	FractalLayer():
 	Layer("FractalLayer"),
-	camera_ctl_(1280.f/1024.f, 1.f)
+	camera_ctl_(1280.f/1024.f, 1.f),
+	show_menu_(true)
 	{
 		EVENTBUS.subscribe(this, &FractalLayer::on_window_resize_event);
 		EVENTBUS.subscribe(this, &FractalLayer::on_mouse_scroll_event);
+		EVENTBUS.subscribe(this, &FractalLayer::on_keyboard_event);
 	}
 
 	~FractalLayer() = default;
@@ -34,12 +36,15 @@ public:
 
 	virtual void on_imgui_render() override
 	{
-	    ImGui::Begin("Mandelbrot explorer");
-        ImGui::SliderInt("Max iterations", &max_iter_, 1, 200);
-        ImGui::SliderFloat("Escape radius", &escape_radius_, 2.f, 100.f);
-        ImGui::SliderFloat("Attenuation", &attenuation_, 0.f, 5.f);
-        ImGui::SliderFloat("Animation speed", &speed_, 0.f, 1.f);
-        ImGui::SliderFloat3("Palette", (float*)&palette_, 0.0f, 1.0f);
+		if(show_menu_)
+		{
+		    ImGui::Begin("Mandelbrot explorer");
+	        ImGui::SliderInt("Max iterations", &max_iter_, 1, 200);
+	        ImGui::SliderFloat("Escape radius", &escape_radius_, 2.f, 100.f);
+	        ImGui::SliderFloat("Attenuation", &attenuation_, 0.f, 5.f);
+	        ImGui::SliderFloat("Animation speed", &speed_, 0.f, 1.f);
+	        ImGui::SliderFloat3("Palette", (float*)&palette_, 0.0f, 1.0f);
+	    }
 	}
 
 	virtual void on_attach() override
@@ -113,12 +118,20 @@ protected:
 		return false;
 	}
 
+	bool on_keyboard_event(const KeyboardEvent& event)
+	{
+		if(event.pressed && event.key == keymap::WKEY::TAB)
+			show_menu_ = !show_menu_;
+		return false;
+	}
+
 private:
 	OrthographicCamera2DController camera_ctl_;
 	ShaderBank shader_bank_;
 	std::shared_ptr<VertexArray> quad_va_;
 	float tt_;
 	float fps_;
+	bool show_menu_;
 
 	int max_iter_ = 100;
 	float escape_radius_ = 75.9f;

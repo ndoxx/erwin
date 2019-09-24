@@ -131,6 +131,12 @@ void GLFWWindow::set_event_callbacks()
 		EVENTBUS.publish(WindowResizeEvent(width, height));
 	});
 
+	// On window resize, framebuffer needs resizing and glViewport must be called with the new size
+	glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+	{
+	    glViewport(0, 0, width, height);
+	});
+
 	// Keyboard event
 	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
