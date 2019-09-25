@@ -129,7 +129,7 @@ private:
 	OrthographicCamera2DController camera_ctl_;
 	ShaderBank shader_bank_;
 	std::shared_ptr<VertexArray> quad_va_;
-	float tt_;
+	float tt_ = 0.f;
 	float fps_;
 	bool show_menu_;
 

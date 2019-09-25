@@ -185,83 +185,16 @@ static rect_wh pack(std::vector<rect_xywh>& rectangles, uint32_t max_side=1000)
     );
 }
 
-// Export a texture atlas to PNG format with a text remapping file
-static void export_atlas_png(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
+static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images, uint32_t width, uint32_t height, bool inverse_y, std::vector<DXAAtlasRemapElement>& remap)
 {
-    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
-    fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
-
-    // * Pack images in an atlas
-    // Allocate output data array
-    unsigned char* output = new unsigned char[4*out_w*out_h];
-    for(int ii=0; ii<4*out_w*out_h; ++ii)
-        output[ii] = 0;
-
-    // Open remapping file
-    std::ofstream ofs(out_remap);
-    // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
-    ofs << "# name x y w h" << std::endl;
-
-    // Create the atlas texture
-    for(int ii=0; ii<images.size(); ++ii)
-    {
-        const ImageData& img = images[ii];
-        
-        // Set remapping file
-        ofs << img.name << " " << img.x << " " << out_h-img.y - img.height << " " << img.width << " " << img.height << std::endl;
-
-        // Set atlas image data
-        for(int xx=0; xx<img.width; ++xx)
-        {
-            int out_x = img.x + xx;
-            for(int yy=0; yy<img.height; ++yy)
-            {
-                int out_y = img.y + yy;
-                output[4 * (out_y * out_w + out_x) + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
-                output[4 * (out_y * out_w + out_x) + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
-                output[4 * (out_y * out_w + out_x) + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
-                output[4 * (out_y * out_w + out_x) + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
-            }
-        }
-    }
-    ofs.close();
-
-    // Export
-    std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
-    std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
-    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
-
-    // Cleanup
-    delete[] output;
-}
-
-// Export a texture atlas to compressed DXA format (remapping information inside)
-static void export_atlas_dxt(const std::vector<ImageData>& images, const std::string& out_name, int out_w, int out_h)
-{
-    // * Pack images in an atlas
-    // Pad size to multiple of 4
-    if(out_w%4)
-    {
-        out_w += (4-out_w%4);
-        std::cout << "Padded width to: " << out_w << std::endl;
-    }
-    if(out_h%4)
-    {
-        out_h += (4-out_h%4);
-        std::cout << "Padded height to: " << out_h << std::endl;
-    }
-
     // Allocate block data array
-    unsigned char* blocks = new unsigned char[4*out_w*out_h];
-    for(int ii=0; ii<4*out_w*out_h; ++ii)
-        blocks[ii] = 0;
+    uint8_t* uncomp = new uint8_t[4*width*height];
+    memset(uncomp, 0, 4*width*height);
 
     // Allocate remapping data array
-    std::vector<DXAAtlasRemapElement> remap;
     remap.reserve(images.size());
 
-    // Populate 4x4 blocks from images data
+    // Create the uncompressed atlas texture
     for(int ii=0; ii<images.size(); ++ii)
     {
         const ImageData& img = images[ii];
@@ -273,43 +206,81 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
         memcpy(elt.name, img.name.c_str(), str_size);
         elt.name[str_size] = '\0';
 
-
         elt.x = img.x;
-        elt.y = out_h-img.y - img.height;
+        elt.y = height-img.y - img.height; // Bottom left corner y
         elt.w = img.width;
         elt.h = img.height;
         remap.push_back(elt);
-        
+
         // Set atlas image data
-        for(int xx=0; xx<img.width; ++xx)
+        for(int yy=0; yy<img.height; ++yy)
         {
-            int out_x = img.x + xx;
-            for(int yy=0; yy<img.height; ++yy)
+            int out_y = inverse_y ? (height - 1) - (img.y + yy) : img.y + yy;
+            for(int xx=0; xx<img.width; ++xx)
             {
-                int out_y = img.y + yy;
-                // Calculate offset inside block container
-                int block_index = out_w * (out_y/4) + (out_x/4);
-                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
-                blocks[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
-                blocks[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
-                blocks[offset + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
-                blocks[offset + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
+                int out_x = img.x + xx;
+                uncomp[4 * (out_y * width + out_x) + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
+                uncomp[4 * (out_y * width + out_x) + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
+                uncomp[4 * (out_y * width + out_x) + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
+                uncomp[4 * (out_y * width + out_x) + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
             }
         }
     }
 
-    // Allocate compressed data array
-    const int num_blocks = (out_w*out_h)/16;
-    static const int block_size = 16*4; // 4 bytes per-pixel, 16 pixel in a 4x4 block
-    static const int compr_size = 16;   // 128 bits compressed size per block
-    unsigned char* tex_blob = new unsigned char[num_blocks*compr_size];
+    return uncomp;
+}
 
-    // Compress each block
-    for(int ii=0; ii<num_blocks; ++ii)
+// Export a texture atlas to PNG format with a text remapping file
+static void export_atlas_png(uint8_t* uncomp, const std::vector<DXAAtlasRemapElement>& remap, const std::string& out_name, int out_w, int out_h)
+{
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
+    fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
+
+    // Write remapping file
+    std::ofstream ofs(out_remap);
+    // Write comment for column names
+    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
+    ofs << "# name x y w h" << std::endl;
+
+    for(auto&& elt: remap)
+        ofs << elt.name << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << std::endl;
+
+    ofs.close();
+
+    // Export
+    std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
+    std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
+    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
+}
+
+inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
+{
+    for(int j=0; j<4; ++j)
     {
-        int src_offset = ii*block_size;
-        int dst_offset = ii*compr_size;
-        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, STB_DXT_NORMAL);
+        memcpy(&colorBlock[j*4*4], in_ptr, 4*4 );
+        in_ptr += width * 4;
+    }
+}
+
+// Export a texture atlas to compressed DXA format (remapping information inside)
+static void export_atlas_dxt(uint8_t* uncomp, const std::vector<DXAAtlasRemapElement>& remap, const std::string& out_name, int out_w, int out_h)
+{
+    // Compress
+    uint8_t* tex_blob = new uint8_t[out_w*out_h];
+    memset(tex_blob, 0, out_w*out_h);
+
+    uint8_t block[64];
+
+    uint32_t dst_offset = 0;
+    uint8_t* in_buf = uncomp;
+    for(int yy=0; yy<out_h; yy+=4, in_buf+=out_w*4*4)
+    {
+        for(int xx=0; xx<out_w; xx+=4)
+        {
+            extract_block(in_buf+xx*4, out_w, block);
+            stb_compress_dxt_block(&tex_blob[dst_offset], block, 1, STB_DXT_HIGHQUAL);
+            dst_offset += 16;
+        }
     }
 
     // Export
@@ -319,16 +290,98 @@ static void export_atlas_dxt(const std::vector<ImageData>& images, const std::st
     {
         out_atlas,
         tex_blob,
-        remap.data(),
+        (void*)remap.data(),
         (uint16_t)out_w,
         (uint16_t)out_h,
-        (uint32_t)(num_blocks*compr_size),
+        (uint32_t)(out_w*out_h),
         (uint32_t)(remap.size()*sizeof(DXAAtlasRemapElement))
     });
 
     // Cleanup
-    delete[] blocks;
     delete[] tex_blob;
+}
+
+// Create an atlas texture plus a remapping file. The atlas contains each sub-texture found in input directory.
+static void make_atlas(const fs::path& input_dir, Compression compr = Compression::None)
+{
+    std::vector<rect_xywh> rectangles;
+    std::vector<ImageData> images;
+
+    // * Iterate over all files
+    for(auto& entry: fs::directory_iterator(input_dir))
+    {
+        if(entry.is_regular_file())
+        {
+            // Load image, force 4 channels
+            ImageData img;
+            img.name = entry.path().stem().string();
+            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 4);
+            img.x = 0;
+            img.y = 0;
+            if(!img.data)
+            {
+                std::cout << "Error while loading image: " << entry.path().filename() << std::endl;
+                continue;
+            }
+
+            // Insert image and rectangle at the same time so they have the same index (stupid rectpack2D lib)
+            images.push_back(img);
+            rectangles.push_back({0,0,img.width,img.height});
+        }
+    }
+
+    // * Find best packing for images
+    auto result_size = pack(rectangles);
+    int out_w = result_size.w;
+    int out_h = result_size.h;
+    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+
+    // Update image positions
+    for(int ii=0; ii<rectangles.size(); ++ii)
+    {
+        images[ii].x = rectangles[ii].x;
+        images[ii].y = rectangles[ii].y;
+    }
+
+    // * Generate uncompressed atlas data
+    // Pad size to multiple of 4 if necessary
+    if(compr == Compression::DXT5)
+    {
+        if(out_w%4)
+        {
+            out_w += (4-out_w%4);
+            std::cout << "Padded width to: " << out_w << std::endl;
+        }
+        if(out_h%4)
+        {
+            out_h += (4-out_h%4);
+            std::cout << "Padded height to: " << out_h << std::endl;
+        }
+    }
+
+    // * Export
+    std::vector<DXAAtlasRemapElement> remap;
+    std::string dir_name = input_dir.stem().string();
+    uint8_t* uncomp = nullptr;
+    switch(compr)
+    {
+        case Compression::None:
+        {
+            uncomp = generate_atlas_uncompressed(images, out_w, out_h, false, remap);
+            export_atlas_png(uncomp, remap, dir_name, out_w, out_h);
+            break;
+        }
+        case Compression::DXT5:
+        {
+            uncomp = generate_atlas_uncompressed(images, out_w, out_h, true, remap);
+            export_atlas_dxt(uncomp, remap, dir_name, out_w, out_h);
+            break;
+        }
+    }
+
+    // Cleanup
+    for(auto&& img: images)
+        stbi_image_free(img.data);
 }
 
 // Export a font atlas to PNG format with a text remapping file
@@ -380,61 +433,6 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
     std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
     std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
-}
-
-// Create an atlas texture plus a remapping file. The atlas contains each sub-texture found in input directory.
-static void make_atlas(const fs::path& input_dir, Compression compr = Compression::None)
-{
-    std::vector<rect_xywh> rectangles;
-    std::vector<ImageData> images;
-
-    // * Iterate over all files
-    for(auto& entry: fs::directory_iterator(input_dir))
-    {
-        if(entry.is_regular_file())
-        {
-            // Load image, force 4 channels
-            ImageData img;
-            img.name = entry.path().stem().string();
-            img.data = stbi_load(entry.path().string().c_str(), &img.width, &img.height, &img.channels, 4);
-            img.x = 0;
-            img.y = 0;
-            if(!img.data)
-            {
-                std::cout << "Error while loading image: " << entry.path().filename() << std::endl;
-                continue;
-            }
-
-            // Insert image and rectangle at the same time so they have the same index (stupid rectpack2D lib)
-            images.push_back(img);
-            rectangles.push_back({0,0,img.width,img.height});
-        }
-    }
-
-    // * Find best packing for images
-    auto result_size = pack(rectangles);
-    int out_w = result_size.w;
-    int out_h = result_size.h;
-    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
-
-    // Update image positions
-    for(int ii=0; ii<rectangles.size(); ++ii)
-    {
-        images[ii].x = rectangles[ii].x;
-        images[ii].y = rectangles[ii].y;
-    }
-
-    // * Export
-    std::string dir_name = input_dir.stem().string();
-    switch(compr)
-    {
-        case Compression::None: export_atlas_png(images, dir_name, out_w, out_h); break;
-        case Compression::DXT5: export_atlas_dxt(images, dir_name, out_w, out_h); break;
-    }
-
-    // Cleanup
-    for(auto&& img: images)
-        stbi_image_free(img.data);
 }
 
 // Read a font file (.ttf) and export an atlas plus a remapping file. The atlas contains each character existing in the font file.

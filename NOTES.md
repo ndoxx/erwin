@@ -750,12 +750,12 @@ L'écriture du blob texture pour export avec stb_image au format PNG fonctionne 
     {
         const ImageData& img = images[ii];
 
-        for(int xx=0; xx<img.width; ++xx)
+        for(int yy=0; yy<img.height; ++yy)
         {
-            int out_x = img.x + xx;
-            for(int yy=0; yy<img.height; ++yy)
+            int out_y = img.y + yy;
+            for(int xx=0; xx<img.width; ++xx)
             {
-                int out_y = img.y + yy;
+                int out_x = img.x + xx;
                 int offset = 4 * (out_y * out_w + out_x);
                 output[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
                 output[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
@@ -767,57 +767,50 @@ L'écriture du blob texture pour export avec stb_image au format PNG fonctionne 
 ```
 Chaque pixel est au format RGBA (4 bytes per pixel), et l'offset de chaque pixel (x,y) dans une image de taille (w,h) est donné par 4 * (y * w + x).
 
-Pour la compression DXT c'est un peu plus subtil. L'image doit être découpée en blocks de pixels de 4x4. Ceci suppose un padding de l'image pour que w comme h soient des multiples de 4. Pour chacun de ces blocks spécifiés en row-major (ligne par ligne), on applique l'algo de compression en appelant stb_compress_dxt_block(dst, src, alpha, mode), qui garantie un résultat sur 128 bits (=16 octets). Un petit jeu d'indices permet de faire ceci avec le même genre de boucles que dans le cas précédent :
-
-    Soient xx (de gauche à droite) et yy (de haut en bas) les coordonnées dans l'image finale. 
-    Chaque block est identifié par une paire d'indices (i,j) tels que :
-        i = xx/4 (division entière)
-        j = yy/4 (division entière)
-    Et les coordonnées de pixels xb et yb dans un block sont :
-        xb = xx%4
-        yb = yy%4
-    L'indice linéaire du block (i,j) dans un tableau de blocks est :
-        w * j + i, avec w la largeur de l'image finale.
-    L'indice linéaire d'un pixel dans le block (i,j) est donné par :
-        4 * yb + xb
-    L'indice de ce pixel dans le tableau de blocks est donc l'indice du block plus l'indice 
-    du pixel par rapport au début du block :
-        (w * j + i) + (4 * yb + xb) = w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4)
-    Comme chaque pixel est codé sur 4 bytes, l'offset mémoire du pixel (xx,yy) est donc 4 
-    fois l'indice :
-        4 * ( w * (yy/4) + (xx/4) + 4*(yy%4) + (xx%4) )
-
+Pour la compression DXT c'est un peu plus subtil. L'atlas non compressé doit d'abord être généré, comme précédemment, mais en inversant la coordonnée y pour que mon loader puisse charger l'asset dans le bon ordre :
 ```cpp
-    for(int ii=0; ii<images.size(); ++ii)
+    for(int yy=0; yy<img.height; ++yy)
     {
-        const ImageData& img = images[ii];
-
-        for(int xx=0; xx<img.width; ++xx)
-        {
-            int out_x = img.x + xx;
-            for(int yy=0; yy<img.height; ++yy)
-            {
-                int out_y = img.y + yy;
-                int block_index = out_w * (out_y/4) + (out_x/4);
-                int offset = 4*(block_index + 4*(out_y%4) + (out_x%4));
-                blocks[offset + 0] = img.data[4 * (yy * img.width + xx) + 0]; // R channel
-                blocks[offset + 1] = img.data[4 * (yy * img.width + xx) + 1]; // G channel
-                blocks[offset + 2] = img.data[4 * (yy * img.width + xx) + 2]; // B channel
-                blocks[offset + 3] = img.data[4 * (yy * img.width + xx) + 3]; // A channel
-            }
-        }
-    }
-
-    // ...
-
-    for(int ii=0; ii<num_blocks; ++ii)
-    {
-        int src_offset = ii*block_size;
-        int dst_offset = ii*compr_size;
-        stb_compress_dxt_block(&tex_blob[dst_offset], &blocks[src_offset], 1, 
-                               STB_DXT_NORMAL);
+        t out_y = inverse_y ? (height - 1) - (img.y + yy) : img.y + yy;
+        // ...
     }
 ```
+Puis pour chaque pixel de l'image, on extrait un block 4x4 dont le pixel est à la position supérieure gauche, et on applique la compression au block. Chaque block compressé tient sur 16 octets, il suffit de parcourir les pixels en row major et d'ajouter les blocks compressés les uns à la suite des autres dans un buffer, que l'on va ensuite sérialiser.
+
+```cpp
+    uint8_t* tex_blob = new uint8_t[out_w*out_h];
+    memset(tex_blob, 0, out_w*out_h);
+
+    uint8_t block[64];
+
+    uint32_t dst_offset = 0;
+    uint8_t* in_buf = uncomp;
+    for(int yy=0; yy<out_h; yy+=4, in_buf+=out_w*4*4)
+    {
+        for(int xx=0; xx<out_w; xx+=4)
+        {
+            extract_block(in_buf+xx*4, out_w, block);
+            stb_compress_dxt_block(&tex_blob[dst_offset], block, 1, STB_DXT_HIGHQUAL);
+            dst_offset += 16;
+        }
+    }
+```
+Avec :
+```cpp
+inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
+{
+    for(int j=0; j<4; ++j)
+    {
+        memcpy(&colorBlock[j*4*4], in_ptr, 4*4 );
+        in_ptr += width * 4;
+    }
+}
+```
+
+Je pensais au départ qu'il suffisait de découper l'image en blocks de pixels 4x4 et d'appliquer la compression sur chacun des blocks, et je m'étais fait chier le zgeg à organiser les données par block lors de la génération des données non compressées avec du calcul d'indices. Bien entendu ça n'a pas fonctionné.
+
+La sérialisation/désérialisation des atlas de textures compressés est gérée par le format de fichiers DXA (spécifié dans core/dxa_file.h). Ce format permet de stocker un blob DXT ainsi qu'une table de remapping.
+
 
 ##Camera & Camera controller
 Contrairement à ce que je faisais dans WCore, j'applique ici une séparation rigoureuse entre la caméra (maths + data) et le contrôleur (wrapper autour de la caméra, réagit aux inputs/events). La classe _OrthographicCamera2D_ représente une caméra orthographique initialisée avec un frustum rectangulaire de type _Frustum2D_. Elle possède un ensemble de fonctions pour récupérer les matrices de vue et de projection. Sa fonction privée update_view_matrix() réalise la mise à jour des matrices vue et vue-projection lorsque la position où l'angle a changé. La fonction set_projection() permet de recalculer une projection depuis un nouveau frustum. Cette classe fait parti des classes de rendu, et doit être passée au renderer (_Renderer2D_) via begin_scene(). Le renderer se charge de lui faire crâcher ses matrices, les sauvegarde de côté, et les refile au shader lors du flush().
