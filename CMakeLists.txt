@@ -35,6 +35,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
 
@@ -146,6 +147,7 @@ set_target_properties(glad PROPERTIES
 
 target_link_libraries(erwin
                       m
+                      z
                       stdc++fs
                       pthread
                       X11

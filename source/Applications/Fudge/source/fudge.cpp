@@ -12,6 +12,7 @@
 #endif
 
 #include "core/cat_file.h"
+#include "core/z_wrapper.h"
 #include "dxt_compressor.h"
 
 #include "inih/cpp/INIReader.h"
@@ -56,7 +57,8 @@ struct Character
 enum class Compression: uint8_t
 {
     None = 0,
-    DXT
+    DXT,
+    Deflate
 };
 
 static fs::path s_self_path;  // Path to executable
@@ -67,6 +69,7 @@ static fs::path s_fonts_path; // Path to fonts folder
 
 static Compression s_tex_compression;
 static Compression s_fnt_compression;
+static Compression s_blob_compression;
 
 static FT_Library ft_;
 
@@ -144,6 +147,17 @@ static bool read_conf(const fs::path& path)
     else
     {
         std::cout << "Unrecognized compression specifier for fonts: " << comp_str << std::endl;
+        return false;
+    }
+
+    comp_str = reader.Get("output", "blob_compression", "UNKNOWN");
+    if(!comp_str.compare("none"))
+        s_blob_compression = Compression::None;
+    else if(!comp_str.compare("deflate"))
+        s_blob_compression = Compression::Deflate;
+    else
+    {
+        std::cout << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
         return false;
     }
 
@@ -261,21 +275,47 @@ static void export_atlas_cat(uint8_t* uncomp, const std::vector<CATAtlasRemapEle
     uint8_t* tex_blob;
     fudge::compress_dxt_5(uncomp, tex_blob, out_w, out_h);
 
+    uint32_t dxt_size = out_w*out_h;
+
     // Export
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".cat");
     std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
-    write_cat(
+    if(s_blob_compression == Compression::Deflate)
     {
-        out_atlas,
-        tex_blob,
-        (void*)remap.data(),
-        out_w,
-        out_h,
-        out_w*out_h,
-        (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
-        TextureCompression::DXT5,
-        LosslessCompression::None,
-    });
+        uint32_t max_size = erwin::get_max_compressed_len(dxt_size);
+        uint8_t* deflated = new uint8_t[max_size];
+        uint32_t comp_size = erwin::compress_data(tex_blob, dxt_size, deflated, max_size);
+        write_cat(
+        {
+            out_atlas,
+            deflated,
+            (void*)remap.data(),
+            out_w,
+            out_h,
+            comp_size, // Blob size
+            dxt_size, // Inflated blob size
+            (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
+            TextureCompression::DXT5,
+            LosslessCompression::Deflate,
+        });
+        delete[] deflated;
+    }
+    else
+    {
+        write_cat(
+        {
+            out_atlas,
+            tex_blob,
+            (void*)remap.data(),
+            out_w,
+            out_h,
+            dxt_size, // Blob size
+            dxt_size, // Inflated blob size
+            (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
+            TextureCompression::DXT5,
+            LosslessCompression::None,
+        });
+    }
 
     // Cleanup
     delete[] tex_blob;
@@ -357,6 +397,7 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
             export_atlas_cat(uncomp, remap, dir_name, out_w, out_h);
             break;
         }
+        default: break;
     }
 
     // Cleanup

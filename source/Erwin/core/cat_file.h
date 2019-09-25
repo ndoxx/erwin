@@ -25,22 +25,23 @@ enum class TextureCompression: uint16_t
 enum class LosslessCompression: uint16_t
 {
 	None = 0,
-	LZMA
+	Deflate
 };
 
 // CAT file format
 //#pragma pack(push,1)
 struct CATHeader
 {
-    uint32_t magic;
-    uint16_t version_major;
-    uint16_t version_minor;
-    uint16_t texture_width;
-    uint16_t texture_height;
-    uint16_t texture_compression;
-    uint16_t lossless_compression;
-    uint64_t texture_blob_size;
-    uint64_t remapping_blob_size;
+    uint32_t magic;                 // Magic number to check file format validity
+    uint16_t version_major;         // Version major number
+    uint16_t version_minor;         // Version minor number
+    uint16_t texture_width;         // Width of texture in pixels
+    uint16_t texture_height;        // Height of texture in pixels
+    uint16_t texture_compression;   // Type of (lossy) texture compression
+    uint16_t lossless_compression;  // Type of (lossless) blob compression
+    uint64_t texture_blob_size;     // Size of texture blob
+    uint64_t blob_inflate_size;     // Size of inflated texture blob (after blob decompression)
+    uint64_t remapping_blob_size;   // Size of remapping table
 };
 //#pragma pack(pop)
 #define CAT_HEADER_SIZE 128
@@ -71,6 +72,7 @@ struct CATDescriptor
     uint32_t texture_width;
     uint32_t texture_height;
     uint32_t texture_blob_size;
+    uint32_t blob_inflate_size;
     uint32_t remapping_blob_size;
 	TextureCompression texture_compression;
 	LosslessCompression lossless_compression;
