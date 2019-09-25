@@ -88,7 +88,7 @@ public:
 	{
 		renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
 		// atlas_.load("textures/atlas/set2.png");
-		atlas_.load("textures/atlas/set2.dxa");
+		atlas_.load("textures/atlas/set2.cat");
 
 		// List of random sub-textures to use
 		tiles_ =

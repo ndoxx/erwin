@@ -706,7 +706,7 @@ NOTE: Quand j'attaquerai la partie texture avec le _BatchRenderer2D_, je pourrai
 
 #[20-09-19]
 ##Texture atlas & Font atlas
-J'ai dev un petit outil d'atlas packing nommé FudgePacker (!) capable de contruire un atlas optimal depuis un ensemble d'images sources non-nécessairement carrées, ou bien d'une police de caractères. Fudge peut exporter les atlas en PNG avec un fichier texte pour les données de remapping : clé / cooronnées / tailles pour les texture atlases, ou bien clé / coordonnées / tailles / advance / bearing pour les font atlases. Alternativement pour les texture atlases, toutes ces donnée peuvent êtres exportées vers un format custom (DXA) qui gère la compression DXT5 pour la texture et possède une table de remapping. Fudge est configurable via le fichier fudge.ini  du dossier config (parsing avec la lib IniH), il suffit d'y préciser où se trouvent les assets à packer et le type de compression :
+J'ai dev un petit outil d'atlas packing nommé FudgePacker (!) capable de contruire un atlas optimal depuis un ensemble d'images sources non-nécessairement carrées, ou bien d'une police de caractères. Fudge peut exporter les atlas en PNG avec un fichier texte pour les données de remapping : clé / cooronnées / tailles pour les texture atlases, ou bien clé / coordonnées / tailles / advance / bearing pour les font atlases. Alternativement pour les texture atlases, toutes ces donnée peuvent êtres exportées vers un format custom (CAT, pour Compressed ATlas) qui gère la compression DXT5 pour la texture et possède une table de remapping. Fudge est configurable via le fichier fudge.ini  du dossier config (parsing avec la lib IniH), il suffit d'y préciser où se trouvent les assets à packer et le type de compression :
 
 ```ini
     [paths]
@@ -775,7 +775,7 @@ Pour la compression DXT c'est un peu plus subtil. L'atlas non compressé doit d'
         // ...
     }
 ```
-Puis pour chaque pixel de l'image, on extrait un block 4x4 dont le pixel est à la position supérieure gauche, et on applique la compression au block. Chaque block compressé tient sur 16 octets, il suffit de parcourir les pixels en row major et d'ajouter les blocks compressés les uns à la suite des autres dans un buffer, que l'on va ensuite sérialiser.
+Puis pour chaque pixel de l'image, on extrait un block 4x4 dont le pixel est à la position supérieure gauche, et on applique la compression au block. Chaque block compressé tient sur 16 octets, il suffit de parcourir les pixels en row major et d'ajouter les blocks compressés les uns à la suite des autres dans un buffer, que l'on va ensuite sérialiser. Je me suis servi de [1] pour la passe de compression.
 
 ```cpp
     uint8_t* tex_blob = new uint8_t[out_w*out_h];
@@ -809,8 +809,12 @@ inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
 
 Je pensais au départ qu'il suffisait de découper l'image en blocks de pixels 4x4 et d'appliquer la compression sur chacun des blocks, et je m'étais fait chier le zgeg à organiser les données par block lors de la génération des données non compressées avec du calcul d'indices. Bien entendu ça n'a pas fonctionné.
 
-La sérialisation/désérialisation des atlas de textures compressés est gérée par le format de fichiers DXA (spécifié dans core/dxa_file.h). Ce format permet de stocker un blob DXT ainsi qu'une table de remapping.
+La sérialisation/désérialisation des atlas de textures compressés est gérée par le format de fichiers CAT (spécifié dans core/cat_file.h). Ce format permet de stocker un blob DXT ainsi qu'une table de remapping. Il est possible qu'à l'avenir je supporte également la compression ASTC (voir [2] et [3]).
 
+###Sources:
+    [1] https://www.researchgate.net/publication/259000525_Real-Time_DXT_Compression
+    [2] https://developer.nvidia.com/astc-texture-compression-for-game-assets
+    [3] https://github.com/ARM-software/astc-encoder/tree/master/Source
 
 ##Camera & Camera controller
 Contrairement à ce que je faisais dans WCore, j'applique ici une séparation rigoureuse entre la caméra (maths + data) et le contrôleur (wrapper autour de la caméra, réagit aux inputs/events). La classe _OrthographicCamera2D_ représente une caméra orthographique initialisée avec un frustum rectangulaire de type _Frustum2D_. Elle possède un ensemble de fonctions pour récupérer les matrices de vue et de projection. Sa fonction privée update_view_matrix() réalise la mise à jour des matrices vue et vue-projection lorsque la position où l'angle a changé. La fonction set_projection() permet de recalculer une projection depuis un nouveau frustum. Cette classe fait parti des classes de rendu, et doit être passée au renderer (_Renderer2D_) via begin_scene(). Le renderer se charge de lui faire crâcher ses matrices, les sauvegarde de côté, et les refile au shader lors du flush().

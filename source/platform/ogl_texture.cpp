@@ -1,6 +1,7 @@
 #include "platform/ogl_texture.h"
 #include "render/render_device.h"
 #include "core/core.h"
+#include "core/cat_file.h"
 #include "debug/logger.h"
 
 #include "glad/glad.h"
@@ -62,7 +63,7 @@ filepath_(filepath)
 	stbi_image_free(data);
 }
 
-OGLTexture2D::OGLTexture2D(void* data, uint32_t width, uint32_t height, bool compressed)
+OGLTexture2D::OGLTexture2D(void* data, uint32_t width, uint32_t height, TextureCompression compression)
 {
 	DLOGN("texture") << "Loading texture from memory: " << std::endl;
 	
@@ -73,9 +74,9 @@ OGLTexture2D::OGLTexture2D(void* data, uint32_t width, uint32_t height, bool com
 	
 	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
 
-	if(compressed)
+	if(compression == TextureCompression::DXT5)
 	{
-		DLOGI << "COMPRESSED" << std::endl;
+		DLOGI << "compression: DXT5" << std::endl;
 		glTextureStorage2D(rd_handle_, 1, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width_, height_);
 		glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width*height, data);
 	}

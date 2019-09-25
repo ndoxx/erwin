@@ -1,5 +1,5 @@
 #include "render/texture_atlas.h"
-#include "core/dxa_file.h"
+#include "core/cat_file.h"
 #include "debug/logger.h"
 
 #include <random>
@@ -62,23 +62,23 @@ void TextureAtlas::load(const fs::path& filepath)
 		    }
 		}
 	}
-	else if(!extension.compare(".dxa"))
+	else if(!extension.compare(".cat"))
 	{
-		DLOGI << "dxa: " << WCC('p') << filepath << WCC(0) << std::endl;
+		DLOGI << "CAT: " << WCC('p') << filepath << WCC(0) << std::endl;
 
-		DXADescriptor desc;
+		CATDescriptor desc;
 		desc.filepath = filesystem::get_asset_dir() / filepath;
 
-		read_dxa(desc);
+		read_cat(desc);
 
 		texture_ = Texture2D::create(desc.texture_blob,
 								     desc.texture_width,
 								     desc.texture_height,
-								     true);
+								     desc.texture_compression);
 		float width = texture_->get_width();
 		float height = texture_->get_height();
 
-		traverse_remapping(desc, [&](const DXAAtlasRemapElement& remap)
+		traverse_remapping(desc, [&](const CATAtlasRemapElement& remap)
 		{
 		    remapping_.insert(std::make_pair(H_(remap.name), glm::vec4{remap.x/width, remap.y/height, (remap.x+remap.w)/width, (remap.y+remap.h)/height}));
 		});

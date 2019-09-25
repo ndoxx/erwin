@@ -11,13 +11,13 @@
 
 #endif
 
-#include "core/dxa_file.h"
+#include "core/cat_file.h"
+#include "dxt_compressor.h"
 
 #include "inih/cpp/INIReader.h"
 #include "rectpack2D/src/finders_interface.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
-#include "stb/stb_dxt.h"
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -56,7 +56,7 @@ struct Character
 enum class Compression: uint8_t
 {
     None = 0,
-    DXT5
+    DXT
 };
 
 static fs::path s_self_path;  // Path to executable
@@ -130,8 +130,8 @@ static bool read_conf(const fs::path& path)
     std::string comp_str = reader.Get("output", "texture_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
         s_tex_compression = Compression::None;
-    else if(!comp_str.compare("DXT5"))
-        s_tex_compression = Compression::DXT5;
+    else if(!comp_str.compare("DXT"))
+        s_tex_compression = Compression::DXT;
     else
     {
         std::cout << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
@@ -185,7 +185,7 @@ static rect_wh pack(std::vector<rect_xywh>& rectangles, uint32_t max_side=1000)
     );
 }
 
-static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images, uint32_t width, uint32_t height, bool inverse_y, std::vector<DXAAtlasRemapElement>& remap)
+static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images, uint32_t width, uint32_t height, bool inverse_y, std::vector<CATAtlasRemapElement>& remap)
 {
     // Allocate block data array
     uint8_t* uncomp = new uint8_t[4*width*height];
@@ -200,11 +200,13 @@ static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images
         const ImageData& img = images[ii];
 
         // Push remapping element
-        DXAAtlasRemapElement elt;
+        CATAtlasRemapElement elt;
         unsigned long str_size = std::min(img.name.size(),31ul);
-        // TODO: make sure name is less than 32 characters
         memcpy(elt.name, img.name.c_str(), str_size);
         elt.name[str_size] = '\0';
+
+        if(img.name.size()>31)
+            std::cout << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
 
         elt.x = img.x;
         elt.y = height-img.y - img.height; // Bottom left corner y
@@ -231,7 +233,7 @@ static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images
 }
 
 // Export a texture atlas to PNG format with a text remapping file
-static void export_atlas_png(uint8_t* uncomp, const std::vector<DXAAtlasRemapElement>& remap, const std::string& out_name, int out_w, int out_h)
+static void export_atlas_png(uint8_t* uncomp, const std::vector<CATAtlasRemapElement>& remap, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".png");
     fs::path out_remap = s_asset_path.parent_path() / (out_name + ".txt");
@@ -253,48 +255,26 @@ static void export_atlas_png(uint8_t* uncomp, const std::vector<DXAAtlasRemapEle
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
 }
 
-inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
+// Export a texture atlas to compressed CAT format (Compressed ATlas, remapping information inside)
+static void export_atlas_cat(uint8_t* uncomp, const std::vector<CATAtlasRemapElement>& remap, const std::string& out_name, uint32_t out_w, uint32_t out_h)
 {
-    for(int j=0; j<4; ++j)
-    {
-        memcpy(&colorBlock[j*4*4], in_ptr, 4*4 );
-        in_ptr += width * 4;
-    }
-}
-
-// Export a texture atlas to compressed DXA format (remapping information inside)
-static void export_atlas_dxt(uint8_t* uncomp, const std::vector<DXAAtlasRemapElement>& remap, const std::string& out_name, int out_w, int out_h)
-{
-    // Compress
-    uint8_t* tex_blob = new uint8_t[out_w*out_h];
-    memset(tex_blob, 0, out_w*out_h);
-
-    uint8_t block[64];
-
-    uint32_t dst_offset = 0;
-    uint8_t* in_buf = uncomp;
-    for(int yy=0; yy<out_h; yy+=4, in_buf+=out_w*4*4)
-    {
-        for(int xx=0; xx<out_w; xx+=4)
-        {
-            extract_block(in_buf+xx*4, out_w, block);
-            stb_compress_dxt_block(&tex_blob[dst_offset], block, 1, STB_DXT_HIGHQUAL);
-            dst_offset += 16;
-        }
-    }
+    uint8_t* tex_blob;
+    fudge::compress_dxt_5(uncomp, tex_blob, out_w, out_h);
 
     // Export
-    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".dxa");
+    fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".cat");
     std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
-    write_dxa(
+    write_cat(
     {
         out_atlas,
         tex_blob,
         (void*)remap.data(),
-        (uint16_t)out_w,
-        (uint16_t)out_h,
-        (uint32_t)(out_w*out_h),
-        (uint32_t)(remap.size()*sizeof(DXAAtlasRemapElement))
+        out_w,
+        out_h,
+        out_w*out_h,
+        (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
+        TextureCompression::DXT5,
+        LosslessCompression::None,
     });
 
     // Cleanup
@@ -345,7 +325,7 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
 
     // * Generate uncompressed atlas data
     // Pad size to multiple of 4 if necessary
-    if(compr == Compression::DXT5)
+    if(compr == Compression::DXT)
     {
         if(out_w%4)
         {
@@ -360,7 +340,7 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
     }
 
     // * Export
-    std::vector<DXAAtlasRemapElement> remap;
+    std::vector<CATAtlasRemapElement> remap;
     std::string dir_name = input_dir.stem().string();
     uint8_t* uncomp = nullptr;
     switch(compr)
@@ -371,10 +351,10 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
             export_atlas_png(uncomp, remap, dir_name, out_w, out_h);
             break;
         }
-        case Compression::DXT5:
+        case Compression::DXT:
         {
             uncomp = generate_atlas_uncompressed(images, out_w, out_h, true, remap);
-            export_atlas_dxt(uncomp, remap, dir_name, out_w, out_h);
+            export_atlas_cat(uncomp, remap, dir_name, out_w, out_h);
             break;
         }
     }

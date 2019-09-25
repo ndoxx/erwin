@@ -1,7 +1,8 @@
 set(SRC_FUDGE
     source/fudge.cpp
     source/stb_build.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/dxa_file.cpp
+    source/dxt_compressor.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
     ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
    )
