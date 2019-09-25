@@ -44,12 +44,6 @@ struct CATHeader
     uint64_t remapping_blob_size;   // Size of remapping table
 };
 //#pragma pack(pop)
-#define CAT_HEADER_SIZE 128
-typedef union
-{
-    struct CATHeader h;
-    uint8_t padding[CAT_HEADER_SIZE];
-} CATHeaderWrapper;
 
 #define CAT_MAGIC 0x54414357 // ASCII(WCAT)
 #define CAT_VERSION_MAJOR 1
@@ -72,7 +66,6 @@ struct CATDescriptor
     uint32_t texture_width;
     uint32_t texture_height;
     uint32_t texture_blob_size;
-    uint32_t blob_inflate_size;
     uint32_t remapping_blob_size;
 	TextureCompression texture_compression;
 	LosslessCompression lossless_compression;

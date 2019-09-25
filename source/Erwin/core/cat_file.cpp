@@ -1,4 +1,5 @@
 #include <fstream>
+#include <cstring>
 #include <iostream>
 
 #include "core/core.h"
@@ -13,20 +14,19 @@ void read_cat(CATDescriptor& desc)
     std::ifstream ifs(desc.filepath, std::ios::binary);
 
     // Read header & sanity check
-    CATHeaderWrapper header;
-    ifs.read(reinterpret_cast<char*>(&header), CAT_HEADER_SIZE);
+    CATHeader header;
+    ifs.read(reinterpret_cast<char*>(&header), sizeof(CATHeader));
 
-    W_ASSERT(header.h.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
-    W_ASSERT(header.h.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
-    W_ASSERT(header.h.version_minor == CAT_VERSION_MINOR, "Invalid CAT file: version (minor) mismatch.");
+    W_ASSERT(header.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
+    W_ASSERT(header.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
+    W_ASSERT(header.version_minor == CAT_VERSION_MINOR, "Invalid CAT file: version (minor) mismatch.");
 
-    desc.texture_width        = header.h.texture_width;
-    desc.texture_height       = header.h.texture_height;
-    desc.texture_blob_size    = header.h.texture_blob_size;
-    desc.blob_inflate_size    = header.h.blob_inflate_size;
-    desc.remapping_blob_size  = header.h.remapping_blob_size;
-    desc.texture_compression  = (TextureCompression)header.h.texture_compression;
-    desc.lossless_compression = (LosslessCompression)header.h.lossless_compression;
+    desc.texture_width        = header.texture_width;
+    desc.texture_height       = header.texture_height;
+    desc.texture_blob_size    = header.texture_blob_size;
+    desc.remapping_blob_size  = header.remapping_blob_size;
+    desc.texture_compression  = (TextureCompression)header.texture_compression;
+    desc.lossless_compression = (LosslessCompression)header.lossless_compression;
 
     // Read data blobs
     char* texture_blob = new char[desc.texture_blob_size];
@@ -34,8 +34,8 @@ void read_cat(CATDescriptor& desc)
     // Inflate (decompress) blob if needed
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
-        uint8_t* inflated = new uint8_t[desc.blob_inflate_size];
-        erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), desc.texture_blob_size, inflated, desc.blob_inflate_size);
+        uint8_t* inflated = new uint8_t[header.blob_inflate_size];
+        erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), desc.texture_blob_size, inflated, header.blob_inflate_size);
         desc.texture_blob = inflated;
         delete[] texture_blob;
     }
@@ -58,21 +58,40 @@ void CATDescriptor::release()
 
 void write_cat(const CATDescriptor& desc)
 {
-    CATHeaderWrapper header;
-    header.h.magic                = CAT_MAGIC;
-    header.h.version_major        = CAT_VERSION_MAJOR;
-    header.h.version_minor        = CAT_VERSION_MINOR;
-    header.h.texture_width        = (uint16_t)desc.texture_width;
-    header.h.texture_height       = (uint16_t)desc.texture_height;
-    header.h.texture_blob_size    = desc.texture_blob_size;
-    header.h.blob_inflate_size    = desc.blob_inflate_size;
-    header.h.remapping_blob_size  = desc.remapping_blob_size;
-    header.h.texture_compression  = (uint16_t)desc.texture_compression;
-    header.h.lossless_compression = (uint16_t)desc.lossless_compression;
+    CATHeader header;
+    header.magic                = CAT_MAGIC;
+    header.version_major        = CAT_VERSION_MAJOR;
+    header.version_minor        = CAT_VERSION_MINOR;
+    header.texture_width        = (uint16_t)desc.texture_width;
+    header.texture_height       = (uint16_t)desc.texture_height;
+    header.remapping_blob_size  = desc.remapping_blob_size;
+    header.texture_compression  = (uint16_t)desc.texture_compression;
+    header.lossless_compression = (uint16_t)desc.lossless_compression;
 
     std::ofstream ofs(desc.filepath, std::ios::binary);
-    ofs.write(reinterpret_cast<const char*>(&header), CAT_HEADER_SIZE);
-    ofs.write(reinterpret_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
+
+    if(desc.lossless_compression == LosslessCompression::Deflate)
+    {
+        uint32_t max_size = erwin::get_max_compressed_len(desc.texture_blob_size);
+        uint8_t* deflated = new uint8_t[max_size];
+        uint32_t comp_size = erwin::compress_data(reinterpret_cast<uint8_t*>(desc.texture_blob), desc.texture_blob_size, deflated, max_size);
+        
+        header.texture_blob_size = comp_size;
+        header.blob_inflate_size = desc.texture_blob_size;
+
+        ofs.write(reinterpret_cast<const char*>(&header), sizeof(CATHeader));
+        ofs.write(reinterpret_cast<const char*>(deflated), comp_size);
+        delete[] deflated;
+    }
+    else
+    {
+        header.texture_blob_size = desc.texture_blob_size;
+        header.blob_inflate_size = desc.texture_blob_size;
+
+        ofs.write(reinterpret_cast<const char*>(&header), sizeof(CATHeader));
+        ofs.write(reinterpret_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
+    }
+
     ofs.write(reinterpret_cast<const char*>(desc.remapping_blob), desc.remapping_blob_size);
     ofs.close();
 }

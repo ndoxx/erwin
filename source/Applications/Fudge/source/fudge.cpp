@@ -216,7 +216,7 @@ static uint8_t* generate_atlas_uncompressed(const std::vector<ImageData>& images
         // Push remapping element
         CATAtlasRemapElement elt;
         unsigned long str_size = std::min(img.name.size(),31ul);
-        memcpy(elt.name, img.name.c_str(), str_size);
+        strncpy(elt.name, img.name.c_str(), str_size);
         elt.name[str_size] = '\0';
 
         if(img.name.size()>31)
@@ -280,43 +280,18 @@ static void export_atlas_cat(uint8_t* uncomp, const std::vector<CATAtlasRemapEle
     // Export
     fs::path out_atlas = s_asset_path.parent_path() / (out_name + ".cat");
     std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
-    if(s_blob_compression == Compression::Deflate)
+    write_cat(
     {
-        uint32_t max_size = erwin::get_max_compressed_len(dxt_size);
-        uint8_t* deflated = new uint8_t[max_size];
-        uint32_t comp_size = erwin::compress_data(tex_blob, dxt_size, deflated, max_size);
-        write_cat(
-        {
-            out_atlas,
-            deflated,
-            (void*)remap.data(),
-            out_w,
-            out_h,
-            comp_size, // Blob size
-            dxt_size, // Inflated blob size
-            (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
-            TextureCompression::DXT5,
-            LosslessCompression::Deflate,
-        });
-        delete[] deflated;
-    }
-    else
-    {
-        write_cat(
-        {
-            out_atlas,
-            tex_blob,
-            (void*)remap.data(),
-            out_w,
-            out_h,
-            dxt_size, // Blob size
-            dxt_size, // Inflated blob size
-            (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
-            TextureCompression::DXT5,
-            LosslessCompression::None,
-        });
-    }
-
+        out_atlas,
+        tex_blob,
+        (void*)remap.data(),
+        out_w,
+        out_h,
+        dxt_size, // Blob size
+        (uint32_t)(remap.size()*sizeof(CATAtlasRemapElement)),
+        TextureCompression::DXT5,
+        (s_blob_compression == Compression::Deflate) ? LosslessCompression::Deflate : LosslessCompression::None,
+    });
     // Cleanup
     delete[] tex_blob;
 }
@@ -401,6 +376,7 @@ static void make_atlas(const fs::path& input_dir, Compression compr = Compressio
     }
 
     // Cleanup
+    delete[] uncomp;
     for(auto&& img: images)
         stbi_image_free(img.data);
 }
@@ -414,8 +390,7 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
     // * Pack images in an atlas
     // Allocate output data array
     unsigned char* output = new unsigned char[4*out_w*out_h];
-    for(int ii=0; ii<4*out_w*out_h; ++ii)
-        output[ii] = 0;
+    memset(output, 0, 4*out_w*out_h);
 
     // Open remapping file
     std::ofstream ofs(out_remap);
@@ -454,6 +429,9 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
     std::cout << "-> export: " << fs::relative(out_atlas, s_root_path) << std::endl;
     std::cout << "-> export: " << fs::relative(out_remap, s_root_path) << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
+
+    // Cleanup
+    delete[] output;
 }
 
 // Read a font file (.ttf) and export an atlas plus a remapping file. The atlas contains each character existing in the font file.
