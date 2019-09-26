@@ -494,7 +494,7 @@ J'ai des couples interface/implémentation OpenGL pour les vertex buffers, les i
 J'ai un couple interface/implémentation _Shader_/_OGLShader_ pour les shaders. Deux factory methods permettent la génération d'une instance de shader depuis soit un flux std::istream, soit une string contenant la source.
 J'ai bien écrit LA source. D'expérience, je ne gagne rien à séparer les sources des vertex / geometry / fragment / ... shaders, donc maintenant, tous sont écrits dans le même fichiers avec des balises de section #type :
 
-```c
+```glsl
     #type vertex
     #version 410 core
 
@@ -604,7 +604,7 @@ Puis pour le lier à un shader :
 
 ```
 La deuxième ligne a pour effet de modifier le binding point. Côté shader on a par exemple :
-```c
+```glsl
 struct InstanceData
 {
     vec2 offset;
@@ -641,7 +641,7 @@ De fait on a autant de draw calls que de vertex buffers, toute la géométrie a 
 
 Une petite optimisation a lieu dans un geometry shader : j'y duplique le triangle inférieur pour construire le triangle supérieur. C'est la raison pour laquelle je n'ai besoin de soumettre que la moitié du quad :
 
-```c
+```glsl
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
 
@@ -767,54 +767,9 @@ L'écriture du blob texture pour export avec stb_image au format PNG fonctionne 
 ```
 Chaque pixel est au format RGBA (4 bytes per pixel), et l'offset de chaque pixel (x,y) dans une image de taille (w,h) est donné par 4 * (y * w + x).
 
-Pour la compression DXT c'est un peu plus subtil. L'atlas non compressé doit d'abord être généré, comme précédemment, mais en inversant la coordonnée y pour que mon loader puisse charger l'asset dans le bon ordre :
-```cpp
-    for(int yy=0; yy<img.height; ++yy)
-    {
-        t out_y = inverse_y ? (height - 1) - (img.y + yy) : img.y + yy;
-        // ...
-    }
-```
-Puis pour chaque pixel de l'image, on extrait un block 4x4 dont le pixel est à la position supérieure gauche, et on applique la compression au block. Chaque block compressé tient sur 16 octets, il suffit de parcourir les pixels en row major et d'ajouter les blocks compressés les uns à la suite des autres dans un buffer, que l'on va ensuite sérialiser. Je me suis servi de [1] pour la passe de compression.
-
-```cpp
-    uint8_t* tex_blob = new uint8_t[out_w*out_h];
-    memset(tex_blob, 0, out_w*out_h);
-
-    uint8_t block[64];
-
-    uint32_t dst_offset = 0;
-    uint8_t* in_buf = uncomp;
-    for(int yy=0; yy<out_h; yy+=4, in_buf+=out_w*4*4)
-    {
-        for(int xx=0; xx<out_w; xx+=4)
-        {
-            extract_block(in_buf+xx*4, out_w, block);
-            stb_compress_dxt_block(&tex_blob[dst_offset], block, 1, STB_DXT_HIGHQUAL);
-            dst_offset += 16;
-        }
-    }
-```
-Avec :
-```cpp
-inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
-{
-    for(int j=0; j<4; ++j)
-    {
-        memcpy(&colorBlock[j*4*4], in_ptr, 4*4 );
-        in_ptr += width * 4;
-    }
-}
-```
-
-Je pensais au départ qu'il suffisait de découper l'image en blocks de pixels 4x4 et d'appliquer la compression sur chacun des blocks, et je m'étais fait chier le zgeg à organiser les données par block lors de la génération des données non compressées avec du calcul d'indices. Bien entendu ça n'a pas fonctionné.
-
-La sérialisation/désérialisation des atlas de textures compressés est gérée par le format de fichiers CAT (spécifié dans core/cat_file.h). Ce format permet de stocker un blob DXT ainsi qu'une table de remapping. Il est possible qu'à l'avenir je supporte également la compression ASTC (voir [2] et [3]).
-
 ###Sources:
     [1] https://www.researchgate.net/publication/259000525_Real-Time_DXT_Compression
-    [2] https://developer.nvidia.com/astc-texture-compression-for-game-assets
-    [3] https://github.com/ARM-software/astc-encoder/tree/master/Source
+
 
 ##Camera & Camera controller
 Contrairement à ce que je faisais dans WCore, j'applique ici une séparation rigoureuse entre la caméra (maths + data) et le contrôleur (wrapper autour de la caméra, réagit aux inputs/events). La classe _OrthographicCamera2D_ représente une caméra orthographique initialisée avec un frustum rectangulaire de type _Frustum2D_. Elle possède un ensemble de fonctions pour récupérer les matrices de vue et de projection. Sa fonction privée update_view_matrix() réalise la mise à jour des matrices vue et vue-projection lorsque la position où l'angle a changé. La fonction set_projection() permet de recalculer une projection depuis un nouveau frustum. Cette classe fait parti des classes de rendu, et doit être passée au renderer (_Renderer2D_) via begin_scene(). Le renderer se charge de lui faire crâcher ses matrices, les sauvegarde de côté, et les refile au shader lors du flush().
@@ -858,5 +813,147 @@ Il m'a semblé plus économe de procéder ainsi, plutôt que de passer chaque qu
 
 
 
-TODO:
-    [ ] Fix aspect ratio bug on window resize.
+#[25-09-19]
+##Rendu texturé
+Je me rends compte que je n'ai pas documenté le rendu de textures avec _BatchRenderer2D_ et _InstancedRenderere2D_ alors que c'est fait depuis longtemps.
+Il y a peu de choses à dire. J'ai modifié (je pense temporairement) la fonction Renderer2D::begin_scene() pour prendre en argument une seule texture (un atlas), et le troisième argument de draw_quad() est maintenant une paire de coordonnées UVs (bottom-left et top right) dans un vec4. De telles coordonnées sont obtenues via la fonction TextureAtlas::get_uvs() en fournissant un hash string en argument (la clé de la table de ramapping, le nom du fichier image avant qu'il ne se retrouve dans l'atlas). Seules quelques modifications mineures ont été nécessaires dans les shaders. La seule qui mérite d'être notée est celle apportée au vertex shader de _InstancedRenderere2D_ :
+```glsl
+layout(location = 0) in vec3 in_position;
+layout(location = 1) in vec2 in_uv;
+
+out vec2 v_uv;
+out vec3 v_color;
+
+struct InstanceData
+{
+    vec2 offset;
+    vec2 scale;
+    vec4 uvs;
+};
+
+layout(std430) buffer instance_data
+{
+    InstanceData inst[];
+};
+
+uniform mat4 u_view_projection;
+out vec2 v_uv;
+
+void main()
+{
+    vec3 offset = vec3(inst[gl_InstanceID].offset, 0.f);
+    vec3 scale  = vec3(inst[gl_InstanceID].scale, 1.f);
+    vec4 uvs    = inst[gl_InstanceID].uvs;
+
+    gl_Position = u_view_projection*vec4(in_position*scale + offset, 1.f);
+    v_uv.x = (in_uv.x < 0.5f) ? uvs.x : uvs.z;
+    v_uv.y = (in_uv.y < 0.5f) ? uvs.y : uvs.w;
+}
+```
+
+![Un rendu texturé (tiled rendering) depuis un atlas.\label{figAtlasRendering}](../Erwin_rel/screens_erwin/erwin_3b_atlas_2d_rendering.png)
+
+Comme mon SSBO ne contient que les coordonnées des coins inférieur-gauche et supérieur-droit de la sous-texture dans l'atlas et que ces données sont per-instance, il me faut regénérer les coordonnées UVs per-vertex pour pouvoir les transmettre au fragment shader. Pour celà, je me sers des coordonnées UVs en attribut de vertex 'in_uv'. Le vec4 'uvs' des données per-instance est formatté comme suit :
+```
+    [       x      |       y      |       z       |       w       ]
+    [ U_lower_left | V_lower_left | U_upper_right | V_upper_right ]
+```
+Il suffit donc de comparer les composantes de 'in_uv' à 0.5 pour savoir dans quel coin je suis, et quelles composantes je dois choisir dans les per-instance UVs.
+Le fragment shader est simplement :
+```glsl
+in vec2 v_uv;
+
+layout(location = 0) out vec4 out_color;
+
+uniform sampler2D us_atlas;
+
+void main()
+{
+    out_color = texture(us_atlas, v_uv);
+}
+```
+
+##Fudge
+###Compression DXT5
+FudgePacker gère donc la compression de textures DXT5. L'atlas non compressé doit d'abord être généré, comme précédemment avec les PNGs, mais en inversant la coordonnée y pour que mon loader puisse charger l'asset dans le bon ordre :
+```cpp
+    for(int yy=0; yy<img.height; ++yy)
+    {
+        out_y = inverse_y ? (height - 1) - (img.y + yy) : img.y + yy;
+        // ...
+    }
+```
+Puis pour chaque pixel de l'image, on extrait un block 4x4 dont le pixel est à la position supérieure gauche, et on applique la compression au block. Chaque block compressé tient sur 16 octets, il suffit de parcourir les pixels en row major et d'ajouter les blocks compressés les uns à la suite des autres dans un buffer, que l'on va ensuite sérialiser. Je me suis servi de [1] pour la passe de compression.
+
+```cpp
+    uint8_t* tex_blob = new uint8_t[out_w*out_h];
+    memset(tex_blob, 0, out_w*out_h);
+
+    uint8_t block[64];
+
+    uint32_t dst_offset = 0;
+    uint8_t* in_buf = uncomp;
+    for(int yy=0; yy<out_h; yy+=4, in_buf+=out_w*4*4)
+    {
+        for(int xx=0; xx<out_w; xx+=4)
+        {
+            extract_block(in_buf+xx*4, out_w, block);
+            stb_compress_dxt_block(&tex_blob[dst_offset], block, 1, STB_DXT_HIGHQUAL);
+            dst_offset += 16;
+        }
+    }
+```
+Avec :
+```cpp
+inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
+{
+    for(int j=0; j<4; ++j)
+    {
+        memcpy(&colorBlock[j*4*4], in_ptr, 4*4 );
+        in_ptr += width * 4;
+    }
+}
+```
+
+Je pensais au départ qu'il suffisait de découper l'image en blocks de pixels 4x4 et d'appliquer la compression sur chacun des blocks, et je m'étais fait chier le zgeg à organiser les données par block lors de la génération des données non compressées avec du calcul d'indices. Bien entendu ça n'a pas fonctionné.
+
+La sérialisation/désérialisation des atlas de textures compressés est gérée par le format de fichiers CAT (spécifié dans core/cat_file.h). Ce format permet de stocker un blob DXT ainsi qu'une table de remapping. Il est possible qu'à l'avenir je supporte également la compression ASTC (voir [1] et [2]).
+
+###Blob Deflate
+Une passe de compression lossless optionnelle permet de réduire davantage la taille disque des fichiers CAT. L'algo Deflate de la ZLib est utilisé. Le wrapper ZLib que j'ai écrit dans core/z_wrapper.h/cpp en me servant de [3] -qui ne manque pas d'aigreur vis-à-vis des Unix geeks crasseux qui ont commis cette lib imbitable- permet de compresser/décompresser des données d'un buffer source vers un buffer destination. Dans les deux cas, la taille finale doit être connue d'avance. Dans le cas d'une compression, la taille maximale peut être estimée, elle est en réalité plus grande que la taille d'origine (compresser des données sans redondance augmente la taille), dans le cas d'une décompression c'est plus ou moins la merde (vu qu'on peut atteindre un ratio de 1/1000 dans certains cas extrêmes). Ma stratégie est de sauvegarder la taille d'origine du blob texture (DXT) dans le CAT header, ainsi j'alloue exactement la bonne taille de buffer au chargement des atlas lors de l'étape de décompression du blob.
+Ce sont les fonctions read_cat() et write_cat() de cat_file.h qui gèrent la (dé)compression en sous-main, en fonction du descripteur à l'écriture et du header à la lecture.
+
+Le moteur peut maintenant charger des assets au format PNG (et s'attend à trouver un .txt du même nom contenant les données de remapping) comme au format CAT, sans différence visible entre les deux.
+
+###Sources:
+    [1] https://developer.nvidia.com/astc-texture-compression-for-game-assets
+    [2] https://github.com/ARM-software/astc-encoder/tree/master/Source
+    [3] https://www.experts-exchange.com/articles/3189/In-Memory-Compression
+        -and-Decompression-Using-ZLIB.html
+
+##Logger: Single-threaded mode
+Le logger est maintenant configurable pour fonctionner uniquement sur le thread principal. Appeler WLOGGER.set_single_threaded(true) passera le logger sous ce mode (veiller à le faire avant de spawn()). Le logger reste cependant thread-safe (a priori, je continue d'utiliser des mutexes), simplement, au lieu de spawner un thread machine à état, chaque appel à LoggerThread::enqueue() aura pour conséquence un dispatch immédiat, et tout appel à spawn(), flush(), sync() et kill() n'aura aucun effet. J'imagine que le côut du branchement est virtuellement nul du fait de l'exécution spéculative.
+_Application_ utilise maintenant un parseur IniH pour lire un fichier de config erwin.ini, ce qui permet de changer de mode facilement (et aussi de paramétrer quels sont les événements à tracker) :
+```ini
+    [logger]
+    backtrace_on_error=1
+    single_threaded=0
+    track_window_close_events=1
+    track_window_resize_events=1
+    track_keyboard_events=0
+    track_mouse_button_events=1
+    track_mouse_scroll_events=0
+    track_mouse_moved_events=0
+```
+En retrouvant un mode immédiat, j'ai à nouveau la possibilité de faire du printf-debugging comme dans WCore, et j'en suis très heureux !
+
+##Mandelbrot Explorer
+J'ai codé il y a quelques jours une petite application qui permet l'exploration de la fractale de Mandelbrot au moyen d'un simple shader. L'idée d'origine et l'effet visuel que je tentais de reproduire sont dus à une vidée de The Art of Code (voir [1]).
+
+    TODO
+
+![Meanwhile somewhere in Mandelbrot world...\label{figFractal}](../Erwin_rel/screens_erwin/erwin_1c_fractal_explorer.png)
+
+
+###Sources:
+    [1] https://www.youtube.com/watch?v=zmWkhlocBRY

@@ -6,8 +6,9 @@
 #include "input/input.h"
 #include "core/intern_string.h"
 #include "core/file_system.h"
-
 #include "render/render_device.h"
+
+#include "inih/cpp/INIReader.h"
 
 #include <iostream>
 
@@ -20,7 +21,8 @@ static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 Application::Application():
 window_(std::unique_ptr<Window>(Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/))),
-is_running_(true)
+is_running_(true),
+minimized_(false)
 {
 	// Create application singleton
 	if(Application::pinstance_)
@@ -40,21 +42,54 @@ is_running_(true)
     WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
     WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
     // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
-    WLOGGER.set_backtrace_on_error(true);
+    WLOGGER.set_single_threaded(true);
+    
+    // Initialize file system
+    filesystem::init();
+
+	// Read .ini file
+	// TMP: move to proper configuration system
+	fs::path ini_path = filesystem::get_config_dir() / "erwin.ini";
+	INIReader reader(ini_path.string().c_str());
+    if(reader.ParseError() < 0)
+    {
+        std::cout << "Can't load 'erwin.ini'" << std::endl;
+    }
+    bool lg_backtrace_on_error = reader.GetBoolean("logger", "backtrace_on_error", true);
+    bool lg_single_threaded    = reader.GetBoolean("logger", "single_threaded", false);
+
+    WLOGGER.set_single_threaded(lg_single_threaded);
+    WLOGGER.set_backtrace_on_error(lg_backtrace_on_error);
 
     // Log events
-    WLOGGER.track_event<WindowCloseEvent>();
-    WLOGGER.track_event<WindowResizeEvent>();
-    //WLOGGER.track_event<KeyboardEvent>();
-    WLOGGER.track_event<MouseButtonEvent>();
-    //WLOGGER.track_event<MouseMovedEvent>();
-    //WLOGGER.track_event<MouseScrollEvent>();
+    if(reader.GetBoolean("logger", "track_window_close_events", false))
+    {
+    	WLOGGER.track_event<WindowCloseEvent>();
+    }
+    if(reader.GetBoolean("logger", "track_window_resize_events", false))
+    {
+    	WLOGGER.track_event<WindowResizeEvent>();
+    }
+    if(reader.GetBoolean("logger", "track_keyboard_events", false))
+    {
+    	WLOGGER.track_event<KeyboardEvent>();
+    }
+    if(reader.GetBoolean("logger", "track_mouse_button_events", false))
+    {
+    	WLOGGER.track_event<MouseButtonEvent>();
+    }
+    if(reader.GetBoolean("logger", "track_mouse_scroll_events", false))
+    {
+    	WLOGGER.track_event<MouseMovedEvent>();
+    }
+    if(reader.GetBoolean("logger", "track_mouse_moved_events", false))
+    {
+    	WLOGGER.track_event<MouseScrollEvent>();
+    }
 
     WLOGGER.spawn();
     WLOGGER.sync();
 
-    // Initialize file system
-    filesystem::init();
     // Parse intern strings
     istr::init("intern_strings.txt");
 
@@ -72,6 +107,8 @@ is_running_(true)
 
 	// React to window close events (and shutdown application)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
+	// React to window resize events
+	EVENTBUS.subscribe(this, &Application::on_window_resize_event);
 
 	on_load();
 }
@@ -118,8 +155,11 @@ void Application::run()
 	    game_clock_.update(frame_d);
 
 		// For each layer, update
-		for(auto* layer: layer_stack_)
-			layer->update(game_clock_);
+		if(!minimized_)
+		{
+			for(auto* layer: layer_stack_)
+				layer->update(game_clock_);
+		}
 
 		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();
@@ -152,5 +192,20 @@ bool Application::on_window_close_event(const WindowCloseEvent& e)
 	return false;
 }
 
+bool Application::on_window_resize_event(const WindowResizeEvent& e)
+{
+/*
+	// Check if window is minimized (size = (0,0))
+	if(e.width == 0 || e.height == 0)
+	{
+		minimized_ = true;
+		return false;
+	}
+
+	minimized_ = false;
+*/
+	Gfx::device->viewport(0, 0, e.width, e.height);
+	return false;
+}
 
 } // namespace erwin

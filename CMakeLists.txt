@@ -108,6 +108,8 @@ add_library(erwin SHARED
             ${SRC_INPUT}
             ${SRC_PLATFORM}
             ${SRC_IMGUI}
+            ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
+            ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
             )
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")

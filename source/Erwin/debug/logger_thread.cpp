@@ -136,7 +136,8 @@ void LogFileSink::finish()
 
 LoggerThread::LoggerThread():
 thread_state_(STATE_IDLE),
-backtrace_on_error_(false)
+backtrace_on_error_(false),
+single_threaded_(false)
 {
 	create_channel("core", 3);
 	create_channel("event", 3);
@@ -198,11 +199,14 @@ void LoggerThread::attach_all(const std::string& sink_name, std::unique_ptr<Sink
 
 void LoggerThread::spawn()
 {
-    logger_thread_ = std::thread(&LoggerThread::thread_run, this);
+	if(!single_threaded_)
+    	logger_thread_ = std::thread(&LoggerThread::thread_run, this);
 }
 
 void LoggerThread::sync()
 {
+	if(single_threaded_) return;
+
     std::unique_lock<std::mutex> lock(mutex_);
     cv_update_.wait(lock, [this]()
     {
@@ -212,6 +216,8 @@ void LoggerThread::sync()
 
 void LoggerThread::kill()
 {
+	if(single_threaded_) return;
+
     // Terminate logger thread execution and join
     thread_state_.store(STATE_KILLED, std::memory_order_release);
     // Must wake up thread before it can be killed
@@ -221,6 +227,13 @@ void LoggerThread::kill()
 
 void LoggerThread::enqueue(LogStatement&& stmt)
 {
+	if(single_threaded_)
+	{
+    	std::unique_lock<std::mutex> lock(mutex_);
+		dispatch(stmt);
+		return;
+	}
+
 	// Avoid ackward deadlock on cv_update when thread is killed 
 	// but another thread wants to push some log data
 	if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
@@ -237,6 +250,13 @@ void LoggerThread::enqueue(LogStatement&& stmt)
 
 void LoggerThread::enqueue(const LogStatement& stmt)
 {
+	if(single_threaded_)
+	{
+    	std::unique_lock<std::mutex> lock(mutex_);
+		dispatch(stmt);
+		return;
+	}
+
 	// Avoid ackward deadlock on cv_update when thread is killed 
 	// but another thread wants to push some log data
 	if(thread_state_.load(std::memory_order_acquire) == STATE_KILLED)
@@ -253,6 +273,8 @@ void LoggerThread::enqueue(const LogStatement& stmt)
 
 void LoggerThread::flush()
 {
+	if(single_threaded_) return;
+
     // Force logger thread to flush the queue
     thread_state_.store(STATE_FLUSH, std::memory_order_release);
     // Wake up logger thread

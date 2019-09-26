@@ -129,6 +129,12 @@ public:
     	std::unique_lock<std::mutex> lock(mutex_);
         backtrace_on_error_ = value;
     }
+    // Enable/Disable single threaded mode
+    inline void set_single_threaded(bool value)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        single_threaded_ = value;
+    }
 	// Enable/Disable a registered tracker
 	void set_sink_enabled(hash_t name, bool value);
 
@@ -174,6 +180,7 @@ private:
     std::atomic<int> thread_state_;		 // Contains the state of this thread's state machine
 
 	bool backtrace_on_error_; // Enable/Disable automatic backtrace submission on severe statements
+    bool single_threaded_;    // If true, logger dispatches statements directly on submit
 
 	std::map<hash_t, std::unique_ptr<Sink>> sinks_;		     // Registered sinks by hash name
 	std::map<hash_t, LogChannel> channels_;				     // Registered channels by hash name

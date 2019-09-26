@@ -18,6 +18,9 @@ public:
 	inline const OrthographicCamera2D& get_camera() const { return camera_; }
 	inline OrthographicCamera2D& get_camera()             { return camera_; }
 
+	inline float get_zoom_level() const   { return zoom_level_; }
+	inline float get_aspect_ratio() const { return aspect_ratio_; }
+
 	bool on_window_resize_event(const WindowResizeEvent& event);
 	bool on_mouse_scroll_event(const MouseScrollEvent& event);
 
