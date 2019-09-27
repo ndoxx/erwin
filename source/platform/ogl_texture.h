@@ -18,6 +18,8 @@ public:
 	virtual void bind(uint32_t slot = 0) override;
 	virtual void unbind() override;
 
+	inline uint32_t get_handle() const { return rd_handle_; }
+
 private:
 	bool handle_filter(uint8_t filter);
 	void handle_address_UV(TextureWrap wrap);

@@ -86,6 +86,21 @@ public:
 
 	virtual void on_attach() override
 	{
+		//TEST
+		/*
+		FrameBufferLayout layout_0 =
+		{
+			{ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT}
+		};
+		Gfx::framebuffer_pool->create_framebuffer("fb_ratio_05"_h, make_scope<FbRatioConstraint>(0.5f,0.5f), layout_0, false);
+
+		FrameBufferLayout layout_1 =
+		{
+			{ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT},
+			{ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT}
+		};
+		Gfx::framebuffer_pool->create_framebuffer("fb_ratio_025_05"_h, make_scope<FbRatioConstraint>(0.25f,0.5f), layout_1, true);
+		*/
 		renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
 		// atlas_.load("textures/atlas/set2.png");
 		atlas_.load("textures/atlas/set2.cat");

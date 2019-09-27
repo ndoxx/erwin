@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "render/framebuffer.h"
 
 namespace erwin
@@ -8,19 +9,20 @@ namespace erwin
 class OGLFramebuffer: public Framebuffer
 {
 public:
-	OGLFramebuffer(uint32_t width, uint32_t height, bool use_depth_texture);
+	OGLFramebuffer(uint32_t width, uint32_t height, const FrameBufferLayout& layout, bool depth, bool stencil);
 	~OGLFramebuffer();
 
-	virtual uint32_t get_width() const override  { return width_; }
-	virtual uint32_t get_height() const override { return height_; }
-	virtual bool has_depth() const override      { return has_depth_; }
+	virtual void bind() override;
+	virtual void unbind() override;
 
 private:
-	uint32_t width_;
-	uint32_t height_;
-	bool has_depth_;
-	uint32_t rd_handle_;
-	uint32_t render_buffer_handle_;
+	void framebuffer_error_report();
+
+private:
+	std::vector<WRef<Texture2D>> textures_;
+	std::vector<uint32_t> color_buffers_;
+	uint32_t rd_handle_ = 0;
+	uint32_t render_buffer_handle_ = 0;
 };
 
 

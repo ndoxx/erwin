@@ -187,6 +187,8 @@ void Application::run()
 
     DLOG("application",1) << "Application stopped." << std::endl;
 
+    Gfx::framebuffer_pool->release();
+
     Input::kill();
     WLOGGER.kill();
 }

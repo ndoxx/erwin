@@ -54,9 +54,13 @@ public:
 	FramebufferPool(uint32_t initial_width, uint32_t initial_height);
 	~FramebufferPool();
 
-	void create_framebuffer(hash_t name, WScope<FbConstraint> constraint, bool use_depth_texture);
+	void create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FrameBufferLayout& layout, bool depth, bool stencil=false);
 
 	const Framebuffer& get_framebuffer(hash_t name) const;
+
+	void bind(hash_t name) const;
+
+	void release();
 
 private:
 	bool on_framebuffer_resize_event(const FramebufferResizeEvent& event);

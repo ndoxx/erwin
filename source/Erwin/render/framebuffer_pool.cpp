@@ -11,6 +11,7 @@ current_width_(initial_width),
 current_height_(initial_height)
 {
 	EVENTBUS.subscribe(this, &FramebufferPool::on_framebuffer_resize_event);
+	DLOG("render",1) << "Framebuffer pool created." << std::endl;
 }
 
 FramebufferPool::~FramebufferPool()
@@ -18,7 +19,7 @@ FramebufferPool::~FramebufferPool()
 	
 }
 
-void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, bool use_depth_texture)
+void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FrameBufferLayout& layout, bool depth, bool stencil)
 {
 	// Check that no framebuffer is already registered to this name
 	auto it = framebuffers_.find(name);
@@ -31,7 +32,7 @@ void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> const
 	uint32_t width  = constraint->get_width(current_width_);
 	uint32_t height = constraint->get_width(current_height_);
 
-	framebuffers_.insert(std::make_pair(name, Framebuffer::create(width, height, use_depth_texture)));
+	framebuffers_.insert(std::make_pair(name, Framebuffer::create(width, height, layout, depth, stencil)));
 	constraints_.insert(std::make_pair(name, std::move(constraint)));
 }
 
@@ -40,6 +41,19 @@ const Framebuffer& FramebufferPool::get_framebuffer(hash_t name) const
 	auto it = framebuffers_.find(name);
 	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
 	return *(it->second);
+}
+
+void FramebufferPool::bind(hash_t name) const
+{
+	auto it = framebuffers_.find(name);
+	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
+	it->second->bind();
+}
+
+void FramebufferPool::release()
+{
+	framebuffers_.clear();
+	DLOG("render",1) << "Framebuffer pool released." << std::endl;
 }
 
 bool FramebufferPool::on_framebuffer_resize_event(const FramebufferResizeEvent& event)
@@ -55,9 +69,11 @@ bool FramebufferPool::on_framebuffer_resize_event(const FramebufferResizeEvent& 
 
 		uint32_t width  = constraint->get_width(current_width_);
 		uint32_t height = constraint->get_width(current_height_);
-		bool use_depth_texture = framebuffers_[name]->has_depth();
+		bool has_depth = framebuffers_[name]->has_depth();
+		bool has_stencil = framebuffers_[name]->has_stencil();
+		auto layout = framebuffers_[name]->get_layout();
 
-		framebuffers_[name] = Framebuffer::create(width, height, use_depth_texture);
+		framebuffers_[name] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
 	}
 
 	return false;
