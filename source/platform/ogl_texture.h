@@ -9,7 +9,7 @@ class OGLTexture2D: public Texture2D
 {
 public:
 	OGLTexture2D(const fs::path filepath);
-	OGLTexture2D(void* data, uint32_t width, uint32_t height, TextureCompression compression);
+	OGLTexture2D(const Texture2DDescriptor& descriptor);
 	~OGLTexture2D();
 
 	virtual uint32_t get_width() const override;
@@ -17,6 +17,11 @@ public:
 
 	virtual void bind(uint32_t slot = 0) override;
 	virtual void unbind() override;
+
+private:
+	bool handle_filter(uint8_t filter);
+	void handle_address_UV(TextureWrap wrap);
+	void generate_mipmaps(uint32_t base_level = 0, uint32_t max_level = 3);
 
 private:
 	uint32_t width_;

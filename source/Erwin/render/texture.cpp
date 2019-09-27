@@ -22,7 +22,7 @@ WRef<Texture2D> Texture2D::create(const fs::path& filepath)
     }
 }
 
-WRef<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_t height, TextureCompression compression)
+WRef<Texture2D> Texture2D::create(const Texture2DDescriptor& descriptor)
 {
     switch(Gfx::get_api())
     {
@@ -31,7 +31,7 @@ WRef<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_t height, T
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_ref<OGLTexture2D>(data, width, height, compression);
+            return make_ref<OGLTexture2D>(descriptor);
     }
 }
 

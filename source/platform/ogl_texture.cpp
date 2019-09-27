@@ -5,11 +5,71 @@
 #include "debug/logger.h"
 
 #include "glad/glad.h"
+#include "glm/glm.hpp"
 #include "stb/stb_image.h"
 #include <iostream>
 namespace erwin
 {
 
+struct FormatDescriptor
+{
+    GLenum internal_format;
+    GLenum format;
+    GLenum data_type;
+    bool is_compressed;
+};
+
+static std::map<ImageFormat, FormatDescriptor> FORMAT_DESCRIPTOR =
+{
+    {ImageFormat::R8,                              {GL_R8,                                  GL_RED,             					GL_UNSIGNED_BYTE,  				   false}},
+    {ImageFormat::RGB8,                            {GL_RGB8,                                GL_RGB,             					GL_UNSIGNED_BYTE,  				   false}},
+    {ImageFormat::RGBA8,                           {GL_RGBA8,                               GL_RGBA,            					GL_UNSIGNED_BYTE,  				   false}},
+    {ImageFormat::RG16F,                           {GL_RG16F,                               GL_RG,              					GL_HALF_FLOAT,     				   false}},
+    {ImageFormat::RGB16F,                          {GL_RGB16F,                              GL_RGB,             					GL_HALF_FLOAT,     				   false}},
+    {ImageFormat::RGBA16F,                         {GL_RGBA16F,                             GL_RGBA,            					GL_HALF_FLOAT,     				   false}},
+    {ImageFormat::RGB32F,                          {GL_RGB32F,                              GL_RGB,             					GL_FLOAT, 	       				   false}},
+    {ImageFormat::RGBA32F,                         {GL_RGBA32F,                             GL_RGBA,            					GL_FLOAT, 	       				   false}},
+    {ImageFormat::SRGB_ALPHA,                      {GL_SRGB_ALPHA,                          GL_RGBA,            					GL_UNSIGNED_BYTE,  				   false}},
+    {ImageFormat::RG16_SNORM,                      {GL_RG16_SNORM,                          GL_RG,              					GL_SHORT, 		   				   false}},
+    {ImageFormat::RGB16_SNORM,                     {GL_RGB16_SNORM,                         GL_RGB,             					GL_SHORT, 		   				   false}},
+    {ImageFormat::RGBA16_SNORM,                    {GL_RGBA16_SNORM,                        GL_RGBA,            					GL_SHORT, 		   				   false}},
+    {ImageFormat::COMPRESSED_RGB_S3TC_DXT1,        {GL_COMPRESSED_RGB_S3TC_DXT1_EXT,        GL_COMPRESSED_RGB_S3TC_DXT1_EXT,        GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_RGBA_S3TC_DXT1,       {GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,       GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,       GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_RGBA_S3TC_DXT3,       {GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,       GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,       GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_RGBA_S3TC_DXT5,       {GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,       GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,       GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_SRGB_S3TC_DXT1,       {GL_COMPRESSED_SRGB_S3TC_DXT1_EXT,       GL_COMPRESSED_SRGB_S3TC_DXT1_EXT,       GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1, {GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT3, {GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5, {GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE,  				   true}},
+    {ImageFormat::DEPTH_COMPONENT16,               {GL_DEPTH_COMPONENT16,                   GL_DEPTH_COMPONENT, 					GL_UNSIGNED_SHORT, 				   false}},
+    {ImageFormat::DEPTH_COMPONENT24,               {GL_DEPTH_COMPONENT24,                   GL_DEPTH_COMPONENT, 					GL_UNSIGNED_INT,   				   false}},
+    {ImageFormat::DEPTH_COMPONENT32F,              {GL_DEPTH_COMPONENT32F,                  GL_DEPTH_COMPONENT, 					GL_FLOAT, 						   false}},
+    {ImageFormat::DEPTH24_STENCIL8,                {GL_DEPTH24_STENCIL8,                    GL_DEPTH_STENCIL,   					GL_UNSIGNED_INT_24_8, 			   false}},
+    {ImageFormat::DEPTH32F_STENCIL8,               {GL_DEPTH32F_STENCIL8,                   GL_DEPTH_STENCIL,   					GL_FLOAT_32_UNSIGNED_INT_24_8_REV, false}},
+};
+
+// TODO: group ALL GLenums to string in a SINGLE function outside this class
+static std::string format_to_string(GLenum value)
+{
+	switch(value)
+	{
+		case GL_RED: return "GL_RED"; break;
+		case GL_RGB: return "GL_RGB"; break;
+		case GL_RGBA: return "GL_RGBA"; break;
+		case GL_RG: return "GL_RG"; break;
+		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT: return "GL_COMPRESSED_RGB_S3TC_DXT1_EXT"; break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: return "GL_COMPRESSED_RGBA_S3TC_DXT1_EXT"; break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT: return "GL_COMPRESSED_RGBA_S3TC_DXT3_EXT"; break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: return "GL_COMPRESSED_RGBA_S3TC_DXT5_EXT"; break;
+		case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT: return "GL_COMPRESSED_SRGB_S3TC_DXT1_EXT"; break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT: return "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT"; break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT: return "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT"; break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT: return "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT"; break;
+		case GL_DEPTH_COMPONENT: return "GL_DEPTH_COMPONENT"; break;
+		case GL_DEPTH_STENCIL: return "GL_DEPTH_STENCIL"; break;
+		default: return "";
+	}
+}
 
 OGLTexture2D::OGLTexture2D(const fs::path filepath):
 filepath_(filepath)
@@ -63,40 +123,111 @@ filepath_(filepath)
 	stbi_image_free(data);
 }
 
-OGLTexture2D::OGLTexture2D(void* data, uint32_t width, uint32_t height, TextureCompression compression)
+OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor):
+width_(descriptor.width),
+height_(descriptor.height)
 {
-	DLOGN("texture") << "Loading texture from memory: " << std::endl;
-	
-	width_ = width;
-	height_ = height;
+	DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
 
-	DLOGI << "WxH:    " << width_ << "x" << height_ << std::endl;
-	
 	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
-
-	if(compression == TextureCompression::DXT5)
-	{
-		DLOGI << "compression: DXT5" << std::endl;
-		glTextureStorage2D(rd_handle_, 1, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width_, height_);
-		glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width*height, data);
-	}
-	else
-	{
-		// TMP: Asume 4 channels for now
-		glTextureStorage2D(rd_handle_, 1, GL_RGBA8, width_, height_);
-		glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	}
-
-	glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
 	DLOGI << "handle: " << rd_handle_ << std::endl;
+	DLOGI << "width:  " << width_ << std::endl;
+	DLOGI << "height: " << height_ << std::endl;
+
+	const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
+	glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+	DLOGI << "format: " << format_to_string(fd.format) << std::endl;
+
+	if(descriptor.data)
+	{
+		if(fd.is_compressed)
+			glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, width_*height_, descriptor.data);
+		else
+			glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, fd.data_type, descriptor.data);
+	}
+
+	bool has_mipmap = handle_filter(descriptor.filter);
+	DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+	handle_address_UV(descriptor.wrap);
+
+    // Handle mipmap if specified
+    if(has_mipmap && !descriptor.lazy_mipmap)
+        generate_mipmaps(0, 3);
+    else
+    {
+        glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
+        glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
+    }
 }
 
 OGLTexture2D::~OGLTexture2D()
 {
 	glDeleteTextures(1, &rd_handle_);
 	DLOG("texture",1) << "Destroyed texture [" << rd_handle_ << "]" << std::endl;
+}
+
+bool OGLTexture2D::handle_filter(uint8_t filter)
+{
+    bool has_mipmap = (filter & TextureFilter::MIN_NEAREST_MIPMAP_NEAREST)
+                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_NEAREST)
+                   || (filter & TextureFilter::MIN_NEAREST_MIPMAP_LINEAR)
+                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_LINEAR);
+
+    // Magnification filter
+    glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, bool(filter & MAG_LINEAR) ? GL_LINEAR : GL_NEAREST);
+
+    // Minification filter
+    uint16_t minfilter = filter & ~(1 << 0); // Clear mag filter bit
+
+    switch(minfilter)
+    {
+        case MIN_NEAREST:                glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST); break;
+        case MIN_LINEAR:                 glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR); break;
+        case MIN_NEAREST_MIPMAP_NEAREST: glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); break;
+        case MIN_LINEAR_MIPMAP_NEAREST:  glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); break;
+        case MIN_NEAREST_MIPMAP_LINEAR:  glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); break;
+        case MIN_LINEAR_MIPMAP_LINEAR:   glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); break;
+    }
+
+    return has_mipmap;
+}
+
+void OGLTexture2D::handle_address_UV(TextureWrap wrap)
+{
+    switch(wrap)
+    {
+        case TextureWrap::REPEAT:
+        {
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            break;
+        }
+        case TextureWrap::MIRRORED_REPEAT:
+        {
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+            break;
+        }
+        case TextureWrap::CLAMP_TO_EDGE:
+        {
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            break;
+        }
+    }
+}
+
+void OGLTexture2D::generate_mipmaps(uint32_t base_level, uint32_t max_level)
+{
+	W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
+
+    glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, base_level);
+    glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, max_level);
+    glGenerateTextureMipmap(rd_handle_);
+
+    GLfloat max_anisotropy;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
+    glTextureParameterf(rd_handle_, GL_TEXTURE_MAX_ANISOTROPY_EXT, glm::clamp(max_anisotropy, 0.0f, 8.0f));
 }
 
 uint32_t OGLTexture2D::get_width() const
