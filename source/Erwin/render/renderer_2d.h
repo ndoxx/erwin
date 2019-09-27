@@ -24,7 +24,7 @@ struct SceneData
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
-	std::shared_ptr<Texture2D> texture;
+	WRef<Texture2D> texture;
 };
 
 // Base class for 2D renderers
@@ -35,13 +35,13 @@ public:
 	virtual ~Renderer2D();
 
 	// Reset renderer flags for next submissions
-	void begin_scene(const OrthographicCamera2D& camera, std::shared_ptr<Texture2D> texture);
+	void begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture);
 	// Upload last batch and flush all batches
 	void end_scene();
 	// Setup render state
 	void submit(const RenderState& state);
 	// INEFFICIENT draw a quad immediately
-	void submit(std::shared_ptr<VertexArray> va, 
+	void submit(WRef<VertexArray> va, 
 			    hash_t shader_name, 
 			    const ShaderParameters& params);
 	// Request the renderer implementation to push a quad to current batch
@@ -83,7 +83,7 @@ protected:
 private:
 	std::vector<uint16_t> batch_ttl_;
 	bool profiling_enabled_ = false;
-	QueryTimer* query_timer_;
+	WScope<QueryTimer> query_timer_;
 };
 
 class BatchRenderer2D: public Renderer2D
@@ -103,7 +103,7 @@ protected:
 	virtual void create_batch() override;
 
 private:
-	std::vector<std::shared_ptr<VertexArray>> batches_;
+	std::vector<WRef<VertexArray>> batches_;
 	std::vector<float> vertex_list_;
 };
 
@@ -131,8 +131,8 @@ private:
 		glm::vec4 uvs;
 	};
 
-	std::shared_ptr<VertexArray> quad_va_;
-	std::vector<std::shared_ptr<ShaderStorageBuffer>> batches_;
+	WRef<VertexArray> quad_va_;
+	std::vector<WRef<ShaderStorageBuffer>> batches_;
 	std::vector<InstanceData> instance_data_;
 };
 

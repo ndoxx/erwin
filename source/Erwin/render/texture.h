@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/core.h"
 #include "core/file_system.h"
 
 namespace erwin
@@ -25,9 +26,9 @@ public:
 	virtual ~Texture2D() = default;
 
 	// Create a 2D texture from a file
-	static std::shared_ptr<Texture2D> create(const fs::path& filepath);
+	static WRef<Texture2D> create(const fs::path& filepath);
 	// Create a 2D texture from data
-	static std::shared_ptr<Texture2D> create(void* data, uint32_t width, uint32_t height, TextureCompression compression);
+	static WRef<Texture2D> create(void* data, uint32_t width, uint32_t height, TextureCompression compression);
 };
 
 } // namespace erwin

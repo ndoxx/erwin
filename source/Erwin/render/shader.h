@@ -23,9 +23,9 @@ enum class ShaderType: uint8_t
 class Texture2D;
 struct ShaderParameters
 {
-	void set_texture_slot(hash_t sampler_name, std::shared_ptr<Texture2D> texture);
+	void set_texture_slot(hash_t sampler_name, WRef<Texture2D> texture);
 
-	std::unordered_map<hash_t, std::shared_ptr<Texture2D>> texture_slots;
+	std::unordered_map<hash_t, WRef<Texture2D>> texture_slots;
 };
 
 class Shader
@@ -49,9 +49,9 @@ public:
 	inline const std::string& get_name() const { return name_; }
 
 	// Factory method for the creation of an API-specific shader from an input stream
-	static std::shared_ptr<Shader> create(const std::string& name, std::istream& source_stream);
+	static WRef<Shader> create(const std::string& name, std::istream& source_stream);
 	// Factory method for the creation of an API-specific shader from a string
-	static std::shared_ptr<Shader> create(const std::string& name, const std::string& source_string);
+	static WRef<Shader> create(const std::string& name, const std::string& source_string);
 
 protected:
 	std::string name_;
@@ -62,7 +62,7 @@ class ShaderBank
 {
 public:
 	// Add an existing shader to the bank
-	void add(std::shared_ptr<Shader> p_shader);
+	void add(WRef<Shader> p_shader);
 	// Load shader in bank from path (relative to the asset directory)
 	void load(const fs::path& path);
 	// Load shader in bank from stream
@@ -83,7 +83,7 @@ private:
 	void next_index(hash_t hname);
 
 private:
-	std::unordered_map<hash_t, std::shared_ptr<Shader>> bank_;
+	std::unordered_map<hash_t, WRef<Shader>> bank_;
 	std::unordered_map<hash_t, uint32_t> indices_;
 	uint32_t current_index_ = 0;
 };

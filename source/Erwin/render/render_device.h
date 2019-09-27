@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <memory>
 
+#include "core/core.h"
 #include "render/render_state.h"
+#include "render/framebuffer_pool.h"
 
 namespace erwin
 {
@@ -34,16 +36,16 @@ public:
 
     // * Draw commands
     // Draw content of specified vertex array using indices
-    virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_indexed(const WRef<VertexArray>& vertexArray,
                               uint32_t count = 0,
                               std::size_t offset = 0) = 0;
     // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_array(const WRef<VertexArray>& vertexArray,
                             DrawPrimitive prim = DrawPrimitive::Triangles,
                             uint32_t count = 0,
                             std::size_t offset = 0) = 0;
     // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
                                         uint32_t instance_count,
                                         uint32_t elements_count = 0,
                                         std::size_t offset = 0) = 0;
@@ -112,8 +114,10 @@ class Gfx
 public:
     inline static GfxAPI get_api() { return api_; }
     static void set_api(GfxAPI api);
+    static void create_framebuffer_pool(uint32_t width, uint32_t height);
 
     static std::unique_ptr<RenderDevice> device;
+    static std::unique_ptr<FramebufferPool> framebuffer_pool;
 
 private:
     static GfxAPI api_;

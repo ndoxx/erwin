@@ -93,7 +93,7 @@ public:
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static VertexBuffer* create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
+    static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
 
 protected:
     BufferLayout layout_;
@@ -121,7 +121,7 @@ public:
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static IndexBuffer* create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+    static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
 
 protected:
     uint32_t count_;
@@ -143,7 +143,7 @@ public:
     inline uint32_t get_data_size() const      { return struct_size_; }
 
     // Factory method to create the correct implementation
-    static UniformBuffer* create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+    static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
 
 protected:
     std::string name_;
@@ -167,7 +167,7 @@ public:
     inline uint32_t get_data_size() const      { return struct_size_; }
 
     // Factory method to create the correct implementation
-    static ShaderStorageBuffer* create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+    static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
 
 protected:
     std::string name_;
@@ -185,11 +185,11 @@ public:
     virtual void unbind() const = 0;
 
     // Set the index buffer
-    virtual void set_index_buffer(std::shared_ptr<IndexBuffer> p_ib) = 0;
+    virtual void set_index_buffer(WRef<IndexBuffer> p_ib) = 0;
     // Add A vertex buffer, should use this for non-interleaved data
-    virtual void add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb) = 0;
+    virtual void add_vertex_buffer(WRef<VertexBuffer> p_vb) = 0;
     // Set THE vertex buffer, should use this for interleaved data
-    inline void set_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
+    inline void set_vertex_buffer(WRef<VertexBuffer> p_vb)
     {
         W_ASSERT(vertex_buffers_.size()==0, "[VertexArray] Use add_vertex_buffer() instead if you intend to add multiple vertex buffers (non-interleaved data).");
         add_vertex_buffer(p_vb);
@@ -205,17 +205,17 @@ public:
         W_ASSERT(index<vertex_buffers_.size(), "[VertexArray] Vertex buffer index out of bounds");
         return *vertex_buffers_[index];
     }
-    inline const std::vector<std::shared_ptr<VertexBuffer>>& get_vertex_buffers() const { return vertex_buffers_; }
+    inline const std::vector<WRef<VertexBuffer>>& get_vertex_buffers() const { return vertex_buffers_; }
     inline const IndexBuffer& get_index_buffer() const { return *index_buffer_; }
     inline IndexBuffer& get_index_buffer() { return *index_buffer_; }
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static VertexArray* create();
+    static WRef<VertexArray> create();
 
 protected:
-	std::vector<std::shared_ptr<VertexBuffer>> vertex_buffers_;
-	std::shared_ptr<IndexBuffer> index_buffer_ = nullptr;
+	std::vector<WRef<VertexBuffer>> vertex_buffers_;
+	WRef<IndexBuffer> index_buffer_ = nullptr;
 };
 
 } // namespace erwin

@@ -68,9 +68,9 @@ public:
 		{
 			0, 1, 2,   2, 3, 0
 		};
-		auto quad_vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(sq_vdata, 20, vertex_tex_layout));
-		auto quad_ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles));
-		quad_va_ = std::shared_ptr<VertexArray>(VertexArray::create());
+		auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
+		auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
+		quad_va_ = VertexArray::create();
 		quad_va_->set_index_buffer(quad_ib);
 		quad_va_->set_vertex_buffer(quad_vb);
 	}
@@ -128,7 +128,7 @@ protected:
 private:
 	OrthographicCamera2DController camera_ctl_;
 	ShaderBank shader_bank_;
-	std::shared_ptr<VertexArray> quad_va_;
+	WRef<VertexArray> quad_va_;
 	float tt_ = 0.f;
 	float fps_;
 	bool show_menu_;

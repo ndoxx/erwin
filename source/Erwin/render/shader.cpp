@@ -7,12 +7,12 @@
 namespace erwin
 {
 
-void ShaderParameters::set_texture_slot(hash_t sampler_name, std::shared_ptr<Texture2D> texture)
+void ShaderParameters::set_texture_slot(hash_t sampler_name, WRef<Texture2D> texture)
 {
     texture_slots.insert(std::make_pair(sampler_name, texture));
 }
 
-std::shared_ptr<Shader> Shader::create(const std::string& name, std::istream& source_stream)
+WRef<Shader> Shader::create(const std::string& name, std::istream& source_stream)
 {
 	switch(Gfx::get_api())
     {
@@ -21,11 +21,11 @@ std::shared_ptr<Shader> Shader::create(const std::string& name, std::istream& so
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return std::make_shared<OGLShader>(name, source_stream);
+            return make_ref<OGLShader>(name, source_stream);
     }
 }
 
-std::shared_ptr<Shader> Shader::create(const std::string& name, const std::string& source_string)
+WRef<Shader> Shader::create(const std::string& name, const std::string& source_string)
 {
 	switch(Gfx::get_api())
     {
@@ -34,13 +34,13 @@ std::shared_ptr<Shader> Shader::create(const std::string& name, const std::strin
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return std::make_shared<OGLShader>(name, source_string);
+            return make_ref<OGLShader>(name, source_string);
     }
 }
 
 // -------------------------------------------------------------------------------------------------
 
-void ShaderBank::add(std::shared_ptr<Shader> p_shader)
+void ShaderBank::add(WRef<Shader> p_shader)
 {
     hash_t hname = H_(p_shader->get_name().c_str());
     if(exists(hname))

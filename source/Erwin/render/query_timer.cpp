@@ -7,7 +7,7 @@
 namespace erwin
 {
 
-QueryTimer* QueryTimer::create()
+WScope<QueryTimer> QueryTimer::create()
 {
     switch(Gfx::get_api())
     {
@@ -16,7 +16,7 @@ QueryTimer* QueryTimer::create()
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLQueryTimer();
+            return make_scope<OGLQueryTimer>();
     }
 }
 

@@ -21,16 +21,16 @@ public:
 
     // * Draw commands
     // Draw content of specified vertex array using indices
-    virtual void draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_indexed(const WRef<VertexArray>& vertexArray,
                               uint32_t count = 0,
     						  std::size_t offset = 0) override;
     // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_array(const WRef<VertexArray>& vertexArray,
                             DrawPrimitive prim = DrawPrimitive::Triangles,
                             uint32_t count = 0,
                             std::size_t offset = 0) override;
     // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(const std::shared_ptr<VertexArray>& vertexArray,
+    virtual void draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
                                         uint32_t instance_count,
                                         uint32_t elements_count = 0,
                                         std::size_t offset = 0) override;

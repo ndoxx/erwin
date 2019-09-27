@@ -50,8 +50,8 @@ public:
     virtual void bind() const override;
     virtual void unbind() const override;
 
-    virtual void add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb) override;
-    virtual void set_index_buffer(std::shared_ptr<IndexBuffer> p_ib) override;
+    virtual void add_vertex_buffer(WRef<VertexBuffer> p_vb) override;
+    virtual void set_index_buffer(WRef<IndexBuffer> p_ib) override;
     
     inline uint32_t get_handle() const { return rd_handle_; }
 

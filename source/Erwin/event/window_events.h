@@ -36,6 +36,26 @@ struct WindowResizeEvent: public WEvent
     int height;
 };
 
+struct FramebufferResizeEvent: public WEvent
+{
+    EVENT_NAME(FramebufferResizeEvent)
+
+    FramebufferResizeEvent(int width, int height):
+    width(width),
+    height(height)
+    {
+
+    }
+
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << "new size: " << width << "x" << height;
+    }
+
+    int width;
+    int height;
+};
+
 struct KeyboardEvent: public WEvent
 {
 	EVENT_NAME(KeyboardEvent)

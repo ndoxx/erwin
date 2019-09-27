@@ -294,7 +294,7 @@ void OGLVertexArray::unbind() const
     glBindVertexArray(0);
 }
 
-void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
+void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
 {
 	// Make sure buffer layout is meaningful
 	W_ASSERT(p_vb->get_layout().get_count(), "Vertex buffer has empty layout!");
@@ -324,7 +324,7 @@ void OGLVertexArray::add_vertex_buffer(std::shared_ptr<VertexBuffer> p_vb)
 					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
 }
 
-void OGLVertexArray::set_index_buffer(std::shared_ptr<IndexBuffer> p_ib)
+void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
 {
     glBindVertexArray(rd_handle_);
 	p_ib->bind();

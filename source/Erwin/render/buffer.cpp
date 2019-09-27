@@ -81,7 +81,7 @@ void BufferLayout::compute_offset_and_stride()
     }
 }
 
-VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode)
+WRef<VertexBuffer> VertexBuffer::create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -90,11 +90,11 @@ VertexBuffer* VertexBuffer::create(float* vertex_data, uint32_t count, const Buf
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLVertexBuffer(vertex_data, count, layout, mode);
+            return make_ref<OGLVertexBuffer>(vertex_data, count, layout, mode);
     }
 }
 
-IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+WRef<IndexBuffer> IndexBuffer::create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -103,11 +103,11 @@ IndexBuffer* IndexBuffer::create(uint32_t* index_data, uint32_t count, DrawPrimi
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLIndexBuffer(index_data, count, primitive, mode);
+            return make_ref<OGLIndexBuffer>(index_data, count, primitive, mode);
     }
 }
 
-VertexArray* VertexArray::create()
+WRef<VertexArray> VertexArray::create()
 {
     switch(Gfx::get_api())
     {
@@ -116,11 +116,11 @@ VertexArray* VertexArray::create()
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLVertexArray();
+            return make_ref<OGLVertexArray>();
     }
 }
 
-UniformBuffer* UniformBuffer::create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode)
+WRef<UniformBuffer> UniformBuffer::create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -129,11 +129,11 @@ UniformBuffer* UniformBuffer::create(const std::string& name, void* data, uint32
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLUniformBuffer(name, data, struct_size, mode);
+            return make_ref<OGLUniformBuffer>(name, data, struct_size, mode);
     }
 }
 
-ShaderStorageBuffer* ShaderStorageBuffer::create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
+WRef<ShaderStorageBuffer> ShaderStorageBuffer::create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -142,7 +142,7 @@ ShaderStorageBuffer* ShaderStorageBuffer::create(const std::string& name, void* 
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return new OGLShaderStorageBuffer(name, data, count, struct_size, mode);
+            return make_ref<OGLShaderStorageBuffer>(name, data, count, struct_size, mode);
     }
 }
 

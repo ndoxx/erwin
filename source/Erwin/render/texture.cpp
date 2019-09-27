@@ -7,7 +7,7 @@
 namespace erwin
 {
 
-std::shared_ptr<Texture2D> Texture2D::create(const fs::path& filepath)
+WRef<Texture2D> Texture2D::create(const fs::path& filepath)
 {
     auto fullpath = filesystem::get_asset_dir() / filepath;
 
@@ -18,11 +18,11 @@ std::shared_ptr<Texture2D> Texture2D::create(const fs::path& filepath)
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return std::make_shared<OGLTexture2D>(fullpath);
+            return make_ref<OGLTexture2D>(fullpath);
     }
 }
 
-std::shared_ptr<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_t height, TextureCompression compression)
+WRef<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_t height, TextureCompression compression)
 {
     switch(Gfx::get_api())
     {
@@ -31,7 +31,7 @@ std::shared_ptr<Texture2D> Texture2D::create(void* data, uint32_t width, uint32_
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return std::make_shared<OGLTexture2D>(data, width, height, compression);
+            return make_ref<OGLTexture2D>(data, width, height, compression);
     }
 }
 

@@ -26,11 +26,10 @@ public:
 	inline const Window& get_window() { return *window_; }
 
 	bool on_window_close_event(const WindowCloseEvent& e);
-	bool on_window_resize_event(const WindowResizeEvent& e);
 
 private:
 	static Application* pinstance_;
-	std::unique_ptr<Window> window_;
+	WScope<Window> window_;
 	bool is_running_;
 	bool minimized_;
 

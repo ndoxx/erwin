@@ -82,10 +82,10 @@ batch_ttl_(s_max_batches, 0)
 
 Renderer2D::~Renderer2D()
 {
-	delete query_timer_;
+
 }
 
-void Renderer2D::begin_scene(const OrthographicCamera2D& camera, std::shared_ptr<Texture2D> texture)
+void Renderer2D::begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture)
 {
 	// Set scene data
 	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
@@ -158,7 +158,7 @@ void Renderer2D::submit(const RenderState& state)
 }
 
 // DO NOT USE
-void Renderer2D::submit(std::shared_ptr<VertexArray> va, hash_t shader_name, const ShaderParameters& params)
+void Renderer2D::submit(WRef<VertexArray> va, hash_t shader_name, const ShaderParameters& params)
 {
 	const Shader& shader = shader_bank.get(shader_name);
 	shader.bind();
@@ -234,8 +234,8 @@ void BatchRenderer2D::create_batch()
 	
 	uint32_t num_vertices = max_batch_count_ * 3; // 3 vertices per triangle
 
-	auto vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(nullptr, num_vertices, s_vertex_color_layout, DrawMode::Stream));
-	auto va = std::shared_ptr<VertexArray>(VertexArray::create());
+	auto vb = VertexBuffer::create(nullptr, num_vertices, s_vertex_color_layout, DrawMode::Stream);
+	auto va = VertexArray::create();
 	va->set_vertex_buffer(vb);
 	batches_.push_back(va);
 
@@ -354,9 +354,9 @@ Renderer2D(max_batch_count)
 	{
 		0, 1, 2,   2, 3, 0
 	};
-	auto quad_vb = std::shared_ptr<VertexBuffer>(VertexBuffer::create(sq_vdata, 20, vertex_tex_layout));
-	auto quad_ib = std::shared_ptr<IndexBuffer>(IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles));
-	quad_va_ = std::shared_ptr<VertexArray>(VertexArray::create());
+	auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
+	auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
+	quad_va_ = VertexArray::create();
 	quad_va_->set_index_buffer(quad_ib);
 	quad_va_->set_vertex_buffer(quad_vb);
 
@@ -368,7 +368,7 @@ void InstanceRenderer2D::create_batch()
 {
 	DLOGN("render") << "[InstanceRenderer2D] Generating new batch." << std::endl;
 	
-	auto ssbo = std::shared_ptr<ShaderStorageBuffer>(ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic));
+	auto ssbo = ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic);
 	batches_.push_back(ssbo);
 
 	DLOG("render",1) << "New batch size is: " << batches_.size() << std::endl;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <memory>
 
 #ifdef _WIN32
 	#ifdef W_BUILD_LIB
@@ -28,3 +29,26 @@
 #endif
 
 inline void fatal() { exit(-1); }
+
+namespace erwin
+{
+	// Ref counting pointer and unique pointer aliases (for now)
+	template <class T>
+	using WRef = std::shared_ptr<T>;
+
+	template <class T>
+	using WScope = std::unique_ptr<T>;
+
+	// Factory methods for ref and scope as function alias, using perfect forwarding (for now)
+	template <class T, class... Args>
+	auto make_ref(Args&&... args) -> decltype(std::make_shared<T>(std::forward<Args>(args)...))
+	{
+	  return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+
+	template <class T, class... Args>
+	auto make_scope(Args&&... args) -> decltype(std::make_unique<T>(std::forward<Args>(args)...))
+	{
+	  return std::make_unique<T>(std::forward<Args>(args)...);
+	}
+} // namespace erwin

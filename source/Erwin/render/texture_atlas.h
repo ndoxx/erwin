@@ -29,10 +29,10 @@ public:
 	inline void bind(uint32_t slot = 0) { texture_->bind(slot); }
 	inline void unbind()                { texture_->unbind(); }
 
-	inline std::shared_ptr<Texture2D> get_texture() { return texture_; }
+	inline WRef<Texture2D> get_texture() { return texture_; }
 
 private:
-	std::shared_ptr<Texture2D> texture_;
+	WRef<Texture2D> texture_;
 	std::unordered_map<hash_t, glm::vec4> remapping_;
 };
 

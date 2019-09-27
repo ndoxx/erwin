@@ -20,7 +20,7 @@ Application* Application::pinstance_ = nullptr;
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 Application::Application():
-window_(std::unique_ptr<Window>(Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/))),
+window_(WScope<Window>(Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/))),
 is_running_(true),
 minimized_(false)
 {
@@ -70,6 +70,10 @@ minimized_(false)
     {
     	WLOGGER.track_event<WindowResizeEvent>();
     }
+    if(reader.GetBoolean("logger", "track_framebuffer_resize_events", false))
+    {
+    	WLOGGER.track_event<FramebufferResizeEvent>();
+    }
     if(reader.GetBoolean("logger", "track_keyboard_events", false))
     {
     	WLOGGER.track_event<KeyboardEvent>();
@@ -93,6 +97,9 @@ minimized_(false)
     // Parse intern strings
     istr::init("intern_strings.txt");
 
+    // Initialize framebuffer pool
+    Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
+
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
 	push_overlay(IMGUI_LAYER);
@@ -107,8 +114,6 @@ minimized_(false)
 
 	// React to window close events (and shutdown application)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
-	// React to window resize events
-	EVENTBUS.subscribe(this, &Application::on_window_resize_event);
 
 	on_load();
 }
@@ -189,22 +194,6 @@ void Application::run()
 bool Application::on_window_close_event(const WindowCloseEvent& e)
 {
 	is_running_ = false;
-	return false;
-}
-
-bool Application::on_window_resize_event(const WindowResizeEvent& e)
-{
-/*
-	// Check if window is minimized (size = (0,0))
-	if(e.width == 0 || e.height == 0)
-	{
-		minimized_ = true;
-		return false;
-	}
-
-	minimized_ = false;
-*/
-	Gfx::device->viewport(0, 0, e.width, e.height);
 	return false;
 }
 

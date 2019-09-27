@@ -47,7 +47,7 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
     set_pack_alignment(4);
 }
 
-void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_indexed(const WRef<VertexArray>& vertexArray,
                                    uint32_t count,
 								   std::size_t offset)
 {
@@ -59,7 +59,7 @@ void OGLRenderDevice::draw_indexed(const std::shared_ptr<VertexArray>& vertexArr
     vertexArray->unbind();
 }
 
-void OGLRenderDevice::draw_array(const std::shared_ptr<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_array(const WRef<VertexArray>& vertexArray,
                                  DrawPrimitive prim,
                                  uint32_t count,
                                  std::size_t offset)
@@ -71,7 +71,7 @@ void OGLRenderDevice::draw_array(const std::shared_ptr<VertexArray>& vertexArray
     vertexArray->unbind();
 }
 
-void OGLRenderDevice::draw_indexed_instanced(const std::shared_ptr<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
                                              uint32_t instance_count,
                                              uint32_t elements_count,
                                              std::size_t offset)

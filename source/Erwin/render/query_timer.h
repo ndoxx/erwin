@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "core/core.h"
+
 namespace erwin
 {
 
@@ -17,7 +19,7 @@ public:
     virtual std::chrono::nanoseconds stop() = 0;
 
     // Factory method for the creation of a graphics API specific timer
-    static QueryTimer* create();
+    static WScope<QueryTimer> create();
 };
 
 } // namespace erwin

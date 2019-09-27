@@ -4,12 +4,12 @@
 #include <fstream>
 #include "erwin.h"
 
+#include "render/render_device.h"
+
 // #include "render/buffer.h"
 // #include "render/shader.h"
 // #include "platform/ogl_shader.h"
 // #include "platform/ogl_texture.h"
-
-#include "render/texture_atlas.h"
 
 using namespace erwin;
 
@@ -182,7 +182,7 @@ bool on_mouse_scroll_event(const MouseScrollEvent& event)
 }
 
 private:
-	std::unique_ptr<Renderer2D> renderer_2D_;
+	WScope<Renderer2D> renderer_2D_;
 	TextureAtlas atlas_;
 	OrthographicCamera2DController camera_ctl_;
 
