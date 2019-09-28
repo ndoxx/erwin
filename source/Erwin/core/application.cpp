@@ -118,11 +118,6 @@ minimized_(false)
 	on_load();
 }
 
-Application::~Application()
-{
-	//EventBus::Kill(); // Can segfault
-}
-
 size_t Application::push_layer(Layer* layer)
 {
 	size_t index = layer_stack_.push_layer(layer);
@@ -191,6 +186,7 @@ void Application::run()
 
     Input::kill();
     WLOGGER.kill();
+    EventBus::Kill();
 }
 
 bool Application::on_window_close_event(const WindowCloseEvent& e)

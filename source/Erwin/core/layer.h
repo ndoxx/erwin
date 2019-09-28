@@ -13,6 +13,8 @@ namespace erwin
 class Layer
 {
 public:
+	friend class LayerStack; // So that LayerStack can acces the protected on_event() overload set
+
 	Layer(const std::string& debug_name);
 	virtual ~Layer();
 
@@ -27,15 +29,15 @@ public:
 	virtual void on_detach() { }
 	virtual void on_imgui_render() { }
 
+protected:
+	virtual void on_update(GameClock& clock) = 0;
+
 	REACT(KeyboardEvent)
 	REACT(KeyTypedEvent)
 	REACT(MouseButtonEvent)
 	REACT(MouseScrollEvent)
 	REACT(MouseMovedEvent)
 	REACT(WindowResizeEvent)
-
-protected:
-	virtual void on_update(GameClock& clock) = 0;
 
 private:
 	std::string debug_name_;

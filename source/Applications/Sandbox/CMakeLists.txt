@@ -1,5 +1,6 @@
 set(SRC_SANDBOX
     source/sandbox_app.cpp
+    source/layer_batch_2d.cpp
    )
 
 add_executable(sandbox ${SRC_SANDBOX})

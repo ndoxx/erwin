@@ -37,7 +37,7 @@ private:
 class FbRatioConstraint: public FbConstraint
 {
 public:
-	FbRatioConstraint(float width_mul, float height_mul): width_mul_(width_mul), height_mul_(height_mul) { }
+	FbRatioConstraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
 
 	virtual uint32_t get_width(uint32_t viewport_width) override   { return uint32_t(std::roundf(width_mul_*viewport_width)); }
 	virtual uint32_t get_height(uint32_t viewport_height) override { return uint32_t(std::roundf(height_mul_*viewport_height)); }

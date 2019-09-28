@@ -2,6 +2,8 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
+
+#define W_ENTRY_POINT
 #include "erwin.h"
 
 #include "render/buffer.h"
@@ -21,9 +23,7 @@ public:
 	camera_ctl_(1280.f/1024.f, 1.f),
 	show_menu_(true)
 	{
-		EVENTBUS.subscribe(this, &FractalLayer::on_window_resize_event);
-		EVENTBUS.subscribe(this, &FractalLayer::on_mouse_scroll_event);
-		EVENTBUS.subscribe(this, &FractalLayer::on_keyboard_event);
+
 	}
 
 	~FractalLayer() = default;
@@ -106,19 +106,19 @@ protected:
 		shader.unbind();
 	}
 
-	bool on_window_resize_event(const WindowResizeEvent& event)
+	virtual bool on_event(const WindowResizeEvent& event) override
 	{
 		camera_ctl_.on_window_resize_event(event);
 		return false;
 	}
 
-	bool on_mouse_scroll_event(const MouseScrollEvent& event)
+	virtual bool on_event(const MouseScrollEvent& event) override
 	{
 		camera_ctl_.on_mouse_scroll_event(event);
 		return false;
 	}
 
-	bool on_keyboard_event(const KeyboardEvent& event)
+	virtual bool on_event(const KeyboardEvent& event) override
 	{
 		if(event.pressed && event.key == keymap::WKEY::TAB)
 			show_menu_ = !show_menu_;

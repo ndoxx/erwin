@@ -2,8 +2,11 @@
 
 // Used by client applications
 
+#ifdef W_ENTRY_POINT
+	#include "core/entry_point.h"
+#endif
+
 #include "core/application.h"
-#include "core/entry_point.h"
 #include "core/wtypes.h"
 #include "core/layer.h"
 #include "core/file_system.h"

@@ -957,3 +957,68 @@ J'ai codé il y a quelques jours une petite application qui permet l'exploration
 
 ###Sources:
     [1] https://www.youtube.com/watch?v=zmWkhlocBRY
+
+
+#[28-09-19]
+##WRef et WScope
+J'ai fini par craquer avec tous les std::shared_ptr<TrucMuche> et std::unique_ptr<MesCouilles>. Pour me faire gagner du temps à l'écriture j'ai écrit des alias pour ces types dans core/core.h, à la manière de ce qu'à fait Cherno dans Hazel (son choix de sémantique avec Ref et Scope m'a bien plu). Mais j'ai aussi codé des alias pour std::make_shared<> et std::make_unique<> :
+
+```cpp
+namespace erwin
+{
+    // Ref counting pointer and unique pointer aliases (for now)
+    template <class T>
+    using WRef = std::shared_ptr<T>;
+
+    template <class T>
+    using WScope = std::unique_ptr<T>;
+
+    // Factory methods for ref and scope as function alias, using perfect forwarding (for now)
+    template <class T, class... Args>
+    auto make_ref(Args&&... args) -> decltype(std::make_shared<T>(std::forward<Args>(args)...))
+    {
+      return std::make_shared<T>(std::forward<Args>(args)...);
+    }
+
+    template <class T, class... Args>
+    auto make_scope(Args&&... args) -> decltype(std::make_unique<T>(std::forward<Args>(args)...))
+    {
+      return std::make_unique<T>(std::forward<Args>(args)...);
+    }
+} // namespace erwin
+```
+
+##Texture2D totalement configurable
+La classe _Texture2D_ possède une nouvelle factory method prenant en argument un _Texture2DDescriptor_. Un tel descripteur spécifie les dimensions, un pointeur vers d'éventuelles données, un format d'image, un filtre (min & mag), un mode d'UV wrapping et une option de lazy mipmapping. La création de la texture côté OpenGL ressemble à ce que je faisais dans WCore, mais sans le délire profond des texture units et en utilisant les fonctions plus modernes de l'API.
+
+##Framebuffer
+Je viens de terminer l'implémentation OpenGL des framebuffers. Comme d'hab, on a une interface _Framebuffer_ avec une factory method create() et une implémentation driver specific du nom de _OGLFramebuffer_. Le moteur supporte les multiple render targets, et donc il fallait trouver un moyen (plus élégant que sous WCore) d'initialiser plusieurs textures servant de color buffer au sein du framebuffer. C'est le rôle de la classe _FrameBufferLayout_, qui sur le modèle de _BufferLayout_ est un conteneur itérable de _FrameBufferLayoutElement_. Chaque élément spécifie un format d'image, un filtre et un mode d'UV wrapping.
+_Framebuffer_ crée sur place les textures nécessaires, plutôt que de les attendre en argument. Ces textures sont stockées dans un vecteur et pourront être accédées par la suite. Le layout est d'abord itéré pour construire les textures associées aux color buffers une à une, et celles-ci sont attachées au framebuffer. La liste des color buffers est ensuite spécifiée, grâce à la liste d'attachments construite dans la boucle précédente. S'il est nécessaire de créer une texture pour le depth attachment ou le depth-stencil attachment, alors celle-ci est créée, attachée et poussée en fin de vecteur. Si aucune depth texture n'est demandée, alors un render buffer est créé pour servir de z-buffer, afin que le framebuffer puisse être complet. Le statut du framebuffer est alors vérifié, et la construction terminée.
+
+##FramebufferPool
+Certains framebuffers doivent tracker la taille du viewport et maintenir leur taille en fonction de celle-ci. Par exemple, un effect framebuffer utilisé pour le post-processing suivra à l'exact la taille du viewport, tandis qu'un autre framebuffer utilisé pour une blur pass pourra suivre cette taille avec un ratio 1:2. D'autres framebuffers, comme dans le cas du shadow mapping, auront une taille fixe.
+La nécessité de redimensionner certains framebuffers lorsque le viewport change (suite à un redimensionnement de la fenêtre par exemple), me force à centraliser tous les framebuffers dans un conteneur statique qui répond aux événements de redimensionnement. C'est précisément le rôle de la _FramebufferPool_ qui est créée en début d'application et détruite en sortie de game loop. Une instance unique de _FramebufferPool_ appartient à la classe statique _Gfx_ qui host également le render device. Cette classe associe les framebuffers qu'elle héberge aux contraintes de taille auxquelles ils obéissent. Ces contraintes sont spécifiées par des classes de contrainte de type _FbConstraint_.
+
+_FbConstraint_ se décline pour le moment en deux classes spécialisées : _FbFixedConstraint_ pour les framebuffers de taille fixe, et _FbRatioConstraint_ pour les framebuffers dont la taille est en rapport algébrique avec la taille du viewport. Un rapport de 1:1 est toujours spécifié par une contrainte de type _FbRatioConstraint_, avec des coefficients multiplicateurs unitaires (défaut). Les méthodes virtuelles FbConstraint::get_width(1) et FbConstraint::get_height(1) retournent les dimensions souhaitées en fonction des dimensions du viewport.
+
+Chaque framebuffer doit être créé via la méthode FramebufferPool::create_framebuffer(5). Cette méthode prend en argument une intern string pour faire référence au framebuffer par la suite, une contrainte, un _FrameBufferLayout_, ainsi que deux booléens qui précisent la nécessité de créer une depth/depth-stencil texture :
+
+```cpp
+FrameBufferLayout layout_0 =
+{
+    {"target1"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT}
+};
+Gfx::framebuffer_pool->create_framebuffer("fb_ratio_05"_h, 
+    make_scope<FbRatioConstraint>(0.5f,0.5f), layout_0, false);
+
+FrameBufferLayout layout_1 =
+{
+    {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+    {"normal"_h, ImageFormat::RGB16_SNORM, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+};
+Gfx::framebuffer_pool->create_framebuffer("fb_ratio_025_05"_h, 
+    make_scope<FbRatioConstraint>(0.25f,0.5f), layout_1, true);
+```
+Les framebuffers peuvent être bound directement depuis la méthode FramebufferPool::bind(hash_t).
+
+_FramebufferPool_ réagit aux événements _FramebufferResizeEvent_, publiés par le callback GLFW *FramebufferSizeCallbackFun* (dans _GLFWWindow_). A la réception d'un tel événement, chaque framebuffer non fixe est détruit et recréé avec les mêmes paramètres qu'avant, sauf la taille qui est mise à jour.

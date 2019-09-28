@@ -10,6 +10,7 @@ namespace erwin
 
 struct FrameBufferLayoutElement
 {
+	hash_t target_name;
 	ImageFormat image_format = ImageFormat::RGBA8;
 	uint8_t filter = MIN_LINEAR | MAG_NEAREST;
 	TextureWrap wrap = TextureWrap::REPEAT;
