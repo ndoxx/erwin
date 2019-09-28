@@ -164,7 +164,6 @@ UniformBuffer(name, struct_size)
     glGenBuffers(1, &rd_handle_);
     glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
     glBufferData(GL_UNIFORM_BUFFER, struct_size_, data, gl_draw_mode);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
@@ -207,7 +206,6 @@ ShaderStorageBuffer(name, count, struct_size)
     glGenBuffers(1, &rd_handle_);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, count_*struct_size_, data, gl_draw_mode);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Element count: " << count_ << std::endl;
@@ -322,6 +320,7 @@ void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: added vertex buffer ["
 					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
+    glBindVertexArray(0);
 }
 
 void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
@@ -332,6 +331,7 @@ void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
 					 << std::static_pointer_cast<OGLIndexBuffer>(p_ib)->get_handle() << "]" << std::endl;
+    glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------------

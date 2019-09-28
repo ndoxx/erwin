@@ -40,10 +40,7 @@ Framebuffer(width, height, layout, depth, stencil)
     }
     // Specify list of color buffers to draw to
     if(has_depth_ && ncolor_attachments == 0) // Depth only texture
-    {
-        glDrawBuffer(GL_NONE); // TODO: Check that this is ok
-        glReadBuffer(GL_NONE);
-    }
+        glDrawBuffer(GL_NONE);
     else
         glDrawBuffers(ncolor_attachments, draw_buffers.data());
 
@@ -95,6 +92,12 @@ void OGLFramebuffer::bind()
 void OGLFramebuffer::unbind()
 {
     Gfx::device->bind_default_frame_buffer();
+}
+
+WRef<Texture2D> OGLFramebuffer::get_texture(uint32_t index)
+{
+    W_ASSERT(index < textures_.size(), "OGLFramebuffer: texture index out of bounds.");
+    return textures_[index];
 }
 
 void OGLFramebuffer::framebuffer_error_report()

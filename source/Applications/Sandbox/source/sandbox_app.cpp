@@ -21,7 +21,7 @@ public:
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new LayerBatch2D());
-		// push_layer(new LayerTest());
+		push_layer(new LayerTest());
 	}
 
 	~Sandbox() = default;

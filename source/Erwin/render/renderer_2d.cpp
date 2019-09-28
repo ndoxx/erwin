@@ -4,6 +4,7 @@
 #include "debug/logger.h"
 #include "render/texture.h"
 
+#include "platform/ogl_buffer.h" // TMP
 #include "platform/ogl_shader.h" // TMP
 #include "render/render_device.h" // TMP: API access pushed to render thread at some point
 
@@ -78,6 +79,40 @@ current_batch_count_(0),
 batch_ttl_(s_max_batches, 0)
 {
 	query_timer_ = QueryTimer::create();
+
+	if(!Gfx::framebuffer_pool->exists("fb_2d_raw"_h))
+	{
+		FrameBufferLayout layout =
+		{
+			{"color"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+		};
+		Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
+	}
+
+	shader_bank.load("shaders/post_proc.glsl");
+
+	// Create vertex array with a quad
+	BufferLayout vertex_tex_layout =
+	{
+	    {"a_position"_h, ShaderDataType::Vec3},
+	    {"a_uv"_h,       ShaderDataType::Vec2},
+	};
+	float sq_vdata[20] = 
+	{
+		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
+		-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
+	};
+	uint32_t sq_idata[6] =
+	{
+		0, 1, 2,   2, 3, 0
+	};
+	auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
+	auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
+	screen_va_ = VertexArray::create();
+	screen_va_->set_index_buffer(quad_ib);
+	screen_va_->set_vertex_buffer(quad_vb);
 }
 
 Renderer2D::~Renderer2D()
@@ -106,7 +141,19 @@ void Renderer2D::end_scene()
 	if(profiling_enabled_)
 		query_timer_->start();
 
+	// Render on offscreen framebuffer
+	Gfx::framebuffer_pool->bind("fb_2d_raw"_h);
+	Gfx::device->clear(CLEAR_COLOR_FLAG);
 	flush();
+	// Render generated texture on screen after post-processing
+	Gfx::framebuffer_pool->bind(0);
+	auto input_tex = Gfx::framebuffer_pool->get_texture("fb_2d_raw"_h, 0);
+	const Shader& post_proc_shader = Renderer2D::shader_bank.get("post_proc"_h);
+	post_proc_shader.bind();
+	input_tex->bind(0);
+	static_cast<const OGLShader&>(post_proc_shader).send_uniform<int>("us_input"_h, 0);
+    Gfx::device->draw_indexed(screen_va_);
+	post_proc_shader.unbind();
 
 	if(profiling_enabled_)
 	{
@@ -225,7 +272,6 @@ Renderer2D(max_batch_count)
 
 	// Load shader
 	Renderer2D::shader_bank.load("shaders/color_dup_shader.glsl");
-
 }
 
 void BatchRenderer2D::create_batch()

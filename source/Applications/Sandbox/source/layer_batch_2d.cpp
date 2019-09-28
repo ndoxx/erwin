@@ -79,21 +79,6 @@ void LayerBatch2D::on_imgui_render()
 
 void LayerBatch2D::on_attach()
 {
-	//TEST
-	/*
-	FrameBufferLayout layout_0 =
-	{
-		{"target1"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT}
-	};
-	Gfx::framebuffer_pool->create_framebuffer("fb_ratio_05"_h, make_scope<FbRatioConstraint>(0.5f,0.5f), layout_0, false);
-
-	FrameBufferLayout layout_1 =
-	{
-		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT},
-		{"normal"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT}
-	};
-	Gfx::framebuffer_pool->create_framebuffer("fb_ratio_025_05"_h, make_scope<FbRatioConstraint>(0.25f,0.5f), layout_1, true);
-	*/
 	renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
 	// atlas_.load("textures/atlas/set2.png");
 	atlas_.load("textures/atlas/set2.cat");
@@ -145,7 +130,7 @@ void LayerBatch2D::on_update(GameClock& clock)
 	{
 		RenderState render_state;
 		render_state.render_target = RenderTarget::Default;
-		render_state.rasterizer_state = CullMode::None;
+		render_state.rasterizer_state = CullMode::Back;
 		render_state.blend_state = BlendState::Opaque;
 		renderer_2D_->submit(render_state);
 /*

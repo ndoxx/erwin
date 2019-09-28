@@ -1,4 +1,5 @@
 #include "render/framebuffer_pool.h"
+#include "render/render_device.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
 
@@ -45,9 +46,26 @@ const Framebuffer& FramebufferPool::get_framebuffer(hash_t name) const
 
 void FramebufferPool::bind(hash_t name) const
 {
+	if(name==0)
+	{
+		Gfx::device->bind_default_frame_buffer();
+		return;
+	}
 	auto it = framebuffers_.find(name);
 	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
 	it->second->bind();
+}
+
+bool FramebufferPool::exists(hash_t name) const
+{
+	return (framebuffers_.find(name) != framebuffers_.end());
+}
+
+WRef<Texture2D> FramebufferPool::get_texture(hash_t name, uint32_t index)
+{
+	auto it = framebuffers_.find(name);
+	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
+	return it->second->get_texture(index);
 }
 
 void FramebufferPool::release()

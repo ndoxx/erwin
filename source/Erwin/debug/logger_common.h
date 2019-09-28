@@ -14,8 +14,10 @@ struct WCC
 {
     static std::map<char, std::string> COLORMAP;
 
-    WCC(char cc);
+    WCC() = default;
+    explicit WCC(char cc);
     WCC(uint8_t R, uint8_t G, uint8_t B);
+    WCC(const WCC& other);
 
     friend std::ostream& operator <<(std::ostream& stream, const WCC& wcc);
 

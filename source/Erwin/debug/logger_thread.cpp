@@ -16,18 +16,18 @@ namespace dbg
 
 static const uint32_t CHANNEL_STYLE_PALETTE = 16u;
 
-static std::map<MsgType, std::string> STYLES =
+static std::map<MsgType, WCC> STYLES =
 {
-    {MsgType::NORMAL,    "\033[1;38;2;255;255;255m"},
-    {MsgType::ITEM,      "\033[1;38;2;255;255;255m"},
-    {MsgType::EVENT,     "\033[1;38;2;255;255;255m"},
-    {MsgType::NOTIFY,    "\033[1;38;2;150;130;255m"},
-    {MsgType::WARNING,   "\033[1;38;2;255;175;0m"},
-    {MsgType::ERROR,     "\033[1;38;2;255;90;90m"},
-    {MsgType::FATAL,     "\033[1;38;2;255;0;0m"},
-    {MsgType::BANG,      "\033[1;38;2;255;100;0m"},
-    {MsgType::GOOD,      "\033[1;38;2;0;255;0m"},
-    {MsgType::BAD,       "\033[1;38;2;255;0;0m"},
+    {MsgType::NORMAL,    WCC(255,255,255)},
+    {MsgType::ITEM,      WCC(255,255,255)},
+    {MsgType::EVENT,     WCC(255,255,255)},
+    {MsgType::NOTIFY,    WCC(150,130,255)},
+    {MsgType::WARNING,   WCC(255,175,0)},
+    {MsgType::ERROR,     WCC(255,90, 90)},
+    {MsgType::FATAL,     WCC(255,0,  0)},
+    {MsgType::BANG,      WCC(255,100,0)},
+    {MsgType::GOOD,      WCC(0,  255,0)},
+    {MsgType::BAD,       WCC(255,0,  0)},
 };
 
 static std::map<MsgType, std::string> ICON =
@@ -68,7 +68,7 @@ void ConsoleSink::send(const LogStatement& stmt, const LogChannel& chan)
 	    std::cout << chan.tag << " " << STYLES[stmt.msg_type] << ICON[stmt.msg_type] << stmt.message;
 	}
 	else
-		std::cout << "\033[0m" << stmt.message;
+		std::cout << "\033[0m" << stmt.message << "\033[0m";
 }
 
 void ConsoleSink::send_raw(const std::string& message)

@@ -1,4 +1,5 @@
 #include <map>
+#include <iostream>
 
 #include "platform/ogl_render_device.h"
 #include "core/core.h"

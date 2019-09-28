@@ -14,6 +14,7 @@ public:
 
 	virtual void bind() override;
 	virtual void unbind() override;
+	virtual WRef<Texture2D> get_texture(uint32_t index) override;
 
 private:
 	void framebuffer_error_report();

@@ -116,6 +116,8 @@ minimized_(false)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
 
 	on_load();
+
+    DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
 }
 
 size_t Application::push_layer(Layer* layer)
@@ -134,7 +136,7 @@ size_t Application::push_overlay(Layer* layer)
 
 void Application::run()
 {
-    DLOG("application",1) << "Application started." << std::endl;
+    DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
 
     float target_fps = 60.f;
     const std::chrono::nanoseconds frame_duration_ns_(uint32_t(1e9*1.0f/target_fps));
@@ -180,7 +182,7 @@ void Application::run()
 		WLOGGER.flush();
 	}
 
-    DLOG("application",1) << "Application stopped." << std::endl;
+    DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 
     Gfx::framebuffer_pool->release();
 

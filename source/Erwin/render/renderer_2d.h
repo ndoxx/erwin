@@ -84,6 +84,7 @@ private:
 	std::vector<uint16_t> batch_ttl_;
 	bool profiling_enabled_ = false;
 	WScope<QueryTimer> query_timer_;
+	WRef<VertexArray> screen_va_;
 };
 
 class BatchRenderer2D: public Renderer2D

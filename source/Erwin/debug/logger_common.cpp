@@ -36,6 +36,11 @@ WCC::WCC(uint8_t R, uint8_t G, uint8_t B)
 	escape = "\033[1;38;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m";
 }
 
+WCC::WCC(const WCC& other)
+{
+    escape = other.escape;
+}
+
 std::ostream& operator <<(std::ostream& stream, const WCC& wcc)
 {
 	stream << wcc.escape;

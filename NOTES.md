@@ -233,7 +233,12 @@ selon que W_BUILD_LIB est défini ou non (W_BUILD_LIB définit lors de la compil
 
 Le header entry_point.h est simplement :
 ```cpp
-extern erwin::Application* erwin::create_application();
+#include "core/application.h"
+
+namespace erwin
+{
+    extern Application* create_application();
+}
 
 int main(int argc, char** argv)
 {
@@ -243,9 +248,16 @@ int main(int argc, char** argv)
 }
 ```
 
-Côté client on n'a qu'à inclure l'unique header erwin.h (qui regroupe toutes les inclusions core/event pertinentes de l'API), à spécialiser _Application_ et à définir create_application() :
+Dans le header erwin.h (qui regroupe toutes les inclusions core/event pertinentes de l'API) le point d'entrée n'est inclu que si la macro *W_ENTRY_POINT* est définie :
+```cpp
+#ifdef W_ENTRY_POINT
+    #include "core/entry_point.h"
+#endif
+```
+Ce mécanisme permet de ne pas inclure plusieurs fois le point d'entrée dans le code client, ce qui définirait main() autant de fois et créerait un bug à la compilation. Seul le cpp qui surcharge _Application_ est supposé définir cette macro: pour créer une nouvelle application sous Erwin engine, on définit *W_ENTRY_POINT*, on inclut l'unique header erwin.h, on spécialise _Application_ et on définit create_application() :
 
 ```cpp
+#define W_ENTRY_POINT
 #include "erwin.h"
 
 class Sandbox: public erwin::Application

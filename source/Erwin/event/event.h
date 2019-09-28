@@ -113,7 +113,6 @@ private:
     EventBus()=default;
     ~EventBus()
     {
-        // TODO: Correct problem here, can segfault
         for(auto&& [key, delegates]: subscribers)
         {
             for(auto&& handler: *delegates)
