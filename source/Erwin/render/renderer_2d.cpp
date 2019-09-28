@@ -84,7 +84,7 @@ batch_ttl_(s_max_batches, 0)
 	{
 		FrameBufferLayout layout =
 		{
-			{"color"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+			{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
 		};
 		Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
 	}
@@ -147,11 +147,10 @@ void Renderer2D::end_scene()
 	flush();
 	// Render generated texture on screen after post-processing
 	Gfx::framebuffer_pool->bind(0);
-	auto input_tex = Gfx::framebuffer_pool->get_texture("fb_2d_raw"_h, 0);
 	const Shader& post_proc_shader = Renderer2D::shader_bank.get("post_proc"_h);
 	post_proc_shader.bind();
-	input_tex->bind(0);
-	static_cast<const OGLShader&>(post_proc_shader).send_uniform<int>("us_input"_h, 0);
+	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture("fb_2d_raw"_h, "albedo"_h);
+	post_proc_shader.attach_texture("us_input"_h, albedo_tex);
     Gfx::device->draw_indexed(screen_va_);
 	post_proc_shader.unbind();
 

@@ -1034,3 +1034,85 @@ Gfx::framebuffer_pool->create_framebuffer("fb_ratio_025_05"_h,
 Les framebuffers peuvent être bound directement depuis la méthode FramebufferPool::bind(hash_t).
 
 _FramebufferPool_ réagit aux événements _FramebufferResizeEvent_, publiés par le callback GLFW *FramebufferSizeCallbackFun* (dans _GLFWWindow_). A la réception d'un tel événement, chaque framebuffer non fixe est détruit et recréé avec les mêmes paramètres qu'avant, sauf la taille qui est mise à jour.
+
+#[28-09-19]
+##Framebuffer opérationnel
+J'ai testé la fonctionnalité de _Framebuffer_ dans _Renderer2D_ en implémentant une passe (mockup) de post-processing. Un framebuffer du nom de "fb_2d_raw" est créé dans le constructeur via :
+```cpp
+if(!Gfx::framebuffer_pool->exists("fb_2d_raw"_h))
+{
+    FrameBufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, 
+            TextureWrap::CLAMP_TO_EDGE}
+    };
+    Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, 
+        make_scope<FbRatioConstraint>(), layout, false);
+}
+```
+Un shader de post-processing (simple pass-through pour l'instant) est aussi chargé par la _ShaderBank_, et un quad de la taille de l'écran est sauvegardé dans un vertex array :
+```cpp
+shader_bank.load("shaders/post_proc.glsl");
+
+// Create vertex array with a quad
+BufferLayout vertex_tex_layout =
+{
+    {"a_position"_h, ShaderDataType::Vec3},
+    {"a_uv"_h,       ShaderDataType::Vec2},
+};
+float sq_vdata[20] = 
+{
+    -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+     1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+     1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
+    -1.0f,  1.0f, 0.0f,   0.0f, 1.0f
+};
+uint32_t sq_idata[6] =
+{
+    0, 1, 2,   2, 3, 0
+};
+auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
+auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
+screen_va_ = VertexArray::create();
+screen_va_->set_index_buffer(quad_ib);
+screen_va_->set_vertex_buffer(quad_vb);
+```
+
+Voici le code du post-processing fragment shader :
+```glsl
+in vec2 v_uv;
+layout(location = 0) out vec4 out_color;
+
+uniform sampler2D us_input;
+
+void main()
+{
+    vec4 in_color = texture(us_input, v_uv);
+    // in_color.r = (v_uv.x<0.5) ? in_color.r : 0.f;
+    out_color = in_color;
+}
+```
+
+Dans la fonction end_scene(), la fonction flush() est appelée après un framebuffer switch affin de dessiner dans une texture (offscreen). Le framebuffer par défaut est ensuite bound, ainsi que le shader de post-proc, la texture du framebuffer "fb_2d_raw" est liée et passée en uniform sampler au shader, puis le quad écran est dessiné :
+```cpp
+// Render on offscreen framebuffer
+Gfx::framebuffer_pool->bind("fb_2d_raw"_h);
+Gfx::device->clear(CLEAR_COLOR_FLAG);
+flush();
+// Render generated texture on screen after post-processing
+Gfx::framebuffer_pool->bind(0);
+const Shader& post_proc_shader = Renderer2D::shader_bank.get("post_proc"_h);
+post_proc_shader.bind();
+auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture("fb_2d_raw"_h, "albedo"_h);
+post_proc_shader.attach_texture("us_input"_h, albedo_tex);
+Gfx::device->draw_indexed(screen_va_);
+post_proc_shader.unbind();
+```
+
+![Test de "post-processing", le canal rouge est annulé sur la droite de l'écran.\label{figTestPP}](../Erwin_rel/screens_erwin/erwin_4a_test_post_proc.png)
+
+
+##De l'intérêt du teddy bear debugging
+Lors de mon implémentation de la passe de post-processing dans _Renderer2D_ j'ai eu droit à un violent segfault lors du premier draw call après un renderer swap vers _InstancedRenderer2D_. Le seul bout de code que j'avais ajouté était un vertex array en membre privé de _Renderer2D_, initialisé dans le constructeur. Le vertex array utilisé par _InstancedRenderer2D_ contient un simple quad utilisé pour l'instancing, et c'est celui-là qui foutait la merde lors de l'appel à draw_indexed_instanced(). Les deux vertex array sont indépendant du point de vue de mon code.
+GDB ne m'a pas beaucoup aidé : j'avais identifié le dernier call avant le segfault après un backtrace, point barre. En discutant avec Jess j'ai établi que ce type de side-effect ressemblait beaucoup à du state leaking OpenGL. Je suis donc allé voir dans render/ogl_buffer.cpp, plus particulièrement dans OGLVertexArray::add_vertex_buffer() et OGLVertexArray::set_index_buffer(), et à tout hasard, rajouté un glBindVertexArray(0) après les divers calls OpenGL pour unbind le vertex array immédiatement après y avoir touché. Surprise : tout fonctionne de nouveau, le renderer swap ne fait plus rien planter.
+Vraisemblablement, le state leaking avait entraîné que le vertex buffer ou l'index buffer d'un des deux vertex array se retrouvait lié dans l'état du second. Après destruction de ces VBO/IBO lors du swap, je devais me retrouver avec un vertex array pointant sur des objets détruits, d'où le segfault... Merci Jess de m'écouter jargonner !

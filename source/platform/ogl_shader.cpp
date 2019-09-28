@@ -10,6 +10,7 @@
 #include "core/string_utils.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
+#include "render/texture.h"
 
 #include "glad/glad.h"
 
@@ -204,6 +205,13 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
 {
     W_ASSERT(texture_slots_.find(sampler)!=texture_slots_.end(), "Unknown sampler name!");
     return texture_slots_.at(sampler);
+}
+
+void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
+{
+    uint32_t slot = get_texture_slot(sampler);
+    texture.bind(slot);
+    send_uniform<int>(sampler, slot);
 }
 
 void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const

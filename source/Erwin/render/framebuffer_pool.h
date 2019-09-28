@@ -57,19 +57,16 @@ public:
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	void create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FrameBufferLayout& layout, bool depth, bool stencil=false);
-
 	// Get a framebuffer by name
 	const Framebuffer& get_framebuffer(hash_t name) const;
-
 	// Bind a framebuffer by name
 	void bind(hash_t name) const;
-
 	// Check whether a framebuffer is registered to this name
 	bool exists(hash_t name) const;
-
-	// Get a framebuffer target texture by name and index
-	WRef<Texture2D> get_texture(hash_t name, uint32_t index);
-
+	// Get a framebuffer target texture by framebuffer name and texture index
+	const Texture2D& get_texture(hash_t name, uint32_t index);
+	// Get a framebuffer target texture by framebuffer name and target texture name
+	const Texture2D& get_named_texture(hash_t fbname, hash_t texname);
 	// Destroy all framebuffers stored in this pool
 	void release();
 

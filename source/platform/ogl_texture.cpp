@@ -240,12 +240,12 @@ uint32_t OGLTexture2D::get_height() const
 	return height_;
 }
 
-void OGLTexture2D::bind(uint32_t slot)
+void OGLTexture2D::bind(uint32_t slot) const
 {
 	glBindTextureUnit(slot, rd_handle_);
 }
 
-void OGLTexture2D::unbind()
+void OGLTexture2D::unbind() const
 {
     glBindTexture(GL_TEXTURE_2D, 0);
 }

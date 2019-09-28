@@ -23,6 +23,6 @@ uniform sampler2D us_input;
 void main()
 {
 	vec4 in_color = texture(us_input, v_uv);
-
+	// in_color.r = (v_uv.x<0.5) ? in_color.r : 0.f;
     out_color = in_color;
 }

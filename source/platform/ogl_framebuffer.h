@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include "render/framebuffer.h"
 
 namespace erwin
@@ -14,7 +15,8 @@ public:
 
 	virtual void bind() override;
 	virtual void unbind() override;
-	virtual WRef<Texture2D> get_texture(uint32_t index) override;
+	virtual const Texture2D& get_texture(uint32_t index) override;
+	virtual const Texture2D& get_named_texture(hash_t name) override;
 
 private:
 	void framebuffer_error_report();
@@ -22,6 +24,8 @@ private:
 private:
 	std::vector<WRef<Texture2D>> textures_;
 	std::vector<uint32_t> color_buffers_;
+	std::unordered_map<hash_t, uint32_t> texture_names_;
+
 	uint32_t rd_handle_ = 0;
 	uint32_t render_buffer_handle_ = 0;
 };

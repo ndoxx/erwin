@@ -48,7 +48,8 @@ public:
 	virtual ~Framebuffer() = default;
 	virtual void bind() = 0;
 	virtual void unbind() = 0;
-	virtual WRef<Texture2D> get_texture(uint32_t index) = 0;
+	virtual const Texture2D& get_texture(uint32_t index=0) = 0;
+	virtual const Texture2D& get_named_texture(hash_t name) = 0;
 
 	inline uint32_t get_width() const  { return width_; }
 	inline uint32_t get_height() const { return height_; }

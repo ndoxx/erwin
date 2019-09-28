@@ -61,11 +61,18 @@ bool FramebufferPool::exists(hash_t name) const
 	return (framebuffers_.find(name) != framebuffers_.end());
 }
 
-WRef<Texture2D> FramebufferPool::get_texture(hash_t name, uint32_t index)
+const Texture2D& FramebufferPool::get_texture(hash_t name, uint32_t index)
 {
 	auto it = framebuffers_.find(name);
 	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
 	return it->second->get_texture(index);
+}
+
+const Texture2D& FramebufferPool::get_named_texture(hash_t fbname, hash_t texname)
+{
+	auto it = framebuffers_.find(fbname);
+	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");
+	return it->second->get_named_texture(texname);
 }
 
 void FramebufferPool::release()

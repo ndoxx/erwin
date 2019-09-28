@@ -35,6 +35,9 @@ Framebuffer(width, height, layout, depth, stencil)
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
     	GLenum attachment = GL_COLOR_ATTACHMENT0 + ncolor_attachments++;
         glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture_handle, 0);
+        // Save target texture name
+        texture_names_.insert(std::make_pair(elt.target_name, textures_.size()));
+        // Save texture and attachments
     	textures_.push_back(texture);
         draw_buffers.push_back(attachment);
     }
@@ -51,6 +54,7 @@ Framebuffer(width, height, layout, depth, stencil)
     	auto texture = Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH24_STENCIL8});
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
+        texture_names_.insert(std::make_pair("depth_stencil"_h, textures_.size()));
     	textures_.push_back(texture);
     }
     else if(has_depth_)
@@ -58,6 +62,7 @@ Framebuffer(width, height, layout, depth, stencil)
     	auto texture = Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH_COMPONENT24});
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
+        texture_names_.insert(std::make_pair("depth"_h, textures_.size()));
     	textures_.push_back(texture);
     }
 
@@ -94,10 +99,17 @@ void OGLFramebuffer::unbind()
     Gfx::device->bind_default_frame_buffer();
 }
 
-WRef<Texture2D> OGLFramebuffer::get_texture(uint32_t index)
+const Texture2D& OGLFramebuffer::get_texture(uint32_t index)
 {
     W_ASSERT(index < textures_.size(), "OGLFramebuffer: texture index out of bounds.");
-    return textures_[index];
+    return *(textures_[index]);
+}
+
+const Texture2D& OGLFramebuffer::get_named_texture(hash_t name)
+{
+    auto it = texture_names_.find(name);
+    W_ASSERT(it != texture_names_.end(), "OGLFramebuffer: unknown texture name.");
+    return *(textures_[it->second]);
 }
 
 void OGLFramebuffer::framebuffer_error_report()

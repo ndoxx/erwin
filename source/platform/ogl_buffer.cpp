@@ -315,23 +315,24 @@ void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
 							  (const void*)(intptr_t)element.offset);
 		++vb_index_;
 	}
+    glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
 
 	vertex_buffers_.push_back(p_vb);
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: added vertex buffer ["
 					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
-    glBindVertexArray(0);
 }
 
 void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
 {
     glBindVertexArray(rd_handle_);
 	p_ib->bind();
-	index_buffer_ = p_ib;
+    glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
+	
+    index_buffer_ = p_ib;
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
 					 << std::static_pointer_cast<OGLIndexBuffer>(p_ib)->get_handle() << "]" << std::endl;
-    glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------------
