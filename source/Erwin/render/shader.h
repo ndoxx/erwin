@@ -50,8 +50,8 @@ public:
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }
 
-	// Factory method for the creation of an API-specific shader from an input stream
-	static WRef<Shader> create(const std::string& name, std::istream& source_stream);
+	// Factory method for the creation of an API-specific shader from a file path
+	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
 	// Factory method for the creation of an API-specific shader from a string
 	static WRef<Shader> create(const std::string& name, const std::string& source_string);
 
@@ -67,8 +67,6 @@ public:
 	void add(WRef<Shader> p_shader);
 	// Load shader in bank from path (relative to the asset directory)
 	void load(const fs::path& path);
-	// Load shader in bank from stream
-	void load(const std::string& name, std::istream& source_stream);
 	// Load shader in bank from string
 	void load(const std::string& name, const std::string& source_string);
 	// Get shader by hash name

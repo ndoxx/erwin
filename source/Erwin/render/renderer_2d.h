@@ -27,6 +27,18 @@ struct SceneData
 	WRef<Texture2D> texture;
 };
 
+struct PostProcData
+{
+	// Chromatic aberration
+	float ca_shift = 0.f;
+	float ca_strength = 0.f;
+	// Vibrance
+	// float vib_strength = 0.f;
+	// glm::vec3 vib_balance = glm::vec3(0.f);
+
+	glm::vec2 fb_size;
+};
+
 // Base class for 2D renderers
 class Renderer2D
 {
@@ -35,7 +47,7 @@ public:
 	virtual ~Renderer2D();
 
 	// Reset renderer flags for next submissions
-	void begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture);
+	void begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data);
 	// Upload last batch and flush all batches
 	void end_scene();
 	// Setup render state
@@ -85,6 +97,8 @@ private:
 	bool profiling_enabled_ = false;
 	WScope<QueryTimer> query_timer_;
 	WRef<VertexArray> screen_va_;
+	WRef<UniformBuffer> pp_ubo_;
+	PostProcData post_proc_data_;
 };
 
 class BatchRenderer2D: public Renderer2D

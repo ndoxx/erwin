@@ -9,6 +9,7 @@
 #include "core/wtypes.h"
 #include "core/string_utils.h"
 #include "core/intern_string.h"
+#include "core/file_system.h"
 #include "debug/logger.h"
 #include "render/texture.h"
 
@@ -117,8 +118,10 @@ static std::string ogl_uniform_type_to_string(GLenum type)
     }
 }
 
-static void shader_error_report(GLuint ShaderID, std::set<int>& errlines)
+static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std::string& source)
 {
+    std::set<int> errlines;
+
     char* log = nullptr;
     GLsizei logsize = 0;
 
@@ -144,6 +147,22 @@ static void shader_error_report(GLuint ShaderID, std::set<int>& errlines)
     }
 
     free(log);
+
+    // * Show problematic lines
+    std::istringstream source_iss(source);
+
+    std::string line;
+    int nline = 1;
+    while(std::getline(source_iss, line))
+    {
+        if(errlines.find(nline++)!=errlines.end())
+        {
+            int actual_line = nline + n_previous_lines;
+            trim(line);
+            DLOGR("shader") << "\033[1;38;2;255;200;10m> \033[1;38;2;255;90;90m"
+                            << actual_line << "\033[1;38;2;255;200;10m : " << line << std::endl;
+        }
+    }
 }
 
 static void program_error_report(GLuint ProgramID)
@@ -163,23 +182,22 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
-OGLShader::OGLShader(const std::string& name, std::istream& source_stream):
-Shader(name)
+OGLShader::OGLShader(const std::string& name, const fs::path& filepath):
+Shader(name),
+filepath_(filepath)
 {
-    if(!source_stream)
-    {
-    	DLOGE("shader") << "Shader source stream is bad!" << std::endl;
-    }
+    std::ifstream ifs(filepath);
 
     // Read stream to buffer and parse full source
-    auto sources = parse(std::string((std::istreambuf_iterator<char>(source_stream)),
+    auto sources = parse(std::string((std::istreambuf_iterator<char>(ifs)),
                                       std::istreambuf_iterator<char>()));
     build(sources);
     setup_uniform_registry();
 }
 
 OGLShader::OGLShader(const std::string& name, const std::string& source_string):
-Shader(name)
+Shader(name),
+filepath_("")
 {
 	auto sources = parse(source_string);
 	build(sources);
@@ -254,6 +272,54 @@ std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::stri
 	return sources;
 }
 
+std::string OGLShader::parse_includes(const std::string& source)
+{
+    // Find all #include directives, extract file location
+    static const std::string include_token = "#include";
+    size_t pos = source.find(include_token, 0);
+
+    std::vector<std::string> files;
+    std::vector<std::pair<uint32_t,uint32_t>> inc_pos_len;
+    while(pos != std::string::npos)
+    {
+        size_t eol = source.find_first_of("\r\n", pos);
+        size_t begin = pos + include_token.size() + 1;
+        size_t next_line_pos = source.find_first_not_of("\r\n", eol);
+
+        files.push_back(source.substr(begin, eol - begin));
+        inc_pos_len.push_back(std::make_pair(pos,next_line_pos-pos-1));
+
+        pos = source.find(include_token, next_line_pos);
+    }
+
+    // Remove include directives from source and replace by actual included source
+    std::string ret(source);
+    int char_offset = 0;
+    for(int ii=0; ii<files.size(); ++ii)
+    {
+        DLOG("shader", 1) << "including: " << WCC('p') << files[ii] << std::endl;
+        uint32_t pos = inc_pos_len[ii].first + char_offset;
+        uint32_t len = inc_pos_len[ii].second;
+        ret.erase(pos, len);
+
+        if(!filepath_.empty())
+        {
+            std::string inc_source = filesystem::get_asset_string(filepath_.parent_path() / files[ii]);
+            ret.insert(pos, inc_source);
+
+            // Kepp track of the number of characters added and removed
+            char_offset += inc_source.size()-len;
+        }
+        else
+        {
+            DLOGE("shader") << "Cannot include from string source shader!" << std::endl;
+            char_offset -= len;
+        }
+    }
+
+    return ret;
+}
+
 bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)
 {
 	DLOGN("shader") << "Building OpenGL Shader program: \"" << name_ << "\" " << std::endl;
@@ -262,42 +328,33 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 	// * Compile each shader
 	int n_previous_lines = 0;
+    int current = 0;
 	for(auto&& [type, source]: sources)
 	{
 		DLOGI << "Compiling " << to_string(type) << "." << std::endl;
 		
+        // Check for includes
+        std::string source_includes = parse_includes(source);
+
+        // Keep track of lines for error report
+        int n_orig_lines = std::count(source.begin(), source.end(), '\n');
+        int n_total_lines = std::count(source_includes.begin(), source_includes.end(), '\n');
+        int n_lines_included = n_total_lines-n_orig_lines;
+
 		// Compile shader from source
     	GLuint shader_id = glCreateShader(to_gl_shader_type(type));
-    	const char* char_src = source.c_str();
+    	const char* char_src = source_includes.c_str();
 		glShaderSource(shader_id, 1, &char_src, nullptr);
 		glCompileShader(shader_id);
 
-		// * Check compilation status
+		// Check compilation status
 	    GLint is_compiled = 0;
 	    glGetShaderiv(shader_id, GL_COMPILE_STATUS, &is_compiled);
 
 	    if(is_compiled == GL_FALSE)
 	    {
 	        DLOGE("shader") << "Shader \"" << name_ << "\" will not compile" << std::endl;
-
-	        std::set<int> errlines;
-	        shader_error_report(shader_id, errlines);
-
-	        // * Show problematic lines
-	        std::istringstream source_iss(source);
-
-	        std::string line;
-	        int nline = 1;
-	        while(std::getline(source_iss, line))
-	        {
-	            if(errlines.find(nline++)!=errlines.end())
-	            {
-	                int actual_line = nline + n_previous_lines;
-	                trim(line);
-	                DLOGR("shader") << "\033[1;38;2;255;200;10m> \033[1;38;2;255;90;90m"
-	                                << actual_line << "\033[1;38;2;255;200;10m : " << line << std::endl;
-	            }
-	        }
+            shader_error_report(shader_id, n_previous_lines-n_lines_included+current, source_includes);
 
 	        // We don't need the shader anymore.
 	        glDeleteShader(shader_id);
@@ -306,7 +363,9 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 	    // Save shader id for later linking
 	    shader_ids.push_back(shader_id);
-	    n_previous_lines += std::count(source.begin(), source.end(), '\n');
+
+        n_previous_lines += n_total_lines;
+        ++current;
 	}
 
 	// * Link program

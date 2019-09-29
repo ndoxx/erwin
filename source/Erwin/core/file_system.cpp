@@ -75,6 +75,20 @@ std::ifstream get_asset_stream(const fs::path& path)
 	return std::ifstream(s_asset_path / path);
 }
 
+std::string get_asset_string(const fs::path& path)
+{
+    std::ifstream ifs(s_asset_path / path);
+    return std::string((std::istreambuf_iterator<char>(ifs)),
+                        std::istreambuf_iterator<char>());
+}
+
+std::string get_file_as_string(const fs::path& path)
+{
+    std::ifstream ifs(path);
+    return std::string((std::istreambuf_iterator<char>(ifs)),
+                        std::istreambuf_iterator<char>());
+}
+
 
 } // namespace filesystem
 } // namespace erwin

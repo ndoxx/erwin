@@ -25,6 +25,11 @@ void set_asset_dir(const fs::path& path);
 
 // Get a stream to an asset in asset directory
 std::ifstream get_asset_stream(const fs::path& path);
+// Get a text file in asset directory as a string
+std::string get_asset_string(const fs::path& path);
+
+// Get a text file as a string
+std::string get_file_as_string(const fs::path& path);
 
 } // namespace filesystem
 } // namespace erwin

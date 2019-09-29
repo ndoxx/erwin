@@ -48,6 +48,7 @@ void LayerBatch2D::on_imgui_render()
         	}
         	renderer_2D_->set_profiling_enabled(enable_profiling_);
         }
+
         ImGui::Separator();
 
         ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
@@ -57,6 +58,25 @@ void LayerBatch2D::on_imgui_render()
         }
     	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
     	ImGui::Checkbox("Trippy mode", &trippy_mode_);
+
+    	// Post processing
+        ImGui::Separator();
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Chromatic aberration"))
+        {
+            ImGui::SliderFloat("Shift",     &pp_data_.ca_shift, 0.0f, 10.0f);
+            ImGui::SliderFloat("Magnitude", &pp_data_.ca_strength, 0.0f, 1.0f);
+            ImGui::TreePop();
+            ImGui::Separator();
+        }/*
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Vibrance"))
+        {
+            ImGui::SliderFloat("Strength",         &pp_data_.vib_strength, -1.0f, 1.0f);
+            ImGui::SliderFloat3("Balance", (float*)&pp_data_.vib_balance, 0.0f, 1.0f);
+            ImGui::TreePop();
+            ImGui::Separator();
+        }*/
 
     ImGui::End();
 
@@ -126,7 +146,7 @@ void LayerBatch2D::on_update(GameClock& clock)
 	if(tt_>=5.f)
 		tt_ = 0.f;
 
-	renderer_2D_->begin_scene(camera_ctl_.get_camera(), atlas_.get_texture());
+	renderer_2D_->begin_scene(camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
 	{
 		RenderState render_state;
 		render_state.render_target = RenderTarget::Default;

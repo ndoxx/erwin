@@ -58,7 +58,7 @@ public:
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	void create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FrameBufferLayout& layout, bool depth, bool stencil=false);
 	// Get a framebuffer by name
-	const Framebuffer& get_framebuffer(hash_t name) const;
+	const Framebuffer& get(hash_t name) const;
 	// Bind a framebuffer by name
 	void bind(hash_t name) const;
 	// Check whether a framebuffer is registered to this name

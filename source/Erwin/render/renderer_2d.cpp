@@ -84,7 +84,7 @@ batch_ttl_(s_max_batches, 0)
 	{
 		FrameBufferLayout layout =
 		{
-			{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+			{"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
 		};
 		Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
 	}
@@ -113,6 +113,9 @@ batch_ttl_(s_max_batches, 0)
 	screen_va_ = VertexArray::create();
 	screen_va_->set_index_buffer(quad_ib);
 	screen_va_->set_vertex_buffer(quad_vb);
+
+	// UBO for post processing data
+	pp_ubo_ = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
 }
 
 Renderer2D::~Renderer2D()
@@ -120,13 +123,18 @@ Renderer2D::~Renderer2D()
 
 }
 
-void Renderer2D::begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture)
+void Renderer2D::begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
 {
 	// Set scene data
 	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
 	scene_data_.view_matrix = camera.get_view_matrix();
 	scene_data_.frustum_sides = camera.get_frustum_sides();
 	scene_data_.texture = texture;
+
+	// Set post processing data
+	post_proc_data_ = pp_data;
+	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get("fb_2d_raw"_h).get_width(),
+				  	   		   Gfx::framebuffer_pool->get("fb_2d_raw"_h).get_height()};
 
 	// Reset
 	current_batch_ = 0;
@@ -151,6 +159,8 @@ void Renderer2D::end_scene()
 	post_proc_shader.bind();
 	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture("fb_2d_raw"_h, "albedo"_h);
 	post_proc_shader.attach_texture("us_input"_h, albedo_tex);
+	pp_ubo_->map(&post_proc_data_);
+	post_proc_shader.attach_uniform_buffer(*pp_ubo_, 0);
     Gfx::device->draw_indexed(screen_va_);
 	post_proc_shader.unbind();
 

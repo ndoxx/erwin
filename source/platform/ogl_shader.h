@@ -13,7 +13,7 @@ namespace erwin
 class OGLShader: public Shader
 {
 public:
-	OGLShader(const std::string& name, std::istream& source_stream);
+	OGLShader(const std::string& name, const fs::path& filepath);
 	OGLShader(const std::string& name, const std::string& source_string);
 	~OGLShader();
 
@@ -35,6 +35,8 @@ public:
 private:
 	// Helper function to extract the various shader sources from a single formatted source string
 	std::vector<std::pair<ShaderType, std::string>> parse(const std::string& full_source);
+	// Helper function to get the code included by a shader source
+	std::string parse_includes(const std::string& source);
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
 	// Helper function to construct the uniform location and texture slot registries
@@ -45,6 +47,7 @@ private:
     uint32_t current_slot_ = 0;
     std::unordered_map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
     std::unordered_map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
+    fs::path filepath_;
 };
 
 template <> bool OGLShader::send_uniform<bool>(hash_t name, const bool& value) const;

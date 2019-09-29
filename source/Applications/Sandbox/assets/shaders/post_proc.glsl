@@ -15,14 +15,38 @@ void main()
 #type fragment
 #version 460 core
 
+#include include/post_proc_inc.glsl
+
 in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
 
 uniform sampler2D us_input;
 
+struct PostProcData
+{
+	// Chromatic aberration
+	float ca_shift;
+	float ca_strength;
+	// Vibrance
+	// float vib_strength;
+	// vec3 vib_balance;
+
+	vec2 fb_size;
+};
+
+layout(std140) uniform post_proc_layout
+{
+    PostProcData pp_data;
+};
+
 void main()
 {
-	vec4 in_color = texture(us_input, v_uv);
-	// in_color.r = (v_uv.x<0.5) ? in_color.r : 0.f;
-    out_color = in_color;
+	vec4 in_hdr = texture(us_input, v_uv);
+	vec3 color_hdr = in_hdr.rgb;
+
+    color_hdr = chromatic_aberration_rgb(us_input, v_uv, pp_data.fb_size, pp_data.ca_shift, pp_data.ca_strength);
+
+    // color_hdr = vibrance_rgb(color_hdr, pp_data.vib_balance, pp_data.vib_strength);
+
+    out_color = vec4(color_hdr, in_hdr.a);
 }

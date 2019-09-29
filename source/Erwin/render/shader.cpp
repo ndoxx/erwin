@@ -12,7 +12,7 @@ void ShaderParameters::set_texture_slot(hash_t sampler_name, WRef<Texture2D> tex
     texture_slots.insert(std::make_pair(sampler_name, texture));
 }
 
-WRef<Shader> Shader::create(const std::string& name, std::istream& source_stream)
+WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
 {
 	switch(Gfx::get_api())
     {
@@ -21,7 +21,7 @@ WRef<Shader> Shader::create(const std::string& name, std::istream& source_stream
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_ref<OGLShader>(name, source_stream);
+            return make_ref<OGLShader>(name, filepath);
     }
 }
 
@@ -54,19 +54,18 @@ void ShaderBank::add(WRef<Shader> p_shader)
 
 void ShaderBank::load(const fs::path& path)
 {
-    auto stream = filesystem::get_asset_stream(path);
-    load(path.stem().string(), stream);
-}
-
-void ShaderBank::load(const std::string& name, std::istream& source_stream)
-{
-    hash_t hname = H_(name.c_str());
-    if(exists(hname))
+    /*auto stream = filesystem::get_asset_stream(path);
+    load(path.stem().string(), stream);*/
+    fs::path shader_path = filesystem::get_asset_dir() / path;
+    if(!fs::exists(shader_path))
     {
-        DLOGW("shader") << "Shader " << name << " already loaded." << std::endl;
+        DLOGE("shader") << "Unable to find file: " << WCC('p') << shader_path << std::endl;
         return;
     }
-    bank_.insert(std::make_pair(hname, Shader::create(name, source_stream)));
+
+    std::string name = path.stem().string();
+    hash_t hname = H_(name.c_str());
+    bank_.insert(std::make_pair(hname, Shader::create(name, shader_path)));
     next_index(hname);
 }
 

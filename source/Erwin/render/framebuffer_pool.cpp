@@ -37,7 +37,7 @@ void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> const
 	constraints_.insert(std::make_pair(name, std::move(constraint)));
 }
 
-const Framebuffer& FramebufferPool::get_framebuffer(hash_t name) const
+const Framebuffer& FramebufferPool::get(hash_t name) const
 {
 	auto it = framebuffers_.find(name);
 	W_ASSERT(it != framebuffers_.end(), "No framebuffer by this name.");

@@ -29,6 +29,7 @@ private:
 	WScope<Renderer2D> renderer_2D_;
 	TextureAtlas atlas_;
 	OrthographicCamera2DController camera_ctl_;
+	PostProcData pp_data_;
 
 	std::vector<hash_t> tiles_;
 
