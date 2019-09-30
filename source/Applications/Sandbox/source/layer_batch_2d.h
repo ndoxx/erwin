@@ -42,4 +42,11 @@ private:
 	int len_grid_ = 100;
 	int batch_size_ = 8192;
 	bool trippy_mode_ = false;
+
+	bool enable_chromatic_aberration_ = true;
+	bool enable_exposure_tone_mapping_ = true;
+	bool enable_vibrance_ = true;
+	bool enable_saturation_ = true;
+	bool enable_contrast_ = true;
+	bool enable_gamma_ = true;
 };

@@ -75,14 +75,15 @@ void TextureAtlas::load(const fs::path& filepath)
 		ImageFormat format;
 		switch(desc.texture_compression)
 		{
-			case TextureCompression::None: format = ImageFormat::RGBA8; break;
-			case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_RGB_S3TC_DXT1; break;
-			case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_RGBA_S3TC_DXT5; break;
+			case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+			case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
+			case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
 		}
 		texture_ = Texture2D::create(Texture2DDescriptor{desc.texture_width,
 									  					 desc.texture_height,
 									  					 desc.texture_blob,
-									  					 format});
+									  					 format,
+									  					 MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST});
 
 		float width = texture_->get_width();
 		float height = texture_->get_height();

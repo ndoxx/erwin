@@ -53,9 +53,8 @@ void LayerBatch2D::on_imgui_render()
 
         ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
         if(ImGui::SliderInt("Batch size", &batch_size_, 200, 10000))
-        {
 			renderer_2D_->set_batch_size(batch_size_);
-        }
+
     	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
     	ImGui::Checkbox("Trippy mode", &trippy_mode_);
 
@@ -64,19 +63,43 @@ void LayerBatch2D::on_imgui_render()
         ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
         if(ImGui::TreeNode("Chromatic aberration"))
         {
+    		ImGui::Checkbox("##en_ca", &enable_chromatic_aberration_);
+
             ImGui::SliderFloat("Shift",     &pp_data_.ca_shift, 0.0f, 10.0f);
             ImGui::SliderFloat("Magnitude", &pp_data_.ca_strength, 0.0f, 1.0f);
             ImGui::TreePop();
             ImGui::Separator();
-        }/*
+        }
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Tone mapping"))
+        {
+    		ImGui::Checkbox("##en_tm", &enable_exposure_tone_mapping_); ImGui::SameLine();
+            ImGui::SliderFloat("Exposure", &pp_data_.tm_exposure, 0.1f, 5.0f);
+            ImGui::TreePop();
+            ImGui::Separator();
+        }
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Correction"))
+        {
+    		ImGui::Checkbox("##en_sat", &enable_saturation_); ImGui::SameLine();
+            ImGui::SliderFloat("Saturation",     &pp_data_.cor_saturation, 0.0f, 2.0f);
+    		ImGui::Checkbox("##en_cnt", &enable_contrast_); ImGui::SameLine();
+            ImGui::SliderFloat("Contrast",       &pp_data_.cor_contrast, 0.0f, 2.0f);
+    		ImGui::Checkbox("##en_gam", &enable_gamma_); ImGui::SameLine();
+            ImGui::SliderFloat3("Gamma", (float*)&pp_data_.cor_gamma, 1.0f, 2.0f);
+            ImGui::TreePop();
+            ImGui::Separator();
+        }
         ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
         if(ImGui::TreeNode("Vibrance"))
         {
-            ImGui::SliderFloat("Strength",         &pp_data_.vib_strength, -1.0f, 1.0f);
+    		ImGui::Checkbox("##en_vib", &enable_vibrance_);
+
+            ImGui::SliderFloat("Strength",         &pp_data_.vib_strength, -1.0f, 2.0f);
             ImGui::SliderFloat3("Balance", (float*)&pp_data_.vib_balance, 0.0f, 1.0f);
             ImGui::TreePop();
             ImGui::Separator();
-        }*/
+        }
 
     ImGui::End();
 
@@ -101,32 +124,44 @@ void LayerBatch2D::on_attach()
 {
 	renderer_2D_ = std::make_unique<BatchRenderer2D>(batch_size_);
 	// atlas_.load("textures/atlas/set2.png");
-	atlas_.load("textures/atlas/set2.cat");
+	atlas_.load("textures/atlas/set1.cat");
 
 	// List of random sub-textures to use
 	tiles_ =
 	{
-		"stonea32"_h,
+		"thatcha64"_h,
+		"stonea64"_h,
+		"pavingc64"_h,
+		"tileroofa64"_h,
 		"pavingd64"_h,
 		"paneling64"_h,
-		"dirt32"_h,
-		"pavingd32"_h,
-		"rockb32"_h,
 		"rockc64"_h,
 		"rocka64"_h,
 		"thatchb64"_h,
-		"rockd32"_h,
 		"sand64"_h,
 		"planks64"_h,
 		"rocke64"_h,
-		"planks32"_h,
-		"clover32"_h,
-		"grass32"_h,
 		"stonewalld64"_h,
 		"pavinge64"_h,
 		"stonec64"_h,
 		"snow64"_h,
-		"rockb64"_h
+		"rockb64"_h,
+		"stonewallb64"_h,
+		"leaves64"_h,
+		"rockd64"_h,
+		"woodfloorb64"_h,
+		"pavingf64"_h,
+		"clover64"_h,
+		"tileroofb64"_h,
+		"grass64"_h,
+		"dirt64"_h,
+		"stoneb64"_h,
+		"woodfloora64"_h,
+		"stonewallc64"_h,
+		"pavinga64"_h,
+		"rockf64"_h,
+		"pavingb64"_h,
+		"stonewalla64"_h
 	};
 
 	//dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
@@ -145,6 +180,13 @@ void LayerBatch2D::on_update(GameClock& clock)
 	tt_ += dt;
 	if(tt_>=5.f)
 		tt_ = 0.f;
+
+    pp_data_.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, enable_chromatic_aberration_);
+    pp_data_.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, enable_exposure_tone_mapping_);
+    pp_data_.set_flag_enabled(PP_EN_VIBRANCE, enable_vibrance_);
+    pp_data_.set_flag_enabled(PP_EN_SATURATION, enable_saturation_);
+    pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
+    pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
 
 	renderer_2D_->begin_scene(camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
 	{
@@ -171,7 +213,8 @@ void LayerBatch2D::on_update(GameClock& clock)
 				float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 2.f/float(len_grid_-1);
 				float pos_y = -1.f + 2.f*yy/float(len_grid_-1) + yy_offset;
 
-				hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
+				// hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
+				hash_t tile = tiles_.at((yy/3 + xx/5)%(tiles_.size()-1));
 				renderer_2D_->draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, atlas_.get_uv(tile));
 			}
 		}

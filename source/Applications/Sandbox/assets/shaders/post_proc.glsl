@@ -22,31 +22,54 @@ layout(location = 0) out vec4 out_color;
 
 uniform sampler2D us_input;
 
-struct PostProcData
-{
-	// Chromatic aberration
-	float ca_shift;
-	float ca_strength;
-	// Vibrance
-	// float vib_strength;
-	// vec3 vib_balance;
-
-	vec2 fb_size;
-};
-
 layout(std140) uniform post_proc_layout
 {
-    PostProcData pp_data;
+	vec4 u_vib_balance;     // Vibrance
+	vec4 u_cor_gamma;       // Color correction
+	float u_ca_shift;       // Chromatic aberration
+	float u_ca_strength;    // Chromatic aberration
+	float u_tm_exposure;    // Exposure tone mapping
+	float u_vib_strength;   // Vibrance
+	float u_cor_saturation; // Color correction
+	float u_cor_contrast;   // Color correction
+	
+	vec2 u_fb_size;         // Framebuffer size
+	int u_flags;			// Flags to enable/disable post-processing features
 };
+
+#define PP_EN_CHROMATIC_ABERRATION  1
+#define PP_EN_EXPOSURE_TONE_MAPPING 2
+#define PP_EN_VIBRANCE              4
+#define PP_EN_SATURATION            8
+#define PP_EN_CONTRAST              16
+#define PP_EN_GAMMA                 32
 
 void main()
 {
 	vec4 in_hdr = texture(us_input, v_uv);
-	vec3 color_hdr = in_hdr.rgb;
+	vec3 color = in_hdr.rgb;
 
-    color_hdr = chromatic_aberration_rgb(us_input, v_uv, pp_data.fb_size, pp_data.ca_shift, pp_data.ca_strength);
+	// Chromatic aberration
+    if(bool(u_flags & PP_EN_CHROMATIC_ABERRATION))
+    	color = chromatic_aberration_rgb(us_input, v_uv, u_fb_size, u_ca_shift, u_ca_strength);
 
-    // color_hdr = vibrance_rgb(color_hdr, pp_data.vib_balance, pp_data.vib_strength);
+    // Tone mapping
+    if(bool(u_flags & PP_EN_EXPOSURE_TONE_MAPPING))
+    	color = exposure_tone_mapping_rgb(color, u_tm_exposure);
+    else
+    	color = reinhard_tone_mapping_rgb(color);
 
-    out_color = vec4(color_hdr, in_hdr.a);
+    // Vibrance
+    if(bool(u_flags & PP_EN_VIBRANCE))
+    	color = vibrance_rgb(color, u_vib_balance.rgb, u_vib_strength);
+
+    // Color correction
+    if(bool(u_flags & PP_EN_SATURATION))
+    	color = saturate_rgb(color, max(0.0f, u_cor_saturation));
+    if(bool(u_flags & PP_EN_CONTRAST))
+    	color = contrast_rgb(color, u_cor_contrast);
+    if(bool(u_flags & PP_EN_GAMMA))
+    	color = gamma_correct_rgb(color, u_cor_gamma.rgb);
+
+    out_color = vec4(color, in_hdr.a);
 }
