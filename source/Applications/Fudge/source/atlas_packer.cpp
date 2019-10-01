@@ -4,13 +4,13 @@
 
 #include "core/cat_file.h"
 #include "core/z_wrapper.h"
+#include "debug/logger.h"
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "ft2build.h"
 #include FT_FREETYPE_H
 
-#include <iostream>
 #include <fstream>
 
 using namespace erwin;
@@ -54,7 +54,7 @@ void init_fonts()
     // Init freetype
     if(FT_Init_FreeType(&ft_))
     {
-        std::cout << "Could not init FreeType Library." << std::endl;
+        DLOGE("fudge") << "Could not init FreeType Library." << std::endl;
         exit(0);
     }
 }
@@ -91,7 +91,7 @@ static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width,
         elt.name[str_size] = '\0';
 
         if(img.name.size()>31)
-            std::cout << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
+            DLOGW("fudge") << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
 
         elt.x = img.x;
         elt.y = height-img.y - img.height; // Bottom left corner y
@@ -134,8 +134,8 @@ static void export_atlas_png(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
     ofs.close();
 
     // Export
-    std::cout << "-> export: " << out_atlas << std::endl;
-    std::cout << "-> export: " << out_remap << std::endl;
+    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
 }
 
@@ -148,7 +148,7 @@ static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
 
     // Export
     fs::path out_atlas = output_dir / (out_name + ".cat");
-    std::cout << "-> export: " << out_atlas << std::endl;
+    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
     cat::write_cat(
     {
         out_atlas,
@@ -209,8 +209,8 @@ static void export_font_atlas_png(const std::vector<Character>& characters, cons
     ofs.close();
 
     // Export
-    std::cout << "-> export: " << out_atlas << std::endl;
-    std::cout << "-> export: " << out_remap << std::endl;
+    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
 
     // Cleanup
@@ -235,7 +235,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
             img.y = 0;
             if(!img.data)
             {
-                std::cout << "Error while loading image: " << entry.path().filename() << std::endl;
+    			DLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
                 continue;
             }
 
@@ -249,7 +249,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
     auto result_size = fudge::pack(rectangles);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+    DLOG("fudge",1) << "Resultant bin size: " << WCC('v') << out_w << "x" << out_h << std::endl;
 
     // Update image positions
     for(int ii=0; ii<rectangles.size(); ++ii)
@@ -265,12 +265,12 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
         if(out_w%4)
         {
             out_w += (4-out_w%4);
-            std::cout << "Padded width to: " << out_w << std::endl;
+            DLOG("fudge",1) << "Padded width to: "  << WCC('v') << out_w << std::endl;
         }
         if(out_h%4)
         {
             out_h += (4-out_h%4);
-            std::cout << "Padded height to: " << out_h << std::endl;
+            DLOG("fudge",1) << "Padded height to: " << WCC('v') << out_h << std::endl;
         }
     }
 
@@ -310,7 +310,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
     FT_Face face;
     if(FT_New_Memory_Face(ft_, reinterpret_cast<FT_Byte*>(&buffer[0]), buffer.size(), 0, &face))
     {
-        std::cout << "Failed to load font: " << input_font << std::endl;
+        DLOGE("fudge") << "Failed to load font: " << input_font << std::endl;
         return;
     }
 
@@ -329,7 +329,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
         // Load character glyph
         if(FT_Load_Char(face, cc, FT_LOAD_RENDER))
         {
-            std::cout << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
+            DLOGE("fudge") << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
             cc = FT_Get_Next_Char(face, cc, &index);
             if(!index)
                 break;
@@ -339,7 +339,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
         // but we don't save them in the atlas.
         if(face->glyph->bitmap.width == 0 && face->glyph->bitmap.rows == 0)
         {
-            std::cout << "Glyph: \'" << std::to_string(cc) << "\' has null size." << std::endl;
+            DLOGW("fudge") << "Glyph: \'" << std::to_string(cc) << "\' has null size." << std::endl;
             cc = FT_Get_Next_Char(face, cc, &index);
             if(!index)
                 break;
@@ -375,7 +375,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
     auto result_size = fudge::pack(rectangles,1000);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    std::cout << "Resultant bin size: " << out_w << "x" << out_h << std::endl;
+    DLOG("fudge",1) << "Resultant bin size: " << WCC('v') << out_w << "x" << out_h << std::endl;
 
     // Update character positions
     for(int ii=0; ii<rectangles.size(); ++ii)

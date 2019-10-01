@@ -2,14 +2,36 @@
 #include <cstring>
 #include <iostream>
 
-#include "core/core.h"
 #include "core/cat_file.h"
+#include "core/core.h"
 #include "core/z_wrapper.h"
 
 namespace erwin
 {
 namespace cat
 {
+
+// CAT file format
+//#pragma pack(push,1)
+struct CATHeader
+{
+    uint32_t magic;                 // Magic number to check file format validity
+    uint16_t version_major;         // Version major number
+    uint16_t version_minor;         // Version minor number
+    uint16_t texture_width;         // Width of texture in pixels
+    uint16_t texture_height;        // Height of texture in pixels
+    uint16_t texture_compression;   // Type of (lossy) texture compression
+    uint16_t lossless_compression;  // Type of (lossless) blob compression
+    uint64_t texture_blob_size;     // Size of texture blob
+    uint64_t blob_inflate_size;     // Size of inflated texture blob (after blob decompression)
+    uint64_t remapping_blob_size;   // Size of remapping table
+};
+//#pragma pack(pop)
+
+#define CAT_MAGIC 0x54414357 // ASCII(WCAT)
+#define CAT_VERSION_MAJOR 1
+#define CAT_VERSION_MINOR 1
+
 void read_cat(CATDescriptor& desc)
 {
     std::ifstream ifs(desc.filepath, std::ios::binary);
@@ -48,7 +70,7 @@ void read_cat(CATDescriptor& desc)
     desc.remapping_blob = new char[desc.remapping_blob_size];
     ifs.read(reinterpret_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
 
-
+    ifs.close();
 }
 
 void CATDescriptor::release()

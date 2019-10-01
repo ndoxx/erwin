@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <regex>
 
 #include "debug/logger_thread.h"
 #include "debug/logger.h"
 #include "debug/stack_trace.h"
-#include "math/math3d.h"
 #include "math/color.h"
 
 namespace erwin
@@ -165,7 +165,7 @@ void LoggerThread::create_channel(const std::string& name, uint8_t verbosity)
     }
 
 	std::string short_name = name.substr(0,3);
-	math::vec3 bgcolor = color::random_color(hname+CHANNEL_STYLE_PALETTE, 0.8f, 0.4f);
+	glm::vec3 bgcolor = color::random_color(hname+CHANNEL_STYLE_PALETTE, 0.8f, 0.4f);
 	
 	std::stringstream ss;
 	ss << "\033[1;48;2;" << uint32_t(bgcolor[0]*255) << ";" << uint32_t(bgcolor[1]*255) << ";" << uint32_t(bgcolor[2]*255) << "m";

@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -13,7 +12,10 @@
 #include "inih/cpp/INIReader.h"
 
 #include "atlas_packer.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
 
+using namespace erwin;
 
 static fs::path s_self_path;  // Path to executable
 static fs::path s_root_path;  // Path to root directory of Erwin engine
@@ -37,12 +39,12 @@ static fs::path get_selfpath()
     }
     else
     {
-        std::cerr << "Cannot read self path using readlink." << std::endl;
+        DLOGE("fudge") << "Cannot read self path using readlink." << std::endl;
         return fs::path();
     }
 #elif _WIN32
 
-    std::cerr << "get_selfpath() not yet implemented." << std::endl;
+    DLOGE("fudge") << "get_selfpath() not yet implemented." << std::endl;
     return fs::path();
 
 #endif
@@ -51,32 +53,32 @@ static fs::path get_selfpath()
 // Read configuration file (.ini) and setup paths
 static bool read_conf(const fs::path& path)
 {
-    std::cout << "Reading atlas tool config file." << std::endl;
+    DLOGN("fudge") << "Reading atlas tool config file." << std::endl;
 
     if(!fs::exists(path))
     {
-        std::cout << "File " << path << " does not exist." << std::endl;
+        DLOGE("fudge") << "File " << path << " does not exist." << std::endl;
         return false;
     }
 
     INIReader reader(path.string().c_str());
     if(reader.ParseError() < 0)
     {
-        std::cout << "Can't load 'fudge.ini'" << std::endl;
+        DLOGE("fudge") << "Can't load 'fudge.ini'" << std::endl;
         return false;
     }
 
     s_asset_path = s_root_path / reader.Get("paths", "upack", "UNKNOWN");
     if(!fs::exists(s_asset_path))
     {
-        std::cout << "Path " << s_asset_path << " does not exist." << std::endl;
+        DLOGE("fudge") << "Path " << s_asset_path << " does not exist." << std::endl;
         return false;
     }
 
     s_fonts_path = s_root_path / reader.Get("paths", "fonts", "UNKNOWN");
     if(!fs::exists(s_fonts_path))
     {
-        std::cout << "Path " << s_fonts_path << " does not exist." << std::endl;
+        DLOGE("fudge") << "Path " << s_fonts_path << " does not exist." << std::endl;
         return false;
     }
 
@@ -87,7 +89,7 @@ static bool read_conf(const fs::path& path)
         s_tex_compression = fudge::Compression::DXT;
     else
     {
-        std::cout << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
+        DLOGE("fudge") << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
         return false;
     }
 
@@ -96,7 +98,7 @@ static bool read_conf(const fs::path& path)
         s_fnt_compression = fudge::Compression::None;
     else
     {
-        std::cout << "Unrecognized compression specifier for fonts: " << comp_str << std::endl;
+        DLOGE("fudge") << "Unrecognized compression specifier for fonts: " << comp_str << std::endl;
         return false;
     }
 
@@ -107,7 +109,7 @@ static bool read_conf(const fs::path& path)
         fudge::set_compression(fudge::Compression::Deflate);
     else
     {
-        std::cout << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
+        DLOGE("fudge") << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
         return false;
     }
 
@@ -129,79 +131,85 @@ static std::string grad(float a)
     return ss.str();
 }
 
-static const std::string S_SECTION = "\033[1;38;2;255;255;153m";
-static const std::string S_DEF     = "\033[0m";
-
 static void show_logo()
 {
-    std::cout << grad(0.0f) << " (                              (                                " << std::endl;
-    std::cout << grad(0.2f) << " )\\ )        (                  )\\ )               )             " << std::endl;
-    std::cout << grad(0.4f) << "(()/(   (    )\\ )  (  (     (  (()/(    )       ( /(    (   (    " << std::endl;
-    std::cout << grad(0.5f) << " /(_)) ))\\  (()/(  )\\))(   ))\\  /(_))( /(   (   )\\())  ))\\  )(   " << std::endl;
-    std::cout << grad(0.6f) << "(_))_|/((_)  ((_))((_))\\  /((_)(_))  )(_))  )\\ ((_)\\  /((_)(()\\  " << std::endl;
-    std::cout << grad(0.7f) << "| |_ (_))(   _| |  (()(_)(_))  | _ \\((_)_  ((_)| |(_)(_))   ((_) " << std::endl;
-    std::cout << grad(0.8f) << "| __|| || |/ _` | / _` | / -_) |  _// _` |/ _| | / / / -_) | '_| " << std::endl;
-    std::cout << grad(0.9f) << "|_|   \\_,_|\\__,_| \\__, | \\___| |_|  \\__,_|\\__| |_\\_\\ \\___| |_|   " << std::endl;
-    std::cout << grad(1.0f) << "                  |___/                                          \033[0m" << std::endl;
-    std::cout << "\033[1;48;2;153;0;0m                        Atlas packer tool                        \033[0m" << std::endl;
-    std::cout << std::endl;
+    DLOGR("fudge") << grad(0.0f) << " (                              (                                " << std::endl;
+    DLOGR("fudge") << grad(0.2f) << " )\\ )        (                  )\\ )               )             " << std::endl;
+    DLOGR("fudge") << grad(0.4f) << "(()/(   (    )\\ )  (  (     (  (()/(    )       ( /(    (   (    " << std::endl;
+    DLOGR("fudge") << grad(0.5f) << " /(_)) ))\\  (()/(  )\\))(   ))\\  /(_))( /(   (   )\\())  ))\\  )(   " << std::endl;
+    DLOGR("fudge") << grad(0.6f) << "(_))_|/((_)  ((_))((_))\\  /((_)(_))  )(_))  )\\ ((_)\\  /((_)(()\\  " << std::endl;
+    DLOGR("fudge") << grad(0.7f) << "| |_ (_))(   _| |  (()(_)(_))  | _ \\((_)_  ((_)| |(_)(_))   ((_) " << std::endl;
+    DLOGR("fudge") << grad(0.8f) << "| __|| || |/ _` | / _` | / -_) |  _// _` |/ _| | / / / -_) | '_| " << std::endl;
+    DLOGR("fudge") << grad(0.9f) << "|_|   \\_,_|\\__,_| \\__, | \\___| |_|  \\__,_|\\__| |_\\_\\ \\___| |_|   " << std::endl;
+    DLOGR("fudge") << grad(1.0f) << "                  |___/                                          \033[0m" << std::endl;
+    DLOGR("fudge") << "\033[1;48;2;153;0;0m                        Atlas packer tool                        \033[0m" << std::endl;
+    DLOGR("fudge") << std::endl;
+}
+
+static void init_logger()
+{
+    WLOGGER.create_channel("fudge", 3);
+    WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
+    WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log"));
+    WLOGGER.set_single_threaded(true);
 }
 
 int main(int argc, char const *argv[])
 {
+    init_logger();
     show_logo();
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
-    std::cout << S_SECTION << "Locating unpacked assets." << S_DEF << std::endl;
+    DLOGN("fudge") << "Locating unpacked assets." << std::endl;
     s_self_path = get_selfpath();
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
 
-    std::cout << "-> Self path: " << s_self_path << std::endl;
-    std::cout << "-> Root path: " << s_root_path << std::endl;
-    std::cout << "-> Conf path: " << s_conf_path << std::endl;
+    DLOGI << "Self path: " << WCC('p') << s_self_path << std::endl;
+    DLOGI << "Root path: " << WCC('p') << s_root_path << std::endl;
+    DLOGI << "Conf path: " << WCC('p') << s_conf_path << std::endl;
 
     if(!read_conf(s_conf_path / "fudge.ini"))
     {
-        std::cout << "Could not complete configuration step, exiting." << std::endl;
+        DLOGE("fudge") << "Could not complete configuration step, exiting." << std::endl;
         exit(0);
     }
-    std::cout << "-> Unpacked assets: " << fs::relative(s_asset_path, s_root_path) << std::endl;
-    std::cout << "-> Fonts:           " << fs::relative(s_fonts_path, s_root_path) << std::endl;
+    DLOGI << "Unpacked assets: " << WCC('p') << fs::relative(s_asset_path, s_root_path) << std::endl;
+    DLOGI << "Fonts:           " << WCC('p') << fs::relative(s_fonts_path, s_root_path) << std::endl;
 
-    std::cout << std::endl;
-    std::cout << "--------------------------------------------------------------------------------" << std::endl;
-    std::cout << std::endl;
+    DLOGR("fudge") << std::endl;
+    DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+    DLOGR("fudge") << std::endl;
 
     // * For each sub-directory in upack directory, create an atlas containing every image in it,
     //   whose name is the sub-directory name
-    std::cout << S_SECTION << "Iterating unpacked assets directories." << S_DEF << std::endl;
+    DLOGN("fudge") << "Iterating unpacked assets directories." << std::endl;
     for(auto& entry: fs::directory_iterator(s_asset_path))
     {
         if(entry.is_directory())
         {
-            std::cout << "*  Processing directory: " << entry.path().stem() << std::endl;
+            DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
             make_atlas(entry.path(), s_asset_path.parent_path(), s_tex_compression);
-            std::cout << std::endl;
+            DLOGR("fudge") << std::endl;
         }
     }
 
-    std::cout << "--------------------------------------------------------------------------------" << std::endl;
-    std::cout << std::endl;
+    DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+    DLOGR("fudge") << std::endl;
 
     // * Generate an atlas for each font in fonts directory
     fudge::init_fonts();
 
-    std::cout << S_SECTION << "Iterating fonts." << S_DEF << std::endl;
+    DLOGN("fudge") << "Iterating fonts." << std::endl;
     for(auto& entry: fs::directory_iterator(s_fonts_path))
     {
         if(entry.is_regular_file() && entry.path().extension().string().compare("ttf"))
         {
-            std::cout << "*  Processing font: " << entry.path().filename() << std::endl;
+            DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
             std::string font_name = entry.path().stem().string();
             make_font_atlas(entry.path(), s_asset_path.parent_path(), s_fnt_compression, 32);
-            std::cout << std::endl;
+            DLOGR("fudge") << std::endl;
         }
     }
 
