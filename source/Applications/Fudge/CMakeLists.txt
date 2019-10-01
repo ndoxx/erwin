@@ -2,6 +2,8 @@ set(SRC_FUDGE
     source/fudge.cpp
     source/stb_build.cpp
     source/dxt_compressor.cpp
+    source/atlas_packer.cpp
+    source/optimal_packing.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c

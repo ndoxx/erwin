@@ -14,7 +14,8 @@ namespace fs = std::filesystem;
 
 namespace erwin
 {
-
+namespace cat
+{
 enum class TextureCompression: uint16_t
 {
 	None = 0,
@@ -77,4 +78,5 @@ extern void write_cat(const CATDescriptor& desc);
 
 extern void traverse_remapping(const CATDescriptor& desc, std::function<void(const CATAtlasRemapElement&)> visit);
 
+} // namespace cat
 } // namespace erwin

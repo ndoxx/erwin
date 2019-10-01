@@ -8,7 +8,8 @@
 
 namespace erwin
 {
-
+namespace cat
+{
 void read_cat(CATDescriptor& desc)
 {
     std::ifstream ifs(desc.filepath, std::ios::binary);
@@ -103,5 +104,5 @@ void traverse_remapping(const CATDescriptor& desc, std::function<void(const CATA
 		visit(*(reinterpret_cast<const CATAtlasRemapElement*>(desc.remapping_blob) + ii));
 }
 
-
+} // namespace cat
 } // namespace erwin

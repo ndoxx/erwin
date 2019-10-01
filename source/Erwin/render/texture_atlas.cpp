@@ -48,6 +48,7 @@ void TextureAtlas::load(const fs::path& filepath)
 
 		std::ifstream ifs(filesystem::get_asset_dir() / remapping_file);
 		std::string line;
+
 		while(std::getline(ifs, line))
 		{
 		    if(line[0] != '#')
@@ -58,8 +59,12 @@ void TextureAtlas::load(const fs::path& filepath)
 		        int x, y, w, h;
 		        iss >> key >> x >> y >> w >> h;
 
-		        // Calculate UVs for bottom left and top right and save in remapping table
-		        remapping_.insert(std::make_pair(H_(key.c_str()), glm::vec4{x/width, y/height, (x+w)/width, (y+h)/height}));
+		        // Calculate UVs for bottom left and top right corners
+		        // Also apply half-pixel correction to address the texel centers 
+		        // rather than the edges, and avoid bleeding
+		        glm::vec4 uvs((x+0.5f)/width, (y+0.5f)/height, (x-0.5f+w)/width, (y-0.5f+h)/height);
+		        // Save uvs in remapping table
+		        remapping_.insert(std::make_pair(H_(key.c_str()), uvs));
 		    }
 		}
 	}
@@ -67,30 +72,32 @@ void TextureAtlas::load(const fs::path& filepath)
 	{
 		DLOGI << "CAT: " << WCC('p') << filepath << WCC(0) << std::endl;
 
-		CATDescriptor desc;
+		cat::CATDescriptor desc;
 		desc.filepath = filesystem::get_asset_dir() / filepath;
 
-		read_cat(desc);
+		cat::read_cat(desc);
 
 		ImageFormat format;
 		switch(desc.texture_compression)
 		{
-			case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
-			case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
-			case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
+			case cat::TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+			case cat::TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
+			case cat::TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
 		}
 		texture_ = Texture2D::create(Texture2DDescriptor{desc.texture_width,
 									  					 desc.texture_height,
 									  					 desc.texture_blob,
 									  					 format,
-									  					 MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST});
+									  					 MAG_NEAREST | MIN_NEAREST});
 
 		float width = texture_->get_width();
 		float height = texture_->get_height();
 
-		traverse_remapping(desc, [&](const CATAtlasRemapElement& remap)
+		cat::traverse_remapping(desc, [&](const cat::CATAtlasRemapElement& remap)
 		{
-		    remapping_.insert(std::make_pair(H_(remap.name), glm::vec4{remap.x/width, remap.y/height, (remap.x+remap.w)/width, (remap.y+remap.h)/height}));
+			glm::vec4 uvs((remap.x+0.5f)/width, (remap.y+0.5f)/height, 
+				          (remap.x-0.5f+remap.w)/width, (remap.y-0.5f+remap.h)/height);
+		    remapping_.insert(std::make_pair(H_(remap.name), uvs));
 		});
 
 		desc.release();

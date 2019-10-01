@@ -781,6 +781,8 @@ Chaque pixel est au format RGBA (4 bytes per pixel), et l'offset de chaque pixel
 
 ###Sources:
     [1] https://www.researchgate.net/publication/259000525_Real-Time_DXT_Compression
+    [2] http://kylehalladay.com/blog/tutorial/2016/11/04/Texture-Atlassing-With-Mips.html
+    [3] https://0fps.net/2013/07/09/texture-atlases-wrapping-and-mip-mapping/
 
 
 ##Camera & Camera controller
@@ -1116,3 +1118,26 @@ post_proc_shader.unbind();
 Lors de mon implémentation de la passe de post-processing dans _Renderer2D_ j'ai eu droit à un violent segfault lors du premier draw call après un renderer swap vers _InstancedRenderer2D_. Le seul bout de code que j'avais ajouté était un vertex array en membre privé de _Renderer2D_, initialisé dans le constructeur. Le vertex array utilisé par _InstancedRenderer2D_ contient un simple quad utilisé pour l'instancing, et c'est celui-là qui foutait la merde lors de l'appel à draw_indexed_instanced(). Les deux vertex array sont indépendant du point de vue de mon code.
 GDB ne m'a pas beaucoup aidé : j'avais identifié le dernier call avant le segfault après un backtrace, point barre. En discutant avec Jess j'ai établi que ce type de side-effect ressemblait beaucoup à du state leaking OpenGL. Je suis donc allé voir dans render/ogl_buffer.cpp, plus particulièrement dans OGLVertexArray::add_vertex_buffer() et OGLVertexArray::set_index_buffer(), et à tout hasard, rajouté un glBindVertexArray(0) après les divers calls OpenGL pour unbind le vertex array immédiatement après y avoir touché. Surprise : tout fonctionne de nouveau, le renderer swap ne fait plus rien planter.
 Vraisemblablement, le state leaking avait entraîné que le vertex buffer ou l'index buffer d'un des deux vertex array se retrouvait lié dans l'état du second. Après destruction de ces VBO/IBO lors du swap, je devais me retrouver avec un vertex array pointant sur des objets détruits, d'où le segfault... Merci Jess de m'écouter jargonner !
+
+
+#[30-09-19]
+##Atlas bleeding
+Mon remapping était assez naïf: au chargement d'un atlas je calculais simplement les coordonnées UVs des coins inférieur gauche et supérieur droit pour chaque sous-texture. Ceci entraînait que sur les bords d'une sous-texture, le sampler interpolait avec la sous-texture d'à côté, provoquant un léger bleeding. En réalité, il faut adresser les centres des texels plutôt que les bords (voir [1] et [2]). Pour ceci, une simple translation positive d'un demi texel pour le coin inférieur gauche et négative d'un demi texel pour le coin supérieur droit suffit à arranger le problème :
+```cpp
+// Calculate UVs for bottom left and top right corners
+// Also apply half-pixel correction to address the texel centers and avoid bleeding
+glm::vec4 uvs((x+0.5f)/width, (y+0.5f)/height, (x-0.5f+w)/width, (y-0.5f+h)/height);
+// Save uvs in remapping table
+remapping_.insert(std::make_pair(H_(key.c_str()), uvs));
+```
+Cette technique s'appèle *half-pixel correction*.
+
+![Pas bien.\label{figAtlWrongUV}](../Erwin_rel/Figures/atlas_wrong_UVs.png){width=5cm height=5cm}
+![Bien.\label{figAtlOkUV}](../Erwin_rel/Figures/atlas_ok_UVs.png){width=5cm height=5cm}
+
+
+###Sources:
+    [1] https://gamedev.stackexchange.com/questions/46963/how-to-avoid-texture
+        -bleeding-in-a-texture-atlas
+    [2] https://docs.microsoft.com/en-us/windows/win32/direct3d9/directly
+        -mapping-texels-to-pixels?redirectedfrom=MSDN
