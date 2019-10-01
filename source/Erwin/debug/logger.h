@@ -57,15 +57,15 @@ static inline LoggerStream& get_log(hash_t channel, MsgType msg_type, uint8_t se
 
 // These macros will be optimized out (and arguments not evaluated)
 // when LOGGING_ENABLED is set to 0. Should be better performance wise than using a null stream.
-#define DLOG(C,S) if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::NORMAL, (S) )
-#define DLOGI     if constexpr(!LOGGING_ENABLED); else get_log(         0, dbg::MsgType::ITEM, 4)
-#define DLOGR(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::RAW, 0)
-#define DLOGN(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::NOTIFY, 0)
-#define DLOGW(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::WARNING, 1, __LINE__, __FILE__ )
-#define DLOGE(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::ERROR, 2, __LINE__, __FILE__ )
-#define DLOGF(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::FATAL, 3, __LINE__, __FILE__ )
-#define DLOGG(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::GOOD, 3, __LINE__, __FILE__ )
-#define DLOGB(C)  if constexpr(!LOGGING_ENABLED); else get_log( H_( (C) ), dbg::MsgType::BAD, 3, __LINE__, __FILE__ )
-#define BANG()    if constexpr(!LOGGING_ENABLED); else get_log(  "core"_h, dbg::MsgType::BANG, 3) << __FILE__ << ":" << __LINE__ << std::endl
+#define DLOG(C,S) if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::NORMAL, (S) )
+#define DLOGI     if constexpr(!LOGGING_ENABLED); else get_log(                 0, erwin::dbg::MsgType::ITEM, 4)
+#define DLOGR(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::RAW, 0)
+#define DLOGN(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::NOTIFY, 0)
+#define DLOGW(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::WARNING, 1, __LINE__, __FILE__ )
+#define DLOGE(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::ERROR, 2, __LINE__, __FILE__ )
+#define DLOGF(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::FATAL, 3, __LINE__, __FILE__ )
+#define DLOGG(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::GOOD, 3, __LINE__, __FILE__ )
+#define DLOGB(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::BAD, 3, __LINE__, __FILE__ )
+#define BANG()    if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_("core"), erwin::dbg::MsgType::BANG, 3) << __FILE__ << ":" << __LINE__ << std::endl
 
 } // namespace erwin

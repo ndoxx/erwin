@@ -28,3 +28,6 @@
 [submodule "source/vendor/zlib"]
 	path = source/vendor/zlib
 	url = https://github.com/madler/zlib.git
+[submodule "source/vendor/rapidxml"]
+	path = source/vendor/rapidxml
+	url = https://github.com/dwd/rapidxml.git

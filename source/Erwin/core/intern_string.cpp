@@ -24,8 +24,6 @@ static void parse(std::istream& stream)
         iss >> key >> value;
         s_intern_strings.insert(std::make_pair(key, value));
     }
-
-    s_intern_strings.insert(std::make_pair("???"_h, "???"));
 }
 
 void init(const fs::path& filepath)
@@ -35,13 +33,13 @@ void init(const fs::path& filepath)
     parse(ifs);
 }
 
-const std::string& resolve(hash_t hname)
+std::string resolve(hash_t hname)
 {
     auto it = s_intern_strings.find(hname);
     if(it!=s_intern_strings.end())
         return it->second;
     else
-        return s_intern_strings.at("???"_h);
+        return std::to_string(hname);
 }
 
 void add(const std::string& str)

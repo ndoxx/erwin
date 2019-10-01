@@ -1,6 +1,7 @@
 #include "core/tom_file.h"
 #include "core/core.h"
 #include "core/z_wrapper.h"
+#include "debug/logger.h"
 
 #include <cstring>
 
@@ -18,8 +19,7 @@ struct TOMHeader
     uint16_t version_minor;         // Version minor number
     uint16_t texture_width;         // Width of textures in pixels
     uint16_t texture_height;        // Height of textures in pixels
-    uint8_t  address_U;				// Texture wrap parameter for U coordinate
-    uint8_t  address_V;				// Texture wrap parameter for V coordinate
+    uint16_t address_UV;			// Texture wrap parameter
     uint16_t num_maps;              // Number of texture maps
     uint16_t blob_compression;      // Type of (lossless) blob compression
     uint64_t blob_size;             // Size of concat texture blob
@@ -36,6 +36,7 @@ struct BlockDescriptor
 {
 	uint8_t filter;		 // Minification & Magnification filter
 	uint8_t channels;	 // Number of color channels
+    uint8_t srgb;        // Use srgb?
 	uint8_t compression; // Texture compression
 	uint32_t size;		 // Size of texture data
 	uint64_t name;		 // Hashed name of texture map ("albedo"_h, "normal"_h, ...)
@@ -69,8 +70,7 @@ void read_tom(TOMDescriptor& desc)
     desc.width       = header.texture_width;
     desc.height      = header.texture_height;
     desc.compression = (LosslessCompression)header.blob_compression;
-    desc.address_U   = (TextureWrap)header.address_U;
-    desc.address_V   = (TextureWrap)header.address_V;
+    desc.address_UV  = (TextureWrap)header.address_UV;
 
     uint32_t num_maps          = header.num_maps;
     uint64_t blob_size         = header.blob_size;
@@ -83,10 +83,15 @@ void read_tom(TOMDescriptor& desc)
 
     for(auto&& block: blocks)
     {
+        // Sanity check
+        W_ASSERT(block.channels>0, "Tom: wrong number of texture channels: min is 1.");
+        W_ASSERT(block.channels<=4, "Tom: wrong number of texture channels: max is 4.");
+
     	TextureMapDescriptor bdesc =
     	{
 			(TextureFilter)block.filter,
 			block.channels,
+            (bool)block.srgb,
 			(TextureCompression)block.compression,
 			block.size,
 			nullptr,
@@ -148,6 +153,7 @@ void write_tom(const TOMDescriptor& desc)
 		{
 			(uint8_t)tmap.filter,
 			tmap.channels,
+            (uint8_t)tmap.srgb,
 			(uint8_t)tmap.compression,
 			tmap.size,
 			(uint64_t)tmap.name
@@ -163,8 +169,7 @@ void write_tom(const TOMDescriptor& desc)
 	header.version_minor     = TOM_VERSION_MINOR;
 	header.texture_width     = desc.width;
 	header.texture_height    = desc.height;
-	header.address_U         = (uint8_t)desc.address_U;
-	header.address_V         = (uint8_t)desc.address_V;
+	header.address_UV        = (uint16_t)desc.address_UV;
 	header.num_maps          = num_maps;
 	header.blob_compression  = (uint16_t)desc.compression;
 	header.blob_size         = blob_size;
@@ -197,13 +202,6 @@ void write_tom(const TOMDescriptor& desc)
 
     // Cleanup
     delete[] blob;
-}
-
-std::vector<WRef<Texture2D>> make_textures(TOMDescriptor& desc)
-{
-	std::vector<WRef<Texture2D>> textures;
-
-	return textures;
 }
 
 } // namespace tom

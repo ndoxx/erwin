@@ -37,13 +37,14 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
 
 set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )
 
 set(SRC_DEBUG

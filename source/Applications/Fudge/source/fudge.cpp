@@ -12,6 +12,7 @@
 #include "inih/cpp/INIReader.h"
 
 #include "atlas_packer.h"
+#include "texture_packer.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 
@@ -20,8 +21,9 @@ using namespace erwin;
 static fs::path s_self_path;  // Path to executable
 static fs::path s_root_path;  // Path to root directory of Erwin engine
 static fs::path s_conf_path;  // Path to configuration directory
-static fs::path s_asset_path; // Path to parent directory of unpacked image files
-static fs::path s_fonts_path; // Path to fonts folder
+static fs::path s_atlas_upack_path; // Path to parent directory of unpacked atlas image files
+static fs::path s_atlas_fonts_path; // Path to fonts folder
+static fs::path s_tmap_upack_path;  // Path to parent directory of unpacked texture maps
 
 static fudge::Compression s_tex_compression;
 static fudge::Compression s_fnt_compression;
@@ -68,21 +70,21 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    s_asset_path = s_root_path / reader.Get("paths", "upack", "UNKNOWN");
-    if(!fs::exists(s_asset_path))
+    s_atlas_upack_path = s_root_path / reader.Get("atlas", "upack_path", "UNKNOWN");
+    if(!fs::exists(s_atlas_upack_path))
     {
-        DLOGE("fudge") << "Path " << s_asset_path << " does not exist." << std::endl;
+        DLOGE("fudge") << "Path " << s_atlas_upack_path << " does not exist." << std::endl;
         return false;
     }
 
-    s_fonts_path = s_root_path / reader.Get("paths", "fonts", "UNKNOWN");
-    if(!fs::exists(s_fonts_path))
+    s_atlas_fonts_path = s_root_path / reader.Get("atlas", "fonts_path", "UNKNOWN");
+    if(!fs::exists(s_atlas_fonts_path))
     {
-        DLOGE("fudge") << "Path " << s_fonts_path << " does not exist." << std::endl;
+        DLOGE("fudge") << "Path " << s_atlas_fonts_path << " does not exist." << std::endl;
         return false;
     }
 
-    std::string comp_str = reader.Get("output", "texture_compression", "UNKNOWN");
+    std::string comp_str = reader.Get("atlas", "texture_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
         s_tex_compression = fudge::Compression::None;
     else if(!comp_str.compare("DXT"))
@@ -93,7 +95,7 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    comp_str = reader.Get("output", "font_compression", "UNKNOWN");
+    comp_str = reader.Get("atlas", "font_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
         s_fnt_compression = fudge::Compression::None;
     else
@@ -102,11 +104,29 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    comp_str = reader.Get("output", "blob_compression", "UNKNOWN");
+    comp_str = reader.Get("atlas", "blob_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
-        fudge::set_compression(fudge::Compression::None);
+        fudge::atlas::set_compression(fudge::Compression::None);
     else if(!comp_str.compare("deflate"))
-        fudge::set_compression(fudge::Compression::Deflate);
+        fudge::atlas::set_compression(fudge::Compression::Deflate);
+    else
+    {
+        DLOGE("fudge") << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
+        return false;
+    }
+
+    s_tmap_upack_path = s_root_path / reader.Get("texmap", "upack_path", "UNKNOWN");
+    if(!fs::exists(s_tmap_upack_path))
+    {
+        DLOGE("fudge") << "Path " << s_tmap_upack_path << " does not exist." << std::endl;
+        return false;
+    }
+
+    comp_str = reader.Get("texmap", "blob_compression", "UNKNOWN");
+    if(!comp_str.compare("none"))
+        fudge::texmap::set_compression(fudge::Compression::None);
+    else if(!comp_str.compare("deflate"))
+        fudge::texmap::set_compression(fudge::Compression::Deflate);
     else
     {
         DLOGE("fudge") << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
@@ -174,8 +194,9 @@ int main(int argc, char const *argv[])
         DLOGE("fudge") << "Could not complete configuration step, exiting." << std::endl;
         exit(0);
     }
-    DLOGI << "Unpacked assets: " << WCC('p') << fs::relative(s_asset_path, s_root_path) << std::endl;
-    DLOGI << "Fonts:           " << WCC('p') << fs::relative(s_fonts_path, s_root_path) << std::endl;
+    DLOGI << "Atlas unpacked:  " << WCC('p') << fs::relative(s_atlas_upack_path, s_root_path) << std::endl;
+    DLOGI << "Atlas fonts:     " << WCC('p') << fs::relative(s_atlas_fonts_path, s_root_path) << std::endl;
+    DLOGI << "Texmap unpacked: " << WCC('p') << fs::relative(s_tmap_upack_path, s_root_path) << std::endl;
 
     DLOGR("fudge") << std::endl;
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
@@ -183,14 +204,14 @@ int main(int argc, char const *argv[])
 
     // * For each sub-directory in upack directory, create an atlas containing every image in it,
     //   whose name is the sub-directory name
-    DLOGN("fudge") << "Iterating unpacked assets directories." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_asset_path))
+    DLOGN("fudge") << "Iterating unpacked atlases directories." << std::endl;
+    for(auto& entry: fs::directory_iterator(s_atlas_upack_path))
     {
         if(entry.is_directory())
         {
             DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
-            make_atlas(entry.path(), s_asset_path.parent_path(), s_tex_compression);
+            fudge::atlas::make_atlas(entry.path(), s_atlas_upack_path.parent_path(), s_tex_compression);
             DLOGR("fudge") << std::endl;
         }
     }
@@ -199,21 +220,38 @@ int main(int argc, char const *argv[])
     DLOGR("fudge") << std::endl;
 
     // * Generate an atlas for each font in fonts directory
-    fudge::init_fonts();
+    fudge::atlas::init_fonts();
 
     DLOGN("fudge") << "Iterating fonts." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_fonts_path))
+    for(auto& entry: fs::directory_iterator(s_atlas_fonts_path))
     {
         if(entry.is_regular_file() && entry.path().extension().string().compare("ttf"))
         {
             DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
             std::string font_name = entry.path().stem().string();
-            make_font_atlas(entry.path(), s_asset_path.parent_path(), s_fnt_compression, 32);
+            fudge::atlas::make_font_atlas(entry.path(), s_atlas_upack_path.parent_path(), s_fnt_compression, 32);
             DLOGR("fudge") << std::endl;
         }
     }
 
-    fudge::release_fonts();
+    fudge::atlas::release_fonts();
+
+    DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+    DLOGR("fudge") << std::endl;
+
+    // * For each sub-directory in upack directory, create a .tom file containing every image in it,
+    //   whose name is the sub-directory name
+    DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
+    for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
+    {
+        if(entry.is_directory())
+        {
+            DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
+
+            fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
+            DLOGR("fudge") << std::endl;
+        }
+    }
 
     return 0;
 }

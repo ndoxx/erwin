@@ -3,16 +3,18 @@ set(SRC_FUDGE
     source/stb_build.cpp
     source/dxt_compressor.cpp
     source/atlas_packer.cpp
+    source/texture_packer.cpp
     source/optimal_packing.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/file_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
     ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
    )

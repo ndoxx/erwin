@@ -16,7 +16,7 @@ extern void init(const fs::path& filepath);
 // Add an intern string to the registry
 extern void add(const std::string& str);
 // Resolve an intern string to a full string
-extern const std::string& resolve(hash_t hname);
+extern std::string resolve(hash_t hname);
 
 } // namespace istr
 } // namespace erwin

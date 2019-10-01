@@ -3,7 +3,6 @@
 #include "dxt_compressor.h"
 
 #include "core/cat_file.h"
-#include "core/z_wrapper.h"
 #include "debug/logger.h"
 
 #include "stb/stb_image.h"
@@ -17,6 +16,8 @@ using namespace erwin;
 using namespace rectpack2D;
 
 namespace fudge
+{
+namespace atlas
 {
 
 // For image texture atlas
@@ -91,7 +92,9 @@ static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width,
         elt.name[str_size] = '\0';
 
         if(img.name.size()>31)
+        {
             DLOGW("fudge") << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
+        }
 
         elt.x = img.x;
         elt.y = height-img.y - img.height; // Bottom left corner y
@@ -395,4 +398,5 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
     FT_Done_Face(face);
 }
 
+} // namespace atlas
 } // namespace fudge

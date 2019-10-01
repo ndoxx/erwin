@@ -2,17 +2,14 @@
 
 #include <filesystem>
 
+#include "common.h"
+
 namespace fs = std::filesystem;
 
 namespace fudge
 {
-
-enum class Compression: uint8_t
+namespace atlas
 {
-    None = 0,
-    DXT,
-    Deflate
-};
 
 // Initialize font library
 extern void init_fonts();
@@ -26,4 +23,5 @@ extern void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Co
 // raster_size (px): allows to scale the characters.
 extern void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Compression compr = Compression::None, uint32_t raster_size=32);
 
+} // namespace atlas
 } // namespace fudge

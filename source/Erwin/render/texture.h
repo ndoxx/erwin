@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "core/core.h"
 #include "core/file_system.h"
 
@@ -28,6 +30,7 @@ enum class TextureWrap: uint8_t
 
 enum class ImageFormat: uint8_t
 {
+    NONE = 0,
     R8,
     RGB8,
     RGBA8,
@@ -90,6 +93,8 @@ public:
 	static WRef<Texture2D> create(const fs::path& filepath);
 	// Create a 2D texture from descriptor
 	static WRef<Texture2D> create(const Texture2DDescriptor& descriptor);
+    // Generate a list of textures (maps) from a TOM file
+    static std::unordered_map<hash_t, WRef<Texture2D>> create_maps(const fs::path& filepath);
 };
 
 } // namespace erwin

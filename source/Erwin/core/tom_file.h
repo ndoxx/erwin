@@ -34,6 +34,7 @@ struct TextureMapDescriptor
 {
 	TextureFilter filter;
 	uint8_t channels;
+	bool srgb;
 	TextureCompression compression;
 	uint32_t size;
 	uint8_t* data;
@@ -48,8 +49,7 @@ struct TOMDescriptor
     uint16_t width;
     uint16_t height;
     LosslessCompression compression;
-    TextureWrap address_U;
-    TextureWrap address_V;
+    TextureWrap address_UV;
     std::vector<TextureMapDescriptor> texture_maps;
 
     void release();
@@ -59,14 +59,6 @@ struct TOMDescriptor
 extern void read_tom(TOMDescriptor& desc);
 // Write a TOM file using data contained in descriptor
 extern void write_tom(const TOMDescriptor& desc);
-// Generate a list of textures from an initialized TOM descriptor (will release descriptor memory)
-extern std::vector<WRef<Texture2D>> make_textures(TOMDescriptor& desc);
-// Shorthand to read a TOM file and generate textures right after
-inline std::vector<WRef<Texture2D>> read_textures(TOMDescriptor& desc)
-{
-	read_tom(desc);
-	return make_textures(desc);
-}
 
 } // namespace tom
 } // namespace erwin
