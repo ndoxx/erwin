@@ -130,17 +130,6 @@ static bool read_conf(const fs::path& path)
         return false;
     }
 
-    comp_str = reader.Get("texmap", "blob_compression", "UNKNOWN");
-    if(!comp_str.compare("none"))
-        fudge::texmap::set_compression(fudge::Compression::None);
-    else if(!comp_str.compare("deflate"))
-        fudge::texmap::set_compression(fudge::Compression::Deflate);
-    else
-    {
-        DLOGE("fudge") << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
-        return false;
-    }
-
     return true;
 }
 
@@ -251,19 +240,13 @@ int main(int argc, char const *argv[])
     if(fudge::texmap::configure(s_tmap_config_path))
     {
         DLOGR("fudge") << std::endl;
-        
+
         // * For each sub-directory in upack directory, create a .tom file containing every image in it,
         //   whose name is the sub-directory name
         DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
         for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
-        {
             if(entry.is_directory())
-            {
-                DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
-
                 fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
-            }
-        }
     }
     else
     {

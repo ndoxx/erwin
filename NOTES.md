@@ -1141,3 +1141,15 @@ Cette technique s'appèle *half-pixel correction*.
         -bleeding-in-a-texture-atlas
     [2] https://docs.microsoft.com/en-us/windows/win32/direct3d9/directly
         -mapping-texels-to-pixels?redirectedfrom=MSDN
+
+
+
+
+struct TexmapData
+{
+    std::string name;   // Name of texture map
+    stbi_uc* data;      // Image data
+    int width;          // Size of image
+    int height;
+    int channels;       // Number of color channels
+};

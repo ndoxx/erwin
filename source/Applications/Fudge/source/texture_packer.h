@@ -11,8 +11,6 @@ namespace fudge
 namespace texmap
 {
 
-// Set lossless compression option
-extern void set_compression(Compression compression);
 // Configure texture map sepcifications
 extern bool configure(const fs::path& filepath);
 // Create a tom file from texture maps found in input directory.

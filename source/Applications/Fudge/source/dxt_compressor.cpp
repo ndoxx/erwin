@@ -15,9 +15,9 @@ inline void extract_block(const uint8_t* in_ptr, int width, uint8_t* colorBlock)
     }
 }
 
-extern void compress_dxt_5(uint8_t* in_buf, uint8_t*& out_buf, uint32_t width, uint32_t height)
+extern uint8_t* compress_dxt_5(uint8_t* in_buf, uint32_t width, uint32_t height)
 {
-    out_buf = new uint8_t[width*height];
+    uint8_t* out_buf = new uint8_t[width*height];
     memset(out_buf, 0, width*height);
 
     uint8_t block[64];
@@ -32,6 +32,8 @@ extern void compress_dxt_5(uint8_t* in_buf, uint8_t*& out_buf, uint32_t width, u
             dst_offset += 16;
         }
     }
+
+    return out_buf;
 }
 
 } // namespace fudge

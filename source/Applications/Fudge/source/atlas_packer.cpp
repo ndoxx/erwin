@@ -144,8 +144,7 @@ static void export_atlas_png(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
 
 static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h)
 {
-    uint8_t* tex_blob;
-    fudge::compress_dxt_5(uncomp, tex_blob, out_w, out_h);
+    uint8_t* tex_blob = fudge::compress_dxt_5(uncomp, out_w, out_h);
 
     uint32_t dxt_size = out_w*out_h;
 
