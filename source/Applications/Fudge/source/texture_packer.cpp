@@ -343,6 +343,10 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
             {
             	DLOGI << "SRGB format." << std::endl;
             }
+	    	if(spec.compression == TextureCompression::DXT5)
+	    	{
+	    		DLOGI << "DXT5 compression." << std::endl;
+	    	}
 
             texture_maps.insert(std::make_pair(tmap_hname, tmap));
         }

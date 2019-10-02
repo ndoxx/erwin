@@ -1,6 +1,7 @@
 set(SRC_FUDGE
     source/fudge.cpp
     source/stb_build.cpp
+    source/asset_registry.cpp
     source/dxt_compressor.cpp
     source/atlas_packer.cpp
     source/texture_packer.cpp

@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-	Texture (o) Maps file
+	Texture & Operation Maps file
 */
 
 #include <vector>

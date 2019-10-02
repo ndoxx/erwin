@@ -1143,13 +1143,162 @@ Cette technique s'appèle *half-pixel correction*.
         -mapping-texels-to-pixels?redirectedfrom=MSDN
 
 
+#[02-10-19]
+##XML files
+J'ai retrouvé toutes les fonctionnalités de parsing des fichiers XML que j'avais développées sous WCore, mais en un peu mieux codées. La structure _XMLFile_ possède un constructeur qui enregistre un chemin d'accès. L'appel à la fonction read() va lire le fichier ciblé, le parser, et initialiser les quelques membres (DOM, buffer, racine). Cette structure possède aussi quelques fonctions pour modifier le DOM et une fonction d'écriture.
 
+```cpp
+    xml::XMLFile cfg(filepath);
+    if(!cfg.read())
+        // ...
+    auto* opt_node = cfg.root->first_node("Options");
+    if(xml::parse_node(opt_node, "BlobCompression", blob_compression_str))
+        // ...
+    for(auto* tmap_node=tmaps_node->first_node("TextureMap");
+        tmap_node;
+        tmap_node=tmap_node->next_sibling("TextureMap"))
+    {
+        // ...
+        xml::parse_attribute(tmap_node, "name", spec.name);
+        // ...
+```
 
-struct TexmapData
+##TOM files
+Hier j'ai codé un nouveau format de fichiers capable de contenir les différentes textures maps d'un même material. Le fichier contient un header qui spécifie les dimensions (communes) des texture maps, leur nombre (N), un paramètre de wrap, le type de compression lossless pour le blob de données, la taille compressée et non compressée du blob.
+Après ce header, on trouve N *Block descriptors*, chacun est spécifique à une texture map et contient un paramètre de filtrage, un nombre de color channels, une option SRGB, un type de compression de texture, une taille et un hash de nom de texture map.
+Le blob de données est constitué de toutes les texture maps concaténées, compressées pour celles qui doivent l'être, en représentation row major. Le blob entier est compressible avec un algo DEFLATE.
+
+Sur le modèle des CAT files, un TOM file peut être lu ou écrit grâce à un _TOMDescriptor_. Un tel descripteur spécifie un chemin d'accès et les divers paramètres globaux, mais en utilisant les types énumérés du moteur, plus un vecteur de _TextureMapDescriptor_, un par texture map, dans lesquels sont spécifiés les paramètres par-texture, dont un pointeur de données.
+
+##Fudge: Texture packer
+Fudge peut maintenant générer des TOM files automatiquement depuis des dossiers contenant les assets sous format image. Chaque asset voit ses texture maps rangées dans un sous dossier, chaque nom de fichier est le nom d'une map (albedo, normal, ...). L'asset produit porte le nom du sous-dossier. Un fichier de configuration au format XML permet de fixer quelques options, décrire les différentes texture maps, et également de spécifier des *groupes*.
+Un groupe rassemble plusieurs texture maps dans la même texture, de sorte à minimiser le nombre de textures chargées par le moteur et transmises aux shaders. Un asset qui possède toutes les texture maps d'un même groupe est qualifié pour utiliser celui-ci, et le groupe est généré automatiquement avant l'écriture au format TOM. Un groupe est un peu à l'image de ce que j'appelais les *texture blocks* sous WCore, mais c'est l'utilisateur qui les définit, ils ne sont pas fixés par l'engine. Reste à savoir de quelle manière je vais abstraire ces structures côté moteur pour m'assurer que chaque shader trouvera toutes ses ressources automatiquement, même si celles-ci sont groupées. Le grouping peut être désactivé.
+
+Voici un exemple de fichier de config :
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+    <Options>
+        <BlobCompression>DEFLATE</BlobCompression>
+        <AllowGrouping>true</AllowGrouping>
+    </Options>
+
+    <TextureMaps>
+        <TextureMap name="albedo" channels="4" compression="DXT5" 
+                    filter_min="NEAREST" filter_mag="NEAREST" srgb="true"/>
+        <TextureMap name="normal" channels="3" compression="None" 
+                    filter_min="NEAREST" filter_mag="NEAREST" srgb="false"/>
+        <TextureMap name="depth" channels="1" compression="None" 
+                    filter_min="NEAREST" filter_mag="NEAREST"/>
+        <TextureMap name="metal" channels="1" compression="None" 
+                    filter_min="NEAREST" filter_mag="NEAREST"/>
+        <TextureMap name="roughness" channels="1" compression="None" 
+                    filter_min="NEAREST" filter_mag="NEAREST"/>
+        <TextureMap name="ao" channels="1" compression="None" 
+                    filter_min="NEAREST" filter_mag="NEAREST"/>
+        
+        <Group name="normal_depth" compression="DXT3" filter_min="NEAREST" 
+               filter_mag="NEAREST" srgb="false">
+            <TextureMap name="normal"/>
+            <TextureMap name="depth"/>
+        </Group>
+        <Group name="mra" compression="DXT1" filter_min="NEAREST" 
+               filter_mag="NEAREST" srgb="false">
+            <TextureMap name="metal"/>
+            <TextureMap name="roughness"/>
+            <TextureMap name="ao"/>
+        </Group>
+    </TextureMaps>
+</Config>
+```
+On repère deux groupes répondant aux noms de "normal_depth" et "mra". Les paramètres des groupes surchargent ceux des simples texture maps. Ainsi, un asset qui ne qualifie pas pour le grouping de "normal" et "depth" parce qu'il ne possède pas de depth map, aura sa normal map non compressée dans une texture map du nom de "normal", mais si on venait lui ajouter une depth map, alors les deux maps seraient groupées sous la texture map "normal_depth" (normal map accessible via les canaux R,G et B, depth accessible via le canal Alpha), et cette texture map serait compressée au format DXT3 (hypothétiquement, car je ne gère pas encore ce type de compression).
+
+Exemple d'output de Fudge lors du texture packing :
+```
+    [0.135912][fud]  ⁕  Iterating unpacked texture maps directories.
+    [0.135945][fud]  ⁕  Processing directory: "beachSand"
+    [0.135971][fud]     Reading: "albedo.png"
+    [0.138115][fud]      ↳ SRGB format.
+    [0.138124][fud]      ↳ DXT5 compression.
+    [0.138146][fud]     Reading: "ao.png"
+    [0.139028][fud]     Reading: "normal.png"
+    [0.141071][fud]     Reading: "metal.png"
+    [0.141330][fud]     Reading: "depth.png"
+    [0.142508][fud]     Reading: "roughness.png"
+    [0.144397][fud]     Qualifies for grouping under layout: normal_depth
+    [0.144699][fud]     Qualifies for grouping under layout: mra
+    [0.147243][fud]     Exporting: beachSand.tom
+    [0.159019][fud]  ⁕  Processing directory: "rockTiling"
+    [0.159068][fud]     Reading: "albedo.png"
+    [0.195157][fud]      ↳ SRGB format.
+    [0.195183][fud]      ↳ DXT5 compression.
+    [0.195198][fud]     Reading: "ao.png"
+    [0.222227][fud]     Reading: "normal.png"
+    [0.281457][fud]     Reading: "depth.png"
+    [0.301390][fud]     Reading: "roughness.png"
+    [0.320072][fud]     Qualifies for grouping under layout: normal_depth
+    [0.362300][fud]     Exporting: rockTiling.tom
+```
+
+##Fudge: Asset registry
+Afin d'éviter de reconstruire les assets déjà à jour, j'ai codé un petit registre des assets qui associe à une directory_entry un hash qui change à chaque fois qu'un des fichiers image d'entrée est modifié (voir asset_registry.h/cpp). L'élément clé pour rendre celà possible est de pouvoir récupérer la dernière date de modification d'un fichier via std::filesystem :
+```cpp
+auto ftime = fs::last_write_time(path_to_file);
+std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
+```
+
+Une directory_entry peut être un simple fichier, comme c'est le cas avec les fichiers fonts (.ttf). Dans ce cas, on calcule simplement un hash du timestamp de dernière modification de ce fichier, et on l'associe au hash de la directory_entry dans une unordered_map :
+```cpp
+static std::unordered_map<uint64_t, uint64_t> s_registry; // <name hash, timestamp hash>
+// ...
+const fs::directory_entry& entry; // = ...
+uint64_t ts_hash = FAR_MAGIC;
+if(entry.is_regular_file())
 {
-    std::string name;   // Name of texture map
-    stbi_uc* data;      // Image data
-    int width;          // Size of image
-    int height;
-    int channels;       // Number of color channels
-};
+    // Compute timestamp hash
+    auto ftime = fs::last_write_time(entry.path());
+    std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
+    hash_combine(ts_hash, cftime);
+}
+// ...
+s_registry.insert(std::make_pair(hname, ts_hash));
+```
+
+Dans le cas des texture atlas en revanche, la directory_entry envoyée à l'atlas packer est un dossier. Pour calculer le hash il faut itérer tout le dossier, et pour chaque fichier calculer un timestamp, et combiner un hash au fur et à mesure :
+```cpp
+uint64_t ts_hash = FAR_MAGIC;
+if(entry.is_directory())
+{
+    // Iterate over all files in this directory and combine timestamp hashes
+    for(auto& sub_entry: fs::directory_iterator(entry.path()))
+    {
+        auto sub_path = sub_entry.path();
+        auto ftime = fs::last_write_time(sub_path);
+        std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
+        hash_combine(ts_hash, cftime);
+    }
+}
+// ...
+```
+Avec la classique fonction de combinaison des hash :
+```cpp
+template <class T>
+inline void hash_combine(uint64_t& seed, const T& v)
+{
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+```
+
+Ces deux comportements sont implémentés derrière une seule fonction du namespace "far" :
+```cpp
+bool need_create(const fs::directory_entry& entry);
+```
+
+Le registre peut être chargé depuis / écrit dans un fichier .far (Fudge Asset Registry), et donc Fudge est capable de tracker les fichiers d'assets qu'il construit. Ainsi, on peut vérifier facilement si un fichier d'asset doit être construit ou non :
+```cpp
+for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
+    if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
+        fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
+```
+Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à *true* quand l'option "-f" (pour "force") est passée au programme. Ceci est utile, car le système ne track pas les noms d'assets écrits, seulement les directory_entry en argument des factory methods. De fait, si l'on supprime un fichier d'asset, celui-ci ne sera pas recréé en relançant fudge car il existe encore une entrée valide dans le registre. Ceci sera probablement corrigé par la suite.

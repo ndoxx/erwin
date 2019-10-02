@@ -11,6 +11,7 @@
 
 #include "inih/cpp/INIReader.h"
 
+#include "asset_registry.h"
 #include "atlas_packer.h"
 #include "texture_packer.h"
 #include "debug/logger.h"
@@ -28,6 +29,8 @@ static fs::path s_tmap_config_path; // Path to config file specifying the differ
 
 static fudge::Compression s_tex_compression;
 static fudge::Compression s_fnt_compression;
+
+static bool s_force_rebuild = false; // If set to true, all assets will be rebuild, disregarding the asset registry content
 
 // Get path to executable
 static fs::path get_selfpath()
@@ -171,10 +174,19 @@ static void init_logger()
     WLOGGER.set_single_threaded(true);
 }
 
+static bool cmd_option_exists(const char** begin, const char** end, const std::string& option)
+{
+    return std::find(begin, end, option) != end;
+}
+
 int main(int argc, char const *argv[])
 {
     init_logger();
     show_logo();
+
+    // Force rebuild
+    if(cmd_option_exists(argv, argv + argc, "-f"))
+        s_force_rebuild = true;
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
     DLOGN("fudge") << "Locating unpacked assets." << std::endl;
@@ -195,6 +207,9 @@ int main(int argc, char const *argv[])
     DLOGI << "Atlas fonts:     " << WCC('p') << fs::relative(s_atlas_fonts_path, s_root_path) << std::endl;
     DLOGI << "Texmap unpacked: " << WCC('p') << fs::relative(s_tmap_upack_path, s_root_path) << std::endl;
 
+    // Load asset registry file
+    fudge::far::load(s_conf_path / "fudge.far");
+
     DLOGR("fudge") << std::endl;
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
@@ -204,7 +219,7 @@ int main(int argc, char const *argv[])
     DLOGN("fudge") << "Iterating unpacked atlases directories." << std::endl;
     for(auto& entry: fs::directory_iterator(s_atlas_upack_path))
     {
-        if(entry.is_directory())
+        if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
         {
             DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
@@ -222,7 +237,9 @@ int main(int argc, char const *argv[])
     DLOGN("fudge") << "Iterating fonts." << std::endl;
     for(auto& entry: fs::directory_iterator(s_atlas_fonts_path))
     {
-        if(entry.is_regular_file() && entry.path().extension().string().compare("ttf"))
+        if(entry.is_regular_file() && 
+           entry.path().extension().string().compare("ttf") &&
+           (fudge::far::need_create(entry) || s_force_rebuild))
         {
             DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
             std::string font_name = entry.path().stem().string();
@@ -245,13 +262,16 @@ int main(int argc, char const *argv[])
         //   whose name is the sub-directory name
         DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
         for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
-            if(entry.is_directory())
+            if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
                 fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
     }
     else
     {
         DLOGE("fudge") << "Failed to configure texture maps." << std::endl;
     }
+
+    // Save asset registry file
+    fudge::far::save(s_conf_path / "fudge.far");
 
     return 0;
 }
