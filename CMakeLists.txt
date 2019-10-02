@@ -18,8 +18,8 @@ set(CMAKE_CXX_STANDARD 17)
 # include_directories(BEFORE "/usr/include/c++/8/")
 # include_directories(AFTER "/usr/include/x86_64-linux-gnu/c++/8/")
 
-set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 # set(CMAKE_BUILD_TYPE MinSizeRel)
 # set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
@@ -36,8 +36,8 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
 

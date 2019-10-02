@@ -8,7 +8,8 @@
 #include <string>
 #include <filesystem>
 
-#include "render/texture.h"
+#include "core/wtypes.h"
+#include "render/texture_common.h"
 
 namespace fs = std::filesystem;
 
@@ -16,13 +17,6 @@ namespace erwin
 {
 namespace tom
 {
-
-enum class TextureCompression: uint8_t
-{
-	None = 0,
-	DXT1,
-	DXT5
-};
 
 enum class LosslessCompression: uint8_t
 {

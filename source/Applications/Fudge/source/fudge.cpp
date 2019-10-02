@@ -24,6 +24,7 @@ static fs::path s_conf_path;  // Path to configuration directory
 static fs::path s_atlas_upack_path; // Path to parent directory of unpacked atlas image files
 static fs::path s_atlas_fonts_path; // Path to fonts folder
 static fs::path s_tmap_upack_path;  // Path to parent directory of unpacked texture maps
+static fs::path s_tmap_config_path; // Path to config file specifying the different texture maps
 
 static fudge::Compression s_tex_compression;
 static fudge::Compression s_fnt_compression;
@@ -87,8 +88,8 @@ static bool read_conf(const fs::path& path)
     std::string comp_str = reader.Get("atlas", "texture_compression", "UNKNOWN");
     if(!comp_str.compare("none"))
         s_tex_compression = fudge::Compression::None;
-    else if(!comp_str.compare("DXT"))
-        s_tex_compression = fudge::Compression::DXT;
+    else if(!comp_str.compare("DXT5"))
+        s_tex_compression = fudge::Compression::DXT5;
     else
     {
         DLOGE("fudge") << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
@@ -119,6 +120,13 @@ static bool read_conf(const fs::path& path)
     if(!fs::exists(s_tmap_upack_path))
     {
         DLOGE("fudge") << "Path " << s_tmap_upack_path << " does not exist." << std::endl;
+        return false;
+    }
+
+    s_tmap_config_path = s_root_path / reader.Get("texmap", "config", "UNKNOWN");
+    if(!fs::exists(s_tmap_upack_path))
+    {
+        DLOGE("fudge") << "Path " << s_tmap_config_path << " does not exist." << std::endl;
         return false;
     }
 
@@ -239,18 +247,27 @@ int main(int argc, char const *argv[])
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
-    // * For each sub-directory in upack directory, create a .tom file containing every image in it,
-    //   whose name is the sub-directory name
-    DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
+    // Configure texture map specs
+    if(fudge::texmap::configure(s_tmap_config_path))
     {
-        if(entry.is_directory())
+        DLOGR("fudge") << std::endl;
+        
+        // * For each sub-directory in upack directory, create a .tom file containing every image in it,
+        //   whose name is the sub-directory name
+        DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
+        for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
         {
-            DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
+            if(entry.is_directory())
+            {
+                DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
-            fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
-            DLOGR("fudge") << std::endl;
+                fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
+            }
         }
+    }
+    else
+    {
+        DLOGE("fudge") << "Failed to configure texture maps." << std::endl;
     }
 
     return 0;

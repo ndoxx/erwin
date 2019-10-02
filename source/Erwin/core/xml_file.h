@@ -57,22 +57,25 @@ namespace xml
 
 struct XMLFile
 {
-    fs::path& filepath;
+    fs::path filepath;
     rapidxml::xml_document<> doc;
     rapidxml::xml_node<>* root;
     std::string buffer;
 
+    XMLFile() = default;
+    XMLFile(const fs::path& filepath): filepath(filepath) { }
     ~XMLFile() { release(); }
+
+    // Read and parse an XML file. Only the filepath member need be initialized.
+    bool read();
+    // Write an XML file, filepath, buffer and doc must be initialized
+    void write();
+
     void release();
     rapidxml::xml_node<>* add_node(rapidxml::xml_node<>* parent, const char* node_name, const char* node_value = nullptr);
     rapidxml::xml_attribute<>* add_attribute(rapidxml::xml_node<>* node, const char* attr_name, const char* attr_val);
     void set_value(rapidxml::xml_node<>* node, const char* value);
 };
-
-// Read and parse an XML file into a descriptor. Only the filepath member need be initialized.
-extern bool read_xml(XMLFile& desc);
-// Write an XML file, filepath, buffer and doc must be initialized
-extern void write_xml(const XMLFile& desc);
 
 template <typename T>
 void parse_attribute(rapidxml::xml_node<>* node, const char* name, std::function<void(T value)> exec)

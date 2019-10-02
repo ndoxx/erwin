@@ -161,7 +161,7 @@ static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
         out_h,
         dxt_size, // Blob size
         (uint32_t)(remap.size()*sizeof(cat::CATAtlasRemapElement)),
-        cat::TextureCompression::DXT5,
+        TextureCompression::DXT5,
         (s_blob_compression == Compression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
     });
     // Cleanup
@@ -263,7 +263,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
 
     // * Generate uncompressed atlas data
     // Pad size to multiple of 4 if necessary
-    if(compr == Compression::DXT)
+    if(compr == Compression::DXT5)
     {
         if(out_w%4)
         {
@@ -289,7 +289,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
             export_atlas_png(uncomp, remap, output_dir, dir_name, out_w, out_h);
             break;
         }
-        case Compression::DXT:
+        case Compression::DXT5:
         {
             uncomp = blit_atlas(images, out_w, out_h, true, remap);
             export_atlas_cat(uncomp, remap, output_dir, dir_name, out_w, out_h);

@@ -10,18 +10,14 @@
 #include <functional>
 #include <filesystem>
 
+#include "render/texture_common.h"
+
 namespace fs = std::filesystem;
 
 namespace erwin
 {
 namespace cat
 {
-enum class TextureCompression: uint16_t
-{
-	None = 0,
-	DXT1,
-	DXT5
-};
 
 enum class LosslessCompression: uint16_t
 {

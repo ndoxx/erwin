@@ -38,7 +38,7 @@ WRef<Texture2D> Texture2D::create(const Texture2DDescriptor& descriptor)
 }
 
 // Select the appropriate image format given some parameters from the descriptor
-static ImageFormat select_image_format(uint8_t channels, tom::TextureCompression compression, bool srgb)
+static ImageFormat select_image_format(uint8_t channels, TextureCompression compression, bool srgb)
 {
     // TODO: A decision tree would be better?
     if(channels == 1)
@@ -51,22 +51,22 @@ static ImageFormat select_image_format(uint8_t channels, tom::TextureCompression
     }
     else if(channels == 3)
     {
-        if(compression == tom::TextureCompression::None)
+        if(compression == TextureCompression::None)
             return ImageFormat::RGB8;
-        else if(compression == tom::TextureCompression::DXT1 && !srgb)
+        else if(compression == TextureCompression::DXT1 && !srgb)
             return ImageFormat::COMPRESSED_RGB_S3TC_DXT1;
-        else if(compression == tom::TextureCompression::DXT1 && srgb)
+        else if(compression == TextureCompression::DXT1 && srgb)
             return ImageFormat::COMPRESSED_SRGB_S3TC_DXT1;
     }
     else if (channels == 4)
     {
-        if(compression == tom::TextureCompression::None && !srgb)
+        if(compression == TextureCompression::None && !srgb)
             return ImageFormat::RGBA8;
-        if(compression == tom::TextureCompression::None && srgb)
+        if(compression == TextureCompression::None && srgb)
             return ImageFormat::SRGB_ALPHA;
-        else if(compression == tom::TextureCompression::DXT5 && !srgb)
+        else if(compression == TextureCompression::DXT5 && !srgb)
             return ImageFormat::COMPRESSED_RGBA_S3TC_DXT5;
-        else if(compression == tom::TextureCompression::DXT5 && srgb)
+        else if(compression == TextureCompression::DXT5 && srgb)
             return ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5;
     }
 

@@ -4,6 +4,7 @@
 #include "debug/logger.h"
 
 #include <cstring>
+#include <fstream>
 
 namespace erwin
 {

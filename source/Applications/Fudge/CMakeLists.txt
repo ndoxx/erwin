@@ -9,6 +9,7 @@ set(SRC_FUDGE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp

@@ -1,7 +1,8 @@
 #include <fstream>
 
-#include "xml_utils.h"
+#include "core/xml_file.h"
 #include "debug/logger.h"
+#include "rapidxml/rapidxml_print.hpp"
 
 using namespace rapidxml;
 
@@ -120,32 +121,32 @@ void XMLFile::set_value(xml_node<>* node, const char* value)
     node->value(doc.allocate_string(value));
 }
 
-bool read_xml(XMLFile& xf)
+bool XMLFile::read()
 {
     DLOGN("core") << "Parsing XML file:" << std::endl;
-    DLOGI << WCC('p') << xf.filepath << std::endl;
+    DLOGI << WCC('p') << filepath << std::endl;
 
-    if(!fs::exists(xf.filepath))
+    if(!fs::exists(filepath))
     {
         DLOGE("core") << "File does not exist." << std::endl;
         return false;
     }
 
     // Read the xml file into a vector
-    std::ifstream ifs(xf.filepath);
+    std::ifstream ifs(filepath);
     if(!ifs.is_open())
     {
         DLOGE("core") << "Unable to open file." << std::endl;
         return false;
     }
-    xf.buffer = std::string((std::istreambuf_iterator<char>(ifs)),
+    buffer = std::string((std::istreambuf_iterator<char>(ifs)),
                           std::istreambuf_iterator<char>());
 
     // Parse the buffer using the xml file parsing library into doc
     try
     {
-        xf.doc.parse<0>(xf.buffer.data());
-        xf.doc.validate();
+        doc.parse<0>(buffer.data());
+        doc.validate();
     }
     catch(parse_error& e)
     {
@@ -159,8 +160,8 @@ bool read_xml(XMLFile& xf)
     }
 
     // Check that a root node exists
-    xf.root = xf.doc.first_node();
-    if(!xf.root)
+    root = doc.first_node();
+    if(!root)
     {
         DLOGW("core") << "File has no root node." << std::endl;
         return false;
@@ -169,11 +170,11 @@ bool read_xml(XMLFile& xf)
     return true;
 }
 
-void write_xml(const XMLFile& xf)
+void XMLFile::write()
 {
-    /*std::ofstream file(xf.filepath);
-    file << xf.doc;
-    file.close();*/
+    std::ofstream file(filepath);
+    file << doc;
+    file.close();
 }
 
 template <>
