@@ -40,10 +40,15 @@ cd ../source/vendor/freetype
 make
 cp objs/.libs/libfreetype.a ../../../lib/
 cp objs/.libs/libfreetype.so* ../../../lib/
-cd ../../../../build
+cd ../../../build
 # Zlib
 cd ../source/vendor/zlib
 ./configure
 make
 cp libz.a ../../../lib/
-cd ../../../../build
+cd ../../../build
+
+# Erwin lib
+make erwin -j4
+make fudge -j4
+make sandbox

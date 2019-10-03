@@ -165,14 +165,6 @@ set_target_properties(glfw PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
 )
 
-# GLAD library as a static import
-# target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-# add_library(glad STATIC IMPORTED)
-# set_target_properties(glad PROPERTIES
-#   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglad.a"
-#   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glad"
-# )
-
 target_link_libraries(erwin
                       m
                       z
