@@ -9,7 +9,7 @@
 #include "core/wtypes.h"
 #include "core/string_utils.h"
 #include "core/intern_string.h"
-#include "core/file_system.h"
+#include "filesystem/filesystem.h"
 #include "debug/logger.h"
 #include "render/texture.h"
 

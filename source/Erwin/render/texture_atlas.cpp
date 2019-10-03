@@ -1,5 +1,5 @@
 #include "render/texture_atlas.h"
-#include "core/cat_file.h"
+#include "filesystem/cat_file.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
 

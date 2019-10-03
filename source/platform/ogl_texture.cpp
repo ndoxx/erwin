@@ -1,7 +1,7 @@
 #include "platform/ogl_texture.h"
 #include "render/render_device.h"
 #include "core/core.h"
-#include "core/cat_file.h"
+#include "filesystem/cat_file.h"
 #include "debug/logger.h"
 
 #include "glad/glad.h"

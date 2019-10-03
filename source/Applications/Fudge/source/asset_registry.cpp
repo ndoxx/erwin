@@ -98,7 +98,6 @@ bool need_create(const fs::directory_entry& entry)
 {
 	// TODO:
 	// Also check if output file already exists
-	// Need to track output file names
 
 	// Compute entry name hash
 	uint64_t hname = std::hash<std::string>{}(entry.path().string());
@@ -134,7 +133,13 @@ bool need_create(const fs::directory_entry& entry)
 	}
 
 	// An entry exists, create file only if timestamp hash has changed
-	return (it->second != ts_hash);
+	if(it->second != ts_hash)
+	{
+		it->second = ts_hash;
+		return true;
+	}
+
+	return false;
 }
 
 } // namespace far

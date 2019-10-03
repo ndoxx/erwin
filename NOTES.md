@@ -24,7 +24,14 @@ on garde:
     * le système de hot swap
     * peut-être les defines
 
-
+##Liste des extensions OpenGL nécessaires
+    * GL_ARB_gl_spirv
+    * GL_EXT_framebuffer_sRGB
+    * GL_EXT_texture_compression_s3tc
+    * GL_EXT_texture_filter_anisotropic
+    * GL_EXT_texture_sRGB
+    * GL_KHR_texture_compression_astc_hdr
+    * GL_KHR_texture_compression_astc_ldr
 
 
 
@@ -558,7 +565,7 @@ J'affiche ainsi mon premier triangle coloré depuis du code client !
 
 
 TODO:
-    [ ] Gérer les includes.
+    [X] Gérer les includes.
     [ ] Gérer le hotswap / reload
         -> Plutôt depuis la _ShaderBank_ quand celle-ci sera construite
 
@@ -964,8 +971,6 @@ En retrouvant un mode immédiat, j'ai à nouveau la possibilité de faire du pri
 ##Mandelbrot Explorer
 J'ai codé il y a quelques jours une petite application qui permet l'exploration de la fractale de Mandelbrot au moyen d'un simple shader. L'idée d'origine et l'effet visuel que je tentais de reproduire sont dus à une vidée de The Art of Code (voir [1]).
 
-    TODO
-
 ![Meanwhile somewhere in Mandelbrot world...\label{figFractal}](../Erwin_rel/screens_erwin/erwin_1c_fractal_explorer.png)
 
 
@@ -1295,10 +1300,37 @@ Ces deux comportements sont implémentés derrière une seule fonction du namesp
 bool need_create(const fs::directory_entry& entry);
 ```
 
-Le registre peut être chargé depuis / écrit dans un fichier .far (Fudge Asset Registry), et donc Fudge est capable de tracker les fichiers d'assets qu'il construit. Ainsi, on peut vérifier facilement si un fichier d'asset doit être construit ou non :
+Le registre peut être chargé depuis / écrit dans un fichier .far (Fudge Asset Registry), et donc Fudge est capable de tracker les fichiers d'assets qu'il génère. Ainsi, on peut vérifier facilement si un fichier d'asset doit être construit ou non :
 ```cpp
 for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
     if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
         fudge::texmap::make_tom(entry.path(), s_tmap_upack_path.parent_path());
 ```
 Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à *true* quand l'option "-f" (pour "force") est passée au programme. Ceci est utile, car le système ne track pas les noms d'assets écrits, seulement les directory_entry en argument des factory methods. De fait, si l'on supprime un fichier d'asset, celui-ci ne sera pas recréé en relançant fudge car il existe encore une entrée valide dans le registre. Ceci sera probablement corrigé par la suite.
+
+
+#[03-10-19]
+##TODO:
+    [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
+    https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
+        [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de tous les
+        stocker dans les CAT files.
+    [ ] Supporter SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
+    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
+    [ ] Ecrire un renderer 2D multi-threaded
+        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
+    [ ] Ecrire un renderer 3D multi-threaded
+    [ ] Ecrire un script de building pour tout le projet (gère les deps...)
+
+##Glad Submodule
+J'ai écrit un fichier extensions.txt contenant toutes les extensions que GLAD doit prendre en charge, à la racine du dossier glad. J'ai aussi créé un CMakeLists.txt custom qui remplace l'ancien, afin de compiler la lib en -fPIC et d'écrire le .a dans le dossier erwin/lib.
+
+> cd source/vendor
+> git submodule add https://github.com/Dav1dde/glad.git glad
+> cd glad
+> python -m glad --generator=c --spec=gl --profile=core --api="gl=4.6" --extensions=./extensions.txt --out-path=.
+> mkdir build; cd build
+> cmake ..
+> make

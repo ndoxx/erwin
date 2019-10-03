@@ -2,7 +2,7 @@
 #include <cstring>
 #include <iostream>
 
-#include "core/cat_file.h"
+#include "filesystem/cat_file.h"
 #include "core/core.h"
 #include "core/z_wrapper.h"
 

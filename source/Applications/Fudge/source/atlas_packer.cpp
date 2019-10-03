@@ -2,7 +2,7 @@
 #include "optimal_packing.h"
 #include "dxt_compressor.h"
 
-#include "core/cat_file.h"
+#include "filesystem/cat_file.h"
 #include "debug/logger.h"
 
 #include "stb/stb_image.h"

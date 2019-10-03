@@ -1,8 +1,8 @@
 #include "texture_packer.h"
 #include "dxt_compressor.h"
 
-#include "core/tom_file.h"
-#include "core/xml_file.h"
+#include "filesystem/tom_file.h"
+#include "filesystem/xml_file.h"
 #include "render/texture_common.h"
 #include "debug/logger.h"
 

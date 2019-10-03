@@ -26,7 +26,6 @@ set(CMAKE_BUILD_TYPE Release)
 subdirs(source)
 
 set(SRC_CORE
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/file_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
@@ -34,11 +33,15 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
+  )
+
+set(SRC_FILESYSTEM
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/tom_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/cat_file.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/xml_file.cpp
   )
 
 set(SRC_MATH
@@ -107,6 +110,7 @@ endif()
 
 add_library(erwin SHARED
             ${SRC_CORE}
+            ${SRC_FILESYSTEM}
             ${SRC_MATH}
             ${SRC_DEBUG}
             ${SRC_RENDERER}

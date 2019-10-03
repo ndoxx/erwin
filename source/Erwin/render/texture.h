@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include "core/core.h"
-#include "core/file_system.h"
+#include "filesystem/filesystem.h"
 #include "render/texture_common.h"
 
 namespace erwin

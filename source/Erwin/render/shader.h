@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "core/wtypes.h"
-#include "core/file_system.h"
+#include "filesystem/filesystem.h"
 #include "render/buffer.h"
 
 namespace erwin

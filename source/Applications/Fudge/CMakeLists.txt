@@ -6,11 +6,8 @@ set(SRC_FUDGE
     source/atlas_packer.cpp
     source/texture_packer.cpp
     source/optimal_packing.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/file_system.cpp
+    ${SRC_FILESYSTEM}
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/tom_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/cat_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/xml_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
