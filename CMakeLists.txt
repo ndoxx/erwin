@@ -1,8 +1,24 @@
+# GLAD
 cmake_minimum_required(VERSION 3.10)
+project(glad VERSION 1.0.0 DESCRIPTION "GLAD OpenGL loader")
+
+add_library(glad STATIC
+            ${CMAKE_SOURCE_DIR}/source/vendor/glad/src/glad.c)
+target_include_directories(glad PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
+
+set_target_properties(glad
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+)
+set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_link_libraries(glad GL)
+
+
+# Erwin library
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 include(cotire)
-
-# Defines a test application with basic scene setup
 
 cmake_minimum_required(VERSION 3.10)
 project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine shared library")
@@ -126,6 +142,7 @@ target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
 set_target_properties(erwin PROPERTIES PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/source/erwin.h")
@@ -149,12 +166,12 @@ set_target_properties(glfw PROPERTIES
 )
 
 # GLAD library as a static import
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-add_library(glad STATIC IMPORTED)
-set_target_properties(glad PROPERTIES
-  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglad.a"
-  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glad"
-)
+# target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
+# add_library(glad STATIC IMPORTED)
+# set_target_properties(glad PROPERTIES
+#   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglad.a"
+#   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glad"
+# )
 
 target_link_libraries(erwin
                       m
