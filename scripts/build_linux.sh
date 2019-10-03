@@ -3,7 +3,7 @@
 cd ..
 
 # Install deps
-sudo apt-get install xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev 
+sudo apt-get install libstdc++-8-dev clang-7 autotools-dev libtool autoconf xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev libharfbuzz-dev libbz2-dev
 
 # Update submodules to their last commit
 git submodule update --init
@@ -36,7 +36,7 @@ cd ../../../../build
 # Freetype
 cd ../source/vendor/freetype
 ./autogen.sh
-./configure --without-harfbuzz CXXFLAGS=-fPIC CFLAGS=-fPIC LDFLAGS=-fPIC CPPFLAGS=-fPIC
+./configure CXXFLAGS=-fPIC CFLAGS=-fPIC LDFLAGS=-fPIC CPPFLAGS=-fPIC
 make
 cp objs/.libs/libfreetype.a ../../../lib/
 cp objs/.libs/libfreetype.so* ../../../lib/
@@ -48,7 +48,12 @@ make
 cp libz.a ../../../lib/
 cd ../../../build
 
-# Erwin lib
+# Erwin lib and apps
 make erwin -j4
 make fudge -j4
+make internstr
 make sandbox
+make fractal
+
+# Initialize intern strings
+../bin/internstr

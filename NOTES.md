@@ -155,7 +155,7 @@ L'ajout de couleurs se fait au moyen d'une structure _WCC_ qui est évaluée en 
 
 Le fichier tests/test_logger.h implémente une fonction test complète, dont un test de concurrence avec plusieurs worker threads qui poussent plein de messages en même temps. Le résultat est impeccable, si je peux me permettre.
 
-![Exemple d'output du logger.\label{figLogger}](../Erwin_rel/screens_erwin/erwin_0d_logger.png)
+![Exemple d'output du logger.\label{figLogger}](../../Erwin_rel/screens_erwin/erwin_0d_logger.png)
 
 ###Disable logging
 Le define LOGGING_ENABLED permet magiquement de supprimer toutes les instructions de log quand initialisé à 0. Ceci est possible grâce à une conditionnelle constexpr présente dans chaque macro DLOGx :
@@ -693,7 +693,7 @@ void main()
 }
 ```
 
-![Application Sandbox utilisant le batch renderer.\label{figBatchRendering}](../Erwin_rel/screens_erwin/erwin_0a_2d_batch_rendering.png)
+![Application Sandbox utilisant le batch renderer.\label{figBatchRendering}](../../Erwin_rel/screens_erwin/erwin_0a_2d_batch_rendering.png)
 
 ##2D Instance Renderer
 Le deuxième renderer que j'ai codé utilise une approche différente : l'instanciation. _InstanceRenderer2D_ fonctionne sur le même genre de dynamique que le précédent, mais crée un SSBO par batch. A chaque appel à draw_quad, les données en argument (la position, l'échelle et la couleur) sont simplement empilées dans un vector de struct _InstanceData_. Quand ce vector est plein, il est déchargé dans un SSBO via la fonction map(). Le batch suivant est créé, rempli, déchargé dans un autre SSBO etc.
@@ -702,7 +702,7 @@ Dans le shader on peut accéder aux données par-instance via l'indice gl_Instan
 
 J'ai eu une grosse emmerde dans un premier temps (affichage décalé / buggé), que j'ai bien mis 30 minutes à piger. En remarquant que le premier quad était toujours bien dessiné mais jamais les suivants, j'ai compris que **l'alignement des données dans le layout du SSBO est méga important** C'est la raison pour laquelle le membre color est un vec4 et non un vec3, pour que la taille totale d'une struct tienne sur 32 bytes (padding).
 
-![Application Sandbox utilisant l'instanced renderer.\label{figInstancedRendering}](../Erwin_rel/screens_erwin/erwin_0b_2d_instanced_rendering.png)
+![Application Sandbox utilisant l'instanced renderer.\label{figInstancedRendering}](../../Erwin_rel/screens_erwin/erwin_0b_2d_instanced_rendering.png)
 
 ###Comparaison
 L'application sandbox possède un GUI minimaliste qui permet d'ajuster dynamiquement la taille de la grille de quads, la taille maximale des batchs et l'implémentation de _Renderer2D_ utilisée ! Elle affiche des statistiques sous forme de courbes et de texte. J'ai aussi un mode qui permet de faire bouger chaque quad indépendamment (en mode onde stationnaire) côté CPU, ce qui n'a aucun effet sur le temps de rendu.
@@ -736,7 +736,7 @@ J'ai dev un petit outil d'atlas packing nommé FudgePacker (!) capable de contru
     font_compression=none
 ```
 
-![FudgePacker et les atlas qu'il génère.\label{figFudgePacker}](../Erwin_rel/screens_erwin/erwin_2a_fudge_packer.png)
+![FudgePacker et les atlas qu'il génère.\label{figFudgePacker}](../../Erwin_rel/screens_erwin/erwin_2a_fudge_packer.png)
 
 La lib RectPack2D est utilisée pour établir le bin packing optimal pour un ensemble de rectangles donnés. Le font rasterizing est effectué au moyen de la lib Freetype. L'export PNG se fait grâce à la lib stb_image et stb_dxt permet la compression DXT5 de blocks de pixels 4x4.
 
@@ -872,7 +872,7 @@ void main()
 }
 ```
 
-![Un rendu texturé (tiled rendering) depuis un atlas.\label{figAtlasRendering}](../Erwin_rel/screens_erwin/erwin_3b_atlas_2d_rendering.png)
+![Un rendu texturé (tiled rendering) depuis un atlas.\label{figAtlasRendering}](../../Erwin_rel/screens_erwin/erwin_3b_atlas_2d_rendering.png)
 
 Comme mon SSBO ne contient que les coordonnées des coins inférieur-gauche et supérieur-droit de la sous-texture dans l'atlas et que ces données sont per-instance, il me faut regénérer les coordonnées UVs per-vertex pour pouvoir les transmettre au fragment shader. Pour celà, je me sers des coordonnées UVs en attribut de vertex 'in_uv'. Le vec4 'uvs' des données per-instance est formatté comme suit :
 ```
@@ -971,7 +971,7 @@ En retrouvant un mode immédiat, j'ai à nouveau la possibilité de faire du pri
 ##Mandelbrot Explorer
 J'ai codé il y a quelques jours une petite application qui permet l'exploration de la fractale de Mandelbrot au moyen d'un simple shader. L'idée d'origine et l'effet visuel que je tentais de reproduire sont dus à une vidée de The Art of Code (voir [1]).
 
-![Meanwhile somewhere in Mandelbrot world...\label{figFractal}](../Erwin_rel/screens_erwin/erwin_1c_fractal_explorer.png)
+![Meanwhile somewhere in Mandelbrot world...\label{figFractal}](../../Erwin_rel/screens_erwin/erwin_1c_fractal_explorer.png)
 
 
 ###Sources:
@@ -1116,7 +1116,7 @@ Gfx::device->draw_indexed(screen_va_);
 post_proc_shader.unbind();
 ```
 
-![Test de "post-processing", le canal rouge est annulé sur la droite de l'écran.\label{figTestPP}](../Erwin_rel/screens_erwin/erwin_4a_test_post_proc.png)
+![Test de "post-processing", le canal rouge est annulé sur la droite de l'écran.\label{figTestPP}](../../Erwin_rel/screens_erwin/erwin_4a_test_post_proc.png)
 
 
 ##De l'intérêt du teddy bear debugging
@@ -1137,8 +1137,8 @@ remapping_.insert(std::make_pair(H_(key.c_str()), uvs));
 ```
 Cette technique s'appèle *half-pixel correction*.
 
-![Pas bien.\label{figAtlWrongUV}](../Erwin_rel/Figures/atlas_wrong_UVs.png){width=5cm height=5cm}
-![Bien.\label{figAtlOkUV}](../Erwin_rel/Figures/atlas_ok_UVs.png){width=5cm height=5cm}
+![Pas bien.\label{figAtlWrongUV}](../../Erwin_rel/Figures/atlas_wrong_UVs.png){width=5cm height=5cm}
+![Bien.\label{figAtlOkUV}](../../Erwin_rel/Figures/atlas_ok_UVs.png){width=5cm height=5cm}
 
 
 ###Sources:
@@ -1322,7 +1322,7 @@ Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à
     [ ] Ecrire un renderer 2D multi-threaded
         [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
     [ ] Ecrire un renderer 3D multi-threaded
-    [ ] Ecrire un script de building pour tout le projet (gère les deps...)
+    [X] Ecrire un script de building pour tout le projet (gère les deps...)
 
 ##Glad Submodule
 J'ai écrit un fichier extensions.txt contenant toutes les extensions que GLAD doit prendre en charge, à la racine du dossier glad. J'ai aussi créé un CMakeLists.txt custom qui remplace l'ancien, afin de compiler la lib en -fPIC et d'écrire le .a dans le dossier erwin/lib.
@@ -1334,3 +1334,13 @@ J'ai écrit un fichier extensions.txt contenant toutes les extensions que GLAD d
 > mkdir build; cd build
 > cmake ..
 > make
+
+##Linux build script
+Le script scripts/build_linux.sh installe toutes les dépendances linux, initialise les submodules et les compile, puis génère toutes les targets de mon projet. En théorie, on doit pouvoir se contenter de cloner mon git et d'exécuter ce script pour tout générer :
+> git clone https://github.com/ndoxx/erwin.git
+> cd scripts
+> sh ./build_linux.sh
+
+NOTES:
+    * Il *faut* se trouver dans le dossier scripts, sans quoi rien ne peut fonctionner (pour l'instant, je suppose). 
+    * Les ressources que j'utilise pour mes tests avec la sandbox (textures...) ne sont pas sur le github.
