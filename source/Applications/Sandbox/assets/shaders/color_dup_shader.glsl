@@ -3,8 +3,7 @@
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
-
-out vec2 v_uv;
+layout(location = 2) out vec2 v_uv;
 
 void main()
 {
@@ -18,8 +17,8 @@ void main()
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
 
-in vec2 v_uv[];
-out vec2 f_uv;
+layout(location = 2) in vec2 v_uv[];
+layout(location = 3) out vec2 f_uv;
 
 uniform mat4 u_view_projection;
 
@@ -52,10 +51,9 @@ void main()
 #type fragment
 #version 460 core
 
-in vec2 f_uv;
+layout(binding = 0) uniform sampler2D us_atlas;
+layout(location = 3) in vec2 f_uv;
 layout(location = 0) out vec4 out_color;
-
-uniform sampler2D us_atlas;
 
 void main()
 {

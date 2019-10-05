@@ -12,8 +12,19 @@
 #include "platform/ogl_shader.h"
 #include "platform/ogl_texture.h"
 
+#include "glm/glm.hpp"
 
 using namespace erwin;
+
+struct MandelbrotData
+{
+	glm::mat4 view_projection;
+    glm::vec4 palette = glm::vec4(0.3f,0.7f,0.9f,0.f);
+    float max_iter = 20.f;
+    float escape_radius = 2.f;
+    float time = 0.f;
+    float attenuation = 1.f;
+};
 
 class FractalLayer: public Layer
 {
@@ -40,10 +51,10 @@ public:
 		{
 		    ImGui::Begin("Mandelbrot explorer");
 	        ImGui::SliderInt("Max iterations", &max_iter_, 1, 200);
-	        ImGui::SliderFloat("Escape radius", &escape_radius_, 2.f, 100.f);
-	        ImGui::SliderFloat("Attenuation", &attenuation_, 0.f, 5.f);
+	        ImGui::SliderFloat("Escape radius", &data_.escape_radius, 2.f, 100.f);
+	        ImGui::SliderFloat("Attenuation", &data_.attenuation, 0.f, 5.f);
+	        ImGui::SliderFloat3("Palette", (float*)&data_.palette, 0.0f, 1.0f);
 	        ImGui::SliderFloat("Animation speed", &speed_, 0.f, 1.f);
-	        ImGui::SliderFloat3("Palette", (float*)&palette_, 0.0f, 1.0f);
 	    }
 	}
 
@@ -73,6 +84,8 @@ public:
 		quad_va_ = VertexArray::create();
 		quad_va_->set_index_buffer(quad_ib);
 		quad_va_->set_vertex_buffer(quad_vb);
+
+		mandel_ubo_ = UniformBuffer::create("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
 	}
 
 protected:
@@ -89,18 +102,16 @@ protected:
 		if(tt_>=1.f)
 			tt_ = 0.f;
 
-		const auto& camera = camera_ctl_.get_camera();
-		glm::mat4 transform = glm::inverse(camera.get_view_projection_matrix());
+
+		data_.max_iter = (float)max_iter_;
+		data_.time = float(2*M_PI*tt_);
+		data_.view_projection = glm::inverse(camera_ctl_.get_camera().get_view_projection_matrix());
+		mandel_ubo_->map(&data_);
 
 		const auto& shader = shader_bank_.get("mandelbrot"_h);
 		shader.bind();
-
-		static_cast<const OGLShader&>(shader).send_uniform("u_max_iter"_h, (float)max_iter_);
-		static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, transform);
-		static_cast<const OGLShader&>(shader).send_uniform("u_palette"_h, palette_);
-		static_cast<const OGLShader&>(shader).send_uniform("u_escape_radius"_h, escape_radius_);
-		static_cast<const OGLShader&>(shader).send_uniform("u_time"_h, float(2*M_PI*tt_));
-		static_cast<const OGLShader&>(shader).send_uniform("u_atten"_h, attenuation_);
+		shader.attach_uniform_buffer(*mandel_ubo_);
+		// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, transform);
 
    		Gfx::device->draw_indexed(quad_va_);
 		shader.unbind();
@@ -129,15 +140,14 @@ private:
 	OrthographicCamera2DController camera_ctl_;
 	ShaderBank shader_bank_;
 	WRef<VertexArray> quad_va_;
+	WRef<UniformBuffer> mandel_ubo_;
 	float tt_ = 0.f;
 	float fps_;
 	bool show_menu_;
 
-	int max_iter_ = 100;
-	float escape_radius_ = 75.9f;
-	float attenuation_ = 0.943f;
+	MandelbrotData data_;
 	float speed_ = 0.1f;
-	glm::vec3 palette_ = glm::vec3(0.297f,0.938f,1.0f);
+	int max_iter_ = 100;
 };
 
 class FractalExplorer: public Application

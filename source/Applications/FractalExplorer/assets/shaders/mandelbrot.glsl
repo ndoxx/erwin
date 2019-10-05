@@ -3,12 +3,19 @@
 #type vertex
 #version 460 core
 
+layout(std140, binding = 0) uniform mandelbrot_layout
+{
+    mat4 u_view_projection;
+    vec4 u_palette;
+    float u_max_iter;
+    float u_escape_radius;
+    float u_time;
+    float u_atten;
+};
+
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
-
-out vec2 v_uv;
-
-uniform mat4 u_view_projection;
+layout(location = 2) out vec2 v_uv;
 
 void main()
 {
@@ -19,15 +26,18 @@ void main()
 #type fragment
 #version 460 core
 
-in vec2 v_uv;
+layout(std140, binding = 0) uniform mandelbrot_layout
+{
+    mat4 u_view_projection;
+    vec4 u_palette;
+    float u_max_iter;
+    float u_escape_radius;
+    float u_time;
+    float u_atten;
+};
 
+layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-
-uniform float u_max_iter = 20;
-uniform float u_escape_radius = 2.f;
-uniform float u_time = 0.f;
-uniform float u_atten = 1.f;
-uniform vec3 u_palette = vec3(0.3f,0.7f,0.9f);
 
 vec2 rot(vec2 point, vec2 pivot, float angle)
 {
@@ -69,7 +79,7 @@ void main()
     float frac_iter = log2(log(dist)/log(u_escape_radius));
 
     float m = sqrt(iter);
-    vec4 col = 0.5f*(sin(vec4(u_palette,1.f)*m*20.f)+1.f);
+    vec4 col = 0.5f*(sin(vec4(u_palette.rgb,1.f)*m*20.f)+1.f);
     col *= smoothstep(3.f,0.f,frac_iter*u_atten);
 
 	out_color = col;

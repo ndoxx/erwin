@@ -118,6 +118,19 @@ static std::string ogl_uniform_type_to_string(GLenum type)
     }
 }
 
+static std::string ogl_interface_to_string(GLenum iface)
+{
+    switch(iface)
+    {
+        case GL_PROGRAM_INPUT:        return "Attribute";
+        case GL_UNIFORM:              return "Uniform";
+        case GL_UNIFORM_BLOCK:        return "Uniform Block";
+        case GL_SHADER_STORAGE_BLOCK: return "Storage Block";
+        case GL_BUFFER_VARIABLE:      return "Buffer Variable";
+        default:                      return "[[UNKNOWN TYPE]]";
+    }
+}
+
 static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std::string& source)
 {
     std::set<int> errlines;
@@ -192,7 +205,7 @@ filepath_(filepath)
     auto sources = parse(std::string((std::istreambuf_iterator<char>(ifs)),
                                       std::istreambuf_iterator<char>()));
     build(sources);
-    setup_uniform_registry();
+    register_resources();
 }
 
 OGLShader::OGLShader(const std::string& name, const std::string& source_string):
@@ -201,7 +214,7 @@ filepath_("")
 {
 	auto sources = parse(source_string);
 	build(sources);
-	setup_uniform_registry();
+	register_resources();
 }
 
 OGLShader::~OGLShader()
@@ -232,18 +245,22 @@ void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
     send_uniform<int>(sampler, slot);
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const
+void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer) const
 {
+    hash_t hname = H_(buffer.get_name().c_str());
+    GLint binding_point = block_bindings_.at(hname);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
-    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, buffer.get_name().c_str());
-    glShaderStorageBlockBinding(rd_handle_, block_index, binding_point);
+    // GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, buffer.get_name().c_str());
+    // glShaderStorageBlockBinding(rd_handle_, block_index, binding_point);
 }
 
-void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t binding_point) const
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer) const
 {
+    hash_t hname = H_(buffer.get_name().c_str());
+    GLint binding_point = block_bindings_.at(hname);
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
-    GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_UNIFORM_BLOCK, buffer.get_name().c_str());
-    glUniformBlockBinding(rd_handle_, block_index, binding_point);
+    // GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_UNIFORM_BLOCK, buffer.get_name().c_str());
+    // glUniformBlockBinding(rd_handle_, block_index, binding_point);
 }
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
@@ -403,54 +420,76 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	return true;
 }
 
-void OGLShader::setup_uniform_registry()
+void OGLShader::register_resources()
 {
-#ifdef __DEBUG__
-	// * Program active report: show detected active attributes
-    GLint active_attribs;
-    glGetProgramiv(rd_handle_, GL_ACTIVE_ATTRIBUTES, &active_attribs);
-    DLOG("shader",1) << "Detected " << active_attribs << " active attributes:" << std::endl;
-
-    for(GLint ii=0; ii<active_attribs; ++ii)
+    static std::vector<GLenum> interfaces { GL_PROGRAM_INPUT, GL_UNIFORM, GL_BUFFER_VARIABLE, GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK };
+    static std::map<GLenum, std::vector<GLenum>> properties_map
     {
-        char name[33];
-        GLsizei length;
-        GLint   size;
-        GLenum  type;
+        {GL_PROGRAM_INPUT,        {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},
+        {GL_UNIFORM,              {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},
+        {GL_BUFFER_VARIABLE,      {GL_NAME_LENGTH, GL_TYPE, GL_BLOCK_INDEX, GL_ARRAY_SIZE}},
+        {GL_UNIFORM_BLOCK,        {GL_NAME_LENGTH, GL_BUFFER_BINDING}},
+        {GL_SHADER_STORAGE_BLOCK, {GL_NAME_LENGTH, GL_BUFFER_BINDING}},
+    };
 
-        glGetActiveAttrib(rd_handle_, ii, 32, &length, &size, &type, name);
-        GLint loc = glGetAttribLocation(rd_handle_, name);
-
-    	DLOGI << "[" << loc << "] " << ogl_attribute_type_to_string(type) << " " << WCC('u') << name << WCC(0) << std::endl;
-    }
-#endif
-
-    // Get number of active uniforms
-    GLint num_active_uniforms;
-    glGetProgramiv(rd_handle_, GL_ACTIVE_UNIFORMS, &num_active_uniforms);
-
-    if(num_active_uniforms)
+    for(int ii=0; ii<interfaces.size(); ++ii)
     {
-    	DLOG("shader",1) << "Detected " << num_active_uniforms << " active uniforms:" << std::endl;
-    }
-    // For each uniform register name in map
-    for(unsigned int ii=0; ii<num_active_uniforms; ++ii)
-    {
-        GLchar name[33];
-        GLsizei length=0;
-        GLint   size;
-        GLenum  type;
+        // Get active objects count
+        GLint num_active;
+        GLenum iface = interfaces[ii];
+        glGetProgramInterfaceiv(rd_handle_, iface, GL_ACTIVE_RESOURCES, &num_active);
 
-        glGetActiveUniform(rd_handle_, ii, 32, &length, &size, &type, name);
-        GLint loc = glGetUniformLocation(rd_handle_, name);
+        if(num_active)
+        {
+            DLOG("shader",1) << "[" << ogl_interface_to_string(iface) << "] active: " << num_active << std::endl;
+        }
+
+        // Get properties
+        const auto& properties = properties_map.at(iface);
+        std::vector<GLint> prop_values(properties.size());
+        std::vector<GLchar> name_data(256);
         
-        hash_t hname = H_(name);
-        uniform_locations_.insert(std::make_pair(hname, loc));
+        for(int jj=0; jj<num_active; ++jj)
+        {
+            glGetProgramResourceiv(rd_handle_, iface, jj, properties.size(),
+                                   &properties[0], prop_values.size(), nullptr, &prop_values[0]);
 
-        if(type == GL_SAMPLER_2D || type == GL_SAMPLER_CUBE)
-            texture_slots_.insert(std::make_pair(hname, current_slot_++));
+            name_data.resize(prop_values[0]); //The length of the name.
+            glGetProgramResourceName(rd_handle_, iface, jj, name_data.size(), nullptr, &name_data[0]);
+            std::string resource_name((char*)&name_data[0], name_data.size() - 1);
+            hash_t hname = H_(resource_name.c_str());
 
-        DLOGI << "[" << loc << "] " << ogl_uniform_type_to_string(type) << " " << WCC('u') << name << WCC(0) << std::endl;
+            // Register resource
+            if(iface == GL_PROGRAM_INPUT)
+            {
+                GLint loc = glGetAttribLocation(rd_handle_, resource_name.c_str());
+                DLOGI << "[" << loc << "] " << ogl_attribute_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+            }
+            else if(iface == GL_UNIFORM)
+            {
+                GLint loc = glGetUniformLocation(rd_handle_, resource_name.c_str());
+                uniform_locations_.insert(std::make_pair(hname, loc));
+
+                if(prop_values[1] == GL_SAMPLER_2D || prop_values[1] == GL_SAMPLER_CUBE)
+                    texture_slots_.insert(std::make_pair(hname, current_slot_++));
+
+                DLOGI << "[" << loc << "] " << ogl_uniform_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+            }
+            else if(iface == GL_BUFFER_VARIABLE)
+            {
+                DLOGI << "[" << prop_values[2] << "] " << ogl_uniform_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+            }
+            else if(iface == GL_UNIFORM_BLOCK)
+            {
+                block_bindings_.insert(std::make_pair(hname, prop_values[1]));
+                DLOGI << "[" << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
+            }
+            else if(iface == GL_SHADER_STORAGE_BLOCK)
+            {
+                block_bindings_.insert(std::make_pair(hname, prop_values[1]));
+                DLOGI << "[" << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
+            }
+        }
     }
 }
 

@@ -160,7 +160,7 @@ void Renderer2D::end_scene()
 	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture("fb_2d_raw"_h, "albedo"_h);
 	post_proc_shader.attach_texture("us_input"_h, albedo_tex);
 	pp_ubo_->map(&post_proc_data_);
-	post_proc_shader.attach_uniform_buffer(*pp_ubo_, 0);
+	post_proc_shader.attach_uniform_buffer(*pp_ubo_);
     Gfx::device->draw_indexed(screen_va_);
 	post_proc_shader.unbind();
 
@@ -223,11 +223,7 @@ void Renderer2D::submit(WRef<VertexArray> va, hash_t shader_name, const ShaderPa
 	// * Setup uniforms
 	// Setup samplers
 	for(auto&& [sampler, texture]: params.texture_slots)
-	{
-		uint32_t slot = shader.get_texture_slot(sampler);
-    	texture->bind(slot);
-    	static_cast<const OGLShader&>(shader).send_uniform<int>(sampler, slot);
-	}
+		shader.attach_texture(sampler, *texture);
 
 	// * Draw
     Gfx::device->draw_indexed(va);
@@ -315,9 +311,7 @@ void BatchRenderer2D::flush()
 
 	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
-	uint32_t slot = shader.get_texture_slot("us_atlas"_h);
-	scene_data_.texture->bind(slot);
-	static_cast<const OGLShader&>(shader).send_uniform<int>("us_atlas"_h, slot);
+	shader.attach_texture("us_atlas"_h, *scene_data_.texture);
 
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
@@ -442,20 +436,18 @@ void InstanceRenderer2D::flush()
 	shader.bind();
 	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
-	uint32_t slot = shader.get_texture_slot("us_atlas"_h);
-	scene_data_.texture->bind(slot);
-	static_cast<const OGLShader&>(shader).send_uniform<int>("us_atlas"_h, slot);
+	shader.attach_texture("us_atlas"_h, *scene_data_.texture);
 
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
-		shader.attach_shader_storage(*batches_[ii], ii);
+		shader.attach_shader_storage(*batches_[ii]);
     	Gfx::device->draw_indexed_instanced(quad_va_, max_batch_count_);
 		++stats_.batches;
 	}
     if(current_batch_count_)
     {
-		shader.attach_shader_storage(*batches_[current_batch_], current_batch_);
+		shader.attach_shader_storage(*batches_[current_batch_]);
     	Gfx::device->draw_indexed_instanced(quad_va_, current_batch_count_);
 		++stats_.batches;
     }

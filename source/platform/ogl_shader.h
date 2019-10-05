@@ -21,8 +21,8 @@ public:
 	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const override;
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t binding_point) const override;
-	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t binding_point) const override;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) const override;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer) const override;
 
     // Uniform management
     template <typename T>
@@ -40,13 +40,14 @@ private:
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
 	// Helper function to construct the uniform location and texture slot registries
-	void setup_uniform_registry();
+	void register_resources();
 
 private:
     uint32_t rd_handle_ = 0;
     uint32_t current_slot_ = 0;
     std::unordered_map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
     std::unordered_map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
+    std::unordered_map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
     fs::path filepath_;
 };
 

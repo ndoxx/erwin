@@ -1309,7 +1309,7 @@ for(auto& entry: fs::directory_iterator(s_tmap_upack_path))
 Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à *true* quand l'option "-f" (pour "force") est passée au programme. Ceci est utile, car le système ne track pas les noms d'assets écrits, seulement les directory_entry en argument des factory methods. De fait, si l'on supprime un fichier d'asset, celui-ci ne sera pas recréé en relançant fudge car il existe encore une entrée valide dans le registre. Ceci sera probablement corrigé par la suite.
 
 
-#[03-10-19]
+#[03-10-19] Maintenance
 ##TODO:
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
     https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually

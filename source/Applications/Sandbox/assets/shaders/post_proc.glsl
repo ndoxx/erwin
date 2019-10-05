@@ -22,7 +22,7 @@ layout(location = 0) out vec4 out_color;
 
 uniform sampler2D us_input;
 
-layout(std140) uniform post_proc_layout
+layout(std140, binding = 0) uniform post_proc_layout
 {
 	vec4 u_vib_balance;     // Vibrance
 	vec4 u_cor_gamma;       // Color correction
