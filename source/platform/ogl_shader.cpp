@@ -291,50 +291,16 @@ std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::stri
 
 std::string OGLShader::parse_includes(const std::string& source)
 {
-    // Find all #include directives, extract file location
-    static const std::string include_token = "#include";
-    size_t pos = source.find(include_token, 0);
+    W_ASSERT(!filepath_.empty(), "Cannot include shader files when source is a pure string.");
 
-    std::vector<std::string> files;
-    std::vector<std::pair<uint32_t,uint32_t>> inc_pos_len;
-    while(pos != std::string::npos)
-    {
-        size_t eol = source.find_first_of("\r\n", pos);
-        size_t begin = pos + include_token.size() + 1;
-        size_t next_line_pos = source.find_first_not_of("\r\n", eol);
-
-        files.push_back(source.substr(begin, eol - begin));
-        inc_pos_len.push_back(std::make_pair(pos,next_line_pos-pos-1));
-
-        pos = source.find(include_token, next_line_pos);
-    }
-
-    // Remove include directives from source and replace by actual included source
-    std::string ret(source);
-    int char_offset = 0;
-    for(int ii=0; ii<files.size(); ++ii)
-    {
-        DLOG("shader", 1) << "including: " << WCC('p') << files[ii] << std::endl;
-        uint32_t pos = inc_pos_len[ii].first + char_offset;
-        uint32_t len = inc_pos_len[ii].second;
-        ret.erase(pos, len);
-
-        if(!filepath_.empty())
-        {
-            std::string inc_source = filesystem::get_asset_string(filepath_.parent_path() / files[ii]);
-            ret.insert(pos, inc_source);
-
-            // Kepp track of the number of characters added and removed
-            char_offset += inc_source.size()-len;
-        }
-        else
-        {
-            DLOGE("shader") << "Cannot include from string source shader!" << std::endl;
-            char_offset -= len;
-        }
-    }
-
-    return ret;
+    // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
+    std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
+    return rx::regex_replace(source, e_inc, [&](const std::smatch& m){
+        std::string result = m[1].str();
+        std::string filename = result.substr(1, result.size()-2);
+        DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
+        return "\n" + filesystem::get_file_as_string(filepath_.parent_path() / filename) + "\n";
+    });
 }
 
 bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)

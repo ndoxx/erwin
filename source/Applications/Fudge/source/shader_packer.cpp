@@ -1,6 +1,8 @@
 #include "shader_packer.h"
+#include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
 #include "core/core.h"
+#include "core/string_utils.h"
 #include "debug/logger.h"
 
 #include <vector>
@@ -13,87 +15,66 @@ using namespace erwin;
 
 namespace fudge
 {
-namespace shd
+namespace spv
 {
 
-static spv::ShaderType type_from_hstring(hash_t htype)
+static erwin::spv::ShaderType type_from_hstring(hash_t htype)
 {
 	switch(htype)
 	{
-		case "vertex"_h: 	return spv::ShaderType::Vertex;
-		case "vert"_h: 	    return spv::ShaderType::Vertex;
-		case "geometry"_h: 	return spv::ShaderType::Geometry;
-		case "geom"_h: 	    return spv::ShaderType::Geometry;
-		case "fragment"_h: 	return spv::ShaderType::Fragment;
-		case "frag"_h: 	    return spv::ShaderType::Fragment;
-		default: 			return spv::ShaderType::None;
+		case "vertex"_h: 	return erwin::spv::ShaderType::Vertex;
+		case "vert"_h: 	    return erwin::spv::ShaderType::Vertex;
+		case "geometry"_h: 	return erwin::spv::ShaderType::Geometry;
+		case "geom"_h: 	    return erwin::spv::ShaderType::Geometry;
+		case "fragment"_h: 	return erwin::spv::ShaderType::Fragment;
+		case "frag"_h: 	    return erwin::spv::ShaderType::Fragment;
+		default: 			return erwin::spv::ShaderType::None;
 	}
 }
 
-static std::string extension_from_type(spv::ShaderType type)
+static std::string extension_from_type(erwin::spv::ShaderType type)
 {
 	switch(type)
 	{
-		case spv::ShaderType::Vertex:   return ".vert";
-		case spv::ShaderType::Geometry: return ".geom";
-		case spv::ShaderType::Fragment: return ".frag";
-		default:                        return ".bad";
+		case erwin::spv::ShaderType::Vertex:   return ".vert";
+		case erwin::spv::ShaderType::Geometry: return ".geom";
+		case erwin::spv::ShaderType::Fragment: return ".frag";
+		default:                               return "";
 	}
 }
 
-static std::string spv_file_from_type(spv::ShaderType type)
+static std::string spv_file_from_type(erwin::spv::ShaderType type)
 {
 	switch(type)
 	{
-		case spv::ShaderType::Vertex:   return "vert.spv";
-		case spv::ShaderType::Geometry: return "geom.spv";
-		case spv::ShaderType::Fragment: return "frag.spv";
-		default:                        return "bad.spv";
+		case erwin::spv::ShaderType::Vertex:   return "vert.spv";
+		case erwin::spv::ShaderType::Geometry: return "geom.spv";
+		case erwin::spv::ShaderType::Fragment: return "frag.spv";
+		default:                               return "";
 	}
 }
 
-static void parse_includes(std::string& source, const fs::path& source_dir)
+void test()
 {
-    // Find all #include directives, extract file location
-    static const std::string include_token = "#include";
-    size_t pos = source.find(include_token, 0);
 
-    std::vector<std::string> files;
-    std::vector<std::pair<uint32_t,uint32_t>> inc_pos_len;
-    while(pos != std::string::npos)
-    {
-        size_t eol = source.find_first_of("\r\n", pos);
-        size_t begin = pos + include_token.size() + 1;
-        size_t next_line_pos = source.find_first_not_of("\r\n", eol);
-
-        files.push_back(source.substr(begin, eol - begin));
-        inc_pos_len.push_back(std::make_pair(pos,next_line_pos-pos-1));
-
-        pos = source.find(include_token, next_line_pos);
-    }
-
-    // Remove include directives from source and replace by actual included source
-    int char_offset = 0;
-    for(int ii=0; ii<files.size(); ++ii)
-    {
-        DLOG("fudge", 1) << "including: " << WCC('p') << files[ii] << WCC(0) << std::endl;
-        uint32_t pos = inc_pos_len[ii].first + char_offset;
-        uint32_t len = inc_pos_len[ii].second;
-        source.erase(pos, len);
-
-		std::ifstream ifs(source_dir / files[ii]);
-		std::string inc_source((std::istreambuf_iterator<char>(ifs)),
-                                std::istreambuf_iterator<char>());
-        source.insert(pos, inc_source);
-
-        // Kepp track of the number of characters added and removed
-        char_offset += inc_source.size()-len;
-    }
 }
 
-static std::vector<std::pair<spv::ShaderType, std::string>> parse(const std::string& full_source, const fs::path& source_dir)
+static void handle_includes(std::string& source, const fs::path& source_dir)
 {
-	std::vector<std::pair<spv::ShaderType, std::string>> sources;
+    // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
+    std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
+    source = rx::regex_replace(source, e_inc, [&](const std::smatch& m)
+    {
+        std::string result = m[1].str();
+        std::string filename = result.substr(1, result.size()-2);
+        DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
+        return "\n" + filesystem::get_file_as_string(source_dir / filename) + "\n";
+    });
+}
+
+static std::vector<std::pair<erwin::spv::ShaderType, std::string>> preprocess(const std::string& full_source, const fs::path& source_dir)
+{
+	std::vector<std::pair<erwin::spv::ShaderType, std::string>> sources;
 
 	static const std::string type_token = "#type";
 	size_t pos = full_source.find(type_token, 0);
@@ -105,8 +86,8 @@ static std::vector<std::pair<spv::ShaderType, std::string>> parse(const std::str
 		size_t begin = pos + type_token.size() + 1;
 		std::string type = full_source.substr(begin, eol - begin);
 		hash_t htype = H_(type.c_str());
-		spv::ShaderType shader_type = type_from_hstring(htype);
-		W_ASSERT(shader_type!=spv::ShaderType::None, "Invalid shader type specified!");
+		erwin::spv::ShaderType shader_type = type_from_hstring(htype);
+		W_ASSERT(shader_type!=erwin::spv::ShaderType::None, "Invalid shader type specified!");
 
 		size_t next_line_pos = full_source.find_first_not_of("\r\n", eol);
 		pos = full_source.find(type_token, next_line_pos);
@@ -116,10 +97,26 @@ static std::vector<std::pair<spv::ShaderType, std::string>> parse(const std::str
 
 	for(auto&& [type, source]: sources)
 	{
-        parse_includes(source, source_dir);
+        handle_includes(source, source_dir);
 	}
 
 	return sources;
+}
+
+extern bool check_toolchain()
+{
+    if(system("glslangValidator -v > /dev/null 2>&1"))
+    {
+        DLOGW("fudge") << "glslangValidator not found, skipping shader compilation." << std::endl;
+        return false;
+    }
+    if(system("spirv-link --version > /dev/null 2>&1"))
+    {
+        DLOGW("fudge") << "spirv-link not found, skipping shader compilation." << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 // TODO: Stop using system calls, compile shaders programatically.
@@ -130,10 +127,10 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 	std::string shader_name = source_path.stem().string();
 
     std::ifstream ifs(source_path);
-    // Read stream to buffer and parse full source
-    auto sources = parse(std::string((std::istreambuf_iterator<char>(ifs)),
-                                      std::istreambuf_iterator<char>()),
-    					 source_dir);
+    // Read stream to buffer and preprocess full source
+    auto sources = preprocess(std::string((std::istreambuf_iterator<char>(ifs)),
+                                           std::istreambuf_iterator<char>()),
+    					      source_dir);
     ifs.close();
 
     // Export temporary source files for each shader
@@ -154,6 +151,7 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     	// Compile shader file
 		std::stringstream cmd;
 		cmd << "glslangValidator -G -e main -o " << out_spv.string() << " " << shader_file.string();
+        // cmd << " > /dev/null";
 		int error = system(cmd.str().c_str());
 		success &= (error==0);
 
@@ -164,18 +162,18 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     if(success)
     {
     	fs::path out_path = output_dir / (source_path.stem().string() + ".spv");
-    	DLOG("fudge",1) << "Successfully compiled shaders. Now, packing." << std::endl;
+    	DLOG("fudge",1) << "Successfully compiled shaders. Now, linking." << std::endl;
     	DLOGI << WCC('p') << out_path.filename() << WCC(0) << std::endl;
 
-		/*std::stringstream cmd;
+		std::stringstream cmd;
 		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
-		system(cmd.str().c_str());*/
+		system(cmd.str().c_str());
 
-    	spv::SPVDescriptor desc { out_path };
+    	/*erwin::spv::SPVDescriptor desc { out_path };
     	for(auto&& spv: spvs)
     	{
     		desc.shaders.emplace_back();
-    		spv::SPVShaderDescriptor& shd_desc = desc.shaders.back();
+    		erwin::spv::SPVShaderDescriptor& shd_desc = desc.shaders.back();
 
     		std::ifstream ifs(spv, std::ios::binary|std::ios::ate);
     		std::ifstream::pos_type len = ifs.tellg();
@@ -185,9 +183,9 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     		ifs.read(&shd_desc.data[0], len);
 		    ifs.close();
     	}
-    	spv::write_spv(desc);
+    	erwin::spv::write_spv(desc);*/
     }
 }
 
-} // namespace shd
+} // namespace spv
 } // namespace fudge

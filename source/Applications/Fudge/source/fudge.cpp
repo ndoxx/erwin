@@ -229,6 +229,14 @@ int main(int argc, char const *argv[])
     if(cmd_option_exists(argv, argv + argc, "-f"))
         s_force_rebuild = true;
 
+    // Test
+    if(cmd_option_exists(argv, argv + argc, "-t"))
+    {
+        fudge::spv::test();
+        return 0;
+    }
+
+
     // * Locate executable path, root directory, config directory, asset and fonts directories
     DLOGN("fudge") << "Locating unpacked assets." << std::endl;
     s_self_path = get_selfpath();
@@ -313,22 +321,25 @@ int main(int argc, char const *argv[])
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
-    // Create temporary folder
-    fs::create_directory(s_shader_output_path / "tmp");
-    DLOGN("fudge") << "Iterating shaders." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_shader_input_path))
+    if(fudge::spv::check_toolchain())
     {
-        if(entry.is_regular_file() && 
-           !entry.path().extension().string().compare(".glsl") &&
-           (fudge::far::need_create(entry) || s_force_rebuild))
+        // Create temporary folder
+        fs::create_directory(s_shader_output_path / "tmp");
+        DLOGN("fudge") << "Iterating shaders." << std::endl;
+        for(auto& entry: fs::directory_iterator(s_shader_input_path))
         {
-            DLOG("fudge",1) << "Processing shader: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
-            fudge::shd::make_shader_spirv(entry.path(), s_shader_output_path);
-            DLOGR("fudge") << std::endl;
+            if(entry.is_regular_file() && 
+               !entry.path().extension().string().compare(".glsl") &&
+               (fudge::far::need_create(entry) || s_force_rebuild))
+            {
+                DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
+                fudge::spv::make_shader_spirv(entry.path(), s_shader_output_path);
+                DLOGR("fudge") << std::endl;
+            }
         }
+        // Delete temporary folder
+        fs::remove_all(s_shader_output_path / "tmp");
     }
-    // Delete temporary folder
-    fs::remove_all(s_shader_output_path / "tmp");
 
     // Save asset registry file
     fudge::far::save(s_conf_path / "fudge.far");

@@ -14,7 +14,7 @@ void main()
 #type fragment
 #version 460 core
 
-#include include/post_proc_inc.glsl
+#include "include/post_proc_inc.glsl"
 
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
