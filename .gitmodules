@@ -7,6 +7,7 @@
 [submodule "source/vendor/glfw"]
 	path = source/vendor/glfw
 	url = https://github.com/glfw/glfw.git
+	ignore = dirty
 [submodule "source/vendor/imgui"]
 	path = source/vendor/imgui
 	url = https://github.com/ocornut/imgui.git
@@ -19,6 +20,7 @@
 [submodule "source/vendor/freetype"]
 	path = source/vendor/freetype
 	url = git://git.sv.nongnu.org/freetype/freetype2.git
+	ignore = dirty
 [submodule "source/vendor/rectpack2D"]
 	path = source/vendor/rectpack2D
 	url = https://github.com/TeamHypersomnia/rectpack2D.git
@@ -28,9 +30,11 @@
 [submodule "source/vendor/zlib"]
 	path = source/vendor/zlib
 	url = https://github.com/madler/zlib.git
+	ignore = dirty
 [submodule "source/vendor/rapidxml"]
 	path = source/vendor/rapidxml
 	url = https://github.com/dwd/rapidxml.git
 [submodule "source/vendor/glad"]
 	path = source/vendor/glad
 	url = https://github.com/Dav1dde/glad.git
+	ignore = dirty

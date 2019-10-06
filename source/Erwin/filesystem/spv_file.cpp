@@ -1,5 +1,5 @@
 #include "filesystem/spv_file.h"
-#include "debug/logger.h"
+#include "core/core.h"
 
 #include <fstream>
 #include <cstring>

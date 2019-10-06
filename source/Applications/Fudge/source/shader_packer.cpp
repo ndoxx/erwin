@@ -122,6 +122,7 @@ static std::vector<std::pair<spv::ShaderType, std::string>> parse(const std::str
 	return sources;
 }
 
+// TODO: Stop using system calls, compile shaders programatically.
 void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 {
 	fs::path source_dir = source_path.parent_path();
@@ -137,12 +138,14 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 
     // Export temporary source files for each shader
     std::vector<fs::path> spvs;
+    std::string spvs_str;
     bool success = true;
     for(auto&& [type, source]: sources)
     {
     	fs::path shader_file = tmp_dir / (shader_name + extension_from_type(type));
     	fs::path out_spv     = tmp_dir / spv_file_from_type(type);
     	spvs.push_back(out_spv);
+    	spvs_str += out_spv.string() + " ";
 
     	std::ofstream ofs(shader_file);
 		ofs << source;
@@ -161,8 +164,13 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     if(success)
     {
     	fs::path out_path = output_dir / (source_path.stem().string() + ".spv");
-    	DLOG("fudge",1) << "Successfully compiled shader program. Now, packing." << std::endl;
-    	DLOGI << WCC('p') << out_path << WCC(0) << std::endl;
+    	DLOG("fudge",1) << "Successfully compiled shaders. Now, packing." << std::endl;
+    	DLOGI << WCC('p') << out_path.filename() << WCC(0) << std::endl;
+
+		/*std::stringstream cmd;
+		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
+		system(cmd.str().c_str());*/
+
     	spv::SPVDescriptor desc { out_path };
     	for(auto&& spv: spvs)
     	{
@@ -179,10 +187,6 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     	}
     	spv::write_spv(desc);
     }
-
-	// Erase temporary spv files
-	for(auto&& spv: spvs)
-		fs::remove(spv);
 }
 
 } // namespace shd

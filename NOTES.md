@@ -1323,6 +1323,8 @@ Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à
         [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
     [ ] Ecrire un renderer 3D multi-threaded
     [X] Ecrire un script de building pour tout le projet (gère les deps...)
+    [ ] Gérer le callback d'erreurs OpenGL
+    https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
 
 ##Glad Submodule
 J'ai écrit un fichier extensions.txt contenant toutes les extensions que GLAD doit prendre en charge, à la racine du dossier glad. J'ai aussi créé un CMakeLists.txt custom qui remplace l'ancien, afin de compiler la lib en -fPIC et d'écrire le .a dans le dossier erwin/lib.
