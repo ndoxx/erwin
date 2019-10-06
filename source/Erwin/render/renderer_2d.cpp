@@ -115,7 +115,8 @@ batch_ttl_(s_max_batches, 0)
 	screen_va_->set_vertex_buffer(quad_vb);
 
 	// UBO for post processing data
-	pp_ubo_ = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
+	pp_ubo_  = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
+	mat_ubo_ = UniformBuffer::create("matrices_layout", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
 }
 
 Renderer2D::~Renderer2D()
@@ -152,6 +153,7 @@ void Renderer2D::end_scene()
 	// Render on offscreen framebuffer
 	Gfx::framebuffer_pool->bind("fb_2d_raw"_h);
 	Gfx::device->clear(CLEAR_COLOR_FLAG);
+	mat_ubo_->map(&scene_data_.view_projection_matrix);
 	flush();
 	// Render generated texture on screen after post-processing
 	Gfx::framebuffer_pool->bind(0);
@@ -309,8 +311,9 @@ void BatchRenderer2D::flush()
 	const Shader& shader = Renderer2D::shader_bank.get("color_dup_shader"_h);
 	shader.bind();
 
-	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
+	// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
+	shader.attach_uniform_buffer(*mat_ubo_);
 	shader.attach_texture("us_atlas"_h, *scene_data_.texture);
 
 	// Draw all full batches plus the last one if not empty
@@ -434,8 +437,9 @@ void InstanceRenderer2D::flush()
 {
 	const Shader& shader = Renderer2D::shader_bank.get("color_inst_shader"_h);
 	shader.bind();
-	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
+	// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
+	shader.attach_uniform_buffer(*mat_ubo_);
 	shader.attach_texture("us_atlas"_h, *scene_data_.texture);
 
 	// Draw all full batches plus the last one if not empty

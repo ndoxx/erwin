@@ -55,6 +55,7 @@ set(SRC_CORE
 
 set(SRC_FILESYSTEM
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/spv_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/tom_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/cat_file.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/xml_file.cpp

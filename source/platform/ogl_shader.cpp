@@ -422,8 +422,8 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 void OGLShader::register_resources()
 {
-    static std::vector<GLenum> interfaces { GL_PROGRAM_INPUT, GL_UNIFORM, GL_BUFFER_VARIABLE, GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK };
-    static std::map<GLenum, std::vector<GLenum>> properties_map
+    static const std::vector<GLenum> interfaces { GL_PROGRAM_INPUT, GL_UNIFORM, GL_BUFFER_VARIABLE, GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK };
+    static const std::map<GLenum, std::vector<GLenum>> properties_map
     {
         {GL_PROGRAM_INPUT,        {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},
         {GL_UNIFORM,              {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},

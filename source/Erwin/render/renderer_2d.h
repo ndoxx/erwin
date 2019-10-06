@@ -113,6 +113,7 @@ protected:
 	uint32_t current_batch_count_;
 	RenderStats stats_;
 	SceneData scene_data_;
+	WRef<UniformBuffer> mat_ubo_;
 
 private:
 	std::vector<uint16_t> batch_ttl_;

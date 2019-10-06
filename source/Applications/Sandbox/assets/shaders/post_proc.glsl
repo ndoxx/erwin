@@ -3,8 +3,7 @@
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
-
-out vec2 v_uv;
+layout(location = 2) out vec2 v_uv;
 
 void main()
 {
@@ -17,10 +16,9 @@ void main()
 
 #include include/post_proc_inc.glsl
 
-in vec2 v_uv;
+layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-
-uniform sampler2D us_input;
+layout(binding = 0) uniform sampler2D us_input;
 
 layout(std140, binding = 0) uniform post_proc_layout
 {

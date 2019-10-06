@@ -3,8 +3,7 @@
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_color;
-
-out vec3 v_color;
+layout(location = 2) out vec3 v_color;
 
 void main()
 {
@@ -15,7 +14,7 @@ void main()
 #type fragment
 #version 460 core
 
-in vec3 v_color;
+layout(location = 2) in vec3 v_color;
 layout(location = 0) out vec4 out_color;
 
 void main()

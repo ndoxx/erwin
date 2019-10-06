@@ -72,11 +72,11 @@ rd_handle_(0)
 
 OGLVertexBuffer::~OGLVertexBuffer()
 {
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Vertex Buffer " << WCC(0) << " id=" << rd_handle_ << std::endl;
     // Unbind and delete
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
-
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+    DLOGI << "done" << std::endl;
 }
 
 void OGLVertexBuffer::bind() const
@@ -123,11 +123,12 @@ rd_handle_(0)
 
 OGLIndexBuffer::~OGLIndexBuffer()
 {
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
     // Unbind and delete
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+    DLOGI << "done" << std::endl;
 }
 
 void OGLIndexBuffer::bind() const
@@ -171,11 +172,12 @@ UniformBuffer(name, struct_size)
 
 OGLUniformBuffer::~OGLUniformBuffer()
 {
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
     // Unbind and delete
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+    DLOGI << "done" << std::endl;
 }
 
 void OGLUniformBuffer::bind() const
@@ -215,11 +217,12 @@ ShaderStorageBuffer(name, count, struct_size)
 
 OGLShaderStorageBuffer::~OGLShaderStorageBuffer()
 {
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
     // Unbind and delete
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     glDeleteBuffers(1, &rd_handle_);
 
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+    DLOGI << "done" << std::endl;
 }
 
 void OGLShaderStorageBuffer::bind() const
@@ -278,8 +281,9 @@ OGLVertexArray::OGLVertexArray()
 
 OGLVertexArray::~OGLVertexArray()
 {
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " id=" << rd_handle_ << std::endl;
     glDeleteVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " destroyed. id=" << rd_handle_ << std::endl;
+    DLOGI << "done" << std::endl;
 }
 
 void OGLVertexArray::bind() const

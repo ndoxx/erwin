@@ -13,11 +13,14 @@ layout(std430, binding = 0) buffer instance_data
     InstanceData inst[];
 };
 
+layout(std140, binding = 0) uniform matrices_layout
+{
+    mat4 u_view_projection;
+};
+
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
 layout(location = 2) out vec2 v_uv;
-
-uniform mat4 u_view_projection;
 
 void main()
 {

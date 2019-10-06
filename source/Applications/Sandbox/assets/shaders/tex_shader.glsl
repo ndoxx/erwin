@@ -3,9 +3,8 @@
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
-
-out vec3 v_color;
-out vec2 v_uv;
+layout(location = 2) out vec3 v_color;
+layout(location = 3) out vec2 v_uv;
 
 void main()
 {
@@ -17,11 +16,10 @@ void main()
 #type fragment
 #version 460 core
 
-in vec3 v_color;
-in vec2 v_uv;
+layout(location = 2) in vec3 v_color;
+layout(location = 3) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-
-uniform sampler2D us_albedo;
+layout(binding = 0) uniform sampler2D us_albedo;
 
 void main()
 {

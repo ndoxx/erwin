@@ -52,7 +52,7 @@ public:
 
 	// Factory method for the creation of an API-specific shader from a file path
 	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
-	// Factory method for the creation of an API-specific shader from a string
+	// Factory method for the creation of an API-specific shader from a source string
 	static WRef<Shader> create(const std::string& name, const std::string& source_string);
 
 protected:

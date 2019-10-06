@@ -17,10 +17,14 @@ void main()
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
 
+layout(std140, binding = 0) uniform matrices_layout
+{
+    mat4 u_view_projection;
+};
+
 layout(location = 2) in vec2 v_uv[];
 layout(location = 3) out vec2 f_uv;
 
-uniform mat4 u_view_projection;
 
 void main()
 {

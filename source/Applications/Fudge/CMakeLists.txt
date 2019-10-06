@@ -5,6 +5,7 @@ set(SRC_FUDGE
     source/dxt_compressor.cpp
     source/atlas_packer.cpp
     source/texture_packer.cpp
+    source/shader_packer.cpp
     source/optimal_packing.cpp
     ${SRC_FILESYSTEM}
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
