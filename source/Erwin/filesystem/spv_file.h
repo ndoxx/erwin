@@ -1,13 +1,14 @@
 #pragma once
 
 /*
-	Spir-V binary shader program file
+	Spir-V binary shader module
+		* Simple parsing routines for .spv files
 */
 
 #include <vector>
 #include <filesystem>
 
-#include "render/texture_common.h"
+#include "core/wtypes.h"
 
 namespace fs = std::filesystem;
 
@@ -16,29 +17,23 @@ namespace erwin
 namespace spv
 {
 
-enum class ShaderType: uint8_t
+enum class ExecutionModel: uint32_t
 {
-	None = 0,
-	Vertex,
-	Geometry,
-	Fragment,
+    Vertex = 0,
+    TessellationControl = 1,
+    TessellationEvaluation = 2,
+    Geometry = 3,
+    Fragment = 4,
+    GLCompute = 5,
 };
 
-struct SPVShaderDescriptor
+struct ShaderStageDescriptor
 {
-	ShaderType type = ShaderType::None;
-	std::string entry_point = "main";
-	std::vector<char> data;
+	ExecutionModel execution_model;
+	std::string entry_point;
 };
 
-struct SPVDescriptor
-{
-	fs::path filepath;
-	std::vector<SPVShaderDescriptor> shaders;
-};
-
-extern void read_spv(SPVDescriptor& desc);
-extern void write_spv(const SPVDescriptor& desc);
+extern std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path);
 
 } // namespace spv
 } // namespace erwin

@@ -25,15 +25,6 @@ cd build
 cmake ..
 # GLAD
 make glad
-# glslang
-# cd ../source/vendor/glslang
-# # ./update_glslang_sources.py
-# mkdir build
-# cd build
-# cmake ..
-# make -j4
-# sudo make install # TMP?
-# cd ../../../../build
 # GLFW
 cd ../source/vendor/glfw
 mkdir build

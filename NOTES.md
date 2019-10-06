@@ -1346,3 +1346,150 @@ Le script scripts/build_linux.sh installe toutes les dépendances linux, initial
 NOTES:
     * Il *faut* se trouver dans le dossier scripts, sans quoi rien ne peut fonctionner (pour l'instant, je suppose). 
     * Les ressources que j'utilise pour mes tests avec la sandbox (textures...) ne sont pas sur le github.
+
+
+#[06-10-19]
+##SPIR-V
+SPIR-V est un langage de shading intermédiaire proche du langage machine. Comme il est plus simple et moins sujet à l'interprétation que les langages de plus haut niveau tels que GLSL ou HLSL, on peut supposer que ses implémentations constructeur varient peu et sont suffisamment optimisées. L'idée est (comme avec Clang/LLVM) de couper le compilateur en deux : un front-end (GLSL/HLSL) et un back-end (SPIR-V). Un avantage immédiat est que l'on peut avoir en entrée des shaders écrits en HLSL, pour autant la sortie SPIR-V sera exécutable dans un environnement OpenGL ou Vulkan.
+
+Fudge se charge également de la compilation des shaders dans des modules SPIR-V (non encore testés in-game). L'application a (jusqu'à nouvel ordre) recours à des system calls pour exécuter des lignes de commande impliquant différents outils SPIR-V externes. La fonction check_toolchain() du namespace fudge::spv permet de vérifier la présence de ces outils. Si un seul vient à manquer, la compilation des shaders n'aura pas lieu. Il est laissé à la discrétion de l'utilisateur de l'engine d'installer ces outils lui-même et de les rendre disponibles dans le PATH.
+
+*glslangValidator* est utilisé pour la compilation depuis le GLSL vers SPIR-V :
+> glslangValidator -G -e main -o vert.spv input.vert
+
+*spirv-link* est utilisé pour combiner plusieurs shaders SPIR-V en un seul module binaire avec plusieurs points d'entrée :
+> spirv-link vert.spv geom.spv frag.spv -o module_name.spv
+
+###Travail préliminaire
+Pour qu'un shader GLSL puisse compiler en SPIR-V, plusieurs contraintes doivent être respectées :
+    
+    * Les attributs et varying doivent être localisés
+    * Les types opaques (comme sampler2D) doivent être associés à un binding
+    * Tous les uniforms doivent être présents dans un layout (genre UBO) avec un binding déterminé
+
+Exemple avec mon fragment shader de post-processing :
+```glsl
+#version 460 core
+
+layout(location = 2) in vec2 v_uv;
+layout(location = 0) out vec4 out_color;
+layout(binding = 0) uniform sampler2D us_input;
+
+layout(std140, binding = 0) uniform post_proc_layout
+{
+    vec4 u_vib_balance;     // Vibrance
+    vec4 u_cor_gamma;       // Color correction
+    float u_ca_shift;       // Chromatic aberration
+    // ...
+};
+```
+Basiquement, on spécifie depuis le shader absolument toutes les données d'indexation des ressources. Côté client, il faut donc récupérer ces données plutôt que de les modifier. Par exemple, jusque-là je devais préciser un binding point dans mes calls à Shader::attach_shader_storage() et Shader::attach_uniform_buffer(), et je me servais de ce paramètre pour modifier dynamiquement le binding point de la ressource en question :
+```cpp
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, 
+                                      uin32_t binding_point) const
+{
+    hash_t hname = H_(buffer.get_name().c_str());
+    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, 
+        static_cast<const OGLUniformBuffer&>(buffer).get_handle());
+    GLuint block_index = glGetProgramResourceIndex(rd_handle_, 
+        GL_UNIFORM_BLOCK, buffer.get_name().c_str());
+    glUniformBlockBinding(rd_handle_, block_index, binding_point);
+}
+```
+C'était incontestablement une très mauvaise façon de faire, et j'ai dû y remédier. Pour celà il me fallait découvrir les bindings lors de la phase d'introspection qui a lieu après compilation de chaque shader, via la fonction OGLShader::register_resources(). Cette fonction d'introspection a été réécrite de manière plus modèrne pour tirer partie des dernières fonctions de l'API : glGetProgramInterfaceiv(), glGetProgramResourceiv() et glGetProgramResourceName(). Par exemple, pour associer le nom d'un uniform buffer avec son binding point tel que définit dans la source du shader, on fera :
+```cpp
+// OGLShader member
+std::unordered_map<hash_t, uint32_t> OGLShader::block_bindings_;
+
+// ...
+
+std::vector<GLenum> properties {GL_NAME_LENGTH, GL_BUFFER_BINDING};
+// Get active UBO count
+GLint num_active;
+GLenum iface = GL_UNIFORM_BLOCK;
+glGetProgramInterfaceiv(rd_handle_, iface, GL_ACTIVE_RESOURCES, &num_active);
+// Get properties for each active UBO
+std::vector<GLint> prop_values(properties.size());
+std::vector<GLchar> name_data(256);
+for(int jj=0; jj<num_active; ++jj)
+{
+    glGetProgramResourceiv(rd_handle_, iface, jj, properties.size(),
+                           &properties[0], prop_values.size(), nullptr, &prop_values[0]);
+    // Get UBO name
+    name_data.resize(prop_values[0]); //The length of the name.
+    glGetProgramResourceName(rd_handle_, iface, jj, name_data.size(), nullptr, &name_data[0]);
+    std::string resource_name((char*)&name_data[0], name_data.size() - 1);
+    block_bindings_.insert(std::make_pair(H_(resource_name.c_str()), prop_values[1]));
+}
+```
+Mon implémentation de register_resources() est une tentative de récupération automatique de toutes ces propriétés non-exclusivement pour les UBOs, mais aussi pour d'autres ressources d'intérêt comme les attributs, les uniformes, et les shader storage blocks. A l'issue de l'introspection, on possède une collection de tous les binding points associés aux noms des ressources. Pour attacher un uniform buffer, ou un shader storage buffer, c'est maintenant beaucoup plus simple et sécurisé :
+```cpp
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer) const
+{
+    hash_t hname = H_(buffer.get_name().c_str());
+    GLint binding_point = block_bindings_.at(hname);
+    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, 
+        static_cast<const OGLUniformBuffer&>(buffer).get_handle());
+}
+```
+
+###Stratégie
+Comme mes sources GLSL regroupent plusieurs shaders dans le même fichier et que glslangValidator attend en entrée un fichier par shader, il me faut créer autant de fichiers GLSL temporaires qu'il y a de shaders dans un programme à traîter. Un tel fichier temporaire contient uniquement du code GLSL légal, en particulier les includes doivent être gérés à ce stade. Je sais qu'il existe un moyen de faire en sorte que glslangValidator se charge des includes (avec l'extension Google include) via :
+```glsl
+    #extension GL_GOOGLE_include_directive : enable
+```
+(voir [1]) mais j'ai préféré parser les includes moi-même comme je le fais dans _OGLShader_, pour l'instant.
+
+Le validateur compilera ensuite chacun de ces fichiers GLSL vers des fichiers .spv (temporaires eux aussi). Puis chacun de ces fichiers .spv est linké en un seul module grâce à spirv-linker. Ce module est le produit fini de la passe de compilation de shaders par Fudge.
+
+Un ensemble d'autres outils comme *spirv-opt* pourront être utilisés par la suite pour optimiser le code SPIR-V produit, réduire sa taille etc.
+
+###Entry points
+Un module SPIR-V linké contient nécessairement plusieurs points d'entrée (un par shader stage). Comme dans la source tous ces points d'entrée se nomment *main*, je me suis demandé un moment comment le linker procédait pour les différencier. Par inspection d'un module linké grâce au désassembleur *spirv-dis* on peut lire ceci pour un module contenant les trois stages vertex, geometry et fragment :
+```spv
+   OpCapability Shader
+   OpCapability Geometry
+%1 = OpExtInstImport "GLSL.std.450"
+   OpMemoryModel Logical GLSL450
+   OpEntryPoint Vertex %main "main" %_ %in_position %v_uv %in_uv %gl_VertexID %gl_InstanceID
+   OpEntryPoint Geometry %main_0 "main" %__0 %gl_in %f_uv %v_uv_0
+   OpEntryPoint Fragment %main_1 "main" %out_color %f_uv_0
+   OpExecutionMode %main_0 Triangles
+   OpExecutionMode %main_0 Invocations 1
+   OpExecutionMode %main_0 OutputTriangleStrip
+   OpExecutionMode %main_0 OutputVertices 6
+   OpExecutionMode %main_1 OriginLowerLeft
+```
+Chaque point d'entrée semble s'appeler "main" à l'export, mais je suppose que le code de spécialisation doit pouvoir s'en sortir puisqu'on lui spécifie le type de stage pour chaque point d'entrée.
+Il me faut donc une fonction de parsing des opcodes correspondants afin de déterminer quels sont les shader stages présents dans le module, et quels sont les noms de leurs points d'entrée. J'aurai en effet besoin de ces informations pour pouvoir automatiser correctement la spécialisation SPIR-V de mes shaders.
+
+Je viens de coder une telle fonction : spv::parse_stages() qui prend en argument un chemin d'accès vers un fichier .spv et retourne un vecteur de _ShaderStageDescriptor_, structures à deux membres : un type énuméré _ExecutionModel_ pour le type de shader stage, et une string pour le nom de l'entry point. Je me suis aidé de [2], mais aussi des specs de SPIR-V [3] et du header [4]. La fonction est d'ailleurs utilisée par Fudge une fois chaque module compilé, affin d'afficher chaque point d'entrée pour chaque stage. J'ai maintenant la voie libre pour commencer l'intégration côté moteur.
+
+###Build
+Pour le validateur/compilateur :
+> git clone https://github.com/KhronosGroup/glslang.git glslang
+> cd glslang
+> ./update_glslang_sources.py
+> mkdir build
+> cd build
+> cmake ..
+> make -j4
+> sudo make install
+
+Pour les différents outils SPIR-V :
+> git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
+> git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
+> cd spirv-tools
+> mkdir build
+> cd build
+> cmake ..
+> make -j4
+> sudo make install
+
+###Sources:
+    [1] https://github.com/KhronosGroup/glslang/issues/1691
+    [2] https://www.leadwerks.com/community/blogs/entry/2403-single-file-spir-v
+        -shaders-for-vulkan/
+    [3] https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.pdf
+    [4] https://github.com/KhronosGroup/SPIRV-Headers/blob/master/include
+        /spirv/unified1/spirv.hpp11

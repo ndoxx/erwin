@@ -72,11 +72,15 @@ void set_asset_dir(const fs::path& path)
 
 std::ifstream get_asset_stream(const fs::path& path)
 {
+    W_ASSERT(fs::exists(path), "File does not exist.");
+
 	return std::ifstream(s_asset_path / path);
 }
 
 std::string get_asset_string(const fs::path& path)
 {
+    W_ASSERT(fs::exists(path), "File does not exist.");
+
     std::ifstream ifs(s_asset_path / path);
     return std::string((std::istreambuf_iterator<char>(ifs)),
                         std::istreambuf_iterator<char>());
@@ -84,11 +88,17 @@ std::string get_asset_string(const fs::path& path)
 
 std::string get_file_as_string(const fs::path& path)
 {
+    W_ASSERT(fs::exists(path), "File does not exist.");
+
     std::ifstream ifs(path);
     return std::string((std::istreambuf_iterator<char>(ifs)),
                         std::istreambuf_iterator<char>());
 }
 
+std::ifstream binary_stream(const fs::path& path)
+{
+    return std::ifstream(path, std::ios::binary);
+}
 
 } // namespace filesystem
 } // namespace erwin

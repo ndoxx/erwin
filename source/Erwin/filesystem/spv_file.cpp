@@ -1,58 +1,77 @@
 #include "filesystem/spv_file.h"
+#include "filesystem/filesystem.h"
 #include "core/core.h"
+#include "debug/logger.h"
 
 #include <fstream>
 #include <cstring>
+#include <string>
 
 namespace erwin
 {
 namespace spv
 {
 
-// SPV file format
-//#pragma pack(push,1)
-struct SPVHeader
+#define SPV_MAGIC 0x07230203
+
+std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path)
 {
-    uint32_t magic;         // Magic number to check file format validity
-    uint16_t version_major; // Version major number
-    uint16_t version_minor; // Version minor number
-    uint32_t num_shaders;   // Number of shaders inside program
-};
-//#pragma pack(pop)
-#define SPV_MAGIC 0x56505357 // ASCII(WSPV)
-#define SPV_VERSION_MAJOR 1
-#define SPV_VERSION_MINOR 0
+    std::string entrypointname[6];
 
-void read_spv(SPVDescriptor& desc)
-{
+    auto ifs = filesystem::binary_stream(path);
 
-}
+    // Parse SPIR-V data
+    uint32_t magic = 0;
+    uint32_t version = 0;
+    uint32_t genmagnum = 0;
+    uint32_t bound = 0;
+    uint32_t reserved = 0;
 
-void write_spv(const SPVDescriptor& desc)
-{
-    SPVHeader header;
-    header.magic = SPV_MAGIC;
-    header.version_major = SPV_VERSION_MAJOR;
-    header.version_minor = SPV_VERSION_MINOR;
-    header.num_shaders = desc.shaders.size();
+    ifs.read(reinterpret_cast<char*>(&magic), sizeof(uint32_t));
+    W_ASSERT(magic == SPV_MAGIC, "Invalid .spv file, wrong magic number");
+    ifs.read(reinterpret_cast<char*>(&version), sizeof(uint32_t));
+    ifs.read(reinterpret_cast<char*>(&genmagnum), sizeof(uint32_t));
+    ifs.read(reinterpret_cast<char*>(&bound), sizeof(uint32_t));
+    ifs.read(reinterpret_cast<char*>(&reserved), sizeof(uint32_t));
 
-    std::ofstream ofs(desc.filepath, std::ios::binary);
-    // Write header
-    ofs.write(reinterpret_cast<const char*>(&header), sizeof(SPVHeader));
-    // Write shader properties and data
-    for(auto&& shd: desc.shaders)
+    std::vector<ShaderStageDescriptor> descs;
+    while(true)
     {
-        uint32_t size = shd.data.size();
-        char entry_point[32];
-        strncpy(entry_point, shd.entry_point.data(), shd.entry_point.size());
-        ofs.write(reinterpret_cast<const char*>(&size), sizeof(uint32_t));
-        ofs.write(reinterpret_cast<const char*>(&shd.type), sizeof(uint8_t));
-        ofs.write(reinterpret_cast<const char*>(entry_point), 32);
-        ofs.write(reinterpret_cast<const char*>(shd.data.data()), shd.data.size());
+        long pos = ifs.tellg();
+        uint32_t bytes;
+        ifs.read(reinterpret_cast<char*>(&bytes), sizeof(uint32_t));
+        uint16_t opcode = uint16_t(bytes & 0x0000FFFF); // Take low word
+        uint16_t wcount = uint16_t((bytes & 0xFFFF0000) >> 16); // Take high word
+
+        if(opcode == 15) // OpEntryPoint
+        {
+            uint32_t execution_model;
+            ifs.read(reinterpret_cast<char*>(&execution_model), sizeof(uint32_t));
+            // Vertex = 0, TessellationControl = 1, TessellationEvaluation = 2, 
+            // Geometry = 3, Fragment = 4, GLCompute = 5,
+            if(execution_model < 6)
+            {
+                ShaderStageDescriptor desc;
+                desc.execution_model = ExecutionModel(execution_model);
+                uint32_t entry_point;
+                ifs.read(reinterpret_cast<char*>(&entry_point), sizeof(uint32_t));
+                char c;
+                while(true)
+                {
+                    ifs.read(&c, 1);
+                    if(c == '\0') break;
+                    desc.entry_point += c;
+                }
+                descs.push_back(desc);
+            }
+        }
+
+        ifs.seekg(pos + wcount*sizeof(uint32_t));
+        if(!ifs) break;
     }
+
+    return descs;
 }
-
-
 
 } // namespace spv
 } // namespace erwin

@@ -18,39 +18,49 @@ namespace fudge
 namespace spv
 {
 
-static erwin::spv::ShaderType type_from_hstring(hash_t htype)
+static erwin::spv::ExecutionModel type_from_hstring(hash_t htype)
 {
 	switch(htype)
 	{
-		case "vertex"_h: 	return erwin::spv::ShaderType::Vertex;
-		case "vert"_h: 	    return erwin::spv::ShaderType::Vertex;
-		case "geometry"_h: 	return erwin::spv::ShaderType::Geometry;
-		case "geom"_h: 	    return erwin::spv::ShaderType::Geometry;
-		case "fragment"_h: 	return erwin::spv::ShaderType::Fragment;
-		case "frag"_h: 	    return erwin::spv::ShaderType::Fragment;
-		default: 			return erwin::spv::ShaderType::None;
+		case "vertex"_h: 	             return erwin::spv::ExecutionModel::Vertex;
+		case "vert"_h: 	                 return erwin::spv::ExecutionModel::Vertex;
+        case "tesselation_control"_h:    return erwin::spv::ExecutionModel::TessellationControl;
+        case "tesc"_h:                   return erwin::spv::ExecutionModel::TessellationControl;
+        case "tesselation_evaluation"_h: return erwin::spv::ExecutionModel::TessellationEvaluation;
+        case "tese"_h:                   return erwin::spv::ExecutionModel::TessellationEvaluation;
+		case "geometry"_h: 	             return erwin::spv::ExecutionModel::Geometry;
+		case "geom"_h: 	                 return erwin::spv::ExecutionModel::Geometry;
+		case "fragment"_h: 	             return erwin::spv::ExecutionModel::Fragment;
+		case "frag"_h: 	                 return erwin::spv::ExecutionModel::Fragment;
+        case "compute"_h:                return erwin::spv::ExecutionModel::GLCompute;
+        case "comp"_h:                   return erwin::spv::ExecutionModel::GLCompute;
 	}
+    return erwin::spv::ExecutionModel(0);
 }
 
-static std::string extension_from_type(erwin::spv::ShaderType type)
+static std::string extension_from_type(erwin::spv::ExecutionModel type)
 {
 	switch(type)
 	{
-		case erwin::spv::ShaderType::Vertex:   return ".vert";
-		case erwin::spv::ShaderType::Geometry: return ".geom";
-		case erwin::spv::ShaderType::Fragment: return ".frag";
-		default:                               return "";
+        case erwin::spv::ExecutionModel::Vertex:                 return ".vert";
+        case erwin::spv::ExecutionModel::TessellationControl:    return ".tesc";
+		case erwin::spv::ExecutionModel::TessellationEvaluation: return ".tese";
+		case erwin::spv::ExecutionModel::Geometry:               return ".geom";
+        case erwin::spv::ExecutionModel::Fragment:               return ".frag";
+		case erwin::spv::ExecutionModel::GLCompute:              return ".comp";
 	}
 }
 
-static std::string spv_file_from_type(erwin::spv::ShaderType type)
+static std::string spv_file_from_type(erwin::spv::ExecutionModel type)
 {
 	switch(type)
 	{
-		case erwin::spv::ShaderType::Vertex:   return "vert.spv";
-		case erwin::spv::ShaderType::Geometry: return "geom.spv";
-		case erwin::spv::ShaderType::Fragment: return "frag.spv";
-		default:                               return "";
+		case erwin::spv::ExecutionModel::Vertex:                 return "vert.spv";
+        case erwin::spv::ExecutionModel::TessellationControl:    return "tesc.spv";
+        case erwin::spv::ExecutionModel::TessellationEvaluation: return "tese.spv";
+		case erwin::spv::ExecutionModel::Geometry:               return "geom.spv";
+		case erwin::spv::ExecutionModel::Fragment:               return "frag.spv";
+        case erwin::spv::ExecutionModel::GLCompute:              return "comp.spv";
 	}
 }
 
@@ -72,9 +82,9 @@ static void handle_includes(std::string& source, const fs::path& source_dir)
     });
 }
 
-static std::vector<std::pair<erwin::spv::ShaderType, std::string>> preprocess(const std::string& full_source, const fs::path& source_dir)
+static std::vector<std::pair<erwin::spv::ExecutionModel, std::string>> preprocess(const std::string& full_source, const fs::path& source_dir)
 {
-	std::vector<std::pair<erwin::spv::ShaderType, std::string>> sources;
+	std::vector<std::pair<erwin::spv::ExecutionModel, std::string>> sources;
 
 	static const std::string type_token = "#type";
 	size_t pos = full_source.find(type_token, 0);
@@ -86,8 +96,7 @@ static std::vector<std::pair<erwin::spv::ShaderType, std::string>> preprocess(co
 		size_t begin = pos + type_token.size() + 1;
 		std::string type = full_source.substr(begin, eol - begin);
 		hash_t htype = H_(type.c_str());
-		erwin::spv::ShaderType shader_type = type_from_hstring(htype);
-		W_ASSERT(shader_type!=erwin::spv::ShaderType::None, "Invalid shader type specified!");
+		erwin::spv::ExecutionModel shader_type = type_from_hstring(htype);
 
 		size_t next_line_pos = full_source.find_first_not_of("\r\n", eol);
 		pos = full_source.find(type_token, next_line_pos);
@@ -124,6 +133,7 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 {
 	fs::path source_dir = source_path.parent_path();
 	fs::path tmp_dir = output_dir / "tmp";
+    fs::path out_path = output_dir / (source_path.stem().string() + ".spv");
 	std::string shader_name = source_path.stem().string();
 
     std::ifstream ifs(source_path);
@@ -161,29 +171,20 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 
     if(success)
     {
-    	fs::path out_path = output_dir / (source_path.stem().string() + ".spv");
     	DLOG("fudge",1) << "Successfully compiled shaders. Now, linking." << std::endl;
     	DLOGI << WCC('p') << out_path.filename() << WCC(0) << std::endl;
 
 		std::stringstream cmd;
 		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
 		system(cmd.str().c_str());
+    }
 
-    	/*erwin::spv::SPVDescriptor desc { out_path };
-    	for(auto&& spv: spvs)
-    	{
-    		desc.shaders.emplace_back();
-    		erwin::spv::SPVShaderDescriptor& shd_desc = desc.shaders.back();
-
-    		std::ifstream ifs(spv, std::ios::binary|std::ios::ate);
-    		std::ifstream::pos_type len = ifs.tellg();
-			shd_desc.type = type_from_hstring(H_(spv.stem().string().c_str()));
-			shd_desc.data.resize(len);
-			ifs.seekg(0, std::ios::beg);
-    		ifs.read(&shd_desc.data[0], len);
-		    ifs.close();
-    	}
-    	erwin::spv::write_spv(desc);*/
+    // Check output file
+    auto stages = erwin::spv::parse_stages(out_path);
+    for(auto&& stage: stages)
+    {
+        DLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
+                        << ": " << WCC('g') << stage.entry_point << WCC(0) << std::endl;
     }
 }
 
