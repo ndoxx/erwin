@@ -30,7 +30,9 @@ std::string get_asset_string(const fs::path& path);
 
 // Get a text file as a string
 std::string get_file_as_string(const fs::path& path);
-
+// Get a binary file as a vector of bytes
+void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec);
+// Get a stream from a binary file
 std::ifstream binary_stream(const fs::path& path);
 
 } // namespace filesystem

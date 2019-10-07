@@ -61,6 +61,7 @@ public:
 	virtual void on_attach() override
 	{
 		shader_bank_.load("shaders/mandelbrot.glsl");
+		// shader_bank_.load("shaders/mandelbrot.spv");
 
 		// Create vertex array with a quad
 		BufferLayout vertex_tex_layout =

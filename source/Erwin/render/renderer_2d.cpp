@@ -89,7 +89,8 @@ batch_ttl_(s_max_batches, 0)
 		Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
 	}
 
-	shader_bank.load("shaders/post_proc.glsl");
+	// shader_bank.load("shaders/post_proc.glsl");
+	shader_bank.load("shaders/post_proc.spv");
 
 	// Create vertex array with a quad
 	BufferLayout vertex_tex_layout =
@@ -279,6 +280,7 @@ Renderer2D(max_batch_count)
 
 	// Load shader
 	Renderer2D::shader_bank.load("shaders/color_dup_shader.glsl");
+	// Renderer2D::shader_bank.load("shaders/color_dup_shader.spv");
 }
 
 void BatchRenderer2D::create_batch()

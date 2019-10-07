@@ -100,5 +100,27 @@ std::ifstream binary_stream(const fs::path& path)
     return std::ifstream(path, std::ios::binary);
 }
 
+void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
+{
+    W_ASSERT(fs::exists(filepath), "File does not exist.");
+
+    std::ifstream ifs(filepath, std::ios::binary);
+    ifs.unsetf(std::ios::skipws);
+
+    std::streampos file_size;
+
+    // Get size
+    ifs.seekg(0, std::ios::end);
+    file_size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+
+    // Allocate & read
+    vec.reserve(file_size);
+    vec.insert(vec.begin(),
+               std::istream_iterator<uint8_t>(ifs),
+               std::istream_iterator<uint8_t>());
+}
+
+
 } // namespace filesystem
 } // namespace erwin

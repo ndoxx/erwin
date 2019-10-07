@@ -10,6 +10,7 @@
 #include "core/string_utils.h"
 #include "core/intern_string.h"
 #include "filesystem/filesystem.h"
+#include "filesystem/spv_file.h"
 #include "debug/logger.h"
 #include "render/texture.h"
 
@@ -22,21 +23,33 @@ static ShaderType type_from_hstring(hash_t htype)
 {
 	switch(htype)
 	{
-		case "vertex"_h: 	return ShaderType::Vertex;
-		case "geometry"_h: 	return ShaderType::Geometry;
-		case "fragment"_h: 	return ShaderType::Fragment;
-		default: 			return ShaderType::None;
+        case "vertex"_h:                 return ShaderType::Vertex;
+        case "vert"_h:                   return ShaderType::Vertex;
+        case "tesselation_control"_h:    return ShaderType::TessellationControl;
+        case "tesc"_h:                   return ShaderType::TessellationControl;
+        case "tesselation_evaluation"_h: return ShaderType::TessellationEvaluation;
+        case "tese"_h:                   return ShaderType::TessellationEvaluation;
+        case "geometry"_h:               return ShaderType::Geometry;
+        case "geom"_h:                   return ShaderType::Geometry;
+        case "fragment"_h:               return ShaderType::Fragment;
+        case "frag"_h:                   return ShaderType::Fragment;
+        case "compute"_h:                return ShaderType::GLCompute;
+        case "comp"_h:                   return ShaderType::GLCompute;
 	}
+    W_ASSERT(false, "Unknown shader type.");
+    return ShaderType::Vertex;
 }
 
 static GLenum to_gl_shader_type(ShaderType type)
 {
 	switch(type)
 	{
-		case ShaderType::Vertex:   return GL_VERTEX_SHADER;
-		case ShaderType::Geometry: return GL_GEOMETRY_SHADER;
-		case ShaderType::Fragment: return GL_FRAGMENT_SHADER;
-		case ShaderType::None:     return GL_NONE;
+        case ShaderType::Vertex:                 return GL_VERTEX_SHADER;
+        case ShaderType::TessellationControl:    return GL_TESS_CONTROL_SHADER;
+		case ShaderType::TessellationEvaluation: return GL_TESS_EVALUATION_SHADER;
+		case ShaderType::Geometry:               return GL_GEOMETRY_SHADER;
+        case ShaderType::Fragment:               return GL_FRAGMENT_SHADER;
+		case ShaderType::GLCompute:              return GL_COMPUTE_SHADER;
 	}
 }
 
@@ -44,10 +57,12 @@ static std::string to_string(ShaderType type)
 {
 	switch(type)
 	{
-		case ShaderType::Vertex:   return "Vertex shader";
-		case ShaderType::Geometry: return "Geometry shader";
-		case ShaderType::Fragment: return "Fragment shader";
-		case ShaderType::None:     return "[UNKNOWN TYPE] shader";
+		case ShaderType::Vertex:                 return "Vertex shader";
+        case ShaderType::TessellationControl:    return "Tesselation Control shader";
+        case ShaderType::TessellationEvaluation: return "Tesselation Evaluation shader";
+		case ShaderType::Geometry:               return "Geometry shader";
+        case ShaderType::Fragment:               return "Fragment shader";
+		case ShaderType::GLCompute:              return "Compute shader";
 	}
 }
 
@@ -195,31 +210,41 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
-OGLShader::OGLShader(const std::string& name, const fs::path& filepath):
-Shader(name),
-filepath_(filepath)
+// Initialize shader from string
+bool OGLShader::init_glsl_string(const std::string& name, const std::string& source)
 {
-    std::ifstream ifs(filepath);
-
+    name_ = name;
+    filepath_ = "";
+    auto sources = parse(source);
+    bool success = build(sources);
+    if(success)
+        register_resources();
+    return success;
+}
+// Initialize shader from packed GLSL source
+bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
+{
+    name_ = name;
+    filepath_ = glsl_file;
     // Read stream to buffer and parse full source
+    std::ifstream ifs(glsl_file);
     auto sources = parse(std::string((std::istreambuf_iterator<char>(ifs)),
                                       std::istreambuf_iterator<char>()));
-    build(sources);
-    register_resources();
+    bool success = build(sources);
+    if(success)
+        register_resources();
+    return success;
 }
-
-OGLShader::OGLShader(const std::string& name, const std::string& source_string):
-Shader(name),
-filepath_("")
+// Initialize shader from SPIR-V file
+bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
 {
-	auto sources = parse(source_string);
-	build(sources);
-	register_resources();
-}
+    name_ = name;
+    filepath_ = spv_file;
 
-OGLShader::~OGLShader()
-{
-
+    bool success = build_spirv(spv_file);
+    if(success)
+        register_resources();
+    return success;
 }
 
 void OGLShader::bind() const
@@ -278,7 +303,6 @@ std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::stri
 		std::string type = full_source.substr(begin, eol - begin);
 		hash_t htype = H_(type.c_str());
 		ShaderType shader_type = type_from_hstring(htype);
-		W_ASSERT(shader_type!=ShaderType::None, "Invalid shader type specified!");
 
 		size_t next_line_pos = full_source.find_first_not_of("\r\n", eol);
 		pos = full_source.find(type_token, next_line_pos);
@@ -295,10 +319,11 @@ std::string OGLShader::parse_includes(const std::string& source)
 
     // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
     std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    return rx::regex_replace(source, e_inc, [&](const std::smatch& m){
+    return rx::regex_replace(source, e_inc, [&](const std::smatch& m)
+    {
         std::string result = m[1].str();
         std::string filename = result.substr(1, result.size()-2);
-        DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
+        // DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl; // BUG: LOGGING HERE CAUSES NEXT LOG CHANNEL NAME CORRUPTION
         return "\n" + filesystem::get_file_as_string(filepath_.parent_path() / filename) + "\n";
     });
 }
@@ -384,6 +409,92 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
 
 	return true;
+}
+
+bool OGLShader::build_spirv(const fs::path& filepath)
+{
+    DLOGN("shader") << "Building SPIR-V OpenGL Shader program: \"" << name_ << "\" " << std::endl;
+    std::vector<GLuint> shader_ids;
+
+    auto stages = spv::parse_stages(filepath);
+
+    std::vector<uint8_t> spirv;
+    filesystem::get_file_as_vector(filepath, spirv);
+
+    for(auto&& stage: stages)
+    {
+        ShaderType type = ShaderType(stage.execution_model);
+        
+        DLOG("shader",1) << "Specializing " << to_string(type) << "." << std::endl;
+        DLOGI << "Entry point: " << stage.entry_point << std::endl;
+
+        GLuint shader_id = glCreateShader(to_gl_shader_type(type));
+        glShaderBinary(1, &shader_id, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv.data(), spirv.size());
+        glSpecializeShader(shader_id, (const GLchar*)stage.entry_point.c_str(), 0, nullptr, nullptr);
+
+        // Check compilation status
+        GLint is_compiled = 0;
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &is_compiled);
+
+        if(is_compiled == GL_FALSE)
+        {
+            DLOGE("shader") << "Shader \"" << name_ << "\" will not compile" << std::endl;
+
+            char* log = nullptr;
+            GLsizei logsize = 0;
+
+            glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &logsize);
+
+            log = (char*) malloc(logsize + 1);
+            W_ASSERT(log, "Cannot allocate memory for Shader Error Report!");
+
+            memset(log, '\0', logsize + 1);
+            glGetShaderInfoLog(shader_id, logsize, &logsize, log);
+            DLOGR("shader") << log << std::endl;
+            free(log);
+
+            // We don't need the shader anymore.
+            glDeleteShader(shader_id);
+            return false;
+        }
+
+        // Save shader id for later linking
+        shader_ids.push_back(shader_id);
+    }
+
+    // * Link program
+    DLOGI << "Linking program." << std::endl;
+    rd_handle_ = glCreateProgram();
+    for(auto&& shader_id: shader_ids)
+        glAttachShader(rd_handle_, shader_id);
+
+    glLinkProgram(rd_handle_);
+
+    // * Check linking status
+    GLint is_linked = 0;
+    glGetProgramiv(rd_handle_, GL_LINK_STATUS, (int*) &is_linked);
+
+    if(is_linked == GL_FALSE)
+    {
+        DLOGE("render") << "Unable to link shaders." << std::endl;
+        program_error_report(rd_handle_);
+
+        //We don't need the program anymore.
+        glDeleteProgram(rd_handle_);
+        //Don't leak shaders either.
+        for(auto&& shader_id: shader_ids)
+            glDeleteShader(shader_id);
+
+        return false;
+    }
+
+    // * Detach shaders
+    for(auto&& shader_id: shader_ids)
+        glDetachShader(rd_handle_, shader_id);
+
+    DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
+
+    return true;
 }
 
 void OGLShader::register_resources()

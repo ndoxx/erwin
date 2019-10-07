@@ -13,9 +13,15 @@ namespace erwin
 class OGLShader: public Shader
 {
 public:
-	OGLShader(const std::string& name, const fs::path& filepath);
-	OGLShader(const std::string& name, const std::string& source_string);
-	~OGLShader();
+	OGLShader() = default;
+	~OGLShader() = default;
+
+	// Initialize shader from glsl source string
+	virtual bool init_glsl_string(const std::string& name, const std::string& source) override;
+	// Initialize shader from packed GLSL source
+	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) override;
+	// Initialize shader from SPIR-V file
+	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) override;
 
 	virtual void bind() const override;
 	virtual void unbind() const override;
@@ -39,6 +45,8 @@ private:
 	std::string parse_includes(const std::string& source);
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
+	// Build the shader program from SPIR-V binary
+	bool build_spirv(const fs::path& filepath);
 	// Helper function to construct the uniform location and texture slot registries
 	void register_resources();
 

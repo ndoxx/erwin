@@ -1460,7 +1460,7 @@ Un module SPIR-V linké contient nécessairement plusieurs points d'entrée (un 
    OpExecutionMode %main_0 OutputVertices 6
    OpExecutionMode %main_1 OriginLowerLeft
 ```
-Chaque point d'entrée semble s'appeler "main" à l'export, mais je suppose que le code de spécialisation doit pouvoir s'en sortir puisqu'on lui spécifie le type de stage pour chaque point d'entrée.
+Chaque point d'entrée semble s'appeler "main" à l'export, mais je suppose que le code de spécialisation doit pouvoir s'en sortir puisqu'on lui spécifie aussi le type de stage pour chaque point d'entrée.
 Il me faut donc une fonction de parsing des opcodes correspondants afin de déterminer quels sont les shader stages présents dans le module, et quels sont les noms de leurs points d'entrée. J'aurai en effet besoin de ces informations pour pouvoir automatiser correctement la spécialisation SPIR-V de mes shaders.
 
 Je viens de coder une telle fonction : spv::parse_stages() qui prend en argument un chemin d'accès vers un fichier .spv et retourne un vecteur de _ShaderStageDescriptor_, structures à deux membres : un type énuméré _ExecutionModel_ pour le type de shader stage, et une string pour le nom de l'entry point. Je me suis aidé de [2], mais aussi des specs de SPIR-V [3] et du header [4]. La fonction est d'ailleurs utilisée par Fudge une fois chaque module compilé, affin d'afficher chaque point d'entrée pour chaque stage. J'ai maintenant la voie libre pour commencer l'intégration côté moteur.

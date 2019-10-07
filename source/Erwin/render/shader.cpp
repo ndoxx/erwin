@@ -21,7 +21,17 @@ WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_ref<OGLShader>(name, filepath);
+        {
+            auto ref = make_ref<OGLShader>();
+
+            std::string extension(filepath.extension().string());
+            if(!extension.compare(".glsl"))
+                ref->init_glsl(name, filepath);
+            else if(!extension.compare(".spv"))
+                ref->init_spirv(name, filepath);
+
+            return ref;
+        }
     }
 }
 
@@ -34,7 +44,11 @@ WRef<Shader> Shader::create(const std::string& name, const std::string& source_s
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_ref<OGLShader>(name, source_string);
+        {
+            auto ref = make_ref<OGLShader>();
+            ref->init_glsl_string(name, source_string);
+            return ref;
+        }
     }
 }
 

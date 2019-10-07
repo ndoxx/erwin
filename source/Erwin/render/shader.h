@@ -14,10 +14,12 @@ namespace erwin
 
 enum class ShaderType: uint8_t
 {
-	None = 0,
-	Vertex,
-	Geometry,
-	Fragment,
+    Vertex = 0,
+    TessellationControl = 1,
+    TessellationEvaluation = 2,
+    Geometry = 3,
+    Fragment = 4,
+    GLCompute = 5,
 };
 
 class Texture2D;
@@ -31,8 +33,15 @@ struct ShaderParameters
 class Shader
 {
 public:
-	Shader(const std::string& name): name_(name) { }
+	Shader() = default;
 	virtual ~Shader() = default;
+
+	// Initialize shader from glsl source string
+	virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
+	// Initialize shader from packed GLSL source
+	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) { return false; }
+	// Initialize shader from SPIR-V file
+	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) { return false; }
 
 	// Use this program
 	virtual void bind() const = 0;

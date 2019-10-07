@@ -7,6 +7,7 @@
 #include "debug/logger_thread.h"
 #include "debug/logger.h"
 #include "debug/stack_trace.h"
+#include "core/intern_string.h"
 #include "math/color.h"
 
 namespace erwin
@@ -295,7 +296,14 @@ void LoggerThread::dispatch(const LogStatement& stmt)
 		return;
 	}
 
-	auto& chan = channels_.at(stmt.channel);
+	auto it = channels_.find(stmt.channel);
+	if(it==channels_.end())
+	{
+		std::cout << "Channel " << istr::resolve(stmt.channel) << " does not exist." << std::endl;
+		return;
+	}
+
+	auto& chan = it->second;
 
 	// check out all sinks subscribed to current channel
 	auto&& range = sink_subscriptions_.equal_range(stmt.channel);
