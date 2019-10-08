@@ -124,7 +124,12 @@ extern bool check_toolchain()
         DLOGW("fudge") << "spirv-link not found, skipping shader compilation." << std::endl;
         return false;
     }
-
+    if(system("spirv-opt --version > /dev/null 2>&1"))
+    {
+        DLOGW("fudge") << "spirv-opt not found, skipping shader compilation." << std::endl;
+        return false;
+    }
+    
     return true;
 }
 
@@ -177,14 +182,35 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 		std::stringstream cmd;
 		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
 		system(cmd.str().c_str());
-    }
 
-    // Check output file
-    auto stages = erwin::spv::parse_stages(out_path);
-    for(auto&& stage: stages)
-    {
-        DLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
-                        << ": " << WCC('g') << stage.entry_point << WCC(0) << std::endl;
+        // Optimize output spv
+        cmd.str("");
+        cmd << "spirv-opt ";
+        cmd << "--inline-entry-points-exhaustive ";
+        cmd << "--convert-local-access-chains ";
+        cmd << "--eliminate-local-single-block ";
+        cmd << "--eliminate-local-single-store ";
+        cmd << "--eliminate-insert-extract ";
+        cmd << "--eliminate-dead-code-aggressive ";
+        cmd << "--eliminate-dead-branches ";
+        cmd << "--merge-blocks ";
+        cmd << "--eliminate-local-single-block ";
+        cmd << "--eliminate-local-single-store ";
+        cmd << "--eliminate-local-multi-store ";
+        cmd << "--eliminate-insert-extract ";
+        cmd << "--eliminate-dead-code-aggressive ";
+        cmd << "-o " << out_path.string() << " " << out_path.string();
+
+        DLOG("fudge",1) << "Optimizing." << std::endl;
+        system(cmd.str().c_str());
+
+        // Check output file
+        auto stages = erwin::spv::parse_stages(out_path);
+        for(auto&& stage: stages)
+        {
+            DLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
+                            << ": " << WCC('g') << stage.entry_point << WCC(0) << std::endl;
+        }
     }
 }
 

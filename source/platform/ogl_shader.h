@@ -47,8 +47,10 @@ private:
 	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
 	// Build the shader program from SPIR-V binary
 	bool build_spirv(const fs::path& filepath);
-	// Helper function to construct the uniform location and texture slot registries
-	void register_resources();
+	// Link the program
+	bool link(const std::vector<uint32_t>& shader_ids);
+	// Helper function to construct the uniform location, texture slot and binding point registries
+	void introspect();
 
 private:
     uint32_t rd_handle_ = 0;

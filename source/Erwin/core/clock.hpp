@@ -40,7 +40,7 @@ Period Clock< Period >::restart()
 
 using nanoClock = Clock<std::chrono::nanoseconds>;
 
-#ifdef __DEBUG__
+#ifdef W_DEBUG
 namespace dbg
 {
 static nanoClock debug_clock;

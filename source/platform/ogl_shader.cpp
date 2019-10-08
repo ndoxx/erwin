@@ -146,10 +146,8 @@ static std::string ogl_interface_to_string(GLenum iface)
     }
 }
 
-static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std::string& source)
+static std::string get_shader_error_report(GLuint ShaderID)
 {
-    std::set<int> errlines;
-
     char* log = nullptr;
     GLsizei logsize = 0;
 
@@ -160,10 +158,21 @@ static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std
 
     memset(log, '\0', logsize + 1);
     glGetShaderInfoLog(ShaderID, logsize, &logsize, log);
-    DLOGR("shader") << log << std::endl;
+
+    std::string ret(log);
+    free(log);
+    return ret;
+}
+
+static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std::string& source)
+{
+    std::set<int> errlines;
+
+    std::string logstr = get_shader_error_report(ShaderID);
+
+    DLOGR("shader") << logstr << std::endl;
 
     // * Find error line numbers
-    std::string logstr(log);
     static std::regex rx_errline("\\d+\\((\\d+)\\)\\s:\\s");
     std::regex_iterator<std::string::iterator> it(logstr.begin(), logstr.end(), rx_errline);
     std::regex_iterator<std::string::iterator> end;
@@ -173,8 +182,6 @@ static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std
         errlines.insert(std::stoi((*it)[1]));
         ++it;
     }
-
-    free(log);
 
     // * Show problematic lines
     std::istringstream source_iss(source);
@@ -218,7 +225,7 @@ bool OGLShader::init_glsl_string(const std::string& name, const std::string& sou
     auto sources = parse(source);
     bool success = build(sources);
     if(success)
-        register_resources();
+        introspect();
     return success;
 }
 // Initialize shader from packed GLSL source
@@ -232,7 +239,7 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
                                       std::istreambuf_iterator<char>()));
     bool success = build(sources);
     if(success)
-        register_resources();
+        introspect();
     return success;
 }
 // Initialize shader from SPIR-V file
@@ -243,7 +250,7 @@ bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
 
     bool success = build_spirv(spv_file);
     if(success)
-        register_resources();
+        introspect();
     return success;
 }
 
@@ -323,7 +330,7 @@ std::string OGLShader::parse_includes(const std::string& source)
     {
         std::string result = m[1].str();
         std::string filename = result.substr(1, result.size()-2);
-        // DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl; // BUG: LOGGING HERE CAUSES NEXT LOG CHANNEL NAME CORRUPTION
+        // DLOG("shader", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
         return "\n" + filesystem::get_file_as_string(filepath_.parent_path() / filename) + "\n";
     });
 }
@@ -332,7 +339,7 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 {
 	DLOGN("shader") << "Building OpenGL Shader program: \"" << name_ << "\" " << std::endl;
 
-	std::vector<GLuint> shader_ids;
+	std::vector<uint32_t> shader_ids;
 
 	// * Compile each shader
 	int n_previous_lines = 0;
@@ -376,45 +383,20 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
         ++current;
 	}
 
-	// * Link program
-	DLOGI << "Linking program." << std::endl;
-	rd_handle_ = glCreateProgram();
-	for(auto&& shader_id: shader_ids)
-    	glAttachShader(rd_handle_, shader_id);
-
-    glLinkProgram(rd_handle_);
-
-    // * Check linking status
-    GLint is_linked = 0;
-    glGetProgramiv(rd_handle_, GL_LINK_STATUS, (int*) &is_linked);
-
-    if(is_linked == GL_FALSE)
+    // Link program
+    if(link(shader_ids))
     {
-        DLOGE("render") << "Unable to link shaders." << std::endl;
-        program_error_report(rd_handle_);
-
-        //We don't need the program anymore.
-        glDeleteProgram(rd_handle_);
-        //Don't leak shaders either.
-		for(auto&& shader_id: shader_ids)
-        	glDeleteShader(shader_id);
-
-        return false;
+        DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
+        return true;
     }
 
-    // * Detach shaders
-	for(auto&& shader_id: shader_ids)
-    	glDetachShader(rd_handle_, shader_id);
-
-	DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
-
-	return true;
+    return false;
 }
 
 bool OGLShader::build_spirv(const fs::path& filepath)
 {
     DLOGN("shader") << "Building SPIR-V OpenGL Shader program: \"" << name_ << "\" " << std::endl;
-    std::vector<GLuint> shader_ids;
+    std::vector<uint32_t> shader_ids;
 
     auto stages = spv::parse_stages(filepath);
 
@@ -439,19 +421,7 @@ bool OGLShader::build_spirv(const fs::path& filepath)
         if(is_compiled == GL_FALSE)
         {
             DLOGE("shader") << "Shader \"" << name_ << "\" will not compile" << std::endl;
-
-            char* log = nullptr;
-            GLsizei logsize = 0;
-
-            glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &logsize);
-
-            log = (char*) malloc(logsize + 1);
-            W_ASSERT(log, "Cannot allocate memory for Shader Error Report!");
-
-            memset(log, '\0', logsize + 1);
-            glGetShaderInfoLog(shader_id, logsize, &logsize, log);
-            DLOGR("shader") << log << std::endl;
-            free(log);
+            DLOGR("shader") << get_shader_error_report(shader_id) << std::endl;
 
             // We don't need the shader anymore.
             glDeleteShader(shader_id);
@@ -462,6 +432,18 @@ bool OGLShader::build_spirv(const fs::path& filepath)
         shader_ids.push_back(shader_id);
     }
 
+    // Link program
+    if(link(shader_ids))
+    {
+        DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
+        return true;
+    }
+
+    return false;
+}
+
+bool OGLShader::link(const std::vector<GLuint>& shader_ids)
+{
     // * Link program
     DLOGI << "Linking program." << std::endl;
     rd_handle_ = glCreateProgram();
@@ -492,22 +474,33 @@ bool OGLShader::build_spirv(const fs::path& filepath)
     for(auto&& shader_id: shader_ids)
         glDetachShader(rd_handle_, shader_id);
 
-    DLOGI << "Program \"" << name_ << "\" is ready." << std::endl;
-
     return true;
 }
 
-void OGLShader::register_resources()
+void OGLShader::introspect()
 {
-    static const std::vector<GLenum> interfaces { GL_PROGRAM_INPUT, GL_UNIFORM, GL_BUFFER_VARIABLE, GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK };
+    // Interfaces to query
+    static const std::vector<GLenum> interfaces
+    {
+        GL_PROGRAM_INPUT, GL_UNIFORM, GL_BUFFER_VARIABLE, 
+        GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK
+    };
+    // Properties to get for each interface
     static const std::map<GLenum, std::vector<GLenum>> properties_map
     {
-        {GL_PROGRAM_INPUT,        {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},
-        {GL_UNIFORM,              {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE}},
-        {GL_BUFFER_VARIABLE,      {GL_NAME_LENGTH, GL_TYPE, GL_BLOCK_INDEX, GL_ARRAY_SIZE}},
-        {GL_UNIFORM_BLOCK,        {GL_NAME_LENGTH, GL_BUFFER_BINDING}},
+        {GL_PROGRAM_INPUT,        {GL_NAME_LENGTH, GL_TYPE, GL_LOCATION}},
+        {GL_UNIFORM,              {GL_NAME_LENGTH, GL_BLOCK_INDEX, GL_TYPE, GL_LOCATION}},
+        {GL_UNIFORM_BLOCK,        {GL_NAME_LENGTH, GL_BUFFER_BINDING, GL_NUM_ACTIVE_VARIABLES}},
         {GL_SHADER_STORAGE_BLOCK, {GL_NAME_LENGTH, GL_BUFFER_BINDING}},
+        {GL_BUFFER_VARIABLE,      {GL_NAME_LENGTH, GL_BLOCK_INDEX, GL_TYPE}},
     };
+    // Block-uniform properties
+    static const std::vector<GLenum> unif_props {GL_NAME_LENGTH, GL_TYPE, GL_LOCATION};
+    static const std::vector<GLenum> active_unif_prop {GL_ACTIVE_VARIABLES};
+
+    std::vector<GLint> prop_values; // Will receive queried properties
+    std::string resource_name;
+    [[maybe_unused]] std::string uniform_name;
 
     for(int ii=0; ii<interfaces.size(); ++ii)
     {
@@ -518,61 +511,95 @@ void OGLShader::register_resources()
 
         if(num_active)
         {
-            DLOG("shader",1) << "[" << ogl_interface_to_string(iface) << "] active: " << num_active << std::endl;
+            DLOG("shader",1) << "[" << WCC(102,153,0) << ogl_interface_to_string(iface) << WCC(0) 
+                             << "] active: " << num_active << std::endl;
         }
+        else
+            continue;
 
         // Get properties
         const auto& properties = properties_map.at(iface);
-        std::vector<GLint> prop_values(properties.size());
-        std::vector<GLchar> name_data(256);
+        prop_values.resize(properties.size());
         
         for(int jj=0; jj<num_active; ++jj)
         {
             glGetProgramResourceiv(rd_handle_, iface, jj, properties.size(),
                                    &properties[0], prop_values.size(), nullptr, &prop_values[0]);
 
-            name_data.resize(prop_values[0]); //The length of the name.
-            glGetProgramResourceName(rd_handle_, iface, jj, name_data.size(), nullptr, &name_data[0]);
-            std::string resource_name((char*)&name_data[0], name_data.size() - 1);
+            resource_name.resize(prop_values[0]); // The length of the name
+            glGetProgramResourceName(rd_handle_, iface, jj, resource_name.size(), nullptr, &resource_name[0]);
             hash_t hname = H_(resource_name.c_str());
 
             // Register resource
             if(iface == GL_PROGRAM_INPUT)
             {
-                GLint loc = glGetAttribLocation(rd_handle_, resource_name.c_str());
-                DLOGI << "[" << loc << "] " << ogl_attribute_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+                // PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
+                DLOGI << "[" << prop_values[2] << "] " << ogl_attribute_type_to_string(prop_values[1]) 
+                      << " " << WCC('u') << resource_name << WCC(0) << std::endl;
             }
             else if(iface == GL_UNIFORM)
             {
-                GLint loc = glGetUniformLocation(rd_handle_, resource_name.c_str());
-                uniform_locations_.insert(std::make_pair(hname, loc));
+                // PROPS = 0: GL_NAME_LENGTH, 1: GL_BLOCK_INDEX, 2: GL_TYPE, 3: GL_LOCATION
+                // We only want non-block uniforms
+                if(prop_values[1]==-1)
+                {
+                    uniform_locations_.insert(std::make_pair(hname, prop_values[3])); // Save location
+                    if(prop_values[2] == GL_SAMPLER_2D || prop_values[2] == GL_SAMPLER_CUBE)
+                        texture_slots_.insert(std::make_pair(hname, current_slot_++));
+                    DLOGI << "[" << prop_values[3] << "] " << ogl_uniform_type_to_string(prop_values[2]) 
+                          << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+                }
 
-                if(prop_values[1] == GL_SAMPLER_2D || prop_values[1] == GL_SAMPLER_CUBE)
-                    texture_slots_.insert(std::make_pair(hname, current_slot_++));
-
-                DLOGI << "[" << loc << "] " << ogl_uniform_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
-            }
-            else if(iface == GL_BUFFER_VARIABLE)
-            {
-                DLOGI << "[" << prop_values[2] << "] " << ogl_uniform_type_to_string(prop_values[1]) << " " << WCC('u') << resource_name << WCC(0) << std::endl;
             }
             else if(iface == GL_UNIFORM_BLOCK)
             {
+                // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING, 2: GL_NUM_ACTIVE_VARIABLES
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
-                DLOGI << "[" << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
+                DLOGI << "[" << prop_values[1] << "] " << WCC('n') << resource_name << std::endl;
+#ifdef W_DEBUG
+                int num_active_uniforms = prop_values[2];
+                if(num_active_uniforms==0) continue;
+
+                // Get all active uniform indices for this block
+                std::vector<GLint> block_unif_indices(num_active_uniforms);
+                glGetProgramResourceiv(rd_handle_, GL_UNIFORM_BLOCK, jj, 1, &active_unif_prop[0], 
+                                       num_active_uniforms, nullptr, &block_unif_indices[0]);
+
+                // Iterate over all uniforms in this block
+                for(int kk=0; kk<num_active_uniforms; ++kk)
+                {
+                    // UNIF PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
+                    std::vector<GLint> unif_prop_values(unif_props.size());
+                    glGetProgramResourceiv(rd_handle_, GL_UNIFORM, block_unif_indices[kk], unif_props.size(),
+                                           &unif_props[0], unif_prop_values.size(), nullptr, &unif_prop_values[0]);
+                    uniform_name.resize(unif_prop_values[0]);
+                    glGetProgramResourceName(rd_handle_, GL_UNIFORM, block_unif_indices[kk], uniform_name.size(), 
+                                             nullptr, &uniform_name[0]);
+                    DLOGI << "* " << ogl_uniform_type_to_string(unif_prop_values[1]) << " " 
+                          << WCC('u') << uniform_name << WCC(0) << std::endl;
+                }
+#endif
             }
             else if(iface == GL_SHADER_STORAGE_BLOCK)
             {
+                // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
                 DLOGI << "[" << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
             }
+            else if(iface == GL_BUFFER_VARIABLE)
+            {
+                // PROPS = 0: GL_NAME_LENGTH, 1: GL_BLOCK_INDEX, 2: GL_TYPE
+                DLOGI << "[" << prop_values[1] << "] " << ogl_uniform_type_to_string(prop_values[2]) << " " 
+                      << WCC('u') << resource_name << WCC(0) << std::endl;
+            }
         }
     }
+    DLOG("shader",1) << "--------" << std::endl;
 }
 
 static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
 {
-#ifdef __DEBUG__
+#ifdef W_DEBUG
 	static std::set<hash_t> marked; // So that we don't warn twice for the same uniform
     hash_t id = H_(shader_name.c_str()) ^ u_name;
 

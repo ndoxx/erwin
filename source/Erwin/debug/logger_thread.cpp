@@ -7,7 +7,6 @@
 #include "debug/logger_thread.h"
 #include "debug/logger.h"
 #include "debug/stack_trace.h"
-#include "core/intern_string.h"
 #include "math/color.h"
 
 namespace erwin
@@ -299,7 +298,7 @@ void LoggerThread::dispatch(const LogStatement& stmt)
 	auto it = channels_.find(stmt.channel);
 	if(it==channels_.end())
 	{
-		std::cout << "Channel " << istr::resolve(stmt.channel) << " does not exist." << std::endl;
+		std::cout << "Channel " << stmt.channel << " does not exist." << std::endl;
 		return;
 	}
 

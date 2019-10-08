@@ -1,3 +1,4 @@
+#!/bin/sh
 
 # Jump to root folder
 cd ..

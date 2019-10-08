@@ -16,7 +16,7 @@ enum class DrawPrimitive
     Quads = 4
 };
 
-#ifdef __DEBUG__
+#ifdef W_DEBUG
 class Mesh;
 #endif
 
@@ -45,7 +45,7 @@ public:
     const Extent& extent(uint32_t submesh=0) const;
 
     // DBG
-#ifdef __DEBUG__
+#ifdef W_DEBUG
     // Dereference this handle to get the underlying mesh object
     const Mesh& operator*();
 #endif

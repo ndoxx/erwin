@@ -23,7 +23,7 @@ struct WEvent
 {
     WEvent(): timestamp(TimeBase::timestamp()) {}
 
-#ifdef __DEBUG__
+#ifdef W_DEBUG
     virtual std::string get_name() const { return ""; }
     virtual void print(std::ostream& stream) const {}
     friend std::ostream& operator <<(std::ostream& stream, const WEvent& event)

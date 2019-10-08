@@ -389,7 +389,8 @@ Renderer2D(max_batch_count)
 	instance_data_.reserve(max_batch_count_);
 
 	// Load shader
-	Renderer2D::shader_bank.load("shaders/color_inst_shader.glsl");
+	// Renderer2D::shader_bank.load("shaders/color_inst_shader.glsl");
+	Renderer2D::shader_bank.load("shaders/color_inst_shader.spv");
 
 	// Create vertex array with a quad
 	BufferLayout vertex_tex_layout =

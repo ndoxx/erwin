@@ -116,11 +116,11 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp)
 
-add_definitions(-D__DEBUG__)
+add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)
 add_definitions(-DLOGGING_ENABLED=1)
 
-if(DEFINED __DEBUG__)
+if(DEFINED W_DEBUG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic")
 endif()
 

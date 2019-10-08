@@ -5,12 +5,12 @@
 
 layout(std140, binding = 0) uniform mandelbrot_layout
 {
-    mat4 u_view_projection;
-    vec4 u_palette;
-    float u_max_iter;
-    float u_escape_radius;
-    float u_time;
-    float u_atten;
+    /*layout(offset = 0)*/  mat4 u_view_projection;
+    /*layout(offset = 64)*/ vec4 u_palette;
+    /*layout(offset = 80)*/ float u_max_iter;
+    /*layout(offset = 84)*/ float u_escape_radius;
+    /*layout(offset = 88)*/ float u_time;
+    /*layout(offset = 92)*/ float u_atten;
 };
 
 layout(location = 0) in vec3 in_position;
