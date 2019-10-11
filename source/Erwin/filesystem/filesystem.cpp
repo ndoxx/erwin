@@ -34,12 +34,16 @@ static fs::path s_self_path;
 static fs::path s_conf_path;
 static fs::path s_root_path;
 static fs::path s_asset_path;
+static fs::path s_sys_asset_path;
 
 void init()
 {
     s_self_path = get_selfpath();
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
+    W_ASSERT(fs::exists(s_conf_path), "No config directory detected in root directory.");
+    s_sys_asset_path = s_root_path / "source/Erwin/assets";
+    W_ASSERT(fs::exists(s_sys_asset_path), "No assets directory detected in Erwin source directory.");
     s_asset_path = fs::path();
 }
 
@@ -61,6 +65,11 @@ const fs::path& get_config_dir()
 const fs::path& get_asset_dir()
 {
 	return s_asset_path;
+}
+
+const fs::path& get_system_asset_dir()
+{
+    return s_sys_asset_path;
 }
 
 void set_asset_dir(const fs::path& path)

@@ -19,10 +19,10 @@ static std::unordered_map<hash_t, int32_t>     s_ints;
 static std::unordered_map<hash_t, float>       s_floats;
 static std::unordered_map<hash_t, bool>        s_bools;
 static std::unordered_map<hash_t, std::string> s_strings;
-// static std::unordered_map<hash_t, fs::path>    s_paths;
 static std::unordered_map<hash_t, glm::vec2>   s_vec2s;
 static std::unordered_map<hash_t, glm::vec3>   s_vec3s;
 static std::unordered_map<hash_t, glm::vec4>   s_vec4s;
+static std::unordered_map<hash_t, fs::path>    s_paths;
 
 static hash_t parse_xml_property(rapidxml::xml_node<>* node,
                                  const std::string& name_chain)
@@ -43,74 +43,67 @@ static hash_t parse_xml_property(rapidxml::xml_node<>* node,
         {
             uint32_t value = 0;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_uints.insert(std::make_pair(full_name_hash, value));
+            s_uints[full_name_hash] = value;
             break;
         }
         case "int"_h:
         {
             int32_t value = 0;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_ints.insert(std::make_pair(full_name_hash, value));
+            s_ints[full_name_hash] = value;
             break;
         }
         case "float"_h:
         {
             float value = 0.0f;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_floats.insert(std::make_pair(full_name_hash, value));
+            s_floats[full_name_hash] = value;
             break;
         }
         case "bool"_h:
         {
             bool value = false;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_bools.insert(std::make_pair(full_name_hash, value));
+            s_bools[full_name_hash] = value;
             break;
         }
         case "string"_h:
         {
             std::string value;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_strings.insert(std::make_pair(full_name_hash, value));
+            s_strings[full_name_hash] = value;
             break;
         }
         case "vec2"_h:
         {
             glm::vec2 value(0.0f);
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_vec2s.insert(std::make_pair(full_name_hash, value));
+            s_vec2s[full_name_hash] = value;
             break;
         }
         case "vec3"_h:
         {
             glm::vec3 value(0.0f);
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_vec3s.insert(std::make_pair(full_name_hash, value));
+            s_vec3s[full_name_hash] = value;
             break;
         }
         case "vec4"_h:
         {
             glm::vec4 value(0.0f);
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            s_vec4s.insert(std::make_pair(full_name_hash, value));
+            s_vec4s[full_name_hash] = value;
             break;
         }
-        /*case "path"_h:
+        case "path"_h:
         {
             std::string value;
             if(!xml::parse_attribute(node, "value", value)) return 0;
-            fs::path dir(root_path_ / fs::path(value.c_str()));
-            if(fs::exists(dir))
-                this->set(full_name_hash, std::cref(dir));
-            else
-            {
-                DLOGE("[ValueMap] Directory does not exist: ", "core");
-                DLOGI(dir.string(), "core");
-                DLOGI("Skipping.", "core");
-                return 0;
-            }
+            fs::path the_path(filesystem::get_root_dir() / value);
+            if(!fs::exists(the_path)) return 0;
+            s_paths[full_name_hash] = the_path;
             break;
-        }*/
+        }
     }
 
     return full_name_hash;
@@ -227,7 +220,7 @@ bool init(const fs::path& filepath)
 		return false;
 	}
 
-	parse_properties(cfg_f.root, "root");
+	parse_properties(cfg_f.root, "erwin");
 	init_logger(cfg_f.root->first_node("logger"));
 
 	return true;
@@ -297,6 +290,13 @@ template <> glm::vec4 get(hash_t hname, glm::vec4 def)
 	return def;
 }
 
+fs::path get(hash_t hname)
+{
+	auto it = s_paths.find(hname);
+	if(it != s_paths.end())
+		return it->second;
+	return fs::path();
+}
 
 } // namespace cfg
 } // namespace erwin

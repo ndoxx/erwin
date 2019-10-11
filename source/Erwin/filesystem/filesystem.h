@@ -22,6 +22,8 @@ const fs::path& get_root_dir();
 const fs::path& get_config_dir();
 // Get application asset directory if any
 const fs::path& get_asset_dir();
+// Get system asset directory
+const fs::path& get_system_asset_dir();
 // Set application asset directory
 void set_asset_dir(const fs::path& path);
 

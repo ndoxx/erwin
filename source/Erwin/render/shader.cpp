@@ -68,18 +68,20 @@ void ShaderBank::add(WRef<Shader> p_shader)
 
 void ShaderBank::load(const fs::path& path)
 {
-    /*auto stream = filesystem::get_asset_stream(path);
-    load(path.stem().string(), stream);*/
-    fs::path shader_path = filesystem::get_asset_dir() / path;
-    if(!fs::exists(shader_path))
+    if(!fs::exists(path))
     {
-        DLOGE("shader") << "Unable to find file: " << WCC('p') << shader_path << std::endl;
+        DLOGE("shader") << "Unable to find file: " << WCC('p') << path << std::endl;
         return;
     }
 
     std::string name = path.stem().string();
     hash_t hname = H_(name.c_str());
-    bank_.insert(std::make_pair(hname, Shader::create(name, shader_path)));
+    if(exists(hname))
+    {
+        DLOGW("shader") << "Shader " << name << " already loaded." << std::endl;
+        return;
+    }
+    bank_.insert(std::make_pair(hname, Shader::create(name, path)));
     next_index(hname);
 }
 

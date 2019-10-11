@@ -1517,4 +1517,3 @@ Pour les différents outils SPIR-V :
     [X] Ecrire un script de building pour tout le projet (gère les deps...)
     [/] Gérer le callback d'erreurs OpenGL
     https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
-

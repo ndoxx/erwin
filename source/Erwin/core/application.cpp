@@ -32,37 +32,37 @@ minimized_(false)
     cfg::init(filesystem::get_config_dir() / "erwin.xml");
 
     // Log events
-    if(cfg::get<bool>("root.logger.track_window_close_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_window_close_events"_h, false))
     {
         WLOGGER.track_event<WindowCloseEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_window_resize_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_window_resize_events"_h, false))
     {
         WLOGGER.track_event<WindowResizeEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_framebuffer_resize_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_framebuffer_resize_events"_h, false))
     {
         WLOGGER.track_event<FramebufferResizeEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_keyboard_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_keyboard_events"_h, false))
     {
         WLOGGER.track_event<KeyboardEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_mouse_button_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_mouse_button_events"_h, false))
     {
         WLOGGER.track_event<MouseButtonEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_mouse_scroll_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_mouse_scroll_events"_h, false))
     {
         WLOGGER.track_event<MouseMovedEvent>();
     }
-    if(cfg::get<bool>("root.logger.track_mouse_moved_events"_h, false))
+    if(cfg::get<bool>("erwin.logger.track_mouse_moved_events"_h, false))
     {
         WLOGGER.track_event<MouseScrollEvent>();
     }
 
-    WLOGGER.set_single_threaded(cfg::get<bool>("root.logger.single_threaded"_h, true));
-    WLOGGER.set_backtrace_on_error(cfg::get<bool>("root.logger.backtrace_on_error"_h, true));
+    WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
+    WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
 
     // Spawn logger thread
     WLOGGER.spawn();
@@ -78,7 +78,16 @@ minimized_(false)
     istr::init("intern_strings.txt");
 
     // Initialize window
-    window_ = Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/);
+    WindowProps props
+    {
+        "ErwinEngine",
+        cfg::get<uint32_t>("erwin.display.width"_h,  1280),
+        cfg::get<uint32_t>("erwin.display.height"_h, 1024),
+        cfg::get<bool>("erwin.display.full"_h,       false),
+        cfg::get<bool>("erwin.display.topmost"_h,    false),
+        cfg::get<bool>("erwin.display.vsync"_h,      true)
+    };
+    window_ = Window::create(props);
 
     // Initialize framebuffer pool
     Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
@@ -121,7 +130,7 @@ void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
 
-    float target_fps = 60.f;
+    float target_fps = cfg::get<uint32_t>("erwin.display.target_fps"_h, 60);
     const std::chrono::nanoseconds frame_duration_ns_(uint32_t(1e9*1.0f/target_fps));
 
     nanoClock frame_clock;
