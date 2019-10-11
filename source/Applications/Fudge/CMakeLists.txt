@@ -15,8 +15,6 @@ set(SRC_FUDGE
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
-    ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
    )
 
 add_executable(fudge ${SRC_FUDGE})

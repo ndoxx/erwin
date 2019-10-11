@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+	<atlas>
+		<texture>
+			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
+				   output="source/Applications/Sandbox/assets/textures/atlas">
+				<texture_compression>DXT5</texture_compression>
+				<blob_compression>deflate</blob_compression>
+			</batch>
+		</texture>
+		<font>
+			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
+				   output="source/Applications/Sandbox/assets/textures/atlas"/>
+		</font>
+	</atlas>
+
+	<texmap>
+		<batch input="source/Applications/Sandbox/assets/textures/map/upack"
+			   output="source/Applications/Sandbox/assets/textures/map">
+			<config>source/Applications/Sandbox/assets/textures/map/upack/texture_maps.xml</config>
+		</batch>
+	</texmap>
+
+	<shader>
+		<batch input="source/Erwin/assets/shaders"
+			   output="source/Erwin/assets/shaders"/>
+		<batch input="source/Applications/FractalExplorer/assets/shaders"
+			   output="source/Applications/FractalExplorer/assets/shaders"/>
+	</shader>
+</Config>

@@ -9,34 +9,20 @@
 
 #endif
 
-#include "inih/cpp/INIReader.h"
-
 #include "asset_registry.h"
 #include "atlas_packer.h"
 #include "texture_packer.h"
 #include "shader_packer.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
+#include "filesystem/xml_file.h"
 
 using namespace erwin;
 
 static fs::path s_self_path;  // Path to executable
 static fs::path s_root_path;  // Path to root directory of Erwin engine
 static fs::path s_conf_path;  // Path to configuration directory
-static fs::path s_texture_atlas_input_path; // Path to parent directory of unpacked atlas image files
-static fs::path s_texture_atlas_output_path; // Path to packed texture atlas directory
-static fs::path s_font_atlas_input_path; // Path to fonts folder
-static fs::path s_font_atlas_output_path; // Path to packed font atlas directory
-static fs::path s_tmap_input_path;  // Path to parent directory of unpacked texture maps
-static fs::path s_tmap_output_path; // Path to packed texture maps directory
-static fs::path s_tmap_config_path; // Path to config file specifying the different texture maps
-static fs::path s_shader_input_path;  // Path to shader sources
-static fs::path s_shader_output_path; // Path to packed packed binary shaders directory
-
-static fudge::Compression s_tex_compression;
-static fudge::Compression s_fnt_compression;
-
-static bool s_force_rebuild = false; // If set to true, all assets will be rebuild, disregarding the asset registry content
+static bool     s_force_rebuild = false; // If set to true, all assets will be rebuild, disregarding the asset registry content
 
 // Get path to executable
 static fs::path get_selfpath()
@@ -60,121 +46,6 @@ static fs::path get_selfpath()
     return fs::path();
 
 #endif
-}
-
-// Read configuration file (.ini) and setup paths
-static bool read_conf(const fs::path& path)
-{
-    DLOGN("fudge") << "Reading atlas tool config file." << std::endl;
-
-    if(!fs::exists(path))
-    {
-        DLOGE("fudge") << "File " << path << " does not exist." << std::endl;
-        return false;
-    }
-
-    INIReader reader(path.string().c_str());
-    if(reader.ParseError() < 0)
-    {
-        DLOGE("fudge") << "Can't load 'fudge.ini'" << std::endl;
-        return false;
-    }
-
-    s_texture_atlas_input_path = s_root_path / reader.Get("atlas", "texture_atlases_input_path", "UNKNOWN");
-    if(!fs::exists(s_texture_atlas_input_path))
-    {
-        DLOGE("fudge") << "Path " << s_texture_atlas_input_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_texture_atlas_output_path = s_root_path / reader.Get("atlas", "texture_atlases_output_path", "UNKNOWN");
-    if(!fs::exists(s_texture_atlas_output_path))
-    {
-        DLOGE("fudge") << "Path " << s_texture_atlas_output_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_font_atlas_input_path = s_root_path / reader.Get("atlas", "font_atlases_input_path", "UNKNOWN");
-    if(!fs::exists(s_font_atlas_input_path))
-    {
-        DLOGE("fudge") << "Path " << s_font_atlas_input_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_font_atlas_output_path = s_root_path / reader.Get("atlas", "font_atlases_output_path", "UNKNOWN");
-    if(!fs::exists(s_font_atlas_output_path))
-    {
-        DLOGE("fudge") << "Path " << s_font_atlas_output_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    std::string comp_str = reader.Get("atlas", "texture_compression", "UNKNOWN");
-    if(!comp_str.compare("none"))
-        s_tex_compression = fudge::Compression::None;
-    else if(!comp_str.compare("DXT5"))
-        s_tex_compression = fudge::Compression::DXT5;
-    else
-    {
-        DLOGE("fudge") << "Unrecognized compression specifier for textures: " << comp_str << std::endl;
-        return false;
-    }
-
-    comp_str = reader.Get("atlas", "font_compression", "UNKNOWN");
-    if(!comp_str.compare("none"))
-        s_fnt_compression = fudge::Compression::None;
-    else
-    {
-        DLOGE("fudge") << "Unrecognized compression specifier for fonts: " << comp_str << std::endl;
-        return false;
-    }
-
-    comp_str = reader.Get("atlas", "blob_compression", "UNKNOWN");
-    if(!comp_str.compare("none"))
-        fudge::atlas::set_compression(fudge::Compression::None);
-    else if(!comp_str.compare("deflate"))
-        fudge::atlas::set_compression(fudge::Compression::Deflate);
-    else
-    {
-        DLOGE("fudge") << "Unrecognized compression specifier for blob: " << comp_str << std::endl;
-        return false;
-    }
-
-    s_tmap_input_path = s_root_path / reader.Get("texmap", "input_path", "UNKNOWN");
-    if(!fs::exists(s_tmap_input_path))
-    {
-        DLOGE("fudge") << "Path " << s_tmap_input_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_tmap_output_path = s_root_path / reader.Get("texmap", "output_path", "UNKNOWN");
-    if(!fs::exists(s_tmap_output_path))
-    {
-        DLOGE("fudge") << "Path " << s_tmap_output_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_tmap_config_path = s_root_path / reader.Get("texmap", "config", "UNKNOWN");
-    if(!fs::exists(s_tmap_config_path))
-    {
-        DLOGE("fudge") << "Path " << s_tmap_config_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_shader_input_path = s_root_path / reader.Get("shader", "input_path", "UNKNOWN");
-    if(!fs::exists(s_shader_input_path))
-    {
-        DLOGE("fudge") << "Path " << s_shader_input_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    s_shader_output_path = s_root_path / reader.Get("shader", "output_path", "UNKNOWN");
-    if(!fs::exists(s_shader_output_path))
-    {
-        DLOGE("fudge") << "Path " << s_shader_output_path << " does not exist." << std::endl;
-        return false;
-    }
-
-    return true;
 }
 
 static std::string grad(float a)
@@ -247,15 +118,12 @@ int main(int argc, char const *argv[])
     DLOGI << "Root path: " << WCC('p') << s_root_path << std::endl;
     DLOGI << "Conf path: " << WCC('p') << s_conf_path << std::endl;
 
-    if(!read_conf(s_conf_path / "fudge.ini"))
+    xml::XMLFile cfg(s_conf_path / "fudge.xml");
+    if(!cfg.read())
     {
         DLOGE("fudge") << "Could not complete configuration step, exiting." << std::endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
-    DLOGI << "Atlas unpacked:  " << WCC('p') << fs::relative(s_texture_atlas_input_path, s_root_path) << std::endl;
-    DLOGI << "Atlas fonts:     " << WCC('p') << fs::relative(s_font_atlas_input_path, s_root_path) << std::endl;
-    DLOGI << "Texmap unpacked: " << WCC('p') << fs::relative(s_tmap_input_path, s_root_path) << std::endl;
-
     // Load asset registry file
     fudge::far::load(s_conf_path / "fudge.far");
 
@@ -263,36 +131,75 @@ int main(int argc, char const *argv[])
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
-    // * For each sub-directory in upack directory, create an atlas containing every image in it,
-    //   whose name is the sub-directory name
-    DLOGN("fudge") << "Iterating unpacked atlases directories." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_texture_atlas_input_path))
+    // ---------------- TEXTURE ATLASES ----------------
+    rapidxml::xml_node<>* atl_node = cfg.root->first_node("atlas");
+    rapidxml::xml_node<>* tatl_node = atl_node->first_node("texture");
+    for(rapidxml::xml_node<>* batch=tatl_node->first_node("batch");
+        batch; batch=batch->next_sibling("batch"))
     {
-        if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
-        {
-            DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
+        // Configure batch
+        std::string input_path, output_path, tex_compression("none"), blob_compression("none");
+        if(!xml::parse_attribute(batch, "input", input_path)) continue;
+        if(!xml::parse_attribute(batch, "output", output_path)) continue;
+        xml::parse_node(batch, "texture_compression", tex_compression);
+        xml::parse_node(batch, "blob_compression", blob_compression);
 
-            fudge::atlas::make_atlas(entry.path(), s_texture_atlas_output_path, s_tex_compression);
-            DLOGR("fudge") << std::endl;
+        fudge::Compression tex_c;
+        switch(H_(tex_compression.c_str()))
+        {
+            case "DXT5"_h: tex_c = fudge::Compression::DXT5; break;
+            default:       tex_c = fudge::Compression::None; break;
+        }
+        fudge::Compression blob_c;
+        switch(H_(tex_compression.c_str()))
+        {
+            case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
+            default:          blob_c = fudge::Compression::None; break;
+        }
+        fudge::atlas::set_compression(blob_c);
+
+        // Iterate directory
+        DLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
+        DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+        for(auto& entry: fs::directory_iterator(s_root_path / input_path))
+        {
+            if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
+            {
+                DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
+
+                fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, tex_c);
+                DLOGR("fudge") << std::endl;
+            }
         }
     }
 
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
-    // * Generate an atlas for each font in fonts directory
+    // ---------------- FONT ATLASES ----------------
     fudge::atlas::init_fonts();
 
-    DLOGN("fudge") << "Iterating fonts." << std::endl;
-    for(auto& entry: fs::directory_iterator(s_font_atlas_input_path))
+    rapidxml::xml_node<>* fatl_node = atl_node->first_node("font");
+    for(rapidxml::xml_node<>* batch=fatl_node->first_node("batch");
+        batch; batch=batch->next_sibling("batch"))
     {
-        if(entry.is_regular_file() && 
-           !entry.path().extension().string().compare(".ttf") &&
-           (fudge::far::need_create(entry) || s_force_rebuild))
+        // Configure batch
+        std::string input_path, output_path;
+        if(!xml::parse_attribute(batch, "input", input_path)) continue;
+        if(!xml::parse_attribute(batch, "output", output_path)) continue;
+
+        DLOGN("fudge") << "Iterating fonts directory:" << std::endl;
+        DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+        for(auto& entry: fs::directory_iterator(s_root_path / input_path))
         {
-            DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
-            fudge::atlas::make_font_atlas(entry.path(), s_texture_atlas_output_path, s_fnt_compression, 32);
-            DLOGR("fudge") << std::endl;
+            if(entry.is_regular_file() && 
+               !entry.path().extension().string().compare(".ttf") &&
+               (fudge::far::need_create(entry) || s_force_rebuild))
+            {
+                DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
+                fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, fudge::Compression::None, 32);
+                DLOGR("fudge") << std::endl;
+            }
         }
     }
 
@@ -301,44 +208,62 @@ int main(int argc, char const *argv[])
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
-    // Configure texture map specs
-    if(fudge::texmap::configure(s_tmap_config_path))
+    // ---------------- TEXTURE MAPS ----------------
+    rapidxml::xml_node<>* tm_node = cfg.root->first_node("texmap");
+    for(rapidxml::xml_node<>* batch=tm_node->first_node("batch");
+        batch; batch=batch->next_sibling("batch"))
     {
-        DLOGR("fudge") << std::endl;
+        // Configure batch
+        std::string input_path, output_path, config_file;
+        if(!xml::parse_attribute(batch, "input", input_path)) continue;
+        if(!xml::parse_attribute(batch, "output", output_path)) continue;
+        if(!xml::parse_node(batch, "config", config_file)) continue;
+        if(!fudge::texmap::configure(s_root_path / config_file))
+        {
+            DLOGE("fudge") << "Failed to configure texture maps." << std::endl;
+            continue;
+        }
 
-        // * For each sub-directory in upack directory, create a .tom file containing every image in it,
-        //   whose name is the sub-directory name
-        DLOGN("fudge") << "Iterating unpacked texture maps directories." << std::endl;
-        for(auto& entry: fs::directory_iterator(s_tmap_input_path))
+        DLOGN("fudge") << "Iterating unpacked texture maps directory:" << std::endl;
+        DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+        for(auto& entry: fs::directory_iterator(s_root_path / input_path))
             if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_rebuild))
-                fudge::texmap::make_tom(entry.path(), s_tmap_output_path);
-    }
-    else
-    {
-        DLOGE("fudge") << "Failed to configure texture maps." << std::endl;
+                fudge::texmap::make_tom(entry.path(), s_root_path / output_path);
     }
 
     DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
     DLOGR("fudge") << std::endl;
 
+    // ---------------- SHADERS ----------------
     if(fudge::spv::check_toolchain())
     {
-        // Create temporary folder
-        fs::create_directory(s_shader_output_path / "tmp");
-        DLOGN("fudge") << "Iterating shaders." << std::endl;
-        for(auto& entry: fs::directory_iterator(s_shader_input_path))
+        rapidxml::xml_node<>* shader_node = cfg.root->first_node("shader");
+        for(rapidxml::xml_node<>* batch=shader_node->first_node("batch");
+            batch; batch=batch->next_sibling("batch"))
         {
-            if(entry.is_regular_file() && 
-               !entry.path().extension().string().compare(".glsl") &&
-               (fudge::far::need_create(entry) || s_force_rebuild))
+            // Configure batch
+            std::string input_path, output_path, config_file;
+            if(!xml::parse_attribute(batch, "input", input_path)) continue;
+            if(!xml::parse_attribute(batch, "output", output_path)) continue;
+
+            // Create temporary folder
+            fs::create_directory(s_root_path / output_path / "tmp");
+            DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
+            DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+            for(auto& entry: fs::directory_iterator(s_root_path / input_path))
             {
-                DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
-                fudge::spv::make_shader_spirv(entry.path(), s_shader_output_path);
-                DLOGR("fudge") << std::endl;
+                if(entry.is_regular_file() && 
+                   !entry.path().extension().string().compare(".glsl") &&
+                   (fudge::far::need_create(entry) || s_force_rebuild))
+                {
+                    DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
+                    fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
+                    DLOGR("fudge") << std::endl;
+                }
             }
+            // Delete temporary folder
+            fs::remove_all(s_root_path / output_path / "tmp");
         }
-        // Delete temporary folder
-        fs::remove_all(s_shader_output_path / "tmp");
     }
 
     // Save asset registry file
