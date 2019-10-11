@@ -477,6 +477,13 @@ bool OGLShader::link(const std::vector<GLuint>& shader_ids)
     return true;
 }
 
+struct BlockElement
+{
+    int32_t offset;
+    int32_t type;
+    std::string name;
+};
+
 void OGLShader::introspect()
 {
     // Interfaces to query
@@ -495,7 +502,7 @@ void OGLShader::introspect()
         {GL_BUFFER_VARIABLE,      {GL_NAME_LENGTH, GL_BLOCK_INDEX, GL_TYPE}},
     };
     // Block-uniform properties
-    static const std::vector<GLenum> unif_props {GL_NAME_LENGTH, GL_TYPE, GL_LOCATION};
+    static const std::vector<GLenum> unif_props {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET};
     static const std::vector<GLenum> active_unif_prop {GL_ACTIVE_VARIABLES};
 
     std::vector<GLint> prop_values; // Will receive queried properties
@@ -534,7 +541,7 @@ void OGLShader::introspect()
             if(iface == GL_PROGRAM_INPUT)
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
-                DLOGI << "[" << prop_values[2] << "] " << ogl_attribute_type_to_string(prop_values[1]) 
+                DLOGI << "[Loc: " << prop_values[2] << "] " << ogl_attribute_type_to_string(prop_values[1]) 
                       << " " << WCC('u') << resource_name << WCC(0) << std::endl;
             }
             else if(iface == GL_UNIFORM)
@@ -546,7 +553,7 @@ void OGLShader::introspect()
                     uniform_locations_.insert(std::make_pair(hname, prop_values[3])); // Save location
                     if(prop_values[2] == GL_SAMPLER_2D || prop_values[2] == GL_SAMPLER_CUBE)
                         texture_slots_.insert(std::make_pair(hname, current_slot_++));
-                    DLOGI << "[" << prop_values[3] << "] " << ogl_uniform_type_to_string(prop_values[2]) 
+                    DLOGI << "[Loc: " << prop_values[3] << "] " << ogl_uniform_type_to_string(prop_values[2]) 
                           << " " << WCC('u') << resource_name << WCC(0) << std::endl;
                 }
 
@@ -555,7 +562,7 @@ void OGLShader::introspect()
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING, 2: GL_NUM_ACTIVE_VARIABLES
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
-                DLOGI << "[" << prop_values[1] << "] " << WCC('n') << resource_name << std::endl;
+                DLOGI << "[Binding: " << prop_values[1] << "] " << WCC('n') << resource_name << std::endl;
 #ifdef W_DEBUG
                 int num_active_uniforms = prop_values[2];
                 if(num_active_uniforms==0) continue;
@@ -566,6 +573,7 @@ void OGLShader::introspect()
                                        num_active_uniforms, nullptr, &block_unif_indices[0]);
 
                 // Iterate over all uniforms in this block
+                std::vector<BlockElement> block_elements;
                 for(int kk=0; kk<num_active_uniforms; ++kk)
                 {
                     // UNIF PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
@@ -575,8 +583,18 @@ void OGLShader::introspect()
                     uniform_name.resize(unif_prop_values[0]);
                     glGetProgramResourceName(rd_handle_, GL_UNIFORM, block_unif_indices[kk], uniform_name.size(), 
                                              nullptr, &uniform_name[0]);
-                    DLOGI << "* " << ogl_uniform_type_to_string(unif_prop_values[1]) << " " 
-                          << WCC('u') << uniform_name << WCC(0) << std::endl;
+                    // Save uniform porperties
+                    block_elements.push_back(BlockElement{unif_prop_values[2], unif_prop_values[1], uniform_name});
+                }
+                // Sort uniforms by offset and display
+                std::sort(block_elements.begin(), block_elements.end(), [](const BlockElement& a, const BlockElement& b) -> bool
+                { 
+                    return a.offset < b.offset; 
+                });
+                for(auto&& elt: block_elements)
+                {
+                    DLOGI << "[Offset: " << elt.offset << "] " << ogl_uniform_type_to_string(elt.type) << " " 
+                          << WCC('u') << elt.name << WCC(0) << std::endl;
                 }
 #endif
             }
@@ -584,14 +602,14 @@ void OGLShader::introspect()
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
-                DLOGI << "[" << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
+                DLOGI << "[Binding: " << prop_values[1] << "] " << WCC('u') << resource_name << std::endl;
             }
-            else if(iface == GL_BUFFER_VARIABLE)
+            /*else if(iface == GL_BUFFER_VARIABLE)
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BLOCK_INDEX, 2: GL_TYPE
                 DLOGI << "[" << prop_values[1] << "] " << ogl_uniform_type_to_string(prop_values[2]) << " " 
                       << WCC('u') << resource_name << WCC(0) << std::endl;
-            }
+            }*/
         }
     }
     DLOG("shader",1) << "--------" << std::endl;

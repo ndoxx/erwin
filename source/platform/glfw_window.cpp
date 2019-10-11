@@ -61,11 +61,11 @@ void APIENTRY glDebugOutput(GLenum source,
 }
 #endif
 */
-static bool glfw_initialized = false;
+static uint8_t s_glfw_num_windows = 0;
 
-Window* Window::create(const WindowProps& props)
+WScope<Window> Window::create(const WindowProps& props)
 {
-	return new GLFWWindow(props);
+	return make_scope<GLFWWindow>(props);
 }
 
 static void GLFW_error_callback(int error, const char* description)
@@ -96,8 +96,9 @@ GLFWWindow::~GLFWWindow()
 void GLFWWindow::init(const WindowProps& props)
 {
 	// Initialize GLFW if not already initialized
-	if(!glfw_initialized)
+	if(s_glfw_num_windows == 0)
 	{
+		DLOGN("core") << "Initializing GLFW." << std::endl;
 		if(!glfwInit())
 		{
 			DLOGF("core") << "Failed to initialize GLFW." << std::endl;
@@ -111,8 +112,6 @@ void GLFWWindow::init(const WindowProps& props)
 	        glfwGetVersion(&major, &minor, &rev);
 	        DLOGI << "Version:  " << major << "." << minor << "." << rev << std::endl;
 	    }
-
-		glfw_initialized = true;
 	}
 
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -131,6 +130,7 @@ void GLFWWindow::init(const WindowProps& props)
         data_->window = glfwCreateWindow(props.width, props.height, props.title.c_str(), glfwGetPrimaryMonitor(), NULL);
     else
         data_->window = glfwCreateWindow(props.width, props.height, props.title.c_str(), NULL, NULL);
+    ++s_glfw_num_windows;
 
     data_->width = props.width;
     data_->height = props.height;
@@ -274,8 +274,11 @@ void GLFWWindow::set_event_callbacks()
 void GLFWWindow::cleanup()
 {
 	glfwDestroyWindow(data_->window);
-	// Will need to remove this in case of multi-window application
-    glfwTerminate();
+	if(--s_glfw_num_windows == 0)
+	{
+		DLOGN("core") << "Shutting down GLFW." << std::endl;
+    	glfwTerminate();
+	}
 }
 
 void GLFWWindow::update()

@@ -1310,22 +1310,6 @@ Noter la présence du booléen statique *s_force_rebuild* qui est initialisé à
 
 
 #[03-10-19] Maintenance
-##TODO:
-    [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
-    https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
-        [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
-        stocker dans les CAT files.
-    [X] Supporter SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
-    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
-    [ ] Ecrire un renderer 2D multi-threaded
-        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
-    [ ] Ecrire un renderer 3D multi-threaded
-    [X] Ecrire un script de building pour tout le projet (gère les deps...)
-    [/] Gérer le callback d'erreurs OpenGL
-    https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
-
 ##Glad Submodule
 J'ai écrit un fichier extensions.txt contenant toutes les extensions que GLAD doit prendre en charge, à la racine du dossier glad. J'ai aussi créé un CMakeLists.txt custom qui remplace l'ancien, afin de compiler la lib en -fPIC et d'écrire le .a dans le dossier erwin/lib.
 
@@ -1515,3 +1499,22 @@ Pour les différents outils SPIR-V :
     [4] https://github.com/KhronosGroup/SPIRV-Headers/blob/master/include
         /spirv/unified1/spirv.hpp11
     [5] https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
+
+
+
+#TODO:
+    [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
+    https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
+        [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
+        stocker dans les CAT files.
+    [X] Supporter SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
+    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
+    [ ] Ecrire un renderer 2D multi-threaded
+        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
+    [ ] Ecrire un renderer 3D multi-threaded
+    [X] Ecrire un script de building pour tout le projet (gère les deps...)
+    [/] Gérer le callback d'erreurs OpenGL
+    https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
+

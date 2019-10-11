@@ -56,14 +56,14 @@ public:
 class LogFileSink: public Sink
 {
 public:
-	LogFileSink(const char* filename);
-	virtual ~LogFileSink();
+	LogFileSink(const std::string& filename);
+	virtual ~LogFileSink() = default;
 	virtual void send(const LogStatement& stmt, const LogChannel& chan) override;
 	virtual void send_raw(const std::string& message) override;
 	virtual void finish() override;
 
 private:
-	const char* filename_;
+	std::string filename_;
 	std::stringstream ss_;
 	std::vector<std::string> entries_;
 };

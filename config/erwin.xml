@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+	<logger>
+		<Channel name="application" verbosity="3"/>
+		<Channel name="render"      verbosity="3"/>
+		<Channel name="shader"      verbosity="3"/>
+		<Channel name="texture"     verbosity="3"/>
+		<Channel name="util"        verbosity="3"/>
+		<Channel name="config"      verbosity="3"/>
+		
+		<Sink name="ConsoleSink"    type="ConsoleSink" channels="all"/>
+		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
+		<Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
+
+		<bool name="backtrace_on_error" value="false"/>
+		<bool name="single_threaded" value="true"/>
+		<bool name="track_window_close_events" value="true"/>
+		<bool name="track_window_resize_events" value="true"/>
+		<bool name="track_framebuffer_resize_events" value="true"/>
+		<bool name="track_keyboard_events" value="false"/>
+		<bool name="track_mouse_button_events" value="true"/>
+		<bool name="track_mouse_scroll_events" value="false"/>
+		<bool name="track_mouse_moved_events" value="false"/>
+	</logger>
+
+</Config>

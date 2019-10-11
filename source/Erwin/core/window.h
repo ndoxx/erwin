@@ -34,7 +34,7 @@ public:
 
 	virtual void* get_native() const = 0;
 
-	static Window* create(const WindowProps& props = WindowProps());
+	static WScope<Window> create(const WindowProps& props = WindowProps());
 
 protected:
 	GFXContext* context_ = nullptr;

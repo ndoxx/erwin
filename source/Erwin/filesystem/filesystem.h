@@ -14,6 +14,8 @@ namespace filesystem
 // Locate executable, and deduce paths
 extern void init();
 
+// Get executable directory
+const fs::path& get_self_dir();
 // Get root directory
 const fs::path& get_root_dir();
 // Get config directory

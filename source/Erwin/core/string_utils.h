@@ -1,9 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <sstream>
 #include <cctype>
 #include <locale>
 #include <regex>
+#include <functional>
 
 namespace erwin
 {
@@ -52,6 +54,30 @@ static inline std::string trim_copy(std::string s)
 {
     trim(s);
     return s;
+}
+
+static inline void tokenize(std::string str, std::vector<std::string>& dst, char delimiter=',')
+{
+    std::stringstream ss(str);
+
+    while(ss.good())
+    {
+        std::string substr;
+        std::getline(ss, substr, delimiter);
+        dst.push_back(substr);
+    }
+}
+
+static inline void tokenize(std::string str, char delimiter, std::function<void(const std::string&)> visit)
+{
+    std::stringstream ss(str);
+
+    while(ss.good())
+    {
+        std::string substr;
+        std::getline(ss, substr, delimiter);
+        visit(substr);
+    }
 }
 
 namespace rx

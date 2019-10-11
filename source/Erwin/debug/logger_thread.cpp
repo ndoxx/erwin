@@ -76,13 +76,8 @@ void ConsoleSink::send_raw(const std::string& message)
 	std::cout << message;
 }
 
-LogFileSink::LogFileSink(const char* filename):
+LogFileSink::LogFileSink(const std::string& filename):
 filename_(filename)
-{
-
-}
-
-LogFileSink::~LogFileSink()
 {
 
 }
@@ -145,8 +140,7 @@ single_threaded_(false)
 
 LoggerThread::~LoggerThread()
 {
-    if(logger_thread_.joinable())
-        kill();
+    kill();
 
 	for(auto&& [key,sink]: sinks_)
 		sink->finish();

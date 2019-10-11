@@ -1,6 +1,5 @@
 #include "filesystem/filesystem.h"
 #include "core/core.h"
-#include "debug/logger.h"
 
 #ifdef __linux__
     #include <unistd.h>
@@ -38,16 +37,15 @@ static fs::path s_asset_path;
 
 void init()
 {
-	DLOGN("config") << "Initializing file system." << std::endl;
-
     s_self_path = get_selfpath();
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
     s_asset_path = fs::path();
+}
 
-    DLOGI << "Executable path: " << WCC('p') << s_self_path.string() << WCC(0) << std::endl;
-    DLOGI << "Root dir:        " << WCC('p') << s_root_path.string() << WCC(0) << std::endl;
-    DLOGI << "Config dir:      " << WCC('p') << s_conf_path.string() << WCC(0) << std::endl;
+const fs::path& get_self_dir()
+{
+    return s_self_path;
 }
 
 const fs::path& get_root_dir()

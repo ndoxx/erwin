@@ -1,14 +1,13 @@
 #include "application.h"
 #include "core/clock.hpp"
+#include "core/intern_string.h"
+#include "core/config.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
-#include "core/intern_string.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
-
-#include "inih/cpp/INIReader.h"
 
 #include <iostream>
 
@@ -20,82 +19,66 @@ Application* Application::pinstance_ = nullptr;
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 Application::Application():
-window_(WScope<Window>(Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/))),
 is_running_(true),
 minimized_(false)
 {
-	// Create application singleton
-	if(Application::pinstance_)
-	{
-		DLOGF("application") << "Application already exists!" << std::endl;
-		fatal();
-	}
+    // Create application singleton
+    W_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
 
-	// Initialize logger
-    WLOGGER.create_channel("application", 3);
-    WLOGGER.create_channel("render", 3);
-    WLOGGER.create_channel("shader", 3);
-    WLOGGER.create_channel("texture", 3);
-    WLOGGER.create_channel("util", 3);
-    WLOGGER.create_channel("config", 3);
-    WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("wcore.log"));
-    // WLOGGER.attach("EventFileSink", std::make_unique<dbg::LogFileSink>("events.log"), {"event"_h});
-    WLOGGER.set_single_threaded(true);
-    
     // Initialize file system
     filesystem::init();
-
-	// Read .ini file
-	// TMP: move to proper configuration system
-	fs::path ini_path = filesystem::get_config_dir() / "erwin.ini";
-	INIReader reader(ini_path.string().c_str());
-    if(reader.ParseError() < 0)
-    {
-        std::cout << "Can't load 'erwin.ini'" << std::endl;
-    }
-    bool lg_backtrace_on_error = reader.GetBoolean("logger", "backtrace_on_error", true);
-    bool lg_single_threaded    = reader.GetBoolean("logger", "single_threaded", false);
-
-    WLOGGER.set_single_threaded(lg_single_threaded);
-    WLOGGER.set_backtrace_on_error(lg_backtrace_on_error);
+    // Initialize config
+    cfg::init(filesystem::get_config_dir() / "erwin.xml");
 
     // Log events
-    if(reader.GetBoolean("logger", "track_window_close_events", false))
+    if(cfg::get<bool>("root.logger.track_window_close_events"_h, false))
     {
-    	WLOGGER.track_event<WindowCloseEvent>();
+        WLOGGER.track_event<WindowCloseEvent>();
     }
-    if(reader.GetBoolean("logger", "track_window_resize_events", false))
+    if(cfg::get<bool>("root.logger.track_window_resize_events"_h, false))
     {
-    	WLOGGER.track_event<WindowResizeEvent>();
+        WLOGGER.track_event<WindowResizeEvent>();
     }
-    if(reader.GetBoolean("logger", "track_framebuffer_resize_events", false))
+    if(cfg::get<bool>("root.logger.track_framebuffer_resize_events"_h, false))
     {
-    	WLOGGER.track_event<FramebufferResizeEvent>();
+        WLOGGER.track_event<FramebufferResizeEvent>();
     }
-    if(reader.GetBoolean("logger", "track_keyboard_events", false))
+    if(cfg::get<bool>("root.logger.track_keyboard_events"_h, false))
     {
-    	WLOGGER.track_event<KeyboardEvent>();
+        WLOGGER.track_event<KeyboardEvent>();
     }
-    if(reader.GetBoolean("logger", "track_mouse_button_events", false))
+    if(cfg::get<bool>("root.logger.track_mouse_button_events"_h, false))
     {
-    	WLOGGER.track_event<MouseButtonEvent>();
+        WLOGGER.track_event<MouseButtonEvent>();
     }
-    if(reader.GetBoolean("logger", "track_mouse_scroll_events", false))
+    if(cfg::get<bool>("root.logger.track_mouse_scroll_events"_h, false))
     {
-    	WLOGGER.track_event<MouseMovedEvent>();
+        WLOGGER.track_event<MouseMovedEvent>();
     }
-    if(reader.GetBoolean("logger", "track_mouse_moved_events", false))
+    if(cfg::get<bool>("root.logger.track_mouse_moved_events"_h, false))
     {
-    	WLOGGER.track_event<MouseScrollEvent>();
+        WLOGGER.track_event<MouseScrollEvent>();
     }
 
+    WLOGGER.set_single_threaded(cfg::get<bool>("root.logger.single_threaded"_h, true));
+    WLOGGER.set_backtrace_on_error(cfg::get<bool>("root.logger.backtrace_on_error"_h, true));
+
+    // Spawn logger thread
     WLOGGER.spawn();
     WLOGGER.sync();
 
+    // Log basic info
+    DLOGN("config") << "[Paths]" << std::endl;
+    DLOGI << "Executable path: " << WCC('p') << filesystem::get_self_dir() << WCC(0) << std::endl;
+    DLOGI << "Root dir:        " << WCC('p') << filesystem::get_root_dir() << WCC(0) << std::endl;
+    DLOGI << "Config dir:      " << WCC('p') << filesystem::get_config_dir() << WCC(0) << std::endl;
+
     // Parse intern strings
     istr::init("intern_strings.txt");
+
+    // Initialize window
+    window_ = Window::create(/*{"ErwinEngine", 1920, 1200, true, false, true}*/);
 
     // Initialize framebuffer pool
     Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
