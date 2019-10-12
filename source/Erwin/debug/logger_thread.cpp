@@ -1,10 +1,7 @@
-#include <algorithm>
 #include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <regex>
 
 #include "debug/logger_thread.h"
+#include "debug/logger_sink.h"
 #include "debug/logger.h"
 #include "debug/stack_trace.h"
 #include "math/color.h"
@@ -15,119 +12,6 @@ namespace dbg
 {
 
 static const uint32_t CHANNEL_STYLE_PALETTE = 16u;
-
-static std::map<MsgType, WCC> STYLES =
-{
-    {MsgType::NORMAL,    WCC(255,255,255)},
-    {MsgType::ITEM,      WCC(255,255,255)},
-    {MsgType::EVENT,     WCC(255,255,255)},
-    {MsgType::NOTIFY,    WCC(150,130,255)},
-    {MsgType::WARNING,   WCC(255,175,0)},
-    {MsgType::ERROR,     WCC(255,90, 90)},
-    {MsgType::FATAL,     WCC(255,0,  0)},
-    {MsgType::BANG,      WCC(255,100,0)},
-    {MsgType::GOOD,      WCC(0,  255,0)},
-    {MsgType::BAD,       WCC(255,0,  0)},
-};
-
-static std::map<MsgType, std::string> ICON =
-{
-    {MsgType::NORMAL,    "    "},
-    {MsgType::ITEM,      "     \u21B3 "},
-    {MsgType::EVENT,     " \u2107 "},
-    {MsgType::NOTIFY,    "\033[1;48;2;20;10;50m \u2055 \033[1;49m "},
-    {MsgType::WARNING,   "\033[1;48;2;50;40;10m \u203C \033[1;49m "},
-    {MsgType::ERROR,     "\033[1;48;2;50;10;10m \u2020 \033[1;49m "},
-    {MsgType::FATAL,     "\033[1;48;2;50;10;10m \u2021 \033[1;49m "},
-    {MsgType::BANG,      "\033[1;48;2;50;40;10m \u0489 \033[1;49m "},
-    {MsgType::GOOD,      "\033[1;48;2;10;50;10m \u203F \033[1;49m "},
-    {MsgType::BAD,       "\033[1;48;2;50;10;10m \u2054 \033[1;49m "},
-};
-
-Sink::Sink():
-enabled_(true)
-{
-
-}
-
-void ConsoleSink::send(const LogStatement& stmt, const LogChannel& chan)
-{
-	if(stmt.msg_type != MsgType::RAW)
-	{
-		// Show file and line if sufficiently severe
-		if(stmt.severity >= 2)
-		{
-			std::cout << "\033[1;38;2;255;255;255m@ " << stmt.code_file << ":" 
-			          << "\033[1;38;2;255;90;90m" << stmt.code_line << "\n";
-		}
-
-	    float ts = std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count();
-	    std::cout << "\033[1;38;2;0;130;10m["
-	              << std::setprecision(6) << std::fixed
-	              << ts << "]" << "\033[0m";
-	    std::cout << chan.tag << " " << STYLES[stmt.msg_type] << ICON[stmt.msg_type] << stmt.message;
-	}
-	else
-		std::cout << "\033[0m" << stmt.message << "\033[0m";
-}
-
-void ConsoleSink::send_raw(const std::string& message)
-{
-	std::cout << message;
-}
-
-LogFileSink::LogFileSink(const std::string& filename):
-filename_(filename)
-{
-
-}
-
-void LogFileSink::send(const LogStatement& stmt, const LogChannel& chan)
-{
-	if(stmt.msg_type != MsgType::RAW)
-	{
-		// Show file and line if sufficiently severe
-		if(stmt.severity >= 2)
-			ss_ << "@ " << stmt.code_file << ":" << stmt.code_line << std::endl;
-
-    	float ts = std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count();
-		ss_ << "[" << std::setprecision(6) << std::fixed << ts << "](" << int(stmt.severity) << ") ";
-		ss_ << stmt.message;
-
-		entries_.push_back(ss_.str());
-	    ss_.str("");
-	}
-	else
-		entries_.push_back(stmt.message);
-}
-
-void LogFileSink::send_raw(const std::string& message)
-{
-	entries_.push_back(message);
-}
-
-static std::string strip_ansi(const std::string& str)
-{
-	static std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
-	return std::regex_replace(str, ansi_regex, "");
-}
-
-void LogFileSink::finish()
-{
-	if(!enabled_)
-		return;
-
-	std::ofstream ofs(filename_);
-
-	for(const std::string& entry: entries_)
-		ofs << strip_ansi(entry);
-
-	ofs.close();
-
-	std::cout << "\033[1;38;2;255;255;255mSaved log file: " 
-		      << "\033[1;38;2;90;255;90m" << filename_ << "\n";
-}
-
 
 LoggerThread::LoggerThread():
 thread_state_(STATE_IDLE),

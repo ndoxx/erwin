@@ -1500,7 +1500,65 @@ Pour les différents outils SPIR-V :
         /spirv/unified1/spirv.hpp11
     [5] https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
 
+#[11-10-19]
+##Config
+core/config.h/cpp définissent un ensemble de fonctions pour :
 
+    * importer des paires clé/valeur depuis un fichier de config XML
+    * récupérer une valeur d'un certain type contre une clé
+
+Ce système permet aussi d'automatiser la configuration du logger pour la déclaration des channels et des sinks. Exemple de configuration :
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+    <logger>
+        <Channel name="application" verbosity="3"/>
+        <Channel name="render"      verbosity="3"/>
+        <!-- ... -->
+        <Sink name="ConsoleSink"    type="ConsoleSink" channels="all"/>
+        <Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
+        <Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
+        <!-- ... -->
+        <bool name="backtrace_on_error" value="false"/>
+        <bool name="single_threaded" value="true"/>
+        <bool name="track_window_close_events" value="true"/>
+        <!-- ... -->
+    </logger>
+    <display>
+        <uint name="width"  value="1920"/>
+        <uint name="height" value="1080"/>
+        <!-- ... -->
+    </display>
+</Config>
+```
+Dans le cas des sinks, l'attribut *channels* peut être omis ou de manière équivalente fixé à "all" pour attacher le sink en question à tous les canaux. Pour attacher un sink à un seul canal ou bien à une liste de canaux, *channels* sera affecté d'un nom de canal, ou bien d'une liste séparée par des virgules.
+
+##Maintenance
+###Fudge batches
+Fudge est configuré via un fichier XML :
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+    <atlas>
+        <texture>
+            <batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
+                   output="source/Applications/Sandbox/assets/textures/atlas">
+                <texture_compression>DXT5</texture_compression>
+                <blob_compression>deflate</blob_compression>
+            </batch>
+        </texture>
+        <!-- ... -->
+    </atlas>
+    <!-- ... -->
+    <shader>
+        <batch input="source/Erwin/assets/shaders"
+               output="source/Erwin/assets/shaders"/>
+        <batch input="source/Applications/FractalExplorer/assets/shaders"
+               output="source/Applications/FractalExplorer/assets/shaders"/>
+    </shader>
+</Config>
+```
+Chaque type d'asset que Fudge peut traiter peut définir plusieurs batches. Chaque batch précise une paire de chemins d'accès (entrée / sortie). Certains batches peuvent définir des propriétés locales comme les types de compression à utiliser pour les texture atlases. Fudge itère chaque batch correctement défini, pour chaque catégorie d'asset.
 
 #TODO:
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :

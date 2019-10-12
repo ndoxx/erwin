@@ -44,6 +44,7 @@ subdirs(source)
 set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
@@ -71,6 +72,7 @@ set(SRC_DEBUG
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
   )
 

@@ -221,6 +221,8 @@ void OGLTexture2D::generate_mipmaps(uint32_t base_level, uint32_t max_level)
 {
 	W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
 
+    DLOG("texture",1) << "Generating mipmaps: " << base_level << " - " << max_level << std::endl;
+
     glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, base_level);
     glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, max_level);
     glGenerateTextureMipmap(rd_handle_);

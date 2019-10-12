@@ -62,4 +62,6 @@ layout(location = 0) out vec4 out_color;
 void main()
 {
     out_color = texture(us_atlas, f_uv);
+    // vec2 lod = textureQueryLod(us_atlas, f_uv);
+    // out_color = vec4(lod.x*100, lod.y*0.1, 0, 1);
 }

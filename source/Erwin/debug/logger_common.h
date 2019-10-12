@@ -62,5 +62,33 @@ struct LogChannel
 	std::string tag;
 };
 
+static std::map<MsgType, WCC> STYLES =
+{
+    {MsgType::NORMAL,    WCC(255,255,255)},
+    {MsgType::ITEM,      WCC(255,255,255)},
+    {MsgType::EVENT,     WCC(255,255,255)},
+    {MsgType::NOTIFY,    WCC(150,130,255)},
+    {MsgType::WARNING,   WCC(255,175,0)},
+    {MsgType::ERROR,     WCC(255,90, 90)},
+    {MsgType::FATAL,     WCC(255,0,  0)},
+    {MsgType::BANG,      WCC(255,100,0)},
+    {MsgType::GOOD,      WCC(0,  255,0)},
+    {MsgType::BAD,       WCC(255,0,  0)},
+};
+
+static std::map<MsgType, std::string> ICON =
+{
+    {MsgType::NORMAL,    "    "},
+    {MsgType::ITEM,      "     \u21B3 "},
+    {MsgType::EVENT,     " \u2107 "},
+    {MsgType::NOTIFY,    "\033[1;48;2;20;10;50m \u2055 \033[1;49m "},
+    {MsgType::WARNING,   "\033[1;48;2;50;40;10m \u203C \033[1;49m "},
+    {MsgType::ERROR,     "\033[1;48;2;50;10;10m \u2020 \033[1;49m "},
+    {MsgType::FATAL,     "\033[1;48;2;50;10;10m \u2021 \033[1;49m "},
+    {MsgType::BANG,      "\033[1;48;2;50;40;10m \u0489 \033[1;49m "},
+    {MsgType::GOOD,      "\033[1;48;2;10;50;10m \u203F \033[1;49m "},
+    {MsgType::BAD,       "\033[1;48;2;50;10;10m \u2054 \033[1;49m "},
+};
+
 } // namespace dbg
 } // namespace erwin

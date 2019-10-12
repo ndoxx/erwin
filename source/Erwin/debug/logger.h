@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include "logger_common.h"
 
 namespace erwin

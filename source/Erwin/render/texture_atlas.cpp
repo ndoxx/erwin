@@ -84,20 +84,26 @@ void TextureAtlas::load(const fs::path& filepath)
 			case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
 			case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
 		}
+		uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
+		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 		texture_ = Texture2D::create(Texture2DDescriptor{desc.texture_width,
 									  					 desc.texture_height,
 									  					 desc.texture_blob,
 									  					 format,
-									  					 MAG_NEAREST | MIN_NEAREST});
+									  					 filter});
 
 		float width = texture_->get_width();
 		float height = texture_->get_height();
 
+		// Apply half-pixel correction if linear filtering is used
+		glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/width, 0.5f/height, -0.5f/width, -0.5f/height)
+													 : glm::vec4(0.f);
+
 		cat::traverse_remapping(desc, [&](const cat::CATAtlasRemapElement& remap)
 		{
-			glm::vec4 uvs((remap.x+0.5f)/width, (remap.y+0.5f)/height, 
-				          (remap.x-0.5f+remap.w)/width, (remap.y-0.5f+remap.h)/height);
-		    remapping_.insert(std::make_pair(H_(remap.name), uvs));
+			glm::vec4 uvs((remap.x)/width, (remap.y)/height, 
+					      (remap.x+remap.w)/width, (remap.y+remap.h)/height);
+		    remapping_.insert(std::make_pair(H_(remap.name), uvs+correction));
 		});
 
 		desc.release();

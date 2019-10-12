@@ -12,17 +12,17 @@
 		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
 		<Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
 
-		<bool name="backtrace_on_error" value="false"/>
-		<bool name="single_threaded" value="true"/>
-		<bool name="track_window_close_events" value="true"/>
-		<bool name="track_window_resize_events" value="true"/>
+		<bool name="backtrace_on_error"              value="false"/>
+		<bool name="single_threaded"                 value="true"/>
+		<bool name="track_window_close_events"       value="true"/>
+		<bool name="track_window_resize_events"      value="true"/>
 		<bool name="track_framebuffer_resize_events" value="true"/>
-		<bool name="track_keyboard_events" value="false"/>
-		<bool name="track_mouse_button_events" value="true"/>
-		<bool name="track_mouse_scroll_events" value="false"/>
-		<bool name="track_mouse_moved_events" value="false"/>
+		<bool name="track_keyboard_events"           value="false"/>
+		<bool name="track_mouse_button_events"       value="true"/>
+		<bool name="track_mouse_scroll_events"       value="false"/>
+		<bool name="track_mouse_moved_events"        value="false"/>
 	</logger>
-	
+
     <display>
         <uint name="width"      value="1920"/>
         <uint name="height"     value="1080"/>
