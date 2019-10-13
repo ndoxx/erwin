@@ -64,6 +64,9 @@ void main()
         // z_prev = z;
         z_prev = rot(z, vec2(0.f), u_time);
         z = vec2(z.x*z.x-z.y*z.y, 2*z.x*z.y) + c;
+        // float d = z.x*z.x-z.y*z.y;
+        // z = vec2(z.x*d-2*z.x*z.y*z.y, z.y*d+2*z.x*z.x*z.y) + c;
+
 
         if(dot(z,z_prev)>r2) break;
     }

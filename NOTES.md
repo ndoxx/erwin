@@ -1575,3 +1575,6 @@ Chaque type d'asset que Fudge peut traiter peut définir plusieurs batches. Chaq
     [X] Ecrire un script de building pour tout le projet (gère les deps...)
     [/] Gérer le callback d'erreurs OpenGL
     https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
+
+GO MT - ROADMAP:
+    [ ] All calls to Gfx::device->func() done through _RenderCommand_ interface.

@@ -1,8 +1,10 @@
 #pragma once
 
+#include "glm/glm.hpp"
+#include "core/wtypes.h"
+
 namespace erwin
 {
-
 
 enum class DrawPrimitive
 {
@@ -48,13 +50,11 @@ enum ClearFlags
     CLEAR_STENCIL_FLAG = 4
 };
 
-enum class RenderTarget
+struct RasterizerState
 {
-    Default = 0,
-    GBuffer,
+    CullMode cull_mode    = CullMode::Back;
+    glm::vec4 clear_color = glm::vec4(0.f,0.f,0.f,1.f);
 };
-
-typedef CullMode RasterizerState;
 
 struct DepthStencilState
 {
@@ -67,9 +67,9 @@ struct DepthStencilState
 
 struct RenderState
 {
-    RenderTarget      render_target       = RenderTarget::Default;
-    RasterizerState   rasterizer_state    = CullMode::Back;
-    BlendState        blend_state         = BlendState::Opaque;
+    hash_t            render_target  = 0; // Name of framebuffer in FramebufferPool
+    BlendState        blend_state    = BlendState::Opaque;
+    RasterizerState   rasterizer_state;
     DepthStencilState depth_stencil_state;
 };
 

@@ -1,4 +1,5 @@
 #include "layer_batch_2d.h"
+#include "render/render_device.h"
 
 LayerBatch2D::LayerBatch2D():
 Layer("LayerBatch2D"),
@@ -166,6 +167,12 @@ void LayerBatch2D::on_attach()
 
 	//dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 	//Renderer2D::shader_bank.load("shaders/tex_shader.glsl");
+
+	FrameBufferLayout layout =
+	{
+		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+	};
+	Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
 }
 
 void LayerBatch2D::on_update(GameClock& clock)
@@ -188,13 +195,13 @@ void LayerBatch2D::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
 
-	renderer_2D_->begin_scene(camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
+	RenderState render_state;
+	render_state.render_target = "fb_2d_raw"_h;
+	render_state.rasterizer_state.cull_mode = CullMode::Back;
+	render_state.blend_state = BlendState::Opaque;
+
+	renderer_2D_->begin_scene(render_state, camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
 	{
-		RenderState render_state;
-		render_state.render_target = RenderTarget::Default;
-		render_state.rasterizer_state = CullMode::Back;
-		render_state.blend_state = BlendState::Opaque;
-		renderer_2D_->submit(render_state);
 /*
 		ShaderParameters sq_params;
 		sq_params.set_texture_slot("us_albedo"_h, dirt_tex_);

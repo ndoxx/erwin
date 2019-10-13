@@ -6,7 +6,8 @@
 
 #include "platform/ogl_buffer.h" // TMP
 #include "platform/ogl_shader.h" // TMP
-#include "render/render_device.h" // TMP: API access pushed to render thread at some point
+#include "render/render_command.h"
+#include "render/render_device.h"
 
 #include <bitset>
 #include <iostream>
@@ -80,15 +81,6 @@ batch_ttl_(s_max_batches, 0)
 {
 	query_timer_ = QueryTimer::create();
 
-	if(!Gfx::framebuffer_pool->exists("fb_2d_raw"_h))
-	{
-		FrameBufferLayout layout =
-		{
-			{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-		};
-		Gfx::framebuffer_pool->create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
-	}
-
 	// shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.glsl");
 	shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.spv");
 
@@ -125,8 +117,11 @@ Renderer2D::~Renderer2D()
 
 }
 
-void Renderer2D::begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
+void Renderer2D::begin_scene(const RenderState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
 {
+	// Set render state
+	render_state_ = render_state;
+
 	// Set scene data
 	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
 	scene_data_.view_matrix = camera.get_view_matrix();
@@ -135,8 +130,8 @@ void Renderer2D::begin_scene(const OrthographicCamera2D& camera, WRef<Texture2D>
 
 	// Set post processing data
 	post_proc_data_ = pp_data;
-	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get("fb_2d_raw"_h).get_width(),
-				  	   		   Gfx::framebuffer_pool->get("fb_2d_raw"_h).get_height()};
+	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get(render_state_.render_target).get_width(),
+				  	   		   Gfx::framebuffer_pool->get(render_state_.render_target).get_height()};
 
 	// Reset
 	current_batch_ = 0;
@@ -152,19 +147,20 @@ void Renderer2D::end_scene()
 		query_timer_->start();
 
 	// Render on offscreen framebuffer
-	Gfx::framebuffer_pool->bind("fb_2d_raw"_h);
-	Gfx::device->clear(CLEAR_COLOR_FLAG);
+	// RenderCommand::set_render_target("fb_2d_raw"_h);
+	RenderCommand::set_render_state(render_state_);
+	RenderCommand::clear(CLEAR_COLOR_FLAG);
 	mat_ubo_->map(&scene_data_.view_projection_matrix);
 	flush();
 	// Render generated texture on screen after post-processing
-	Gfx::framebuffer_pool->bind(0);
+	RenderCommand::set_render_target(0);
 	const Shader& post_proc_shader = Renderer2D::shader_bank.get("post_proc"_h);
 	post_proc_shader.bind();
-	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture("fb_2d_raw"_h, "albedo"_h);
+	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture(render_state_.render_target, "albedo"_h);
 	post_proc_shader.attach_texture("us_input"_h, albedo_tex);
 	pp_ubo_->map(&post_proc_data_);
 	post_proc_shader.attach_uniform_buffer(*pp_ubo_);
-    Gfx::device->draw_indexed(screen_va_);
+    RenderCommand::draw_indexed(screen_va_);
 	post_proc_shader.unbind();
 
 	if(profiling_enabled_)
@@ -185,36 +181,11 @@ void Renderer2D::end_scene()
 	}
 	remove_unused_batches(ii);
 }
-
+/*
 void Renderer2D::submit(const RenderState& state)
 {
-	//[[maybe_unused]] uint64_t key = make_key(true, current_layer_);
-	//DLOG("render",1) << "sta: " << std::bitset<32>(key) << std::endl;
-
-	// TMP: direct rendering for now, will submit to render thread then
-	if(state.render_target == RenderTarget::Default)
-		Gfx::device->bind_default_frame_buffer();
-	else
-		W_ASSERT(false, "Only default render target supported for now!");
-
-	Gfx::device->set_cull_mode(state.rasterizer_state);
-
-	if(state.blend_state == BlendState::Alpha)
-		Gfx::device->set_std_blending();
-	else
-		Gfx::device->disable_blending();
-
-	Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
-	if(state.depth_stencil_state.stencil_test_enabled)
-	{
-		Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
-		Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
-	}
-
-	Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
-	if(state.depth_stencil_state.depth_test_enabled)
-		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
-}
+	RenderCommand::set_render_state(state);
+}*/
 
 // DO NOT USE
 void Renderer2D::submit(WRef<VertexArray> va, hash_t shader_name, const ShaderParameters& params)
@@ -229,7 +200,7 @@ void Renderer2D::submit(WRef<VertexArray> va, hash_t shader_name, const ShaderPa
 		shader.attach_texture(sampler, *texture);
 
 	// * Draw
-    Gfx::device->draw_indexed(va);
+    RenderCommand::draw_indexed(va);
 }
 
 void Renderer2D::draw_quad(const glm::vec2& position, 
@@ -264,8 +235,6 @@ void Renderer2D::draw_quad(const glm::vec2& position,
 	push_quad(position, scale, uvs);
 
 	++current_batch_count_;
-
-	W_ASSERT(Gfx::device->get_error()==0, "Driver error!");
 }
 
 // ----------------------------------------------------------------------------------------
@@ -321,12 +290,12 @@ void BatchRenderer2D::flush()
 	// Draw all full batches plus the last one if not empty
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
-    	Gfx::device->draw_array(batches_[ii], DrawPrimitive::Triangles, max_batch_count_*3);
+    	RenderCommand::draw_array(batches_[ii], DrawPrimitive::Triangles, max_batch_count_*3);
 		++stats_.batches;
 	}
     if(current_batch_count_)
     {
-    	Gfx::device->draw_array(batches_[current_batch_], DrawPrimitive::Triangles, current_batch_count_*3);
+    	RenderCommand::draw_array(batches_[current_batch_], DrawPrimitive::Triangles, current_batch_count_*3);
 		++stats_.batches;
     }
 	
@@ -449,13 +418,13 @@ void InstanceRenderer2D::flush()
 	for(int ii=0; ii<current_batch_; ++ii)
 	{
 		shader.attach_shader_storage(*batches_[ii]);
-    	Gfx::device->draw_indexed_instanced(quad_va_, max_batch_count_);
+    	RenderCommand::draw_indexed_instanced(quad_va_, max_batch_count_);
 		++stats_.batches;
 	}
     if(current_batch_count_)
     {
 		shader.attach_shader_storage(*batches_[current_batch_]);
-    	Gfx::device->draw_indexed_instanced(quad_va_, current_batch_count_);
+    	RenderCommand::draw_indexed_instanced(quad_va_, current_batch_count_);
 		++stats_.batches;
     }
 	

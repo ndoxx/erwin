@@ -85,6 +85,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_command.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp

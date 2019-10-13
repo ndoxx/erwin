@@ -1,6 +1,5 @@
 #include "platform/ogl_framebuffer.h"
 #include "platform/ogl_texture.h"
-#include "render/render_device.h"
 #include "debug/logger.h"
 
 #include "glad/glad.h"
@@ -78,8 +77,7 @@ Framebuffer(width, height, layout, depth, stencil)
 
     framebuffer_error_report();
 
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    Gfx::device->bind_default_frame_buffer();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 OGLFramebuffer::~OGLFramebuffer()
@@ -96,7 +94,7 @@ void OGLFramebuffer::bind()
 
 void OGLFramebuffer::unbind()
 {
-    Gfx::device->bind_default_frame_buffer();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 const Texture2D& OGLFramebuffer::get_texture(uint32_t index)
