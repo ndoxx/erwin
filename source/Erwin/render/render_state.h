@@ -65,12 +65,21 @@ struct DepthStencilState
     bool       depth_test_enabled    = false;
 };
 
+// = Pass state
 struct RenderState
 {
     hash_t            render_target  = 0; // Name of framebuffer in FramebufferPool
     BlendState        blend_state    = BlendState::Opaque;
     RasterizerState   rasterizer_state;
     DepthStencilState depth_stencil_state;
+
+    inline void reset()
+    {
+        render_target       = 0;
+        blend_state         = BlendState::Opaque;
+        rasterizer_state    = RasterizerState();
+        depth_stencil_state = DepthStencilState();
+    }
 };
 
 } // namespace erwin

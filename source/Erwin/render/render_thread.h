@@ -5,10 +5,18 @@
 #include <condition_variable>
 #include <atomic>
 
-#include "render_queue.h"
+#include "render_queue.hpp"
 
 namespace erwin
 {
+
+struct StubQueueData
+{
+    typedef uint64_t RenderKey;
+    
+    int value;
+};
+
 
 class RenderThread
 {
@@ -21,9 +29,9 @@ public:
     // Stop render thread execution (waits for pending commands to be processed)
     void kill();
     // Push a single item into the queue (inefficient)
-    void enqueue(RenderKey key, QueueItem&& item);
+    /*void enqueue(RenderKey key, QueueItem&& item);
     // Push a group of items into the queue
-    void enqueue(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items);
+    void enqueue(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items);*/
     // Sort queue and dispatch items
     void flush();
 
@@ -39,10 +47,10 @@ protected:
     void thread_run();
     void thread_cleanup();
 
-    void dispatch(const QueueItem& item);
+    //void dispatch(const QueueItem& item);
 
 private:
-    RenderQueue render_queue_;
+    RenderQueue<StubQueueData> render_queue_;
 
     std::mutex mutex_;
     std::condition_variable cv_consume_;

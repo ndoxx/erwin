@@ -147,16 +147,16 @@ void Renderer2D::end_scene()
 		query_timer_->start();
 
 	// Render on offscreen framebuffer
-	// RenderCommand::set_render_target("fb_2d_raw"_h);
 	RenderCommand::set_render_state(render_state_);
 	RenderCommand::clear(CLEAR_COLOR_FLAG);
 	mat_ubo_->map(&scene_data_.view_projection_matrix);
 	flush();
+
 	// Render generated texture on screen after post-processing
 	RenderCommand::set_render_target(0);
 	const Shader& post_proc_shader = Renderer2D::shader_bank.get("post_proc"_h);
 	post_proc_shader.bind();
-	auto&& albedo_tex = Gfx::framebuffer_pool->get_named_texture(render_state_.render_target, "albedo"_h);
+	auto&& albedo_tex = Gfx::framebuffer_pool->get_texture(render_state_.render_target, 0);
 	post_proc_shader.attach_texture("us_input"_h, albedo_tex);
 	pp_ubo_->map(&post_proc_data_);
 	post_proc_shader.attach_uniform_buffer(*pp_ubo_);
@@ -180,27 +180,6 @@ void Renderer2D::end_scene()
 				break;
 	}
 	remove_unused_batches(ii);
-}
-/*
-void Renderer2D::submit(const RenderState& state)
-{
-	RenderCommand::set_render_state(state);
-}*/
-
-// DO NOT USE
-void Renderer2D::submit(WRef<VertexArray> va, hash_t shader_name, const ShaderParameters& params)
-{
-	const Shader& shader = shader_bank.get(shader_name);
-	shader.bind();
-	static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
-
-	// * Setup uniforms
-	// Setup samplers
-	for(auto&& [sampler, texture]: params.texture_slots)
-		shader.attach_texture(sampler, *texture);
-
-	// * Draw
-    RenderCommand::draw_indexed(va);
 }
 
 void Renderer2D::draw_quad(const glm::vec2& position, 
@@ -281,8 +260,6 @@ void BatchRenderer2D::flush()
 {
 	const Shader& shader = Renderer2D::shader_bank.get("color_dup_shader"_h);
 	shader.bind();
-
-	// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
 	shader.attach_uniform_buffer(*mat_ubo_);
 	shader.attach_texture("us_atlas"_h, *scene_data_.texture);
@@ -409,7 +386,6 @@ void InstanceRenderer2D::flush()
 {
 	const Shader& shader = Renderer2D::shader_bank.get("color_inst_shader"_h);
 	shader.bind();
-	// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, scene_data_.view_projection_matrix);
 
 	shader.attach_uniform_buffer(*mat_ubo_);
 	shader.attach_texture("us_atlas"_h, *scene_data_.texture);

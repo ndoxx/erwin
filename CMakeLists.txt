@@ -84,7 +84,6 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_queue.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_command.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
@@ -126,7 +125,6 @@ add_definitions(-DLOGGING_ENABLED=1)
 if(DEFINED W_DEBUG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic")
 endif()
-
 
 add_library(erwin SHARED
             ${SRC_CORE}

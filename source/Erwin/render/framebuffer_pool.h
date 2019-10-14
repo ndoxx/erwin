@@ -64,7 +64,7 @@ public:
 	// Check whether a framebuffer is registered to this name
 	bool exists(hash_t name) const;
 	// Get a framebuffer target texture by framebuffer name and texture index
-	const Texture2D& get_texture(hash_t name, uint32_t index);
+	const Texture2D& get_texture(hash_t fbname, uint32_t index);
 	// Get a framebuffer target texture by framebuffer name and target texture name
 	const Texture2D& get_named_texture(hash_t fbname, hash_t texname);
 	// Destroy all framebuffers stored in this pool

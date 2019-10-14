@@ -2,6 +2,7 @@
 
 #include "render/render_state.h"
 #include "core/core.h"
+#include "glm/glm.hpp"
 
 namespace erwin
 {
@@ -16,14 +17,14 @@ public:
     static void set_render_state(const RenderState& state);
 
 	// Set the color used to clear any framebuffer
-    static void set_clear_color(float r, float g, float b, float a);
-    // Clear currently bound framebuffer
-    static void clear(int flags);
+	static void set_clear_color(const glm::vec4& color);
     // Set the current render target (framebuffer)
     static void set_render_target(hash_t name);
 
 
     // * Draw commands
+    // Clear currently bound framebuffer
+    static void clear(int flags);
     // Draw content of specified vertex array using indices
     static void draw_indexed(const WRef<VertexArray>& vertexArray,
                              uint32_t count = 0,
@@ -38,6 +39,9 @@ public:
                                        uint32_t instance_count,
                                        uint32_t elements_count = 0,
                                        std::size_t offset = 0);
+
+private:
+	static RenderState s_prev_state;
 };
 
 

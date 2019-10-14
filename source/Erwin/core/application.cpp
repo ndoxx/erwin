@@ -7,7 +7,6 @@
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
 #include "filesystem/filesystem.h"
-#include "render/render_command.h"
 #include "render/render_device.h"
 
 #include <iostream>
@@ -137,13 +136,9 @@ void Application::run()
     nanoClock frame_clock;
     frame_clock.restart();
 
-	RenderCommand::set_clear_color(0.2f,0.2f,0.2f,1.f);
-
 	std::chrono::nanoseconds frame_d(16666666);
 	while(is_running_)
 	{
-		RenderCommand::clear(CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG);
-
 	    if(game_clock_.is_paused())
 	        continue;
 

@@ -198,6 +198,7 @@ void LayerBatch2D::on_update(GameClock& clock)
 	RenderState render_state;
 	render_state.render_target = "fb_2d_raw"_h;
 	render_state.rasterizer_state.cull_mode = CullMode::Back;
+	render_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 	render_state.blend_state = BlendState::Opaque;
 
 	renderer_2D_->begin_scene(render_state, camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);

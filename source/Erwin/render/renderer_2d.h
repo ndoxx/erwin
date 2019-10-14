@@ -72,12 +72,6 @@ public:
 	void begin_scene(const RenderState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data);
 	// Upload last batch and flush all batches
 	void end_scene();
-	// Setup render state
-	//void submit(const RenderState& state);
-	// INEFFICIENT draw a quad immediately
-	void submit(WRef<VertexArray> va, 
-			    hash_t shader_name, 
-			    const ShaderParameters& params);
 	// Request the renderer implementation to push a quad to current batch
 	void draw_quad(const glm::vec2& position, 
 				   const glm::vec2& scale,
