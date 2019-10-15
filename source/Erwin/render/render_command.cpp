@@ -6,7 +6,7 @@
 namespace erwin
 {
 
-RenderState RenderCommand::s_prev_state;
+PassState RenderCommand::s_prev_state;
 
 void RenderCommand::set_clear_color(const glm::vec4& color)
 {
@@ -29,7 +29,7 @@ void RenderCommand::set_render_target(hash_t name)
 	}
 }
 
-void RenderCommand::set_render_state(const RenderState& state)
+void RenderCommand::set_render_state(const PassState& state)
 {
 	set_render_target(state.render_target);
 	set_clear_color(state.rasterizer_state.clear_color);
@@ -82,7 +82,7 @@ void RenderCommand::draw_indexed(const WRef<VertexArray>& vertexArray,
                          		 uint32_t count,
                          		 std::size_t offset)
 {
-	Gfx::device->draw_indexed(vertexArray, count, offset);
+	Gfx::device->draw_indexed(*vertexArray, count, offset);
 }
 
 void RenderCommand::draw_array(const WRef<VertexArray>& vertexArray,
@@ -90,7 +90,7 @@ void RenderCommand::draw_array(const WRef<VertexArray>& vertexArray,
                        		   uint32_t count,
                        		   std::size_t offset)
 {
-	Gfx::device->draw_array(vertexArray, prim, count, offset);
+	Gfx::device->draw_array(*vertexArray, prim, count, offset);
 }
 
 void RenderCommand::draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
@@ -98,7 +98,7 @@ void RenderCommand::draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
                                    		   uint32_t elements_count,
                                    		   std::size_t offset)
 {
-	Gfx::device->draw_indexed_instanced(vertexArray, instance_count, elements_count, offset);
+	Gfx::device->draw_indexed_instanced(*vertexArray, instance_count, elements_count, offset);
 }
 
 

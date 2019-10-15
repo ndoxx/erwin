@@ -5,7 +5,7 @@
 
 namespace erwin
 {
-
+/*
 RenderThread::RenderThread():
 thread_state_(STATE_IDLE)
 {
@@ -31,7 +31,7 @@ void RenderThread::kill()
     cv_consume_.notify_one();
     render_thread_.join();
 }
-/*
+
 void RenderThread::enqueue(RenderKey key, QueueItem&& item)
 {
     // Avoid ackward deadlock on cv_update_ when thread is killed 
@@ -64,7 +64,7 @@ void RenderThread::enqueue(const std::vector<RenderKey>& keys,
     });
     render_queue_.push(keys, std::forward<std::vector<QueueItem>>(items));
 }
-*/
+
 void RenderThread::flush()
 {
     // Force render thread to flush the queue
@@ -72,11 +72,11 @@ void RenderThread::flush()
     // Wake up render thread
     cv_consume_.notify_one();
 }
-/*
+
 void RenderThread::dispatch(const QueueItem& item)
 {
     std::cout << item.id << " ";
-}*/
+}
 
 void RenderThread::thread_run()
 {
@@ -98,8 +98,8 @@ void RenderThread::thread_run()
         // Acquire state
         int state = thread_state_.load(std::memory_order_acquire);
         // Flush the queue and dispatch items
-        /*render_queue_.flush(std::bind(&RenderThread::dispatch, this, std::placeholders::_1));
-        std::cout << std::endl;*/
+        render_queue_.flush(std::bind(&RenderThread::dispatch, this, std::placeholders::_1));
+        std::cout << std::endl;
 
         // If state was STATE_FLUSH, go back to idle state
         if(state == STATE_KILLED)
@@ -121,7 +121,7 @@ void RenderThread::thread_cleanup()
     std::cout << "Render Thread: cleanup" << std::endl;
 
 }
-
+*/
 
 
 } // namespace erwin

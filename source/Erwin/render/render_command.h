@@ -14,7 +14,7 @@ class RenderCommand
 public:
 	// * Render state
     // Set whole render state at once
-    static void set_render_state(const RenderState& state);
+    static void set_render_state(const PassState& state);
 
 	// Set the color used to clear any framebuffer
 	static void set_clear_color(const glm::vec4& color);
@@ -41,7 +41,7 @@ public:
                                        std::size_t offset = 0);
 
 private:
-	static RenderState s_prev_state;
+	static PassState s_prev_state;
 };
 
 

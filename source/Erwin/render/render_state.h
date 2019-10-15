@@ -65,8 +65,7 @@ struct DepthStencilState
     bool       depth_test_enabled    = false;
 };
 
-// = Pass state
-struct RenderState
+struct PassState
 {
     hash_t            render_target  = 0; // Name of framebuffer in FramebufferPool
     BlendState        blend_state    = BlendState::Opaque;

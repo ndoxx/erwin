@@ -117,7 +117,7 @@ Renderer2D::~Renderer2D()
 
 }
 
-void Renderer2D::begin_scene(const RenderState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
+void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
 {
 	// Set render state
 	render_state_ = render_state;

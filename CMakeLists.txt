@@ -43,6 +43,7 @@ subdirs(source)
 
 set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/unique_id.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
@@ -87,6 +88,8 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_command.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP_renderer_2d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/master_renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp

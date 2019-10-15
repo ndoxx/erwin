@@ -8,6 +8,7 @@
 #include "input/input.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
+#include "render/master_renderer.h"
 
 #include <iostream>
 
@@ -92,6 +93,9 @@ minimized_(false)
     // Initialize framebuffer pool
     Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
 
+    // Create master renderer instance
+    MasterRenderer::create();
+
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
 	push_overlay(IMGUI_LAYER);
@@ -171,7 +175,8 @@ void Application::run()
 	}
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
-
+    
+    MasterRenderer::kill();
     Gfx::framebuffer_pool->release();
 
     Input::kill();

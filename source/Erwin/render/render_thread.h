@@ -9,7 +9,7 @@
 
 namespace erwin
 {
-
+/*
 struct StubQueueData
 {
     typedef uint64_t RenderKey;
@@ -29,9 +29,9 @@ public:
     // Stop render thread execution (waits for pending commands to be processed)
     void kill();
     // Push a single item into the queue (inefficient)
-    /*void enqueue(RenderKey key, QueueItem&& item);
+    void enqueue(RenderKey key, QueueItem&& item);
     // Push a group of items into the queue
-    void enqueue(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items);*/
+    void enqueue(const std::vector<RenderKey>& keys, std::vector<QueueItem>&& items);
     // Sort queue and dispatch items
     void flush();
 
@@ -58,5 +58,5 @@ private:
     std::thread render_thread_;
     std::atomic<int> thread_state_;
 };
-
+*/
 } // namespace erwin

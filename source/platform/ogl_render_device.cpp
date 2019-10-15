@@ -48,42 +48,42 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
     set_pack_alignment(4);
 }
 
-void OGLRenderDevice::draw_indexed(const WRef<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_indexed(const VertexArray& vertexArray,
                                    uint32_t count,
 								   std::size_t offset)
 {
-	vertexArray->bind();
-	glDrawElements(OGLPrimitive[vertexArray->get_index_buffer().get_primitive()], 
-				   (bool(count) ? count : vertexArray->get_index_buffer().get_count()),
+	vertexArray.bind();
+	glDrawElements(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()], 
+				   (bool(count) ? count : vertexArray.get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
 				   (void*)(offset * sizeof(GLuint)));
-    vertexArray->unbind();
+    vertexArray.unbind();
 }
 
-void OGLRenderDevice::draw_array(const WRef<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_array(const VertexArray& vertexArray,
                                  DrawPrimitive prim,
                                  uint32_t count,
                                  std::size_t offset)
 {
-    vertexArray->bind();
+    vertexArray.bind();
     glDrawArrays(OGLPrimitive[prim], 
                  offset, 
-                 (bool(count) ? count : vertexArray->get_vertex_buffer().get_count()));
-    vertexArray->unbind();
+                 (bool(count) ? count : vertexArray.get_vertex_buffer().get_count()));
+    vertexArray.unbind();
 }
 
-void OGLRenderDevice::draw_indexed_instanced(const WRef<VertexArray>& vertexArray,
+void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
                                              uint32_t instance_count,
                                              uint32_t elements_count,
                                              std::size_t offset)
 {
-    vertexArray->bind();
-    glDrawElementsInstanced(OGLPrimitive[vertexArray->get_index_buffer().get_primitive()],
-                            (bool(elements_count) ? elements_count : vertexArray->get_index_buffer().get_count()),
+    vertexArray.bind();
+    glDrawElementsInstanced(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()],
+                            (bool(elements_count) ? elements_count : vertexArray.get_index_buffer().get_count()),
                             GL_UNSIGNED_INT,
                             (void*)(offset * sizeof(GLuint)),
                             instance_count);
-    vertexArray->unbind();
+    vertexArray.unbind();
 }
 
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)

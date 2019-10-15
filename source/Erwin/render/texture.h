@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "core/core.h"
+#include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/texture_common.h"
 
@@ -12,6 +13,7 @@ namespace erwin
 class Texture
 {
 public:
+	Texture(): unique_id_(id::unique_id()) {}
 	virtual ~Texture() = default;
 
 	virtual uint32_t get_width() const = 0;
@@ -19,6 +21,11 @@ public:
 
 	virtual void bind(uint32_t slot = 0) const = 0;
 	virtual void unbind() const = 0;
+
+    inline W_ID get_unique_id() const { return unique_id_; }
+
+protected:
+    W_ID unique_id_;
 };
 
 

@@ -195,7 +195,7 @@ void LayerBatch2D::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
 
-	RenderState render_state;
+	PassState render_state;
 	render_state.render_target = "fb_2d_raw"_h;
 	render_state.rasterizer_state.cull_mode = CullMode::Back;
 	render_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);

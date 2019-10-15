@@ -69,7 +69,7 @@ public:
 	virtual ~Renderer2D();
 
 	// Reset renderer flags for next submissions
-	void begin_scene(const RenderState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data);
+	void begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data);
 	// Upload last batch and flush all batches
 	void end_scene();
 	// Request the renderer implementation to push a quad to current batch
@@ -106,7 +106,7 @@ protected:
 	uint32_t current_batch_;
 	uint32_t current_batch_count_;
 	RenderStats stats_;
-	RenderState render_state_;
+	PassState render_state_;
 	SceneData scene_data_;
 	WRef<UniformBuffer> mat_ubo_;
 
