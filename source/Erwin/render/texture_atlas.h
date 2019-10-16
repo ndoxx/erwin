@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 
 #include "render/texture.h"
 #include "filesystem/filesystem.h"
@@ -33,7 +33,7 @@ public:
 
 private:
 	WRef<Texture2D> texture_;
-	std::unordered_map<hash_t, glm::vec4> remapping_;
+	std::map<hash_t, glm::vec4> remapping_;
 };
 
 

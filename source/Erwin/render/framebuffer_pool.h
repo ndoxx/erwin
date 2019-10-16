@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 #include "core/wtypes.h"
 #include "render/framebuffer.h"
 #include "event/window_events.h"
@@ -74,8 +74,8 @@ private:
 	bool on_framebuffer_resize_event(const FramebufferResizeEvent& event);
 
 private:
-	std::unordered_map<hash_t, WScope<Framebuffer>> framebuffers_;
-	std::unordered_map<hash_t, WScope<FbConstraint>> constraints_;
+	std::map<hash_t, WScope<Framebuffer>> framebuffers_;
+	std::map<hash_t, WScope<FbConstraint>> constraints_;
 
 	uint32_t current_width_;
 	uint32_t current_height_;

@@ -8,7 +8,7 @@
 
 #include "render/buffer.h"
 #include "render/shader.h"
-#include "render/render_command.h"
+#include "render/render_device.h"
 #include "platform/ogl_shader.h"
 #include "platform/ogl_texture.h"
 
@@ -114,7 +114,7 @@ protected:
 		shader.attach_uniform_buffer(*mandel_ubo_);
 		// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, transform);
 
-   		RenderCommand::draw_indexed(quad_va_);
+   		Gfx::device->draw_indexed(*quad_va_);
 		shader.unbind();
 	}
 

@@ -3,9 +3,10 @@
 #include <istream>
 #include <string>
 #include <memory>
-#include <unordered_map>
+#include <map>
 
 #include "core/wtypes.h"
+#include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/buffer.h"
 
@@ -23,17 +24,11 @@ enum class ShaderType: uint8_t
 };
 
 class Texture2D;
-struct ShaderParameters
-{
-	void set_texture_slot(hash_t sampler_name, WRef<Texture2D> texture);
-
-	std::unordered_map<hash_t, WRef<Texture2D>> texture_slots;
-};
 
 class Shader
 {
 public:
-	Shader() = default;
+	Shader(): unique_id_(id::unique_id()) { }
 	virtual ~Shader() = default;
 
 	// Initialize shader from glsl source string
@@ -58,6 +53,8 @@ public:
 
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }
+    // Return engine unique id for this object
+    inline W_ID get_unique_id() const { return unique_id_; }
 
 	// Factory method for the creation of an API-specific shader from a file path
 	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
@@ -66,6 +63,7 @@ public:
 
 protected:
 	std::string name_;
+    W_ID unique_id_;
 };
 
 // The shader bank holds references to multiple shaders and makes them accessible by name
@@ -92,8 +90,8 @@ private:
 	void next_index(hash_t hname);
 
 private:
-	std::unordered_map<hash_t, WRef<Shader>> bank_;
-	std::unordered_map<hash_t, uint32_t> indices_;
+	std::map<hash_t, WRef<Shader>> bank_;
+	std::map<hash_t, uint32_t> indices_;
 	uint32_t current_index_ = 0;
 };
 

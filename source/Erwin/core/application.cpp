@@ -8,7 +8,6 @@
 #include "input/input.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
-#include "render/render_command.h"
 #include "render/master_renderer.h"
 
 #include <iostream>
@@ -162,6 +161,7 @@ void Application::run()
 		IMGUI_LAYER->begin();
 		for(auto* layer: layer_stack_)
 			layer->on_imgui_render();
+        MasterRenderer::instance().on_imgui_render();
 		IMGUI_LAYER->end();
 
         frame_d = frame_clock.restart();

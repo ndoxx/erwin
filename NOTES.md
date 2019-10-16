@@ -1,29 +1,4 @@
-#[Ce qui doit changer, ce qu'on doit garder]
-
-##Pipeline
-on change:
-    * tout.
-
-On a un seul "renderer" : le _RenderThread_. Cet objet peut pousser des commandes _RenderCommand_ dans une queue _RenderQueue_. Une clé est calculée pour chaque commande en fonction des ressources qu'elle implique (material, ...) et en fin de frame, la queue est triée via ces clés. Il en résulte une série de draw commands minimisant le state change (optimisée) que le _RenderThread_ peut pousser vers le GPU en async, alors que la frame d'après est calculée.
-
-Les _Layers_ sont des objets empilables dans une _LayerStack_ possédée par l'_Application_, dont la fonction run() ne fait qu'itérer les layers dans l'ordre de soumission en appelant leur fonction update(). Cette fonction update est responsable de la soumission des _DrawCommand_ à la _RenderQueue_.
-
-Quand tous les layers ont été itérés, la queue est triée et dispatchée via RenderThread::flush(), et (à travers l'indirection _GraphicsContext_) on a un call vers swap_buffers().
-
-##Shaders
-
-on change:
-    * _Shader_ est une interface API-agnostic du moteur de rendu, et masque des implémentations API-specific
-    * un _Shader_ est une des ressources référencées par _Material_
-    * 1 seul fichier par shader, utiliser une directive custom pour la segmentation
-    * a priori, les variantes dégagent
-    * un _Shader_ doit détecter et gérer ses uniformes de façon intelligente (en particulier les samplers pour lesquels des texture slots sont attribués)
-
-on garde:
-    * le système d'includes
-    * le système de hot swap
-    * peut-être les defines
-
+#[General]
 ##Liste des extensions OpenGL nécessaires
     * GL_ARB_gl_spirv
     * GL_EXT_framebuffer_sRGB
@@ -33,7 +8,10 @@ on garde:
     * GL_KHR_texture_compression_astc_hdr
     * GL_KHR_texture_compression_astc_ldr
 
-
+##[Command Galore]
+###Callgrind profiling
+> valgrind --tool=callgrind ../bin/sandbox
+> gprof2dot --format=callgrind -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
 
 #[11-08-19]
 Les trois derniers jours j'ai travaillé intensément au refactor du logger du projet WCore. Un nouvel event system a aussi vu le jour, adapté d'une trouvaille en ligne, bien plus facile d'utilisation que l'ancien, type-safe et single-header.

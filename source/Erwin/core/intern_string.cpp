@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include <unordered_map>
+#include <map>
 
 #include "intern_string.h"
 #include "debug/logger.h"
@@ -10,7 +10,7 @@ namespace erwin
 namespace istr
 {
 
-static std::unordered_map<hash_t, std::string> s_intern_strings;
+static std::map<hash_t, std::string> s_intern_strings;
 
 static void parse(std::istream& stream)
 {

@@ -73,7 +73,7 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
     return ImageFormat::NONE;
 }
 
-std::unordered_map<hash_t, WRef<Texture2D>> Texture2D::create_maps(const fs::path& filepath)
+std::map<hash_t, WRef<Texture2D>> Texture2D::create_maps(const fs::path& filepath)
 {
     DLOGN("texture") << "Loading texture from TOM file: " << std::endl;
     DLOGI << "path: " << WCC('p') << filepath << std::endl;
@@ -81,7 +81,7 @@ std::unordered_map<hash_t, WRef<Texture2D>> Texture2D::create_maps(const fs::pat
     fs::path fullpath = filesystem::get_asset_dir() / filepath;
 
     // Sanity check
-    std::unordered_map<hash_t, WRef<Texture2D>> textures;
+    std::map<hash_t, WRef<Texture2D>> textures;
     if(fullpath.extension().string().compare(".tom"))
     {
         DLOGE("texture") << "File is not a valid .tom file." << std::endl;

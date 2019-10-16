@@ -7,11 +7,6 @@
 namespace erwin
 {
 
-void ShaderParameters::set_texture_slot(hash_t sampler_name, WRef<Texture2D> texture)
-{
-    texture_slots.insert(std::make_pair(sampler_name, texture));
-}
-
 WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
 {
 	switch(Gfx::get_api())

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include "render/framebuffer.h"
 
 namespace erwin
@@ -24,7 +24,7 @@ private:
 private:
 	std::vector<WRef<Texture2D>> textures_;
 	std::vector<uint32_t> color_buffers_;
-	std::unordered_map<hash_t, uint32_t> texture_names_;
+	std::map<hash_t, uint32_t> texture_names_;
 
 	uint32_t rd_handle_ = 0;
 	uint32_t render_buffer_handle_ = 0;

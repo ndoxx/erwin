@@ -55,9 +55,9 @@ private:
 private:
     uint32_t rd_handle_ = 0;
     uint32_t current_slot_ = 0;
-    std::unordered_map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
-    std::unordered_map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
-    std::unordered_map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
+    std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
+    std::map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
+    std::map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
     fs::path filepath_;
 };
 

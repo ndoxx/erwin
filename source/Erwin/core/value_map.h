@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 #include <string>
 #include <filesystem>
 
@@ -30,15 +30,15 @@ protected:
 	void parse_properties(void* node, const std::string& name_chain);
 
 private:
-	std::unordered_map<hash_t, uint32_t>    uints_;
-	std::unordered_map<hash_t, int32_t>     ints_;
-	std::unordered_map<hash_t, float>       floats_;
-	std::unordered_map<hash_t, bool>        bools_;
-	std::unordered_map<hash_t, std::string> strings_;
-	std::unordered_map<hash_t, glm::vec2>   vec2s_;
-	std::unordered_map<hash_t, glm::vec3>   vec3s_;
-	std::unordered_map<hash_t, glm::vec4>   vec4s_;
-	std::unordered_map<hash_t, fs::path>    paths_;
+	std::map<hash_t, uint32_t>    uints_;
+	std::map<hash_t, int32_t>     ints_;
+	std::map<hash_t, float>       floats_;
+	std::map<hash_t, bool>        bools_;
+	std::map<hash_t, std::string> strings_;
+	std::map<hash_t, glm::vec2>   vec2s_;
+	std::map<hash_t, glm::vec3>   vec3s_;
+	std::map<hash_t, glm::vec4>   vec4s_;
+	std::map<hash_t, fs::path>    paths_;
 };
 
 template <> uint32_t    ValueMap::get(hash_t hname, uint32_t def);

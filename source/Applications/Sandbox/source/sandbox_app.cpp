@@ -6,8 +6,7 @@
 #define W_ENTRY_POINT
 #include "erwin.h"
 
-#include "layer_batch_2d.h"
-#include "layer_test.h"
+#include "layer_qtest_2d.h"
 
 using namespace erwin;
 
@@ -21,7 +20,7 @@ public:
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		// push_layer(new LayerBatch2D());
-		push_layer(new LayerTest());
+		push_layer(new LayerQTest2D());
 	}
 
 	~Sandbox() = default;

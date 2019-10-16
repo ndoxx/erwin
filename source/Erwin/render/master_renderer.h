@@ -7,6 +7,7 @@
 #include "render/buffer.h"
 #include "render/shader.h"
 #include "render/texture.h"
+#include "core/unique_id.h"
 #include "ctti/type_id.hpp"
 
 #include <thread>
@@ -68,6 +69,8 @@ struct SortKeyCreator<PostProcessingQueueData>
 	}
 };
 
+
+class QueryTimer;
 class MasterRenderer
 {
 public:
@@ -77,6 +80,8 @@ public:
 
 	MasterRenderer();
 	~MasterRenderer();
+
+	inline void set_profiling_enabled(bool value = true) { profiling_enabled_ = value; }
 
 	template <typename QueueDataT>
 	void add_queue(uint32_t priority, uint32_t num_data, uint32_t num_rs,
@@ -103,6 +108,7 @@ public:
 	}
 
 	void flush();
+	void on_imgui_render();
 
 	static ShaderBank shader_bank;
 
@@ -111,10 +117,30 @@ private:
 	void execute_isp(const InstancedSpriteQueueData& data);
 	void execute_pp(const PostProcessingQueueData& data);
 
+	inline void reset_stats() { stats_.render_time = 0.f; }
+
+	struct RenderStats
+	{
+		float render_time = 0.f;
+	};
+	struct StateCache
+	{
+		W_ID shader = 0;
+		W_ID texture = 0;
+		W_ID VAO = 0;
+		W_ID UBO = 0;
+		W_ID SSBO = 0;
+	};
+
 private:
 	std::unordered_map<ctti::unnamed_type_id_t, std::unique_ptr<AbstractRenderQueue>> queues_;
 	std::multimap<uint32_t, ctti::unnamed_type_id_t> queue_priority_;
 	PassState prev_state_;
+	StateCache state_cache_;
+
+	bool profiling_enabled_;
+	WScope<QueryTimer> query_timer_;
+	RenderStats stats_;
 
 	static std::unique_ptr<MasterRenderer> instance_;
 };

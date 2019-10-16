@@ -32,6 +32,8 @@ public:
     typedef QueueDataT DataT;
     typedef uint64_t SortKey;
 
+    inline uint32_t get_count() { return items_.size(); }
+
     void resize_pool(uint32_t num_data, uint32_t num_rs)
     {
         data_pool_.resize(num_data);
