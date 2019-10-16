@@ -8,6 +8,7 @@
 #include "input/input.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
+#include "render/render_command.h"
 #include "render/master_renderer.h"
 
 #include <iostream>
@@ -154,6 +155,8 @@ void Application::run()
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
+
+        MasterRenderer::instance().flush();
 
 		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();

@@ -25,8 +25,10 @@ project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine shared library")
 
 if(DEFINED CLANG6)
   include(toolchain_clang6)
-else()
+elseif(DEFINED CLANG7)
   include(toolchain_clang7)
+else()
+  include(toolchain_clang8)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)

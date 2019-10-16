@@ -1,5 +1,6 @@
 #include "render/WIP_renderer_2d.h"
 #include "render/master_renderer.h"
+#include "render/render_device.h" // TMP
 #include "debug/logger.h"
 
 namespace erwin
@@ -47,10 +48,9 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 Renderer2D::Renderer2D(uint32_t max_batch_count):
 max_batch_count_(max_batch_count),
 current_batch_(0),
-current_batch_count_(0)
+current_batch_count_(0),
+batch_ttl_(s_max_batches, 0)
 {
-	query_timer_ = QueryTimer::create();
-
 	// Create vertex array with a quad
 	BufferLayout vertex_tex_layout =
 	{
@@ -73,7 +73,9 @@ current_batch_count_(0)
 	quad_va_ = VertexArray::create();
 	quad_va_->set_index_buffer(quad_ib);
 	quad_va_->set_vertex_buffer(quad_vb);
+
 	mat_ubo_ = UniformBuffer::create("matrices_layout", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	pp_ubo_  = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
 
 	for(int ii=0; ii<s_num_batches_init; ++ii)
 		create_batch();
@@ -84,7 +86,7 @@ Renderer2D::~Renderer2D()
 
 }
 
-void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture)
+void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
 {
 	// Set render state
 	render_state_ = render_state;
@@ -95,7 +97,12 @@ void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCa
 	scene_data_.frustum_sides = camera.get_frustum_sides();
 	scene_data_.texture = texture;
 
+	// Set post processing data
+	post_proc_data_ = pp_data;
+	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get(render_state_.render_target).get_width(),
+				  	   		   Gfx::framebuffer_pool->get(render_state_.render_target).get_height()};
 	// Reset
+	current_batch_ = 0;
 	current_batch_count_ = 0;
 	reset_stats();
 }
@@ -104,37 +111,42 @@ void Renderer2D::end_scene()
 {
 	upload_batch();
 
-	if(profiling_enabled_)
-		query_timer_->start();
-
 	// Flush
 	mat_ubo_->map(&scene_data_.view_projection_matrix);
-	auto& queue = MASTER_RENDERER->get_queue<InstancedSpriteQueueData>();
-	auto* state = queue.pass_state_ptr();
-	*state = render_state_;
-	queue.begin_pass(state);
+	auto& isp_queue = MasterRenderer::instance().get_queue<InstancedSpriteQueueData>();
+	auto* isp_state = isp_queue.pass_state_ptr();
+	*isp_state = render_state_;
+	isp_queue.begin_pass(isp_state);
 
 	for(int ii=0; ii<=current_batch_; ++ii)
 	{
-		auto* data = queue.data_ptr();
+		auto* data = isp_queue.data_ptr();
 		data->instance_count = (ii==current_batch_) ? current_batch_count_ : max_batch_count_;
 		data->texture = scene_data_.texture;
 		data->VAO = quad_va_;
 		data->UBO = mat_ubo_;
 		data->SSBO = batches_[ii];
-		queue.push(data);
+		isp_queue.push(data);
 
 		++stats_.batches;
 	}
 
-	// TMP
-	MASTER_RENDERER->flush();
+	// Render generated texture on screen after post-processing
+	pp_ubo_->map(&post_proc_data_);
 
-	if(profiling_enabled_)
-	{
-		auto render_duration = query_timer_->stop();
-		stats_.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
-	}
+	auto& pp_queue = MasterRenderer::instance().get_queue<PostProcessingQueueData>();
+	auto* pp_state = pp_queue.pass_state_ptr();
+	pp_state->render_target = 0;
+	pp_state->rasterizer_state.cull_mode = CullMode::Back;
+	pp_state->rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pp_state->blend_state = BlendState::Opaque;
+	pp_queue.begin_pass(pp_state);
+	auto* pp_data = pp_queue.data_ptr();
+	pp_data->input_framebuffer = render_state_.render_target;
+	pp_data->framebuffer_texture_index = 0;
+	pp_data->VAO = quad_va_;
+	pp_data->UBO = pp_ubo_;
+	pp_queue.push(pp_data);
 
 	// Update unused batches' time to live, remove dead batches
 	int ii=0;

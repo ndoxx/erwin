@@ -20,7 +20,7 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		push_layer(new LayerBatch2D());
+		// push_layer(new LayerBatch2D());
 		push_layer(new LayerTest());
 	}
 

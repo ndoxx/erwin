@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <iostream>
 
 #include "render/render_queue.hpp"
 #include "render/buffer.h"
@@ -8,11 +9,10 @@
 #include "render/texture.h"
 #include "ctti/type_id.hpp"
 
+#include <thread>
+
 namespace erwin
 {
-
-class MasterRenderer;
-static std::unique_ptr<MasterRenderer> MASTER_RENDERER = nullptr;
 
 struct InstancedSpriteQueueData
 {
@@ -42,11 +42,38 @@ struct SortKeyCreator<InstancedSpriteQueueData>
 	}
 };
 
+struct PostProcessingQueueData
+{
+	hash_t input_framebuffer = 0;
+	uint32_t framebuffer_texture_index = 0;
+	WRef<VertexArray> VAO = nullptr;
+	WRef<UniformBuffer> UBO = nullptr;
+
+	inline void reset()
+	{
+		input_framebuffer = 0;
+		framebuffer_texture_index = 0;
+		VAO = nullptr;
+		UBO = nullptr;
+	}
+};
+
+template <>
+struct SortKeyCreator<PostProcessingQueueData>
+{
+	inline uint64_t operator()(const PostProcessingQueueData& data)
+	{
+		return uint8_t(data.framebuffer_texture_index)
+		    + (uint8_t(data.input_framebuffer) << 8);
+	}
+};
+
 class MasterRenderer
 {
 public:
 	static void create();
 	static void kill();
+	static inline MasterRenderer& instance() { return *instance_; }
 
 	MasterRenderer();
 	~MasterRenderer();
@@ -59,13 +86,18 @@ public:
 		auto pqueue = std::make_unique<RenderQueue<QueueDataT>>();
 		pqueue->resize_pool(num_data, num_rs);
 		pqueue->set_command_handlers(on_data, on_state);
-		queues_.insert(std::make_pair(ctti::type_id<QueueDataT>(),
-									  std::move(pqueue)));
+		queues_.insert(std::make_pair(ctti::type_id<QueueDataT>(), std::move(pqueue)));
 		queue_priority_.insert(std::make_pair(priority, ctti::type_id<QueueDataT>()));
 	}
 
 	template <typename QueueDataT>
-	inline RenderQueue<QueueDataT>& get_queue()
+	bool has_queue() const
+	{
+		return (queues_.find(ctti::type_id<QueueDataT>())!=queues_.end());
+	}
+
+	template <typename QueueDataT>
+	RenderQueue<QueueDataT>& get_queue()
 	{
 		return static_cast<RenderQueue<QueueDataT>&>(*queues_.at(ctti::type_id<QueueDataT>()));
 	}
@@ -76,12 +108,15 @@ public:
 
 private:
 	void apply_state(const PassState& state);
-	void execute(const InstancedSpriteQueueData& data);
+	void execute_isp(const InstancedSpriteQueueData& data);
+	void execute_pp(const PostProcessingQueueData& data);
 
 private:
 	std::unordered_map<ctti::unnamed_type_id_t, std::unique_ptr<AbstractRenderQueue>> queues_;
 	std::multimap<uint32_t, ctti::unnamed_type_id_t> queue_priority_;
 	PassState prev_state_;
+
+	static std::unique_ptr<MasterRenderer> instance_;
 };
 
 
