@@ -16,10 +16,12 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 	// Compute each point in world space
 	glm::vec3 points[4] =
 	{
-		glm::vec3(position.x-0.5f*scale.x, position.y-0.5f*scale.y, 1.0f),
-		glm::vec3(position.x+0.5f*scale.x, position.y-0.5f*scale.y, 1.0f),
-		glm::vec3(position.x+0.5f*scale.x, position.y+0.5f*scale.y, 1.0f),
-		glm::vec3(position.x-0.5f*scale.x, position.y+0.5f*scale.y, 1.0f)
+		// WTF: Scale terms should be multiplied by 0.5f to make sense,
+		// but it produces false positives at the edges.
+		glm::vec3(position.x-scale.x, position.y-scale.y, 1.0f),
+		glm::vec3(position.x+scale.x, position.y-scale.y, 1.0f),
+		glm::vec3(position.x+scale.x, position.y+scale.y, 1.0f),
+		glm::vec3(position.x-scale.x, position.y+scale.y, 1.0f)
 	};
 
     // For each frustum side
@@ -49,29 +51,6 @@ current_batch_(0),
 current_batch_count_(0),
 batch_ttl_(s_max_batches, 0)
 {
-	// Create vertex array with a quad
-	BufferLayout vertex_tex_layout =
-	{
-	    {"a_position"_h, ShaderDataType::Vec3},
-	    {"a_uv"_h,       ShaderDataType::Vec2},
-	};
-	float sq_vdata[20] = 
-	{
-		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
-		 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-		-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
-	};
-	uint32_t sq_idata[6] =
-	{
-		0, 1, 2,   2, 3, 0
-	};
-	auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
-	auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
-	quad_va_ = VertexArray::create();
-	quad_va_->set_index_buffer(quad_ib);
-	quad_va_->set_vertex_buffer(quad_vb);
-
 	mat_ubo_ = UniformBuffer::create("matrices_layout", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
 	pp_ubo_  = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
 
@@ -113,16 +92,13 @@ void Renderer2D::end_scene()
 	// Flush
 	mat_ubo_->map(&scene_data_.view_projection_matrix);
 	auto& isp_queue = MasterRenderer::instance().get_queue<InstancedSpriteQueueData>();
-	auto* isp_state = isp_queue.pass_state_ptr();
-	*isp_state = render_state_;
-	isp_queue.begin_pass(isp_state);
+	isp_queue.begin_pass(&render_state_);
 
 	for(int ii=0; ii<=current_batch_; ++ii)
 	{
 		auto* data = isp_queue.data_ptr();
 		data->instance_count = (ii==current_batch_) ? current_batch_count_ : max_batch_count_;
 		data->texture = scene_data_.texture;
-		data->VAO = quad_va_;
 		data->UBO = mat_ubo_;
 		data->SSBO = batches_[ii];
 		isp_queue.push(data);
@@ -141,7 +117,6 @@ void Renderer2D::end_scene()
 	auto* pp_data = pp_queue.data_ptr();
 	pp_data->input_framebuffer = render_state_.render_target;
 	pp_data->framebuffer_texture_index = 0;
-	pp_data->VAO = quad_va_;
 	pp_data->UBO = pp_ubo_;
 	pp_queue.push(pp_data);
 
@@ -235,5 +210,106 @@ void Renderer2D::remove_unused_batches(uint32_t index)
 		batches_.erase(batches_.begin()+index,batches_.end());
 }
 
+
+/*
+Renderer2D::Renderer2D(uint32_t max_batch_count):
+max_batch_count_(max_batch_count),
+batch_count_(0),
+front_buffer_(0),
+back_buffer_(1)
+{
+	instance_data_[front_buffer_].resize(max_batch_count_);
+	instance_data_[back_buffer_].resize(max_batch_count_);
+
+	mat_ubo_    = UniformBuffer::create("matrices_layout", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	pp_ubo_     = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
+
+	uint32_t mem_pool_size = 32 * max_batch_count_ * sizeof(InstanceData);
+	mem_pool_ = MasterRenderer::instance().request_memory_pool(mem_pool_size);
+}
+
+void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
+{
+	// Set render state
+	render_state_ = render_state;
+
+	// Set scene data
+	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
+	scene_data_.view_matrix = camera.get_view_matrix();
+	scene_data_.frustum_sides = camera.get_frustum_sides();
+	scene_data_.texture = texture;
+
+	// Set post processing data
+	post_proc_data_ = pp_data;
+	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get(render_state_.render_target).get_width(),
+				  	   		   Gfx::framebuffer_pool->get(render_state_.render_target).get_height()};
+	// Reset
+	batch_count_ = 0;
+
+	auto& isp_queue = MasterRenderer::instance().get_queue<InstancedSpriteQueueData>();
+	isp_queue.begin_pass(&render_state_);
+}
+
+void Renderer2D::end_scene()
+{
+	if(batch_count_)
+		flush();
+
+	// Render generated texture on screen after post-processing
+	pp_ubo_->map(&post_proc_data_);
+
+	auto& pp_queue = MasterRenderer::instance().get_queue<PostProcessingQueueData>();
+	auto* pp_state = pp_queue.pass_state_ptr();
+	pp_state->render_target = 0;
+	pp_state->rasterizer_state.cull_mode = CullMode::Back;
+	pp_state->rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pp_state->blend_state = BlendState::Opaque;
+	pp_queue.begin_pass(pp_state);
+	auto* pp_data = pp_queue.data_ptr();
+	pp_data->input_framebuffer = render_state_.render_target;
+	pp_data->framebuffer_texture_index = 0;
+	pp_data->UBO = pp_ubo_;
+	pp_queue.push(pp_data);
+}
+
+void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs)
+{
+	// * Frustum culling
+	if(frustum_cull(position, scale, scene_data_.frustum_sides))
+		return;
+
+	// Check that current batch has enough space, if not, upload batch and start to fill next batch
+	if(batch_count_ >= max_batch_count_)
+	{
+		std::swap(front_buffer_, back_buffer_);
+		flush();
+		batch_count_ = 0;
+	}
+
+	instance_data_[front_buffer_][batch_count_] = {position, scale, uvs};
+	++batch_count_;
+}
+
+void Renderer2D::set_batch_size(uint32_t value)
+{
+
+}
+
+void Renderer2D::flush()
+{
+	mat_ubo_->map(&scene_data_.view_projection_matrix);
+
+	auto& isp_queue = MasterRenderer::instance().get_queue<InstancedSpriteQueueData>();
+	auto* data = isp_queue.data_ptr();
+	data->instance_count = batch_count_;
+	data->texture = scene_data_.texture;
+	data->UBO = mat_ubo_;
+	data->SSBO_data_size = batch_count_ * sizeof(InstanceData);
+	data->SSBO_data_offset = MasterRenderer::instance().push_pool_data(mem_pool_, instance_data_[back_buffer_].data(), data->SSBO_data_size);
+	data->pool_index = mem_pool_;
+
+	isp_queue.push(data);
+}
+*/
 
 } // namespace erwin

@@ -27,8 +27,8 @@ public:
 	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const override;
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) const override;
-	virtual void attach_uniform_buffer(const UniformBuffer& buffer) const override;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t count=0, uint32_t base_index=0) const override;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
 
     // Uniform management
     template <typename T>

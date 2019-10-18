@@ -164,9 +164,12 @@ void Application::run()
         MasterRenderer::instance().on_imgui_render();
 		IMGUI_LAYER->end();
 
-        frame_d = frame_clock.restart();
-        auto sleep_duration = frame_duration_ns_ - frame_d;
-        std::this_thread::sleep_for(sleep_duration);
+        if(!window_->is_vsync())
+        {
+            auto active_d = frame_clock.get_elapsed_time();
+            auto idle_duration = frame_duration_ns_ - active_d;
+            std::this_thread::sleep_for(idle_duration);
+        }
 
     	// To allow frame by frame update
     	game_clock_.release_flags();
@@ -175,6 +178,7 @@ void Application::run()
         window_->update();
 
 		WLOGGER.flush();
+        frame_d = frame_clock.restart();
 	}
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;

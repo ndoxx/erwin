@@ -8,7 +8,9 @@
 #include "render/shader.h"
 #include "render/texture.h"
 #include "core/unique_id.h"
+#include "core/db_pool.h"
 #include "ctti/type_id.hpp"
+#include "glm/glm.hpp"
 
 #include <thread>
 
@@ -18,18 +20,23 @@ namespace erwin
 struct InstancedSpriteQueueData
 {
 	uint32_t instance_count = 0;
-	WRef<Texture2D> texture = nullptr;
-	WRef<VertexArray> VAO = nullptr;
+	WRef<Texture2D> texture = nullptr; // TMP: Pure data instead of WRefs in the future
 	WRef<UniformBuffer> UBO = nullptr;
 	WRef<ShaderStorageBuffer> SSBO = nullptr;
+
+	/*uint32_t pool_index = 0;
+	uint32_t SSBO_data_offset = 0;*/
 
 	inline void reset()
 	{
 		instance_count = 0;
 		texture = nullptr;
-		VAO = nullptr;
 		UBO = nullptr;
 		SSBO = nullptr;
+
+		/*pool_index = 0;
+		SSBO_data_offset = 0;
+		*/
 	}
 };
 
@@ -47,14 +54,12 @@ struct PostProcessingQueueData
 {
 	hash_t input_framebuffer = 0;
 	uint32_t framebuffer_texture_index = 0;
-	WRef<VertexArray> VAO = nullptr;
 	WRef<UniformBuffer> UBO = nullptr;
 
 	inline void reset()
 	{
 		input_framebuffer = 0;
 		framebuffer_texture_index = 0;
-		VAO = nullptr;
 		UBO = nullptr;
 	}
 };
@@ -109,6 +114,9 @@ public:
 
 	void flush();
 	void on_imgui_render();
+	uint32_t request_memory_pool(uint32_t size);
+	void* get_pool_data_pointer(uint32_t pool_index);
+	uint32_t push_pool_data(uint32_t pool_index, void* data, uint32_t size);
 
 	static ShaderBank shader_bank;
 
@@ -130,11 +138,13 @@ private:
 		W_ID VAO = 0;
 		W_ID UBO = 0;
 		W_ID SSBO = 0;
+		// int SSBO = -1;
 	};
 
 private:
 	std::unordered_map<ctti::unnamed_type_id_t, std::unique_ptr<AbstractRenderQueue>> queues_;
 	std::multimap<uint32_t, ctti::unnamed_type_id_t> queue_priority_;
+	std::vector<DoubleBufferedPool> mem_pools_;
 	PassState prev_state_;
 	StateCache state_cache_;
 
@@ -143,6 +153,11 @@ private:
 	RenderStats stats_;
 
 	static std::unique_ptr<MasterRenderer> instance_;
+
+	// TMP: move to more global object containing basic geometry 
+	WRef<VertexArray> quad_va_;
+	// TMP: array of SSBOs next
+	//WRef<ShaderStorageBuffer> batch_2d_ssbo_;
 };
 
 

@@ -147,7 +147,7 @@ public:
     virtual void map(void* data) = 0;
 
     inline const std::string& get_name() const { return name_; }
-    inline uint32_t get_data_size() const      { return struct_size_; }
+    inline uint32_t get_size() const           { return struct_size_; }
     // Return engine unique id for this object
     inline W_ID get_unique_id() const { return unique_id_; }
 
@@ -174,6 +174,7 @@ public:
 
     inline const std::string& get_name() const { return name_; }
     inline uint32_t get_count() const          { return count_; }
+    inline uint32_t get_size() const           { return count_*struct_size_; }
     inline uint32_t get_data_size() const      { return struct_size_; }
     // Return engine unique id for this object
     inline W_ID get_unique_id() const { return unique_id_; }

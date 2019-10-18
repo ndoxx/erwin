@@ -11,7 +11,7 @@ class OGLQueryTimer: public QueryTimer
 {
 public:
 	OGLQueryTimer();
-	~OGLQueryTimer();
+	~OGLQueryTimer() = default;
 
     // Start query timer
     virtual void start() override;
@@ -19,14 +19,9 @@ public:
     virtual std::chrono::nanoseconds stop() override;
 
 private:
-    // Helper func to swap query buffers
-    void swap_query_buffers();
-
-private:
-    // the array to store the two sets of queries.
-    unsigned int* query_ID_;
-    unsigned int query_back_buffer_;
-    unsigned int query_front_buffer_;
+    uint32_t query_ID_[2]; // the array to store the two sets of queries.
+    uint32_t query_back_buffer_;
+    uint32_t query_front_buffer_;
     uint32_t timer_;
 };
 

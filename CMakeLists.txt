@@ -53,6 +53,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/db_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )

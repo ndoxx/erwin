@@ -141,7 +141,7 @@ void LayerQTest2D::on_update(GameClock& clock)
 
 	PassState pass_state;
 	pass_state.render_target = "fb_2d_raw"_h;
-	pass_state.rasterizer_state.cull_mode = CullMode::None;
+	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 	pass_state.blend_state = BlendState::Opaque;
 
@@ -151,13 +151,13 @@ void LayerQTest2D::on_update(GameClock& clock)
 		for(int xx=0; xx<len_grid_; ++xx)
 		{
 			float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
-			float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 2.f/float(len_grid_-1);
+			float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.f/float(len_grid_-1);
 			float pos_x = -1.f + 2.f*xx/float(len_grid_-1) + xx_offset;
 
 			for(int yy=0; yy<len_grid_; ++yy)
 			{
 				float yy_offset = trippy_mode_ ? 3.0f/len_grid_ * sin(2*2*M_PI*yy/(1.f+len_grid_))*cos(0.2f*2*M_PI*tt_) : 0.f;
-				float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 2.f/float(len_grid_-1);
+				float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.f/float(len_grid_-1);
 				float pos_y = -1.f + 2.f*yy/float(len_grid_-1) + yy_offset;
 
 				// hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));

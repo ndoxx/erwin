@@ -277,22 +277,28 @@ void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
     send_uniform<int>(sampler, slot);
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer) const
+void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t count, uint32_t base_index) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
-    // GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_SHADER_STORAGE_BLOCK, buffer.get_name().c_str());
-    // glShaderStorageBlockBinding(rd_handle_, block_index, binding_point);
+    if(count)
+    {
+        uint32_t size = count * buffer.get_data_size();
+        uint32_t offset = base_index * buffer.get_data_size();
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle(), offset, size);
+    }
+    else
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
 }
 
-void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer) const
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
-    // GLuint block_index = glGetProgramResourceIndex(rd_handle_, GL_UNIFORM_BLOCK, buffer.get_name().c_str());
-    // glUniformBlockBinding(rd_handle_, block_index, binding_point);
+    if(size)
+        glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle(), offset, size);
+    else
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
 }
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)

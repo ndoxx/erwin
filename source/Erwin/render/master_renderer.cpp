@@ -30,14 +30,14 @@ void MasterRenderer::kill()
 }
 
 MasterRenderer::MasterRenderer():
-profiling_enabled_(false)
+profiling_enabled_(true)
 {
 	query_timer_ = QueryTimer::create();
 
-	shader_bank.load(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.spv");
-	// shader_bank.load(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.glsl");
-	shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.spv");
-	// shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.glsl");
+	// shader_bank.load(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.spv");
+	shader_bank.load(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.glsl");
+	// shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.spv");
+	shader_bank.load(filesystem::get_system_asset_dir() / "shaders/post_proc.glsl");
 
 	add_queue<InstancedSpriteQueueData>(0,8192,32,
 										std::bind(&MasterRenderer::execute_isp, this, std::placeholders::_1),
@@ -45,6 +45,32 @@ profiling_enabled_(false)
 	add_queue<PostProcessingQueueData>(1,32,32,
 									   std::bind(&MasterRenderer::execute_pp, this, std::placeholders::_1),
 									   std::bind(&MasterRenderer::apply_state, this, std::placeholders::_1));
+
+	// * Create resources
+	// batch_2d_ssbo_ = ShaderStorageBuffer::create("instance_data", nullptr, 8192, 2*sizeof(glm::vec4), DrawMode::Dynamic);
+
+	// Create vertex array with a quad
+	BufferLayout vertex_tex_layout =
+	{
+	    {"a_position"_h, ShaderDataType::Vec3},
+	    {"a_uv"_h,       ShaderDataType::Vec2},
+	};
+	float sq_vdata[20] = 
+	{
+		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
+		-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
+	};
+	uint32_t sq_idata[6] =
+	{
+		0, 1, 2,   2, 3, 0
+	};
+	auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
+	auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
+	quad_va_ = VertexArray::create();
+	quad_va_->set_index_buffer(quad_ib);
+	quad_va_->set_vertex_buffer(quad_vb);
 }
 
 MasterRenderer::~MasterRenderer()
@@ -59,10 +85,11 @@ void MasterRenderer::flush()
 	if(profiling_enabled_)
 		query_timer_->start();
 
+	for(auto&& pool: mem_pools_)
+		pool.swap_buffers();
+
 	for(auto&& [priority, key]: queue_priority_)
-	{
 		queues_.at(key)->flush();
-	}
 
 	if(profiling_enabled_)
 	{
@@ -89,6 +116,36 @@ void MasterRenderer::on_imgui_render()
             }
     	ImGui::End();
     }
+/*
+	// BUG#2 tracking
+	static uint32_t s_frame = 0;
+	static int s_displayed = 0;
+    if(stats_.render_time>1000 && s_displayed<25)
+    {
+    	DLOGW("render") << "Frame: " << s_frame << std::endl;
+    	++s_displayed;
+    }
+    ++s_frame;
+*/
+}
+
+uint32_t MasterRenderer::request_memory_pool(uint32_t size)
+{
+	uint32_t pool_index = mem_pools_.size();
+	mem_pools_.emplace_back(size);
+	return pool_index;
+}
+
+void* MasterRenderer::get_pool_data_pointer(uint32_t pool_index)
+{
+	W_ASSERT(pool_index < mem_pools_.size(), "[MasterRenderer] pool index out of bounds.");
+	return mem_pools_[pool_index].get_front_pointer();
+}
+
+uint32_t MasterRenderer::push_pool_data(uint32_t pool_index, void* data, uint32_t size)
+{
+	W_ASSERT(pool_index < mem_pools_.size(), "[MasterRenderer] pool index out of bounds.");
+	return mem_pools_[pool_index].push(data, size);
 }
 
 void MasterRenderer::apply_state(const PassState& state)
@@ -149,8 +206,6 @@ void MasterRenderer::apply_state(const PassState& state)
 
 void MasterRenderer::execute_isp(const InstancedSpriteQueueData& data)
 {
-	W_ASSERT(data.VAO, "InstancedSpriteQueueData: must initialize VAO.");
-
 	const Shader& shader = shader_bank.get("color_inst_shader"_h);
 	shader.bind();
 
@@ -168,17 +223,23 @@ void MasterRenderer::execute_isp(const InstancedSpriteQueueData& data)
 
 	if(data.SSBO && (state_cache_.SSBO!=data.SSBO->get_unique_id()))
 	{
-		shader.attach_shader_storage(*data.SSBO);
+		shader.attach_shader_storage(*data.SSBO, data.instance_count);
 		state_cache_.SSBO = data.SSBO->get_unique_id();
 	}
+	/*
+	if(state_cache_.SSBO!=data.SSBO_data_offset)
+	{
+		uint8_t* pool_ptr = mem_pools_[data.pool_index].get_back_pointer();
+		batch_2d_ssbo_->map(pool_ptr+data.SSBO_data_offset, data.instance_count);
+		shader.attach_shader_storage(*batch_2d_ssbo_);
+		state_cache_.SSBO = data.SSBO_data_offset;
+	}*/
 
-	Gfx::device->draw_indexed_instanced(*data.VAO, data.instance_count);
+	Gfx::device->draw_indexed_instanced(*quad_va_, data.instance_count);
 }
 
 void MasterRenderer::execute_pp(const PostProcessingQueueData& data)
 {
-	W_ASSERT(data.VAO, "PostProcessingQueueData: must initialize VAO.");
-
 	const Shader& shader = shader_bank.get("post_proc"_h);
 	shader.bind();
 
@@ -195,7 +256,7 @@ void MasterRenderer::execute_pp(const PostProcessingQueueData& data)
 		state_cache_.UBO = data.UBO->get_unique_id();
 	}
 
-	Gfx::device->draw_indexed(*data.VAO);
+	Gfx::device->draw_indexed(*quad_va_);
 }
 
 } // namespace erwin
