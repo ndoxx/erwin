@@ -96,47 +96,4 @@ private:
 	std::vector<uint16_t> batch_ttl_;
 };
 
-/*
-// Attempt at creating a simpler renderer
-class Renderer2D
-{
-public:
-	Renderer2D(uint32_t max_batch_count=8192);
-	~Renderer2D() = default;
-
-	// Reset renderer flags for next submissions
-	void begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data);
-	// Upload last batch and flush all batches
-	void end_scene();
-	// Request the renderer implementation to push a quad to current batch
-	void draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs);
-	// Modify maximum batch size
-	void set_batch_size(uint32_t value);
-
-private:
-	void flush();
-
-private:
-	struct InstanceData // Need correct alignment for SSBO data
-	{
-		glm::vec2 offset;
-		glm::vec2 scale;
-		glm::vec4 uvs;
-	};
-
-	uint32_t max_batch_count_;   // max number of quads in a batch
-	uint32_t batch_count_;
-	uint32_t front_buffer_;
-	uint32_t back_buffer_;
-	std::vector<InstanceData> instance_data_[2]; // Double-buffered
-	PassState render_state_;
-	SceneData scene_data_;
-	PostProcData post_proc_data_;
-	WRef<UniformBuffer> mat_ubo_;
-	WRef<UniformBuffer> pp_ubo_;
-
-	uint32_t mem_pool_;
-};
-*/
-
 } // namespace erwin

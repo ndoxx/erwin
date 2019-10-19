@@ -65,10 +65,11 @@ public:
         for(uint32_t index: order_)
         {
             QueueItem& item = items_[index];
-            if(item.is_state)
-                on_state_(*item.content.render_state);
-            else
-                on_data_(*item.content.data);
+            if(item.data)
+                on_data_(*item.data);
+            else if(item.pass_state)
+                on_state_(*item.pass_state);
+
             item.release();
         }
 
@@ -97,37 +98,33 @@ protected:
 
     inline void set_key(QueueItem& item)
     {
-        item.key = item.is_state ? (1<<24) : make_key_(*item.content.data);
+        item.key = item.data ? make_key_(*item.data) : (1<<24);
         item.key |= (~current_pass_ << 25);
     }
 
     struct QueueItem
     {
         SortKey key = 0;
-        bool is_state = false;
-        union
-        {
-            QueueDataT* data;
-            PassState* render_state;
-        } content;
+        QueueDataT* data = nullptr;
+        PassState* pass_state = nullptr;
 
-        QueueItem(QueueDataT* data)
+        QueueItem(QueueDataT* data_ptr)
         {
-            is_state = false;
-            content.data = data;
+            data = data_ptr;
         }
-        QueueItem(PassState* state)
+        QueueItem(PassState* state_ptr)
         {
-            is_state = true;
-            content.render_state = state;
+            pass_state = state_ptr;
         }
 
         inline void release()
         {
-            if(is_state)
-                content.render_state->reset();
+            if(pass_state)
+                pass_state->reset();
             else
-                content.data->reset();
+                data->reset();
+            data = nullptr;
+            pass_state = nullptr;
         }
     };
 
