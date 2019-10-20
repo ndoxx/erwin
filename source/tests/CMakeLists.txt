@@ -101,6 +101,7 @@ cotire(test_config)
 
 set(SRC_NUCLEAR
     nuclear.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
    )
 
 add_executable(nuclear ${SRC_NUCLEAR})
@@ -119,7 +120,7 @@ set_target_properties(nuclear
 )
 
 target_link_libraries(nuclear
-                      # erwin
+                      # erwin # throws std::system_error
                       pthread
                       stdc++fs
                       )

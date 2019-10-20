@@ -1562,3 +1562,4 @@ Fudge est configuré via un fichier XML :
 </Config>
 ```
 Chaque type d'asset que Fudge peut traiter peut définir plusieurs batches. Chaque batch précise une paire de chemins d'accès (entrée / sortie). Certains batches peuvent définir des propriétés locales comme les types de compression à utiliser pour les texture atlases. Fudge itère chaque batch correctement défini, pour chaque catégorie d'asset.
+

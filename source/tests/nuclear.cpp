@@ -3,12 +3,147 @@
 #include <functional>
 #include <random>
 #include <type_traits>
+#include <cstdlib>
+#include <cstring>
 
-#include "render/render_queue.hpp"
-
+#include "memory/memory.hpp"
+#include "memory/linear_allocator.h"
 
 using namespace erwin;
 
+struct POD
+{
+	uint32_t a;
+	uint32_t b;
+	uint64_t plop;
+};
+
+struct NonPOD
+{
+	NonPOD(uint32_t a, uint32_t b):
+	a(a), b(b), c(555)
+	{
+		std::cout << "NonPOD ctor" << std::endl;
+		data = new uint32_t[a];
+		for(int ii=0; ii<a; ++ii)
+			data[ii] = b;
+	}
+
+	NonPOD():NonPOD(4,2) { }
+
+	~NonPOD()
+	{
+		std::cout << "NonPOD dtor" << std::endl;
+		delete[] data;
+	}
+
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t* data;
+};
+
+int main(int argc, char** argv)
+{
+	HeapArea area(1000);
+	MemoryArena<LinearAllocator, policy::SingleThread, policy::SimpleBoundsChecking> arena(area);
+
+	std::cout << "POD is POD: " << std::is_pod<POD>::value << std::endl;
+	std::cout << "NonPOD is POD: " << std::is_pod<NonPOD>::value << std::endl;
+	std::cout << std::endl;
+	
+	{
+		std::cout << "--- new POD non-aligned ---" << std::endl;
+		POD* some_pod = W_NEW(POD, arena);
+		std::cout << some_pod << " " << size_t(some_pod)%16 << std::endl;
+		some_pod->a = 42;
+		some_pod->b = 56;
+		some_pod->plop = 5587474657354873254;
+		std::cout << some_pod->a << " " << some_pod->b << " " << some_pod->plop << std::endl;
+		W_DELETE(some_pod, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new POD aligned ---" << std::endl;
+		POD* some_pod = W_NEW_ALIGN(POD, arena, 16);
+		std::cout << some_pod << " " << size_t(some_pod)%16 << std::endl;
+		some_pod->a = 42;
+		some_pod->b = 56;
+		some_pod->plop = 5587474657354873254;
+		std::cout << some_pod->a << " " << some_pod->b << " " << some_pod->plop << std::endl;
+		W_DELETE(some_pod, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new POD array non-aligned ---" << std::endl;
+		POD* pod_array = W_NEW_ARRAY(POD[10], arena);
+		for(int ii=0; ii<10; ++ii)
+		{
+			pod_array[ii].a = 42;
+			pod_array[ii].b = 56;
+		}
+		std::cout << pod_array[5].a << " " << pod_array[5].b << std::endl;
+		W_DELETE_ARRAY(pod_array, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new POD array aligned ---" << std::endl;
+		POD* pod_array = W_NEW_ARRAY_ALIGN(POD[10], arena, 16);
+		for(int ii=0; ii<10; ++ii)
+		{
+			pod_array[ii].a = 42;
+			pod_array[ii].b = 56;
+		}
+		std::cout << pod_array[5].a << " " << pod_array[5].b << std::endl;
+		W_DELETE_ARRAY(pod_array, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new non-POD non-aligned ---" << std::endl;
+		NonPOD* some_non_pod = W_NEW(NonPOD, arena)(10,8);
+		std::cout << some_non_pod->data[9] << std::endl;
+		W_DELETE(some_non_pod, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new non-POD array non-aligned ---" << std::endl;
+		NonPOD* non_pod_array = W_NEW_ARRAY(NonPOD[4], arena);
+		W_DELETE_ARRAY(non_pod_array, arena);
+		std::cout << std::endl;
+	}
+/*
+	{
+		std::cout << "--- back overwrite test ---" << std::endl;
+		POD* some_pod = W_NEW(POD, arena);
+		uint8_t* ptr = (uint8_t*)some_pod;
+		std::fill(ptr, ptr + sizeof(POD) + 8, 0xAA);
+		W_DELETE(some_pod, arena);
+		std::cout << std::endl;
+	}
+*/
+/*
+	{
+		std::cout << "--- front overwrite test ---" << std::endl;
+		POD* some_pod = W_NEW(POD, arena);
+		POD* some_other_pod = W_NEW(POD, arena);
+		uint8_t* ptr = (uint8_t*)some_pod;
+		std::fill(ptr, ptr + sizeof(POD) + 8, 0xAA);
+		W_DELETE(some_other_pod, arena);
+		W_DELETE(some_pod, arena);
+		std::cout << std::endl;
+	}
+*/
+	return 0;
+}
+
+
+/*
+#include "render/render_queue.hpp"
 struct InstancedSpriteQueueData
 {
 	hash_t shader;
@@ -72,3 +207,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/
