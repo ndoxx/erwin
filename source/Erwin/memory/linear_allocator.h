@@ -4,6 +4,8 @@
 
 namespace erwin
 {
+namespace memory
+{
 
 class LinearAllocator
 {
@@ -25,4 +27,5 @@ private:
 };
 
 
+} // namespace memory
 } // namespace erwin

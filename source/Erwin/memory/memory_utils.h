@@ -2,7 +2,11 @@
 
 #include <cstdint>
 
+#include "debug/logger_common.h"
+
 namespace erwin
+{
+namespace memory
 {
 namespace utils
 {
@@ -17,4 +21,10 @@ static inline std::size_t alignment_padding(const std::size_t base_address, cons
 }
 
 } // namespace utils
+
+extern void hex_dump_highlight(uint32_t word, const WCB& wcb);
+extern void hex_dump_clear_highlights();
+extern void hex_dump(void* ptr, std::size_t size);
+
+} // namespace memory
 } // namespace erwin

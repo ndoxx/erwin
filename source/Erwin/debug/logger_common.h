@@ -24,6 +24,22 @@ struct WCC
     std::string escape;
 };
 
+// WCore Console Background color
+// Evaluates to an ansi string when submitted to a stream
+struct WCB
+{
+    static std::map<char, std::string> COLORMAP;
+
+    WCB() = default;
+    explicit WCB(int cc);
+    WCB(uint8_t R, uint8_t G, uint8_t B);
+    WCB(const WCB& other);
+
+    friend std::ostream& operator <<(std::ostream& stream, const WCB& wcc);
+
+    std::string escape;
+};
+
 namespace dbg
 {
 

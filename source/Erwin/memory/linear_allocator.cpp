@@ -3,7 +3,11 @@
 
 #include <iostream>
 
+#define ALLOCATOR_PADDING_MAGIC
+
 namespace erwin
+{
+namespace memory
 {
 
 LinearAllocator::LinearAllocator(std::size_t size)
@@ -33,8 +37,14 @@ void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::si
     if(current + padding + size > end_)
         return nullptr;
 
+    // Mark padding area
+#ifdef ALLOCATOR_PADDING_MAGIC
+    std::fill(current, current + padding, 0xd0);
+#endif
+
     current_offset_ += padding + size;
     return current + padding;
 }
 
+} // namespace memory
 } // namespace erwin

@@ -2,6 +2,7 @@
 <Config>
 	<logger>
 		<Channel name="application" verbosity="3"/>
+		<Channel name="memory"      verbosity="3"/>
 		<Channel name="render"      verbosity="3"/>
 		<Channel name="shader"      verbosity="3"/>
 		<Channel name="texture"     verbosity="3"/>

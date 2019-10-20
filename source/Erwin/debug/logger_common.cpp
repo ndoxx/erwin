@@ -41,10 +41,32 @@ WCC::WCC(const WCC& other)
     escape = other.escape;
 }
 
+
+WCB::WCB(int cc)
+{
+    escape = "\033[1;49m";
+}
+
+WCB::WCB(uint8_t R, uint8_t G, uint8_t B)
+{
+    escape = "\033[1;48;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m";
+}
+
+WCB::WCB(const WCB& other)
+{
+    escape = other.escape;
+}
+
 std::ostream& operator <<(std::ostream& stream, const WCC& wcc)
 {
 	stream << wcc.escape;
 	return stream;
+}
+
+std::ostream& operator <<(std::ostream& stream, const WCB& wcb)
+{
+    stream << wcb.escape;
+    return stream;
 }
 
 } // namespace erwin

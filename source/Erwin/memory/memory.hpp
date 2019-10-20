@@ -17,10 +17,12 @@
 #include <algorithm>
 
 #include "core/core.h"
+#include "debug/logger.h"
 
 namespace erwin
 {
-
+namespace memory
+{
 namespace policy
 {
 class SingleThread
@@ -58,9 +60,9 @@ public:
 class SimpleBoundsChecking
 {
 public:
-	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0x0f); }
+	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (front)."); }
+	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front)."); }
 	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back)."); }
 
 	static constexpr size_t SIZE_FRONT = 4;
@@ -79,6 +81,26 @@ class NoMemoryTracking
 public:
 	inline void on_allocation(uint8_t*, size_t size, size_t alignment) const { }
 	inline void on_deallocation(uint8_t*) const { }
+	inline int32_t get_allocation_count() const { return 0; }
+	inline void report() const { }
+};
+
+class SimpleMemoryTracking
+{
+public:
+	inline void on_allocation(uint8_t*, size_t size, size_t alignment) { ++num_allocs_; }
+	inline void on_deallocation(uint8_t*) { --num_allocs_; }
+	inline int32_t get_allocation_count() const { return num_allocs_; }
+	inline void report() const
+	{
+		if(num_allocs_)
+		{
+			DLOGE("memory") << "[MemoryTracker] Alloc-dealloc mismatch: " << num_allocs_ << std::endl;
+		}
+	}
+
+private:
+	int32_t num_allocs_ = 0;
 };
 
 }
@@ -114,6 +136,11 @@ class MemoryArena
 {
 public:
 	typedef uint32_t SIZE_TYPE;
+	// Size of bookkeeping data before user pointer
+	static constexpr uint32_t BK_FRONT_SIZE = BoundsCheckerT::SIZE_FRONT
+											+ sizeof(SIZE_TYPE);
+	static constexpr uint32_t DECORATION_SIZE = BK_FRONT_SIZE
+											  + BoundsCheckerT::SIZE_BACK;
 
     template <class AreaPolicyT>
     explicit MemoryArena(AreaPolicyT& area):
@@ -122,8 +149,13 @@ public:
 
     }
 
-    inline       AllocatorT& get_allocator()       { return allocator_; }
-    inline const AllocatorT& get_allocator() const { return allocator_; }
+    ~MemoryArena()
+    {
+    	memory_tracker_.report();
+    }
+
+    inline       AllocatorT& get_allocator()            { return allocator_; }
+    inline const AllocatorT& get_allocator() const      { return allocator_; }
 
 	void* allocate(size_t size, size_t alignment, const char* file, int line)
 	{
@@ -243,8 +275,6 @@ void DeleteArray(T* object, ArenaT& arena)
 		// Number of instances stored 4 bytes before first instance
 		const SIZE_TYPE N = as_size_t[-1];
 
-		std::cout << N << std::endl;
-
 		// Call instances' destructor in reverse order
 		for(uint32_t ii=N; ii>0; --ii)
 			as_T[ii-1].~T();
@@ -262,15 +292,16 @@ struct TypeAndCount<T[N]>
 	typedef T type;
 	static constexpr size_t count = N;
 };
+} // namespace memory
 
 
 #define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 0, __FILE__, __LINE__)) TYPE
-#define W_NEW_ARRAY( TYPE , ARENA ) NewArray<TypeAndCount< TYPE >::type>( ARENA , TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
+#define W_NEW_ARRAY( TYPE , ARENA ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
 
 #define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), ALIGNMENT , __FILE__, __LINE__)) TYPE
-#define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) NewArray<TypeAndCount< TYPE >::type>( ARENA , TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
+#define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
 
-#define W_DELETE( OBJECT , ARENA ) Delete( OBJECT , ARENA )
-#define W_DELETE_ARRAY( OBJECT , ARENA ) DeleteArray( OBJECT , ARENA )
+#define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )
+#define W_DELETE_ARRAY( OBJECT , ARENA ) memory::DeleteArray( OBJECT , ARENA )
 
 } // namespace erwin

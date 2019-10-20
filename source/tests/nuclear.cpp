@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <functional>
 #include <random>
@@ -6,8 +7,12 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
+#include "debug/logger_sink.h"
 #include "memory/memory.hpp"
 #include "memory/linear_allocator.h"
+#include "memory/memory_utils.h"
 
 using namespace erwin;
 
@@ -23,7 +28,6 @@ struct NonPOD
 	NonPOD(uint32_t a, uint32_t b):
 	a(a), b(b), c(555)
 	{
-		std::cout << "NonPOD ctor" << std::endl;
 		data = new uint32_t[a];
 		for(int ii=0; ii<a; ++ii)
 			data[ii] = b;
@@ -33,7 +37,6 @@ struct NonPOD
 
 	~NonPOD()
 	{
-		std::cout << "NonPOD dtor" << std::endl;
 		delete[] data;
 	}
 
@@ -43,10 +46,24 @@ struct NonPOD
 	uint32_t* data;
 };
 
+typedef memory::MemoryArena<memory::LinearAllocator, 
+		    		memory::policy::SingleThread, 
+		    		memory::policy::SimpleBoundsChecking,
+		    		memory::policy::NoMemoryTagging,
+		    		memory::policy::SimpleMemoryTracking> TestArena;
+
 int main(int argc, char** argv)
 {
-	HeapArea area(1000);
-	MemoryArena<LinearAllocator, policy::SingleThread, policy::SimpleBoundsChecking> arena(area);
+    WLOGGER.create_channel("memory", 3);
+    WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
+    WLOGGER.set_single_threaded(true);
+
+    memory::hex_dump_highlight(0xf0f0f0f0, WCB(100,0,0));
+    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,0,100));
+    memory::hex_dump_highlight(0xd0d0d0d0, WCB(200,100,0));
+
+	memory::HeapArea area(1000);
+	TestArena arena(area);
 
 	std::cout << "POD is POD: " << std::is_pod<POD>::value << std::endl;
 	std::cout << "NonPOD is POD: " << std::is_pod<NonPOD>::value << std::endl;
@@ -55,11 +72,10 @@ int main(int argc, char** argv)
 	{
 		std::cout << "--- new POD non-aligned ---" << std::endl;
 		POD* some_pod = W_NEW(POD, arena);
-		std::cout << some_pod << " " << size_t(some_pod)%16 << std::endl;
 		some_pod->a = 42;
 		some_pod->b = 56;
 		some_pod->plop = 5587474657354873254;
-		std::cout << some_pod->a << " " << some_pod->b << " " << some_pod->plop << std::endl;
+		memory::hex_dump(reinterpret_cast<uint8_t*>(some_pod) - TestArena::BK_FRONT_SIZE, sizeof(POD) + TestArena::DECORATION_SIZE);
 		W_DELETE(some_pod, arena);
 		std::cout << std::endl;
 	}
@@ -67,11 +83,10 @@ int main(int argc, char** argv)
 	{
 		std::cout << "--- new POD aligned ---" << std::endl;
 		POD* some_pod = W_NEW_ALIGN(POD, arena, 16);
-		std::cout << some_pod << " " << size_t(some_pod)%16 << std::endl;
 		some_pod->a = 42;
 		some_pod->b = 56;
 		some_pod->plop = 5587474657354873254;
-		std::cout << some_pod->a << " " << some_pod->b << " " << some_pod->plop << std::endl;
+		memory::hex_dump(reinterpret_cast<uint8_t*>(some_pod) - TestArena::BK_FRONT_SIZE, sizeof(POD) + TestArena::DECORATION_SIZE);
 		W_DELETE(some_pod, arena);
 		std::cout << std::endl;
 	}
@@ -84,7 +99,7 @@ int main(int argc, char** argv)
 			pod_array[ii].a = 42;
 			pod_array[ii].b = 56;
 		}
-		std::cout << pod_array[5].a << " " << pod_array[5].b << std::endl;
+		memory::hex_dump(reinterpret_cast<uint8_t*>(pod_array) - TestArena::BK_FRONT_SIZE, 10*sizeof(POD) + TestArena::DECORATION_SIZE);
 		W_DELETE_ARRAY(pod_array, arena);
 		std::cout << std::endl;
 	}
@@ -97,7 +112,7 @@ int main(int argc, char** argv)
 			pod_array[ii].a = 42;
 			pod_array[ii].b = 56;
 		}
-		std::cout << pod_array[5].a << " " << pod_array[5].b << std::endl;
+		memory::hex_dump(reinterpret_cast<uint8_t*>(pod_array) - TestArena::BK_FRONT_SIZE, 10*sizeof(POD) + TestArena::DECORATION_SIZE);
 		W_DELETE_ARRAY(pod_array, arena);
 		std::cout << std::endl;
 	}
@@ -105,7 +120,15 @@ int main(int argc, char** argv)
 	{
 		std::cout << "--- new non-POD non-aligned ---" << std::endl;
 		NonPOD* some_non_pod = W_NEW(NonPOD, arena)(10,8);
-		std::cout << some_non_pod->data[9] << std::endl;
+		memory::hex_dump(reinterpret_cast<uint8_t*>(some_non_pod) - TestArena::BK_FRONT_SIZE, sizeof(NonPOD) + TestArena::DECORATION_SIZE);
+		W_DELETE(some_non_pod, arena);
+		std::cout << std::endl;
+	}
+
+	{
+		std::cout << "--- new non-POD aligned ---" << std::endl;
+		NonPOD* some_non_pod = W_NEW_ALIGN(NonPOD, arena, 16)(10,8);
+		memory::hex_dump(reinterpret_cast<uint8_t*>(some_non_pod) - TestArena::BK_FRONT_SIZE, sizeof(NonPOD) + TestArena::DECORATION_SIZE);
 		W_DELETE(some_non_pod, arena);
 		std::cout << std::endl;
 	}
@@ -113,9 +136,22 @@ int main(int argc, char** argv)
 	{
 		std::cout << "--- new non-POD array non-aligned ---" << std::endl;
 		NonPOD* non_pod_array = W_NEW_ARRAY(NonPOD[4], arena);
+		memory::hex_dump(reinterpret_cast<uint8_t*>(non_pod_array) - TestArena::BK_FRONT_SIZE - 4, 4*sizeof(NonPOD) + TestArena::DECORATION_SIZE + 4);
 		W_DELETE_ARRAY(non_pod_array, arena);
 		std::cout << std::endl;
 	}
+
+	{
+		std::cout << "--- new non-POD array aligned ---" << std::endl;
+		NonPOD* non_pod_array = W_NEW_ARRAY_ALIGN(NonPOD[4], arena, 16);
+		memory::hex_dump(reinterpret_cast<uint8_t*>(non_pod_array) - TestArena::BK_FRONT_SIZE - 4, 4*sizeof(NonPOD) + TestArena::DECORATION_SIZE + 4);
+		W_DELETE_ARRAY(non_pod_array, arena);
+		std::cout << std::endl;
+	}
+
+	std::cout << "--- full hex dump ---" << std::endl;
+	memory::hex_dump(reinterpret_cast<uint8_t*>(area.begin()), 1000);
+
 /*
 	{
 		std::cout << "--- back overwrite test ---" << std::endl;
