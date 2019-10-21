@@ -168,16 +168,15 @@ public:
     inline       AllocatorT& get_allocator()            { return allocator_; }
     inline const AllocatorT& get_allocator() const      { return allocator_; }
 
-	void* allocate(size_t size, size_t instances, size_t alignment, const char* file, int line)
+	void* allocate(size_t size, size_t offset, size_t alignment, const char* file, int line)
 	{
 		// Lock resource if needed
 		thread_guard_.enter();
 
 		// Compute size after decoration and allocate
         const size_t naked_size = size;
-        const size_t n_inst_field_size = (instances>1) ? sizeof(uint32_t) : 0;
-        const size_t decorated_size = DECORATION_SIZE + n_inst_field_size + naked_size;
-		const size_t user_offset = BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + n_inst_field_size;
+        const size_t decorated_size = DECORATION_SIZE + naked_size;
+		const size_t user_offset = BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + offset;
 
 		uint8_t* begin = static_cast<uint8_t*>(allocator_.allocate(decorated_size, alignment, user_offset));
 		uint8_t* current = begin;
@@ -190,16 +189,6 @@ public:
 		*(reinterpret_cast<SIZE_TYPE*>(current)) = (SIZE_TYPE)decorated_size;
 		current += sizeof(SIZE_TYPE);
 
-		// Save number of instances if array allocation
-		// new[] operator stores the number of instances in the first 4 bytes and
-		// returns a pointer to the address right after, we emulate this behavior here,
-		// but using arena's size type (which might be larger than 4 bytes).
-		if(n_inst_field_size)
-		{
-			*(reinterpret_cast<uint32_t*>(current)) = (uint32_t)instances;
-			current += sizeof(uint32_t);
-		}
-
 		// More bookkeeping
         memory_tagger_.tag_allocation(current, naked_size);
 		bounds_checker_.put_sentinel_back(current + naked_size);
@@ -210,10 +199,10 @@ public:
 		return current;
 	}
 
-	void deallocate(void* ptr, bool array)
+	void deallocate(void* ptr, bool array=false)
 	{
 		thread_guard_.enter();
-		// Take care to jump further back if array deallocation, because we also stored the number of instances
+		// Take care to jump further back if non-POD array deallocation, because we also stored the number of instances
 		uint8_t* begin = static_cast<uint8_t*>(ptr) - BK_FRONT_SIZE - (array ? sizeof(SIZE_TYPE) : 0);
 
 		// Check the front sentinel before we retrieve the allocation size, just in case
@@ -242,24 +231,31 @@ template <typename T, class ArenaT>
 T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int line)
 {
 	if constexpr(std::is_pod<T>::value)
-		return static_cast<T*>(arena.allocate(sizeof(T)*N, N, alignment, file, line));
-
-	// Bjarne said union cast was pure evil. Oh well...
-	union
 	{
-		void* as_void;
-		T*    as_T;
-	};
+		return static_cast<T*>(arena.allocate(sizeof(T)*N, 0, alignment, file, line));
+	}
+	else
+	{
+		union
+		{
+			uint32_t* as_uint;
+			T*        as_T;
+		};
+		as_uint = static_cast<uint32_t*>(arena.allocate(sizeof(uint32_t) + sizeof(T)*N, sizeof(uint32_t), alignment, file, line));
+		
+		// new[] operator stores the number of instances in the first 4 bytes and
+		// returns a pointer to the address right after, we emulate this behavior here,
+		// but using arena's size type (which might be larger than 4 bytes).
+		*(as_uint++) = (uint32_t)N;
 
-	as_void = arena.allocate(sizeof(T)*N, N, alignment, file, line);
+		// Construct instances using placement new
+		const T* const end = as_T + N;
+		while (as_T < end)
+			new (as_T++) T;
 
-	// Construct instances using placement new
-	const T* const end = as_T + N;
-	while (as_T < end)
-		new (as_T++) T;
-
-	// Hand user the pointer to the first instance
-	return (as_T - N);
+		// Hand user the pointer to the first instance
+		return (as_T - N);
+	}
 }
 
 // No "placement-delete" in C++, so we define this helper deleter
@@ -268,12 +264,12 @@ void Delete(T* object, ArenaT& arena)
 {
 	if constexpr(std::is_pod<T>::value)
 	{
-    	arena.deallocate(object, false);
+    	arena.deallocate(object);
     }
     else
     {
 	    object->~T();
-	    arena.deallocate(object, false);
+	    arena.deallocate(object);
 	}
 }
 
@@ -282,7 +278,7 @@ void DeleteArray(T* object, ArenaT& arena)
 {
 	if constexpr(std::is_pod<T>::value)
 	{
-		arena.deallocate(object, true);
+		arena.deallocate(object);
 	}
 	else
 	{
@@ -318,10 +314,10 @@ struct TypeAndCount<T[N]>
 } // namespace memory
 
 
-#define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 1, 0, __FILE__, __LINE__)) TYPE
+#define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 0, 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY( TYPE , ARENA ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
 
-#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), 1, ALIGNMENT , __FILE__, __LINE__)) TYPE
+#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), 0, ALIGNMENT , __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
 
 #define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )

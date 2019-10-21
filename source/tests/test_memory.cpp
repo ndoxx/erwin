@@ -121,10 +121,8 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD array non-aligned", "[mem]")
 	}
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(pod_array) - LinArena::BK_FRONT_SIZE - 4, N*sizeof(POD) + LinArena::DECORATION_SIZE + 4);
 	
-	// Arena should write the number of instances before the returned user pointer
-	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-1) == N);
-	// Arena should write the complete allocation size just before the number of instances
-	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-2) == N*sizeof(POD) + LinArena::DECORATION_SIZE + sizeof(SIZE_TYPE));
+	// Arena should write the complete allocation size just before the user pointer
+	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-1) == N*sizeof(POD) + LinArena::DECORATION_SIZE);
 
 	W_DELETE_ARRAY(pod_array, arena);
 }
@@ -144,10 +142,8 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD array aligned", "[mem]")
 	
 	// Check that returned address is correctly 32 bytes aligned
 	REQUIRE(size_t(pod_array)%32==0);
-	// Arena should write the number of instances before the returned user pointer
-	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-1) == N);
-	// Arena should write the complete allocation size just before the number of instances
-	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-2) == N*sizeof(POD) + LinArena::DECORATION_SIZE + sizeof(SIZE_TYPE));
+	// Arena should write the complete allocation size just before the user pointer
+	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(pod_array)-1) == N*sizeof(POD) + LinArena::DECORATION_SIZE);
 
 	W_DELETE_ARRAY(pod_array, arena);
 }
