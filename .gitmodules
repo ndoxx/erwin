@@ -38,3 +38,6 @@
 	path = source/vendor/glad
 	url = https://github.com/Dav1dde/glad.git
 	ignore = dirty
+[submodule "source/vendor/Catch2"]
+	path = source/vendor/Catch2
+	url = https://github.com/catchorg/Catch2.git

@@ -97,12 +97,49 @@ target_link_libraries(test_config
                       )
 cotire(test_config)
 
+
+# -------- MEMORY TEST -------- #
+
+set(SRC_MEMORY
+    catch_app.cpp
+    test_memory.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+   )
+
+add_executable(test_memory ${SRC_MEMORY})
+
+target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
+target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/Catch2/single_include")
+
+set_target_properties(test_memory
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/test"
+)
+
+target_link_libraries(test_memory
+                      # erwin # throws std::system_error
+                      pthread
+                      stdc++fs
+                      )
+cotire(test_memory)
+
 # -------- NUCLEAR TEST -------- #
 
 set(SRC_NUCLEAR
     nuclear.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp

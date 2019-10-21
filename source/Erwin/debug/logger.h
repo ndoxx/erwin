@@ -65,4 +65,7 @@ static inline LoggerStream& get_log(hash_t channel, MsgType msg_type, uint8_t se
 #define DLOGB(C)  if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::BAD, 3, __LINE__, __FILE__ )
 #define BANG()    if constexpr(!LOGGING_ENABLED); else get_log( erwin::H_("core"), erwin::dbg::MsgType::BANG, 3) << __FILE__ << ":" << __LINE__ << std::endl
 
+#define DLOGR__(C) get_log( erwin::H_( (C) ) , erwin::dbg::MsgType::RAW, 0)
+
+
 } // namespace erwin

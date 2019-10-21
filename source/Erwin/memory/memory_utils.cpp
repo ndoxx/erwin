@@ -1,6 +1,5 @@
 #include "memory/memory_utils.h"
 
-#include <iostream>
 #include <iomanip>
 #include <cstdint>
 #include <map>
@@ -22,7 +21,7 @@ void hex_dump_clear_highlights()
 	s_highlights.clear();
 }
 
-void hex_dump(void* ptr, std::size_t size)
+void hex_dump(std::ostream& stream, void* ptr, std::size_t size)
 {
 	uint32_t* begin = static_cast<uint32_t*>(ptr);
 	uint32_t* end = begin + size/4;
@@ -34,38 +33,45 @@ void hex_dump(void* ptr, std::size_t size)
 	// Find offset of 32 bytes aligned address after end if end not 32 bytes aligned itself
 	std::size_t end_offset = 32-std::size_t(end)%32;
 
-	uint32_t fmt_cnt = 0;
-	std::cout << std::hex;
+	stream << WCC(102,153,0) << "/-" << WCC(0,130,10) << "HEX DUMP" << WCC(102,153,0) << "-\\" << std::endl;
+	stream << std::hex;
 	while(current < end+end_offset/4)
 	{
+		// Show 32 bytes aligned addresses
 		if(std::size_t(current)%32==0)
-			std::cout << WCC(153,204,0) << std::setfill('0') << std::setw(8) << std::size_t(current) << "  ";
+			stream << WCC(102,153,0) << "[0x" << std::setfill('0') << std::setw(8) << std::size_t(current) << "] ";
+		// Separator after 16 bytes aligned addresses
+		else if(std::size_t(current)%16==0)
+			stream << " ";
 
-		uint32_t value = *current;
-
-		// Style
-		auto it = s_highlights.find(value);
+		// Out-of-scope data in dark gray dots
 		if(current < begin || current >= end)
-			std::cout << WCC(100,100,100) << std::setfill('0') << std::setw(8) << value;
-		else if(it!=s_highlights.end())
-			std::cout << WCC(220,220,220) << it->second << std::setfill('0') << std::setw(8) << value << WCB(0);
+			stream << WCC(100,100,100) << "........";
 		else
-			std::cout << WCC(220,220,220) << std::setfill('0') << std::setw(8) << value;
-
-		std::cout << " ";
-
-		++fmt_cnt;
-		if(fmt_cnt%8==0)
 		{
-			std::cout << std::endl;
-			fmt_cnt = 0;
+			// Get current value
+			uint32_t value = *current;
+
+			// Display
+			auto it = s_highlights.find(value);
+			// Highlight recognized words
+			if(it!=s_highlights.end())
+				stream << WCC(220,220,220) << it->second << std::setfill('0') << std::setw(8) << value << WCB(0);
+			// Basic display
+			else
+				stream << WCC(220,220,220) << std::setfill('0') << std::setw(8) << value;
 		}
-		else if(fmt_cnt%4==0)
-			std::cout << " ";
+
+		// Jump lines before 32 bytes aligned addresses
+		if(std::size_t(current)%32==28)
+			stream << std::endl;
+		else
+			stream << " ";
 
 		++current;
 	}
-	std::cout << WCC(0) << std::endl;
+	stream << WCC(102,153,0) << "\\-" << WCC(0,130,10) << "HEX DUMP" << WCC(102,153,0) << "-/" << std::endl;
+	stream << WCC(0);
 }
 
 } // namespace memory

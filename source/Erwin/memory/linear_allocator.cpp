@@ -1,5 +1,6 @@
 #include "memory/linear_allocator.h"
 #include "memory/memory_utils.h"
+#include "core/core.h"
 
 #include <iostream>
 
@@ -35,7 +36,10 @@ void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::si
 
 	// Out of memory
     if(current + padding + size > end_)
+    {
+    	W_ASSERT(false, "[LinearAllocator] Out of memory!");
         return nullptr;
+    }
 
     // Mark padding area
 #ifdef ALLOCATOR_PADDING_MAGIC

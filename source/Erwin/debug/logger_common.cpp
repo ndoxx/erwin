@@ -44,7 +44,7 @@ WCC::WCC(const WCC& other)
 
 WCB::WCB(int cc)
 {
-    escape = "\033[1;49m";
+    escape = "\033[0m";
 }
 
 WCB::WCB(uint8_t R, uint8_t G, uint8_t B)

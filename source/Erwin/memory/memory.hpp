@@ -19,6 +19,13 @@
 #include "core/core.h"
 #include "debug/logger.h"
 
+// Useful to avoid uninitialized reads with Valgrind during hexdumps
+// Disable for retail build
+#ifdef W_DEBUG
+	#define HEAP_AREA_MEMSET_ENABLED
+#endif
+#define AREA_MEMSET_VALUE 0x00
+
 namespace erwin
 {
 namespace memory
@@ -112,6 +119,9 @@ public:
 	size_(size)
 	{
 		begin_ = new uint8_t[size_];
+#ifdef HEAP_AREA_MEMSET_ENABLED
+		memset(begin_, AREA_MEMSET_VALUE, size_);
+#endif
 	}
 
 	~HeapArea()
@@ -135,16 +145,17 @@ template <typename AllocatorT,
 class MemoryArena
 {
 public:
-	typedef uint32_t SIZE_TYPE;
+	typedef uint32_t SIZE_TYPE; // BUG#4 if set to size_t/uint64_t, probably because of endianness
 	// Size of bookkeeping data before user pointer
 	static constexpr uint32_t BK_FRONT_SIZE = BoundsCheckerT::SIZE_FRONT
 											+ sizeof(SIZE_TYPE);
 	static constexpr uint32_t DECORATION_SIZE = BK_FRONT_SIZE
 											  + BoundsCheckerT::SIZE_BACK;
 
-    template <class AreaPolicyT>
-    explicit MemoryArena(AreaPolicyT& area):
-    allocator_(area.begin(), area.end())
+	// Wrap the allocator ctor
+    template <typename... ArgsT>
+    explicit MemoryArena(ArgsT&&... args):
+    allocator_(std::forward<ArgsT>(args)...)
     {
 
     }
@@ -157,40 +168,60 @@ public:
     inline       AllocatorT& get_allocator()            { return allocator_; }
     inline const AllocatorT& get_allocator() const      { return allocator_; }
 
-	void* allocate(size_t size, size_t alignment, const char* file, int line)
+	void* allocate(size_t size, size_t instances, size_t alignment, const char* file, int line)
 	{
 		// Lock resource if needed
 		thread_guard_.enter();
 
 		// Compute size after decoration and allocate
         const size_t naked_size = size;
-        const size_t decorated_size = BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + naked_size + BoundsCheckerT::SIZE_BACK;
-		uint8_t* begin = static_cast<uint8_t*>(allocator_.allocate(decorated_size, alignment, BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE)));
+        const size_t n_inst_field_size = (instances>1) ? sizeof(uint32_t) : 0;
+        const size_t decorated_size = DECORATION_SIZE + n_inst_field_size + naked_size;
+		const size_t user_offset = BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + n_inst_field_size;
+
+		uint8_t* begin = static_cast<uint8_t*>(allocator_.allocate(decorated_size, alignment, user_offset));
+		uint8_t* current = begin;
 
 		// Put front sentinel for overwrite detection
-		bounds_checker_.put_sentinel_front(begin);
-		// Save allocation size
-		*(reinterpret_cast<SIZE_TYPE*>(begin + BoundsCheckerT::SIZE_FRONT)) = (SIZE_TYPE)decorated_size;
+		bounds_checker_.put_sentinel_front(current);
+		current += BoundsCheckerT::SIZE_FRONT;
 
-        memory_tagger_.tag_allocation(begin + BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE), naked_size);
-		bounds_checker_.put_sentinel_back(begin + BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + naked_size);
+		// Save allocation size
+		*(reinterpret_cast<SIZE_TYPE*>(current)) = (SIZE_TYPE)decorated_size;
+		current += sizeof(SIZE_TYPE);
+
+		// Save number of instances if array allocation
+		// new[] operator stores the number of instances in the first 4 bytes and
+		// returns a pointer to the address right after, we emulate this behavior here,
+		// but using arena's size type (which might be larger than 4 bytes).
+		if(n_inst_field_size)
+		{
+			*(reinterpret_cast<uint32_t*>(current)) = (uint32_t)instances;
+			current += sizeof(uint32_t);
+		}
+
+		// More bookkeeping
+        memory_tagger_.tag_allocation(current, naked_size);
+		bounds_checker_.put_sentinel_back(current + naked_size);
         memory_tracker_.on_allocation(begin, decorated_size, alignment);
 
-		// Unlock resource and return user pointer, just after the front sentinel
+		// Unlock resource and return user pointer
 		thread_guard_.leave();
-		return begin + sizeof(SIZE_TYPE) + BoundsCheckerT::SIZE_FRONT;
+		return current;
 	}
 
-	void deallocate(void* ptr)
+	void deallocate(void* ptr, bool array)
 	{
 		thread_guard_.enter();
-		uint8_t* begin = (static_cast<uint8_t*>(ptr) - sizeof(SIZE_TYPE) - BoundsCheckerT::SIZE_FRONT);
+		// Take care to jump further back if array deallocation, because we also stored the number of instances
+		uint8_t* begin = static_cast<uint8_t*>(ptr) - BK_FRONT_SIZE - (array ? sizeof(SIZE_TYPE) : 0);
 
 		// Check the front sentinel before we retrieve the allocation size, just in case
 		// the size was corrupted by an overwrite.
         bounds_checker_.check_sentinel_front(begin);
 		const SIZE_TYPE decorated_size = *(reinterpret_cast<SIZE_TYPE*>(begin + BoundsCheckerT::SIZE_FRONT));
 
+		// Check that everything went ok
         bounds_checker_.check_sentinel_back(begin + decorated_size - BoundsCheckerT::SIZE_BACK);
         memory_tracker_.on_deallocation(begin);
         memory_tagger_.tag_deallocation(begin, decorated_size);
@@ -211,23 +242,16 @@ template <typename T, class ArenaT>
 T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int line)
 {
 	if constexpr(std::is_pod<T>::value)
-		return static_cast<T*>(arena.allocate(sizeof(T)*N, alignment, file, line));
+		return static_cast<T*>(arena.allocate(sizeof(T)*N, N, alignment, file, line));
 
-	typedef typename ArenaT::SIZE_TYPE SIZE_TYPE;
 	// Bjarne said union cast was pure evil. Oh well...
 	union
 	{
-		void*      as_void;
-		T*         as_T;
-		SIZE_TYPE* as_size_t;
+		void* as_void;
+		T*    as_T;
 	};
 
-	as_void = arena.allocate(sizeof(T)*N + sizeof(SIZE_TYPE), alignment, file, line);
-
-	// new array operator stores the number of instances in the first 4 bytes and
-	// returns a pointer to the address right after, we emulate this behavior here,
-	// but using arena's size type (which might be larger than 4 bytes).
-	*as_size_t++ = N;
+	as_void = arena.allocate(sizeof(T)*N, N, alignment, file, line);
 
 	// Construct instances using placement new
 	const T* const end = as_T + N;
@@ -244,12 +268,12 @@ void Delete(T* object, ArenaT& arena)
 {
 	if constexpr(std::is_pod<T>::value)
 	{
-    	arena.deallocate(object);
+    	arena.deallocate(object, false);
     }
     else
     {
 	    object->~T();
-	    arena.deallocate(object);
+	    arena.deallocate(object, false);
 	}
 }
 
@@ -258,28 +282,27 @@ void DeleteArray(T* object, ArenaT& arena)
 {
 	if constexpr(std::is_pod<T>::value)
 	{
-		arena.deallocate(object);
+		arena.deallocate(object, true);
 	}
 	else
 	{
-		typedef typename ArenaT::SIZE_TYPE SIZE_TYPE;
 		union
 		{
-			SIZE_TYPE* as_size_t;
-			T*         as_T;
+			uint32_t* as_uint;
+			T*        as_T;
 		};
 
 		// User pointer points to first instance
 		as_T = object;
 
 		// Number of instances stored 4 bytes before first instance
-		const SIZE_TYPE N = as_size_t[-1];
+		const uint32_t N = as_uint[-1];
 
 		// Call instances' destructor in reverse order
 		for(uint32_t ii=N; ii>0; --ii)
 			as_T[ii-1].~T();
 
-		arena.deallocate(as_size_t-1);
+		arena.deallocate(as_uint, true);
 	}
 }
 
@@ -295,10 +318,10 @@ struct TypeAndCount<T[N]>
 } // namespace memory
 
 
-#define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 0, __FILE__, __LINE__)) TYPE
+#define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 1, 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY( TYPE , ARENA ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
 
-#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), ALIGNMENT , __FILE__, __LINE__)) TYPE
+#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), 1, ALIGNMENT , __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
 
 #define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )
