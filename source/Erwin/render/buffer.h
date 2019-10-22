@@ -6,20 +6,10 @@
 #include "core/core.h"
 #include "core/wtypes.h"
 #include "core/unique_id.h"
+#include "render/render_state.h"
 
 namespace erwin
 {
-
-// Describes data types held in buffer layouts and passed to shaders
-enum class ShaderDataType: uint8_t
-{
-    Float = 0, Vec2, Vec3, Vec4, Mat3, Mat4, Int, IVec2, IVec3, IVec4, Bool
-};
-
-enum class DrawMode: uint8_t
-{
-    Static = 0, Stream, Dynamic
-};
 
 // Represents a vertex attribute
 struct BufferLayoutElement

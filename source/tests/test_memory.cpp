@@ -46,10 +46,10 @@ struct NonPOD
 };
 
 typedef memory::MemoryArena<memory::LinearAllocator, 
-		    		memory::policy::SingleThread, 
-		    		memory::policy::SimpleBoundsChecking,
-		    		memory::policy::NoMemoryTagging,
-		    		memory::policy::SimpleMemoryTracking> LinArena;
+		    				memory::policy::SingleThread, 
+		    				memory::policy::SimpleBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::SimpleMemoryTracking> LinArena;
 
 class LinArenaFixture
 {
@@ -57,7 +57,7 @@ public:
 	typedef typename LinArena::SIZE_TYPE SIZE_TYPE;
 	
 	LinArenaFixture():
-	area(1024),
+	area(1_kB),
 	arena(area.begin(), area.end())
 	{
 
@@ -103,9 +103,11 @@ TEST_CASE_METHOD(LinArenaFixture, "multiple alignments test", "[mem]")
 	for(uint32_t ALIGNMENT=2; ALIGNMENT<=128; ALIGNMENT*=2)
 	{
 		POD* some_pod = W_NEW_ALIGN(POD, arena, ALIGNMENT);
+		some_pod->a = 0xB16B00B5;
 		REQUIRE(size_t(some_pod)%ALIGNMENT==0);
 		W_DELETE(some_pod, arena);
 	}
+	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(area.begin()), 512);
 }
 
 TEST_CASE_METHOD(LinArenaFixture, "new POD array non-aligned", "[mem]")
@@ -233,7 +235,7 @@ TEST_CASE_METHOD(LinArenaFixture, "multiple allocations", "[mem]")
 			W_DELETE_ARRAY(pod_array, arena);
 		}
 	}
-	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(area.begin()), 1024);
+	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(area.begin()), 1_kB);
 
 	SUCCEED();
 }

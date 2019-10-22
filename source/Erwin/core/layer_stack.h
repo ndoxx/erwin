@@ -21,6 +21,8 @@ public:
 	void pop_layer(size_t index);
 	void pop_overlay(size_t index);
 
+	void clear();
+
 	void set_layer_enabled(size_t index, bool value);
 
 	friend std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs);

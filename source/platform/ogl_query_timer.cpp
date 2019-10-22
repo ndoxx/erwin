@@ -8,7 +8,8 @@ namespace erwin
 
 OGLQueryTimer::OGLQueryTimer():
 query_back_buffer_(0),
-query_front_buffer_(1)
+query_front_buffer_(1),
+timer_(0)
 {
     glGenQueries(1, &query_ID_[query_back_buffer_]);
     glGenQueries(1, &query_ID_[query_front_buffer_]);

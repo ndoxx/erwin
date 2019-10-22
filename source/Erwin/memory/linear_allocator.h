@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 namespace erwin
 {
@@ -13,6 +14,7 @@ public:
 	explicit LinearAllocator(std::size_t size);
 
 	LinearAllocator(void* begin, void* end);
+	LinearAllocator(std::pair<void*,void*> ptr_range);
 
 	void* allocate(std::size_t size, std::size_t alignment, std::size_t offset);
 

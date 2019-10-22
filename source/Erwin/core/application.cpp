@@ -181,6 +181,8 @@ void Application::run()
         frame_d = frame_clock.restart();
 	}
 
+    layer_stack_.clear();
+
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
     
     MasterRenderer::kill();

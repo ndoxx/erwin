@@ -13,8 +13,17 @@ overlay_pos_(0)
 
 LayerStack::~LayerStack()
 {
+	clear();
+}
+
+void LayerStack::clear()
+{
 	for(Layer* layer: layers_)
+	{
+		layer->on_detach();
 		delete layer;
+	}
+	layers_.clear();
 }
 
 size_t LayerStack::push_layer(Layer* layer)

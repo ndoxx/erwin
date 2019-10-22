@@ -24,6 +24,12 @@ current_offset_(0)
 
 }
 
+LinearAllocator::LinearAllocator(std::pair<void*,void*> ptr_range):
+LinearAllocator(ptr_range.first, ptr_range.second)
+{
+
+}
+
 void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)
 {
 	uint8_t* current = begin_ + current_offset_;

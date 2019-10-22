@@ -30,7 +30,7 @@ void MasterRenderer::kill()
 }
 
 MasterRenderer::MasterRenderer():
-profiling_enabled_(true)
+profiling_enabled_(false)
 {
 	query_timer_ = QueryTimer::create();
 

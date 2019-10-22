@@ -119,6 +119,7 @@ public:
 	size_(size)
 	{
 		begin_ = new uint8_t[size_];
+		head_ = begin_;
 #ifdef HEAP_AREA_MEMSET_ENABLED
 		memset(begin_, AREA_MEMSET_VALUE, size_);
 #endif
@@ -131,10 +132,22 @@ public:
 
 	inline void* begin() { return begin_; }
 	inline void* end()   { return begin_+size_+1; }
+	inline std::pair<void*,void*> range() { return {begin(), end()}; }
+
+	// Get a range of pointers to a memory block within area, and advance head
+	inline std::pair<void*,void*> require_block(size_t size)
+	{
+		W_ASSERT(head_ + size < end(), "[HeapArea] Out of memory!");
+
+		std::pair<void*,void*> range = {head_, head_+size+1};
+		head_ += size;
+		return range;
+	}
 
 private:
 	size_t size_;
 	uint8_t* begin_;
+	uint8_t* head_;
 };
 
 template <typename AllocatorT, 
@@ -165,18 +178,17 @@ public:
     	memory_tracker_.report();
     }
 
-    inline       AllocatorT& get_allocator()            { return allocator_; }
-    inline const AllocatorT& get_allocator() const      { return allocator_; }
+    inline       AllocatorT& get_allocator()       { return allocator_; }
+    inline const AllocatorT& get_allocator() const { return allocator_; }
 
-	void* allocate(size_t size, size_t offset, size_t alignment, const char* file, int line)
+	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
-		// Lock resource if needed
+		// Lock resource
 		thread_guard_.enter();
 
 		// Compute size after decoration and allocate
-        const size_t naked_size = size;
-        const size_t decorated_size = DECORATION_SIZE + naked_size;
-		const size_t user_offset = BoundsCheckerT::SIZE_FRONT + sizeof(SIZE_TYPE) + offset;
+        const size_t decorated_size = DECORATION_SIZE + size;
+		const size_t user_offset = BK_FRONT_SIZE + offset;
 
 		uint8_t* begin = static_cast<uint8_t*>(allocator_.allocate(decorated_size, alignment, user_offset));
 		uint8_t* current = begin;
@@ -190,8 +202,8 @@ public:
 		current += sizeof(SIZE_TYPE);
 
 		// More bookkeeping
-        memory_tagger_.tag_allocation(current, naked_size);
-		bounds_checker_.put_sentinel_back(current + naked_size);
+        memory_tagger_.tag_allocation(current, size);
+		bounds_checker_.put_sentinel_back(current + size);
         memory_tracker_.on_allocation(begin, decorated_size, alignment);
 
 		// Unlock resource and return user pointer
@@ -199,11 +211,11 @@ public:
 		return current;
 	}
 
-	void deallocate(void* ptr, bool array=false)
+	void deallocate(void* ptr)
 	{
 		thread_guard_.enter();
 		// Take care to jump further back if non-POD array deallocation, because we also stored the number of instances
-		uint8_t* begin = static_cast<uint8_t*>(ptr) - BK_FRONT_SIZE - (array ? sizeof(SIZE_TYPE) : 0);
+		uint8_t* begin = static_cast<uint8_t*>(ptr) - BK_FRONT_SIZE;
 
 		// Check the front sentinel before we retrieve the allocation size, just in case
 		// the size was corrupted by an overwrite.
@@ -232,20 +244,18 @@ T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int lin
 {
 	if constexpr(std::is_pod<T>::value)
 	{
-		return static_cast<T*>(arena.allocate(sizeof(T)*N, 0, alignment, file, line));
+		return static_cast<T*>(arena.allocate(sizeof(T)*N, alignment, 0, file, line));
 	}
 	else
 	{
+		// new[] operator stores the number of instances in the first 4 bytes and
+		// returns a pointer to the address right after, we emulate this behavior here.
 		union
 		{
 			uint32_t* as_uint;
 			T*        as_T;
 		};
-		as_uint = static_cast<uint32_t*>(arena.allocate(sizeof(uint32_t) + sizeof(T)*N, sizeof(uint32_t), alignment, file, line));
-		
-		// new[] operator stores the number of instances in the first 4 bytes and
-		// returns a pointer to the address right after, we emulate this behavior here,
-		// but using arena's size type (which might be larger than 4 bytes).
+		as_uint = static_cast<uint32_t*>(arena.allocate(sizeof(uint32_t) + sizeof(T)*N, alignment, sizeof(uint32_t), file, line));
 		*(as_uint++) = (uint32_t)N;
 
 		// Construct instances using placement new
@@ -287,10 +297,8 @@ void DeleteArray(T* object, ArenaT& arena)
 			uint32_t* as_uint;
 			T*        as_T;
 		};
-
 		// User pointer points to first instance
 		as_T = object;
-
 		// Number of instances stored 4 bytes before first instance
 		const uint32_t N = as_uint[-1];
 
@@ -298,7 +306,8 @@ void DeleteArray(T* object, ArenaT& arena)
 		for(uint32_t ii=N; ii>0; --ii)
 			as_T[ii-1].~T();
 
-		arena.deallocate(as_uint, true);
+		// Arena's deallocate() expects a pointer 4 bytes before actual user pointer
+		arena.deallocate(as_uint-1);
 	}
 }
 
@@ -313,11 +322,16 @@ struct TypeAndCount<T[N]>
 };
 } // namespace memory
 
+// User literals for bytes multiples
+constexpr size_t operator"" _B(unsigned long long size)  { return size; }
+constexpr size_t operator"" _kB(unsigned long long size) { return 1024*size; }
+constexpr size_t operator"" _MB(unsigned long long size) { return 1048576*size; }
+constexpr size_t operator"" _GB(unsigned long long size) { return 1073741824*size; }
 
 #define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 0, 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY( TYPE , ARENA ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
 
-#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), 0, ALIGNMENT , __FILE__, __LINE__)) TYPE
+#define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), ALIGNMENT , 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
 
 #define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )
