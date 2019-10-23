@@ -11,7 +11,7 @@ namespace WIP
 class MasterRenderer
 {
 public:
-	friend struct RenderCommand;
+	friend class CommandQueue;
 
 	static void init();
 	static void shutdown();
@@ -26,6 +26,8 @@ private:
 	struct dispatch
 	{
 		static void create_index_buffer(RenderCommand* cmd);
+		static void create_vertex_buffer_layout(RenderCommand* cmd);
+		static void create_vertex_buffer(RenderCommand* cmd);
 	};
 };
 
@@ -37,6 +39,7 @@ namespace hnd
 	extern void release(HandleT*) { }
 
 	template<> [[maybe_unused]] IndexBufferHandle*         get();
+	template<> [[maybe_unused]] VertexBufferLayoutHandle*  get();
 	template<> [[maybe_unused]] VertexBufferHandle*        get();
 	template<> [[maybe_unused]] VertexArrayHandle*         get();
 	template<> [[maybe_unused]] UniformBufferHandle*       get();
@@ -45,6 +48,7 @@ namespace hnd
 	template<> [[maybe_unused]] ShaderHandle*              get();
 
 	template<> [[maybe_unused]] void release(IndexBufferHandle* handle);
+	template<> [[maybe_unused]] void release(VertexBufferLayoutHandle* handle);
 	template<> [[maybe_unused]] void release(VertexBufferHandle* handle);
 	template<> [[maybe_unused]] void release(VertexArrayHandle* handle);
 	template<> [[maybe_unused]] void release(UniformBufferHandle* handle);

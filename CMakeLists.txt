@@ -55,6 +55,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
@@ -83,6 +84,7 @@ set(SRC_DEBUG
 
 set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer_layout.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_pool.cpp

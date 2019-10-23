@@ -331,9 +331,11 @@ constexpr size_t operator"" _GB(unsigned long long size) { return 1073741824*siz
 
 #define W_NEW( TYPE , ARENA ) new ( ARENA.allocate(sizeof( TYPE ), 0, 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY( TYPE , ARENA ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, 0, __FILE__, __LINE__)
+#define W_NEW_ARRAY_DYNAMIC( TYPE , COUNT , ARENA ) memory::NewArray< TYPE >( ARENA , COUNT , 0, __FILE__, __LINE__)
 
 #define W_NEW_ALIGN( TYPE , ARENA , ALIGNMENT ) new ( ARENA.allocate(sizeof( TYPE ), ALIGNMENT , 0, __FILE__, __LINE__)) TYPE
 #define W_NEW_ARRAY_ALIGN( TYPE , ARENA , ALIGNMENT ) memory::NewArray<memory::TypeAndCount< TYPE >::type>( ARENA , memory::TypeAndCount< TYPE >::count, ALIGNMENT , __FILE__, __LINE__)
+#define W_NEW_ARRAY_DYNAMIC_ALIGN( TYPE , COUNT , ARENA , ALIGNMENT ) memory::NewArray< TYPE >( ARENA , COUNT , ALIGNMENT , __FILE__, __LINE__)
 
 #define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )
 #define W_DELETE_ARRAY( OBJECT , ARENA ) memory::DeleteArray( OBJECT , ARENA )

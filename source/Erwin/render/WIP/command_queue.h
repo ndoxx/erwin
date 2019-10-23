@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "core/core.h"
+#include "render/buffer_layout.h"
 #include "render/render_state.h"
 // #define ARENA_RETAIL
 #include "memory/arena.h"
@@ -30,6 +31,7 @@ constexpr uint32_t k_invalid_handle = 0xffff;
 
 W_HANDLE(IndexBufferHandle);
 W_HANDLE(VertexBufferHandle);
+W_HANDLE(VertexBufferLayoutHandle);
 W_HANDLE(VertexArrayHandle);
 W_HANDLE(UniformBufferHandle);
 W_HANDLE(ShaderStorageBufferHandle);
@@ -44,6 +46,7 @@ struct RenderCommand
 	enum: uint16_t
 	{
 		CreateIndexBuffer,
+		CreateVertexBufferLayout,
 		CreateVertexBuffer,
 		CreateVertexArray,
 		CreateUniformBuffer,
@@ -65,8 +68,6 @@ struct RenderCommand
 		memcpy(destination, data + head - size, size);
 		head -= (uint16_t)size;
 	}
-
-	void create_index_buffer(IndexBufferHandle* handle, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
 
 	uint64_t render_state;
 	uint16_t type;
@@ -91,19 +92,15 @@ public:
 		Count
 	};
 
-	CommandQueue(std::pair<void*,void*> mem_range);
+	CommandQueue(std::pair<void*,void*> mem_range, std::pair<void*,void*> aux_mem_range);
 	~CommandQueue();
 
-	inline RenderCommand* get()
-	{
-		return W_NEW(RenderCommand, arena_);
-	}
+	// The following functions will initialize a render command and push it to this queue 
+	void create_index_buffer(uint64_t key, IndexBufferHandle* handle, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	void create_vertex_buffer_layout(uint64_t key, VertexBufferLayoutHandle* handle, const std::initializer_list<BufferLayoutElement>& elements);
+	void create_vertex_buffer(uint64_t key, VertexBufferHandle* handle, VertexBufferLayoutHandle* layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 
-	inline void push(RenderCommand* cmd, uint64_t key)
-	{
-		commands_.push_back({key, cmd});
-	}
-
+	// Sort queue by sorting key
 	inline void sort()
 	{
 		// Keys stored separately from commands to avoid touching data too
@@ -115,6 +112,7 @@ public:
 	        });
 	}
 
+	// Dispatch all commands
 	inline void flush()
 	{
 		for(auto&& [key,cmd]: commands_)
@@ -125,10 +123,29 @@ public:
 		}
 	}
 
+	// Clear queue
 	void reset();
 
 private:
+	inline RenderCommand* get()
+	{
+		return W_NEW(RenderCommand, arena_);
+	}
+
+	inline void push(RenderCommand* cmd, uint64_t key)
+	{
+		commands_.push_back({key, cmd});
+	}
+
+private:
+	typedef memory::MemoryArena<memory::LinearAllocator, 
+			    				memory::policy::SingleThread, 
+			    				memory::policy::NoBoundsChecking,
+			    				memory::policy::NoMemoryTagging,
+			    				memory::policy::NoMemoryTracking> AuxArena;
+
 	LinearArena arena_;
+	AuxArena auxiliary_arena_;
 
 	std::size_t head_;
 	std::vector<QueueItem> commands_; // TODO: Find a faster alternative
