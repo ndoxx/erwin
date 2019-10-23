@@ -135,6 +135,7 @@ public:
 	inline std::pair<void*,void*> range() { return {begin(), end()}; }
 
 	// Get a range of pointers to a memory block within area, and advance head
+	// TODO: Page align returned block to avoid false sharing if multiple threads access this area
 	inline std::pair<void*,void*> require_block(size_t size)
 	{
 		W_ASSERT(head_ + size < end(), "[HeapArea] Out of memory!");

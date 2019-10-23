@@ -6,11 +6,10 @@ namespace erwin
 namespace WIP
 {
 
-constexpr uint8_t  k_flags_draw_primitive_bits  = 2;
-constexpr uint64_t k_flags_draw_primitive_shift = uint64_t(64) - k_flags_draw_primitive_bits;
-
-constexpr uint8_t  k_flags_draw_mode_bits  = 2;
-constexpr uint64_t k_flags_draw_mode_shift = k_flags_draw_primitive_shift - k_flags_draw_mode_bits;
+namespace detail
+{
+	inline void nop(RenderCommand*) { }
+}
 
 void RenderCommand::create_index_buffer(IndexBufferHandle* handle, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
@@ -18,26 +17,39 @@ void RenderCommand::create_index_buffer(IndexBufferHandle* handle, uint32_t* ind
 	type = CreateIndexBuffer;
 	handle->invalidate();
 
-	// Write flags
-	switch(primitive) // TMP
-	{
-		case DrawPrimitive::Lines:     flags |= uint64_t(0x1) << k_flags_draw_primitive_shift; break;
-		case DrawPrimitive::Triangles: flags |= uint64_t(0x2) << k_flags_draw_primitive_shift; break;
-		case DrawPrimitive::Quads:     flags |= uint64_t(0x3) << k_flags_draw_primitive_shift; break;
-	}
-	flags |= (uint64_t)mode << k_flags_draw_mode_shift;
-
 	// Write data
 	write(&handle,     sizeof(IndexBufferHandle*));
 	write(&index_data, sizeof(uint32_t*));
 	write(&count,      sizeof(uint32_t));
-	write(&primitive,  sizeof(DrawPrimitive)); // TMP
-	write(&mode,       sizeof(DrawMode)); // TMP
+	write(&primitive,  sizeof(DrawPrimitive));
+	write(&mode,       sizeof(DrawMode));
 
-	// Set dispatch function
+	// Set dispatch functions
 	backend_dispatch_func = MasterRenderer::dispatch::create_index_buffer;
+	state_handler_func = &detail::nop;
 }
 
+	// state_handler_func = MasterRenderer::dispatch::apply_state();
+
+
+CommandQueue::CommandQueue(std::pair<void*,void*> mem_range):
+arena_(mem_range),
+head_(0)
+{
+
+}
+
+CommandQueue::~CommandQueue()
+{
+
+}
+
+void CommandQueue::reset()
+{
+	arena_.get_allocator().reset();
+	commands_.clear();
+	head_ = 0;
+}
 
 
 } // namespace WIP
