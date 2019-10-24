@@ -11,7 +11,38 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 
-#include "render/render_queue.hpp"
+// #include "render/render_queue.hpp"
+#include "render/WIP/command_queue.h"
+
+#include "memory/handle_pool.h"
+
+using namespace erwin;
+using namespace WIP;
+
+
+
+int main(int argc, char** argv)
+{
+	HandlePoolT<16> handle_pool;
+
+	uint16_t h1 = handle_pool.acquire();
+	uint16_t h2 = handle_pool.acquire();
+	uint16_t h3 = handle_pool.acquire();
+	uint16_t h4 = handle_pool.acquire();
+
+	std::cout << h1 << " " << h2 << " " << h3 << " " << h4 << std::endl;
+
+	handle_pool.release(h2);
+	handle_pool.release(h4);
+
+	uint16_t h5 = handle_pool.acquire();
+	uint16_t h6 = handle_pool.acquire();
+	std::cout << h1 << " " << h3 << " " << h5 << " " << h6 << std::endl;
+
+	return 0;
+}
+
+/*
 struct InstancedSpriteQueueData
 {
 	hash_t shader;
@@ -75,3 +106,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/

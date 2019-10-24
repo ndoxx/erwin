@@ -39,6 +39,14 @@ W_HANDLE(TextureHandle);
 W_HANDLE(ShaderHandle);
 
 constexpr std::size_t k_max_render_command_data_size = 32;
+constexpr std::size_t k_max_index_buffers            = 128;
+constexpr std::size_t k_max_vertex_buffer_layouts    = 128;
+constexpr std::size_t k_max_vertex_buffers           = 128;
+constexpr std::size_t k_max_vertex_arrays            = 128;
+constexpr std::size_t k_max_uniform_buffers          = 128;
+constexpr std::size_t k_max_shader_storage_buffers   = 128;
+constexpr std::size_t k_max_textures                 = 128;
+constexpr std::size_t k_max_shaders                  = 128;
 
 // Pushed to a command queue
 struct RenderCommand
@@ -55,7 +63,7 @@ struct RenderCommand
 		Count
 	};
 
-	inline void reset() { render_state = 0; head = 0; auxiliary = nullptr; backend_dispatch_func = nullptr; }
+	inline void reset() { render_state = 0; head = 0; auxiliary = nullptr; backend_dispatch_func = nullptr; state_handler_func = nullptr; }
 	inline void write(void const* source, std::size_t size)
 	{
 		W_ASSERT(size + head < k_max_render_command_data_size, "[RenderCommand] Data buffer overwrite!");
@@ -68,6 +76,10 @@ struct RenderCommand
 		memcpy(destination, data + head - size, size);
 		head -= (uint16_t)size;
 	}
+	template <typename T>
+	inline void write(T* source)     { write(source, sizeof(T)); }
+	template <typename T>
+	inline void read(T* destination) { read(destination, sizeof(T)); }
 
 	uint64_t render_state;
 	uint16_t type;
@@ -96,9 +108,11 @@ public:
 	~CommandQueue();
 
 	// The following functions will initialize a render command and push it to this queue 
-	void create_index_buffer(uint64_t key, IndexBufferHandle* handle, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	void create_vertex_buffer_layout(uint64_t key, VertexBufferLayoutHandle* handle, const std::initializer_list<BufferLayoutElement>& elements);
-	void create_vertex_buffer(uint64_t key, VertexBufferHandle* handle, VertexBufferLayoutHandle* layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	IndexBufferHandle        create_index_buffer(uint64_t key, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	VertexBufferLayoutHandle create_vertex_buffer_layout(uint64_t key, const std::initializer_list<BufferLayoutElement>& elements);
+	VertexBufferHandle       create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	VertexArrayHandle        create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib);
+	UniformBufferHandle      create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
 
 	// Sort queue by sorting key
 	inline void sort()
@@ -135,6 +149,7 @@ private:
 	inline void push(RenderCommand* cmd, uint64_t key)
 	{
 		commands_.push_back({key, cmd});
+		++head_;
 	}
 
 private:

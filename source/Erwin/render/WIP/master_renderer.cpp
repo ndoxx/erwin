@@ -8,6 +8,7 @@
 #include "memory/arena.h"
 #include "memory/memory_utils.h"
 #include "memory/linear_allocator.h"
+#include "memory/handle_pool.h"
 
 namespace erwin
 {
@@ -53,12 +54,13 @@ struct RendererStorage
 	renderer_memory(10_MB),
 	handle_arena(renderer_memory.require_block(512_kB))
 	{
-
+		std::fill(std::begin(index_buffers), std::end(index_buffers), nullptr);
 	}
 
-	std::vector<WRef<IndexBuffer>> index_buffers;
-	std::vector<WRef<VertexBuffer>> vertex_buffers;
-	std::vector<BufferLayout> vertex_buffer_layouts;
+	WRef<BufferLayout> vertex_buffer_layouts[k_max_vertex_buffer_layouts];
+	WRef<IndexBuffer>  index_buffers[k_max_index_buffers];
+	WRef<VertexBuffer> vertex_buffers[k_max_vertex_buffers];
+	WRef<VertexArray>  vertex_arrays[k_max_vertex_arrays];
 
 	std::vector<CommandQueue> queues_;
 
@@ -121,20 +123,20 @@ void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
 {
 	W_ASSERT(cmd->type == RenderCommand::CreateIndexBuffer, "Wrong command type or dispatch.");
 
-	IndexBufferHandle* handle;
+	// IndexBufferHandle* handle;
+	IndexBufferHandle handle;
 	uint32_t* index_data;
 	uint32_t count;
 	DrawPrimitive primitive;
 	DrawMode mode;
 
-	cmd->read(&mode,       sizeof(DrawMode));
-	cmd->read(&primitive,  sizeof(DrawPrimitive));
-	cmd->read(&count,      sizeof(uint32_t));
-	cmd->read(&index_data, sizeof(uint32_t*));
-	cmd->read(&handle,     sizeof(IndexBufferHandle*));
+	cmd->read(&mode);
+	cmd->read(&primitive);
+	cmd->read(&count);
+	cmd->read(&index_data);
+	cmd->read(&handle);
 
-	handle->index = s_storage->index_buffers.size();
-	s_storage->index_buffers.push_back(IndexBuffer::create(index_data, count, primitive, mode));
+	s_storage->index_buffers[handle.index] = IndexBuffer::create(index_data, count, primitive, mode);
 }
 
 void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
@@ -142,57 +144,53 @@ void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
 	W_ASSERT(cmd->type == RenderCommand::CreateVertexBufferLayout, "Wrong command type or dispatch.");
 
 	uint32_t count;
-	VertexBufferLayoutHandle* handle;
-	cmd->read(&count,  sizeof(uint32_t));
-	cmd->read(&handle, sizeof(VertexBufferLayoutHandle*));
+	VertexBufferLayoutHandle handle;
+	cmd->read(&count);
+	cmd->read(&handle);
 
-	handle->index = s_storage->vertex_buffer_layouts.size();
-	s_storage->vertex_buffer_layouts.emplace_back(reinterpret_cast<BufferLayoutElement*>(cmd->auxiliary), count);
+	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(reinterpret_cast<BufferLayoutElement*>(cmd->auxiliary), count);
 }
 
 void MasterRenderer::dispatch::create_vertex_buffer(RenderCommand* cmd)
 {
 	W_ASSERT(cmd->type == RenderCommand::CreateVertexBuffer, "Wrong command type or dispatch.");
 
-	VertexBufferHandle* handle;
-	VertexBufferLayoutHandle* layout_hnd;
+	VertexBufferHandle handle;
+	VertexBufferLayoutHandle layout_hnd;
 	uint32_t count;
 	DrawMode mode;
-	cmd->read(&mode,       sizeof(DrawMode));
-	cmd->read(&count,      sizeof(uint32_t));
-	cmd->read(&layout_hnd, sizeof(VertexBufferLayoutHandle*));
-	cmd->read(&handle,     sizeof(VertexBufferHandle*));
-	W_ASSERT(layout_hnd->is_valid(), "Invalid handle!");
+	cmd->read(&mode);
+	cmd->read(&count);
+	cmd->read(&layout_hnd);
+	cmd->read(&handle);
+	W_ASSERT(layout_hnd.is_valid(), "Invalid handle!");
 
-	float* vertex_data = reinterpret_cast<float*>(cmd->auxiliary);
-	const auto& layout = s_storage->vertex_buffer_layouts[layout_hnd->index];
-
-	handle->index = s_storage->vertex_buffers.size();
-	s_storage->vertex_buffers.push_back(VertexBuffer::create(vertex_data, count, layout, mode));
+	const auto& layout = *s_storage->vertex_buffer_layouts[layout_hnd.index];
+	s_storage->vertex_buffers[handle.index] = VertexBuffer::create(reinterpret_cast<float*>(cmd->auxiliary), count, layout, mode);
 }
 
-
-namespace hnd
+void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
 {
-	template<> IndexBufferHandle*         get() { return W_NEW(IndexBufferHandle, s_storage->handle_arena); }
-	template<> VertexBufferLayoutHandle*  get() { return W_NEW(VertexBufferLayoutHandle, s_storage->handle_arena); }
-	template<> VertexBufferHandle*        get() { return W_NEW(VertexBufferHandle, s_storage->handle_arena); }
-	template<> VertexArrayHandle*         get() { return W_NEW(VertexArrayHandle, s_storage->handle_arena); }
-	template<> UniformBufferHandle*       get() { return W_NEW(UniformBufferHandle, s_storage->handle_arena); }
-	template<> ShaderStorageBufferHandle* get() { return W_NEW(ShaderStorageBufferHandle, s_storage->handle_arena); }
-	template<> TextureHandle*             get() { return W_NEW(TextureHandle, s_storage->handle_arena); }
-	template<> ShaderHandle*              get() { return W_NEW(ShaderHandle, s_storage->handle_arena); }
+	W_ASSERT(cmd->type == RenderCommand::CreateVertexArray, "Wrong command type or dispatch.");
 
-	template<> void release(IndexBufferHandle* handle)         { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(VertexBufferLayoutHandle* handle)  { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(VertexBufferHandle* handle)        { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(VertexArrayHandle* handle)         { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(UniformBufferHandle* handle)       { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(ShaderStorageBufferHandle* handle) { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(TextureHandle* handle)             { W_DELETE(handle, s_storage->handle_arena); }
-	template<> void release(ShaderHandle* handle)              { W_DELETE(handle, s_storage->handle_arena); }
-} // namespace hnd
+	VertexArrayHandle handle;
+	VertexBufferHandle vb;
+	IndexBufferHandle ib;
+	cmd->read(&ib);
+	cmd->read(&vb);
+	cmd->read(&handle);
+	W_ASSERT(vb.is_valid(), "Invalid handle!");
 
+	s_storage->vertex_arrays[handle.index] = VertexArray::create();
+	s_storage->vertex_arrays[handle.index]->set_vertex_buffer(s_storage->vertex_buffers[vb.index]);
+	if(ib.is_valid())
+		s_storage->vertex_arrays[handle.index]->set_index_buffer(s_storage->index_buffers[ib.index]);
+}
+
+void MasterRenderer::dispatch::create_uniform_buffer(RenderCommand* cmd)
+{
+
+}
 
 } // namespace WIP
 } // namespace erwin

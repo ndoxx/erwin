@@ -104,7 +104,9 @@ set(SRC_MEMORY
     catch_app.cpp
     test_memory.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
@@ -140,6 +142,7 @@ cotire(test_memory)
 
 set(SRC_NUCLEAR
     nuclear.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
