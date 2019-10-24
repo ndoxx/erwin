@@ -89,17 +89,17 @@ void OGLVertexBuffer::unbind() const
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void OGLVertexBuffer::stream(float* vertex_data, uint32_t count, std::size_t offset)
+void OGLVertexBuffer::stream(void* vertex_data, uint32_t size, uint32_t offset)
 {
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(float), count*sizeof(float), vertex_data);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, size, vertex_data);
 }
 
-void OGLVertexBuffer::map(float* vertex_data, uint32_t count)
+void OGLVertexBuffer::map(void* vertex_data, uint32_t size)
 {
     glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
 	void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	memcpy(ptr, vertex_data, count*sizeof(float));
+	memcpy(ptr, vertex_data, size);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 

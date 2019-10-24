@@ -19,8 +19,8 @@ public:
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(float* vertex_data, uint32_t count, std::size_t offset) = 0;
-    virtual void map(float* vertex_data, uint32_t count) = 0;
+    virtual void stream(void* vertex_data, uint32_t size, uint32_t offset) = 0;
+    virtual void map(void* vertex_data, uint32_t size) = 0;
 
     // Return the buffer layout
 	inline const BufferLayout& get_layout() const { return layout_; }

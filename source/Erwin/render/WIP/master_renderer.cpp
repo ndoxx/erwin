@@ -113,11 +113,6 @@ void MasterRenderer::flush()
 	}
 }
 
-void MasterRenderer::test_submit(RenderCommand* cmd)
-{
-	(*cmd->backend_dispatch_func)(cmd);
-}
-
 void MasterRenderer::test()
 {
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin()), 512_B);
@@ -127,7 +122,6 @@ void MasterRenderer::test()
 void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
 {
 	IndexBufferHandle handle;
-	uint32_t* index_data;
 	uint32_t count;
 	DrawPrimitive primitive;
 	DrawMode mode;
@@ -135,10 +129,9 @@ void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
 	cmd->read(&mode);
 	cmd->read(&primitive);
 	cmd->read(&count);
-	cmd->read(&index_data);
 	cmd->read(&handle);
 
-	s_storage->index_buffers[handle.index] = IndexBuffer::create(index_data, count, primitive, mode);
+	s_storage->index_buffers[handle.index] = IndexBuffer::create(reinterpret_cast<uint32_t*>(cmd->auxiliary), count, primitive, mode);
 }
 
 void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
@@ -161,7 +154,6 @@ void MasterRenderer::dispatch::create_vertex_buffer(RenderCommand* cmd)
 	cmd->read(&count);
 	cmd->read(&layout_hnd);
 	cmd->read(&handle);
-	W_ASSERT(layout_hnd.is_valid(), "Invalid handle!");
 
 	const auto& layout = *s_storage->vertex_buffer_layouts[layout_hnd.index];
 	s_storage->vertex_buffers[handle.index] = VertexBuffer::create(reinterpret_cast<float*>(cmd->auxiliary), count, layout, mode);
@@ -175,26 +167,25 @@ void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
 	cmd->read(&ib);
 	cmd->read(&vb);
 	cmd->read(&handle);
-	W_ASSERT(vb.is_valid(), "Invalid handle!");
 
 	s_storage->vertex_arrays[handle.index] = VertexArray::create();
 	s_storage->vertex_arrays[handle.index]->set_vertex_buffer(s_storage->vertex_buffers[vb.index]);
-	if(ib.is_valid())
+	if(is_valid(ib))
 		s_storage->vertex_arrays[handle.index]->set_index_buffer(s_storage->index_buffers[ib.index]);
 }
 
 void MasterRenderer::dispatch::create_uniform_buffer(RenderCommand* cmd)
 {
 	UniformBufferHandle handle;
-	uint32_t struct_size;
+	uint32_t size;
 	DrawMode mode;
 	std::string name;
 	cmd->read_str(name);
 	cmd->read(&mode);
-	cmd->read(&struct_size);
+	cmd->read(&size);
 	cmd->read(&handle);
 
-	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, cmd->auxiliary, struct_size, mode);
+	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, cmd->auxiliary, size, mode);
 }
 
 void MasterRenderer::dispatch::create_shader_storage_buffer(RenderCommand* cmd)
@@ -213,22 +204,42 @@ void MasterRenderer::dispatch::create_shader_storage_buffer(RenderCommand* cmd)
 
 void MasterRenderer::dispatch::update_index_buffer(RenderCommand* cmd)
 {
+	IndexBufferHandle handle;
+	uint32_t count;
+	cmd->read(&count);
+	cmd->read(&handle);
 
+	s_storage->index_buffers[handle.index]->map(reinterpret_cast<uint32_t*>(cmd->auxiliary), count);
 }
 
 void MasterRenderer::dispatch::update_vertex_buffer(RenderCommand* cmd)
 {
+	VertexBufferHandle handle;
+	uint32_t size;
+	cmd->read(&size);
+	cmd->read(&handle);
 
+	s_storage->vertex_buffers[handle.index]->map(cmd->auxiliary, size);
 }
 
 void MasterRenderer::dispatch::update_uniform_buffer(RenderCommand* cmd)
 {
+	UniformBufferHandle handle;
+	uint32_t size;
+	cmd->read(&size);
+	cmd->read(&handle);
 
+	s_storage->uniform_buffers[handle.index]->map(cmd->auxiliary);
 }
 
 void MasterRenderer::dispatch::update_shader_storage_buffer(RenderCommand* cmd)
 {
+	ShaderStorageBufferHandle handle;
+	uint32_t size;
+	cmd->read(&size);
+	cmd->read(&handle);
 
+	s_storage->shader_storage_buffers[handle.index]->map(cmd->auxiliary, size);
 }
 
 void MasterRenderer::dispatch::destroy_index_buffer(RenderCommand* cmd)

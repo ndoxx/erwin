@@ -41,6 +41,9 @@ void HandlePool::release(uint16_t handle)
 
 bool HandlePool::is_valid(uint16_t handle) const
 {
+	if(handle == INVALID_HANDLE)
+		return false;
+
 	uint16_t* dense  = get_dense_ptr();
 	uint16_t* sparse = get_sparse_ptr();
 	uint16_t  index  = sparse[handle];

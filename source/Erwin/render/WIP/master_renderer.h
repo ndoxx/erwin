@@ -19,10 +19,8 @@ public:
 	static CommandQueue& get_queue(int name);
 	static void flush();
 
-	static void test_submit(RenderCommand* cmd);
 	static void test();
 
-private:
 	struct dispatch
 	{
 		static void create_index_buffer(RenderCommand* cmd);

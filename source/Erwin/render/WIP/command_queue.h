@@ -19,15 +19,12 @@ namespace WIP
 {
 
 // Handle structures to manipulate graphics objects
-constexpr uint32_t k_invalid_handle = 0xffff;
-
-#define W_HANDLE(name)                                                     \
-	struct name 														   \
-	{ 																	   \
-		inline bool is_valid() const { return index != k_invalid_handle; } \
-		inline void invalidate()     { index = k_invalid_handle; }         \
-		uint32_t index;													   \
-	};																	   \
+#define W_HANDLE(name)   \
+	struct name 		 \
+	{ 					 \
+		uint32_t index;	 \
+	};					 \
+	bool is_valid(name); \
 
 W_HANDLE(IndexBufferHandle);
 W_HANDLE(VertexBufferHandle);
@@ -75,7 +72,7 @@ struct RenderCommand
 		Count
 	};
 
-	RenderCommand(): render_state(0), type(0), head(0), auxiliary(nullptr), backend_dispatch_func(nullptr), state_handler_func(nullptr) { }
+	RenderCommand(): render_state(0), type(0), head(0), auxiliary(nullptr) { }
 
 	inline void write(void const* source, std::size_t size)
 	{
@@ -85,7 +82,7 @@ struct RenderCommand
 	}
 	inline void read(void* destination, std::size_t size)
 	{
-		W_ASSERT(int(head) - size >= 0, "[RenderCommand] Data buffer empty!");
+		W_ASSERT(int(head) - size >= 0, "[RenderCommand] Data buffer overread!");
 		memcpy(destination, data + head - size, size);
 		head -= (uint16_t)size;
 	}
@@ -111,11 +108,11 @@ struct RenderCommand
 	uint16_t type;
 	uint16_t head;
 	uint8_t  data[k_max_render_command_data_size];
-
 	void* auxiliary;
-	void (*backend_dispatch_func)(RenderCommand*);
-	void (*state_handler_func)(RenderCommand*);
 };
+
+// Array of function pointers for render command dispatching
+extern void (* backend_dispatch [])(RenderCommand*);
 
 class CommandQueue
 {
@@ -138,7 +135,7 @@ public:
 	VertexBufferLayoutHandle  create_vertex_buffer_layout(uint64_t key, const std::initializer_list<BufferLayoutElement>& elements);
 	VertexBufferHandle        create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 	VertexArrayHandle         create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib);
-	UniformBufferHandle       create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+	UniformBufferHandle       create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	ShaderStorageBufferHandle create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 
 	void update_index_buffer(uint64_t key, IndexBufferHandle handle, uint32_t* data, uint32_t count);
@@ -170,8 +167,8 @@ public:
 	{
 		for(auto&& [key,cmd]: commands_)
 		{
-			(*cmd->state_handler_func)(cmd);
-			(*cmd->backend_dispatch_func)(cmd);
+			// TODO: handle state
+			(*backend_dispatch[cmd->type])(cmd);
 			W_DELETE(cmd, arena_);
 		}
 	}

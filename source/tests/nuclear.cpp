@@ -35,9 +35,18 @@ int main(int argc, char** argv)
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(&handle_pool), pool_size);
 
 	std::cout << h1 << " " << h2 << " " << h3 << " " << h4 << std::endl;
+	std::cout << handle_pool.is_valid(h1) << " "
+			  << handle_pool.is_valid(h2) << " "
+			  << handle_pool.is_valid(h3) << " "
+			  << handle_pool.is_valid(h4) << " "
+			  << handle_pool.is_valid(12) << std::endl;
 
 	handle_pool.release(h2);
 	handle_pool.release(h4);
+	std::cout << handle_pool.is_valid(h1) << " "
+			  << handle_pool.is_valid(h2) << " "
+			  << handle_pool.is_valid(h3) << " "
+			  << handle_pool.is_valid(h4) << std::endl;
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(&handle_pool), pool_size);
 
 	uint16_t h5 = handle_pool.acquire();
