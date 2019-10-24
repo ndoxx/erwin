@@ -60,10 +60,23 @@ struct RenderCommand
 		CreateUniformBuffer,
 		CreateShaderStorageBuffer,
 
+		UpdateIndexBuffer,
+		UpdateVertexBuffer,
+		UpdateUniformBuffer,
+		UpdateShaderStorageBuffer,
+
+		DestroyIndexBuffer,
+		DestroyVertexBufferLayout,
+		DestroyVertexBuffer,
+		DestroyVertexArray,
+		DestroyUniformBuffer,
+		DestroyShaderStorageBuffer,
+
 		Count
 	};
 
-	inline void reset() { render_state = 0; head = 0; auxiliary = nullptr; backend_dispatch_func = nullptr; state_handler_func = nullptr; }
+	RenderCommand(): render_state(0), type(0), head(0), auxiliary(nullptr), backend_dispatch_func(nullptr), state_handler_func(nullptr) { }
+
 	inline void write(void const* source, std::size_t size)
 	{
 		W_ASSERT(size + head < k_max_render_command_data_size, "[RenderCommand] Data buffer overwrite!");
@@ -80,6 +93,19 @@ struct RenderCommand
 	inline void write(T* source)     { write(source, sizeof(T)); }
 	template <typename T>
 	inline void read(T* destination) { read(destination, sizeof(T)); }
+	inline void write_str(const std::string& str)
+	{
+		uint32_t str_size = str.size();
+		write(str.data(), str_size);
+		write(&str_size, sizeof(uint32_t));
+	}
+	inline void read_str(std::string& str)
+	{
+		uint32_t str_size;
+		read(&str_size, sizeof(uint32_t));
+		str.resize(str_size);
+		read(str.data(), str_size);
+	}
 
 	uint64_t render_state;
 	uint16_t type;
@@ -108,11 +134,24 @@ public:
 	~CommandQueue();
 
 	// The following functions will initialize a render command and push it to this queue 
-	IndexBufferHandle        create_index_buffer(uint64_t key, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	VertexBufferLayoutHandle create_vertex_buffer_layout(uint64_t key, const std::initializer_list<BufferLayoutElement>& elements);
-	VertexBufferHandle       create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
-	VertexArrayHandle        create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib);
-	UniformBufferHandle      create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+	IndexBufferHandle         create_index_buffer(uint64_t key, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	VertexBufferLayoutHandle  create_vertex_buffer_layout(uint64_t key, const std::initializer_list<BufferLayoutElement>& elements);
+	VertexBufferHandle        create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	VertexArrayHandle         create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib);
+	UniformBufferHandle       create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+	ShaderStorageBufferHandle create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+
+	void update_index_buffer(uint64_t key, IndexBufferHandle handle, uint32_t* data, uint32_t count);
+	void update_vertex_buffer(uint64_t key, VertexBufferHandle handle, void* data, uint32_t size);
+	void update_uniform_buffer(uint64_t key, UniformBufferHandle handle, void* data, uint32_t size);
+	void update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size);
+
+	void destroy_index_buffer(uint64_t key, IndexBufferHandle handle);
+	void destroy_vertex_buffer_layout(uint64_t key, VertexBufferLayoutHandle handle);
+	void destroy_vertex_buffer(uint64_t key, VertexBufferHandle handle);
+	void destroy_vertex_array(uint64_t key, VertexArrayHandle handle);
+	void destroy_uniform_buffer(uint64_t key, UniformBufferHandle handle);
+	void destroy_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle);
 
 	// Sort queue by sorting key
 	inline void sort()

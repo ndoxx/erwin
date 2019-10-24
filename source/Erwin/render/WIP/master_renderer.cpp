@@ -51,21 +51,26 @@ struct GenHandle
 struct RendererStorage
 {
 	RendererStorage():
-	renderer_memory(10_MB),
-	handle_arena(renderer_memory.require_block(512_kB))
+	renderer_memory(10_MB)
 	{
 		std::fill(std::begin(index_buffers), std::end(index_buffers), nullptr);
+		std::fill(std::begin(vertex_buffer_layouts), std::end(vertex_buffer_layouts), nullptr);
+		std::fill(std::begin(vertex_buffers), std::end(vertex_buffers), nullptr);
+		std::fill(std::begin(vertex_arrays), std::end(vertex_arrays), nullptr);
+		std::fill(std::begin(uniform_buffers), std::end(uniform_buffers), nullptr);
+		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
 	}
 
-	WRef<BufferLayout> vertex_buffer_layouts[k_max_vertex_buffer_layouts];
-	WRef<IndexBuffer>  index_buffers[k_max_index_buffers];
-	WRef<VertexBuffer> vertex_buffers[k_max_vertex_buffers];
-	WRef<VertexArray>  vertex_arrays[k_max_vertex_arrays];
+	WRef<IndexBuffer>         index_buffers[k_max_index_buffers];
+	WRef<BufferLayout>        vertex_buffer_layouts[k_max_vertex_buffer_layouts];
+	WRef<VertexBuffer>        vertex_buffers[k_max_vertex_buffers];
+	WRef<VertexArray>         vertex_arrays[k_max_vertex_arrays];
+	WRef<UniformBuffer>       uniform_buffers[k_max_uniform_buffers];
+	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_shader_storage_buffers];
 
 	std::vector<CommandQueue> queues_;
 
 	memory::HeapArea renderer_memory;
-	LinearArena handle_arena; // TODO: Use pool allocator instead when we have one
 };
 std::unique_ptr<RendererStorage> s_storage;
 
@@ -115,15 +120,12 @@ void MasterRenderer::test_submit(RenderCommand* cmd)
 
 void MasterRenderer::test()
 {
+	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin()), 512_B);
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin())+512_kB, 512_B);
-	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin())+1_MB, 512_B);
 }
 
 void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
 {
-	W_ASSERT(cmd->type == RenderCommand::CreateIndexBuffer, "Wrong command type or dispatch.");
-
-	// IndexBufferHandle* handle;
 	IndexBufferHandle handle;
 	uint32_t* index_data;
 	uint32_t count;
@@ -141,8 +143,6 @@ void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
 
 void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
 {
-	W_ASSERT(cmd->type == RenderCommand::CreateVertexBufferLayout, "Wrong command type or dispatch.");
-
 	uint32_t count;
 	VertexBufferLayoutHandle handle;
 	cmd->read(&count);
@@ -153,8 +153,6 @@ void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
 
 void MasterRenderer::dispatch::create_vertex_buffer(RenderCommand* cmd)
 {
-	W_ASSERT(cmd->type == RenderCommand::CreateVertexBuffer, "Wrong command type or dispatch.");
-
 	VertexBufferHandle handle;
 	VertexBufferLayoutHandle layout_hnd;
 	uint32_t count;
@@ -171,8 +169,6 @@ void MasterRenderer::dispatch::create_vertex_buffer(RenderCommand* cmd)
 
 void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
 {
-	W_ASSERT(cmd->type == RenderCommand::CreateVertexArray, "Wrong command type or dispatch.");
-
 	VertexArrayHandle handle;
 	VertexBufferHandle vb;
 	IndexBufferHandle ib;
@@ -189,8 +185,96 @@ void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
 
 void MasterRenderer::dispatch::create_uniform_buffer(RenderCommand* cmd)
 {
+	UniformBufferHandle handle;
+	uint32_t struct_size;
+	DrawMode mode;
+	std::string name;
+	cmd->read_str(name);
+	cmd->read(&mode);
+	cmd->read(&struct_size);
+	cmd->read(&handle);
+
+	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, cmd->auxiliary, struct_size, mode);
+}
+
+void MasterRenderer::dispatch::create_shader_storage_buffer(RenderCommand* cmd)
+{
+	ShaderStorageBufferHandle handle;
+	uint32_t struct_size;
+	uint32_t count;
+	DrawMode mode;
+	std::string name;
+	cmd->read_str(name);
+	cmd->read(&mode);
+	cmd->read(&struct_size);
+	cmd->read(&count);
+	cmd->read(&handle);
+
+	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, cmd->auxiliary, count, struct_size, mode);
+}
+
+void MasterRenderer::dispatch::update_index_buffer(RenderCommand* cmd)
+{
 
 }
+
+void MasterRenderer::dispatch::update_vertex_buffer(RenderCommand* cmd)
+{
+
+}
+
+void MasterRenderer::dispatch::update_uniform_buffer(RenderCommand* cmd)
+{
+
+}
+
+void MasterRenderer::dispatch::update_shader_storage_buffer(RenderCommand* cmd)
+{
+
+}
+
+void MasterRenderer::dispatch::destroy_index_buffer(RenderCommand* cmd)
+{
+	IndexBufferHandle handle;
+	cmd->read(&handle);
+	s_storage->index_buffers[handle.index] = nullptr;
+}
+
+void MasterRenderer::dispatch::destroy_vertex_buffer_layout(RenderCommand* cmd)
+{
+	VertexBufferLayoutHandle handle;
+	cmd->read(&handle);
+	s_storage->vertex_buffer_layouts[handle.index] = nullptr;
+}
+
+void MasterRenderer::dispatch::destroy_vertex_buffer(RenderCommand* cmd)
+{
+	VertexBufferHandle handle;
+	cmd->read(&handle);
+	s_storage->vertex_buffers[handle.index] = nullptr;
+}
+
+void MasterRenderer::dispatch::destroy_vertex_array(RenderCommand* cmd)
+{
+	VertexArrayHandle handle;
+	cmd->read(&handle);
+	s_storage->vertex_arrays[handle.index] = nullptr;
+}
+
+void MasterRenderer::dispatch::destroy_uniform_buffer(RenderCommand* cmd)
+{
+	UniformBufferHandle handle;
+	cmd->read(&handle);
+	s_storage->uniform_buffers[handle.index] = nullptr;
+}
+
+void MasterRenderer::dispatch::destroy_shader_storage_buffer(RenderCommand* cmd)
+{
+	ShaderStorageBufferHandle handle;
+	cmd->read(&handle);
+	s_storage->shader_storage_buffers[handle.index] = nullptr;
+}
+
 
 } // namespace WIP
 } // namespace erwin
