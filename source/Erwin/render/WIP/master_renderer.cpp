@@ -200,17 +200,15 @@ void MasterRenderer::dispatch::create_uniform_buffer(RenderCommand* cmd)
 void MasterRenderer::dispatch::create_shader_storage_buffer(RenderCommand* cmd)
 {
 	ShaderStorageBufferHandle handle;
-	uint32_t struct_size;
-	uint32_t count;
+	uint32_t size;
 	DrawMode mode;
 	std::string name;
 	cmd->read_str(name);
 	cmd->read(&mode);
-	cmd->read(&struct_size);
-	cmd->read(&count);
+	cmd->read(&size);
 	cmd->read(&handle);
 
-	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, cmd->auxiliary, count, struct_size, mode);
+	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, cmd->auxiliary, size, mode);
 }
 
 void MasterRenderer::dispatch::update_index_buffer(RenderCommand* cmd)

@@ -98,6 +98,7 @@ void Renderer2D::end_scene()
 	{
 		auto* data = isp_queue.data_ptr();
 		data->instance_count = (ii==current_batch_) ? current_batch_count_ : max_batch_count_;
+		data->SSBO_size = data->instance_count*sizeof(InstanceData);
 		data->texture = scene_data_.texture;
 		data->UBO = mat_ubo_;
 		data->SSBO = batches_[ii];
@@ -192,7 +193,7 @@ void Renderer2D::create_batch()
 {
 	DLOGN("render") << "[Renderer2D] Generating new batch." << std::endl;
 	
-	auto ssbo = ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_, sizeof(InstanceData), DrawMode::Dynamic);
+	auto ssbo = ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_*sizeof(InstanceData), DrawMode::Dynamic);
 	batches_.push_back(ssbo);
 
 	DLOG("render",1) << "New batch size is: " << batches_.size() << std::endl;
@@ -201,7 +202,7 @@ void Renderer2D::create_batch()
 void Renderer2D::upload_batch()
 {
 	// Map instance data to SSBO
-	batches_[current_batch_]->map(instance_data_.data(), current_batch_count_);
+	batches_[current_batch_]->map(instance_data_.data(), current_batch_count_*sizeof(InstanceData));
 }
 
 void Renderer2D::remove_unused_batches(uint32_t index)

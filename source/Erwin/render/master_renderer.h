@@ -19,6 +19,7 @@ namespace erwin
 struct InstancedSpriteQueueData
 {
 	uint32_t instance_count = 0;
+	uint32_t SSBO_size = 0;
 	WRef<Texture2D> texture = nullptr; // TMP: Pure data instead of WRefs in the future
 	WRef<UniformBuffer> UBO = nullptr;
 	WRef<ShaderStorageBuffer> SSBO = nullptr;
@@ -26,6 +27,7 @@ struct InstancedSpriteQueueData
 	inline void reset()
 	{
 		instance_count = 0;
+		SSBO_size = 0;
 		texture = nullptr;
 		UBO = nullptr;
 		SSBO = nullptr;

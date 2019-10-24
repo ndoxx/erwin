@@ -59,7 +59,7 @@ WRef<UniformBuffer> UniformBuffer::create(const std::string& name, void* data, u
     }
 }
 
-WRef<ShaderStorageBuffer> ShaderStorageBuffer::create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
+WRef<ShaderStorageBuffer> ShaderStorageBuffer::create(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
     switch(Gfx::get_api())
     {
@@ -68,7 +68,7 @@ WRef<ShaderStorageBuffer> ShaderStorageBuffer::create(const std::string& name, v
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_ref<OGLShaderStorageBuffer>(name, data, count, struct_size, mode);
+            return make_ref<OGLShaderStorageBuffer>(name, data, size, mode);
     }
 }
 

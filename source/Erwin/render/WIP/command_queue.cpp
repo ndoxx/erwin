@@ -170,7 +170,7 @@ UniformBufferHandle CommandQueue::create_uniform_buffer(uint64_t key, const std:
 	return handle;
 }
 
-ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode)
+ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	RenderCommand* cmd = get();
 	cmd->type = RenderCommand::CreateShaderStorageBuffer;
@@ -179,16 +179,15 @@ ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(uint64_t ke
 	// Write data
 	W_ASSERT(name.size()<=20, "SSBO layout name should be less than 20 characters long.")
 	cmd->write(&handle);
-	cmd->write(&count);
-	cmd->write(&struct_size);
+	cmd->write(&size);
 	cmd->write(&mode);
 	cmd->write_str(name);
 
 	// Write auxiliary data
 	if(data)
 	{
-		cmd->auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, struct_size*count, auxiliary_arena_);
-		memcpy(cmd->auxiliary, data, struct_size*count);
+		cmd->auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
+		memcpy(cmd->auxiliary, data, size);
 	}
 	else
 	{

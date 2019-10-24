@@ -139,7 +139,7 @@ public:
 	VertexBufferHandle        create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 	VertexArrayHandle         create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib);
 	UniformBufferHandle       create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
-	ShaderStorageBufferHandle create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+	ShaderStorageBufferHandle create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 
 	void update_index_buffer(uint64_t key, IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	void update_vertex_buffer(uint64_t key, VertexBufferHandle handle, void* data, uint32_t size);

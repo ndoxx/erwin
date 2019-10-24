@@ -199,7 +199,7 @@ void MasterRenderer::execute_isp(const InstancedSpriteQueueData& data)
 
 	if(data.SSBO && (state_cache_.SSBO!=data.SSBO->get_unique_id()))
 	{
-		shader.attach_shader_storage(*data.SSBO, data.instance_count);
+		shader.attach_shader_storage(*data.SSBO, data.SSBO_size);
 		state_cache_.SSBO = data.SSBO->get_unique_id();
 	}
 

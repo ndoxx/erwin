@@ -101,29 +101,26 @@ protected:
 class ShaderStorageBuffer
 {
 public:
-    ShaderStorageBuffer(const std::string& name, uint32_t count, uint32_t struct_size): unique_id_(id::unique_id()), name_(name), count_(count), struct_size_(struct_size) { }
+    ShaderStorageBuffer(const std::string& name, uint32_t size): unique_id_(id::unique_id()), name_(name), size_(size) { }
     virtual ~ShaderStorageBuffer() = default;
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(void* data, uint32_t count, std::size_t offset) = 0;
-    virtual void map(void* data, uint32_t count) = 0;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) = 0;
+    virtual void map(void* data, uint32_t size) = 0;
 
     inline const std::string& get_name() const { return name_; }
-    inline uint32_t get_count() const          { return count_; }
-    inline uint32_t get_size() const           { return count_*struct_size_; }
-    inline uint32_t get_data_size() const      { return struct_size_; }
+    inline uint32_t get_size() const           { return size_; }
     // Return engine unique id for this object
     inline W_ID get_unique_id() const { return unique_id_; }
 
     // Factory method to create the correct implementation
-    static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t count, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+    static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 
 protected:
     W_ID unique_id_;
     std::string name_;
-    uint32_t count_;
-    uint32_t struct_size_;
+    uint32_t size_;
 };
 
 class VertexArray

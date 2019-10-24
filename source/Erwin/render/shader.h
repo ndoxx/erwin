@@ -47,7 +47,7 @@ public:
 	// Attach a texture to a sampler without having to manipulate solts
 	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const = 0;
 	// Attach a shader buffer storage
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t count=0, uint32_t base_index=0) const = 0;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const = 0;
 	// Attach a uniform buffer
 	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const = 0;
 
