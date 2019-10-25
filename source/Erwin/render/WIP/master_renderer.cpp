@@ -119,54 +119,60 @@ void MasterRenderer::test()
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin())+512_kB, 512_B);
 }
 
-void MasterRenderer::dispatch::create_index_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
 	uint32_t count;
 	DrawPrimitive primitive;
 	DrawMode mode;
+	uint32_t* auxiliary;
 
-	cmd->read(&mode);
-	cmd->read(&primitive);
-	cmd->read(&count);
-	cmd->read(&handle);
+	buf.read(&handle);
+	buf.read(&count);
+	buf.read(&primitive);
+	buf.read(&mode);
+	buf.read(&auxiliary);
 
-	s_storage->index_buffers[handle.index] = IndexBuffer::create(reinterpret_cast<uint32_t*>(cmd->auxiliary), count, primitive, mode);
+	s_storage->index_buffers[handle.index] = IndexBuffer::create(auxiliary, count, primitive, mode);
 }
 
-void MasterRenderer::dispatch::create_vertex_buffer_layout(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 {
 	uint32_t count;
 	VertexBufferLayoutHandle handle;
-	cmd->read(&count);
-	cmd->read(&handle);
+	BufferLayoutElement* auxiliary;
+	buf.read(&handle);
+	buf.read(&count);
+	buf.read(&auxiliary);
 
-	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(reinterpret_cast<BufferLayoutElement*>(cmd->auxiliary), count);
+	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(auxiliary, count);
 }
 
-void MasterRenderer::dispatch::create_vertex_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_vertex_buffer(memory::LinearBuffer<>& buf)
 {
 	VertexBufferHandle handle;
 	VertexBufferLayoutHandle layout_hnd;
 	uint32_t count;
 	DrawMode mode;
-	cmd->read(&mode);
-	cmd->read(&count);
-	cmd->read(&layout_hnd);
-	cmd->read(&handle);
+	float* auxiliary;
+	buf.read(&handle);
+	buf.read(&layout_hnd);
+	buf.read(&count);
+	buf.read(&mode);
+	buf.read(&auxiliary);
 
 	const auto& layout = *s_storage->vertex_buffer_layouts[layout_hnd.index];
-	s_storage->vertex_buffers[handle.index] = VertexBuffer::create(reinterpret_cast<float*>(cmd->auxiliary), count, layout, mode);
+	s_storage->vertex_buffers[handle.index] = VertexBuffer::create(auxiliary, count, layout, mode);
 }
 
-void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_vertex_array(memory::LinearBuffer<>& buf)
 {
 	VertexArrayHandle handle;
 	VertexBufferHandle vb;
 	IndexBufferHandle ib;
-	cmd->read(&ib);
-	cmd->read(&vb);
-	cmd->read(&handle);
+	buf.read(&handle);
+	buf.read(&vb);
+	buf.read(&ib);
 
 	s_storage->vertex_arrays[handle.index] = VertexArray::create();
 	s_storage->vertex_arrays[handle.index]->set_vertex_buffer(s_storage->vertex_buffers[vb.index]);
@@ -174,113 +180,125 @@ void MasterRenderer::dispatch::create_vertex_array(RenderCommand* cmd)
 		s_storage->vertex_arrays[handle.index]->set_index_buffer(s_storage->index_buffers[ib.index]);
 }
 
-void MasterRenderer::dispatch::create_uniform_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_uniform_buffer(memory::LinearBuffer<>& buf)
 {
 	UniformBufferHandle handle;
 	uint32_t size;
 	DrawMode mode;
 	std::string name;
-	cmd->read_str(name);
-	cmd->read(&mode);
-	cmd->read(&size);
-	cmd->read(&handle);
+	uint8_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&size);
+	buf.read(&mode);
+	buf.read_str(name);
+	buf.read(&auxiliary);
 
-	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, cmd->auxiliary, size, mode);
+	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, auxiliary, size, mode);
 }
 
-void MasterRenderer::dispatch::create_shader_storage_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
 	ShaderStorageBufferHandle handle;
 	uint32_t size;
 	DrawMode mode;
 	std::string name;
-	cmd->read_str(name);
-	cmd->read(&mode);
-	cmd->read(&size);
-	cmd->read(&handle);
+	uint8_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&size);
+	buf.read(&mode);
+	buf.read_str(name);
+	buf.read(&auxiliary);
 
-	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, cmd->auxiliary, size, mode);
+	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, auxiliary, size, mode);
 }
 
-void MasterRenderer::dispatch::update_index_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::update_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
 	uint32_t count;
-	cmd->read(&count);
-	cmd->read(&handle);
+	uint32_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&count);
+	buf.read(&auxiliary);
 
-	s_storage->index_buffers[handle.index]->map(reinterpret_cast<uint32_t*>(cmd->auxiliary), count);
+	s_storage->index_buffers[handle.index]->map(auxiliary, count);
 }
 
-void MasterRenderer::dispatch::update_vertex_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::update_vertex_buffer(memory::LinearBuffer<>& buf)
 {
 	VertexBufferHandle handle;
 	uint32_t size;
-	cmd->read(&size);
-	cmd->read(&handle);
+	uint8_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&size);
+	buf.read(&auxiliary);
 
-	s_storage->vertex_buffers[handle.index]->map(cmd->auxiliary, size);
+	s_storage->vertex_buffers[handle.index]->map(auxiliary, size);
 }
 
-void MasterRenderer::dispatch::update_uniform_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::update_uniform_buffer(memory::LinearBuffer<>& buf)
 {
 	UniformBufferHandle handle;
 	uint32_t size;
-	cmd->read(&size);
-	cmd->read(&handle);
+	uint8_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&size);
+	buf.read(&auxiliary);
 
-	s_storage->uniform_buffers[handle.index]->map(cmd->auxiliary);
+	s_storage->uniform_buffers[handle.index]->map(auxiliary);
 }
 
-void MasterRenderer::dispatch::update_shader_storage_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
 	ShaderStorageBufferHandle handle;
 	uint32_t size;
-	cmd->read(&size);
-	cmd->read(&handle);
+	uint8_t* auxiliary;
+	buf.read(&handle);
+	buf.read(&size);
+	buf.read(&auxiliary);
 
-	s_storage->shader_storage_buffers[handle.index]->map(cmd->auxiliary, size);
+	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
 
-void MasterRenderer::dispatch::destroy_index_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->index_buffers[handle.index] = nullptr;
 }
 
-void MasterRenderer::dispatch::destroy_vertex_buffer_layout(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 {
 	VertexBufferLayoutHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->vertex_buffer_layouts[handle.index] = nullptr;
 }
 
-void MasterRenderer::dispatch::destroy_vertex_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 {
 	VertexBufferHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->vertex_buffers[handle.index] = nullptr;
 }
 
-void MasterRenderer::dispatch::destroy_vertex_array(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_vertex_array(memory::LinearBuffer<>& buf)
 {
 	VertexArrayHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->vertex_arrays[handle.index] = nullptr;
 }
 
-void MasterRenderer::dispatch::destroy_uniform_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 {
 	UniformBufferHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->uniform_buffers[handle.index] = nullptr;
 }
 
-void MasterRenderer::dispatch::destroy_shader_storage_buffer(RenderCommand* cmd)
+void MasterRenderer::dispatch::destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
 	ShaderStorageBufferHandle handle;
-	cmd->read(&handle);
+	buf.read(&handle);
 	s_storage->shader_storage_buffers[handle.index] = nullptr;
 }
 

@@ -13,6 +13,7 @@
 #include <iomanip>
 
 #include <cstdint>
+#include <string>
 #include <type_traits>
 #include <algorithm>
 
@@ -321,6 +322,60 @@ struct TypeAndCount<T[N]>
 	typedef T type;
 	static constexpr size_t count = N;
 };
+
+
+template <typename ThreadPolicyT=policy::SingleThread>
+class LinearBuffer
+{
+public:
+	LinearBuffer(std::pair<void*,void*> ptr_range):
+	begin_(static_cast<uint8_t*>(ptr_range.first)),
+	end_(static_cast<uint8_t*>(ptr_range.second)),
+	head_(begin_)
+	{
+
+	}
+
+	inline void write(void const* source, std::size_t size)
+	{
+		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overwrite!");
+		memcpy(head_, source, size);
+		head_ += size;
+	}
+	inline void read(void* destination, std::size_t size)
+	{
+		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overread!");
+		memcpy(destination, head_, size);
+		head_ += size;
+	}
+	template <typename T>
+	inline void write(T* source)     { write(source, sizeof(T)); }
+	template <typename T>
+	inline void read(T* destination) { read(destination, sizeof(T)); }
+	inline void write_str(const std::string& str)
+	{
+		uint32_t str_size = str.size();
+		write(&str_size, sizeof(uint32_t));
+		write(str.data(), str_size);
+	}
+	inline void read_str(std::string& str)
+	{
+		uint32_t str_size;
+		read(&str_size, sizeof(uint32_t));
+		str.resize(str_size);
+		read(str.data(), str_size);
+	}
+
+	inline void reset()         { head_ = begin_; }
+	inline uint8_t* get_head()  { return head_; }
+	inline void seek(void* ptr) { head_ = static_cast<uint8_t*>(ptr); }
+
+private:
+	uint8_t* begin_;
+	uint8_t* end_;
+	uint8_t* head_;
+};
+
 } // namespace memory
 
 // User literals for bytes multiples

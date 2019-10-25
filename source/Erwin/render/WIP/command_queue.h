@@ -46,78 +46,37 @@ constexpr std::size_t k_max_textures                 = 128;
 constexpr std::size_t k_max_shaders                  = 128;
 
 // Pushed to a command queue
-struct RenderCommand
+enum class RenderCommand: uint16_t
 {
-	enum: uint16_t
-	{
-		CreateIndexBuffer,
-		CreateVertexBufferLayout,
-		CreateVertexBuffer,
-		CreateVertexArray,
-		CreateUniformBuffer,
-		CreateShaderStorageBuffer,
+	CreateIndexBuffer,
+	CreateVertexBufferLayout,
+	CreateVertexBuffer,
+	CreateVertexArray,
+	CreateUniformBuffer,
+	CreateShaderStorageBuffer,
 
-		UpdateIndexBuffer,
-		UpdateVertexBuffer,
-		UpdateUniformBuffer,
-		UpdateShaderStorageBuffer,
+	UpdateIndexBuffer,
+	UpdateVertexBuffer,
+	UpdateUniformBuffer,
+	UpdateShaderStorageBuffer,
 
-		DestroyIndexBuffer,
-		DestroyVertexBufferLayout,
-		DestroyVertexBuffer,
-		DestroyVertexArray,
-		DestroyUniformBuffer,
-		DestroyShaderStorageBuffer,
+	DestroyIndexBuffer,
+	DestroyVertexBufferLayout,
+	DestroyVertexBuffer,
+	DestroyVertexArray,
+	DestroyUniformBuffer,
+	DestroyShaderStorageBuffer,
 
-		Count
-	};
-
-	RenderCommand(): render_state(0), type(0), head(0), auxiliary(nullptr) { }
-
-	inline void write(void const* source, std::size_t size)
-	{
-		W_ASSERT(size + head < k_max_render_command_data_size, "[RenderCommand] Data buffer overwrite!");
-		memcpy(data + head, source, size);
-		head += (uint16_t)size;
-	}
-	inline void read(void* destination, std::size_t size)
-	{
-		W_ASSERT(int(head) - size >= 0, "[RenderCommand] Data buffer overread!");
-		memcpy(destination, data + head - size, size);
-		head -= (uint16_t)size;
-	}
-	template <typename T>
-	inline void write(T* source)     { write(source, sizeof(T)); }
-	template <typename T>
-	inline void read(T* destination) { read(destination, sizeof(T)); }
-	inline void write_str(const std::string& str)
-	{
-		uint32_t str_size = str.size();
-		write(str.data(), str_size);
-		write(&str_size, sizeof(uint32_t));
-	}
-	inline void read_str(std::string& str)
-	{
-		uint32_t str_size;
-		read(&str_size, sizeof(uint32_t));
-		str.resize(str_size);
-		read(str.data(), str_size);
-	}
-
-	uint64_t render_state;
-	uint16_t type;
-	uint16_t head;
-	uint8_t  data[k_max_render_command_data_size];
-	void* auxiliary;
+	Count
 };
 
 // Array of function pointers for render command dispatching
-extern void (* backend_dispatch [])(RenderCommand*);
+extern void (* backend_dispatch [])(memory::LinearBuffer<>&);
 
 class CommandQueue
 {
 public:
-	typedef std::pair<uint64_t,RenderCommand*> QueueItem;
+	typedef std::pair<uint64_t,void*> QueueItem;
 
 	enum
 	{
@@ -168,8 +127,10 @@ public:
 		for(auto&& [key,cmd]: commands_)
 		{
 			// TODO: handle state
-			(*backend_dispatch[cmd->type])(cmd);
-			W_DELETE(cmd, arena_);
+			command_buffer_.seek(cmd);
+			uint16_t type;
+			command_buffer_.read(&type);
+			(*backend_dispatch[type])(command_buffer_);
 		}
 	}
 
@@ -177,12 +138,8 @@ public:
 	void reset();
 
 private:
-	inline RenderCommand* get()
-	{
-		return W_NEW(RenderCommand, arena_);
-	}
 
-	inline void push(RenderCommand* cmd, uint64_t key)
+	inline void push(void* cmd, uint64_t key)
 	{
 		commands_.push_back({key, cmd});
 		++head_;
@@ -195,7 +152,7 @@ private:
 			    				memory::policy::NoMemoryTagging,
 			    				memory::policy::NoMemoryTracking> AuxArena;
 
-	LinearArena arena_;
+	memory::LinearBuffer<> command_buffer_;
 	AuxArena auxiliary_arena_;
 
 	std::size_t head_;
