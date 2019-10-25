@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <cstdlib>
 #include <cstring>
+#include <bitset>
 
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
@@ -19,7 +20,6 @@ using namespace erwin;
 
 int main(int argc, char** argv)
 {
-
 
 	return 0;
 }

@@ -21,11 +21,11 @@ void hex_dump_clear_highlights()
 	s_highlights.clear();
 }
 
-void hex_dump(std::ostream& stream, void* ptr, std::size_t size)
+void hex_dump(std::ostream& stream, const void* ptr, std::size_t size)
 {
-	uint32_t* begin = static_cast<uint32_t*>(ptr);
-	uint32_t* end = begin + size/4;
-	uint32_t* current = begin;
+	const uint32_t* begin = static_cast<const uint32_t*>(ptr);
+	const uint32_t* end = begin + size/4;
+	uint32_t* current = const_cast<uint32_t*>(begin);
 
 	// Find 32 bytes aligned address before current if current not 32 bytes aligned itself
 	std::size_t begin_offset = std::size_t(current)%32;

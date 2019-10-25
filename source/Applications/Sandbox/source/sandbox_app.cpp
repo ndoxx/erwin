@@ -7,6 +7,7 @@
 #include "erwin.h"
 
 #include "layer_qtest_2d.h"
+// #include "layer_test.h"
 
 using namespace erwin;
 
@@ -19,8 +20,8 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		// push_layer(new LayerBatch2D());
 		push_layer(new LayerQTest2D());
+		// push_layer(new LayerTest());
 	}
 
 	~Sandbox() = default;

@@ -15,6 +15,110 @@ namespace erwin
 {
 namespace WIP
 {
+/*
+		  _  __              
+		 | |/ /              
+		 | ' / ___ _   _ ___ 
+		 |  < / _ \ | | / __|
+		 | . \  __/ |_| \__ \
+		 |_|\_\___|\__, |___/
+		            __/ |    
+		           |___/     
+*/
+
+// Sorting key system
+constexpr uint8_t  k_view_bits       = 8;
+constexpr uint8_t  k_draw_bits       = 1;
+constexpr uint8_t  k_draw_type_bits  = 2;
+constexpr uint8_t  k_transp_bits     = 1;
+constexpr uint8_t  k_shader_bits     = 8;
+constexpr uint8_t  k_depth_bits      = 32;
+constexpr uint8_t  k_seq_bits        = 32;
+constexpr uint64_t k_view_shift      = uint8_t(64)       - k_view_bits;
+constexpr uint64_t k_draw_bit_shift  = k_view_shift      - k_draw_bits;
+constexpr uint64_t k_draw_type_shift = k_draw_bit_shift  - k_draw_type_bits;
+constexpr uint64_t k_1_transp_shift  = k_draw_type_shift - k_transp_bits;
+constexpr uint64_t k_1_shader_shift  = k_1_transp_shift  - k_shader_bits;
+constexpr uint64_t k_1_depth_shift   = k_1_shader_shift  - k_depth_bits;
+constexpr uint64_t k_2_depth_shift   = k_draw_type_shift - k_depth_bits;
+constexpr uint64_t k_2_transp_shift  = k_2_depth_shift   - k_transp_bits;
+constexpr uint64_t k_2_shader_shift  = k_2_transp_shift  - k_shader_bits;
+constexpr uint64_t k_3_seq_shift     = k_draw_type_shift - k_seq_bits;
+constexpr uint64_t k_3_transp_shift  = k_3_seq_shift     - k_transp_bits;
+constexpr uint64_t k_3_shader_shift  = k_3_transp_shift  - k_shader_bits;
+constexpr uint64_t k_view_mask       = uint64_t(0x0000000f) << k_view_shift;
+constexpr uint64_t k_draw_bit_mask   = uint64_t(0x00000001) << k_draw_bit_shift;
+constexpr uint64_t k_draw_type_mask  = uint64_t(0x00000003) << k_draw_type_shift;
+constexpr uint64_t k_1_transp_mask   = uint64_t(0x00000001) << k_1_transp_shift;
+constexpr uint64_t k_1_shader_mask   = uint64_t(0x000000ff) << k_1_shader_shift;
+constexpr uint64_t k_1_depth_mask    = uint64_t(0xffffffff) << k_1_depth_shift;
+constexpr uint64_t k_2_depth_mask    = uint64_t(0xffffffff) << k_2_depth_shift;
+constexpr uint64_t k_2_transp_mask   = uint64_t(0x00000001) << k_2_transp_shift;
+constexpr uint64_t k_2_shader_mask   = uint64_t(0x000000ff) << k_2_shader_shift;
+constexpr uint64_t k_3_seq_mask      = uint64_t(0xffffffff) << k_3_seq_shift;
+constexpr uint64_t k_3_transp_mask   = uint64_t(0x00000001) << k_3_transp_shift;
+constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
+
+struct SortKey
+{
+	enum Order: uint8_t
+	{
+		ByShader,
+		ByDepth,
+		Sequential
+	};
+
+	uint64_t encode(Order type) const;
+	void decode(uint64_t key);
+
+	uint8_t view;
+	uint8_t transparency;
+	uint8_t shader;
+	bool is_draw;
+	uint32_t depth;
+	uint32_t sequence;
+};
+
+uint64_t SortKey::encode(Order type) const
+{
+	uint64_t head = ((uint64_t(view)     << k_view_shift     ) & k_view_mask)
+				  | ((uint64_t(~is_draw) << k_draw_bit_shift ) & k_draw_bit_mask)
+				  | ((uint64_t(0)	   	 << k_draw_type_shift) & k_draw_type_mask);
+
+	uint64_t body = 0;
+	switch(type)
+	{
+		case Order::ByShader:
+		{
+			body |= ((uint64_t(transparency) << k_1_transp_shift) & k_1_transp_mask)
+				 |  ((uint64_t(shader)       << k_1_shader_shift) & k_1_shader_mask)
+				 |  ((uint64_t(depth)        << k_1_depth_shift)  & k_1_depth_mask);
+			break;
+		}
+		case Order::ByDepth:
+		{
+			body |= ((uint64_t(depth)        << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(transparency) << k_2_transp_shift) & k_2_transp_mask)
+				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask);
+			break;
+		}
+		case Order::Sequential:
+		{
+			body |= ((uint64_t(sequence)     << k_3_seq_shift)    & k_3_seq_mask)
+				 |  ((uint64_t(transparency) << k_3_transp_shift) & k_3_transp_mask)
+				 |  ((uint64_t(shader)       << k_3_shader_shift) & k_3_shader_mask);
+			break;
+		}
+	}
+
+	return head | body;
+}
+
+void SortKey::decode(uint64_t key)
+{
+	// TODO (if ever needed)
+}
+
 
 /*
 		   _____ _                             
@@ -34,19 +138,21 @@ constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handle
  										  						  + k_max_handles[HandleType::UniformBufferHandleT]
  										  						  + k_max_handles[HandleType::ShaderStorageBufferHandleT]
  										  						  + k_max_handles[HandleType::TextureHandleT]
- 										  						  + k_max_handles[HandleType::ShaderHandleT]) + 512_B;
+ 										  						  + k_max_handles[HandleType::ShaderHandleT])
+																  + HandleType::Count * sizeof(HandlePool)
+																  + 128_B;	// TODO: compute actual size
 
 struct RendererStorage
 {
 	RendererStorage():
-	renderer_memory(10_MB),
-	handle_arena_(renderer_memory.require_block(k_handle_alloc_size))
+	renderer_memory_(10_MB),
+	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
 	{
-		std::fill(std::begin(index_buffers), std::end(index_buffers), nullptr);
-		std::fill(std::begin(vertex_buffer_layouts), std::end(vertex_buffer_layouts), nullptr);
-		std::fill(std::begin(vertex_buffers), std::end(vertex_buffers), nullptr);
-		std::fill(std::begin(vertex_arrays), std::end(vertex_arrays), nullptr);
-		std::fill(std::begin(uniform_buffers), std::end(uniform_buffers), nullptr);
+		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
+		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
+		std::fill(std::begin(vertex_buffers),         std::end(vertex_buffers),         nullptr);
+		std::fill(std::begin(vertex_arrays),          std::end(vertex_arrays),          nullptr);
+		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
 		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
 
 #define MAKE_HANDLE_POOL( TYPE ) handles_[ TYPE ] = W_NEW(HandlePoolT<k_max_handles[ TYPE ]>, handle_arena_)
@@ -77,6 +183,7 @@ struct RendererStorage
 
 	HandlePool* handles_[HandleType::Count];
 
+	// TODO: Drop WRefs and use an arena (with pool allocator?) to allocate memory for these objects
 	WRef<IndexBuffer>         index_buffers[k_max_handles[HandleType::IndexBufferHandleT]];
 	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles[HandleType::VertexBufferLayoutHandleT]];
 	WRef<VertexBuffer>        vertex_buffers[k_max_handles[HandleType::VertexBufferHandleT]];
@@ -86,7 +193,7 @@ struct RendererStorage
 
 	std::vector<CommandQueue> queues_;
 
-	memory::HeapArea renderer_memory;
+	memory::HeapArea renderer_memory_;
 	LinearArena handle_arena_;
 };
 std::unique_ptr<RendererStorage> s_storage;
@@ -110,8 +217,8 @@ void MasterRenderer::init()
 	s_storage = std::make_unique<RendererStorage>();
 	// Create command queues
 	for(int queue_name = 0; queue_name < CommandQueue::Count; ++queue_name)
-		s_storage->queues_.emplace_back(s_storage->renderer_memory.require_block(512_kB), // For commands
-										s_storage->renderer_memory.require_block(2_MB));  // For auxiliary data
+		s_storage->queues_.emplace_back(s_storage->renderer_memory_.require_block(512_kB), // For commands
+										s_storage->renderer_memory_.require_block(2_MB));  // For auxiliary data
 	DLOGI << "done" << std::endl;
 }
 
@@ -141,10 +248,12 @@ void MasterRenderer::flush()
 	}
 }
 
-void MasterRenderer::test()
+void MasterRenderer::DEBUG_test()
 {
-	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin())+k_handle_alloc_size, 512_B);
-	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(s_storage->renderer_memory.begin())+k_handle_alloc_size+512_kB, 512_B);
+	const void* buf = s_storage->queues_[CommandQueue::QueueName::Resource].get_command_buffer();
+	const void* aux = s_storage->queues_[CommandQueue::QueueName::Resource].get_auxiliary_buffer();
+	memory::hex_dump(std::cout, reinterpret_cast<const uint8_t*>(buf), 512_B);
+	memory::hex_dump(std::cout, reinterpret_cast<const uint8_t*>(aux), 512_B);
 }
 
 /*
@@ -176,10 +285,11 @@ void CommandQueue::reset()
 	count_ = 0;
 }
 
-IndexBufferHandle CommandQueue::create_index_buffer(uint64_t key, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+IndexBufferHandle CommandQueue::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	IndexBufferHandle handle = { s_storage->handles_[IndexBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
 	RenderCommand type = RenderCommand::CreateIndexBuffer;
@@ -202,14 +312,16 @@ IndexBufferHandle CommandQueue::create_index_buffer(uint64_t key, uint32_t* inde
 	}
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-VertexBufferLayoutHandle CommandQueue::create_vertex_buffer_layout(uint64_t key, const std::initializer_list<BufferLayoutElement>& elements)
+VertexBufferLayoutHandle CommandQueue::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
 {
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	VertexBufferLayoutHandle handle = { s_storage->handles_[VertexBufferLayoutHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	std::vector<BufferLayoutElement> elts(elements);
 	uint32_t count = elts.size();
@@ -225,16 +337,18 @@ VertexBufferLayoutHandle CommandQueue::create_vertex_buffer_layout(uint64_t key,
 	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-VertexBufferHandle CommandQueue::create_vertex_buffer(uint64_t key, VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
+VertexBufferHandle CommandQueue::create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
 {
 	W_ASSERT(is_valid(layout), "Invalid VertexBufferLayoutHandle!");
 
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	VertexBufferHandle handle = { s_storage->handles_[VertexBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
 	RenderCommand type = RenderCommand::CreateVertexBuffer;
@@ -257,17 +371,19 @@ VertexBufferHandle CommandQueue::create_vertex_buffer(uint64_t key, VertexBuffer
 	}
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-VertexArrayHandle CommandQueue::create_vertex_array(uint64_t key, VertexBufferHandle vb, IndexBufferHandle ib)
+VertexArrayHandle CommandQueue::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
 {
 	W_ASSERT(is_valid(vb), "Invalid VertexBufferHandle!");
 	W_ASSERT(is_valid(ib), "Invalid IndexBufferHandle!");
 
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	VertexArrayHandle handle = { s_storage->handles_[VertexArrayHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
 	RenderCommand type = RenderCommand::CreateVertexArray;
@@ -276,16 +392,18 @@ VertexArrayHandle CommandQueue::create_vertex_array(uint64_t key, VertexBufferHa
 	command_buffer_.write(&vb);
 	command_buffer_.write(&ib);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-UniformBufferHandle CommandQueue::create_uniform_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode)
+UniformBufferHandle CommandQueue::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	W_ASSERT(name.size()<=20, "UBO layout name should be less than 20 characters long.");
 	
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	UniformBufferHandle handle = { s_storage->handles_[UniformBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
 	RenderCommand type = RenderCommand::CreateUniformBuffer;
@@ -308,16 +426,18 @@ UniformBufferHandle CommandQueue::create_uniform_buffer(uint64_t key, const std:
 	}
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(uint64_t key, const std::string& name, void* data, uint32_t size, DrawMode mode)
+ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	W_ASSERT(name.size()<=20, "SSBO layout name should be less than 20 characters long.");
 	
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	ShaderStorageBufferHandle handle = { s_storage->handles_[ShaderStorageBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
 	RenderCommand type = RenderCommand::CreateShaderStorageBuffer;
@@ -340,15 +460,16 @@ ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(uint64_t ke
 	}
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 	return handle;
 }
 
-void CommandQueue::update_index_buffer(uint64_t key, IndexBufferHandle handle, uint32_t* data, uint32_t count)
+void CommandQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::UpdateIndexBuffer;
 	command_buffer_.write(&type);
@@ -358,14 +479,15 @@ void CommandQueue::update_index_buffer(uint64_t key, IndexBufferHandle handle, u
 	memcpy(auxiliary, data, count);
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::update_vertex_buffer(uint64_t key, VertexBufferHandle handle, void* data, uint32_t size)
+void CommandQueue::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::UpdateVertexBuffer;
 	command_buffer_.write(&type);
@@ -375,14 +497,15 @@ void CommandQueue::update_vertex_buffer(uint64_t key, VertexBufferHandle handle,
 	memcpy(auxiliary, data, size);
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::update_uniform_buffer(uint64_t key, UniformBufferHandle handle, void* data, uint32_t size)
+void CommandQueue::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::UpdateUniformBuffer;
 	command_buffer_.write(&type);
@@ -392,14 +515,15 @@ void CommandQueue::update_uniform_buffer(uint64_t key, UniformBufferHandle handl
 	memcpy(auxiliary, data, size);
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size)
+void CommandQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::UpdateShaderStorageBuffer;
 	command_buffer_.write(&type);
@@ -409,86 +533,93 @@ void CommandQueue::update_shader_storage_buffer(uint64_t key, ShaderStorageBuffe
 	memcpy(auxiliary, data, size);
 	command_buffer_.write(&auxiliary);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_index_buffer(uint64_t key, IndexBufferHandle handle)
+void CommandQueue::destroy_index_buffer(IndexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
 	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
 
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyIndexBuffer;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_vertex_buffer_layout(uint64_t key, VertexBufferLayoutHandle handle)
+void CommandQueue::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
 	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyVertexBufferLayout;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_vertex_buffer(uint64_t key, VertexBufferHandle handle)
+void CommandQueue::destroy_vertex_buffer(VertexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
 	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyVertexBuffer;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_vertex_array(uint64_t key, VertexArrayHandle handle)
+void CommandQueue::destroy_vertex_array(VertexArrayHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
 	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyVertexArray;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_uniform_buffer(uint64_t key, UniformBufferHandle handle)
+void CommandQueue::destroy_uniform_buffer(UniformBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
 	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyUniformBuffer;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
-void CommandQueue::destroy_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle)
+void CommandQueue::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
 	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.get_head();
+	void* cmd = command_buffer_.head();
 	
 	RenderCommand type = RenderCommand::DestroyShaderStorageBuffer;
 	command_buffer_.write(&type);
 	command_buffer_.write(&handle);
 
-	push(cmd, key);
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
+	push(cmd, key.encode(SortKey::Sequential));
 }
 
 /*
@@ -691,7 +822,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 } // namespace dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
-static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Count] =
+static backend_dispatch_func_t backend_dispatch[(std::size_t)CommandQueue::RenderCommand::Count] =
 {
 	&dispatch::create_index_buffer,
 	&dispatch::create_vertex_buffer_layout,

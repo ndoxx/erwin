@@ -20,13 +20,16 @@
 
 #include "core/core.h"
 #include "debug/logger.h"
+#include "memory/memory_utils.h"
 
 // Useful to avoid uninitialized reads with Valgrind during hexdumps
 // Disable for retail build
 #ifdef W_DEBUG
 	#define HEAP_AREA_MEMSET_ENABLED
+	#define HEAP_AREA_PADDING_MAGIC
+	#define AREA_MEMSET_VALUE 0x00
+	#define AREA_PADDING_MARK 0xd0
 #endif
-#define AREA_MEMSET_VALUE 0x00
 
 namespace erwin
 {
@@ -137,13 +140,19 @@ public:
 	inline std::pair<void*,void*> range() { return {begin(), end()}; }
 
 	// Get a range of pointers to a memory block within area, and advance head
-	// TODO: Page align returned block to avoid false sharing if multiple threads access this area
 	inline std::pair<void*,void*> require_block(size_t size)
 	{
-		W_ASSERT(head_ + size < end(), "[HeapArea] Out of memory!");
+		// Page align returned block to avoid false sharing if multiple threads access this area
+        size_t padding = utils::alignment_padding((std::size_t)(head_), 64);
+		W_ASSERT(head_ + size + padding < end(), "[HeapArea] Out of memory!");
 
-		std::pair<void*,void*> range = {head_, head_+size+1};
-		head_ += size;
+    	// Mark padding area
+#ifdef HEAP_AREA_PADDING_MAGIC
+    	std::fill(head_, head_ + padding, AREA_PADDING_MARK);
+#endif
+
+		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
+		head_ += size + padding;
 		return range;
 	}
 
@@ -367,9 +376,11 @@ public:
 		read(str.data(), str_size);
 	}
 
-	inline void reset()         { head_ = begin_; }
-	inline uint8_t* get_head()  { return head_; }
-	inline void seek(void* ptr) { head_ = static_cast<uint8_t*>(ptr); }
+	inline void reset()                 { head_ = begin_; }
+	inline uint8_t* head()              { return head_; }
+	inline uint8_t* begin()             { return begin_; }
+	inline const uint8_t* begin() const { return begin_; }
+	inline void seek(void* ptr)         { head_ = static_cast<uint8_t*>(ptr); }
 
 private:
 	uint8_t* begin_;

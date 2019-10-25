@@ -51,35 +51,34 @@ public:
 		};
 
 		auto& rq = MasterRenderer::get_queue(CommandQueue::Resource);
-		ibo_handle = rq.create_index_buffer(100, index_data, 6, DrawPrimitive::Triangles);
-		auto ibo_handle2 = rq.create_index_buffer(99, index_data, 6, DrawPrimitive::Triangles);
-		rq.destroy_index_buffer(98, ibo_handle2);
-		vbl_handle = rq.create_vertex_buffer_layout(90,
-									 			    {
+		ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
+		auto ibo_handle2 = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
+		rq.destroy_index_buffer(ibo_handle2);
+		vbl_handle = rq.create_vertex_buffer_layout({
 				    				 			    	{"a_position"_h, ShaderDataType::Vec3},
     								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
     								 			    });
-		vbo_handle = rq.create_vertex_buffer(80, vbl_handle, sq_vdata, 20, DrawMode::Static);
-		va_handle = rq.create_vertex_array(70, vbo_handle, ibo_handle);
+		vbo_handle = rq.create_vertex_buffer(vbl_handle, sq_vdata, 20, DrawMode::Static);
+		va_handle = rq.create_vertex_array(vbo_handle, ibo_handle);
 
-		auto ubo_handle = rq.create_uniform_buffer(60, "layout_xyz", nullptr, 64, DrawMode::Dynamic);
-		auto ssbo_handle = rq.create_shader_storage_buffer(50, "layout_xyz", nullptr, 10*64, DrawMode::Dynamic);
+		auto ubo_handle = rq.create_uniform_buffer("layout_xyz", nullptr, 64, DrawMode::Dynamic);
+		auto ssbo_handle = rq.create_shader_storage_buffer("layout_xyz", nullptr, 10*64, DrawMode::Dynamic);
 
-		rq.destroy_vertex_array(45, va_handle);
-		rq.destroy_vertex_buffer(40, vbo_handle);
-		rq.destroy_index_buffer(35, ibo_handle);
-		rq.destroy_vertex_buffer_layout(30, vbl_handle);
+		rq.destroy_vertex_array(va_handle);
+		rq.destroy_vertex_buffer(vbo_handle);
+		rq.destroy_index_buffer(ibo_handle);
+		rq.destroy_vertex_buffer_layout(vbl_handle);
 
-		MasterRenderer::test();
+		MasterRenderer::DEBUG_test();
 		MasterRenderer::flush();
 
 		uint8_t ubo_data[64];
 		uint8_t ssbo_data[10*64];
-		rq.update_uniform_buffer(100, ubo_handle, ubo_data, 64);
-		rq.update_shader_storage_buffer(90, ssbo_handle, ssbo_data, 10*64);
+		rq.update_uniform_buffer(ubo_handle, ubo_data, 64);
+		rq.update_shader_storage_buffer(ssbo_handle, ssbo_data, 10*64);
 
-		rq.destroy_uniform_buffer(20, ubo_handle);
-		rq.destroy_shader_storage_buffer(10, ssbo_handle);
+		rq.destroy_uniform_buffer(ubo_handle);
+		rq.destroy_shader_storage_buffer(ssbo_handle);
 		MasterRenderer::flush();
 	}
 
