@@ -13,6 +13,7 @@
 #include <iomanip>
 
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <type_traits>
 #include <algorithm>
