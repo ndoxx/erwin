@@ -71,12 +71,13 @@ struct SortKey
 	uint64_t encode(Order type) const;
 	void decode(uint64_t key);
 
-	uint8_t view;
-	uint8_t transparency;
-	uint8_t shader;
-	bool is_draw;
-	uint32_t depth;
-	uint32_t sequence;
+						  // -- dependencies --     -- meaning --
+	uint8_t view;         // queue global state?	layer / viewport id
+	uint8_t transparency; // queue type 			blending type: opaque / transparent
+	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
+	bool is_draw;         // command data / type 	whether or not the command performs a draw call
+	uint32_t depth;       // command data / type 	depth mantissa
+	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
 };
 
 uint64_t SortKey::encode(Order type) const
@@ -183,7 +184,7 @@ struct RendererStorage
 
 	HandlePool* handles_[HandleType::Count];
 
-	// TODO: Drop WRefs and use an arena (with pool allocator?) to allocate memory for these objects
+	// TODO: Drop WRefs and use a arenas (with pool allocator?) to allocate memory for these objects
 	WRef<IndexBuffer>         index_buffers[k_max_handles[HandleType::IndexBufferHandleT]];
 	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles[HandleType::VertexBufferLayoutHandleT]];
 	WRef<VertexBuffer>        vertex_buffers[k_max_handles[HandleType::VertexBufferHandleT]];
@@ -217,8 +218,8 @@ void MasterRenderer::init()
 	s_storage = std::make_unique<RendererStorage>();
 	// Create command queues
 	for(int queue_name = 0; queue_name < CommandQueue::Count; ++queue_name)
-		s_storage->queues_.emplace_back(s_storage->renderer_memory_.require_block(512_kB), // For commands
-										s_storage->renderer_memory_.require_block(2_MB));  // For auxiliary data
+		s_storage->queues_.emplace_back(s_storage->renderer_memory_);
+
 	DLOGI << "done" << std::endl;
 }
 
@@ -243,7 +244,12 @@ void MasterRenderer::flush()
 	{
 		auto& queue = s_storage->queues_[queue_name];
 		queue.sort();
-		queue.flush();
+		queue.flush(CommandQueue::Phase::Pre);
+	}
+	for(int queue_name = 0; queue_name < CommandQueue::Count; ++queue_name)
+	{
+		auto& queue = s_storage->queues_[queue_name];
+		queue.flush(CommandQueue::Phase::Post);
 		queue.reset();
 	}
 }
@@ -252,8 +258,8 @@ void MasterRenderer::DEBUG_test()
 {
 	const void* buf = s_storage->queues_[CommandQueue::QueueName::Resource].get_command_buffer();
 	const void* aux = s_storage->queues_[CommandQueue::QueueName::Resource].get_auxiliary_buffer();
-	memory::hex_dump(std::cout, reinterpret_cast<const uint8_t*>(buf), 512_B);
-	memory::hex_dump(std::cout, reinterpret_cast<const uint8_t*>(aux), 512_B);
+	memory::hex_dump(std::cout, buf, 512_B);
+	memory::hex_dump(std::cout, aux, 512_B);
 }
 
 /*
@@ -265,10 +271,12 @@ void MasterRenderer::DEBUG_test()
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
 
-CommandQueue::CommandQueue(std::pair<void*,void*> mem_range, std::pair<void*,void*> aux_mem_range):
-command_buffer_(mem_range),
-auxiliary_arena_(aux_mem_range),
-count_(0)
+CommandQueue::CommandQueue(memory::HeapArea& memory):
+command_buffer_(memory.require_block(512_kB)),
+post_command_buffer_(memory.require_block(512_kB)),
+auxiliary_arena_(memory.require_block(2_MB)),
+count_(0),
+post_count_(0)
 {
 
 }
@@ -278,26 +286,45 @@ CommandQueue::~CommandQueue()
 
 }
 
+void CommandQueue::sort()
+{
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(commands_), std::begin(commands_) + count_, 
+        [&](const QueueItem& item1, const QueueItem& item2)
+        {
+        	return item1.first > item2.first;
+        });
+    std::sort(std::begin(post_commands_), std::begin(post_commands_) + post_count_, 
+        [&](const QueueItem& item1, const QueueItem& item2)
+        {
+        	return item1.first > item2.first;
+        });
+}
+
 void CommandQueue::reset()
 {
 	command_buffer_.reset();
 	auxiliary_arena_.get_allocator().reset();
 	count_ = 0;
+	post_count_ = 0;
 }
 
 IndexBufferHandle CommandQueue::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
-	void* cmd = command_buffer_.head();
+	RenderCommand type = RenderCommand::CreateIndexBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	IndexBufferHandle handle = { s_storage->handles_[IndexBufferHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateIndexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&count);
-	command_buffer_.write(&primitive);
-	command_buffer_.write(&mode);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
+	cmdbuf.write(&primitive);
+	cmdbuf.write(&mode);
 
 	// Write auxiliary data
 	uint32_t* auxiliary = nullptr;
@@ -310,16 +337,19 @@ IndexBufferHandle CommandQueue::create_index_buffer(uint32_t* index_data, uint32
 	{
 		W_ASSERT(mode != DrawMode::Static, "Index data can't be null in static mode.");
 	}
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
 VertexBufferLayoutHandle CommandQueue::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
 {
-	void* cmd = command_buffer_.head();
+	RenderCommand type = RenderCommand::CreateVertexBufferLayout;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	VertexBufferLayoutHandle handle = { s_storage->handles_[VertexBufferLayoutHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
@@ -327,18 +357,17 @@ VertexBufferLayoutHandle CommandQueue::create_vertex_buffer_layout(const std::in
 	uint32_t count = elts.size();
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateVertexBufferLayout;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&count);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
 
 	// Write auxiliary data
 	BufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(BufferLayoutElement, elts.size(), auxiliary_arena_);
 	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
@@ -346,17 +375,19 @@ VertexBufferHandle CommandQueue::create_vertex_buffer(VertexBufferLayoutHandle l
 {
 	W_ASSERT(is_valid(layout), "Invalid VertexBufferLayoutHandle!");
 
-	void* cmd = command_buffer_.head();
+	RenderCommand type = RenderCommand::CreateVertexBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	VertexBufferHandle handle = { s_storage->handles_[VertexBufferHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateVertexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&layout);
-	command_buffer_.write(&count);
-	command_buffer_.write(&mode);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&layout);
+	cmdbuf.write(&count);
+	cmdbuf.write(&mode);
 
 	// Write auxiliary data
 	float* auxiliary = nullptr;
@@ -369,10 +400,10 @@ VertexBufferHandle CommandQueue::create_vertex_buffer(VertexBufferLayoutHandle l
 	{
 		W_ASSERT(mode != DrawMode::Static, "Vertex data can't be null in static mode.");
 	}
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
@@ -381,19 +412,21 @@ VertexArrayHandle CommandQueue::create_vertex_array(VertexBufferHandle vb, Index
 	W_ASSERT(is_valid(vb), "Invalid VertexBufferHandle!");
 	W_ASSERT(is_valid(ib), "Invalid IndexBufferHandle!");
 
-	void* cmd = command_buffer_.head();
+	RenderCommand type = RenderCommand::CreateVertexArray;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	VertexArrayHandle handle = { s_storage->handles_[VertexArrayHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateVertexArray;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&vb);
-	command_buffer_.write(&ib);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&vb);
+	cmdbuf.write(&ib);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
@@ -401,17 +434,19 @@ UniformBufferHandle CommandQueue::create_uniform_buffer(const std::string& name,
 {
 	W_ASSERT(name.size()<=20, "UBO layout name should be less than 20 characters long.");
 	
-	void* cmd = command_buffer_.head();
+	RenderCommand type = RenderCommand::CreateUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	UniformBufferHandle handle = { s_storage->handles_[UniformBufferHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateUniformBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&size);
-	command_buffer_.write(&mode);
-	command_buffer_.write_str(name);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	cmdbuf.write(&mode);
+	cmdbuf.write_str(name);
 
 	// Write auxiliary data
 	uint8_t* auxiliary = nullptr;
@@ -424,28 +459,30 @@ UniformBufferHandle CommandQueue::create_uniform_buffer(const std::string& name,
 	{
 		W_ASSERT(mode != DrawMode::Static, "UBO data can't be null in static mode.");
 	}
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
 ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	W_ASSERT(name.size()<=20, "SSBO layout name should be less than 20 characters long.");
-	
-	void* cmd = command_buffer_.head();
+
+	RenderCommand type = RenderCommand::CreateShaderStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
 	ShaderStorageBufferHandle handle = { s_storage->handles_[ShaderStorageBufferHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
 	// Write data
-	RenderCommand type = RenderCommand::CreateShaderStorageBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&size);
-	command_buffer_.write(&mode);
-	command_buffer_.write_str(name);
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	cmdbuf.write(&mode);
+	cmdbuf.write_str(name);
 
 	// Write auxiliary data
 	uint8_t* auxiliary = nullptr;
@@ -458,10 +495,10 @@ ShaderStorageBufferHandle CommandQueue::create_shader_storage_buffer(const std::
 	{
 		W_ASSERT(mode != DrawMode::Static, "SSBO data can't be null in static mode.");
 	}
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 	return handle;
 }
 
@@ -469,72 +506,80 @@ void CommandQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data,
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.head();
-	
+
 	RenderCommand type = RenderCommand::UpdateIndexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&count);
+	auto& cmdbuf = get_command_buffer(type);
+
+	void* cmd = cmdbuf.head();
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
 	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, auxiliary_arena_);
 	memcpy(auxiliary, data, count);
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.head();
-	
+
 	RenderCommand type = RenderCommand::UpdateVertexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&size);
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
 	memcpy(auxiliary, data, size);
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.head();
-	
+
 	RenderCommand type = RenderCommand::UpdateUniformBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&size);
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
 	memcpy(auxiliary, data, size);
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
 	W_ASSERT(data, "No data!");
-	void* cmd = command_buffer_.head();
-	
+
 	RenderCommand type = RenderCommand::UpdateShaderStorageBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
-	command_buffer_.write(&size);
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
 	memcpy(auxiliary, data, size);
-	command_buffer_.write(&auxiliary);
+	cmdbuf.write(&auxiliary);
 
 	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_index_buffer(IndexBufferHandle handle)
@@ -542,84 +587,95 @@ void CommandQueue::destroy_index_buffer(IndexBufferHandle handle)
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
 	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
 
-	void* cmd = command_buffer_.head();
-	
 	RenderCommand type = RenderCommand::DestroyIndexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
 	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
-	void* cmd = command_buffer_.head();
-	
-	RenderCommand type = RenderCommand::DestroyVertexBufferLayout;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	RenderCommand type = RenderCommand::DestroyVertexBufferLayout;
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_vertex_buffer(VertexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
 	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.head();
-	
-	RenderCommand type = RenderCommand::DestroyVertexBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	RenderCommand type = RenderCommand::DestroyVertexBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_vertex_array(VertexArrayHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
 	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
-	void* cmd = command_buffer_.head();
-	
-	RenderCommand type = RenderCommand::DestroyVertexArray;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	RenderCommand type = RenderCommand::DestroyVertexArray;
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_uniform_buffer(UniformBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
 	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.head();
-	
-	RenderCommand type = RenderCommand::DestroyUniformBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	RenderCommand type = RenderCommand::DestroyUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 void CommandQueue::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
 	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
-	void* cmd = command_buffer_.head();
-	
-	RenderCommand type = RenderCommand::DestroyShaderStorageBuffer;
-	command_buffer_.write(&type);
-	command_buffer_.write(&handle);
 
-	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(count_) };
-	push(cmd, key.encode(SortKey::Sequential));
+	RenderCommand type = RenderCommand::DestroyShaderStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type);
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	SortKey key = { 0, 0, 0, false, 0, ~uint32_t(post_count_) };
+	push(key.encode(SortKey::Sequential), type, cmd);
 }
 
 /*
@@ -777,6 +833,8 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
 
+void nop(memory::LinearBuffer<>& buf) { }
+
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
@@ -834,6 +892,9 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)CommandQueue::Rende
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
 	&dispatch::update_shader_storage_buffer,
+
+	&dispatch::nop,
+
 	&dispatch::destroy_index_buffer,
 	&dispatch::destroy_vertex_buffer_layout,
 	&dispatch::destroy_vertex_buffer,
@@ -842,16 +903,20 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)CommandQueue::Rende
 	&dispatch::destroy_shader_storage_buffer,
 };
 
-void CommandQueue::flush()
+void CommandQueue::flush(Phase phase)
 {
-	for(int ii=0; ii<count_; ++ii)
+	auto& cbuf = get_command_buffer(phase);
+	auto* cmds = (phase == Phase::Pre) ? commands_ : post_commands_;
+	uint32_t count = (phase == Phase::Pre) ? count_ : post_count_;
+
+	for(int ii=0; ii<count; ++ii)
 	{
-		auto&& [key,cmd] = commands_[ii];
+		auto&& [key,cmd] = cmds[ii];
 		// TODO: handle state
-		command_buffer_.seek(cmd);
+		cbuf.seek(cmd);
 		uint16_t type;
-		command_buffer_.read(&type);
-		(*backend_dispatch[type])(command_buffer_);
+		cbuf.read(&type);
+		(*backend_dispatch[type])(cbuf);
 	}
 }
 

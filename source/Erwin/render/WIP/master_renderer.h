@@ -93,6 +93,8 @@ public:
 		UpdateUniformBuffer,
 		UpdateShaderStorageBuffer,
 
+		Post,
+
 		DestroyIndexBuffer,
 		DestroyVertexBufferLayout,
 		DestroyVertexBuffer,
@@ -106,12 +108,18 @@ public:
 	enum QueueName
 	{
 		Resource = 0,
-		Instanced2D,
+		//Instanced2D,
 
 		Count
 	};
 
-	CommandQueue(std::pair<void*,void*> mem_range, std::pair<void*,void*> aux_mem_range);
+	enum class Phase
+	{
+		Pre,
+		Post
+	};
+
+	CommandQueue(memory::HeapArea& memory);
 	~CommandQueue();
 
 	// The following functions will initialize a render command and push it to this queue 
@@ -135,19 +143,9 @@ public:
 	void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
 
 	// Sort queue by sorting key
-	inline void sort()
-	{
-		// Keys stored separately from commands to avoid touching data too
-		// much during sort calls
-        std::sort(std::begin(commands_), std::begin(commands_) + count_, 
-	        [&](const QueueItem& item1, const QueueItem& item2)
-	        {
-	        	return item1.first > item2.first;
-	        });
-	}
-
+	void sort();
 	// Dispatch all commands
-	void flush();
+	void flush(Phase phase);
 	// Clear queue
 	void reset();
 
@@ -157,9 +155,27 @@ public:
 
 private:
 
-	inline void push(void* cmd, uint64_t key)
+	inline void push(uint64_t key, RenderCommand type, void* cmd)
 	{
-		commands_[count_++] = {key, cmd};
+		if(type < RenderCommand::Post)
+			commands_[count_++] = {key, cmd};
+		else
+			post_commands_[post_count_++] = {key, cmd};
+	}
+
+	inline memory::LinearBuffer<>& get_command_buffer(Phase phase)
+	{
+		switch(phase)
+		{
+			case Phase::Pre:  return command_buffer_;
+			case Phase::Post: return post_command_buffer_;
+		}
+	}
+
+	inline memory::LinearBuffer<>& get_command_buffer(RenderCommand command)
+	{
+		Phase phase = (command < RenderCommand::Post) ? Phase::Pre : Phase::Post;
+		return get_command_buffer(phase);
 	}
 
 private:
@@ -170,10 +186,13 @@ private:
 			    				memory::policy::NoMemoryTracking> AuxArena;
 
 	memory::LinearBuffer<> command_buffer_;
+	memory::LinearBuffer<> post_command_buffer_;
 	AuxArena auxiliary_arena_;
 
 	std::size_t count_;
+	std::size_t post_count_;
 	QueueItem commands_[k_max_render_commands];
+	QueueItem post_commands_[k_max_render_commands];
 };
 
 } // namespace WIP
