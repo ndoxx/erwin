@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "filesystem/filesystem.h"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
 #include "memory/arena.h"
@@ -12,16 +13,22 @@ namespace erwin
 namespace WIP
 {
 
-class CommandQueue;
-class MasterRenderer
+class RenderQueue;
+class MainRenderer
 {
 public:
-	friend class CommandQueue;
+	enum QueueName
+	{
+		Resource = 0,
+		//2D,
+
+		Count
+	};
 
 	static void init();
 	static void shutdown();
 
-	static CommandQueue& get_queue(int name);
+	static RenderQueue& get_queue(int name);
 	static void flush();
 
 	static void DEBUG_test();
@@ -74,11 +81,52 @@ constexpr std::size_t k_max_handles[HandleType::Count] =
 	128, // shaders
 };
 
-class CommandQueue
+struct SortKey
+{
+	enum class Order: uint8_t
+	{
+		ByShader,
+		ByDepth, // TODO: back to front / front to back options
+		Sequential
+	};
+
+	uint64_t encode(SortKey::Order type) const;
+	void decode(uint64_t key);
+
+						  // -- dependencies --     -- meaning --
+	uint8_t view;         // queue global state?	layer / viewport id
+	uint8_t transparency; // queue type 			blending type: opaque / transparent
+	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
+	bool is_draw;         // command data / type 	whether or not the command performs a draw call
+	uint32_t depth;       // command data / type 	depth mantissa
+	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
+};
+
+struct CommandBuffer
+{
+	typedef std::pair<uint64_t,void*> Entry;
+
+	CommandBuffer(std::pair<void*,void*> ptr_range):
+	count(0),
+	storage(ptr_range)
+	{
+
+	}
+
+	inline void reset()
+	{
+		storage.reset();
+		count = 0;
+	}
+
+	std::size_t count;
+	memory::LinearBuffer<> storage;
+	Entry entries[k_max_render_commands];
+};
+
+class RenderQueue
 {
 public:
-	typedef std::pair<uint64_t,void*> QueueItem;
-
 	enum class RenderCommand: uint16_t
 	{
 		CreateIndexBuffer,
@@ -87,6 +135,7 @@ public:
 		CreateVertexArray,
 		CreateUniformBuffer,
 		CreateShaderStorageBuffer,
+		CreateShader,
 
 		UpdateIndexBuffer,
 		UpdateVertexBuffer,
@@ -101,14 +150,7 @@ public:
 		DestroyVertexArray,
 		DestroyUniformBuffer,
 		DestroyShaderStorageBuffer,
-
-		Count
-	};
-
-	enum QueueName
-	{
-		Resource = 0,
-		//Instanced2D,
+		DestroyShader,
 
 		Count
 	};
@@ -119,8 +161,8 @@ public:
 		Post
 	};
 
-	CommandQueue(memory::HeapArea& memory);
-	~CommandQueue();
+	RenderQueue(memory::HeapArea& memory, SortKey::Order order);
+	~RenderQueue();
 
 	// The following functions will initialize a render command and push it to this queue 
 	IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
@@ -129,6 +171,7 @@ public:
 	VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
+	ShaderHandle 			  create_shader(const fs::path& filepath, const std::string& name);
 
 	void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
@@ -141,6 +184,7 @@ public:
 	void destroy_vertex_array(VertexArrayHandle handle);
 	void destroy_uniform_buffer(UniformBufferHandle handle);
 	void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
+	void destroy_shader(ShaderHandle handle);
 
 	// Sort queue by sorting key
 	void sort();
@@ -150,29 +194,24 @@ public:
 	void reset();
 
 	// DEBUG
-	inline const void* get_command_buffer() const   { return command_buffer_.begin(); }
-	inline const void* get_auxiliary_buffer() const { return auxiliary_arena_.get_allocator().begin(); }
+	inline const void* get_pre_command_buffer_ptr() const  { return pre_buffer_.storage.begin(); }
+	inline const void* get_post_command_buffer_ptr() const { return post_buffer_.storage.begin(); }
+	inline const void* get_auxiliary_buffer_ptr() const    { return auxiliary_arena_.get_allocator().begin(); }
 
 private:
+	// Helper func to update the key sequence and push command to the queue
+	void push(RenderCommand type, void* cmd);
 
-	inline void push(uint64_t key, RenderCommand type, void* cmd)
-	{
-		if(type < RenderCommand::Post)
-			commands_[count_++] = {key, cmd};
-		else
-			post_commands_[post_count_++] = {key, cmd};
-	}
-
-	inline memory::LinearBuffer<>& get_command_buffer(Phase phase)
+	inline CommandBuffer& get_command_buffer(Phase phase)
 	{
 		switch(phase)
 		{
-			case Phase::Pre:  return command_buffer_;
-			case Phase::Post: return post_command_buffer_;
+			case Phase::Pre:  return pre_buffer_;
+			case Phase::Post: return post_buffer_;
 		}
 	}
 
-	inline memory::LinearBuffer<>& get_command_buffer(RenderCommand command)
+	inline CommandBuffer& get_command_buffer(RenderCommand command)
 	{
 		Phase phase = (command < RenderCommand::Post) ? Phase::Pre : Phase::Post;
 		return get_command_buffer(phase);
@@ -185,14 +224,11 @@ private:
 			    				memory::policy::NoMemoryTagging,
 			    				memory::policy::NoMemoryTracking> AuxArena;
 
-	memory::LinearBuffer<> command_buffer_;
-	memory::LinearBuffer<> post_command_buffer_;
+	SortKey::Order order_;
+	SortKey key_;
+	CommandBuffer pre_buffer_;
+	CommandBuffer post_buffer_;
 	AuxArena auxiliary_arena_;
-
-	std::size_t count_;
-	std::size_t post_count_;
-	QueueItem commands_[k_max_render_commands];
-	QueueItem post_commands_[k_max_render_commands];
 };
 
 } // namespace WIP

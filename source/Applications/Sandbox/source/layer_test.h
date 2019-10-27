@@ -10,7 +10,7 @@
 // #include "render/shader.h"
 // #include "platform/ogl_shader.h"
 // #include "platform/ogl_texture.h"
-#include "render/WIP/master_renderer.h"
+#include "render/WIP/main_renderer.h"
 #include "memory/memory_utils.h"
 
 using namespace erwin;
@@ -35,7 +35,7 @@ public:
 
 	virtual void on_attach() override
 	{
-		MasterRenderer::init();
+		MainRenderer::init();
 
 		IndexBufferHandle ibo_handle;
 		VertexBufferLayoutHandle vbl_handle;
@@ -50,7 +50,8 @@ public:
 			-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
 		};
 
-		auto& rq = MasterRenderer::get_queue(CommandQueue::Resource);
+		auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
+		// auto shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.spv", "color_inst_shader");
 		ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 		auto ibo_handle2 = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 		rq.destroy_index_buffer(ibo_handle2);
@@ -69,8 +70,8 @@ public:
 		rq.destroy_index_buffer(ibo_handle);
 		rq.destroy_vertex_buffer_layout(vbl_handle);
 
-		MasterRenderer::DEBUG_test();
-		MasterRenderer::flush();
+		MainRenderer::DEBUG_test();
+		MainRenderer::flush();
 
 		uint8_t ubo_data[64];
 		uint8_t ssbo_data[10*64];
@@ -79,12 +80,13 @@ public:
 
 		rq.destroy_uniform_buffer(ubo_handle);
 		rq.destroy_shader_storage_buffer(ssbo_handle);
-		MasterRenderer::flush();
+		// rq.destroy_shader(shader_handle);
+		MainRenderer::flush();
 	}
 
 	virtual void on_detach() override
 	{
-		MasterRenderer::shutdown();
+		MainRenderer::shutdown();
 	}
 
 
