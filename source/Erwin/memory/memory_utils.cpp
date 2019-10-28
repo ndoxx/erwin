@@ -11,6 +11,17 @@ namespace memory
 
 static std::map<uint32_t, WCB> s_highlights;
 
+static void center(std::string& input, int size)
+{
+	int diff = size - input.size();
+	if(diff <= 0)
+		return;
+
+	int before = diff / 2;
+	int after  = before + diff % 2;
+	input = std::string(before, ' ') + input + std::string(after, ' ');
+}
+
 void hex_dump_highlight(uint32_t word, const WCB& wcb)
 {
 	s_highlights[word] = wcb;
@@ -21,7 +32,7 @@ void hex_dump_clear_highlights()
 	s_highlights.clear();
 }
 
-void hex_dump(std::ostream& stream, const void* ptr, std::size_t size)
+void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std::string& title)
 {
 	const uint32_t* begin = static_cast<const uint32_t*>(ptr);
 	const uint32_t* end = begin + size/4;
@@ -33,7 +44,9 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size)
 	// Find offset of 32 bytes aligned address after end if end not 32 bytes aligned itself
 	std::size_t end_offset = 32-std::size_t(end)%32;
 
-	stream << WCC(102,153,0) << "/-" << WCC(0,130,10) << "HEX DUMP" << WCC(102,153,0) << "-\\" << std::endl;
+	std::string dump_title = title.size() ? title : "HEX DUMP";
+	center(dump_title,12);
+	stream << WCC(102,153,0) << "/-" << WCC(0,130,10) << dump_title << WCC(102,153,0) << "-\\" << std::endl;
 	stream << std::hex;
 	while(current < end+end_offset/4)
 	{
@@ -51,7 +64,6 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size)
 		{
 			// Get current value
 			uint32_t value = *current;
-
 			// Display
 			auto it = s_highlights.find(value);
 			// Highlight recognized words
@@ -70,8 +82,7 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size)
 
 		++current;
 	}
-	stream << WCC(102,153,0) << "\\-" << WCC(0,130,10) << "HEX DUMP" << WCC(102,153,0) << "-/" << std::endl;
-	stream << WCC(0);
+	stream << WCC(0) << std::dec;
 }
 
 } // namespace memory

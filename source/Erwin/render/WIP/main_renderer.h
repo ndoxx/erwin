@@ -142,6 +142,8 @@ public:
 		UpdateUniformBuffer,
 		UpdateShaderStorageBuffer,
 
+		Submit,
+
 		Post,
 
 		DestroyIndexBuffer,
@@ -164,7 +166,13 @@ public:
 	RenderQueue(memory::HeapArea& memory, SortKey::Order order);
 	~RenderQueue();
 
-	// The following functions will initialize a render command and push it to this queue 
+	// * These functions change the queue state persistently
+	// Set clear color for associated render target
+	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
+	//
+	void set_state(const PassState& state);
+
+	// * The following functions will initialize a render command and push it to this queue 
 	IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
 	VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
 	VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
@@ -177,6 +185,9 @@ public:
 	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
 	void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
 	void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
+
+	void submit(VertexArrayHandle va, ShaderHandle shader, UniformBufferHandle ubo, uint32_t count=0, uint32_t base_index=0);
+	// void submit(VertexArrayHandle va, hash_t shader);
 
 	void destroy_index_buffer(IndexBufferHandle handle);
 	void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
@@ -199,8 +210,9 @@ public:
 	inline const void* get_auxiliary_buffer_ptr() const    { return auxiliary_arena_.get_allocator().begin(); }
 
 private:
-	// Helper func to update the key sequence and push command to the queue
-	void push(RenderCommand type, void* cmd);
+	// Helper func to update the key sequence and push commands to the queue
+	void push_command(RenderCommand type, void* cmd);
+	void push_draw_call(RenderCommand type, void* cmd);
 
 	inline CommandBuffer& get_command_buffer(Phase phase)
 	{
@@ -226,6 +238,8 @@ private:
 
 	SortKey::Order order_;
 	SortKey key_;
+	uint32_t clear_color_;
+	uint64_t state_flags_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	AuxArena auxiliary_arena_;

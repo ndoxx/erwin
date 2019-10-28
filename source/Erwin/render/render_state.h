@@ -108,7 +108,7 @@ struct PassState
         depth_stencil_state = DepthStencilState();
     }
 
-    inline uint64_t encode()
+    inline uint64_t encode() const
     {
         return (uint64_t)blend_state                              << k_shift_transp_bit
              | (uint64_t)rasterizer_state.cull_mode               << k_shift_cull_mode

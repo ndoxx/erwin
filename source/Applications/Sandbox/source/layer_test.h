@@ -10,7 +10,7 @@
 // #include "render/shader.h"
 // #include "platform/ogl_shader.h"
 // #include "platform/ogl_texture.h"
-#include "render/WIP/main_renderer.h"
+#include "render/WIP/renderer_2d.h"
 #include "memory/memory_utils.h"
 
 using namespace erwin;
@@ -19,7 +19,7 @@ using namespace erwin::WIP;
 class LayerTest: public Layer
 {
 public:
-	LayerTest(): Layer("TestLayer")
+	LayerTest(): Layer("TestLayer"), camera_ctl_(1280.f/1024.f, 1.f)
 	{
 	    memory::hex_dump_highlight(0xf0f0f0f0, WCB(100,0,0));
 	    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,0,100));
@@ -35,65 +35,39 @@ public:
 
 	virtual void on_attach() override
 	{
-		MainRenderer::init();
-
-		IndexBufferHandle ibo_handle;
-		VertexBufferLayoutHandle vbl_handle;
-		VertexBufferHandle vbo_handle;
-		VertexArrayHandle va_handle;
-		uint32_t index_data[6] = { 0, 1, 2, 2, 3, 1 };
-		float sq_vdata[20] = 
-		{
-			-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
-		};
-
-		auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-		// auto shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/color_inst_shader.spv", "color_inst_shader");
-		ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
-		auto ibo_handle2 = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
-		rq.destroy_index_buffer(ibo_handle2);
-		vbl_handle = rq.create_vertex_buffer_layout({
-				    				 			    	{"a_position"_h, ShaderDataType::Vec3},
-    								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
-    								 			    });
-		vbo_handle = rq.create_vertex_buffer(vbl_handle, sq_vdata, 20, DrawMode::Static);
-		va_handle = rq.create_vertex_array(vbo_handle, ibo_handle);
-
+		WIP::Renderer2D::init();
+/*
 		auto ubo_handle = rq.create_uniform_buffer("layout_xyz", nullptr, 64, DrawMode::Dynamic);
 		auto ssbo_handle = rq.create_shader_storage_buffer("layout_xyz", nullptr, 10*64, DrawMode::Dynamic);
-
-		rq.destroy_vertex_array(va_handle);
-		rq.destroy_vertex_buffer(vbo_handle);
-		rq.destroy_index_buffer(ibo_handle);
-		rq.destroy_vertex_buffer_layout(vbl_handle);
-
-		MainRenderer::DEBUG_test();
-		MainRenderer::flush();
-
-		uint8_t ubo_data[64];
-		uint8_t ssbo_data[10*64];
-		rq.update_uniform_buffer(ubo_handle, ubo_data, 64);
-		rq.update_shader_storage_buffer(ssbo_handle, ssbo_data, 10*64);
-
-		rq.destroy_uniform_buffer(ubo_handle);
-		rq.destroy_shader_storage_buffer(ssbo_handle);
-		// rq.destroy_shader(shader_handle);
-		MainRenderer::flush();
+*/
 	}
 
 	virtual void on_detach() override
 	{
-		MainRenderer::shutdown();
+		WIP::Renderer2D::shutdown();
 	}
 
 
 protected:
 	virtual void on_update(GameClock& clock) override
 	{
+		float dt = clock.get_frame_duration();
+		tt_ += dt;
+		if(tt_>=5.f)
+			tt_ = 0.f;
 
+		camera_ctl_.update(clock);
+
+		PassState pass_state;
+		pass_state.rasterizer_state.cull_mode = CullMode::Back;
+		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+		pass_state.blend_state = BlendState::Opaque;
+
+		WIP::Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera());
+		WIP::Renderer2D::draw_quad({0.f,0.f},{0.5f,0.5f},{0.f,0.f,0.f,0.f},0);
+		WIP::Renderer2D::end_pass();
+
+		MainRenderer::flush();
 	}
 
 	virtual bool on_event(const MouseButtonEvent& event) override
@@ -103,15 +77,18 @@ protected:
 
 	virtual bool on_event(const WindowResizeEvent& event) override
 	{
+		camera_ctl_.on_window_resize_event(event);
 		return false;
 	}
 
 	virtual bool on_event(const MouseScrollEvent& event) override
 	{
+		camera_ctl_.on_mouse_scroll_event(event);
 		return false;
 	}
 
 
 private:
-
+	OrthographicCamera2DController camera_ctl_;
+	float tt_ = 0.f;
 };

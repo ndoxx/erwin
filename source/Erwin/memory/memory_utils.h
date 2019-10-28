@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <ostream>
 
 #include "debug/logger_common.h"
@@ -25,7 +26,7 @@ static inline std::size_t alignment_padding(std::size_t base_address, std::size_
 
 extern void hex_dump_highlight(uint32_t word, const WCB& wcb);
 extern void hex_dump_clear_highlights();
-extern void hex_dump(std::ostream& stream, const void* ptr, std::size_t size);
+extern void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std::string& title="");
 
 } // namespace memory
 } // namespace erwin

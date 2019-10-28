@@ -4,6 +4,7 @@
 #include <memory>
 #include <iostream>
 
+#include "render/render_device.h"
 #include "render/buffer.h"
 #include "render/shader.h"
 #include "debug/logger.h"
@@ -208,6 +209,7 @@ void MainRenderer::init()
 
 void MainRenderer::shutdown()
 {
+	flush();
 	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
 	RendererStorage* rs = s_storage.release();
 	delete rs;
@@ -227,6 +229,7 @@ void MainRenderer::flush()
 	{
 		auto& queue = s_storage->queues_[queue_name];
 		queue.sort();
+		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG); // TMP: flags will change for each queue
 		queue.flush(RenderQueue::Phase::Pre);
 	}
 	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
@@ -242,9 +245,9 @@ void MainRenderer::DEBUG_test()
 	const void* pre_buf = s_storage->queues_[QueueName::Resource].get_pre_command_buffer_ptr();
 	const void* post_buf = s_storage->queues_[QueueName::Resource].get_post_command_buffer_ptr();
 	const void* aux = s_storage->queues_[QueueName::Resource].get_auxiliary_buffer_ptr();
-	memory::hex_dump(std::cout, pre_buf, 256_B);
-	memory::hex_dump(std::cout, post_buf, 256_B);
-	memory::hex_dump(std::cout, aux, 512_B);
+	memory::hex_dump(std::cout, pre_buf, 256_B, "CMDBuf-PRE");
+	memory::hex_dump(std::cout, post_buf, 256_B, "CMDBuf-POST");
+	memory::hex_dump(std::cout, aux, 256_B, "AUX");
 }
 
 /*
@@ -271,6 +274,37 @@ RenderQueue::~RenderQueue()
 
 }
 
+void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
+{
+	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
+	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
+}
+
+void RenderQueue::set_state(const PassState& state)
+{
+	state_flags_ = state.encode();
+
+	// TMP
+	//Gfx::framebuffer_pool->bind(state.render_target);
+	Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
+	
+	if(state.blend_state == BlendState::Alpha)
+		Gfx::device->set_std_blending();
+	else
+		Gfx::device->disable_blending();
+
+	Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
+	if(state.depth_stencil_state.stencil_test_enabled)
+	{
+		Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
+		Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
+	}
+
+	Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
+	if(state.depth_stencil_state.depth_test_enabled)
+		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+}
+
 void RenderQueue::sort()
 {
 	// Keys stored separately from commands to avoid touching data too
@@ -287,12 +321,21 @@ void RenderQueue::sort()
         });
 }
 
-void RenderQueue::push(RenderCommand type, void* cmd)
+void RenderQueue::push_command(RenderCommand type, void* cmd)
 {
 	auto& cmdbuf = get_command_buffer(type);
+	key_.is_draw = false;
 	key_.sequence = ~uint32_t(cmdbuf.count); // TODO: per-view sequence
 	uint64_t key = key_.encode(order_);
 	cmdbuf.entries[cmdbuf.count++] = {key, cmd};
+}
+
+void RenderQueue::push_draw_call(RenderCommand type, void* cmd)
+{
+	key_.is_draw = true;
+	key_.sequence = ~uint32_t(pre_buffer_.count);
+	uint64_t key = key_.encode(order_);
+	pre_buffer_.entries[pre_buffer_.count++] = {key, cmd};
 }
 
 void RenderQueue::reset()
@@ -332,7 +375,7 @@ IndexBufferHandle RenderQueue::create_index_buffer(uint32_t* index_data, uint32_
 	}
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -358,7 +401,7 @@ VertexBufferLayoutHandle RenderQueue::create_vertex_buffer_layout(const std::ini
 	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -393,7 +436,7 @@ VertexBufferHandle RenderQueue::create_vertex_buffer(VertexBufferLayoutHandle la
 	}
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -415,7 +458,7 @@ VertexArrayHandle RenderQueue::create_vertex_array(VertexBufferHandle vb, IndexB
 	cmdbuf.write(&vb);
 	cmdbuf.write(&ib);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -448,7 +491,7 @@ UniformBufferHandle RenderQueue::create_uniform_buffer(const std::string& name, 
 	}
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -481,7 +524,7 @@ ShaderStorageBufferHandle RenderQueue::create_shader_storage_buffer(const std::s
 	}
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -498,7 +541,7 @@ ShaderHandle RenderQueue::create_shader(const fs::path& filepath, const std::str
 	cmdbuf.write_str(filepath.string());
 	cmdbuf.write_str(name);
 
-	push(type, cmd);
+	push_command(type, cmd);
 	return handle;
 }
 
@@ -518,7 +561,7 @@ void RenderQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data, 
 	memcpy(auxiliary, data, count);
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
@@ -537,7 +580,7 @@ void RenderQueue::update_vertex_buffer(VertexBufferHandle handle, void* data, ui
 	memcpy(auxiliary, data, size);
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
@@ -556,7 +599,7 @@ void RenderQueue::update_uniform_buffer(UniformBufferHandle handle, void* data, 
 	memcpy(auxiliary, data, size);
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
@@ -575,7 +618,26 @@ void RenderQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle,
 	memcpy(auxiliary, data, size);
 	cmdbuf.write(&auxiliary);
 
-	push(type, cmd);
+	push_command(type, cmd);
+}
+
+void RenderQueue::submit(VertexArrayHandle va, ShaderHandle shader, UniformBufferHandle ubo, uint32_t count, uint32_t base_index)
+{
+	W_ASSERT(is_valid(va), "Invalid VertexArrayHandle!");
+	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
+
+	RenderCommand type = RenderCommand::Submit;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&va);
+	cmdbuf.write(&shader);
+	cmdbuf.write(&ubo);
+	cmdbuf.write(&count);
+	cmdbuf.write(&base_index);
+
+	push_draw_call(type, cmd);
 }
 
 void RenderQueue::destroy_index_buffer(IndexBufferHandle handle)
@@ -590,7 +652,7 @@ void RenderQueue::destroy_index_buffer(IndexBufferHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
@@ -605,7 +667,7 @@ void RenderQueue::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_vertex_buffer(VertexBufferHandle handle)
@@ -620,7 +682,7 @@ void RenderQueue::destroy_vertex_buffer(VertexBufferHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_vertex_array(VertexArrayHandle handle)
@@ -635,7 +697,7 @@ void RenderQueue::destroy_vertex_array(VertexArrayHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_uniform_buffer(UniformBufferHandle handle)
@@ -650,7 +712,7 @@ void RenderQueue::destroy_uniform_buffer(UniformBufferHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
@@ -665,7 +727,7 @@ void RenderQueue::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 void RenderQueue::destroy_shader(ShaderHandle handle)
@@ -680,7 +742,7 @@ void RenderQueue::destroy_shader(ShaderHandle handle)
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
 
-	push(type, cmd);
+	push_command(type, cmd);
 }
 
 
@@ -855,6 +917,29 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
 
+void submit(memory::LinearBuffer<>& buf)
+{
+	VertexArrayHandle va_handle;
+	ShaderHandle shader_handle;
+	UniformBufferHandle ubo_handle;
+	uint32_t count;
+	uint32_t base_index;
+	buf.read(&va_handle);
+	buf.read(&shader_handle);
+	buf.read(&ubo_handle);
+	buf.read(&count);
+	buf.read(&base_index);
+
+	auto& va = *s_storage->vertex_arrays[va_handle.index];
+	auto& shader = *s_storage->shaders[shader_handle.index];
+	auto& ubo = *s_storage->uniform_buffers[ubo_handle.index];
+
+	shader.bind();
+	shader.attach_uniform_buffer(ubo);
+
+	Gfx::device->draw_indexed(va, count, base_index);
+}
+
 void nop(memory::LinearBuffer<>& buf) { }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
@@ -924,6 +1009,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
 	&dispatch::update_shader_storage_buffer,
+	&dispatch::submit,
 
 	&dispatch::nop,
 

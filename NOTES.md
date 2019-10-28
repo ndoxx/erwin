@@ -1563,3 +1563,94 @@ Fudge est configuré via un fichier XML :
 ```
 Chaque type d'asset que Fudge peut traiter peut définir plusieurs batches. Chaque batch précise une paire de chemins d'accès (entrée / sortie). Certains batches peuvent définir des propriétés locales comme les types de compression à utiliser pour les texture atlases. Fudge itère chaque batch correctement défini, pour chaque catégorie d'asset.
 
+#[26-10-19]
+Merde, ce retard de dingue dans ma prise de notes...
+
+##Memory System
+Je me suis beaucoup inspiré des articles [1] à [8] pour réaliser un système de gestion de la mémoire assez puissant. L'idée générale consiste à réserver un gros bloc mémoire, et à utiliser une ou plusieurs "arènes" sur ce bloc pour allouer dynamiquement les objets que l'on veut avec du placement new. Une arène, de type _MemoryArena_ (dans memory/memory.hpp) est une classe template hautement paramétrable qui prend possession d'un bloc mémoire, implémente une stratégie particulière d'allocation (linear, stack, pool...) sur ce bloc, et réagit à une primitive de synchronisation particulière dans un contexte multi-thread. Plusieurs politiques de debugging peuvent être utilisées pour assurer l'intégrité des données (*bounds checking*), la validité des accès (*memory tagging*) et la détection des fuites (*memory tracking*) :
+
+```cpp
+template <typename AllocatorT, 
+          typename ThreadPolicyT=policy::SingleThread,
+          typename BoundsCheckerT=policy::NoBoundsChecking,
+          typename MemoryTaggerT=policy::NoMemoryTagging,
+          typename MemoryTrackerT=policy::NoMemoryTracking>
+class MemoryArena
+{
+    // ...
+};
+```
+Une arène peut allouer un bloc d'une taille donnée, et forcer un alignement particulier du pointeur retourné à l'utilisateur :
+
+```cpp
+typedef memory::MemoryArena<memory::LinearAllocator, 
+                            memory::policy::SingleThread, 
+                            memory::policy::SimpleBoundsChecking,
+                            memory::policy::NoMemoryTagging,
+                            memory::policy::SimpleMemoryTracking> LinArena;
+
+memory::HeapArea area;
+LinArena arena;
+
+Object* instance = W_NEW(Object, arena);
+W_DELETE(instance, arena);
+
+instance = W_NEW_ALIGN(Object, arena, 16);
+W_DELETE(instance, arena);
+```
+Il est aussi possible d'allouer des tableaux d'objets, de manière statique ou dynamique :
+
+```cpp
+Object* obj_array = W_NEW_ARRAY(Object[10], arena);
+W_DELETE_ARRAY(obj_array, arena);
+
+obj_array = W_NEW_ARRAY_ALIGN(Object[10], arena, 32);
+W_DELETE_ARRAY(obj_array, arena);
+
+int num_objects = // ...
+obj_array = W_NEW_ARRAY_DYNAMIC(Object, num_objects, arena);
+W_DELETE_ARRAY(obj_array, arena);
+
+obj_array = W_NEW_ARRAY_DYNAMIC_ALIGN(Object, num_objects, arena, 64);
+W_DELETE_ARRAY(obj_array, arena);
+```
+Ce qui se passe dans les coulisses est assez fascinant. Les différentes macros ont pour objectif de remplacer les opérateurs *new*, *new[]*, *delete* et *delete[]* dans le contexte d'une arène, et donc il faut reproduire leurs comportements. [1] est une source excellente pour en comprendre le fonctionnement détaillé. De manière très schématique :
+
+    * new alloue un espace mémoire de taille suffisante pour un objet de type T,
+      appèle le constructeur T() (si T n'est pas POD) et retourne un pointeur
+      de type T* à l'utilisateur vers le début de l'espace alloué.
+    * delete appèle le destructeur ~T() (si T est non-POD) et libère la mémoire.
+    * new[] réserve 4 + N*sizeof(T) octets, sauvegarde le nombre N d'instances à 
+      générer sur les 4 premiers octets, puis appèle T() itérativement sur chaque
+      slot réservé (si T non-POD) avant de retourner un pointeur T* vers la première
+      instance (et NON vers le début de l'allocation).
+    * delete[] remonte de 4 octets avant le pointeur qui lui est passé pour lire
+      le nombre d'instances à détruire, puis appèle ~T() itérativement pour 
+      chaque instance (si T non-POD), avant de libérer l'ensemble de la mémoire.
+
+Essentiellement, il y a deux points cruciaux qui ont guidé la mise en oeuvre :
+
+    * new et new[] n'ont pas besoin d'appeler de constructeur pour les types POD, de même
+      que delete et delete[] n'ont pas besoin d'appeler de destructeurs pour ces mêmes
+      types, ce qui laisse la voie à une optimisation, puisque la nature POD ou non
+      d'un type est connaissable en compile-time via les type traits.
+    * new[] doit faire du bookkeeping pour que delete[] puisse fonctionner.
+
+
+###Sources:
+    [1] https://blog.molecular-matters.com/2011/07/05/memory-system-part-1/
+    [2] https://blog.molecular-matters.com/2011/07/07/memory-system-part-2/
+    [3] https://blog.molecular-matters.com/2011/07/08/memory-system-part-3/
+    [4] https://blog.molecular-matters.com/2011/07/15/memory-system-part-4/
+    [5] https://blog.molecular-matters.com/2011/08/03/memory-system-part-5/
+    [6] https://blog.molecular-matters.com/2012/08/14/memory-allocation
+        -strategies-a-linear-allocator/
+    [7] https://blog.molecular-matters.com/2012/09/17/memory-allocation
+        -strategies-a-pool-allocator/
+    [8] https://blog.molecular-matters.com/2015/02/13/stateless-layered
+        -multi-threaded-rendering-part-4-memory-management-synchronization/
+
+
+
+###Sources:
+    [1] http://realtimecollisiondetection.net/blog/?p=86
