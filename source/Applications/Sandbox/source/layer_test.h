@@ -65,6 +65,7 @@ protected:
 
 		WIP::Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera());
 		WIP::Renderer2D::draw_quad({0.f,0.f},{0.5f,0.5f},{0.f,0.f,0.f,0.f},0);
+		WIP::Renderer2D::draw_quad({-0.5f,-0.5f},{0.4f,0.4f},{0.f,0.f,0.f,0.f},0);
 		WIP::Renderer2D::end_pass();
 
 		MainRenderer::flush();

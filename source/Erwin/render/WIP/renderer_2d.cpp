@@ -82,8 +82,11 @@ void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, co
 	glm::mat4 MVP = storage.view_projection_matrix * transform;
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	rq.update_uniform_buffer(storage.ubo_handle, &MVP, sizeof(glm::mat4));
-	rq.submit(storage.va_handle, storage.shader_handle, storage.ubo_handle);
+	// TODO: batch quads like in the old 2D renderer
+	DrawCall dc(DrawCall::Indexed, storage.shader_handle, storage.va_handle);
+	dc.set_per_instance_UBO(storage.ubo_handle, &MVP, sizeof(glm::mat4));
+	rq.submit(dc);
+
 }
 /*
 void Renderer2D::draw_quad(const glm::vec3& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)

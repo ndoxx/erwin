@@ -124,6 +124,47 @@ struct CommandBuffer
 	Entry entries[k_max_render_commands];
 };
 
+struct DrawCall
+{
+	enum Type
+	{
+		Indexed,
+		Array,
+		IndexedInstanced,
+		ArrayInstanced,
+
+		Count
+	};
+
+	DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
+
+	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
+	{
+		UBO = ubo;
+		UBO_data = data;
+		UBO_size = size;
+	}
+
+	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size)
+	{
+		SSBO = ssbo;
+		SSBO_data = data;
+		SSBO_size = size;
+	}
+
+	Type type;
+	ShaderHandle shader;
+	VertexArrayHandle VAO;
+	UniformBufferHandle UBO;
+	ShaderStorageBufferHandle SSBO;
+	void* UBO_data;
+	void* SSBO_data;
+	uint32_t UBO_size;
+	uint32_t SSBO_size;
+	uint32_t count;
+	uint32_t offset;
+};
+
 class RenderQueue
 {
 public:
@@ -186,8 +227,7 @@ public:
 	void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
 	void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
 
-	void submit(VertexArrayHandle va, ShaderHandle shader, UniformBufferHandle ubo, uint32_t count=0, uint32_t base_index=0);
-	// void submit(VertexArrayHandle va, hash_t shader);
+	void submit(const DrawCall& draw_call);
 
 	void destroy_index_buffer(IndexBufferHandle handle);
 	void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
@@ -212,7 +252,6 @@ public:
 private:
 	// Helper func to update the key sequence and push commands to the queue
 	void push_command(RenderCommand type, void* cmd);
-	void push_draw_call(RenderCommand type, void* cmd);
 
 	inline CommandBuffer& get_command_buffer(Phase phase)
 	{
