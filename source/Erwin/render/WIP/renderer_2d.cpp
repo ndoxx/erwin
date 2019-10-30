@@ -45,6 +45,8 @@ void Renderer2D::init()
 	storage.vbo_handle = rq.create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
 	storage.va_handle = rq.create_vertex_array(storage.vbo_handle, storage.ibo_handle);
 	storage.ubo_handle = rq.create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+
+	rq.shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
 }
 
 void Renderer2D::shutdown()
@@ -83,10 +85,9 @@ void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, co
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
 	// TODO: batch quads like in the old 2D renderer
-	DrawCall dc(DrawCall::Indexed, storage.shader_handle, storage.va_handle);
+	DrawCall dc(rq, DrawCall::Indexed, storage.shader_handle, storage.va_handle);
 	dc.set_per_instance_UBO(storage.ubo_handle, &MVP, sizeof(glm::mat4));
-	rq.submit(dc);
-
+	dc.submit();
 }
 /*
 void Renderer2D::draw_quad(const glm::vec3& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)

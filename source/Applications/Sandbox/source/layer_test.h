@@ -63,9 +63,18 @@ protected:
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 		pass_state.blend_state = BlendState::Opaque;
 
+		static int n_quads = 40;
+		float scale = 1.f/(n_quads);
 		WIP::Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera());
-		WIP::Renderer2D::draw_quad({0.f,0.f},{0.5f,0.5f},{0.f,0.f,0.f,0.f},0);
-		WIP::Renderer2D::draw_quad({-0.5f,-0.5f},{0.4f,0.4f},{0.f,0.f,0.f,0.f},0);
+		for(int xx=0; xx<n_quads; ++xx)
+		{
+			float x_pos = -1.f + 2.f*xx/(n_quads-1);
+			for(int yy=0; yy<n_quads; ++yy)
+			{
+				float y_pos = -1.f + 2.f*yy/(n_quads-1);
+				WIP::Renderer2D::draw_quad({x_pos,y_pos},{scale,scale},{0.f,0.f,0.f,0.f},0);
+			}
+		}
 		WIP::Renderer2D::end_pass();
 
 		MainRenderer::flush();

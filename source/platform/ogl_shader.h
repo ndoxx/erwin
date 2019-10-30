@@ -23,8 +23,8 @@ public:
 	// Initialize shader from SPIR-V file
 	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) override;
 
-	virtual void bind() const override;
-	virtual void unbind() const override;
+	virtual void bind_impl() const override;
+	virtual void unbind_impl() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const override;
 	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;

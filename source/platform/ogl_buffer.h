@@ -69,6 +69,7 @@ public:
     virtual void bind() const override;
     virtual void unbind() const override;
     virtual void map(void* data) override;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 

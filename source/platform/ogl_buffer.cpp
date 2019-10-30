@@ -198,6 +198,12 @@ void OGLUniformBuffer::map(void* data)
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 }
 
+void OGLUniformBuffer::stream(void* data, uint32_t size, uint32_t offset)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+}
+
 // ----------------------------------------------------------------------------------
 
 OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, DrawMode mode):

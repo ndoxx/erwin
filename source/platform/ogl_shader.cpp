@@ -254,12 +254,12 @@ bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
     return success;
 }
 
-void OGLShader::bind() const
+void OGLShader::bind_impl() const
 {
     glUseProgram(rd_handle_);
 }
 
-void OGLShader::unbind() const
+void OGLShader::unbind_impl() const
 {
     glUseProgram(0);
 }

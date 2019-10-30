@@ -49,13 +49,15 @@ enum HandleType: uint16_t
 	Count
 };
 
-#define W_HANDLE(name)   							            \
-	struct name 		 							            \
-	{ 					 							            \
-		static constexpr HandleType type = HandleType::name##T; \
-		uint32_t index;	 							  			\
-	};					 							  			\
-	bool is_valid(name); 							  			\
+#define W_HANDLE(name)   							               				\
+	struct name 		 							               				\
+	{ 					 							               				\
+		inline bool operator ==(const name& o) const { return index==o.index; } \
+		inline bool operator !=(const name& o) const { return index!=o.index; } \
+		static constexpr HandleType type = HandleType::name##T;    				\
+		uint32_t index = 0xffff;	 							  			   	\
+	};					 							  			   				\
+	bool is_valid(name); 							  			   				\
 
 W_HANDLE(IndexBufferHandle);
 W_HANDLE(VertexBufferLayoutHandle);
@@ -68,7 +70,7 @@ W_HANDLE(ShaderHandle);
 
 #undef W_HANDLE
 
-constexpr std::size_t k_max_render_commands = 1024;
+constexpr std::size_t k_max_render_commands = 10000;
 constexpr std::size_t k_max_handles[HandleType::Count] =
 {
 	128, // index buffers
@@ -124,47 +126,7 @@ struct CommandBuffer
 	Entry entries[k_max_render_commands];
 };
 
-struct DrawCall
-{
-	enum Type
-	{
-		Indexed,
-		Array,
-		IndexedInstanced,
-		ArrayInstanced,
-
-		Count
-	};
-
-	DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
-
-	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
-	{
-		UBO = ubo;
-		UBO_data = data;
-		UBO_size = size;
-	}
-
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size)
-	{
-		SSBO = ssbo;
-		SSBO_data = data;
-		SSBO_size = size;
-	}
-
-	Type type;
-	ShaderHandle shader;
-	VertexArrayHandle VAO;
-	UniformBufferHandle UBO;
-	ShaderStorageBufferHandle SSBO;
-	void* UBO_data;
-	void* SSBO_data;
-	uint32_t UBO_size;
-	uint32_t SSBO_size;
-	uint32_t count;
-	uint32_t offset;
-};
-
+struct DrawCall;
 class RenderQueue
 {
 public:
@@ -182,6 +144,8 @@ public:
 		UpdateVertexBuffer,
 		UpdateUniformBuffer,
 		UpdateShaderStorageBuffer,
+		ShaderAttachUniformBuffer,
+		ShaderAttachStorageBuffer,
 
 		Submit,
 
@@ -226,6 +190,8 @@ public:
 	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
 	void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
 	void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
+	void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
+	void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 
 	void submit(const DrawCall& draw_call);
 
@@ -282,6 +248,60 @@ private:
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	AuxArena auxiliary_arena_;
+};
+
+/*
+	TODO: 
+	- Compress data size as much as possible
+	- Handle textures
+*/
+struct DrawCall
+{
+	enum Type
+	{
+		Indexed,
+		Array,
+		IndexedInstanced,
+		ArrayInstanced,
+
+		Count
+	};
+
+	DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
+
+	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
+	{
+		UBO = ubo;
+		UBO_data = data;
+		UBO_size = size;
+	}
+
+	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size)
+	{
+		SSBO = ssbo;
+		SSBO_data = data;
+		SSBO_size = size;
+	}
+
+	inline void submit()
+	{
+		queue.submit(*this);
+	}
+
+	Type type;
+	ShaderHandle shader;
+	VertexArrayHandle VAO;
+	UniformBufferHandle UBO;
+	ShaderStorageBufferHandle SSBO;
+	void* UBO_data;
+	void* SSBO_data;
+	uint32_t UBO_size;
+	uint32_t SSBO_size;
+	uint32_t count;
+	uint32_t offset;
+
+private:
+	RenderQueue& queue;
 };
 
 } // namespace WIP

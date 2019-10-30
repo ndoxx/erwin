@@ -82,6 +82,7 @@ public:
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
     virtual void map(void* data) = 0;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) = 0;
 
     inline const std::string& get_name() const { return name_; }
     inline uint32_t get_size() const           { return struct_size_; }

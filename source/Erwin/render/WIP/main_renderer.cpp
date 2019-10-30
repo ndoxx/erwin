@@ -128,7 +128,7 @@ constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handle
 struct RendererStorage
 {
 	RendererStorage():
-	renderer_memory_(10_MB),
+	renderer_memory_(20_MB),
 	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
 	{
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
@@ -177,6 +177,7 @@ struct RendererStorage
 
 	std::vector<RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
+	// RendererStateCache cache_;
 
 	memory::HeapArea renderer_memory_;
 	LinearArena handle_arena_;
@@ -259,7 +260,7 @@ void MainRenderer::DEBUG_test()
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
 
-DrawCall::DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
+DrawCall::DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
 type(type),
 shader(shader),
 VAO(VAO),
@@ -268,7 +269,8 @@ SSBO_data(nullptr),
 UBO_size(0),
 SSBO_size(0),
 count(count),
-offset(offset)
+offset(offset),
+queue(queue)
 {
 
 }
@@ -627,36 +629,68 @@ void RenderQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle,
 	push_command(type, cmd);
 }
 
-void RenderQueue::submit(const DrawCall& draw_call)
+void RenderQueue::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
 {
-	W_ASSERT(is_valid(draw_call.VAO), "Invalid VertexArrayHandle!");
-	W_ASSERT(is_valid(draw_call.shader), "Invalid ShaderHandle!");
+	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
+	W_ASSERT(is_valid(ubo), "Invalid UniformBufferHandle!");
+
+	RenderCommand type = RenderCommand::ShaderAttachUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&shader);
+	cmdbuf.write(&ubo);
+
+	push_command(type, cmd);
+}
+
+void RenderQueue::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
+{
+	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
+	W_ASSERT(is_valid(ssbo), "Invalid ShaderStorageBufferHandle!");
+
+	RenderCommand type = RenderCommand::ShaderAttachStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&shader);
+	cmdbuf.write(&ssbo);
+
+	push_command(type, cmd);
+}
+
+void RenderQueue::submit(const DrawCall& dc)
+{
+	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
+	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
 
 	RenderCommand type = RenderCommand::Submit;
 	auto& cmdbuf = get_command_buffer(type).storage;
 	void* cmd = cmdbuf.head();
 
 	cmdbuf.write(&type);
-	cmdbuf.write(&draw_call.type);
-	cmdbuf.write(&draw_call.VAO);
-	cmdbuf.write(&draw_call.shader);
-	cmdbuf.write(&draw_call.UBO);
-	cmdbuf.write(&draw_call.SSBO);
-	cmdbuf.write(&draw_call.UBO_size);
-	cmdbuf.write(&draw_call.SSBO_size);
-	cmdbuf.write(&draw_call.count);
-	cmdbuf.write(&draw_call.offset);
+	cmdbuf.write(&dc.type);
+	cmdbuf.write(&dc.VAO);
+	cmdbuf.write(&dc.shader);
+	cmdbuf.write(&dc.UBO);
+	cmdbuf.write(&dc.SSBO);
+	cmdbuf.write(&dc.UBO_size);
+	cmdbuf.write(&dc.SSBO_size);
+	cmdbuf.write(&dc.count);
+	cmdbuf.write(&dc.offset);
 	uint8_t* ubo_data = nullptr;
 	uint8_t* ssbo_data = nullptr;
-	if(draw_call.UBO_data)
+	if(dc.UBO_data)
 	{
-		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, draw_call.UBO_size, auxiliary_arena_);
-		memcpy(ubo_data, draw_call.UBO_data, draw_call.UBO_size);
+		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, auxiliary_arena_);
+		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
 	}
-	if(draw_call.SSBO_data)
+	if(dc.SSBO_data)
 	{
-		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, draw_call.SSBO_size, auxiliary_arena_);
-		memcpy(ssbo_data, draw_call.SSBO_data, draw_call.SSBO_size);
+		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, auxiliary_arena_);
+		memcpy(ssbo_data, dc.SSBO_data, dc.SSBO_size);
 	}
 	cmdbuf.write(&ubo_data);
 	cmdbuf.write(&ssbo_data);
@@ -941,6 +975,32 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
 
+void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
+{
+	ShaderHandle shader_handle;
+	UniformBufferHandle ubo_handle;
+	buf.read(&shader_handle);
+	buf.read(&ubo_handle);
+
+	auto& shader = *s_storage->shaders[shader_handle.index];
+	auto& ubo = *s_storage->uniform_buffers[ubo_handle.index];
+
+	shader.attach_uniform_buffer(ubo);
+}
+
+void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
+{
+	ShaderHandle shader_handle;
+	ShaderStorageBufferHandle ssbo_handle;
+	buf.read(&shader_handle);
+	buf.read(&ssbo_handle);
+
+	auto& shader = *s_storage->shaders[shader_handle.index];
+	auto& ssbo = *s_storage->shader_storage_buffers[ssbo_handle.index];
+
+	shader.attach_shader_storage(ssbo);
+}
+
 void submit(memory::LinearBuffer<>& buf)
 {
 	DrawCall::Type type;
@@ -969,13 +1029,21 @@ void submit(memory::LinearBuffer<>& buf)
 
 	auto& va = *s_storage->vertex_arrays[va_handle.index];
 	auto& shader = *s_storage->shaders[shader_handle.index];
-	auto& ubo = *s_storage->uniform_buffers[ubo_handle.index];
-
-	if(ubo_data)
-		ubo.map(ubo_data);
 
 	shader.bind();
-	shader.attach_uniform_buffer(ubo);
+
+	if(ubo_data)
+	{
+		auto& ubo = *s_storage->uniform_buffers[ubo_handle.index];
+		ubo.stream(ubo_data, ubo_size, 0);
+		// shader.attach_uniform_buffer(ubo);
+	}
+	if(ssbo_data)
+	{
+		auto& ssbo = *s_storage->shader_storage_buffers[ssbo_handle.index];
+		ssbo.stream(ssbo_data, ssbo_size, 0);
+		// shader.attach_shader_storage(ssbo);
+	}
 
 	Gfx::device->draw_indexed(va, count, offset);
 }
@@ -1049,6 +1117,8 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
 	&dispatch::update_shader_storage_buffer,
+	&dispatch::shader_attach_uniform_buffer,
+	&dispatch::shader_attach_storage_buffer,
 	&dispatch::submit,
 
 	&dispatch::nop,
