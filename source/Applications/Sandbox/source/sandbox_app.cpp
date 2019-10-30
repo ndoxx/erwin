@@ -6,8 +6,13 @@
 #define W_ENTRY_POINT
 #include "erwin.h"
 
-// #include "layer_qtest_2d.h"
-#include "layer_test.h"
+#define WIP__
+
+#ifdef WIP__
+	#include "layer_test.h"
+#else
+	#include "layer_qtest_2d.h"
+#endif
 
 using namespace erwin;
 
@@ -20,8 +25,11 @@ public:
 		EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
-		// push_layer(new LayerQTest2D());
+#ifdef WIP__
 		push_layer(new LayerTest());
+#else
+		push_layer(new LayerQTest2D());
+#endif
 	}
 
 	~Sandbox() = default;

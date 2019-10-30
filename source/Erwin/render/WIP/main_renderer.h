@@ -19,8 +19,10 @@ class MainRenderer
 public:
 	enum QueueName
 	{
-		Resource = 0,
-		//2D,
+		Resource,
+		Opaque,
+		// OpaqueEmissive,
+		// Transparent,
 
 		Count
 	};
@@ -276,11 +278,12 @@ struct DrawCall
 		UBO_size = size;
 	}
 
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size)
+	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size, uint32_t inst_count)
 	{
 		SSBO = ssbo;
 		SSBO_data = data;
 		SSBO_size = size;
+		instance_count = inst_count;
 	}
 
 	inline void submit()
@@ -298,6 +301,7 @@ struct DrawCall
 	uint32_t UBO_size;
 	uint32_t SSBO_size;
 	uint32_t count;
+	uint32_t instance_count;
 	uint32_t offset;
 
 private:

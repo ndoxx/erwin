@@ -12,6 +12,7 @@
 ###Callgrind profiling
 > valgrind --tool=callgrind ../bin/sandbox
 > gprof2dot --format=callgrind -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
+> gprof2dot --format=callgrind -zerwin::* -lerwin::* -n0.1 -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
 
 ###Apitrace usage
 > apitrace trace --api=gl --output=sandbox.trace ../bin/sandbox

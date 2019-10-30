@@ -162,11 +162,19 @@ struct RendererStorage
 		DESTROY_HANDLE_POOL(HandleType::VertexBufferLayoutHandleT);
 		DESTROY_HANDLE_POOL(HandleType::IndexBufferHandleT);
 #undef  DESTROY_HANDLE_POOL
+
+		for(auto& ref: index_buffers) ref = nullptr;
+		for(auto& ref: vertex_buffer_layouts) ref = nullptr;
+		for(auto& ref: vertex_buffers) ref = nullptr;
+		for(auto& ref: vertex_arrays) ref = nullptr;
+		for(auto& ref: uniform_buffers) ref = nullptr;
+		for(auto& ref: shader_storage_buffers) ref = nullptr;
+		for(auto& ref: shaders) ref = nullptr;
 	}
 
 	HandlePool* handles_[HandleType::Count];
 
-	// TODO: Drop WRefs and use a arenas (with pool allocator?) to allocate memory for these objects
+	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
 	WRef<IndexBuffer>         index_buffers[k_max_handles[HandleType::IndexBufferHandleT]];
 	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles[HandleType::VertexBufferLayoutHandleT]];
 	WRef<VertexBuffer>        vertex_buffers[k_max_handles[HandleType::VertexBufferHandleT]];
@@ -243,9 +251,9 @@ void MainRenderer::flush()
 
 void MainRenderer::DEBUG_test()
 {
-	const void* pre_buf = s_storage->queues_[QueueName::Resource].get_pre_command_buffer_ptr();
-	const void* post_buf = s_storage->queues_[QueueName::Resource].get_post_command_buffer_ptr();
-	const void* aux = s_storage->queues_[QueueName::Resource].get_auxiliary_buffer_ptr();
+	const void* pre_buf = s_storage->queues_[QueueName::Opaque].get_pre_command_buffer_ptr();
+	const void* post_buf = s_storage->queues_[QueueName::Opaque].get_post_command_buffer_ptr();
+	const void* aux = s_storage->queues_[QueueName::Opaque].get_auxiliary_buffer_ptr();
 	memory::hex_dump(std::cout, pre_buf, 256_B, "CMDBuf-PRE");
 	memory::hex_dump(std::cout, post_buf, 256_B, "CMDBuf-POST");
 	memory::hex_dump(std::cout, aux, 256_B, "AUX");
@@ -679,6 +687,7 @@ void RenderQueue::submit(const DrawCall& dc)
 	cmdbuf.write(&dc.UBO_size);
 	cmdbuf.write(&dc.SSBO_size);
 	cmdbuf.write(&dc.count);
+	cmdbuf.write(&dc.instance_count);
 	cmdbuf.write(&dc.offset);
 	uint8_t* ubo_data = nullptr;
 	uint8_t* ssbo_data = nullptr;
@@ -1009,6 +1018,7 @@ void submit(memory::LinearBuffer<>& buf)
 	UniformBufferHandle ubo_handle;
 	ShaderStorageBufferHandle ssbo_handle;
 	uint32_t count;
+	uint32_t instance_count;
 	uint32_t offset;
 	uint32_t ubo_size;
 	uint32_t ssbo_size;
@@ -1023,6 +1033,7 @@ void submit(memory::LinearBuffer<>& buf)
 	buf.read(&ubo_size);
 	buf.read(&ssbo_size);
 	buf.read(&count);
+	buf.read(&instance_count);
 	buf.read(&offset);
 	buf.read(&ubo_data);
 	buf.read(&ssbo_data);
@@ -1045,7 +1056,17 @@ void submit(memory::LinearBuffer<>& buf)
 		// shader.attach_shader_storage(ssbo);
 	}
 
-	Gfx::device->draw_indexed(va, count, offset);
+	switch(type)
+	{
+		case DrawCall::Indexed:
+			Gfx::device->draw_indexed(va, count, offset);
+			break;
+		case DrawCall::IndexedInstanced:
+			Gfx::device->draw_indexed_instanced(va, instance_count);
+			break;
+		default:
+			break;
+	}
 }
 
 void nop(memory::LinearBuffer<>& buf) { }

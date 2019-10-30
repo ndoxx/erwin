@@ -8,7 +8,14 @@
 #include "input/input.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
-// #include "render/master_renderer.h"
+
+#define WIP__
+
+#ifdef WIP__
+    #include "render/WIP/main_renderer.h"
+#else
+    #include "render/master_renderer.h"
+#endif
 
 #include <iostream>
 
@@ -94,7 +101,11 @@ minimized_(false)
     Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
 
     // Create master renderer instance
-    // MasterRenderer::create();
+#ifdef WIP__
+    WIP::MainRenderer::init();
+#else
+    MasterRenderer::create();
+#endif
 
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
@@ -154,14 +165,19 @@ void Application::run()
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
-
-        // MasterRenderer::instance().flush();
+#ifdef WIP__
+        WIP::MainRenderer::flush();
+#else
+        MasterRenderer::instance().flush();
+#endif
 
 		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();
 		for(auto* layer: layer_stack_)
 			layer->on_imgui_render();
-        // MasterRenderer::instance().on_imgui_render();
+#ifndef WIP__
+        MasterRenderer::instance().on_imgui_render();
+#endif
 		IMGUI_LAYER->end();
 
         if(!window_->is_vsync())
@@ -184,8 +200,12 @@ void Application::run()
     layer_stack_.clear();
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
-    
-    // MasterRenderer::kill();
+
+#ifdef WIP__
+    WIP::MainRenderer::shutdown();
+#else
+    MasterRenderer::kill();
+#endif
     Gfx::framebuffer_pool->release();
 
     Input::kill();

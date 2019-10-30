@@ -14,6 +14,7 @@
 #include "texture_packer.h"
 #include "shader_packer.h"
 #include "debug/logger.h"
+#include "debug/logger_sink.h"
 #include "debug/logger_thread.h"
 #include "filesystem/xml_file.h"
 

@@ -14,6 +14,7 @@ set(SRC_FUDGE
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
    )
 
