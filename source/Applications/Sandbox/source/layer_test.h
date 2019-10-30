@@ -36,10 +36,46 @@ public:
 	virtual void on_attach() override
 	{
 		WIP::Renderer2D::init();
-/*
-		auto ubo_handle = rq.create_uniform_buffer("layout_xyz", nullptr, 64, DrawMode::Dynamic);
-		auto ssbo_handle = rq.create_shader_storage_buffer("layout_xyz", nullptr, 10*64, DrawMode::Dynamic);
-*/
+		atlas_.load("textures/atlas/set1.cat");
+		WIP::Renderer2D::register_atlas("set1"_h, atlas_);
+
+		// List of random sub-textures to use
+		tiles_ =
+		{
+			"thatcha64"_h,
+			"stonea64"_h,
+			"pavingc64"_h,
+			"tileroofa64"_h,
+			"pavingd64"_h,
+			"paneling64"_h,
+			"rockc64"_h,
+			"rocka64"_h,
+			"thatchb64"_h,
+			"sand64"_h,
+			"planks64"_h,
+			"rocke64"_h,
+			"stonewalld64"_h,
+			"pavinge64"_h,
+			"stonec64"_h,
+			"snow64"_h,
+			"rockb64"_h,
+			"stonewallb64"_h,
+			"leaves64"_h,
+			"rockd64"_h,
+			"woodfloorb64"_h,
+			"pavingf64"_h,
+			"clover64"_h,
+			"tileroofb64"_h,
+			"grass64"_h,
+			"dirt64"_h,
+			"stoneb64"_h,
+			"woodfloora64"_h,
+			"stonewallc64"_h,
+			"pavinga64"_h,
+			"rockf64"_h,
+			"pavingb64"_h,
+			"stonewalla64"_h
+		};
 	}
 
 	virtual void on_detach() override
@@ -64,7 +100,7 @@ protected:
 		pass_state.blend_state = BlendState::Opaque;
 
 		static int n_quads = 50;
-		float scale = 1.f/(n_quads);
+		float scale = 1.f/(n_quads-1);
 		WIP::Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera());
 		for(int xx=0; xx<n_quads; ++xx)
 		{
@@ -72,7 +108,8 @@ protected:
 			for(int yy=0; yy<n_quads; ++yy)
 			{
 				float y_pos = -1.f + 2.f*yy/(n_quads-1);
-				WIP::Renderer2D::draw_quad({x_pos,y_pos},{scale,scale},{0.f,0.f,1.f,1.f},0);
+				hash_t tile = tiles_.at((yy/3 + xx/5)%(tiles_.size()-1));
+				WIP::Renderer2D::draw_quad({x_pos,y_pos},{scale,scale},atlas_.get_uv(tile),"set1"_h);
 			}
 		}
 		WIP::Renderer2D::end_pass();
@@ -99,5 +136,7 @@ protected:
 
 private:
 	OrthographicCamera2DController camera_ctl_;
+	WIP::TextureAtlas atlas_;
+	std::vector<hash_t> tiles_;
 	float tt_ = 0.f;
 };

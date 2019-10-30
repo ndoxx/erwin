@@ -8,6 +8,8 @@
 #include "render/buffer_layout.h"
 #include "memory/arena.h"
 
+#include "render/texture.h" // TMP: for Texture2DDescriptor
+
 namespace erwin
 {
 namespace WIP
@@ -141,6 +143,7 @@ public:
 		CreateUniformBuffer,
 		CreateShaderStorageBuffer,
 		CreateShader,
+		CreateTexture2D,
 
 		UpdateIndexBuffer,
 		UpdateVertexBuffer,
@@ -160,6 +163,7 @@ public:
 		DestroyUniformBuffer,
 		DestroyShaderStorageBuffer,
 		DestroyShader,
+		DestroyTexture2D,
 
 		Count
 	};
@@ -187,6 +191,7 @@ public:
 	UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	ShaderHandle 			  create_shader(const fs::path& filepath, const std::string& name);
+	TextureHandle 			  create_texture_2D(const Texture2DDescriptor& desc);
 
 	void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
@@ -204,6 +209,7 @@ public:
 	void destroy_uniform_buffer(UniformBufferHandle handle);
 	void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
 	void destroy_shader(ShaderHandle handle);
+	void destroy_texture_2D(TextureHandle handle);
 
 	// Sort queue by sorting key
 	void sort();
@@ -286,6 +292,12 @@ struct DrawCall
 		instance_count = inst_count;
 	}
 
+	inline void set_texture(hash_t smp, TextureHandle tex)
+	{
+		sampler = smp;
+		texture = tex;
+	}
+
 	inline void submit()
 	{
 		queue.submit(*this);
@@ -303,6 +315,9 @@ struct DrawCall
 	uint32_t count;
 	uint32_t instance_count;
 	uint32_t offset;
+
+	hash_t sampler;
+	TextureHandle texture; // TODO: allow multiple textures
 
 private:
 	RenderQueue& queue;

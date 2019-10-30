@@ -4,6 +4,7 @@
 #include "render/render_state.h" // For access to enums
 #include "render/camera_2d.h"
 #include "render/WIP/main_renderer.h"
+#include "render/WIP/texture_atlas.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -19,6 +20,8 @@ public:
 	static void init(uint32_t max_batch_count=8192);
 	// Destroy renderer
 	static void shutdown();
+	// Register a texture atlas
+	static void register_atlas(hash_t name, TextureAtlas& atlas);
 
 	// Start a new pass
 	static void begin_pass(const PassState& state, const OrthographicCamera2D& camera);

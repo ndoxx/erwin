@@ -169,6 +169,7 @@ struct RendererStorage
 		for(auto& ref: vertex_arrays) ref = nullptr;
 		for(auto& ref: uniform_buffers) ref = nullptr;
 		for(auto& ref: shader_storage_buffers) ref = nullptr;
+		for(auto& ref: textures) ref = nullptr;
 		for(auto& ref: shaders) ref = nullptr;
 	}
 
@@ -181,6 +182,7 @@ struct RendererStorage
 	WRef<VertexArray>         vertex_arrays[k_max_handles[HandleType::VertexArrayHandleT]];
 	WRef<UniformBuffer>       uniform_buffers[k_max_handles[HandleType::UniformBufferHandleT]];
 	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_handles[HandleType::ShaderStorageBufferHandleT]];
+	WRef<Texture2D>			  textures[k_max_handles[HandleType::TextureHandleT]];
 	WRef<Shader>			  shaders[k_max_handles[HandleType::ShaderHandleT]];
 
 	std::vector<RenderQueue> queues_;
@@ -561,6 +563,22 @@ ShaderHandle RenderQueue::create_shader(const fs::path& filepath, const std::str
 	return handle;
 }
 
+TextureHandle RenderQueue::create_texture_2D(const Texture2DDescriptor& desc)
+{
+	RenderCommand type = RenderCommand::CreateTexture2D;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	TextureHandle handle = { s_storage->handles_[TextureHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&desc);
+
+	push_command(type, cmd);
+	return handle;
+}
+
 void RenderQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
@@ -689,6 +707,8 @@ void RenderQueue::submit(const DrawCall& dc)
 	cmdbuf.write(&dc.count);
 	cmdbuf.write(&dc.instance_count);
 	cmdbuf.write(&dc.offset);
+	cmdbuf.write(&dc.sampler);
+	cmdbuf.write(&dc.texture);
 	uint8_t* ubo_data = nullptr;
 	uint8_t* ssbo_data = nullptr;
 	if(dc.UBO_data)
@@ -803,6 +823,21 @@ void RenderQueue::destroy_shader(ShaderHandle handle)
 	s_storage->handles_[ShaderHandleT]->release(handle.index);
 	
 	RenderCommand type = RenderCommand::DestroyShader;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void RenderQueue::destroy_texture_2D(TextureHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid TextureHandle!");
+	s_storage->handles_[TextureHandleT]->release(handle.index);
+	
+	RenderCommand type = RenderCommand::DestroyTexture2D;
 	auto& cmdbuf = get_command_buffer(type).storage;
 	void* cmd = cmdbuf.head();
 
@@ -936,6 +971,16 @@ void create_shader(memory::LinearBuffer<>& buf)
 	s_storage->shader_names_.insert(std::pair(hname, handle));
 }
 
+void create_texture_2D(memory::LinearBuffer<>& buf)
+{
+	TextureHandle handle;
+	Texture2DDescriptor descriptor;
+	buf.read(&handle);
+	buf.read(&descriptor);
+
+	s_storage->textures[handle.index] = Texture2D::create(descriptor);
+}
+
 void update_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
@@ -1017,6 +1062,8 @@ void submit(memory::LinearBuffer<>& buf)
 	ShaderHandle shader_handle;
 	UniformBufferHandle ubo_handle;
 	ShaderStorageBufferHandle ssbo_handle;
+	TextureHandle texture_handle;
+	hash_t sampler;
 	uint32_t count;
 	uint32_t instance_count;
 	uint32_t offset;
@@ -1035,6 +1082,8 @@ void submit(memory::LinearBuffer<>& buf)
 	buf.read(&count);
 	buf.read(&instance_count);
 	buf.read(&offset);
+	buf.read(&sampler);
+	buf.read(&texture_handle);
 	buf.read(&ubo_data);
 	buf.read(&ssbo_data);
 
@@ -1054,6 +1103,11 @@ void submit(memory::LinearBuffer<>& buf)
 		auto& ssbo = *s_storage->shader_storage_buffers[ssbo_handle.index];
 		ssbo.stream(ssbo_data, ssbo_size, 0);
 		// shader.attach_shader_storage(ssbo);
+	}
+	if(is_valid(texture_handle))
+	{
+		auto& texture = *s_storage->textures[texture_handle.index];
+		shader.attach_texture(sampler, texture);
 	}
 
 	switch(type)
@@ -1122,6 +1176,13 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 	s_storage->shader_names_.erase(hname);
 }
 
+void destroy_texture_2D(memory::LinearBuffer<>& buf)
+{
+	TextureHandle handle;
+	buf.read(&handle);
+	s_storage->textures[handle.index] = nullptr;
+}
+
 } // namespace dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
@@ -1134,6 +1195,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::create_uniform_buffer,
 	&dispatch::create_shader_storage_buffer,
 	&dispatch::create_shader,
+	&dispatch::create_texture_2D,
 	&dispatch::update_index_buffer,
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
@@ -1151,6 +1213,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::destroy_uniform_buffer,
 	&dispatch::destroy_shader_storage_buffer,
 	&dispatch::destroy_shader,
+	&dispatch::destroy_texture_2D,
 };
 
 void RenderQueue::flush(Phase phase)

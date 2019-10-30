@@ -97,6 +97,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/master_renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/renderer_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/main_renderer.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp

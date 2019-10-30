@@ -1,3 +1,5 @@
+#include <map>
+
 #include "render/WIP/renderer_2d.h"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -11,6 +13,13 @@ struct InstanceData // Need correct alignment for SSBO data
 	glm::vec2 offset;
 	glm::vec2 scale;
 	glm::vec4 uvs;
+};
+
+struct Batch2D
+{
+	TextureHandle texture;
+	uint32_t current_batch_count;
+	std::vector<InstanceData> instance_data;
 };
 
 struct Renderer2DStorage
@@ -29,9 +38,18 @@ struct Renderer2DStorage
 
 	uint32_t num_batches; // stats
 	uint32_t max_batch_count;
-	uint32_t current_batch_count;
-	std::vector<InstanceData> instance_data;
+	std::map<hash_t, Batch2D> batches;
 };
+static Renderer2DStorage storage;
+
+static void create_batch(hash_t atlas_name, TextureHandle texture)
+{
+	storage.batches.insert(std::make_pair(atlas_name, Batch2D()));
+	auto& batch = storage.batches[atlas_name];
+	batch.instance_data.reserve(storage.max_batch_count);
+	batch.current_batch_count = 0;
+	batch.texture = texture;
+}
 
 // TMP: MOVE this to proper collision trait class?
 static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, const FrustumSides& fs)
@@ -68,14 +86,10 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 	return false;
 }
 
-static Renderer2DStorage storage;
-
 void Renderer2D::init(uint32_t max_batch_count)
 {
 	storage.num_batches = 1;
-	storage.current_batch_count = 0;
 	storage.max_batch_count = max_batch_count;
-	storage.instance_data.reserve(max_batch_count);
 
 	float sq_vdata[20] = 
 	{
@@ -87,7 +101,8 @@ void Renderer2D::init(uint32_t max_batch_count)
 	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 	storage.vbl_handle = rq.create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
@@ -115,6 +130,28 @@ void Renderer2D::shutdown()
 	rq.destroy_shader(storage.shader_handle);
 }
 
+void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
+{
+	ImageFormat format;
+	switch(atlas.descriptor.texture_compression)
+	{
+		case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+		case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
+		case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
+	}
+	uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
+	// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
+
+	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
+	atlas.handle = rq.create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
+								  					 		atlas.descriptor.texture_height,
+								  					 		atlas.descriptor.texture_blob,
+								  					 		format,
+								  					 		filter});
+
+	create_batch(name, atlas.handle);
+}
+
 void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera)
 {
 	// Reset stats
@@ -134,31 +171,42 @@ void Renderer2D::end_pass()
 
 }
 
+static void flush_batch(hash_t key)
+{
+	auto& batch = storage.batches[key];
+	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+
+	DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
+	dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
+	dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.current_batch_count * sizeof(InstanceData), batch.current_batch_count);
+	dc.set_texture("us_atlas"_h, batch.texture);
+	dc.submit();
+}
+
 void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)
 {
 	// * Frustum culling
 	if(frustum_cull(position, scale, storage.frustum_sides)) return;
 
+	// Get appropriate batch
+	auto& batch = storage.batches[atlas];
+
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
-	if(storage.current_batch_count == storage.max_batch_count)
+	if(batch.current_batch_count == storage.max_batch_count)
 	{
 		flush();
 		++storage.num_batches;
-		storage.current_batch_count = 0;
+		batch.current_batch_count = 0;
 	}
 
-	storage.instance_data[storage.current_batch_count] = {position, scale, uvs};
-	++storage.current_batch_count;
+	batch.instance_data[batch.current_batch_count] = {position, scale, uvs};
+	++batch.current_batch_count;
 }
 
 void Renderer2D::flush()
 {
-	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
-
-	DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
-	dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
-	dc.set_instance_data_SSBO(storage.ssbo_handle, storage.instance_data.data(), storage.current_batch_count * sizeof(InstanceData), storage.current_batch_count);
-	dc.submit();
+	for(auto&& [key, batch]: storage.batches)
+		flush_batch(key);
 }
 
 } // namespace WIP
