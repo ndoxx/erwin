@@ -18,7 +18,7 @@ struct InstanceData // Need correct alignment for SSBO data
 struct Batch2D
 {
 	TextureHandle texture;
-	uint32_t current_batch_count;
+	uint32_t count;
 	std::vector<InstanceData> instance_data;
 };
 
@@ -47,7 +47,7 @@ static void create_batch(hash_t atlas_name, TextureHandle texture)
 	storage.batches.insert(std::make_pair(atlas_name, Batch2D()));
 	auto& batch = storage.batches[atlas_name];
 	batch.instance_data.reserve(storage.max_batch_count);
-	batch.current_batch_count = 0;
+	batch.count = 0;
 	batch.texture = texture;
 }
 
@@ -171,16 +171,20 @@ void Renderer2D::end_pass()
 
 }
 
-static void flush_batch(hash_t key)
+static void flush_batch(Batch2D& batch)
 {
-	auto& batch = storage.batches[key];
-	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+	if(batch.count)
+	{
+		auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
 
-	DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
-	dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
-	dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.current_batch_count * sizeof(InstanceData), batch.current_batch_count);
-	dc.set_texture("us_atlas"_h, batch.texture);
-	dc.submit();
+		DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
+		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
+		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.count * sizeof(InstanceData), batch.count);
+		dc.set_texture("us_atlas"_h, batch.texture);
+		dc.submit();
+
+		batch.count = 0;
+	}
 }
 
 void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)
@@ -192,21 +196,20 @@ void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, co
 	auto& batch = storage.batches[atlas];
 
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
-	if(batch.current_batch_count == storage.max_batch_count)
+	if(batch.count == storage.max_batch_count)
 	{
-		flush();
+		flush_batch(batch);
 		++storage.num_batches;
-		batch.current_batch_count = 0;
 	}
 
-	batch.instance_data[batch.current_batch_count] = {position, scale, uvs};
-	++batch.current_batch_count;
+	batch.instance_data[batch.count] = {position, scale, uvs};
+	++batch.count;
 }
 
 void Renderer2D::flush()
 {
 	for(auto&& [key, batch]: storage.batches)
-		flush_batch(key);
+		flush_batch(batch);
 }
 
 } // namespace WIP

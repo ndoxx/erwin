@@ -1568,7 +1568,12 @@ Chaque type d'asset que Fudge peut traiter peut définir plusieurs batches. Chaq
 Merde, ce retard de dingue dans ma prise de notes...
 
 ##Memory System
-Je me suis beaucoup inspiré des articles [1] à [8] pour réaliser un système de gestion de la mémoire assez puissant. L'idée générale consiste à réserver un gros bloc mémoire, et à utiliser une ou plusieurs "arènes" sur ce bloc pour allouer dynamiquement les objets que l'on veut avec du placement new. Une arène, de type _MemoryArena_ (dans memory/memory.hpp) est une classe template hautement paramétrable qui prend possession d'un bloc mémoire, implémente une stratégie particulière d'allocation (linear, stack, pool...) sur ce bloc, et réagit à une primitive de synchronisation particulière dans un contexte multi-thread. Plusieurs politiques de debugging peuvent être utilisées pour assurer l'intégrité des données (*bounds checking*), la validité des accès (*memory tagging*) et la détection des fuites (*memory tracking*) :
+Je me suis beaucoup inspiré des articles [1] à [8] pour réaliser un système de gestion de la mémoire assez puissant. L'idée générale consiste à réserver un gros bloc mémoire, et à utiliser une ou plusieurs "arènes" sur ce bloc pour allouer dynamiquement les objets que l'on veut avec du placement new.
+
+##Area & Arena
+Un espace mémoire préalloué est décrit par une *surface*. Pour l'instant, je ne gère que des allocations sur le tas grâce à la surface _HeapArea_, mais rien n'empêche de créer par exemple une surface _StackArea_ qui réserve un espace sur la pile (via alloca() par exemple). Une surface mémoire implémente un allocateur linéaire très basique, et dispose d'une fonction require_block() qui réserve un bloc mémoire et retourne une paire de pointeurs (begin / end) qui encadre ce bloc. Le deuxième pointeur ("end") pointe vers l'adresse immédiatement __après__ le bloc. Par ailleurs, le pointeur vers le début du bloc est toujours aligné sur 64 octets (*page-aligned*), de sorte à éviter le *false sharing* lorsque deux threads accèdent à des blocs contigus. 
+
+Une arène, de type _MemoryArena_ (dans memory/memory.hpp) est une classe template hautement paramétrable qui prend possession d'un bloc mémoire, implémente une stratégie particulière d'allocation (linear, stack, pool...) sur ce bloc, et réagit à une primitive de synchronisation particulière dans un contexte multi-thread. Plusieurs politiques de debugging peuvent être utilisées pour assurer l'intégrité des données (*bounds checking*), la validité des accès (*memory tagging*) et la détection des fuites (*memory tracking*) :
 
 ```cpp
 template <typename AllocatorT, 
@@ -1581,8 +1586,8 @@ class MemoryArena
     // ...
 };
 ```
-Une arène peut allouer un bloc d'une taille donnée, et forcer un alignement particulier du pointeur retourné à l'utilisateur :
 
+Pour instancier une arène on procède comme suit :
 ```cpp
 typedef memory::MemoryArena<memory::LinearAllocator, 
                             memory::policy::SingleThread, 
@@ -1590,15 +1595,40 @@ typedef memory::MemoryArena<memory::LinearAllocator,
                             memory::policy::NoMemoryTagging,
                             memory::policy::SimpleMemoryTracking> LinArena;
 
-memory::HeapArea area;
-LinArena arena;
+memory::HeapArea area(10_MB);
+LinArena arena(area.require_block(1_MB));
+```
+Ici, on alloue tout d'abord un gros bloc mémoire de 10MB sur le tas grâce à une surface _memory::HeapArea_, puis on récupère un intervalle de pointeurs sur un sous-block de 1MB via HeapArea::require_block(size_t) que l'on affecte à l'arène. Noter l'utilisation des littéraux pour désigner les tailles mémoires : ils assurent que la taille retournée est un multiple de 1024, par exemple, 1_MB vaut 1024 * 1024 octets. Les littéraux suivants sont disponibles :
+```cpp
+    size_t one_byte     = 1_B;
+    size_t one_kilobyte = 1_kB;
+    size_t one_megabyte = 1_MB;
+    size_t one_gigabyte = 1_GB;
+```
 
+
+Pour être tout à fait complet, voici la fonction de memory/memory_utils.h que j'utilise pour calculer l'adresse alignée la plus proche :
+```cpp
+static inline std::size_t alignment_padding(std::size_t base_address, std::size_t alignment)
+{
+    std::size_t multiplier = (base_address / alignment) + 1;
+    std::size_t aligned_address = multiplier * alignment;
+    std::size_t padding = aligned_address - base_address;
+    
+    return padding;
+}
+```
+La valeur "padding" retournée est le nombre d'octets de padding avant l'adresse alignée.
+
+Un ensemble de macros a été codé afin de conserver une syntaxe relativement proche de celle des opérateurs new, new[], delete et delete[], mais en spécifiant l'arène concernée par l'opération. Une arène peut allouer un bloc d'une taille donnée, et forcer un alignement particulier du pointeur retourné à l'utilisateur :
+```cpp
 Object* instance = W_NEW(Object, arena);
 W_DELETE(instance, arena);
 
 instance = W_NEW_ALIGN(Object, arena, 16);
 W_DELETE(instance, arena);
 ```
+
 Il est aussi possible d'allouer des tableaux d'objets, de manière statique ou dynamique :
 
 ```cpp
@@ -1635,8 +1665,30 @@ Essentiellement, il y a deux points cruciaux qui ont guidé la mise en oeuvre :
       que delete et delete[] n'ont pas besoin d'appeler de destructeurs pour ces mêmes
       types, ce qui laisse la voie à une optimisation, puisque la nature POD ou non
       d'un type est connaissable en compile-time via les type traits.
-    * new[] doit faire du bookkeeping pour que delete[] puisse fonctionner.
+    * Pour un type non-POD, new[] doit faire du bookkeeping afin que delete[] puisse 
+      fonctionner.
 
+Une arène possède une fonction allocate() et une fonction deallocate() qui réalisent les allocations / désallocations au gré des politiques qui la paramétrisent. Les macros précédentes appèlent des classes templates intermédiaires (_NewArray_, _DeleteArray_ et _Delete_) qui réalisent les allocations / désallocations nécessaires en appelant ces fonctions de l'arène. Le prototype de allocate() est le suivant :
+```cpp
+    void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line);
+```
+Le paramètre "offset" est essentiellement utilisé pour l'allocation de tableaux de types non-POD, afin de pouvoir écrire le nombre d'instances sur 4 octets avant le tableau, mais néanmoins retourner un pointeur sur le début du tableau à l'utilisateur. Les paramètres "file" et "line" sont prévus pour recevoir l'évaluation des macros __FILE__ et __LINE__, ce qui renseigne le memory tracker sur lieu de l'allocation.
+
+###LinearAllocator
+
+###HexDump bien classe
+memory/memory_utils.h propose une fonction hex_dump() qui réalise comme son nom l'indique un dump mémoire à une adresse donnée, sur une taille donnée. Il est possible de configurer le dumper via hex_dump_highlight() pour surligner d'une couleur particulière un certain motif sur 4 octets. 
+
+Exemple d'utilisation :
+```cpp
+    memory::hex_dump_highlight(0xf0f0f0f0, WCB(100,0,0));
+    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,0,100));
+    memory::hex_dump_highlight(0xd0d0d0d0, WCB(200,100,0));
+    memory::hex_dump(std::cout, arena.get_allocator().begin(), size, "HEX DUMP");
+```
+![Hex dump.\label{figHexDump}](../../Erwin_rel/screens_erwin/erwin_5a_hexdump.png)
+
+Je prévois de lui coder un petit mode ASCII à l'occasion, et pourquoi pas de pousser un peu la détection de motifs. Cet outil m'a déjà été d'une aide inestimable.
 
 ###Sources:
     [1] https://blog.molecular-matters.com/2011/07/05/memory-system-part-1/
