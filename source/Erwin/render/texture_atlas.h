@@ -2,39 +2,28 @@
 
 #include <map>
 
-#include "render/texture.h"
+#include "render/handles.h"
 #include "filesystem/filesystem.h"
+#include "filesystem/cat_file.h"
 #include "glm/glm.hpp"
 
 namespace erwin
 {
 
-class TextureAtlas
+struct TextureAtlas
 {
-public:
-	TextureAtlas();
-	~TextureAtlas();
-
+	// Load texture data from file and prepare descriptor for later renderer submission
 	void load(const fs::path& filepath);
-
 	// Return lower left and upper right uv coordinates for the sub-texture at input key
-	inline const glm::vec4& get_uv(hash_t key) const { return remapping_.at(key); }
+	inline const glm::vec4& get_uv(hash_t key) const { return remapping.at(key); }
+	inline uint32_t get_width() const { return descriptor.texture_width; }
+	inline uint32_t get_height() const { return descriptor.texture_height; }
 
-	// Get a random sub-texture uvs, for DEBUG purposes
-	const glm::vec4& get_random_uv() const;
-
-	inline uint32_t get_width() const  { return texture_->get_width(); }
-	inline uint32_t get_height() const { return texture_->get_height(); }
-
-	inline void bind(uint32_t slot = 0) { texture_->bind(slot); }
-	inline void unbind()                { texture_->unbind(); }
-
-	inline WRef<Texture2D> get_texture() { return texture_; }
+	cat::CATDescriptor descriptor;
+	TextureHandle handle;
 
 private:
-	WRef<Texture2D> texture_;
-	std::map<hash_t, glm::vec4> remapping_;
+	std::map<hash_t, glm::vec4> remapping;
 };
-
 
 } // namespace erwin

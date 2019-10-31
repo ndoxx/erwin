@@ -5,7 +5,6 @@
 
 #include "core/core.h"
 #include "render/render_state.h"
-#include "render/framebuffer_pool.h"
 
 namespace erwin
 {
@@ -114,10 +113,8 @@ class Gfx
 public:
     inline static GfxAPI get_api() { return api_; }
     static void set_api(GfxAPI api);
-    static void create_framebuffer_pool(uint32_t width, uint32_t height);
 
     static std::unique_ptr<RenderDevice> device;
-    static std::unique_ptr<FramebufferPool> framebuffer_pool;
 
 private:
     static GfxAPI api_;

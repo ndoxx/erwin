@@ -10,14 +10,17 @@
 #include "memory/arena.h"
 
 #include "render/texture.h" // TMP: for Texture2DDescriptor
-#include "render/WIP/handles.h"
+#include "render/handles.h"
 
-#include "render/WIP/framebuffer_pool.h"
+#include "render/framebuffer_pool.h"
 
 namespace erwin
 {
-namespace WIP
+
+struct MainRendererStats
 {
+	float render_time = 0.f;
+};
 
 class RenderQueue;
 class MainRenderer
@@ -35,6 +38,9 @@ public:
 
 	static void init();
 	static void shutdown();
+
+	static void set_profiling_enabled(bool value=true);
+	static const MainRendererStats& get_stats();
 
 	static RenderQueue& get_queue(int name);
 	static void flush();
@@ -284,5 +290,4 @@ private:
 	RenderQueue& queue;
 };
 
-} // namespace WIP
 } // namespace erwin

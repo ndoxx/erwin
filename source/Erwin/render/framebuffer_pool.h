@@ -1,8 +1,10 @@
 #pragma once
 
 #include <map>
+#include <cmath>
 #include "core/wtypes.h"
-#include "render/framebuffer.h"
+#include "render/framebuffer_layout.h"
+#include "render/handles.h"
 #include "event/window_events.h"
 
 namespace erwin
@@ -47,39 +49,15 @@ private:
 	float height_mul_;
 };
 
-
 class FramebufferPool
 {
 public:
-	FramebufferPool(uint32_t initial_width, uint32_t initial_height);
-	~FramebufferPool();
-
+	static void init(uint32_t initial_width, uint32_t initial_height);
+	// Destroy all framebuffers stored in this pool
+	static void shutdown();
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
-	void create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);
-	// Get a framebuffer by name
-	const Framebuffer& get(hash_t name) const;
-	// Bind a framebuffer by name
-	void bind(hash_t name) const;
-	// Check whether a framebuffer is registered to this name
-	bool exists(hash_t name) const;
-	// Get a framebuffer target texture by framebuffer name and texture index
-	const Texture2D& get_texture(hash_t fbname, uint32_t index);
-	// Get a framebuffer target texture by framebuffer name and target texture name
-	const Texture2D& get_named_texture(hash_t fbname, hash_t texname);
-	// Destroy all framebuffers stored in this pool
-	void release();
-
-private:
-	bool on_framebuffer_resize_event(const FramebufferResizeEvent& event);
-
-private:
-	std::map<hash_t, WScope<Framebuffer>> framebuffers_;
-	std::map<hash_t, WScope<FbConstraint>> constraints_;
-
-	uint32_t current_width_;
-	uint32_t current_height_;
+	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);
 };
-
 
 } // namespace erwin

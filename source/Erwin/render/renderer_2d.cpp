@@ -1,14 +1,53 @@
+#include <map>
+
 #include "render/renderer_2d.h"
-#include "render/master_renderer.h"
-#include "render/render_device.h" // TMP
-#include "debug/logger.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace erwin
 {
 
-static const uint32_t s_num_batches_init = 1;
-static const uint32_t s_max_batches = 32;
-static const uint16_t s_max_batch_ttl = 60*2;
+struct InstanceData // Need correct alignment for SSBO data
+{
+	glm::vec2 offset;
+	glm::vec2 scale;
+	glm::vec4 uvs;
+};
+
+struct Batch2D
+{
+	TextureHandle texture;
+	uint32_t count;
+	std::vector<InstanceData> instance_data;
+};
+
+struct Renderer2DStorage
+{
+	IndexBufferHandle ibo_handle;
+	VertexBufferLayoutHandle vbl_handle;
+	VertexBufferHandle vbo_handle;
+	VertexArrayHandle va_handle;
+	ShaderHandle shader_handle;
+	UniformBufferHandle ubo_handle;
+	ShaderStorageBufferHandle ssbo_handle;
+
+	glm::mat4 view_projection_matrix;
+	glm::mat4 view_matrix;
+	FrustumSides frustum_sides;
+
+	uint32_t num_batches; // stats
+	uint32_t max_batch_count;
+	std::map<hash_t, Batch2D> batches;
+};
+static Renderer2DStorage storage;
+
+static void create_batch(hash_t atlas_name, TextureHandle texture)
+{
+	storage.batches.insert(std::make_pair(atlas_name, Batch2D()));
+	auto& batch = storage.batches[atlas_name];
+	batch.instance_data.reserve(storage.max_batch_count);
+	batch.count = 0;
+	batch.texture = texture;
+}
 
 // TMP: MOVE this to proper collision trait class?
 static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, const FrustumSides& fs)
@@ -45,170 +84,130 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 	return false;
 }
 
-Renderer2D::Renderer2D(uint32_t max_batch_count):
-max_batch_count_(max_batch_count),
-current_batch_(0),
-current_batch_count_(0),
-batch_ttl_(s_max_batches, 0)
+void Renderer2D::init(uint32_t max_batch_count)
 {
-	mat_ubo_ = UniformBuffer::create("matrices_layout", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	pp_ubo_  = UniformBuffer::create("post_proc_layout", nullptr, sizeof(PostProcData), DrawMode::Dynamic);
+	storage.num_batches = 1;
+	storage.max_batch_count = max_batch_count;
 
-	for(int ii=0; ii<s_num_batches_init; ++ii)
-		create_batch();
+	float sq_vdata[20] = 
+	{
+		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
+		-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
+	};
+	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
-	instance_data_.reserve(max_batch_count_);
+	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
+	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
+	storage.vbl_handle = rq.create_vertex_buffer_layout({
+			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
+								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
+								 			    });
+	storage.vbo_handle = rq.create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
+	storage.va_handle = rq.create_vertex_array(storage.vbo_handle, storage.ibo_handle);
+	storage.ubo_handle = rq.create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	storage.ssbo_handle = rq.create_shader_storage_buffer("instance_data", nullptr, max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+
+
+	rq.shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
+	rq.shader_attach_storage_buffer(storage.shader_handle, storage.ssbo_handle);
 }
 
-Renderer2D::~Renderer2D()
+void Renderer2D::shutdown()
 {
-
+	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
+	rq.destroy_shader_storage_buffer(storage.ssbo_handle);
+	rq.destroy_uniform_buffer(storage.ubo_handle);
+	rq.destroy_vertex_array(storage.va_handle);
+	rq.destroy_vertex_buffer(storage.vbo_handle);
+	rq.destroy_vertex_buffer_layout(storage.vbl_handle);
+	rq.destroy_index_buffer(storage.ibo_handle);
+	rq.destroy_shader(storage.shader_handle);
 }
 
-void Renderer2D::begin_scene(const PassState& render_state, const OrthographicCamera2D& camera, WRef<Texture2D> texture, const PostProcData& pp_data)
+void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 {
-	// Set render state
-	render_state_ = render_state;
+	ImageFormat format;
+	switch(atlas.descriptor.texture_compression)
+	{
+		case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+		case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
+		case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
+	}
+	uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
+	// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
+
+	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
+	atlas.handle = rq.create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
+								  					 		atlas.descriptor.texture_height,
+								  					 		atlas.descriptor.texture_blob,
+								  					 		format,
+								  					 		filter});
+
+	create_batch(name, atlas.handle);
+}
+
+void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera)
+{
+	// Reset stats
+	storage.num_batches = 1;
+
+	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+	rq.set_state(state);
 
 	// Set scene data
-	scene_data_.view_projection_matrix = camera.get_view_projection_matrix();
-	scene_data_.view_matrix = camera.get_view_matrix();
-	scene_data_.frustum_sides = camera.get_frustum_sides();
-	scene_data_.texture = texture;
-
-	// Set post processing data
-	post_proc_data_ = pp_data;
-	post_proc_data_.fb_size = {Gfx::framebuffer_pool->get(render_state_.render_target).get_width(),
-				  	   		   Gfx::framebuffer_pool->get(render_state_.render_target).get_height()};
-	// Reset
-	current_batch_ = 0;
-	current_batch_count_ = 0;
+	storage.view_projection_matrix = camera.get_view_projection_matrix();
+	storage.view_matrix = camera.get_view_matrix();
+	storage.frustum_sides = camera.get_frustum_sides();
 }
 
-void Renderer2D::end_scene()
+void Renderer2D::end_pass()
 {
-	upload_batch();
 
-	// Flush
-	mat_ubo_->map(&scene_data_.view_projection_matrix);
-	auto& isp_queue = MasterRenderer::instance().get_queue<InstancedSpriteQueueData>();
-	isp_queue.begin_pass(&render_state_);
-
-	for(int ii=0; ii<=current_batch_; ++ii)
-	{
-		auto* data = isp_queue.data_ptr();
-		data->instance_count = (ii==current_batch_) ? current_batch_count_ : max_batch_count_;
-		data->SSBO_size = data->instance_count*sizeof(InstanceData);
-		data->texture = scene_data_.texture;
-		data->UBO = mat_ubo_;
-		data->SSBO = batches_[ii];
-		isp_queue.push(data);
-	}
-
-	// Render generated texture on screen after post-processing
-	pp_ubo_->map(&post_proc_data_);
-
-	auto& pp_queue = MasterRenderer::instance().get_queue<PostProcessingQueueData>();
-	auto* pp_state = pp_queue.pass_state_ptr();
-	pp_state->render_target = 0;
-	pp_state->rasterizer_state.cull_mode = CullMode::Back;
-	pp_state->rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
-	pp_state->blend_state = BlendState::Opaque;
-	pp_queue.begin_pass(pp_state);
-	auto* pp_data = pp_queue.data_ptr();
-	pp_data->input_framebuffer = render_state_.render_target;
-	pp_data->framebuffer_texture_index = 0;
-	pp_data->UBO = pp_ubo_;
-	pp_queue.push(pp_data);
-
-	// Update unused batches' time to live, remove dead batches
-	int ii=0;
-	for(; ii<s_max_batches; ++ii)
-	{
-		if(ii<=current_batch_)
-			batch_ttl_[ii] = 0;
-		else
-			if(++batch_ttl_[ii]>s_max_batch_ttl)
-				break;
-	}
-	remove_unused_batches(ii);
 }
 
-void Renderer2D::draw_quad(const glm::vec2& position,
-						   const glm::vec2& scale,
-						   const glm::vec4& uvs)
+static void flush_batch(Batch2D& batch)
+{
+	if(batch.count)
+	{
+		auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+
+		DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
+		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
+		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.count * sizeof(InstanceData), batch.count);
+		dc.set_texture("us_atlas"_h, batch.texture);
+		dc.submit();
+
+		batch.count = 0;
+	}
+}
+
+void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)
 {
 	// * Frustum culling
-	if(frustum_cull(position, scale, scene_data_.frustum_sides)) return;
+	if(frustum_cull(position, scale, storage.frustum_sides)) return;
 
-	// * Select a batch vertex array
+	// Get appropriate batch
+	auto& batch = storage.batches[atlas];
+
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
-	if(current_batch_count_ == max_batch_count_)
+	if(batch.count == storage.max_batch_count)
 	{
-		upload_batch();
-
-		// If current batch is the last one in list, add new batch
-		if(current_batch_ >= batches_.size()-1)
-		{
-			if(current_batch_ < s_max_batches-1)
-				create_batch();
-			else
-			{
-				DLOGW("render") << "[Renderer2D] Hitting max batch number." << std::endl;
-				return;
-			}
-		}
-
-		++current_batch_;
-		current_batch_count_ = 0;
+		flush_batch(batch);
+		++storage.num_batches;
 	}
 
-	instance_data_[current_batch_count_] = {position, scale, uvs};
-
-	++current_batch_count_;
+	batch.instance_data[batch.count] = {position, scale, uvs};
+	++batch.count;
 }
 
-void Renderer2D::set_batch_size(uint32_t value)
+void Renderer2D::flush()
 {
-	if(value<200)
-		return;
-
-	// Avoid lowering the batch size when the number of batches is already maximal
-	uint32_t num_batches = batches_.size();
-	if(num_batches>=s_max_batches && value<max_batch_count_)
-		return;
-
-	max_batch_count_ = value;
-
-	batches_.clear();
-	for(int ii=0; ii<num_batches; ++ii)
-		create_batch();
-
-	instance_data_.reserve(max_batch_count_);
-
-	current_batch_ = 0;
-}
-
-void Renderer2D::create_batch()
-{
-	DLOGN("render") << "[Renderer2D] Generating new batch." << std::endl;
-	
-	auto ssbo = ShaderStorageBuffer::create("instance_data", nullptr, max_batch_count_*sizeof(InstanceData), DrawMode::Dynamic);
-	batches_.push_back(ssbo);
-
-	DLOG("render",1) << "New batch size is: " << batches_.size() << std::endl;
-}
-
-void Renderer2D::upload_batch()
-{
-	// Map instance data to SSBO
-	batches_[current_batch_]->map(instance_data_.data(), current_batch_count_*sizeof(InstanceData));
-}
-
-void Renderer2D::remove_unused_batches(uint32_t index)
-{
-	if(index<s_max_batches)
-		batches_.erase(batches_.begin()+index,batches_.end());
+	for(auto&& [key, batch]: storage.batches)
+		flush_batch(batch);
 }
 
 } // namespace erwin

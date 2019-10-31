@@ -93,13 +93,8 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/master_renderer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/renderer_2d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/main_renderer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/texture_atlas.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/WIP/framebuffer_pool.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/main_renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp

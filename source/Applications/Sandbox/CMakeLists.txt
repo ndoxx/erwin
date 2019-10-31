@@ -1,6 +1,6 @@
 set(SRC_SANDBOX
     source/sandbox_app.cpp
-    source/layer_qtest_2d.cpp
+    source/layer_test.cpp
    )
 
 add_executable(sandbox ${SRC_SANDBOX})

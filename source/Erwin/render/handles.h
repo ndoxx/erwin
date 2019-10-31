@@ -2,8 +2,6 @@
 
 namespace erwin
 {
-namespace WIP
-{
 
 // Handle structures to manipulate graphics objects
 enum HandleType: uint16_t
@@ -57,5 +55,4 @@ constexpr std::size_t k_max_handles[HandleType::Count] =
 	32,  // framebuffers
 };
 
-} // namespace WIP
 } // namespace erwin

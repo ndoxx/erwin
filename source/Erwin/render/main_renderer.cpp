@@ -1,4 +1,4 @@
-#include "render/WIP/main_renderer.h"
+#include "render/main_renderer.h"
 
 #include <map>
 #include <memory>
@@ -6,7 +6,9 @@
 
 #include "render/render_device.h"
 #include "render/buffer.h"
+#include "render/framebuffer.h"
 #include "render/shader.h"
+#include "render/query_timer.h"
 #include "debug/logger.h"
 #include "memory/arena.h"
 #include "memory/memory_utils.h"
@@ -16,8 +18,7 @@
 
 namespace erwin
 {
-namespace WIP
-{
+
 /*
 		  _  __              
 		 | |/ /              
@@ -195,7 +196,10 @@ struct RendererStorage
 
 	std::vector<RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
-	// RendererStateCache cache_;
+
+	WScope<QueryTimer> query_timer;
+	bool profiling_enabled;
+	MainRendererStats stats;
 
 	memory::HeapArea renderer_memory_;
 	LinearArena handle_arena_;
@@ -224,6 +228,9 @@ void MainRenderer::init()
 	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
 		s_storage->queues_.emplace_back(s_storage->renderer_memory_, SortKey::Order::Sequential);
 
+	s_storage->query_timer = QueryTimer::create();
+	s_storage->profiling_enabled = false;
+
 	DLOGI << "done" << std::endl;
 }
 
@@ -236,6 +243,16 @@ void MainRenderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
+void MainRenderer::set_profiling_enabled(bool value)
+{
+	s_storage->profiling_enabled = value;
+}
+
+const MainRendererStats& MainRenderer::get_stats()
+{
+	return s_storage->stats;
+}
+
 RenderQueue& MainRenderer::get_queue(int name)
 {
 	W_ASSERT(name < QueueName::Count, "Unknown queue name!");
@@ -244,6 +261,9 @@ RenderQueue& MainRenderer::get_queue(int name)
 
 void MainRenderer::flush()
 {
+	if(s_storage->profiling_enabled)
+		s_storage->query_timer->start();
+
 	// Sort and flush each queue
 	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
 	{
@@ -257,6 +277,12 @@ void MainRenderer::flush()
 		auto& queue = s_storage->queues_[queue_name];
 		queue.flush(RenderQueue::Phase::Post);
 		queue.reset();
+	}
+
+	if(s_storage->profiling_enabled)
+	{
+		auto render_duration = s_storage->query_timer->stop();
+		s_storage->stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 }
 
@@ -1334,5 +1360,4 @@ void RenderQueue::flush(Phase phase)
 	}
 }
 
-} // namespace WIP
 } // namespace erwin
