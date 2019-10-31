@@ -6,13 +6,7 @@
 namespace erwin
 {
 
-FrameBufferLayout::FrameBufferLayout(const std::initializer_list<FrameBufferLayoutElement>& elements):
-elements_(elements)
-{
-
-}
-
-WScope<Framebuffer> Framebuffer::create(uint32_t width, uint32_t height, const FrameBufferLayout& layout, bool depth, bool stencil)
+WScope<Framebuffer> Framebuffer::create(uint32_t width, uint32_t height, const FramebufferLayout& layout, bool depth, bool stencil)
 {
     switch(Gfx::get_api())
     {

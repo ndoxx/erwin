@@ -8,7 +8,7 @@ namespace erwin
 {
 
 
-OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, const FrameBufferLayout& layout, bool depth, bool stencil):
+OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, const FramebufferLayout& layout, bool depth, bool stencil):
 Framebuffer(width, height, layout, depth, stencil)
 {
     DLOG("render",1) << "Creating OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << "." << std::endl;

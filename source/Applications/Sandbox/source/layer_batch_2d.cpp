@@ -168,7 +168,7 @@ void LayerBatch2D::on_attach()
 	//dirt_tex_ = Texture2D::create("textures/dirt01_albedo.png");
 	//Renderer2D::shader_bank.load("shaders/tex_shader.glsl");
 
-	FrameBufferLayout layout =
+	FramebufferLayout layout =
 	{
 		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
 	};

@@ -121,7 +121,8 @@ constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handle
  										  						  + k_max_handles[HandleType::UniformBufferHandleT]
  										  						  + k_max_handles[HandleType::ShaderStorageBufferHandleT]
  										  						  + k_max_handles[HandleType::TextureHandleT]
- 										  						  + k_max_handles[HandleType::ShaderHandleT])
+ 										  						  + k_max_handles[HandleType::ShaderHandleT]
+ 										  						  + k_max_handles[HandleType::FramebufferHandleT])
 																  + HandleType::Count * sizeof(HandlePool)
 																  + 128_B;	// TODO: compute actual size
 
@@ -137,6 +138,9 @@ struct RendererStorage
 		std::fill(std::begin(vertex_arrays),          std::end(vertex_arrays),          nullptr);
 		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
 		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
+		std::fill(std::begin(textures),               std::end(textures),               nullptr);
+		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
+		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
 
 #define MAKE_HANDLE_POOL( TYPE ) handles_[ TYPE ] = W_NEW(HandlePoolT<k_max_handles[ TYPE ]>, handle_arena_)
 		MAKE_HANDLE_POOL(HandleType::IndexBufferHandleT);
@@ -147,12 +151,14 @@ struct RendererStorage
 		MAKE_HANDLE_POOL(HandleType::ShaderStorageBufferHandleT);
 		MAKE_HANDLE_POOL(HandleType::TextureHandleT);
 		MAKE_HANDLE_POOL(HandleType::ShaderHandleT);
+		MAKE_HANDLE_POOL(HandleType::FramebufferHandleT);
 #undef  MAKE_HANDLE_POOL
 	}
 
 	~RendererStorage()
 	{
 #define DESTROY_HANDLE_POOL( TYPE ) W_DELETE(handles_[ TYPE ], handle_arena_)
+		DESTROY_HANDLE_POOL(HandleType::FramebufferHandleT);
 		DESTROY_HANDLE_POOL(HandleType::ShaderHandleT);
 		DESTROY_HANDLE_POOL(HandleType::TextureHandleT);
 		DESTROY_HANDLE_POOL(HandleType::ShaderStorageBufferHandleT);
@@ -171,6 +177,7 @@ struct RendererStorage
 		for(auto& ref: shader_storage_buffers) ref = nullptr;
 		for(auto& ref: textures) ref = nullptr;
 		for(auto& ref: shaders) ref = nullptr;
+		for(auto& ref: framebuffers) ref = nullptr;
 	}
 
 	HandlePool* handles_[HandleType::Count];
@@ -184,6 +191,7 @@ struct RendererStorage
 	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_handles[HandleType::ShaderStorageBufferHandleT]];
 	WRef<Texture2D>			  textures[k_max_handles[HandleType::TextureHandleT]];
 	WRef<Shader>			  shaders[k_max_handles[HandleType::ShaderHandleT]];
+	WRef<Framebuffer>		  framebuffers[k_max_handles[HandleType::FramebufferHandleT]];
 
 	std::vector<RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
@@ -203,6 +211,7 @@ std::unique_ptr<RendererStorage> s_storage;
 		MAKE_VALIDATOR(ShaderStorageBufferHandle);
 		MAKE_VALIDATOR(TextureHandle);
 		MAKE_VALIDATOR(ShaderHandle);
+		MAKE_VALIDATOR(FramebufferHandle);
 #undef  MAKE_VALIDATOR
 
 
@@ -579,6 +588,33 @@ TextureHandle RenderQueue::create_texture_2D(const Texture2DDescriptor& desc)
 	return handle;
 }
 
+FramebufferHandle RenderQueue::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
+{
+	RenderCommand type = RenderCommand::CreateFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	FramebufferHandle handle = { s_storage->handles_[FramebufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	uint32_t count = layout.get_count();
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&width);
+	cmdbuf.write(&height);
+	cmdbuf.write(&depth);
+	cmdbuf.write(&stencil);
+	cmdbuf.write(&count);
+
+	// Write auxiliary data
+	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, layout.get_count(), auxiliary_arena_);
+	memcpy(auxiliary, layout.data(), layout.get_count() * sizeof(FramebufferLayoutElement));
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
 void RenderQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
@@ -683,6 +719,22 @@ void RenderQueue::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorag
 	cmdbuf.write(&type);
 	cmdbuf.write(&shader);
 	cmdbuf.write(&ssbo);
+
+	push_command(type, cmd);
+}
+
+void RenderQueue::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
+{
+	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
+
+	RenderCommand type = RenderCommand::UpdateFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&fb);
+	cmdbuf.write(&width);
+	cmdbuf.write(&height);
 
 	push_command(type, cmd);
 }
@@ -847,6 +899,20 @@ void RenderQueue::destroy_texture_2D(TextureHandle handle)
 	push_command(type, cmd);
 }
 
+void RenderQueue::destroy_framebuffer(FramebufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
+	s_storage->handles_[FramebufferHandleT]->release(handle.index);
+	
+	RenderCommand type = RenderCommand::DestroyFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
 
 /*
 		  _____  _                 _       _     
@@ -981,6 +1047,27 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	s_storage->textures[handle.index] = Texture2D::create(descriptor);
 }
 
+void create_framebuffer(memory::LinearBuffer<>& buf)
+{
+	uint32_t width;
+	uint32_t height;
+	uint32_t count;
+	bool depth;
+	bool stencil;
+	FramebufferHandle handle;
+	FramebufferLayoutElement* auxiliary;
+	buf.read(&handle);
+	buf.read(&width);
+	buf.read(&height);
+	buf.read(&depth);
+	buf.read(&stencil);
+	buf.read(&count);
+	buf.read(&auxiliary);
+
+	FramebufferLayout layout(auxiliary, count);
+	s_storage->framebuffers[handle.index] = Framebuffer::create(width, height, layout, depth, stencil);
+}
+
 void update_index_buffer(memory::LinearBuffer<>& buf)
 {
 	IndexBufferHandle handle;
@@ -1055,68 +1142,74 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 	shader.attach_shader_storage(ssbo);
 }
 
+void update_framebuffer(memory::LinearBuffer<>& buf)
+{
+	FramebufferHandle fb_handle;
+	uint32_t width;
+	uint32_t height;
+
+	buf.read(&fb_handle);
+	buf.read(&width);
+	buf.read(&height);
+
+	bool has_depth   = s_storage->framebuffers[fb_handle.index]->has_depth();
+	bool has_stencil = s_storage->framebuffers[fb_handle.index]->has_stencil();
+	auto layout      = s_storage->framebuffers[fb_handle.index]->get_layout();
+
+	s_storage->framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
+}
+
 void submit(memory::LinearBuffer<>& buf)
 {
-	DrawCall::Type type;
-	VertexArrayHandle va_handle;
-	ShaderHandle shader_handle;
-	UniformBufferHandle ubo_handle;
-	ShaderStorageBufferHandle ssbo_handle;
-	TextureHandle texture_handle;
-	hash_t sampler;
-	uint32_t count;
-	uint32_t instance_count;
-	uint32_t offset;
-	uint32_t ubo_size;
-	uint32_t ssbo_size;
-	uint8_t* ubo_data;
-	uint8_t* ssbo_data;
+#pragma pack(push,1)
+	struct
+	{
+		DrawCall::Type type;
+		VertexArrayHandle va_handle;
+		ShaderHandle shader_handle;
+		UniformBufferHandle ubo_handle;
+		ShaderStorageBufferHandle ssbo_handle;
+		uint32_t ubo_size;
+		uint32_t ssbo_size;
+		uint32_t count;
+		uint32_t instance_count;
+		uint32_t offset;
+		hash_t sampler;
+		TextureHandle texture_handle;
+		uint8_t* ubo_data;
+		uint8_t* ssbo_data;
+	} dc;
+#pragma pack(pop)
+	buf.read(&dc); // Read all in one go
 
-	buf.read(&type);
-	buf.read(&va_handle);
-	buf.read(&shader_handle);
-	buf.read(&ubo_handle);
-	buf.read(&ssbo_handle);
-	buf.read(&ubo_size);
-	buf.read(&ssbo_size);
-	buf.read(&count);
-	buf.read(&instance_count);
-	buf.read(&offset);
-	buf.read(&sampler);
-	buf.read(&texture_handle);
-	buf.read(&ubo_data);
-	buf.read(&ssbo_data);
-
-	auto& va = *s_storage->vertex_arrays[va_handle.index];
-	auto& shader = *s_storage->shaders[shader_handle.index];
+	auto& va = *s_storage->vertex_arrays[dc.va_handle.index];
+	auto& shader = *s_storage->shaders[dc.shader_handle.index];
 
 	shader.bind();
 
-	if(ubo_data)
+	if(dc.ubo_data)
 	{
-		auto& ubo = *s_storage->uniform_buffers[ubo_handle.index];
-		ubo.stream(ubo_data, ubo_size, 0);
-		// shader.attach_uniform_buffer(ubo);
+		auto& ubo = *s_storage->uniform_buffers[dc.ubo_handle.index];
+		ubo.stream(dc.ubo_data, dc.ubo_size, 0);
 	}
-	if(ssbo_data)
+	if(dc.ssbo_data)
 	{
-		auto& ssbo = *s_storage->shader_storage_buffers[ssbo_handle.index];
-		ssbo.stream(ssbo_data, ssbo_size, 0);
-		// shader.attach_shader_storage(ssbo);
+		auto& ssbo = *s_storage->shader_storage_buffers[dc.ssbo_handle.index];
+		ssbo.stream(dc.ssbo_data, dc.ssbo_size, 0);
 	}
-	if(is_valid(texture_handle))
+	if(is_valid(dc.texture_handle))
 	{
-		auto& texture = *s_storage->textures[texture_handle.index];
-		shader.attach_texture(sampler, texture);
+		auto& texture = *s_storage->textures[dc.texture_handle.index];
+		shader.attach_texture(dc.sampler, texture);
 	}
 
-	switch(type)
+	switch(dc.type)
 	{
 		case DrawCall::Indexed:
-			Gfx::device->draw_indexed(va, count, offset);
+			Gfx::device->draw_indexed(va, dc.count, dc.offset);
 			break;
 		case DrawCall::IndexedInstanced:
-			Gfx::device->draw_indexed_instanced(va, instance_count);
+			Gfx::device->draw_indexed_instanced(va, dc.instance_count);
 			break;
 		default:
 			break;
@@ -1183,6 +1276,13 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 	s_storage->textures[handle.index] = nullptr;
 }
 
+void destroy_framebuffer(memory::LinearBuffer<>& buf)
+{
+	FramebufferHandle handle;
+	buf.read(&handle);
+	s_storage->framebuffers[handle.index] = nullptr;
+}
+
 } // namespace dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
@@ -1196,12 +1296,14 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::create_shader_storage_buffer,
 	&dispatch::create_shader,
 	&dispatch::create_texture_2D,
+	&dispatch::create_framebuffer,
 	&dispatch::update_index_buffer,
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
 	&dispatch::update_shader_storage_buffer,
 	&dispatch::shader_attach_uniform_buffer,
 	&dispatch::shader_attach_storage_buffer,
+	&dispatch::update_framebuffer,
 	&dispatch::submit,
 
 	&dispatch::nop,
@@ -1214,6 +1316,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::destroy_shader_storage_buffer,
 	&dispatch::destroy_shader,
 	&dispatch::destroy_texture_2D,
+	&dispatch::destroy_framebuffer,
 };
 
 void RenderQueue::flush(Phase phase)

@@ -20,7 +20,7 @@ FramebufferPool::~FramebufferPool()
 	
 }
 
-void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FrameBufferLayout& layout, bool depth, bool stencil)
+void FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
 {
 	// Check that no framebuffer is already registered to this name
 	auto it = framebuffers_.find(name);

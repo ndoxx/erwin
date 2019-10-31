@@ -112,7 +112,7 @@ void LayerQTest2D::on_attach()
 		"stonewalla64"_h
 	};
 
-	FrameBufferLayout layout =
+	FramebufferLayout layout =
 	{
 		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
 	};

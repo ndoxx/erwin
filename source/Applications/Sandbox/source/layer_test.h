@@ -39,6 +39,12 @@ public:
 		atlas_.load("textures/atlas/set1.cat");
 		WIP::Renderer2D::register_atlas("set1"_h, atlas_);
 
+		FramebufferLayout layout =
+		{
+			{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+		};
+		fb_handle_ = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
+
 		// List of random sub-textures to use
 		tiles_ =
 		{
@@ -139,4 +145,6 @@ private:
 	WIP::TextureAtlas atlas_;
 	std::vector<hash_t> tiles_;
 	float tt_ = 0.f;
+
+	FramebufferHandle fb_handle_;
 };

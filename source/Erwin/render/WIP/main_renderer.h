@@ -6,9 +6,13 @@
 #include "filesystem/filesystem.h"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
+#include "render/framebuffer_layout.h"
 #include "memory/arena.h"
 
 #include "render/texture.h" // TMP: for Texture2DDescriptor
+#include "render/WIP/handles.h"
+
+#include "render/WIP/framebuffer_pool.h"
 
 namespace erwin
 {
@@ -36,55 +40,6 @@ public:
 	static void flush();
 
 	static void DEBUG_test();
-};
-
-// Handle structures to manipulate graphics objects
-enum HandleType: uint16_t
-{
-	IndexBufferHandleT,
-	VertexBufferLayoutHandleT,
-	VertexBufferHandleT,
-	VertexArrayHandleT,
-	UniformBufferHandleT,
-	ShaderStorageBufferHandleT,
-	TextureHandleT,
-	ShaderHandleT,
-
-	Count
-};
-
-#define W_HANDLE(name)   							               				\
-	struct name 		 							               				\
-	{ 					 							               				\
-		inline bool operator ==(const name& o) const { return index==o.index; } \
-		inline bool operator !=(const name& o) const { return index!=o.index; } \
-		static constexpr HandleType type = HandleType::name##T;    				\
-		uint32_t index = 0xffff;	 							  			   	\
-	};					 							  			   				\
-	bool is_valid(name); 							  			   				\
-
-W_HANDLE(IndexBufferHandle);
-W_HANDLE(VertexBufferLayoutHandle);
-W_HANDLE(VertexBufferHandle);
-W_HANDLE(VertexArrayHandle);
-W_HANDLE(UniformBufferHandle);
-W_HANDLE(ShaderStorageBufferHandle);
-W_HANDLE(TextureHandle);
-W_HANDLE(ShaderHandle);
-
-#undef W_HANDLE
-
-constexpr std::size_t k_max_render_commands = 10000;
-constexpr std::size_t k_max_handles[HandleType::Count] =
-{
-	128, // index buffers
-	128, // vertex buffer layouts
-	128, // vertex buffers
-	128, // vertex arrays
-	128, // uniform buffers
-	128, // shader storage buffers
-	128, // textures
-	128, // shaders
 };
 
 struct SortKey
@@ -144,6 +99,7 @@ public:
 		CreateShaderStorageBuffer,
 		CreateShader,
 		CreateTexture2D,
+		CreateFramebuffer,
 
 		UpdateIndexBuffer,
 		UpdateVertexBuffer,
@@ -151,6 +107,7 @@ public:
 		UpdateShaderStorageBuffer,
 		ShaderAttachUniformBuffer,
 		ShaderAttachStorageBuffer,
+		UpdateFramebuffer,
 
 		Submit,
 
@@ -164,6 +121,7 @@ public:
 		DestroyShaderStorageBuffer,
 		DestroyShader,
 		DestroyTexture2D,
+		DestroyFramebuffer,
 
 		Count
 	};
@@ -192,6 +150,7 @@ public:
 	ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	ShaderHandle 			  create_shader(const fs::path& filepath, const std::string& name);
 	TextureHandle 			  create_texture_2D(const Texture2DDescriptor& desc);
+	FramebufferHandle 		  create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
 
 	void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
@@ -199,6 +158,7 @@ public:
 	void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
 	void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
 	void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
+	void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
 
 	void submit(const DrawCall& draw_call);
 
@@ -210,6 +170,7 @@ public:
 	void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
 	void destroy_shader(ShaderHandle handle);
 	void destroy_texture_2D(TextureHandle handle);
+	void destroy_framebuffer(FramebufferHandle handle);
 
 	// Sort queue by sorting key
 	void sort();

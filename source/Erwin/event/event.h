@@ -68,6 +68,26 @@ private:
     MemberFunction memberFunction; // Pointer to member function
 };
 
+// Free function wrapper
+template<class EventT>
+class FreeDelegate: public AbstractDelegate
+{
+public:
+    virtual ~FreeDelegate() = default;
+    typedef bool (*FreeFunction)(const EventT&);
+
+    FreeDelegate(FreeFunction freeFunction): freeFunction{ freeFunction } {};
+
+    // Cast event to the correct type and call member function
+    inline bool call(const WEvent& event)
+    {
+        return (*freeFunction)(static_cast<const EventT&>(event));
+    }
+
+private:
+    FreeFunction freeFunction; // Pointer to member function
+};
+
 // Central message broker
 class EventBus: public Singleton<EventBus>
 {
@@ -106,6 +126,22 @@ public:
         }
 
         delegates->push_back(new MemberDelegate<T, EventT>(instance, memberFunction));
+    }
+
+    // Register a free function as an event handler
+    template<class EventT>
+    void subscribe(bool (*freeFunction)(const EventT&))
+    {
+        DelegateList* delegates = subscribers[ctti::type_id<EventT>()];
+
+        // First time initialization
+        if(delegates == nullptr)
+        {
+            delegates = new DelegateList();
+            subscribers[ctti::type_id<EventT>()] = delegates;
+        }
+
+        delegates->push_back(new FreeDelegate<EventT>(freeFunction));
     }
 
 private:

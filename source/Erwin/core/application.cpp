@@ -98,12 +98,12 @@ minimized_(false)
     window_ = Window::create(props);
 
     // Initialize framebuffer pool
-    Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
-
     // Create master renderer instance
 #ifdef WIP__
+    WIP::FramebufferPool::init(window_->get_width(), window_->get_height());
     WIP::MainRenderer::init();
 #else
+    Gfx::create_framebuffer_pool(window_->get_width(), window_->get_height());
     MasterRenderer::create();
 #endif
 
@@ -202,11 +202,12 @@ void Application::run()
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 
 #ifdef WIP__
+    WIP::FramebufferPool::shutdown();
     WIP::MainRenderer::shutdown();
 #else
     MasterRenderer::kill();
-#endif
     Gfx::framebuffer_pool->release();
+#endif
 
     Input::kill();
     WLOGGER.kill();
