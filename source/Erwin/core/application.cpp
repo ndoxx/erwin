@@ -182,7 +182,7 @@ void Application::run()
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 
-    FramebufferPool::shutdown();
+    // FramebufferPool::shutdown();
     MainRenderer::shutdown();
 
     Input::kill();

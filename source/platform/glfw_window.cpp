@@ -289,16 +289,18 @@ void GLFWWindow::update()
 
 uint32_t GLFWWindow::get_width() const
 {
-	int width, height;
+	/*int width, height;
 	glfwGetWindowSize(data_->window, &width, &height);
-	return width;
+	return width;*/
+	return data_->width;
 }
 
 uint32_t GLFWWindow::get_height() const
 {
-	int width, height;
+	/*int width, height;
 	glfwGetWindowSize(data_->window, &width, &height);
-	return height;
+	return height;*/
+	return data_->height;
 }
 
 void GLFWWindow::set_vsync(bool value)

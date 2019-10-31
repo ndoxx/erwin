@@ -34,7 +34,7 @@ struct Renderer2DStorage
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
 
-	uint32_t num_batches; // stats
+	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
 	std::map<hash_t, Batch2D> batches;
 };
@@ -86,7 +86,7 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 
 void Renderer2D::init(uint32_t max_batch_count)
 {
-	storage.num_batches = 1;
+	storage.num_draw_calls = 0;
 	storage.max_batch_count = max_batch_count;
 
 	float sq_vdata[20] = 
@@ -99,8 +99,8 @@ void Renderer2D::init(uint32_t max_batch_count)
 	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 	storage.vbl_handle = rq.create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
@@ -150,13 +150,14 @@ void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 	create_batch(name, atlas.handle);
 }
 
-void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera)
+void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& state, const OrthographicCamera2D& camera)
 {
 	// Reset stats
-	storage.num_batches = 1;
+	storage.num_draw_calls = 0;
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
 	rq.set_state(state);
+	rq.set_render_target(render_target);
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -166,7 +167,7 @@ void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& 
 
 void Renderer2D::end_pass()
 {
-
+	Renderer2D::flush();
 }
 
 static void flush_batch(Batch2D& batch)
@@ -181,6 +182,7 @@ static void flush_batch(Batch2D& batch)
 		dc.set_texture("us_atlas"_h, batch.texture);
 		dc.submit();
 
+		++storage.num_draw_calls;
 		batch.count = 0;
 	}
 }
@@ -195,10 +197,7 @@ void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, co
 
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(batch.count == storage.max_batch_count)
-	{
 		flush_batch(batch);
-		++storage.num_batches;
-	}
 
 	batch.instance_data[batch.count] = {position, scale, uvs};
 	++batch.count;
@@ -208,6 +207,11 @@ void Renderer2D::flush()
 {
 	for(auto&& [key, batch]: storage.batches)
 		flush_batch(batch);
+}
+
+uint32_t Renderer2D::get_draw_call_count()
+{
+	return storage.num_draw_calls;
 }
 
 } // namespace erwin

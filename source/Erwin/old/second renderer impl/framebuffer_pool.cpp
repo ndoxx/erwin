@@ -48,7 +48,7 @@ void FramebufferPool::bind(hash_t name) const
 {
 	if(name==0)
 	{
-		Gfx::device->bind_default_frame_buffer();
+		Gfx::device->bind_default_framebuffer();
 		return;
 	}
 	auto it = framebuffers_.find(name);

@@ -194,6 +194,8 @@ struct RendererStorage
 	WRef<Shader>			  shaders[k_max_handles[HandleType::ShaderHandleT]];
 	WRef<Framebuffer>		  framebuffers[k_max_handles[HandleType::FramebufferHandleT]];
 
+	FramebufferHandle default_framebuffer_;
+
 	std::vector<RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 
@@ -231,6 +233,8 @@ void MainRenderer::init()
 	s_storage->query_timer = QueryTimer::create();
 	s_storage->profiling_enabled = false;
 
+	s_storage->default_framebuffer_ = { s_storage->handles_[FramebufferHandleT]->acquire() };
+
 	DLOGI << "done" << std::endl;
 }
 
@@ -238,6 +242,7 @@ void MainRenderer::shutdown()
 {
 	flush();
 	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
+	s_storage->handles_[FramebufferHandleT]->release(s_storage->default_framebuffer_.index);
 	RendererStorage* rs = s_storage.release();
 	delete rs;
 	DLOGI << "done" << std::endl;
@@ -251,6 +256,11 @@ void MainRenderer::set_profiling_enabled(bool value)
 const MainRendererStats& MainRenderer::get_stats()
 {
 	return s_storage->stats;
+}
+
+FramebufferHandle MainRenderer::default_render_target()
+{
+	return s_storage->default_framebuffer_;
 }
 
 RenderQueue& MainRenderer::get_queue(int name)
@@ -268,11 +278,12 @@ void MainRenderer::flush()
 	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
 	{
 		auto& queue = s_storage->queues_[queue_name];
+
 		queue.sort();
 		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG); // TMP: flags will change for each queue
 		queue.flush(RenderQueue::Phase::Pre);
 	}
-	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
+	for(int queue_name = QueueName::Count-1; queue_name >= 0; --queue_name)
 	{
 		auto& queue = s_storage->queues_[queue_name];
 		queue.flush(RenderQueue::Phase::Post);
@@ -327,7 +338,7 @@ pre_buffer_(memory.require_block(512_kB)),
 post_buffer_(memory.require_block(512_kB)),
 auxiliary_arena_(memory.require_block(2_MB))
 {
-
+	render_target_.index = 0;
 }
 
 RenderQueue::~RenderQueue()
@@ -343,27 +354,13 @@ void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
 
 void RenderQueue::set_state(const PassState& state)
 {
+	// TMP: this will leak state if MT
 	state_flags_ = state.encode();
+}
 
-	// TMP
-	//Gfx::framebuffer_pool->bind(state.render_target);
-	Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
-	
-	if(state.blend_state == BlendState::Alpha)
-		Gfx::device->set_std_blending();
-	else
-		Gfx::device->disable_blending();
-
-	Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
-	if(state.depth_stencil_state.stencil_test_enabled)
-	{
-		Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
-		Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
-	}
-
-	Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
-	if(state.depth_stencil_state.depth_test_enabled)
-		Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+void RenderQueue::set_render_target(FramebufferHandle fb)
+{
+	render_target_ = fb;
 }
 
 void RenderQueue::sort()
@@ -775,6 +772,7 @@ void RenderQueue::submit(const DrawCall& dc)
 	void* cmd = cmdbuf.head();
 
 	cmdbuf.write(&type);
+	cmdbuf.write(&state_flags_);
 	cmdbuf.write(&dc.type);
 	cmdbuf.write(&dc.VAO);
 	cmdbuf.write(&dc.shader);
@@ -1190,6 +1188,7 @@ void submit(memory::LinearBuffer<>& buf)
 #pragma pack(push,1)
 	struct
 	{
+		uint64_t state_flags;
 		DrawCall::Type type;
 		VertexArrayHandle va_handle;
 		ShaderHandle shader_handle;
@@ -1207,6 +1206,33 @@ void submit(memory::LinearBuffer<>& buf)
 	} dc;
 #pragma pack(pop)
 	buf.read(&dc); // Read all in one go
+
+	static uint64_t last_state = 0xffffffffffffffff;
+	if(dc.state_flags != last_state)
+	{
+		PassState state;
+		state.decode(dc.state_flags);
+
+		Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
+		
+		if(state.blend_state == BlendState::Alpha)
+			Gfx::device->set_std_blending();
+		else
+			Gfx::device->disable_blending();
+
+		Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
+		if(state.depth_stencil_state.stencil_test_enabled)
+		{
+			Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
+			Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
+		}
+
+		Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
+		if(state.depth_stencil_state.depth_test_enabled)
+			Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+	
+		last_state = dc.state_flags;
+	}
 
 	auto& va = *s_storage->vertex_arrays[dc.va_handle.index];
 	auto& shader = *s_storage->shaders[dc.shader_handle.index];
@@ -1348,11 +1374,20 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 void RenderQueue::flush(Phase phase)
 {
 	auto& cbuf = get_command_buffer(phase);
+	if(cbuf.count == 0)
+		return;
+
+	if(render_target_ == s_storage->default_framebuffer_)
+		Gfx::device->bind_default_framebuffer();
+	else
+	{
+		W_ASSERT(is_valid(render_target_), "Invalid FramebufferHandle!");
+		s_storage->framebuffers[render_target_.index]->bind();
+	}
 
 	for(int ii=0; ii<cbuf.count; ++ii)
 	{
 		auto&& [key,cmd] = cbuf.entries[ii];
-		// TODO: handle state
 		cbuf.storage.seek(cmd);
 		uint16_t type;
 		cbuf.storage.read(&type);

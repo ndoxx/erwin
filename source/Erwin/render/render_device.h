@@ -29,7 +29,7 @@ public:
     // Set the default framebuffer
     virtual void set_default_framebuffer(uint32_t index) = 0;
     // Bind the default framebuffer
-    virtual void bind_default_frame_buffer() = 0;
+    virtual void bind_default_framebuffer() = 0;
     // Read framebuffer content to an array
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) = 0;
 

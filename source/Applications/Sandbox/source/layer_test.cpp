@@ -38,9 +38,10 @@ void LayerTest::on_imgui_render()
     {
     	static uint32_t s_frame_cnt = 0;
     	const auto& mr_stats = MainRenderer::get_stats();
+    	uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
     	ImGui::Begin("Stats");
-        	// ImGui::Text("#Batches: %d", stats.batches);
-        	// ImGui::Separator();
+        	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);
+        	ImGui::Separator();
         	ImGui::PlotVar("Draw time (µs)", mr_stats.render_time, 0.0f, 7000.f);
     	
             if(++s_frame_cnt>200)
@@ -54,7 +55,7 @@ void LayerTest::on_imgui_render()
 	// BUG#2 tracking
 	static uint32_t s_frame = 0;
 	static int s_displayed = 0;
-    if(stats.render_time>1000 && s_displayed<25)
+    if(mr_stats.render_time>1500 && s_displayed<25)
     {
     	DLOGW("render") << "Frame: " << s_frame << std::endl;
     	++s_displayed;
@@ -134,7 +135,7 @@ void LayerTest::on_update(GameClock& clock)
 	pass_state.blend_state = BlendState::Opaque;
 
 	// Draw a grid of quads
-	Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera());
+	Renderer2D::begin_pass(MainRenderer::default_render_target(), pass_state, camera_ctl_.get_camera());
 	for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
@@ -153,7 +154,6 @@ void LayerTest::on_update(GameClock& clock)
 		}
 	}
 	Renderer2D::end_pass();
-	Renderer2D::flush();
 }
 
 bool LayerTest::on_event(const MouseButtonEvent& event)

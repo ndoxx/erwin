@@ -42,6 +42,8 @@ public:
 	static void set_profiling_enabled(bool value=true);
 	static const MainRendererStats& get_stats();
 
+	static FramebufferHandle default_render_target();
+
 	static RenderQueue& get_queue(int name);
 	static void flush();
 
@@ -95,6 +97,8 @@ struct DrawCall;
 class RenderQueue
 {
 public:
+	friend class MainRenderer;
+
 	enum class RenderCommand: uint16_t
 	{
 		CreateIndexBuffer,
@@ -146,6 +150,8 @@ public:
 	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
 	//
 	void set_state(const PassState& state);
+	//
+	void set_render_target(FramebufferHandle fb);
 
 	// * The following functions will initialize a render command and push it to this queue 
 	IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
@@ -220,6 +226,7 @@ private:
 	SortKey key_;
 	uint32_t clear_color_;
 	uint64_t state_flags_;
+	FramebufferHandle render_target_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	AuxArena auxiliary_arena_;

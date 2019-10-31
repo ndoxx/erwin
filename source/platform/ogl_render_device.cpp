@@ -36,7 +36,7 @@ void OGLRenderDevice::set_default_framebuffer(uint32_t index)
     default_framebuffer_ = index;
 }
 
-void OGLRenderDevice::bind_default_frame_buffer()
+void OGLRenderDevice::bind_default_framebuffer()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, default_framebuffer_);
 }

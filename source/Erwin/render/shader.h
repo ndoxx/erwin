@@ -86,6 +86,7 @@ protected:
     // ShaderStateCache cache_;
 };
 
+// DEPRECATED
 // The shader bank holds references to multiple shaders and makes them accessible by name
 class ShaderBank
 {
