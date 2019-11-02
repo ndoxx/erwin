@@ -9,8 +9,11 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/main_renderer.h"
+#include "render/renderer_2d.h"
 
 #include <iostream>
+
+#define MR__
 
 namespace erwin
 {
@@ -90,10 +93,13 @@ minimized_(false)
     };
     window_ = Window::create(props);
 
+#ifdef MR__
     // Initialize framebuffer pool
     FramebufferPool::init(window_->get_width(), window_->get_height());
-    // Create master renderer instance
+    // Initialize master renderer storage
     MainRenderer::init();
+    Renderer2D::init();
+#endif
 
     // Generate ImGui overlay
 	IMGUI_LAYER = new ImGuiLayer();
@@ -153,8 +159,9 @@ void Application::run()
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
+#ifdef MR__
         MainRenderer::flush();
-
+#endif
 		// TODO: move this to render thread when we have one
 		IMGUI_LAYER->begin();
 		for(auto* layer: layer_stack_)
@@ -182,9 +189,11 @@ void Application::run()
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 
+#ifdef MR__
     // FramebufferPool::shutdown();
+    Renderer2D::shutdown();
     MainRenderer::shutdown();
-
+#endif
     Input::kill();
     WLOGGER.kill();
     EventBus::Kill();

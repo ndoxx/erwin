@@ -29,7 +29,7 @@ void LayerTest::on_imgui_render()
 
     	ImGui::Separator();
 
-        ImGui::SliderInt("Grid size", &len_grid_, 10, 200);
+        ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
     	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
     	ImGui::Checkbox("Trippy mode", &trippy_mode_);
     ImGui::End();
@@ -66,7 +66,6 @@ void LayerTest::on_imgui_render()
 
 void LayerTest::on_attach()
 {
-	Renderer2D::init();
 	atlas_.load("textures/atlas/set1.cat");
 	Renderer2D::register_atlas("set1"_h, atlas_);
 
@@ -117,7 +116,7 @@ void LayerTest::on_attach()
 
 void LayerTest::on_detach()
 {
-	Renderer2D::shutdown();
+
 }
 
 void LayerTest::on_update(GameClock& clock)

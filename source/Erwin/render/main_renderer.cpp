@@ -15,6 +15,7 @@
 #include "memory/handle_pool.h"
 #include "memory/linear_allocator.h"
 #include "memory/handle_pool.h"
+#include "core/config.h"
 
 namespace erwin
 {
@@ -130,7 +131,7 @@ constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handle
 struct RendererStorage
 {
 	RendererStorage():
-	renderer_memory_(20_MB),
+	renderer_memory_(cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB)),
 	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
 	{
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
@@ -334,11 +335,17 @@ queue(queue)
 RenderQueue::RenderQueue(memory::HeapArea& memory, SortKey::Order order):
 order_(order),
 key_({ 0, 0, 0, false, 0, 0 }),
-pre_buffer_(memory.require_block(512_kB)),
-post_buffer_(memory.require_block(512_kB)),
-auxiliary_arena_(memory.require_block(2_MB))
+pre_buffer_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_pre_buffer"_h, 512_kB))),
+post_buffer_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_post_buffer"_h, 512_kB))),
+auxiliary_arena_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB)))
 {
 	render_target_.index = 0;
+
+#ifdef W_DEBUG
+	pre_buffer_.storage.set_debug_name("Queue-Pre");
+	post_buffer_.storage.set_debug_name("Queue-Post");
+	auxiliary_arena_.set_debug_name("Queue-Auxiliary");
+#endif
 }
 
 RenderQueue::~RenderQueue()
@@ -350,12 +357,6 @@ void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
 {
 	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
 	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
-}
-
-void RenderQueue::set_state(const PassState& state)
-{
-	// TMP: this will leak state if MT
-	state_flags_ = state.encode();
 }
 
 void RenderQueue::set_render_target(FramebufferHandle fb)
@@ -772,8 +773,8 @@ void RenderQueue::submit(const DrawCall& dc)
 	void* cmd = cmdbuf.head();
 
 	cmdbuf.write(&type);
-	cmdbuf.write(&state_flags_);
 	cmdbuf.write(&dc.type);
+	cmdbuf.write(&dc.state_flags);
 	cmdbuf.write(&dc.VAO);
 	cmdbuf.write(&dc.shader);
 	cmdbuf.write(&dc.UBO);
@@ -1188,8 +1189,8 @@ void submit(memory::LinearBuffer<>& buf)
 #pragma pack(push,1)
 	struct
 	{
-		uint64_t state_flags;
 		DrawCall::Type type;
+		uint64_t state_flags;
 		VertexArrayHandle va_handle;
 		ShaderHandle shader_handle;
 		UniformBufferHandle ubo_handle;

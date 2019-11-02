@@ -1,6 +1,7 @@
 #include <map>
 
 #include "render/renderer_2d.h"
+#include "core/config.h"
 #include "glm/gtc/matrix_transform.hpp"
 
 namespace erwin
@@ -33,6 +34,7 @@ struct Renderer2DStorage
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
+	uint64_t state_flags;
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
@@ -84,10 +86,10 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 	return false;
 }
 
-void Renderer2D::init(uint32_t max_batch_count)
+void Renderer2D::init()
 {
 	storage.num_draw_calls = 0;
-	storage.max_batch_count = max_batch_count;
+	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
 	float sq_vdata[20] = 
 	{
@@ -100,7 +102,7 @@ void Renderer2D::init(uint32_t max_batch_count)
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
 	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 	storage.vbl_handle = rq.create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
@@ -109,7 +111,7 @@ void Renderer2D::init(uint32_t max_batch_count)
 	storage.vbo_handle = rq.create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
 	storage.va_handle = rq.create_vertex_array(storage.vbo_handle, storage.ibo_handle);
 	storage.ubo_handle = rq.create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	storage.ssbo_handle = rq.create_shader_storage_buffer("instance_data", nullptr, max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+	storage.ssbo_handle = rq.create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 
 
 	rq.shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
@@ -155,8 +157,8 @@ void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& st
 	// Reset stats
 	storage.num_draw_calls = 0;
 
+	storage.state_flags = state.encode();
 	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
-	rq.set_state(state);
 	rq.set_render_target(render_target);
 
 	// Set scene data
@@ -177,6 +179,7 @@ static void flush_batch(Batch2D& batch)
 		auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
 
 		DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
+		dc.set_state(storage.state_flags);
 		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
 		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.count * sizeof(InstanceData), batch.count);
 		dc.set_texture("us_atlas"_h, batch.texture);

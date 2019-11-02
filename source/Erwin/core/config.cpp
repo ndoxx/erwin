@@ -104,6 +104,11 @@ bool init(const fs::path& filepath)
 	return true;
 }
 
+template <> size_t get(hash_t hname, size_t def)
+{
+	return vmap.get(hname, def);
+}
+
 template <> uint32_t get(hash_t hname, uint32_t def)
 {
 	return vmap.get(hname, def);

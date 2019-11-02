@@ -30,6 +30,7 @@ protected:
 	void parse_properties(void* node, const std::string& name_chain);
 
 private:
+	std::map<hash_t, size_t>      sizes_;
 	std::map<hash_t, uint32_t>    uints_;
 	std::map<hash_t, int32_t>     ints_;
 	std::map<hash_t, float>       floats_;
@@ -41,6 +42,7 @@ private:
 	std::map<hash_t, fs::path>    paths_;
 };
 
+template <> size_t      ValueMap::get(hash_t hname, size_t def);
 template <> uint32_t    ValueMap::get(hash_t hname, uint32_t def);
 template <> int32_t     ValueMap::get(hash_t hname, int32_t def);
 template <> float       ValueMap::get(hash_t hname, float def);

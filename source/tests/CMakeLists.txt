@@ -151,6 +151,10 @@ set(SRC_NUCLEAR
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/xml_file.cpp
    )
 
 add_executable(nuclear ${SRC_NUCLEAR})
@@ -163,9 +167,9 @@ target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ce
 
 set_target_properties(nuclear
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/test"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
 target_link_libraries(nuclear

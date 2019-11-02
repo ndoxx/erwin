@@ -32,4 +32,14 @@
         <bool name="topmost"    value="true"/>
         <bool name="vsync"      value="true"/>
     </display>
+
+    <renderer>
+    	<memory>
+	    	<size name="renderer_area"     value="20_MB"/>
+	    	<size name="queue_pre_buffer"  value="512_kB"/>
+	    	<size name="queue_post_buffer" value="512_kB"/>
+	    	<size name="auxiliary_arena"   value="8_MB"/>
+	    </memory>
+        <uint name="max_2d_batch_count" value="8192"/>
+    </renderer>
 </Config>

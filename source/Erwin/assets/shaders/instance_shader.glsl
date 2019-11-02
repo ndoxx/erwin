@@ -13,7 +13,7 @@ layout(std430, binding = 0) buffer instance_data
     InstanceData inst[];
 };
 
-layout(std140, binding = 0) uniform matrices_layout
+layout(std140, binding = 0) uniform matrices
 {
     mat4 u_view_projection;
 };
@@ -30,7 +30,7 @@ void main()
 
     gl_Position = u_view_projection*vec4(in_position*scale + offset, 1.f);
     v_uv.x = (in_uv.x < 0.5f) ? uvs.x : uvs.z;
-  	v_uv.y = (in_uv.y < 0.5f) ? uvs.y : uvs.w;
+    v_uv.y = (in_uv.y < 0.5f) ? uvs.y : uvs.w;
 }
 
 #type fragment
@@ -43,4 +43,6 @@ layout(location = 0) out vec4 out_color;
 void main()
 {
     out_color = texture(us_atlas, v_uv);
+    // out_color = vec4(v_uv, 0.f, 1.f);
+    // out_color = vec4(1.f, 0.f, 0.f, 1.f);
 }

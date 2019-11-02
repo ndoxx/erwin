@@ -15,7 +15,7 @@ class Renderer2D
 {
 public:
 	// Initialize renderer
-	static void init(uint32_t max_batch_count=8192);
+	static void init();
 	// Destroy renderer
 	static void shutdown();
 	// Register a texture atlas

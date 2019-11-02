@@ -14,7 +14,7 @@ public:
     virtual ~QueryTimer() = default;
 
     // Start query timer
-    virtual void start() = 0;
+    virtual void start(bool sync=false) = 0;
     // Stop timer and get elapsed GPU time
     virtual std::chrono::nanoseconds stop() = 0;
 

@@ -87,6 +87,8 @@ public:
 		quad_va_->set_vertex_buffer(quad_vb);
 
 		mandel_ubo_ = UniformBuffer::create("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
+		const auto& shader = shader_bank_.get("mandelbrot"_h);
+		shader.attach_uniform_buffer(*mandel_ubo_);
 	}
 
 protected:
@@ -107,12 +109,10 @@ protected:
 		data_.max_iter = (float)max_iter_;
 		data_.time = float(2*M_PI*tt_);
 		data_.view_projection = glm::inverse(camera_ctl_.get_camera().get_view_projection_matrix());
-		mandel_ubo_->map(&data_);
+		mandel_ubo_->stream(&data_, sizeof(MandelbrotData), 0);
 
 		const auto& shader = shader_bank_.get("mandelbrot"_h);
 		shader.bind();
-		shader.attach_uniform_buffer(*mandel_ubo_);
-		// static_cast<const OGLShader&>(shader).send_uniform("u_view_projection"_h, transform);
 
    		Gfx::device->draw_indexed(*quad_va_);
 		shader.unbind();

@@ -149,8 +149,6 @@ public:
 	// Set clear color for associated render target
 	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
 	//
-	void set_state(const PassState& state);
-	//
 	void set_render_target(FramebufferHandle fb);
 
 	// * The following functions will initialize a render command and push it to this queue 
@@ -225,7 +223,6 @@ private:
 	SortKey::Order order_;
 	SortKey key_;
 	uint32_t clear_color_;
-	uint64_t state_flags_;
 	FramebufferHandle render_target_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
@@ -235,7 +232,6 @@ private:
 /*
 	TODO: 
 	- Compress data size as much as possible
-	- Handle textures
 */
 struct DrawCall
 {
@@ -250,6 +246,16 @@ struct DrawCall
 	};
 
 	DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
+
+	inline void set_state(const PassState& state)
+	{
+		state_flags = state.encode();
+	}
+
+	inline void set_state(uint64_t state)
+	{
+		state_flags = state;
+	}
 
 	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
 	{
@@ -289,6 +295,7 @@ struct DrawCall
 	uint32_t count;
 	uint32_t instance_count;
 	uint32_t offset;
+	uint64_t state_flags;
 
 	hash_t sampler;
 	TextureHandle texture; // TODO: allow multiple textures

@@ -14,6 +14,7 @@ namespace cfg
 extern bool init(const fs::path& filepath);
 
 template <typename T> T get(hash_t hname, T def);
+template <> size_t      get(hash_t hname, size_t def);
 template <> uint32_t    get(hash_t hname, uint32_t def);
 template <> int32_t     get(hash_t hname, int32_t def);
 template <> float       get(hash_t hname, float def);

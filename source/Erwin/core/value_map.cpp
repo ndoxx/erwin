@@ -93,6 +93,23 @@ hash_t ValueMap::parse_xml_property(void* node, const std::string& name_chain)
             paths_[full_name_hash] = the_path;
             break;
         }
+        case "size"_h:
+        {
+            std::string value;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+
+            auto underscore_pos = value.find_first_of("_");
+            size_t size = std::stoi(value.substr(0,underscore_pos));
+            size_t multiplier = 1;
+            switch(H_(value.substr(underscore_pos).c_str()))
+            {
+                case "_kB"_h: multiplier = 1024; break;
+                case "_MB"_h: multiplier = 1024*1024; break;
+                case "_GB"_h: multiplier = 1024*1024*1024; break;
+            }
+
+            sizes_[full_name_hash] = size*multiplier;
+        }
     }
 
     return full_name_hash;
@@ -128,6 +145,12 @@ void ValueMap::parse_properties(void* node, const std::string& name_chain)
             }
         }
     }
+}
+
+template <> size_t ValueMap::get(hash_t hname, size_t def)
+{
+    auto it = sizes_.find(hname);
+    return (it != sizes_.end()) ? it->second : def;
 }
 
 template <> uint32_t ValueMap::get(hash_t hname, uint32_t def)

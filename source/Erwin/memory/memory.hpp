@@ -152,6 +152,13 @@ public:
 #endif
 
 		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
+
+		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " allocated aligned block:" << std::endl;
+		DLOGI << "Size:      " << size << "B" << std::endl;
+		DLOGI << "Padding:   " << padding << "B" << std::endl;
+		DLOGI << "Address:   0x" << std::hex << uint64_t(head_ + padding) << std::dec << std::endl;
+		DLOGI << "Remaining: " << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << "B" << std::endl;
+
 		head_ += size + padding;
 		return range;
 	}
@@ -193,6 +200,10 @@ public:
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
+#ifdef W_DEBUG
+    inline void set_debug_name(const std::string& name) { debug_name_ = name; }
+#endif
+
 	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
 		// Lock resource
@@ -203,6 +214,15 @@ public:
 		const size_t user_offset = BK_FRONT_SIZE + offset;
 
 		uint8_t* begin = static_cast<uint8_t*>(allocator_.allocate(decorated_size, alignment, user_offset));
+
+#ifdef W_DEBUG
+		if(begin == nullptr)
+		{
+			DLOGF("memory") << "[Arena] \"" << debug_name_ << "\": Out of memory." << std::endl;
+			W_ASSERT(false, "Allocation failed.");
+		}
+#endif
+
 		uint8_t* current = begin;
 
 		// Put front sentinel for overwrite detection
@@ -249,6 +269,10 @@ private:
 	BoundsCheckerT bounds_checker_;
 	MemoryTaggerT  memory_tagger_;
 	MemoryTrackerT memory_tracker_;
+
+#ifdef W_DEBUG
+	std::string debug_name_;
+#endif
 };
 
 template <typename T, class ArenaT>
@@ -346,14 +370,30 @@ public:
 
 	}
 
+#ifdef W_DEBUG
+    inline void set_debug_name(const std::string& name) { debug_name_ = name; }
+#endif
+
 	inline void write(void const* source, std::size_t size)
 	{
+#ifdef W_DEBUG
+		if(head_ + size >= end_)
+		{
+			DLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overwrite!" << std::endl;
+		}
+#endif
 		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overwrite!");
 		memcpy(head_, source, size);
 		head_ += size;
 	}
 	inline void read(void* destination, std::size_t size)
 	{
+#ifdef W_DEBUG
+		if(head_ + size >= end_)
+		{
+			DLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overread!" << std::endl;
+		}
+#endif
 		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overread!");
 		memcpy(destination, head_, size);
 		head_ += size;
@@ -386,6 +426,10 @@ private:
 	uint8_t* begin_;
 	uint8_t* end_;
 	uint8_t* head_;
+
+#ifdef W_DEBUG
+	std::string debug_name_;
+#endif
 };
 
 } // namespace memory

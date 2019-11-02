@@ -43,7 +43,9 @@ void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::si
 	// Out of memory
     if(current + padding + size > end_)
     {
+#ifndef W_DEBUG
     	W_ASSERT(false, "[LinearAllocator] Out of memory!");
+#endif
         return nullptr;
     }
 

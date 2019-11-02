@@ -18,10 +18,10 @@
 	#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
 	#ifdef __linux__ 
 		#include <csignal>
-		#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); raise(SIGTRAP); } }
+		#define W_ASSERT(CND, ...) { if(!( CND )) { printf("Assertion Failed: %s\n", __VA_ARGS__ ); raise(SIGTRAP); } }
 	#endif
 	#ifdef _WIN32 
-		#define W_ASSERT(CND, ...) { if(!(CND)) { printf("Assertion Failed: %s\n", __VA_ARGS__); __debugbreak(); } }
+		#define W_ASSERT(CND, ...) { if(!( CND )) { printf("Assertion Failed: %s\n", __VA_ARGS__ ); __debugbreak(); } }
 	#endif
 #else
 	#define W_STATIC_ERROR(FSTR, ...)

@@ -46,16 +46,16 @@ public:
 	// Use this program
 	inline void bind() const
 	{
-		if(ShaderStateCache::bound_shader!=unique_id_)
+		/*if(ShaderStateCache::bound_shader!=unique_id_)
 		{
-			ShaderStateCache::bound_shader = unique_id_;
+			ShaderStateCache::bound_shader = unique_id_;*/
 			bind_impl();
-		}
+		//}
 	}
 	// Stop using this program
 	inline void unbind() const
 	{
-		ShaderStateCache::bound_shader = 0;
+		//ShaderStateCache::bound_shader = 0;
 		unbind_impl();
 	}
 
