@@ -22,6 +22,43 @@ struct MainRendererStats
 	float render_time = 0.f;
 };
 
+enum class RenderCommand: uint16_t
+{
+	CreateIndexBuffer,
+	CreateVertexBufferLayout,
+	CreateVertexBuffer,
+	CreateVertexArray,
+	CreateUniformBuffer,
+	CreateShaderStorageBuffer,
+	CreateShader,
+	CreateTexture2D,
+	CreateFramebuffer,
+
+	UpdateIndexBuffer,
+	UpdateVertexBuffer,
+	UpdateUniformBuffer,
+	UpdateShaderStorageBuffer,
+	ShaderAttachUniformBuffer,
+	ShaderAttachStorageBuffer,
+	UpdateFramebuffer,
+
+	Submit,
+
+	Post,
+
+	DestroyIndexBuffer,
+	DestroyVertexBufferLayout,
+	DestroyVertexBuffer,
+	DestroyVertexArray,
+	DestroyUniformBuffer,
+	DestroyShaderStorageBuffer,
+	DestroyShader,
+	DestroyTexture2D,
+	DestroyFramebuffer,
+
+	Count
+};
+
 class RenderQueue;
 class MainRenderer
 {
@@ -36,6 +73,12 @@ public:
 		Count
 	};
 
+	enum class Phase
+	{
+		Pre,
+		Post
+	};
+
 	static void init();
 	static void shutdown();
 
@@ -46,6 +89,33 @@ public:
 
 	static RenderQueue& get_queue(int name);
 	static void flush();
+
+	// * The following functions will initialize a render command and push it to the appropriate queue 
+	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
+	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
+	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
+	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
+	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
+	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
+	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
+	static void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
+	static void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
+	static void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
+	static void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
+	static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
+	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
+	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
+	static void destroy_index_buffer(IndexBufferHandle handle);
+	static void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
+	static void destroy_vertex_buffer(VertexBufferHandle handle);
+	static void destroy_vertex_array(VertexArrayHandle handle);
+	static void destroy_uniform_buffer(UniformBufferHandle handle);
+	static void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
+	static void destroy_shader(ShaderHandle handle);
+	static void destroy_texture_2D(TextureHandle handle);
+	static void destroy_framebuffer(FramebufferHandle handle);
 
 	static void DEBUG_test();
 };
@@ -99,50 +169,7 @@ class RenderQueue
 public:
 	friend class MainRenderer;
 
-	enum class RenderCommand: uint16_t
-	{
-		CreateIndexBuffer,
-		CreateVertexBufferLayout,
-		CreateVertexBuffer,
-		CreateVertexArray,
-		CreateUniformBuffer,
-		CreateShaderStorageBuffer,
-		CreateShader,
-		CreateTexture2D,
-		CreateFramebuffer,
-
-		UpdateIndexBuffer,
-		UpdateVertexBuffer,
-		UpdateUniformBuffer,
-		UpdateShaderStorageBuffer,
-		ShaderAttachUniformBuffer,
-		ShaderAttachStorageBuffer,
-		UpdateFramebuffer,
-
-		Submit,
-
-		Post,
-
-		DestroyIndexBuffer,
-		DestroyVertexBufferLayout,
-		DestroyVertexBuffer,
-		DestroyVertexArray,
-		DestroyUniformBuffer,
-		DestroyShaderStorageBuffer,
-		DestroyShader,
-		DestroyTexture2D,
-		DestroyFramebuffer,
-
-		Count
-	};
-
-	enum class Phase
-	{
-		Pre,
-		Post
-	};
-
-	RenderQueue(memory::HeapArea& memory, SortKey::Order order);
+	RenderQueue(SortKey::Order order, memory::HeapArea& area);
 	~RenderQueue();
 
 	// * These functions change the queue state persistently
@@ -151,82 +178,21 @@ public:
 	//
 	void set_render_target(FramebufferHandle fb);
 
-	// * The following functions will initialize a render command and push it to this queue 
-	IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
-	VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
-	VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
-	UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
-	ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
-	ShaderHandle 			  create_shader(const fs::path& filepath, const std::string& name);
-	TextureHandle 			  create_texture_2D(const Texture2DDescriptor& desc);
-	FramebufferHandle 		  create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
-
-	void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
-	void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
-	void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
-	void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
-	void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
-	void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
-	void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
-
 	void submit(const DrawCall& draw_call);
-
-	void destroy_index_buffer(IndexBufferHandle handle);
-	void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
-	void destroy_vertex_buffer(VertexBufferHandle handle);
-	void destroy_vertex_array(VertexArrayHandle handle);
-	void destroy_uniform_buffer(UniformBufferHandle handle);
-	void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
-	void destroy_shader(ShaderHandle handle);
-	void destroy_texture_2D(TextureHandle handle);
-	void destroy_framebuffer(FramebufferHandle handle);
 
 	// Sort queue by sorting key
 	void sort();
 	// Dispatch all commands
-	void flush(Phase phase);
+	void flush();
 	// Clear queue
 	void reset();
 
-	// DEBUG
-	inline const void* get_pre_command_buffer_ptr() const  { return pre_buffer_.storage.begin(); }
-	inline const void* get_post_command_buffer_ptr() const { return post_buffer_.storage.begin(); }
-	inline const void* get_auxiliary_buffer_ptr() const    { return auxiliary_arena_.get_allocator().begin(); }
-
 private:
-	// Helper func to update the key sequence and push commands to the queue
-	void push_command(RenderCommand type, void* cmd);
-
-	inline CommandBuffer& get_command_buffer(Phase phase)
-	{
-		switch(phase)
-		{
-			case Phase::Pre:  return pre_buffer_;
-			case Phase::Post: return post_buffer_;
-		}
-	}
-
-	inline CommandBuffer& get_command_buffer(RenderCommand command)
-	{
-		Phase phase = (command < RenderCommand::Post) ? Phase::Pre : Phase::Post;
-		return get_command_buffer(phase);
-	}
-
-private:
-	typedef memory::MemoryArena<memory::LinearAllocator, 
-			    				memory::policy::SingleThread, 
-			    				memory::policy::NoBoundsChecking,
-			    				memory::policy::NoMemoryTagging,
-			    				memory::policy::NoMemoryTracking> AuxArena;
-
 	SortKey::Order order_;
 	SortKey key_;
 	uint32_t clear_color_;
 	FramebufferHandle render_target_;
-	CommandBuffer pre_buffer_;
-	CommandBuffer post_buffer_;
-	AuxArena auxiliary_arena_;
+	CommandBuffer command_buffer_;
 };
 
 /*

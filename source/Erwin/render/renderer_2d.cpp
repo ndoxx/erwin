@@ -100,34 +100,32 @@ void Renderer2D::init()
 	};
 	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
-	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	// storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
-	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
-	storage.vbl_handle = rq.create_vertex_buffer_layout({
+	storage.shader_handle = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	// storage.shader_handle = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.ibo_handle = MainRenderer::create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
+	storage.vbl_handle = MainRenderer::create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
 								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
 								 			    });
-	storage.vbo_handle = rq.create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
-	storage.va_handle = rq.create_vertex_array(storage.vbo_handle, storage.ibo_handle);
-	storage.ubo_handle = rq.create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	storage.ssbo_handle = rq.create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+	storage.vbo_handle = MainRenderer::create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
+	storage.va_handle = MainRenderer::create_vertex_array(storage.vbo_handle, storage.ibo_handle);
+	storage.ubo_handle = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	storage.ssbo_handle = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 
 
-	rq.shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
-	rq.shader_attach_storage_buffer(storage.shader_handle, storage.ssbo_handle);
+	MainRenderer::shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
+	MainRenderer::shader_attach_storage_buffer(storage.shader_handle, storage.ssbo_handle);
 }
 
 void Renderer2D::shutdown()
 {
-	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	rq.destroy_shader_storage_buffer(storage.ssbo_handle);
-	rq.destroy_uniform_buffer(storage.ubo_handle);
-	rq.destroy_vertex_array(storage.va_handle);
-	rq.destroy_vertex_buffer(storage.vbo_handle);
-	rq.destroy_vertex_buffer_layout(storage.vbl_handle);
-	rq.destroy_index_buffer(storage.ibo_handle);
-	rq.destroy_shader(storage.shader_handle);
+	MainRenderer::destroy_shader_storage_buffer(storage.ssbo_handle);
+	MainRenderer::destroy_uniform_buffer(storage.ubo_handle);
+	MainRenderer::destroy_vertex_array(storage.va_handle);
+	MainRenderer::destroy_vertex_buffer(storage.vbo_handle);
+	MainRenderer::destroy_vertex_buffer_layout(storage.vbl_handle);
+	MainRenderer::destroy_index_buffer(storage.ibo_handle);
+	MainRenderer::destroy_shader(storage.shader_handle);
 }
 
 void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
@@ -142,12 +140,11 @@ void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 	uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
 	// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
-	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	atlas.handle = rq.create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
-								  					 		atlas.descriptor.texture_height,
-								  					 		atlas.descriptor.texture_blob,
-								  					 		format,
-								  					 		filter});
+	atlas.handle = MainRenderer::create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
+								  					 				   atlas.descriptor.texture_height,
+								  					 				   atlas.descriptor.texture_blob,
+								  					 				   format,
+								  					 				   filter});
 
 	create_batch(name, atlas.handle);
 }

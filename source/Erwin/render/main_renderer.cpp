@@ -116,6 +116,12 @@ void SortKey::decode(uint64_t key)
 		                            |___/      
 */
 
+typedef memory::MemoryArena<memory::LinearAllocator, 
+		    				memory::policy::SingleThread, 
+		    				memory::policy::NoBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::NoMemoryTracking> AuxArena;
+
 constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handles[HandleType::IndexBufferHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferLayoutHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferHandleT]
@@ -132,8 +138,17 @@ struct RendererStorage
 {
 	RendererStorage():
 	renderer_memory_(cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB)),
+	pre_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB))),
+	post_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB))),
+	auxiliary_arena_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB))),
 	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
 	{
+#ifdef W_DEBUG
+		pre_buffer_.storage.set_debug_name("CB-Pre");
+		post_buffer_.storage.set_debug_name("CB-Post");
+		auxiliary_arena_.set_debug_name("Auxiliary");
+#endif
+
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
 		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
 		std::fill(std::begin(vertex_buffers),         std::end(vertex_buffers),         nullptr);
@@ -205,6 +220,9 @@ struct RendererStorage
 	MainRendererStats stats;
 
 	memory::HeapArea renderer_memory_;
+	CommandBuffer pre_buffer_;
+	CommandBuffer post_buffer_;
+	AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
 };
 std::unique_ptr<RendererStorage> s_storage;
@@ -221,6 +239,27 @@ std::unique_ptr<RendererStorage> s_storage;
 		MAKE_VALIDATOR(FramebufferHandle);
 #undef  MAKE_VALIDATOR
 
+inline CommandBuffer& get_command_buffer(MainRenderer::Phase phase)
+{
+	switch(phase)
+	{
+		case MainRenderer::Phase::Pre:  return s_storage->pre_buffer_;
+		case MainRenderer::Phase::Post: return s_storage->post_buffer_;
+	}
+}
+
+inline CommandBuffer& get_command_buffer(RenderCommand command)
+{
+	MainRenderer::Phase phase = (command < RenderCommand::Post) ? MainRenderer::Phase::Pre : MainRenderer::Phase::Post;
+	return get_command_buffer(phase);
+}
+
+inline void push_command(RenderCommand type, void* cmd)
+{
+	auto& cmdbuf = get_command_buffer(type);
+	uint64_t key = ~uint64_t(cmdbuf.count);
+	cmdbuf.entries[cmdbuf.count++] = {key, cmd};
+}
 
 void MainRenderer::init()
 {
@@ -229,7 +268,7 @@ void MainRenderer::init()
 	s_storage = std::make_unique<RendererStorage>();
 	// Create command queues
 	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
-		s_storage->queues_.emplace_back(s_storage->renderer_memory_, SortKey::Order::Sequential);
+		s_storage->queues_.emplace_back(SortKey::Order::Sequential, s_storage->renderer_memory_);
 
 	s_storage->query_timer = QueryTimer::create();
 	s_storage->profiling_enabled = false;
@@ -270,42 +309,20 @@ RenderQueue& MainRenderer::get_queue(int name)
 	return s_storage->queues_[name];
 }
 
-void MainRenderer::flush()
+static void sort_commands()
 {
-	if(s_storage->profiling_enabled)
-		s_storage->query_timer->start();
-
-	// Sort and flush each queue
-	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
-	{
-		auto& queue = s_storage->queues_[queue_name];
-
-		queue.sort();
-		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG); // TMP: flags will change for each queue
-		queue.flush(RenderQueue::Phase::Pre);
-	}
-	for(int queue_name = QueueName::Count-1; queue_name >= 0; --queue_name)
-	{
-		auto& queue = s_storage->queues_[queue_name];
-		queue.flush(RenderQueue::Phase::Post);
-		queue.reset();
-	}
-
-	if(s_storage->profiling_enabled)
-	{
-		auto render_duration = s_storage->query_timer->stop();
-		s_storage->stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
-	}
-}
-
-void MainRenderer::DEBUG_test()
-{
-	const void* pre_buf = s_storage->queues_[QueueName::Opaque].get_pre_command_buffer_ptr();
-	const void* post_buf = s_storage->queues_[QueueName::Opaque].get_post_command_buffer_ptr();
-	const void* aux = s_storage->queues_[QueueName::Opaque].get_auxiliary_buffer_ptr();
-	memory::hex_dump(std::cout, pre_buf, 256_B, "CMDBuf-PRE");
-	memory::hex_dump(std::cout, post_buf, 256_B, "CMDBuf-POST");
-	memory::hex_dump(std::cout, aux, 256_B, "AUX");
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
+    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
 }
 
 /*
@@ -316,6 +333,517 @@ void MainRenderer::DEBUG_test()
 		 | |___| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
+
+IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+{
+	RenderCommand type = RenderCommand::CreateIndexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	IndexBufferHandle handle = { s_storage->handles_[IndexBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
+	cmdbuf.write(&primitive);
+	cmdbuf.write(&mode);
+
+	// Write auxiliary data
+	uint32_t* auxiliary = nullptr;
+	if(index_data)
+	{
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage->auxiliary_arena_);
+		memcpy(auxiliary, index_data, count * sizeof(uint32_t));
+	}
+	else
+	{
+		W_ASSERT(mode != DrawMode::Static, "Index data can't be null in static mode.");
+	}
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
+{
+	RenderCommand type = RenderCommand::CreateVertexBufferLayout;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	VertexBufferLayoutHandle handle = { s_storage->handles_[VertexBufferLayoutHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	std::vector<BufferLayoutElement> elts(elements);
+	uint32_t count = elts.size();
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
+
+	// Write auxiliary data
+	BufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(BufferLayoutElement, elts.size(), s_storage->auxiliary_arena_);
+	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
+{
+	W_ASSERT(is_valid(layout), "Invalid VertexBufferLayoutHandle!");
+
+	RenderCommand type = RenderCommand::CreateVertexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	VertexBufferHandle handle = { s_storage->handles_[VertexBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&layout);
+	cmdbuf.write(&count);
+	cmdbuf.write(&mode);
+
+	// Write auxiliary data
+	float* auxiliary = nullptr;
+	if(vertex_data)
+	{
+		auxiliary = W_NEW_ARRAY_DYNAMIC(float, count, s_storage->auxiliary_arena_);
+		memcpy(auxiliary, vertex_data, count * sizeof(float));
+	}
+	else
+	{
+		W_ASSERT(mode != DrawMode::Static, "Vertex data can't be null in static mode.");
+	}
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+VertexArrayHandle MainRenderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
+{
+	W_ASSERT(is_valid(vb), "Invalid VertexBufferHandle!");
+	W_ASSERT(is_valid(ib), "Invalid IndexBufferHandle!");
+
+	RenderCommand type = RenderCommand::CreateVertexArray;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	VertexArrayHandle handle = { s_storage->handles_[VertexArrayHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&vb);
+	cmdbuf.write(&ib);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+UniformBufferHandle MainRenderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+{
+	RenderCommand type = RenderCommand::CreateUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	UniformBufferHandle handle = { s_storage->handles_[UniformBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	cmdbuf.write(&mode);
+	cmdbuf.write_str(name);
+
+	// Write auxiliary data
+	uint8_t* auxiliary = nullptr;
+	if(data)
+	{
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+		memcpy(auxiliary, data, size);
+	}
+	else
+	{
+		W_ASSERT(mode != DrawMode::Static, "UBO data can't be null in static mode.");
+	}
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+ShaderStorageBufferHandle MainRenderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+{
+	RenderCommand type = RenderCommand::CreateShaderStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	ShaderStorageBufferHandle handle = { s_storage->handles_[ShaderStorageBufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	// Write data
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	cmdbuf.write(&mode);
+	cmdbuf.write_str(name);
+
+	// Write auxiliary data
+	uint8_t* auxiliary = nullptr;
+	if(data)
+	{
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+		memcpy(auxiliary, data, size);
+	}
+	else
+	{
+		W_ASSERT(mode != DrawMode::Static, "SSBO data can't be null in static mode.");
+	}
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+ShaderHandle MainRenderer::create_shader(const fs::path& filepath, const std::string& name)
+{
+	RenderCommand type = RenderCommand::CreateShader;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	ShaderHandle handle = { s_storage->handles_[ShaderHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write_str(filepath.string());
+	cmdbuf.write_str(name);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+TextureHandle MainRenderer::create_texture_2D(const Texture2DDescriptor& desc)
+{
+	RenderCommand type = RenderCommand::CreateTexture2D;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	TextureHandle handle = { s_storage->handles_[TextureHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&desc);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
+{
+	RenderCommand type = RenderCommand::CreateFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	FramebufferHandle handle = { s_storage->handles_[FramebufferHandleT]->acquire() };
+	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+
+	uint32_t count = layout.get_count();
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&width);
+	cmdbuf.write(&height);
+	cmdbuf.write(&depth);
+	cmdbuf.write(&stencil);
+	cmdbuf.write(&count);
+
+	// Write auxiliary data
+	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, layout.get_count(), s_storage->auxiliary_arena_);
+	memcpy(auxiliary, layout.data(), layout.get_count() * sizeof(FramebufferLayoutElement));
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+	return handle;
+}
+
+void MainRenderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
+{
+	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
+	W_ASSERT(data, "No data!");
+
+	RenderCommand type = RenderCommand::UpdateIndexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+
+	void* cmd = cmdbuf.head();
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&count);
+	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage->auxiliary_arena_);
+	memcpy(auxiliary, data, count);
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
+{
+	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
+	W_ASSERT(data, "No data!");
+
+	RenderCommand type = RenderCommand::UpdateVertexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	memcpy(auxiliary, data, size);
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
+{
+	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
+	W_ASSERT(data, "No data!");
+
+	RenderCommand type = RenderCommand::UpdateUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	memcpy(auxiliary, data, size);
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
+{
+	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
+	W_ASSERT(data, "No data!");
+
+	RenderCommand type = RenderCommand::UpdateShaderStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+	cmdbuf.write(&size);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	memcpy(auxiliary, data, size);
+	cmdbuf.write(&auxiliary);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
+{
+	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
+	W_ASSERT(is_valid(ubo), "Invalid UniformBufferHandle!");
+
+	RenderCommand type = RenderCommand::ShaderAttachUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&shader);
+	cmdbuf.write(&ubo);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
+{
+	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
+	W_ASSERT(is_valid(ssbo), "Invalid ShaderStorageBufferHandle!");
+
+	RenderCommand type = RenderCommand::ShaderAttachStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&shader);
+	cmdbuf.write(&ssbo);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
+{
+	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
+
+	RenderCommand type = RenderCommand::UpdateFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&fb);
+	cmdbuf.write(&width);
+	cmdbuf.write(&height);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_index_buffer(IndexBufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
+	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyIndexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
+	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyVertexBufferLayout;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_vertex_buffer(VertexBufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
+	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyVertexBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_vertex_array(VertexArrayHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
+	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyVertexArray;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_uniform_buffer(UniformBufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
+	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyUniformBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
+	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
+
+	RenderCommand type = RenderCommand::DestroyShaderStorageBuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+	
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_shader(ShaderHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid ShaderHandle!");
+	s_storage->handles_[ShaderHandleT]->release(handle.index);
+	
+	RenderCommand type = RenderCommand::DestroyShader;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_texture_2D(TextureHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid TextureHandle!");
+	s_storage->handles_[TextureHandleT]->release(handle.index);
+	
+	RenderCommand type = RenderCommand::DestroyTexture2D;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::destroy_framebuffer(FramebufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
+	s_storage->handles_[FramebufferHandleT]->release(handle.index);
+	
+	RenderCommand type = RenderCommand::DestroyFramebuffer;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&handle);
+
+	push_command(type, cmd);
+}
+
+void MainRenderer::DEBUG_test()
+{
+	const void* pre_buf = s_storage->pre_buffer_.storage.begin();
+	const void* post_buf = s_storage->post_buffer_.storage.begin();
+	const void* aux = s_storage->auxiliary_arena_.get_allocator().begin();
+	memory::hex_dump(std::cout, pre_buf, 256_B, "CMDBuf-PRE");
+	memory::hex_dump(std::cout, post_buf, 256_B, "CMDBuf-POST");
+	memory::hex_dump(std::cout, aux, 256_B, "AUX");
+}
 
 DrawCall::DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
 type(type),
@@ -332,20 +860,12 @@ queue(queue)
 
 }
 
-RenderQueue::RenderQueue(memory::HeapArea& memory, SortKey::Order order):
+RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 key_({ 0, 0, 0, false, 0, 0 }),
-pre_buffer_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_pre_buffer"_h, 512_kB))),
-post_buffer_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_post_buffer"_h, 512_kB))),
-auxiliary_arena_(memory.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB)))
+command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
 {
 	render_target_.index = 0;
-
-#ifdef W_DEBUG
-	pre_buffer_.storage.set_debug_name("Queue-Pre");
-	post_buffer_.storage.set_debug_name("Queue-Post");
-	auxiliary_arena_.set_debug_name("Queue-Auxiliary");
-#endif
 }
 
 RenderQueue::~RenderQueue()
@@ -368,399 +888,18 @@ void RenderQueue::sort()
 {
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
-    std::sort(std::begin(pre_buffer_.entries), std::begin(pre_buffer_.entries) + pre_buffer_.count, 
+    std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
         	return item1.first > item2.first;
         });
-    std::sort(std::begin(post_buffer_.entries), std::begin(post_buffer_.entries) + post_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-}
-
-void RenderQueue::push_command(RenderCommand type, void* cmd)
-{
-	auto& cmdbuf = get_command_buffer(type);
-	key_.is_draw = (type == RenderCommand::Submit);
-	key_.sequence = ~uint32_t(cmdbuf.count); // TODO: per-view sequence
-	uint64_t key = key_.encode(order_);
-	cmdbuf.entries[cmdbuf.count++] = {key, cmd};
 }
 
 void RenderQueue::reset()
 {
-	pre_buffer_.reset();
-	post_buffer_.reset();
-	auxiliary_arena_.get_allocator().reset();
+	command_buffer_.reset();
+	s_storage->auxiliary_arena_.get_allocator().reset();
 	key_ = { 0, 0, 0, false, 0, 0 };
-}
-
-IndexBufferHandle RenderQueue::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
-{
-	RenderCommand type = RenderCommand::CreateIndexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	IndexBufferHandle handle = { s_storage->handles_[IndexBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&count);
-	cmdbuf.write(&primitive);
-	cmdbuf.write(&mode);
-
-	// Write auxiliary data
-	uint32_t* auxiliary = nullptr;
-	if(index_data)
-	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, auxiliary_arena_);
-		memcpy(auxiliary, index_data, count * sizeof(uint32_t));
-	}
-	else
-	{
-		W_ASSERT(mode != DrawMode::Static, "Index data can't be null in static mode.");
-	}
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-VertexBufferLayoutHandle RenderQueue::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
-{
-	RenderCommand type = RenderCommand::CreateVertexBufferLayout;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	VertexBufferLayoutHandle handle = { s_storage->handles_[VertexBufferLayoutHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	std::vector<BufferLayoutElement> elts(elements);
-	uint32_t count = elts.size();
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&count);
-
-	// Write auxiliary data
-	BufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(BufferLayoutElement, elts.size(), auxiliary_arena_);
-	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-VertexBufferHandle RenderQueue::create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
-{
-	W_ASSERT(is_valid(layout), "Invalid VertexBufferLayoutHandle!");
-
-	RenderCommand type = RenderCommand::CreateVertexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	VertexBufferHandle handle = { s_storage->handles_[VertexBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&layout);
-	cmdbuf.write(&count);
-	cmdbuf.write(&mode);
-
-	// Write auxiliary data
-	float* auxiliary = nullptr;
-	if(vertex_data)
-	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(float, count, auxiliary_arena_);
-		memcpy(auxiliary, vertex_data, count * sizeof(float));
-	}
-	else
-	{
-		W_ASSERT(mode != DrawMode::Static, "Vertex data can't be null in static mode.");
-	}
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-VertexArrayHandle RenderQueue::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
-{
-	W_ASSERT(is_valid(vb), "Invalid VertexBufferHandle!");
-	W_ASSERT(is_valid(ib), "Invalid IndexBufferHandle!");
-
-	RenderCommand type = RenderCommand::CreateVertexArray;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	VertexArrayHandle handle = { s_storage->handles_[VertexArrayHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&vb);
-	cmdbuf.write(&ib);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-UniformBufferHandle RenderQueue::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
-{
-	RenderCommand type = RenderCommand::CreateUniformBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	UniformBufferHandle handle = { s_storage->handles_[UniformBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&size);
-	cmdbuf.write(&mode);
-	cmdbuf.write_str(name);
-
-	// Write auxiliary data
-	uint8_t* auxiliary = nullptr;
-	if(data)
-	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
-		memcpy(auxiliary, data, size);
-	}
-	else
-	{
-		W_ASSERT(mode != DrawMode::Static, "UBO data can't be null in static mode.");
-	}
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-ShaderStorageBufferHandle RenderQueue::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
-{
-	RenderCommand type = RenderCommand::CreateShaderStorageBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	ShaderStorageBufferHandle handle = { s_storage->handles_[ShaderStorageBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	// Write data
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&size);
-	cmdbuf.write(&mode);
-	cmdbuf.write_str(name);
-
-	// Write auxiliary data
-	uint8_t* auxiliary = nullptr;
-	if(data)
-	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
-		memcpy(auxiliary, data, size);
-	}
-	else
-	{
-		W_ASSERT(mode != DrawMode::Static, "SSBO data can't be null in static mode.");
-	}
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-ShaderHandle RenderQueue::create_shader(const fs::path& filepath, const std::string& name)
-{
-	RenderCommand type = RenderCommand::CreateShader;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	ShaderHandle handle = { s_storage->handles_[ShaderHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write_str(filepath.string());
-	cmdbuf.write_str(name);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-TextureHandle RenderQueue::create_texture_2D(const Texture2DDescriptor& desc)
-{
-	RenderCommand type = RenderCommand::CreateTexture2D;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	TextureHandle handle = { s_storage->handles_[TextureHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&desc);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-FramebufferHandle RenderQueue::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
-{
-	RenderCommand type = RenderCommand::CreateFramebuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	FramebufferHandle handle = { s_storage->handles_[FramebufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
-
-	uint32_t count = layout.get_count();
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&width);
-	cmdbuf.write(&height);
-	cmdbuf.write(&depth);
-	cmdbuf.write(&stencil);
-	cmdbuf.write(&count);
-
-	// Write auxiliary data
-	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, layout.get_count(), auxiliary_arena_);
-	memcpy(auxiliary, layout.data(), layout.get_count() * sizeof(FramebufferLayoutElement));
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-	return handle;
-}
-
-void RenderQueue::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
-{
-	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
-	W_ASSERT(data, "No data!");
-
-	RenderCommand type = RenderCommand::UpdateIndexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-
-	void* cmd = cmdbuf.head();
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&count);
-	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, auxiliary_arena_);
-	memcpy(auxiliary, data, count);
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
-{
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
-	W_ASSERT(data, "No data!");
-
-	RenderCommand type = RenderCommand::UpdateVertexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&size);
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
-	memcpy(auxiliary, data, size);
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
-{
-	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
-	W_ASSERT(data, "No data!");
-
-	RenderCommand type = RenderCommand::UpdateUniformBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&size);
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
-	memcpy(auxiliary, data, size);
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
-{
-	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
-	W_ASSERT(data, "No data!");
-
-	RenderCommand type = RenderCommand::UpdateShaderStorageBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-	cmdbuf.write(&size);
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, auxiliary_arena_);
-	memcpy(auxiliary, data, size);
-	cmdbuf.write(&auxiliary);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
-{
-	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
-	W_ASSERT(is_valid(ubo), "Invalid UniformBufferHandle!");
-
-	RenderCommand type = RenderCommand::ShaderAttachUniformBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&shader);
-	cmdbuf.write(&ubo);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
-{
-	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
-	W_ASSERT(is_valid(ssbo), "Invalid ShaderStorageBufferHandle!");
-
-	RenderCommand type = RenderCommand::ShaderAttachStorageBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&shader);
-	cmdbuf.write(&ssbo);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
-{
-	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
-
-	RenderCommand type = RenderCommand::UpdateFramebuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&fb);
-	cmdbuf.write(&width);
-	cmdbuf.write(&height);
-
-	push_command(type, cmd);
 }
 
 void RenderQueue::submit(const DrawCall& dc)
@@ -769,7 +908,7 @@ void RenderQueue::submit(const DrawCall& dc)
 	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
 
 	RenderCommand type = RenderCommand::Submit;
-	auto& cmdbuf = get_command_buffer(type).storage;
+	auto& cmdbuf = command_buffer_.storage;
 	void* cmd = cmdbuf.head();
 
 	cmdbuf.write(&type);
@@ -790,154 +929,23 @@ void RenderQueue::submit(const DrawCall& dc)
 	uint8_t* ssbo_data = nullptr;
 	if(dc.UBO_data)
 	{
-		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, auxiliary_arena_);
+		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
 		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
 	}
 	if(dc.SSBO_data)
 	{
-		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, auxiliary_arena_);
+		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, s_storage->auxiliary_arena_);
 		memcpy(ssbo_data, dc.SSBO_data, dc.SSBO_size);
 	}
 	cmdbuf.write(&ubo_data);
 	cmdbuf.write(&ssbo_data);
 
-	push_command(type, cmd);
+	key_.is_draw = true;
+	key_.sequence = ~uint32_t(command_buffer_.count); // TODO: per-view sequence
+	uint64_t key = key_.encode(order_);
+	command_buffer_.entries[command_buffer_.count++] = {key, cmd};
 }
 
-void RenderQueue::destroy_index_buffer(IndexBufferHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
-	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyIndexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
-	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyVertexBufferLayout;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_vertex_buffer(VertexBufferHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
-	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyVertexBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_vertex_array(VertexArrayHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
-	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyVertexArray;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_uniform_buffer(UniformBufferHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
-	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyUniformBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
-	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
-
-	RenderCommand type = RenderCommand::DestroyShaderStorageBuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-	
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_shader(ShaderHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid ShaderHandle!");
-	s_storage->handles_[ShaderHandleT]->release(handle.index);
-	
-	RenderCommand type = RenderCommand::DestroyShader;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_texture_2D(TextureHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid TextureHandle!");
-	s_storage->handles_[TextureHandleT]->release(handle.index);
-	
-	RenderCommand type = RenderCommand::DestroyTexture2D;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
-
-void RenderQueue::destroy_framebuffer(FramebufferHandle handle)
-{
-	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
-	s_storage->handles_[FramebufferHandleT]->release(handle.index);
-	
-	RenderCommand type = RenderCommand::DestroyFramebuffer;
-	auto& cmdbuf = get_command_buffer(type).storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&handle);
-
-	push_command(type, cmd);
-}
 
 /*
 		  _____  _                 _       _     
@@ -1339,7 +1347,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 } // namespace dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
-static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::RenderCommand::Count] =
+static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Count] =
 {
 	&dispatch::create_index_buffer,
 	&dispatch::create_vertex_buffer_layout,
@@ -1372,10 +1380,9 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderQueue::Render
 	&dispatch::destroy_framebuffer,
 };
 
-void RenderQueue::flush(Phase phase)
+void RenderQueue::flush()
 {
-	auto& cbuf = get_command_buffer(phase);
-	if(cbuf.count == 0)
+	if(command_buffer_.count == 0)
 		return;
 
 	if(render_target_ == s_storage->default_framebuffer_)
@@ -1386,13 +1393,55 @@ void RenderQueue::flush(Phase phase)
 		s_storage->framebuffers[render_target_.index]->bind();
 	}
 
-	for(int ii=0; ii<cbuf.count; ++ii)
+	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
-		auto&& [key,cmd] = cbuf.entries[ii];
-		cbuf.storage.seek(cmd);
+		auto&& [key,cmd] = command_buffer_.entries[ii];
+		command_buffer_.storage.seek(cmd);
 		uint16_t type;
-		cbuf.storage.read(&type);
-		(*backend_dispatch[type])(cbuf.storage);
+		command_buffer_.storage.read(&type);
+		(*backend_dispatch[type])(command_buffer_.storage);
+	}
+}
+
+static void flush_command_buffer(CommandBuffer& cmdbuf)
+{
+	for(int ii=0; ii<cmdbuf.count; ++ii)
+	{
+		auto&& [key,cmd] = cmdbuf.entries[ii];
+		cmdbuf.storage.seek(cmd);
+		uint16_t type;
+		cmdbuf.storage.read(&type);
+		(*backend_dispatch[type])(cmdbuf.storage);
+	}
+	cmdbuf.reset();
+}
+
+void MainRenderer::flush()
+{
+	if(s_storage->profiling_enabled)
+		s_storage->query_timer->start();
+
+	// Sort command buffers
+	sort_commands();
+	// Dispatch pre buffer commands
+	flush_command_buffer(s_storage->pre_buffer_);
+	// Sort and flush each queue
+	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
+	{
+		auto& queue = s_storage->queues_[queue_name];
+
+		queue.sort();
+		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG); // TMP: flags will change for each queue
+		queue.flush();
+		queue.reset();
+	}
+	// Dispatch post buffer commands
+	flush_command_buffer(s_storage->post_buffer_);
+
+	if(s_storage->profiling_enabled)
+	{
+		auto render_duration = s_storage->query_timer->stop();
+		s_storage->stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 }
 
