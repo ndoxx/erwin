@@ -13,7 +13,7 @@ std::map<char, std::string> WCC::COLORMAP =
     {'n', "\033[1;38;2;255;50;0m"},    // names and symbols in dark orange
     {'i', "\033[1;38;2;255;190;10m"},  // instructions in light orange
     {'w', "\033[1;38;2;220;200;255m"}, // values in light purple
-    {'v', "\033[1;38;2;190;10;255m"},  // important values in purple
+    {'v', "\033[1;38;2;153;204;0m"},   // important values in green
     {'u', "\033[1;38;2;0;255;100m"},   // uniforms and attributes in light green
     {'d', "\033[1;38;2;255;100;0m"},   // default in vivid orange
     {'b', "\033[1;38;2;255;0;0m"},     // bad things in red

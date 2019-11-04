@@ -56,6 +56,7 @@ enum class BlendState
 
 enum ClearFlags
 {
+    CLEAR_NONE = 0,
     CLEAR_COLOR_FLAG = 1,
     CLEAR_DEPTH_FLAG = 2,
     CLEAR_STENCIL_FLAG = 4
@@ -63,8 +64,9 @@ enum ClearFlags
 
 struct RasterizerState
 {
-    CullMode cull_mode    = CullMode::Back;
-    glm::vec4 clear_color = glm::vec4(0.f,0.f,0.f,1.f);
+    ClearFlags clear_flags = ClearFlags::CLEAR_NONE;
+    CullMode cull_mode     = CullMode::Back;
+    glm::vec4 clear_color  = glm::vec4(0.f,0.f,0.f,1.f);
 };
 
 struct DepthStencilState

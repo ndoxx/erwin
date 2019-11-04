@@ -130,8 +130,8 @@ void LayerTest::on_update(GameClock& clock)
 
 	PassState pass_state;
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 	pass_state.blend_state = BlendState::Opaque;
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f); // TODO: move to PassState
 
 	// Draw a grid of quads
 	Renderer2D::begin_pass(MainRenderer::default_render_target(), pass_state, camera_ctl_.get_camera());

@@ -101,8 +101,8 @@ void Renderer2D::init()
 	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
 	auto& rq = MainRenderer::get_queue(MainRenderer::Resource);
-	// storage.shader_handle = rq.create_shader(filesystem::get_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	// storage.shader_handle = rq.create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 	storage.ibo_handle = rq.create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
 	storage.vbl_handle = rq.create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},

@@ -195,13 +195,13 @@ void LayerBatch2D::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
 
-	PassState render_state;
-	render_state.render_target = "fb_2d_raw"_h;
-	render_state.rasterizer_state.cull_mode = CullMode::Back;
-	render_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
-	render_state.blend_state = BlendState::Opaque;
+	PassState pass_state;
+	pass_state.render_target = "fb_2d_raw"_h;
+	pass_state.rasterizer_state.cull_mode = CullMode::Back;
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pass_state.blend_state = BlendState::Opaque;
 
-	renderer_2D_->begin_scene(render_state, camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
+	renderer_2D_->begin_scene(pass_state, camera_ctl_.get_camera(), atlas_.get_texture(), pp_data_);
 	{
 /*
 		ShaderParameters sq_params;

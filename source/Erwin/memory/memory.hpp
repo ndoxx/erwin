@@ -154,10 +154,10 @@ public:
 		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
 
 		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " allocated aligned block:" << std::endl;
-		DLOGI << "Size:      " << size << "B" << std::endl;
-		DLOGI << "Padding:   " << padding << "B" << std::endl;
-		DLOGI << "Address:   0x" << std::hex << uint64_t(head_ + padding) << std::dec << std::endl;
-		DLOGI << "Remaining: " << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << "B" << std::endl;
+		DLOGI << "Size:      "   << WCC('v') << size                                                 << WCC(0) << "B" << std::endl;
+		DLOGI << "Padding:   "   << WCC('v') << padding                                              << WCC(0) << "B" << std::endl;
+		DLOGI << "Remaining: "   << WCC('v') << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << WCC(0) << "B" << std::endl;
+		DLOGI << "Address:   0x" << std::hex << uint64_t(head_ + padding)                            << std::dec << std::endl;
 
 		head_ += size + padding;
 		return range;
