@@ -193,7 +193,7 @@ static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std
         if(errlines.find(nline++)!=errlines.end())
         {
             int actual_line = nline + n_previous_lines;
-            trim(line);
+            su::trim(line);
             DLOGR("shader") << "\033[1;38;2;255;200;10m> \033[1;38;2;255;90;90m"
                             << actual_line << "\033[1;38;2;255;200;10m : " << line << std::endl;
         }
@@ -328,7 +328,7 @@ std::string OGLShader::parse_includes(const std::string& source)
 
     // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
     std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    return rx::regex_replace(source, e_inc, [&](const std::smatch& m)
+    return su::rx::regex_replace(source, e_inc, [&](const std::smatch& m)
     {
         std::string result = m[1].str();
         std::string filename = result.substr(1, result.size()-2);

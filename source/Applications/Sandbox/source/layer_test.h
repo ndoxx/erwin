@@ -31,7 +31,7 @@ private:
 	std::vector<hash_t> tiles_;
 	float tt_ = 0.f;
 	bool trippy_mode_ = false;
-	int len_grid_ = 50;
+	int len_grid_ = 100;
 	bool enable_profiling_ = false;
 
 	FramebufferHandle fb_handle_;

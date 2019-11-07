@@ -98,6 +98,7 @@ minimized_(false)
     FramebufferPool::init(window_->get_width(), window_->get_height());
     // Initialize master renderer storage
     MainRenderer::init();
+    MainRenderer::create_queue(0, SortKey::Order::Sequential); // Opaque 2D
     Renderer2D::init();
 #endif
 

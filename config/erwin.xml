@@ -34,12 +34,13 @@
     </display>
 
     <renderer>
+    	<Queue name="Opaque" sort="depth_descend"/>
     	<memory>
-	    	<size name="renderer_area"   value="20_MB"/>
+	    	<size name="renderer_area"   value="32_MB"/>
 	    	<size name="queue_buffer"    value="512_kB"/>
 	    	<size name="pre_buffer"      value="512_kB"/>
 	    	<size name="post_buffer"     value="512_kB"/>
-	    	<size name="auxiliary_arena" value="8_MB"/>
+	    	<size name="auxiliary_arena" value="16_MB"/>
 	    </memory>
         <uint name="max_2d_batch_count" value="8192"/>
     </renderer>

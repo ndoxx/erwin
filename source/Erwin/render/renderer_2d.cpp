@@ -6,12 +6,13 @@
 
 namespace erwin
 {
-
 struct InstanceData // Need correct alignment for SSBO data
 {
-	glm::vec2 offset;
-	glm::vec2 scale;
 	glm::vec4 uvs;
+	glm::vec4 tint;
+	glm::vec4 offset;
+	glm::vec2 scale;
+	glm::vec2 padding;
 };
 
 struct Batch2D
@@ -30,6 +31,8 @@ struct Renderer2DStorage
 	ShaderHandle shader_handle;
 	UniformBufferHandle ubo_handle;
 	ShaderStorageBufferHandle ssbo_handle;
+	TextureHandle white_texture;
+	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
@@ -111,7 +114,13 @@ void Renderer2D::init()
 	storage.va_handle = MainRenderer::create_vertex_array(storage.vbo_handle, storage.ibo_handle);
 	storage.ubo_handle = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
 	storage.ssbo_handle = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
-
+	
+	storage.white_texture_data = 0xffffffff;
+	storage.white_texture = MainRenderer::create_texture_2D(Texture2DDescriptor{1,1,
+								  					 				   			&storage.white_texture_data,
+								  					 				   			ImageFormat::RGBA8,
+								  					 				   			MAG_NEAREST | MIN_NEAREST});
+	create_batch(0, storage.white_texture);
 
 	MainRenderer::shader_attach_uniform_buffer(storage.shader_handle, storage.ubo_handle);
 	MainRenderer::shader_attach_storage_buffer(storage.shader_handle, storage.ssbo_handle);
@@ -119,6 +128,7 @@ void Renderer2D::init()
 
 void Renderer2D::shutdown()
 {
+	MainRenderer::destroy_texture_2D(storage.white_texture);
 	MainRenderer::destroy_shader_storage_buffer(storage.ssbo_handle);
 	MainRenderer::destroy_uniform_buffer(storage.ubo_handle);
 	MainRenderer::destroy_vertex_array(storage.va_handle);
@@ -155,7 +165,7 @@ void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& st
 	storage.num_draw_calls = 0;
 
 	storage.state_flags = state.encode();
-	auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+	auto& rq = MainRenderer::get_queue(0);
 	rq.set_render_target(render_target);
 
 	// Set scene data
@@ -173,7 +183,7 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		auto& rq = MainRenderer::get_queue(MainRenderer::Opaque);
+		auto& rq = MainRenderer::get_queue(0);
 
 		DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
 		dc.set_state(storage.state_flags);
@@ -187,10 +197,10 @@ static void flush_batch(Batch2D& batch)
 	}
 }
 
-void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas)
+void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas, const glm::vec4& tint)
 {
 	// * Frustum culling
-	if(frustum_cull(position, scale, storage.frustum_sides)) return;
+	if(frustum_cull(glm::vec2(position), scale, storage.frustum_sides)) return;
 
 	// Get appropriate batch
 	auto& batch = storage.batches[atlas];
@@ -199,7 +209,7 @@ void Renderer2D::draw_quad(const glm::vec2& position, const glm::vec2& scale, co
 	if(batch.count == storage.max_batch_count)
 		flush_batch(batch);
 
-	batch.instance_data[batch.count] = {position, scale, uvs};
+	batch.instance_data[batch.count] = {uvs, tint, position, scale};
 	++batch.count;
 }
 

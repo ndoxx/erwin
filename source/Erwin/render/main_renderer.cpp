@@ -80,7 +80,14 @@ uint64_t SortKey::encode(SortKey::Order type) const
 				 |  ((uint64_t(depth)        << k_1_depth_shift)  & k_1_depth_mask);
 			break;
 		}
-		case SortKey::Order::ByDepth:
+		case SortKey::Order::ByDepthDescending:
+		{
+			body |= ((uint64_t(~depth)       << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(transparency) << k_2_transp_shift) & k_2_transp_mask)
+				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask);
+			break;
+		}
+		case SortKey::Order::ByDepthAscending:
 		{
 			body |= ((uint64_t(depth)        << k_2_depth_shift)  & k_2_depth_mask)
 				 |  ((uint64_t(transparency) << k_2_transp_shift) & k_2_transp_mask)
@@ -212,7 +219,7 @@ struct RendererStorage
 
 	FramebufferHandle default_framebuffer_;
 
-	std::vector<RenderQueue> queues_;
+	std::map<uint32_t, RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 
 	WScope<QueryTimer> query_timer;
@@ -239,6 +246,84 @@ std::unique_ptr<RendererStorage> s_storage;
 		MAKE_VALIDATOR(FramebufferHandle);
 #undef  MAKE_VALIDATOR
 
+void MainRenderer::init()
+{
+	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
+	
+	// Create and initialize storage object
+	s_storage = std::make_unique<RendererStorage>();
+	s_storage->query_timer = QueryTimer::create();
+	s_storage->profiling_enabled = false;
+	s_storage->default_framebuffer_ = { s_storage->handles_[FramebufferHandleT]->acquire() };
+
+	DLOGI << "done" << std::endl;
+}
+
+void MainRenderer::shutdown()
+{
+	flush();
+	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
+	s_storage->handles_[FramebufferHandleT]->release(s_storage->default_framebuffer_.index);
+	RendererStorage* rs = s_storage.release();
+	delete rs;
+	DLOGI << "done" << std::endl;
+}
+
+void MainRenderer::create_queue(uint32_t name, SortKey::Order order)
+{
+	s_storage->queues_.emplace(std::piecewise_construct,
+              				   std::forward_as_tuple(name),
+              				   std::forward_as_tuple(order, s_storage->renderer_memory_));
+}
+
+RenderQueue& MainRenderer::get_queue(uint32_t name)
+{
+	auto it = s_storage->queues_.find(name);
+	W_ASSERT(it != s_storage->queues_.end(), "Unknown queue name!");
+	return it->second;
+}
+
+void MainRenderer::set_profiling_enabled(bool value)
+{
+	s_storage->profiling_enabled = value;
+}
+
+const MainRendererStats& MainRenderer::get_stats()
+{
+	return s_storage->stats;
+}
+
+FramebufferHandle MainRenderer::default_render_target()
+{
+	return s_storage->default_framebuffer_;
+}
+
+/*
+		   _____                                          _     
+		  / ____|                                        | |    
+		 | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| |___ 
+		 | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` / __|
+		 | |___| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
+		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
+*/
+
+// Helpers
+static void sort_commands()
+{
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
+    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
+}
+
 inline CommandBuffer& get_command_buffer(MainRenderer::Phase phase)
 {
 	switch(phase)
@@ -260,79 +345,6 @@ inline void push_command(RenderCommand type, void* cmd)
 	uint64_t key = ~uint64_t(cmdbuf.count);
 	cmdbuf.entries[cmdbuf.count++] = {key, cmd};
 }
-
-void MainRenderer::init()
-{
-	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
-	// Create storage object
-	s_storage = std::make_unique<RendererStorage>();
-	// Create command queues
-	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
-		s_storage->queues_.emplace_back(SortKey::Order::Sequential, s_storage->renderer_memory_);
-
-	s_storage->query_timer = QueryTimer::create();
-	s_storage->profiling_enabled = false;
-
-	s_storage->default_framebuffer_ = { s_storage->handles_[FramebufferHandleT]->acquire() };
-
-	DLOGI << "done" << std::endl;
-}
-
-void MainRenderer::shutdown()
-{
-	flush();
-	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
-	s_storage->handles_[FramebufferHandleT]->release(s_storage->default_framebuffer_.index);
-	RendererStorage* rs = s_storage.release();
-	delete rs;
-	DLOGI << "done" << std::endl;
-}
-
-void MainRenderer::set_profiling_enabled(bool value)
-{
-	s_storage->profiling_enabled = value;
-}
-
-const MainRendererStats& MainRenderer::get_stats()
-{
-	return s_storage->stats;
-}
-
-FramebufferHandle MainRenderer::default_render_target()
-{
-	return s_storage->default_framebuffer_;
-}
-
-RenderQueue& MainRenderer::get_queue(int name)
-{
-	W_ASSERT(name < QueueName::Count, "Unknown queue name!");
-	return s_storage->queues_[name];
-}
-
-static void sort_commands()
-{
-	// Keys stored separately from commands to avoid touching data too
-	// much during sort calls
-    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-}
-
-/*
-		   _____                                          _     
-		  / ____|                                        | |    
-		 | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| |___ 
-		 | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` / __|
-		 | |___| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
-		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
-*/
 
 IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
@@ -835,118 +847,6 @@ void MainRenderer::destroy_framebuffer(FramebufferHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::DEBUG_test()
-{
-	const void* pre_buf = s_storage->pre_buffer_.storage.begin();
-	const void* post_buf = s_storage->post_buffer_.storage.begin();
-	const void* aux = s_storage->auxiliary_arena_.get_allocator().begin();
-	memory::hex_dump(std::cout, pre_buf, 256_B, "CMDBuf-PRE");
-	memory::hex_dump(std::cout, post_buf, 256_B, "CMDBuf-POST");
-	memory::hex_dump(std::cout, aux, 256_B, "AUX");
-}
-
-DrawCall::DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
-type(type),
-shader(shader),
-VAO(VAO),
-UBO_data(nullptr),
-SSBO_data(nullptr),
-UBO_size(0),
-SSBO_size(0),
-count(count),
-offset(offset),
-queue(queue)
-{
-
-}
-
-RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
-order_(order),
-key_({ 0, 0, 0, false, 0, 0 }),
-command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
-{
-	render_target_.index = 0;
-}
-
-RenderQueue::~RenderQueue()
-{
-
-}
-
-void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
-{
-	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
-	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
-}
-
-void RenderQueue::set_render_target(FramebufferHandle fb)
-{
-	render_target_ = fb;
-}
-
-void RenderQueue::sort()
-{
-	// Keys stored separately from commands to avoid touching data too
-	// much during sort calls
-    std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-}
-
-void RenderQueue::reset()
-{
-	command_buffer_.reset();
-	s_storage->auxiliary_arena_.get_allocator().reset();
-	key_ = { 0, 0, 0, false, 0, 0 };
-}
-
-void RenderQueue::submit(const DrawCall& dc)
-{
-	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
-	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
-
-	RenderCommand type = RenderCommand::Submit;
-	auto& cmdbuf = command_buffer_.storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&type);
-	cmdbuf.write(&dc.type);
-	cmdbuf.write(&dc.state_flags);
-	cmdbuf.write(&dc.VAO);
-	cmdbuf.write(&dc.shader);
-	cmdbuf.write(&dc.UBO);
-	cmdbuf.write(&dc.SSBO);
-	cmdbuf.write(&dc.UBO_size);
-	cmdbuf.write(&dc.SSBO_size);
-	cmdbuf.write(&dc.count);
-	cmdbuf.write(&dc.instance_count);
-	cmdbuf.write(&dc.offset);
-	cmdbuf.write(&dc.sampler);
-	cmdbuf.write(&dc.texture);
-	uint8_t* ubo_data = nullptr;
-	uint8_t* ssbo_data = nullptr;
-	if(dc.UBO_data)
-	{
-		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
-		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
-	}
-	if(dc.SSBO_data)
-	{
-		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, s_storage->auxiliary_arena_);
-		memcpy(ssbo_data, dc.SSBO_data, dc.SSBO_size);
-	}
-	cmdbuf.write(&ubo_data);
-	cmdbuf.write(&ssbo_data);
-
-	key_.is_draw = true;
-	key_.sequence = ~uint32_t(command_buffer_.count); // TODO: per-view sequence
-	uint64_t key = key_.encode(order_);
-	command_buffer_.entries[command_buffer_.count++] = {key, cmd};
-}
-
-
 /*
 		  _____  _                 _       _     
 		 |  __ \(_)               | |     | |    
@@ -1192,91 +1092,6 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	s_storage->framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
 }
 
-void submit(memory::LinearBuffer<>& buf)
-{
-#pragma pack(push,1)
-	struct
-	{
-		DrawCall::Type type;
-		uint64_t state_flags;
-		VertexArrayHandle va_handle;
-		ShaderHandle shader_handle;
-		UniformBufferHandle ubo_handle;
-		ShaderStorageBufferHandle ssbo_handle;
-		uint32_t ubo_size;
-		uint32_t ssbo_size;
-		uint32_t count;
-		uint32_t instance_count;
-		uint32_t offset;
-		hash_t sampler;
-		TextureHandle texture_handle;
-		uint8_t* ubo_data;
-		uint8_t* ssbo_data;
-	} dc;
-#pragma pack(pop)
-	buf.read(&dc); // Read all in one go
-
-	static uint64_t last_state = 0xffffffffffffffff;
-	if(dc.state_flags != last_state)
-	{
-		PassState state;
-		state.decode(dc.state_flags);
-
-		Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
-		
-		if(state.blend_state == BlendState::Alpha)
-			Gfx::device->set_std_blending();
-		else
-			Gfx::device->disable_blending();
-
-		Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
-		if(state.depth_stencil_state.stencil_test_enabled)
-		{
-			Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
-			Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
-		}
-
-		Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
-		if(state.depth_stencil_state.depth_test_enabled)
-			Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
-	
-		last_state = dc.state_flags;
-	}
-
-	auto& va = *s_storage->vertex_arrays[dc.va_handle.index];
-	auto& shader = *s_storage->shaders[dc.shader_handle.index];
-
-	shader.bind();
-
-	if(dc.ubo_data)
-	{
-		auto& ubo = *s_storage->uniform_buffers[dc.ubo_handle.index];
-		ubo.stream(dc.ubo_data, dc.ubo_size, 0);
-	}
-	if(dc.ssbo_data)
-	{
-		auto& ssbo = *s_storage->shader_storage_buffers[dc.ssbo_handle.index];
-		ssbo.stream(dc.ssbo_data, dc.ssbo_size, 0);
-	}
-	if(is_valid(dc.texture_handle))
-	{
-		auto& texture = *s_storage->textures[dc.texture_handle.index];
-		shader.attach_texture(dc.sampler, texture);
-	}
-
-	switch(dc.type)
-	{
-		case DrawCall::Indexed:
-			Gfx::device->draw_indexed(va, dc.count, dc.offset);
-			break;
-		case DrawCall::IndexedInstanced:
-			Gfx::device->draw_indexed_instanced(va, dc.instance_count);
-			break;
-		default:
-			break;
-	}
-}
-
 void nop(memory::LinearBuffer<>& buf) { }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
@@ -1365,7 +1180,6 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::shader_attach_uniform_buffer,
 	&dispatch::shader_attach_storage_buffer,
 	&dispatch::update_framebuffer,
-	&dispatch::submit,
 
 	&dispatch::nop,
 
@@ -1380,10 +1194,196 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::destroy_framebuffer,
 };
 
+DrawCall::DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
+type(type),
+shader(shader),
+VAO(VAO),
+UBO_data(nullptr),
+SSBO_data(nullptr),
+UBO_size(0),
+SSBO_size(0),
+count(count),
+offset(offset),
+queue(queue)
+{
+
+}
+
+RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
+order_(order),
+key_({ 0, 0, 0, false, 0, 0 }),
+command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
+{
+	render_target_.index = 0;
+}
+
+RenderQueue::~RenderQueue()
+{
+
+}
+
+void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
+{
+	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
+	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
+}
+
+void RenderQueue::set_render_target(FramebufferHandle fb)
+{
+	render_target_ = fb;
+}
+
+void RenderQueue::sort()
+{
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
+}
+
+void RenderQueue::reset()
+{
+	command_buffer_.reset();
+	s_storage->auxiliary_arena_.get_allocator().reset();
+	key_ = { 0, 0, 0, false, 0, 0 };
+}
+
+void RenderQueue::submit(const DrawCall& dc)
+{
+	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
+	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
+
+	auto& cmdbuf = command_buffer_.storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&dc.type);
+	cmdbuf.write(&dc.state_flags);
+	cmdbuf.write(&dc.VAO);
+	cmdbuf.write(&dc.shader);
+	cmdbuf.write(&dc.UBO);
+	cmdbuf.write(&dc.SSBO);
+	cmdbuf.write(&dc.UBO_size);
+	cmdbuf.write(&dc.SSBO_size);
+	cmdbuf.write(&dc.count);
+	cmdbuf.write(&dc.instance_count);
+	cmdbuf.write(&dc.offset);
+	cmdbuf.write(&dc.sampler);
+	cmdbuf.write(&dc.texture);
+	uint8_t* ubo_data = nullptr;
+	uint8_t* ssbo_data = nullptr;
+	if(dc.UBO_data)
+	{
+		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
+		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
+	}
+	if(dc.SSBO_data)
+	{
+		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, s_storage->auxiliary_arena_);
+		memcpy(ssbo_data, dc.SSBO_data, dc.SSBO_size);
+	}
+	cmdbuf.write(&ubo_data);
+	cmdbuf.write(&ssbo_data);
+
+	key_.is_draw = true;
+	key_.sequence = ~uint32_t(command_buffer_.count); // TODO: per-view sequence
+	uint64_t key = key_.encode(order_);
+	command_buffer_.entries[command_buffer_.count++] = {key, cmd};
+}
+
+static void render_dispatch(memory::LinearBuffer<>& buf)
+{
+#pragma pack(push,1)
+	struct
+	{
+		DrawCall::Type type;
+		uint64_t state_flags;
+		VertexArrayHandle va_handle;
+		ShaderHandle shader_handle;
+		UniformBufferHandle ubo_handle;
+		ShaderStorageBufferHandle ssbo_handle;
+		uint32_t ubo_size;
+		uint32_t ssbo_size;
+		uint32_t count;
+		uint32_t instance_count;
+		uint32_t offset;
+		hash_t sampler;
+		TextureHandle texture_handle;
+		uint8_t* ubo_data;
+		uint8_t* ssbo_data;
+	} dc;
+#pragma pack(pop)
+	buf.read(&dc); // Read all in one go
+
+	static uint64_t last_state = 0xffffffffffffffff;
+	if(dc.state_flags != last_state)
+	{
+		PassState state;
+		state.decode(dc.state_flags);
+
+		Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
+		
+		if(state.blend_state == BlendState::Alpha)
+			Gfx::device->set_std_blending();
+		else
+			Gfx::device->disable_blending();
+
+		Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
+		if(state.depth_stencil_state.stencil_test_enabled)
+		{
+			Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
+			Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
+		}
+
+		Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
+		if(state.depth_stencil_state.depth_test_enabled)
+			Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
+	
+		last_state = dc.state_flags;
+	}
+
+	auto& va = *s_storage->vertex_arrays[dc.va_handle.index];
+	auto& shader = *s_storage->shaders[dc.shader_handle.index];
+
+	shader.bind();
+
+	if(dc.ubo_data)
+	{
+		auto& ubo = *s_storage->uniform_buffers[dc.ubo_handle.index];
+		ubo.stream(dc.ubo_data, dc.ubo_size, 0);
+	}
+	if(dc.ssbo_data)
+	{
+		auto& ssbo = *s_storage->shader_storage_buffers[dc.ssbo_handle.index];
+		ssbo.stream(dc.ssbo_data, dc.ssbo_size, 0);
+	}
+	if(is_valid(dc.texture_handle))
+	{
+		auto& texture = *s_storage->textures[dc.texture_handle.index];
+		shader.attach_texture(dc.sampler, texture);
+	}
+
+	switch(dc.type)
+	{
+		case DrawCall::Indexed:
+			Gfx::device->draw_indexed(va, dc.count, dc.offset);
+			break;
+		case DrawCall::IndexedInstanced:
+			Gfx::device->draw_indexed_instanced(va, dc.instance_count);
+			break;
+		default:
+			break;
+	}
+}
+
 void RenderQueue::flush()
 {
 	if(command_buffer_.count == 0)
 		return;
+
+	Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG); // TMP: flags will change for each queue
 
 	if(render_target_ == s_storage->default_framebuffer_)
 		Gfx::device->bind_default_framebuffer();
@@ -1397,9 +1397,7 @@ void RenderQueue::flush()
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
 		command_buffer_.storage.seek(cmd);
-		uint16_t type;
-		command_buffer_.storage.read(&type);
-		(*backend_dispatch[type])(command_buffer_.storage);
+		render_dispatch(command_buffer_.storage);
 	}
 }
 
@@ -1426,12 +1424,9 @@ void MainRenderer::flush()
 	// Dispatch pre buffer commands
 	flush_command_buffer(s_storage->pre_buffer_);
 	// Sort and flush each queue
-	for(int queue_name = 0; queue_name < QueueName::Count; ++queue_name)
+	for(auto&& [name, queue]: s_storage->queues_)
 	{
-		auto& queue = s_storage->queues_[queue_name];
-
 		queue.sort();
-		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG); // TMP: flags will change for each queue
 		queue.flush();
 		queue.reset();
 	}

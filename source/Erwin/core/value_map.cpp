@@ -1,4 +1,5 @@
 #include "core/value_map.h"
+#include "core/string_utils.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 
@@ -97,18 +98,8 @@ hash_t ValueMap::parse_xml_property(void* node, const std::string& name_chain)
         {
             std::string value;
             if(!xml::parse_attribute(xnode, "value", value)) return 0;
-
-            auto underscore_pos = value.find_first_of("_");
-            size_t size = std::stoi(value.substr(0,underscore_pos));
-            size_t multiplier = 1;
-            switch(H_(value.substr(underscore_pos).c_str()))
-            {
-                case "_kB"_h: multiplier = 1024; break;
-                case "_MB"_h: multiplier = 1024*1024; break;
-                case "_GB"_h: multiplier = 1024*1024*1024; break;
-            }
-
-            sizes_[full_name_hash] = size*multiplier;
+            sizes_[full_name_hash] = su::parse_size(value, '_');
+            break;
         }
     }
 

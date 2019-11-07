@@ -17,6 +17,28 @@
 namespace erwin
 {
 
+struct SortKey
+{
+	enum class Order: uint8_t
+	{
+		ByShader,
+		ByDepthDescending,
+		ByDepthAscending,
+		Sequential
+	};
+
+	uint64_t encode(SortKey::Order type) const;
+	void decode(uint64_t key);
+
+						  // -- dependencies --     -- meaning --
+	uint8_t view;         // queue global state?	layer / viewport id
+	uint8_t transparency; // queue type 			blending type: opaque / transparent
+	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
+	bool is_draw;         // command data / type 	whether or not the command performs a draw call
+	uint32_t depth;       // command data / type 	depth mantissa
+	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
+};
+
 struct MainRendererStats
 {
 	float render_time = 0.f;
@@ -42,8 +64,6 @@ enum class RenderCommand: uint16_t
 	ShaderAttachStorageBuffer,
 	UpdateFramebuffer,
 
-	Submit,
-
 	Post,
 
 	DestroyIndexBuffer,
@@ -63,16 +83,6 @@ class RenderQueue;
 class MainRenderer
 {
 public:
-	enum QueueName
-	{
-		Resource,
-		Opaque,
-		// OpaqueEmissive,
-		// Transparent,
-
-		Count
-	};
-
 	enum class Phase
 	{
 		Pre,
@@ -81,16 +91,17 @@ public:
 
 	static void init();
 	static void shutdown();
+	static void create_queue(uint32_t name, SortKey::Order order);
+	static RenderQueue& get_queue(uint32_t name);
 
 	static void set_profiling_enabled(bool value=true);
 	static const MainRendererStats& get_stats();
 
 	static FramebufferHandle default_render_target();
 
-	static RenderQueue& get_queue(int name);
 	static void flush();
 
-	// * The following functions will initialize a render command and push it to the appropriate queue 
+	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
 	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
 	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
@@ -116,29 +127,6 @@ public:
 	static void destroy_shader(ShaderHandle handle);
 	static void destroy_texture_2D(TextureHandle handle);
 	static void destroy_framebuffer(FramebufferHandle handle);
-
-	static void DEBUG_test();
-};
-
-struct SortKey
-{
-	enum class Order: uint8_t
-	{
-		ByShader,
-		ByDepth, // TODO: back to front / front to back options
-		Sequential
-	};
-
-	uint64_t encode(SortKey::Order type) const;
-	void decode(uint64_t key);
-
-						  // -- dependencies --     -- meaning --
-	uint8_t view;         // queue global state?	layer / viewport id
-	uint8_t transparency; // queue type 			blending type: opaque / transparent
-	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
-	bool is_draw;         // command data / type 	whether or not the command performs a draw call
-	uint32_t depth;       // command data / type 	depth mantissa
-	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
 };
 
 struct CommandBuffer
@@ -175,11 +163,10 @@ public:
 	// * These functions change the queue state persistently
 	// Set clear color for associated render target
 	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
-	//
+	// Set the framebuffer this queue is going to draw to
 	void set_render_target(FramebufferHandle fb);
-
+	// Submit a draw call
 	void submit(const DrawCall& draw_call);
-
 	// Sort queue by sorting key
 	void sort();
 	// Dispatch all commands

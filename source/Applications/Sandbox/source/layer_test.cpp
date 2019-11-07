@@ -131,6 +131,7 @@ void LayerTest::on_update(GameClock& clock)
 	PassState pass_state;
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
+	pass_state.depth_stencil_state.depth_test_enabled = true;
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f); // TODO: move to PassState
 
 	// Draw a grid of quads
@@ -149,7 +150,19 @@ void LayerTest::on_update(GameClock& clock)
 
 			// hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
 			hash_t tile = tiles_.at((yy/3 + xx/5)%(tiles_.size()-1));
-			Renderer2D::draw_quad({pos_x,pos_y}, {xx_scale,yy_scale}, atlas_.get_uv(tile), "set1"_h);
+			Renderer2D::draw_quad({pos_x,pos_y,0.f,1.f}, {xx_scale,yy_scale}, atlas_.get_uv(tile), "set1"_h);
+		}
+	}
+	for(int xx=0; xx<5; ++xx)
+	{
+		float pos_x = -1.f + 2.f*xx/float(5-1);
+		float xx_scale = 1.f/float(5-1);
+		for(int yy=0; yy<5; ++yy)
+		{
+			float pos_y = -1.f + 2.f*yy/float(5-1);
+			float yy_scale = 1.f/float(5-1);
+			glm::vec4 color((xx+1)/6.f, (yy+1)/6.f, (xx+yy)/10.f, 1.f);
+			Renderer2D::draw_colored_quad({pos_x,pos_y,-0.1f,1.f}, {xx_scale,yy_scale}, color);
 		}
 	}
 	Renderer2D::end_pass();

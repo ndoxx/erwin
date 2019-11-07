@@ -9,8 +9,9 @@
 
 namespace erwin
 {
-
-// trim from start (in place)
+namespace su
+{
+// Trim from start (in place)
 extern inline void ltrim(std::string &s)
 {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch)
@@ -19,7 +20,7 @@ extern inline void ltrim(std::string &s)
     }));
 }
 
-// trim from end (in place)
+// Trim from end (in place)
 extern inline void rtrim(std::string &s)
 {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch)
@@ -28,34 +29,35 @@ extern inline void rtrim(std::string &s)
     }).base(), s.end());
 }
 
-// trim from both ends (in place)
+// Trim from both ends (in place)
 extern inline void trim(std::string &s)
 {
     ltrim(s);
     rtrim(s);
 }
 
-// trim from start (copying)
+// Trim from start (copying)
 static inline std::string ltrim_copy(std::string s)
 {
     ltrim(s);
     return s;
 }
 
-// trim from end (copying)
+// Trim from end (copying)
 static inline std::string rtrim_copy(std::string s)
 {
     rtrim(s);
     return s;
 }
 
-// trim from both ends (copying)
+// Trim from both ends (copying)
 static inline std::string trim_copy(std::string s)
 {
     trim(s);
     return s;
 }
 
+// Tokenize an input string into a vector of strings, specifying a delimiter
 static inline void tokenize(std::string str, std::vector<std::string>& dst, char delimiter=',')
 {
     std::stringstream ss(str);
@@ -68,6 +70,7 @@ static inline void tokenize(std::string str, std::vector<std::string>& dst, char
     }
 }
 
+// Tokenize an input string and call a visitor for each token
 static inline void tokenize(std::string str, char delimiter, std::function<void(const std::string&)> visit)
 {
     std::stringstream ss(str);
@@ -78,6 +81,21 @@ static inline void tokenize(std::string str, char delimiter, std::function<void(
         std::getline(ss, substr, delimiter);
         visit(substr);
     }
+}
+
+// Convert a size string to a number
+static inline size_t parse_size(const std::string& input, char delimiter='_')
+{
+    auto delimiter_pos = input.find_first_of(delimiter);
+    size_t size = std::stoi(input.substr(0,delimiter_pos));
+    switch(H_(input.substr(delimiter_pos+1).c_str()))
+    {
+        case "B"_h:  return size;
+        case "kB"_h: return size * 1024;
+        case "MB"_h: return size * 1024*1024;
+        case "GB"_h: return size * 1024*1024*1024;
+    }
+    return size;
 }
 
 namespace rx
@@ -128,4 +146,5 @@ std::string regex_replace(const std::string& s,
 }
 
 } // namespace rx
+} // namespace su
 } // namespace erwin

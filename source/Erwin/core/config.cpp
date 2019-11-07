@@ -71,7 +71,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     			attach_all = true;
     		else
     		{
-	    		tokenize(sink_chan_list, ',', [&](const std::string& chan_name)
+	    		su::tokenize(sink_chan_list, ',', [&](const std::string& chan_name)
 	    		{
 	    			chan_hnames.push_back(H_(chan_name.c_str()));
 	    		});
