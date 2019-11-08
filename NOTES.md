@@ -19,11 +19,21 @@
 > LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace sandbox.trace
 
 ##[GIT]
+###SSH
+Créer une paire de clés RSA pour permettre une connexion SSH avec Github :
+> ssh-keygen -t rsa -C 'bg.physique@gmail.com'
+
+La clé est stockée dans *~/.ssh*, le nom par défaut de la clé publique est *id_rsa.pub*. On affiche la clé publique avec :
+> cat ~ /.ssh/id_rsa.pub
+
+Puis on copie-colle dans le text-area de https://github.com/settings/keys.
+
 ###Workflow
 On veut conserver une copie fonctionnelle sur la branche master à tout instant. Pour introduire un nouveau feature, on va passer sur la branche de développement, créer une autre branche spécifiquement pour ce feature, faire les modifications/ajouts nécessaires, puis commit... Quand le feature est complètement testé et digne d'être intégré dans la branche master, on merge. Typiquement, la branche "master" est associée au *production server*, et la branche "dev" au *staging server*.
 
-Créer une branche nommée "develop" :
+Créer une branche nommée "develop" et la pousser sur le repo distant :
 > git branch develop
+> git push origin develop
 
 Afficher l'ensemble des branches ainsi que la branche active :
 > git branch
@@ -56,6 +66,24 @@ Pour se simplifier le travail, on peut utiliser le plugin git-flow :
 Il faut initialiser git-flow sur un repo git déjà initialisé :
 > git flow init -d
 
+L'argument -d permet d'initialiser git flow avec les noms de branche par défaut, on peut l'omettre et préciser le nom de chacune d'entre-elles. Ici, les branches "master" et "develop" sont reconnaissables automatiquement par git flow. Tous les changements doivent être *staged* avant de procéder à l'initialisation.
+
+Créer une nouvelle feature branch devient simplement :
+> git flow feature start new-feature-name
+
+Cette commande va créer une nouvelle branche basée sur "develop", avec le préfixe "feature" comme précédemment (feature/new-feature-name), et passer sur cette branche. On peut alors commencer l'implémentation puis commit :
+> git commit -am "Done implementing new feature"
+
+Pour publier cette feature branch sur le repo distant on fait :
+> git flow feature publish new-feature-name
+
+Ce qui est équivalent à :
+> git push origin feature/new-feature-name
+
+Lorsque l'on a terminé le développement du feature, depuis la feature branch, on fait :
+> git flow feature finish new-feature-name
+
+Ceci va merge la feature branch avec la branche develop localement.
 
 ##TODO:
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
