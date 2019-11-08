@@ -22,32 +22,32 @@
 ###Workflow
 On veut conserver une copie fonctionnelle sur la branche master à tout instant. Pour introduire un nouveau feature, on va passer sur la branche de développement, créer une autre branche spécifiquement pour ce feature, faire les modifications/ajouts nécessaires, puis commit... Quand le feature est complètement testé et digne d'être intégré dans la branche master, on merge. Typiquement, la branche "master" est associée au *production server*, et la branche "dev" au *staging server*.
 
-Créer une branche nommée "dev" :
-> git branch dev
+Créer une branche nommée "develop" :
+> git branch develop
 
 Afficher l'ensemble des branches ainsi que la branche active :
 > git branch
-      dev
+      develop
     * master
 
-Passer sur la branche dev :
-> git checkout dev
+Passer sur la branche develop :
+> git checkout develop
 
-Créer une nouvelle branche (qui référence la branche dev) pour le feature et passer dessus automatiquement :
+Créer une nouvelle branche (qui référence la branche develop) pour le feature et passer dessus automatiquement :
 > git checkout -b feature/new-feature-name
 
 On implémente le feature, on teste massivement, on commit, on itère... Jusqu'au commit final pour ce feature :
 > git commit -am "Done implementing new feature"
 
-Noter qu'avec l'argument "a" on "git add" automatiquement tous les fichiers. On repasse maintenant sur la branche dev :
-> git checkout dev
+Noter qu'avec l'argument "a" on "git add" automatiquement tous les fichiers. On repasse maintenant sur la branche develop :
+> git checkout develop
 
-A ce stade, la branche dev ne contient pas le nouveau feature. On va merge avec la branche "feature/new-feature-name", puis on va détruire la feature branch :
+A ce stade, la branche develop ne contient pas le nouveau feature. On va merge avec la branche "feature/new-feature-name", puis on va détruire la feature branch :
 > git merge feature/new-feature-name
 > git branch -d feature/new-feature-name
 > git push origin --delete feature/new-feature-name
 
-Git vient de créer un "merge commit". Avec "git log" on se rend compte que le dernier commit sur la branche feature/new-feature-name vient d'être ajouté à la branche dev.
+Git vient de créer un "merge commit". Avec "git log" on se rend compte que le dernier commit sur la branche feature/new-feature-name vient d'être ajouté à la branche develop.
 
 ###git-flow
 Pour se simplifier le travail, on peut utiliser le plugin git-flow :
@@ -55,6 +55,7 @@ Pour se simplifier le travail, on peut utiliser le plugin git-flow :
 
 Il faut initialiser git-flow sur un repo git déjà initialisé :
 > git flow init -d
+
 
 ##TODO:
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
