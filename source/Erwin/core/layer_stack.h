@@ -55,7 +55,7 @@ private:
         return false;//handled;
 	}
 
-	void update_layer_priorities();
+	void update_layer_ids();
 
 private:
 	std::vector<Layer*> layers_;

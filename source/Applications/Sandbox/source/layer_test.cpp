@@ -135,7 +135,7 @@ void LayerTest::on_update(GameClock& clock)
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f); // TODO: move to PassState
 
 	// Draw a grid of quads
-	Renderer2D::begin_pass(MainRenderer::default_render_target(), pass_state, camera_ctl_.get_camera());
+	Renderer2D::begin_pass(MainRenderer::default_render_target(), pass_state, camera_ctl_.get_camera(), get_layer_id());
 	for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
@@ -162,7 +162,7 @@ void LayerTest::on_update(GameClock& clock)
 			float pos_y = -1.f + 2.f*yy/float(5-1);
 			float yy_scale = 1.f/float(5-1);
 			glm::vec4 color((xx+1)/6.f, (yy+1)/6.f, (xx+yy)/10.f, 1.f);
-			Renderer2D::draw_colored_quad({pos_x,pos_y,-0.1f,1.f}, {xx_scale,yy_scale}, color);
+			Renderer2D::draw_colored_quad({pos_x,pos_y,-0.2f,1.f}, {xx_scale,yy_scale}, color);
 		}
 	}
 	Renderer2D::end_pass();
