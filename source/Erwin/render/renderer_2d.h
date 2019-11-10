@@ -21,7 +21,7 @@ public:
 	// Register a texture atlas
 	static void register_atlas(hash_t name, TextureAtlas& atlas);
 	// Start a new pass
-	static void begin_pass(FramebufferHandle render_target, const PassState& state, const OrthographicCamera2D& camera);
+	static void begin_pass(FramebufferHandle render_target, const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id);
 	// End a pass
 	static void end_pass();
 	// Draw a textured quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.

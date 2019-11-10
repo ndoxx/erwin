@@ -20,8 +20,8 @@ public:
 
 	inline const std::string& get_name() const  { return debug_name_; }
 	inline void set_enabled(bool value)         { enabled_ = value; }
-	inline void set_priority(uint32_t priority) { priority_ = priority; }
-	inline uint32_t get_priority() const        { return priority_; }
+	inline void set_layer_id(uint8_t layer_id)  { layer_id_ = layer_id; }
+	inline uint8_t get_layer_id() const         { return layer_id_; }
 	inline bool is_enabled() const              { return enabled_; }
 	inline void update(GameClock& clock)        { if(enabled_) on_update(clock); }
 
@@ -42,7 +42,7 @@ protected:
 private:
 	std::string debug_name_;
 	bool enabled_;
-	uint32_t priority_;
+	uint8_t layer_id_;
 };
 
 #undef REACT

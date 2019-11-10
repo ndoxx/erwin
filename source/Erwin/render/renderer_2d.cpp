@@ -19,6 +19,7 @@ struct Batch2D
 {
 	TextureHandle texture;
 	uint32_t count;
+	float max_depth;
 	std::vector<InstanceData> instance_data;
 };
 
@@ -41,6 +42,7 @@ struct Renderer2DStorage
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
+	uint8_t layer_id;
 	std::map<hash_t, Batch2D> batches;
 };
 static Renderer2DStorage storage;
@@ -51,6 +53,7 @@ static void create_batch(hash_t atlas_name, TextureHandle texture)
 	auto& batch = storage.batches[atlas_name];
 	batch.instance_data.reserve(storage.max_batch_count);
 	batch.count = 0;
+	batch.max_depth = -1.f;
 	batch.texture = texture;
 }
 
@@ -159,7 +162,7 @@ void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 	create_batch(name, atlas.handle);
 }
 
-void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& state, const OrthographicCamera2D& camera)
+void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id)
 {
 	// Reset stats
 	storage.num_draw_calls = 0;
@@ -167,6 +170,8 @@ void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& st
 	storage.state_flags = state.encode();
 	auto& rq = MainRenderer::get_queue(0);
 	rq.set_render_target(render_target);
+
+	storage.layer_id = layer_id;
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -190,10 +195,12 @@ static void flush_batch(Batch2D& batch)
 		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
 		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.count * sizeof(InstanceData), batch.count);
 		dc.set_texture("us_atlas"_h, batch.texture);
+		dc.set_key_depth(batch.max_depth, storage.layer_id);
 		dc.submit();
 
 		++storage.num_draw_calls;
 		batch.count = 0;
+		batch.max_depth = -1.f;
 	}
 }
 
@@ -208,6 +215,10 @@ void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, co
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(batch.count == storage.max_batch_count)
 		flush_batch(batch);
+
+	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
+	if(position.z > batch.max_depth)
+		batch.max_depth = position.z; // TMP: this must be in view space
 
 	batch.instance_data[batch.count] = {uvs, tint, position, scale};
 	++batch.count;

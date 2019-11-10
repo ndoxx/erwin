@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 #include <utility>
 
 #include "filesystem/filesystem.h"
@@ -30,13 +31,11 @@ struct SortKey
 	uint64_t encode(SortKey::Order type) const;
 	void decode(uint64_t key);
 
-						  // -- dependencies --     -- meaning --
-	uint8_t view;         // queue global state?	layer / viewport id
-	uint8_t transparency; // queue type 			blending type: opaque / transparent
-	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
-	bool is_draw;         // command data / type 	whether or not the command performs a draw call
-	uint32_t depth;       // command data / type 	depth mantissa
-	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
+						      // -- meaning --
+	uint8_t view = 0;         // layer / viewport id
+	uint8_t shader = 0;       // could be "material ID" when I have a material system
+	uint32_t depth = 0;       // depth mantissa
+	uint32_t sequence = 0;    // for commands to be dispatched sequentially
 };
 
 struct MainRendererStats
@@ -176,7 +175,6 @@ public:
 
 private:
 	SortKey::Order order_;
-	SortKey key_;
 	uint32_t clear_color_;
 	FramebufferHandle render_target_;
 	CommandBuffer command_buffer_;
@@ -236,6 +234,20 @@ struct DrawCall
 		queue.submit(*this);
 	}
 
+	inline void set_key_depth(float depth, uint8_t layer_id)
+	{
+		key.view = layer_id;
+		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
+		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
+	}
+
+	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
+	{
+		key.view = layer_id;
+		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
+		key.sequence = sequence;
+	}
+
 	Type type;
 	ShaderHandle shader;
 	VertexArrayHandle VAO;
@@ -253,6 +265,7 @@ struct DrawCall
 	hash_t sampler;
 	TextureHandle texture; // TODO: allow multiple textures
 
+	SortKey key;
 private:
 	RenderQueue& queue;
 };
