@@ -20,7 +20,8 @@ struct Batch2D
 	TextureHandle texture;
 	uint32_t count;
 	float max_depth;
-	std::vector<InstanceData> instance_data;
+	// std::vector<InstanceData> instance_data;
+	InstanceData* instance_data;
 };
 
 struct Renderer2DStorage
@@ -51,7 +52,7 @@ static void create_batch(hash_t atlas_name, TextureHandle texture)
 {
 	storage.batches.insert(std::make_pair(atlas_name, Batch2D()));
 	auto& batch = storage.batches[atlas_name];
-	batch.instance_data.reserve(storage.max_batch_count);
+	// batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, MainRenderer::get_arena());
 	batch.count = 0;
 	batch.max_depth = -1.f;
 	batch.texture = texture;
@@ -177,6 +178,10 @@ void Renderer2D::begin_pass(FramebufferHandle render_target, const PassState& st
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
 	storage.view_matrix = camera.get_view_matrix();
 	storage.frustum_sides = camera.get_frustum_sides();
+
+	// Reset batch instance data pointers
+	for(auto&& [key, batch]: storage.batches)
+		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, MainRenderer::get_arena());
 }
 
 void Renderer2D::end_pass()
@@ -193,7 +198,7 @@ static void flush_batch(Batch2D& batch)
 		DrawCall dc(rq, DrawCall::IndexedInstanced, storage.shader_handle, storage.va_handle);
 		dc.set_state(storage.state_flags);
 		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
-		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data.data(), batch.count * sizeof(InstanceData), batch.count);
+		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);
 		dc.set_texture("us_atlas"_h, batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
 		dc.submit();
@@ -201,6 +206,7 @@ static void flush_batch(Batch2D& batch)
 		++storage.num_draw_calls;
 		batch.count = 0;
 		batch.max_depth = -1.f;
+		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, MainRenderer::get_arena());
 	}
 }
 

@@ -78,6 +78,12 @@ enum class RenderCommand: uint16_t
 	Count
 };
 
+typedef memory::MemoryArena<memory::LinearAllocator, 
+		    				memory::policy::SingleThread, 
+		    				memory::policy::NoBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::NoMemoryTracking> AuxArena;
+
 class RenderQueue;
 class MainRenderer
 {
@@ -92,6 +98,7 @@ public:
 	static void shutdown();
 	static void create_queue(uint32_t name, SortKey::Order order);
 	static RenderQueue& get_queue(uint32_t name);
+	static AuxArena& get_arena();
 
 	static void set_profiling_enabled(bool value=true);
 	static const MainRendererStats& get_stats();
