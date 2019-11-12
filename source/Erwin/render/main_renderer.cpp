@@ -108,12 +108,6 @@ void SortKey::decode(uint64_t key)
 		                            |___/      
 */
 
-typedef memory::MemoryArena<memory::LinearAllocator, 
-		    				memory::policy::SingleThread, 
-		    				memory::policy::NoBoundsChecking,
-		    				memory::policy::NoMemoryTagging,
-		    				memory::policy::NoMemoryTracking> AuxArena;
-
 constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handles[HandleType::IndexBufferHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferLayoutHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferHandleT]
@@ -266,6 +260,11 @@ RenderQueue& MainRenderer::get_queue(uint32_t name)
 	auto it = s_storage->queues_.find(name);
 	W_ASSERT(it != s_storage->queues_.end(), "Unknown queue name!");
 	return it->second;
+}
+
+AuxArena& MainRenderer::get_arena()
+{
+	return s_storage->auxiliary_arena_;
 }
 
 void MainRenderer::set_profiling_enabled(bool value)
@@ -1231,7 +1230,6 @@ void RenderQueue::sort()
 void RenderQueue::reset()
 {
 	command_buffer_.reset();
-	s_storage->auxiliary_arena_.get_allocator().reset();
 }
 
 void RenderQueue::submit(const DrawCall& dc)
@@ -1255,8 +1253,8 @@ void RenderQueue::submit(const DrawCall& dc)
 	cmdbuf.write(&dc.offset);
 	cmdbuf.write(&dc.sampler);
 	cmdbuf.write(&dc.texture);
-	uint8_t* ubo_data = nullptr;
-	uint8_t* ssbo_data = nullptr;
+	void* ubo_data = nullptr;
+	void* ssbo_data = nullptr;
 	if(dc.UBO_data)
 	{
 		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
@@ -1264,8 +1262,7 @@ void RenderQueue::submit(const DrawCall& dc)
 	}
 	if(dc.SSBO_data)
 	{
-		ssbo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.SSBO_size, s_storage->auxiliary_arena_);
-		memcpy(ssbo_data, dc.SSBO_data, dc.SSBO_size);
+		ssbo_data = dc.SSBO_data;
 	}
 	cmdbuf.write(&ubo_data);
 	cmdbuf.write(&ssbo_data);
@@ -1291,8 +1288,8 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		uint32_t offset;
 		hash_t sampler;
 		TextureHandle texture_handle;
-		uint8_t* ubo_data;
-		uint8_t* ssbo_data;
+		void* ubo_data;
+		void* ssbo_data;
 	} dc;
 #pragma pack(pop)
 	buf.read(&dc); // Read all in one go
@@ -1343,6 +1340,7 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 	{
 		auto& texture = *s_storage->textures[dc.texture_handle.index];
 		shader.attach_texture(dc.sampler, texture);
+		texture.bind();
 	}
 
 	switch(dc.type)
@@ -1412,6 +1410,8 @@ void MainRenderer::flush()
 	}
 	// Dispatch post buffer commands
 	flush_command_buffer(s_storage->post_buffer_);
+	// Reset auxiliary memory arena for next frame
+	s_storage->auxiliary_arena_.get_allocator().reset();
 
 	if(s_storage->profiling_enabled)
 	{

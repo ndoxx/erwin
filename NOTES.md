@@ -1765,3 +1765,5 @@ Je prévois de lui coder un petit mode ASCII à l'occasion, et pourquoi pas de p
 
 ###Sources:
     [1] http://realtimecollisiondetection.net/blog/?p=86
+
+
