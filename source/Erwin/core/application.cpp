@@ -99,6 +99,7 @@ minimized_(false)
     // Initialize master renderer storage
     MainRenderer::init();
     MainRenderer::create_queue(0, SortKey::Order::ByDepthDescending); // Opaque 2D
+    MainRenderer::create_queue(1, SortKey::Order::Sequential); // Presentation
     Renderer2D::init();
 #endif
 

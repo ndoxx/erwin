@@ -33,6 +33,4 @@ private:
 	bool trippy_mode_ = false;
 	int len_grid_ = 100;
 	bool enable_profiling_ = false;
-
-	FramebufferHandle fb_handle_;
 };

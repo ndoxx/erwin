@@ -97,6 +97,11 @@ void OGLFramebuffer::unbind()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+WRef<Texture2D> OGLFramebuffer::get_shared_texture(uint32_t index)
+{
+    return textures_[index];
+}
+
 const Texture2D& OGLFramebuffer::get_texture(uint32_t index)
 {
     W_ASSERT(index < textures_.size(), "OGLFramebuffer: texture index out of bounds.");
@@ -108,6 +113,11 @@ const Texture2D& OGLFramebuffer::get_named_texture(hash_t name)
     auto it = texture_names_.find(name);
     W_ASSERT(it != texture_names_.end(), "OGLFramebuffer: unknown texture name.");
     return *(textures_[it->second]);
+}
+
+uint32_t OGLFramebuffer::get_texture_count()
+{
+    return textures_.size();
 }
 
 void OGLFramebuffer::framebuffer_error_report()

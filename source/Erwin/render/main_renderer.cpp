@@ -108,6 +108,11 @@ void SortKey::decode(uint64_t key)
 		                            |___/      
 */
 
+struct FramebufferTextureVector
+{
+	std::vector<TextureHandle> handles;
+};
+
 constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handles[HandleType::IndexBufferHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferLayoutHandleT]
  										  						  + k_max_handles[HandleType::VertexBufferHandleT]
@@ -197,6 +202,7 @@ struct RendererStorage
 	WRef<Framebuffer>		  framebuffers[k_max_handles[HandleType::FramebufferHandleT]];
 
 	FramebufferHandle default_framebuffer_;
+	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 
 	std::map<uint32_t, RenderQueue> queues_;
 	std::map<hash_t, ShaderHandle> shader_names_;
@@ -280,6 +286,13 @@ const MainRendererStats& MainRenderer::get_stats()
 FramebufferHandle MainRenderer::default_render_target()
 {
 	return s_storage->default_framebuffer_;
+}
+
+TextureHandle MainRenderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
+{
+	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle.");
+	W_ASSERT(index < s_storage->framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
+	return s_storage->framebuffer_textures_[handle.index].handles[index];
 }
 
 /*
@@ -554,6 +567,16 @@ FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t heig
 	FramebufferHandle handle = { s_storage->handles_[FramebufferHandleT]->acquire() };
 	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
 
+	// Create handles for framebuffer textures
+	FramebufferTextureVector texture_vector;
+	uint32_t tex_count = depth ? layout.get_count()+1 : layout.get_count(); // Take the depth texture into account
+	for(uint32_t ii=0; ii<tex_count; ++ii)
+	{
+		TextureHandle tex_handle = { s_storage->handles_[TextureHandleT]->acquire() };
+		texture_vector.handles.push_back(tex_handle);
+	}
+	s_storage->framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
+
 	uint32_t count = layout.get_count();
 	cmdbuf.write(&type);
 	cmdbuf.write(&handle);
@@ -820,7 +843,7 @@ void MainRenderer::destroy_framebuffer(FramebufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
 	s_storage->handles_[FramebufferHandleT]->release(handle.index);
-	
+
 	RenderCommand type = RenderCommand::DestroyFramebuffer;
 	auto& cmdbuf = get_command_buffer(type).storage;
 	void* cmd = cmdbuf.head();
@@ -983,6 +1006,12 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 
 	FramebufferLayout layout(auxiliary, count);
 	s_storage->framebuffers[handle.index] = Framebuffer::create(width, height, layout, depth, stencil);
+
+	// Register framebuffer textures as regular textures accessible by handles
+	auto& fb = s_storage->framebuffers[handle.index];
+	const auto& texture_vector = s_storage->framebuffer_textures_[handle.index];
+	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+		s_storage->textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
@@ -1074,6 +1103,12 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	auto layout      = s_storage->framebuffers[fb_handle.index]->get_layout();
 
 	s_storage->framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
+
+	// Update framebuffer textures
+	auto& fb = s_storage->framebuffers[fb_handle.index];
+	auto& texture_vector = s_storage->framebuffer_textures_[fb_handle.index];
+	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+		s_storage->textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
 void nop(memory::LinearBuffer<>& buf) { }
@@ -1141,6 +1176,16 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 	FramebufferHandle handle;
 	buf.read(&handle);
 	s_storage->framebuffers[handle.index] = nullptr;
+
+	// Delete framebuffer textures
+	auto& texture_vector = s_storage->framebuffer_textures_[handle.index];
+	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+	{
+		uint16_t tex_index = texture_vector.handles[ii].index;
+		s_storage->textures[tex_index] = nullptr;
+		s_storage->handles_[TextureHandleT]->release(tex_index);
+	}
+	s_storage->framebuffer_textures_.erase(handle.index);
 }
 
 } // namespace dispatch
@@ -1361,8 +1406,6 @@ void RenderQueue::flush()
 	if(command_buffer_.count == 0)
 		return;
 
-	Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG); // TMP: flags will change for each queue
-
 	if(render_target_ == s_storage->default_framebuffer_)
 		Gfx::device->bind_default_framebuffer();
 	else
@@ -1370,6 +1413,7 @@ void RenderQueue::flush()
 		W_ASSERT(is_valid(render_target_), "Invalid FramebufferHandle!");
 		s_storage->framebuffers[render_target_.index]->bind();
 	}
+	Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG); // TMP: flags will change for each queue
 
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{

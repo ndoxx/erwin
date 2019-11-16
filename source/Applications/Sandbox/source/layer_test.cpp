@@ -69,12 +69,6 @@ void LayerTest::on_attach()
 	atlas_.load("textures/atlas/set1.cat");
 	Renderer2D::register_atlas("set1"_h, atlas_);
 
-	FramebufferLayout layout =
-	{
-		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-	};
-	fb_handle_ = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, false);
-
 	// List of random sub-textures to use
 	tiles_ =
 	{
@@ -132,10 +126,10 @@ void LayerTest::on_update(GameClock& clock)
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
 	pass_state.depth_stencil_state.depth_test_enabled = true;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f); // TODO: move to PassState
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 
 	// Draw a grid of quads
-	Renderer2D::begin_pass(MainRenderer::default_render_target(), pass_state, camera_ctl_.get_camera(), get_layer_id());
+	Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
 	for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;

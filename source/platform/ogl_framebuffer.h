@@ -15,8 +15,10 @@ public:
 
 	virtual void bind() override;
 	virtual void unbind() override;
+	virtual WRef<Texture2D> get_shared_texture(uint32_t index=0) override;
 	virtual const Texture2D& get_texture(uint32_t index) override;
 	virtual const Texture2D& get_named_texture(hash_t name) override;
+	virtual uint32_t get_texture_count() override;
 
 private:
 	void framebuffer_error_report();

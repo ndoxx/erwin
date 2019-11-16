@@ -104,6 +104,7 @@ public:
 	static const MainRendererStats& get_stats();
 
 	static FramebufferHandle default_render_target();
+	static TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
 
 	static void flush();
 
