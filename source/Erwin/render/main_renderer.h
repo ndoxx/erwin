@@ -59,8 +59,8 @@ enum class RenderCommand: uint16_t
 	UpdateVertexBuffer,
 	UpdateUniformBuffer,
 	UpdateShaderStorageBuffer,
-	ShaderAttachUniformBuffer,
-	ShaderAttachStorageBuffer,
+	// ShaderAttachUniformBuffer,
+	// ShaderAttachStorageBuffer,
 	UpdateFramebuffer,
 
 	Post,
@@ -122,8 +122,8 @@ public:
 	static void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
 	static void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
 	static void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
-	static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
-	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
+	// static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
+	// static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
 	static void destroy_index_buffer(IndexBufferHandle handle);
 	static void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);

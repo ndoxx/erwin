@@ -1,4 +1,4 @@
-#include "layer_test.h"
+#include "layer_2d.h"
 
 #include <iostream>
 #include <iomanip>
@@ -6,22 +6,18 @@
 
 #include "erwin.h"
 
-// #include "render/buffer.h"
-// #include "render/shader.h"
-// #include "platform/ogl_shader.h"
-// #include "platform/ogl_texture.h"
 #include "memory/memory_utils.h"
 
 using namespace erwin;
 
-LayerTest::LayerTest(): Layer("TestLayer"), camera_ctl_(1280.f/1024.f, 1.f)
+Layer2D::Layer2D(): Layer("2DLayer"), camera_ctl_(1280.f/1024.f, 1.f)
 {
     memory::hex_dump_highlight(0xf0f0f0f0, WCB(100,0,0));
     memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,0,100));
     memory::hex_dump_highlight(0xd0d0d0d0, WCB(200,100,0));
 }
 
-void LayerTest::on_imgui_render()
+void Layer2D::on_imgui_render()
 {
     ImGui::Begin("BatchRenderer2D");
     	if(ImGui::Checkbox("Profile", &enable_profiling_))
@@ -64,7 +60,7 @@ void LayerTest::on_imgui_render()
 */
 }
 
-void LayerTest::on_attach()
+void Layer2D::on_attach()
 {
 	atlas_.load("textures/atlas/set1.cat");
 	Renderer2D::register_atlas("set1"_h, atlas_);
@@ -108,12 +104,12 @@ void LayerTest::on_attach()
 	};
 }
 
-void LayerTest::on_detach()
+void Layer2D::on_detach()
 {
 
 }
 
-void LayerTest::on_update(GameClock& clock)
+void Layer2D::on_update(GameClock& clock)
 {
 	float dt = clock.get_frame_duration();
 	tt_ += dt;
@@ -162,18 +158,18 @@ void LayerTest::on_update(GameClock& clock)
 	Renderer2D::end_pass();
 }
 
-bool LayerTest::on_event(const MouseButtonEvent& event)
+bool Layer2D::on_event(const MouseButtonEvent& event)
 {
 	return false;
 }
 
-bool LayerTest::on_event(const WindowResizeEvent& event)
+bool Layer2D::on_event(const WindowResizeEvent& event)
 {
 	camera_ctl_.on_window_resize_event(event);
 	return false;
 }
 
-bool LayerTest::on_event(const MouseScrollEvent& event)
+bool Layer2D::on_event(const MouseScrollEvent& event)
 {
 	camera_ctl_.on_mouse_scroll_event(event);
 	return false;

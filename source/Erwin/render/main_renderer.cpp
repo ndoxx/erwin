@@ -670,7 +670,7 @@ void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 
 	push_command(type, cmd);
 }
-
+/*
 void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
 {
 	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
@@ -702,7 +702,7 @@ void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStora
 
 	push_command(type, cmd);
 }
-
+*/
 void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
 {
 	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
@@ -1061,7 +1061,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
-
+/*
 void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 {
 	ShaderHandle shader_handle;
@@ -1087,7 +1087,7 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 
 	shader.attach_shader_storage(ssbo);
 }
-
+*/
 void update_framebuffer(memory::LinearBuffer<>& buf)
 {
 	FramebufferHandle fb_handle;
@@ -1206,8 +1206,8 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::update_vertex_buffer,
 	&dispatch::update_uniform_buffer,
 	&dispatch::update_shader_storage_buffer,
-	&dispatch::shader_attach_uniform_buffer,
-	&dispatch::shader_attach_storage_buffer,
+	// &dispatch::shader_attach_uniform_buffer,
+	// &dispatch::shader_attach_storage_buffer,
 	&dispatch::update_framebuffer,
 
 	&dispatch::nop,
@@ -1375,11 +1375,13 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 	{
 		auto& ubo = *s_storage->uniform_buffers[dc.ubo_handle.index];
 		ubo.stream(dc.ubo_data, dc.ubo_size, 0);
+		shader.attach_uniform_buffer(ubo);
 	}
 	if(dc.ssbo_data)
 	{
 		auto& ssbo = *s_storage->shader_storage_buffers[dc.ssbo_handle.index];
 		ssbo.stream(dc.ssbo_data, dc.ssbo_size, 0);
+		shader.attach_shader_storage(ssbo);
 	}
 	if(is_valid(dc.texture_handle))
 	{
