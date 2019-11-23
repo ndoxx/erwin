@@ -65,10 +65,15 @@ public:
 	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
 	// Attach a texture to a sampler without having to manipulate solts
 	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const = 0;
-	// Attach a shader buffer storage
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const = 0;
-	// Attach a uniform buffer
-	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const = 0;
+
+	// Attach an SSBO that will automatically be bound when this shader is bound
+	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) = 0;
+	// Attach an UBO that will automatically be bound when this shader is bound
+	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) = 0;
+	// Bind a shader buffer storage
+	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const = 0;
+	// Bind a uniform buffer
+	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const = 0;
 
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }

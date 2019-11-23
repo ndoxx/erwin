@@ -127,6 +127,9 @@ void Renderer2D::init()
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
 	storage.instance_ssbo = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 	
+	MainRenderer::shader_attach_uniform_buffer(storage.batch_2d_shader, storage.pass_ubo);
+	MainRenderer::shader_attach_storage_buffer(storage.batch_2d_shader, storage.instance_ssbo);
+
 	storage.white_texture_data = 0xffffffff;
 	storage.white_texture = MainRenderer::create_texture_2D(Texture2DDescriptor{1,1,
 								  					 				   			&storage.white_texture_data,

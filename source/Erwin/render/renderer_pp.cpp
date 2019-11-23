@@ -50,6 +50,8 @@ void PostProcessingRenderer::init()
 	// storage.pp_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc.glsl", "post_processing");
 	storage.pp_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
 
+	MainRenderer::shader_attach_uniform_buffer(storage.pp_shader, storage.pp_ubo);
+
 	auto& q_presentation = MainRenderer::get_queue(1);
 	q_presentation.set_render_target(MainRenderer::default_render_target());
 }
