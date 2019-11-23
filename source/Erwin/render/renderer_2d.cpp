@@ -140,14 +140,14 @@ void Renderer2D::init()
 
 void Renderer2D::shutdown()
 {
-	MainRenderer::destroy_texture_2D(storage.white_texture);
-	MainRenderer::destroy_shader_storage_buffer(storage.instance_ssbo);
-	MainRenderer::destroy_uniform_buffer(storage.pass_ubo);
-	MainRenderer::destroy_vertex_array(storage.sq_va);
-	MainRenderer::destroy_vertex_buffer(storage.sq_vbo);
-	MainRenderer::destroy_vertex_buffer_layout(storage.sq_vbl);
-	MainRenderer::destroy_index_buffer(storage.sq_ibo);
-	MainRenderer::destroy_shader(storage.batch_2d_shader);
+	MainRenderer::destroy(storage.white_texture);
+	MainRenderer::destroy(storage.instance_ssbo);
+	MainRenderer::destroy(storage.pass_ubo);
+	MainRenderer::destroy(storage.sq_va);
+	MainRenderer::destroy(storage.sq_vbo);
+	MainRenderer::destroy(storage.sq_vbl);
+	MainRenderer::destroy(storage.sq_ibo);
+	MainRenderer::destroy(storage.batch_2d_shader);
 }
 
 void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)

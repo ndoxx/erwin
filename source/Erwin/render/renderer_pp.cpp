@@ -58,13 +58,13 @@ void PostProcessingRenderer::init()
 
 void PostProcessingRenderer::shutdown()
 {
-	MainRenderer::destroy_shader(storage.pp_shader);
-	MainRenderer::destroy_shader(storage.passthrough_shader);
-	MainRenderer::destroy_uniform_buffer(storage.pp_ubo);
-	MainRenderer::destroy_vertex_array(storage.sq_va);
-	MainRenderer::destroy_vertex_buffer(storage.sq_vbo);
-	MainRenderer::destroy_vertex_buffer_layout(storage.sq_vbl);
-	MainRenderer::destroy_index_buffer(storage.sq_ibo);
+	MainRenderer::destroy(storage.pp_shader);
+	MainRenderer::destroy(storage.passthrough_shader);
+	MainRenderer::destroy(storage.pp_ubo);
+	MainRenderer::destroy(storage.sq_va);
+	MainRenderer::destroy(storage.sq_vbo);
+	MainRenderer::destroy(storage.sq_vbl);
+	MainRenderer::destroy(storage.sq_ibo);
 }
 
 void PostProcessingRenderer::begin_pass(const PassState& state, const PostProcessingData& pp_data)

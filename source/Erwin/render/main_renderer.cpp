@@ -719,7 +719,7 @@ void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_index_buffer(IndexBufferHandle handle)
+void MainRenderer::destroy(IndexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
 	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
@@ -734,7 +734,7 @@ void MainRenderer::destroy_index_buffer(IndexBufferHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
+void MainRenderer::destroy(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
 	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
@@ -749,7 +749,7 @@ void MainRenderer::destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_vertex_buffer(VertexBufferHandle handle)
+void MainRenderer::destroy(VertexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
 	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
@@ -764,7 +764,7 @@ void MainRenderer::destroy_vertex_buffer(VertexBufferHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_vertex_array(VertexArrayHandle handle)
+void MainRenderer::destroy(VertexArrayHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
 	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
@@ -779,7 +779,7 @@ void MainRenderer::destroy_vertex_array(VertexArrayHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_uniform_buffer(UniformBufferHandle handle)
+void MainRenderer::destroy(UniformBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
 	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
@@ -794,7 +794,7 @@ void MainRenderer::destroy_uniform_buffer(UniformBufferHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_shader_storage_buffer(ShaderStorageBufferHandle handle)
+void MainRenderer::destroy(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
 	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
@@ -809,7 +809,7 @@ void MainRenderer::destroy_shader_storage_buffer(ShaderStorageBufferHandle handl
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_shader(ShaderHandle handle)
+void MainRenderer::destroy(ShaderHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid ShaderHandle!");
 	s_storage->handles_[ShaderHandleT]->release(handle.index);
@@ -824,7 +824,7 @@ void MainRenderer::destroy_shader(ShaderHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_texture_2D(TextureHandle handle)
+void MainRenderer::destroy(TextureHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid TextureHandle!");
 	s_storage->handles_[TextureHandleT]->release(handle.index);
@@ -839,7 +839,7 @@ void MainRenderer::destroy_texture_2D(TextureHandle handle)
 	push_command(type, cmd);
 }
 
-void MainRenderer::destroy_framebuffer(FramebufferHandle handle)
+void MainRenderer::destroy(FramebufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
 	s_storage->handles_[FramebufferHandleT]->release(handle.index);

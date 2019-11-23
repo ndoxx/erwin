@@ -48,7 +48,7 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 void FramebufferPool::shutdown()
 {
 	for(auto&& [name, fb]: s_storage.framebuffers_)
-		MainRenderer::destroy_framebuffer(fb);
+		MainRenderer::destroy(fb);
 
 	DLOGN("render") << "Framebuffer pool released." << std::endl;
 }
