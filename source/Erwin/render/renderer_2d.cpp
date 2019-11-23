@@ -25,16 +25,15 @@ struct Batch2D
 
 struct Renderer2DStorage
 {
-	IndexBufferHandle ibo_handle;
-	VertexBufferLayoutHandle vbl_handle;
-	VertexBufferHandle vbo_handle;
-	VertexArrayHandle va_handle;
+	IndexBufferHandle sq_ibo;
+	VertexBufferLayoutHandle sq_vbl;
+	VertexBufferHandle sq_vbo;
+	VertexArrayHandle sq_va;
 	ShaderHandle batch_2d_shader;
-	ShaderHandle passthrough_shader;
-	UniformBufferHandle ubo_handle;
-	ShaderStorageBufferHandle ssbo_handle;
+	UniformBufferHandle pass_ubo;
+	ShaderStorageBufferHandle instance_ssbo;
 	TextureHandle white_texture;
-	FramebufferHandle fb_raw_2d_handle;
+	FramebufferHandle raw2d_framebuffer;
 	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
@@ -102,14 +101,9 @@ void Renderer2D::init()
 	{
 		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
 	};
-	storage.fb_raw_2d_handle = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
+	storage.raw2d_framebuffer = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
 	auto& q_opaque_2d = MainRenderer::get_queue(0);
-	// q_opaque_2d.set_render_target(MainRenderer::default_render_target());
-	q_opaque_2d.set_render_target(storage.fb_raw_2d_handle);
-
-	// TMP
-	auto& q_presentation = MainRenderer::get_queue(1);
-	q_presentation.set_render_target(MainRenderer::default_render_target());
+	q_opaque_2d.set_render_target(storage.raw2d_framebuffer);
 
 	float sq_vdata[20] = 
 	{
@@ -120,42 +114,40 @@ void Renderer2D::init()
 	};
 	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
 
-	storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	// storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
-	// storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.glsl", "passthrough");
-	storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
+	// storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 
-	storage.ibo_handle = MainRenderer::create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
-	storage.vbl_handle = MainRenderer::create_vertex_buffer_layout({
+	storage.sq_ibo = MainRenderer::create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
+	storage.sq_vbl = MainRenderer::create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
 								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
 								 			    });
-	storage.vbo_handle = MainRenderer::create_vertex_buffer(storage.vbl_handle, sq_vdata, 20, DrawMode::Static);
-	storage.va_handle = MainRenderer::create_vertex_array(storage.vbo_handle, storage.ibo_handle);
-	storage.ubo_handle = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	storage.ssbo_handle = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+	storage.sq_vbo = MainRenderer::create_vertex_buffer(storage.sq_vbl, sq_vdata, 20, DrawMode::Static);
+	storage.sq_va = MainRenderer::create_vertex_array(storage.sq_vbo, storage.sq_ibo);
+	storage.pass_ubo = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	storage.instance_ssbo = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 	
+	MainRenderer::shader_attach_uniform_buffer(storage.batch_2d_shader, storage.pass_ubo);
+	MainRenderer::shader_attach_storage_buffer(storage.batch_2d_shader, storage.instance_ssbo);
+
 	storage.white_texture_data = 0xffffffff;
 	storage.white_texture = MainRenderer::create_texture_2D(Texture2DDescriptor{1,1,
 								  					 				   			&storage.white_texture_data,
 								  					 				   			ImageFormat::RGBA8,
 								  					 				   			MAG_NEAREST | MIN_NEAREST});
 	create_batch(0, storage.white_texture);
-
-	MainRenderer::shader_attach_uniform_buffer(storage.batch_2d_shader, storage.ubo_handle);
-	MainRenderer::shader_attach_storage_buffer(storage.batch_2d_shader, storage.ssbo_handle);
 }
 
 void Renderer2D::shutdown()
 {
-	MainRenderer::destroy_texture_2D(storage.white_texture);
-	MainRenderer::destroy_shader_storage_buffer(storage.ssbo_handle);
-	MainRenderer::destroy_uniform_buffer(storage.ubo_handle);
-	MainRenderer::destroy_vertex_array(storage.va_handle);
-	MainRenderer::destroy_vertex_buffer(storage.vbo_handle);
-	MainRenderer::destroy_vertex_buffer_layout(storage.vbl_handle);
-	MainRenderer::destroy_index_buffer(storage.ibo_handle);
-	MainRenderer::destroy_shader(storage.batch_2d_shader);
+	MainRenderer::destroy(storage.white_texture);
+	MainRenderer::destroy(storage.instance_ssbo);
+	MainRenderer::destroy(storage.pass_ubo);
+	MainRenderer::destroy(storage.sq_va);
+	MainRenderer::destroy(storage.sq_vbo);
+	MainRenderer::destroy(storage.sq_vbl);
+	MainRenderer::destroy(storage.sq_ibo);
+	MainRenderer::destroy(storage.batch_2d_shader);
 }
 
 void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
@@ -200,20 +192,6 @@ void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& 
 void Renderer2D::end_pass()
 {
 	Renderer2D::flush();
-
-	// TMP: another system will be responsible for this when we implement post-processing
-	// Display to screen
-	PassState pass_state;
-	pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pass_state.blend_state = BlendState::Opaque;
-	pass_state.depth_stencil_state.depth_test_enabled = true;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
-
-	auto& q_presentation = MainRenderer::get_queue(1);
-	DrawCall dc(q_presentation, DrawCall::Indexed, storage.passthrough_shader, storage.va_handle);
-	dc.set_state(pass_state);
-	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(storage.fb_raw_2d_handle, 0));
-	dc.submit();
 }
 
 static void flush_batch(Batch2D& batch)
@@ -222,10 +200,10 @@ static void flush_batch(Batch2D& batch)
 	{
 		auto& q_opaque_2d = MainRenderer::get_queue(0);
 
-		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, storage.va_handle);
+		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, storage.sq_va);
 		dc.set_state(storage.state_flags);
-		dc.set_per_instance_UBO(storage.ubo_handle, &storage.view_projection_matrix, sizeof(glm::mat4));
-		dc.set_instance_data_SSBO(storage.ssbo_handle, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);
+		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4));
+		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);
 		dc.set_texture("us_atlas"_h, batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
 		dc.submit();

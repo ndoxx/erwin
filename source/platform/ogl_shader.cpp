@@ -257,6 +257,20 @@ bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
 void OGLShader::bind_impl() const
 {
     glUseProgram(rd_handle_);
+
+    // Bind resources
+    for(auto&& [key, ubo]: uniform_buffers_)
+    {
+        hash_t hname = H_(ubo->get_name().c_str());
+        GLint binding_point = block_bindings_.at(hname);
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(*ubo).get_handle());
+    }
+    for(auto&& [key, ssbo]: shader_storage_buffers_)
+    {
+        hash_t hname = H_(ssbo->get_name().c_str());
+        GLint binding_point = block_bindings_.at(hname);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(*ssbo).get_handle());
+    }
 }
 
 void OGLShader::unbind_impl() const
@@ -277,7 +291,17 @@ void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
     send_uniform<int>(sampler, slot);
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
+void OGLShader::attach_shader_storage(WRef<ShaderStorageBuffer> buffer)
+{
+    shader_storage_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+}
+
+void OGLShader::attach_uniform_buffer(WRef<UniformBuffer> buffer)
+{
+    uniform_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+}
+
+void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);
@@ -287,7 +311,7 @@ void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
 }
 
-void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
+void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);

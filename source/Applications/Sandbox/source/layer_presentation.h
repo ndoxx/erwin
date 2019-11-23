@@ -1,19 +1,14 @@
 #pragma once
 
-#include <iostream>
-#include <iomanip>
-#include <bitset>
-
 #include "erwin.h"
-#include "render/renderer_2d.h"
 
 using namespace erwin;
 
-class LayerTest: public Layer
+class PresentationLayer: public Layer
 {
 public:
-	LayerTest();
-	~LayerTest() = default;
+	PresentationLayer();
+	~PresentationLayer() = default;
 
 	virtual void on_imgui_render() override;
 	virtual void on_attach() override;
@@ -26,11 +21,14 @@ protected:
 	virtual bool on_event(const MouseScrollEvent& event) override;
 
 private:
-	OrthographicCamera2DController camera_ctl_;
-	TextureAtlas atlas_;
-	std::vector<hash_t> tiles_;
 	float tt_ = 0.f;
-	bool trippy_mode_ = false;
-	int len_grid_ = 100;
 	bool enable_profiling_ = false;
+
+	bool enable_chromatic_aberration_ = true;
+	bool enable_exposure_tone_mapping_ = true;
+	bool enable_vibrance_ = true;
+	bool enable_saturation_ = true;
+	bool enable_contrast_ = true;
+	bool enable_gamma_ = true;
+	PostProcessingData pp_data_;
 };

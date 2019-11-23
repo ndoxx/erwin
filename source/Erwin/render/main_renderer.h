@@ -125,15 +125,15 @@ public:
 	static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
 	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
-	static void destroy_index_buffer(IndexBufferHandle handle);
-	static void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
-	static void destroy_vertex_buffer(VertexBufferHandle handle);
-	static void destroy_vertex_array(VertexArrayHandle handle);
-	static void destroy_uniform_buffer(UniformBufferHandle handle);
-	static void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
-	static void destroy_shader(ShaderHandle handle);
-	static void destroy_texture_2D(TextureHandle handle);
-	static void destroy_framebuffer(FramebufferHandle handle);
+	static void destroy(IndexBufferHandle handle);
+	static void destroy(VertexBufferLayoutHandle handle);
+	static void destroy(VertexBufferHandle handle);
+	static void destroy(VertexArrayHandle handle);
+	static void destroy(UniformBufferHandle handle);
+	static void destroy(ShaderStorageBufferHandle handle);
+	static void destroy(ShaderHandle handle);
+	static void destroy(TextureHandle handle);
+	static void destroy(FramebufferHandle handle);
 };
 
 struct CommandBuffer

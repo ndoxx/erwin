@@ -48,9 +48,31 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 void FramebufferPool::shutdown()
 {
 	for(auto&& [name, fb]: s_storage.framebuffers_)
-		MainRenderer::destroy_framebuffer(fb);
+		MainRenderer::destroy(fb);
 
 	DLOGN("render") << "Framebuffer pool released." << std::endl;
+}
+
+FramebufferHandle FramebufferPool::get_framebuffer(hash_t name)
+{
+	// Check that a framebuffer is registered to this name
+	auto it = s_storage.framebuffers_.find(name);
+	W_ASSERT(it != s_storage.framebuffers_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second;
+}
+
+uint32_t FramebufferPool::get_width(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second->get_width(s_storage.current_width_);
+}
+
+uint32_t FramebufferPool::get_height(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second->get_height(s_storage.current_height_);
 }
 
 FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)

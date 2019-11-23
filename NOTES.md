@@ -8,6 +8,31 @@
     * GL_KHR_texture_compression_astc_hdr
     * GL_KHR_texture_compression_astc_ldr
 
+##TODO:
+    [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
+    https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
+        [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
+        stocker dans les CAT files.
+    [X] Supporter SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V
+    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
+    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
+    [/] Ecrire un renderer 2D multi-threaded
+        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
+    [ ] Ecrire un renderer 3D multi-threaded
+    [X] Ecrire un script de building pour tout le projet (gère les deps...)
+    [ ] Gérer le callback d'erreurs OpenGL
+    https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml
+
+##OPT:
+    [X] Réduire le nombre de calls à glBindBufferBase (UBO/SSBO attach)
+        -> Un shader pourrait les enregistrer une fois pour toutes et les lier depuis la fonction bind.
+
+###GO MT - ROADMAP:
+    [X] Command queues
+    [X] Master renderer
+    [ ] Gfx resources manag.
+
 ##[Command Galore]
 ###Callgrind profiling
 > valgrind --tool=callgrind ../bin/sandbox
@@ -84,27 +109,6 @@ Lorsque l'on a terminé le développement du feature, depuis la feature branch, 
 > git flow feature finish new-feature-name
 
 Ceci va merge la feature branch avec la branche develop localement.
-
-##TODO:
-    [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
-    https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
-        [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
-        stocker dans les CAT files.
-    [X] Supporter SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
-    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
-    [/] Ecrire un renderer 2D multi-threaded
-        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
-    [ ] Ecrire un renderer 3D multi-threaded
-    [X] Ecrire un script de building pour tout le projet (gère les deps...)
-    [ ] Gérer le callback d'erreurs OpenGL
-    https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml 
-
-###GO MT - ROADMAP:
-    [X] Command queues
-    [X] Master renderer
-    [ ] Gfx resources manag.
 
 #[11-08-19]
 Les trois derniers jours j'ai travaillé intensément au refactor du logger du projet WCore. Un nouvel event system a aussi vu le jour, adapté d'une trouvaille en ligne, bien plus facile d'utilisation que l'ancien, type-safe et single-header.

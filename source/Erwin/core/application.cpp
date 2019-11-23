@@ -10,6 +10,7 @@
 #include "render/render_device.h"
 #include "render/main_renderer.h"
 #include "render/renderer_2d.h"
+#include "render/renderer_pp.h"
 
 #include <iostream>
 
@@ -101,6 +102,7 @@ minimized_(false)
     MainRenderer::create_queue(0, SortKey::Order::ByDepthDescending); // Opaque 2D
     MainRenderer::create_queue(1, SortKey::Order::Sequential); // Presentation
     Renderer2D::init();
+    PostProcessingRenderer::init();
 #endif
 
     // Generate ImGui overlay
@@ -192,7 +194,8 @@ void Application::run()
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 
 #ifdef MR__
-    // FramebufferPool::shutdown();
+    FramebufferPool::shutdown();
+    PostProcessingRenderer::shutdown();
     Renderer2D::shutdown();
     MainRenderer::shutdown();
 #endif

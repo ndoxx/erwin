@@ -16,6 +16,7 @@
 #include "debug/logger.h"
 
 #include "render/renderer_2d.h"
+#include "render/renderer_pp.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
