@@ -94,6 +94,8 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 
 void Renderer2D::init()
 {
+    W_PROFILE_FUNCTION()
+
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
@@ -140,6 +142,8 @@ void Renderer2D::init()
 
 void Renderer2D::shutdown()
 {
+    W_PROFILE_FUNCTION()
+
 	MainRenderer::destroy(storage.white_texture);
 	MainRenderer::destroy(storage.instance_ssbo);
 	MainRenderer::destroy(storage.pass_ubo);
@@ -173,6 +177,8 @@ void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 
 void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id)
 {
+    W_PROFILE_FUNCTION()
+
 	// Reset stats
 	storage.num_draw_calls = 0;
 
@@ -191,6 +197,8 @@ void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& 
 
 void Renderer2D::end_pass()
 {
+    W_PROFILE_FUNCTION()
+    
 	Renderer2D::flush();
 }
 

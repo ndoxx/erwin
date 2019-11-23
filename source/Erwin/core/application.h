@@ -14,7 +14,7 @@ class W_API Application
 {
 public:
 	Application();
-	virtual ~Application() = default;
+	virtual ~Application();
 
 	virtual void on_load() { }
 

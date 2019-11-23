@@ -233,6 +233,7 @@ std::unique_ptr<RendererStorage> s_storage;
 
 void MainRenderer::init()
 {
+    W_PROFILE_FUNCTION()
 	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
@@ -246,6 +247,7 @@ void MainRenderer::init()
 
 void MainRenderer::shutdown()
 {
+    W_PROFILE_FUNCTION()
 	flush();
 	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
 	s_storage->handles_[FramebufferHandleT]->release(s_storage->default_framebuffer_.index);
@@ -307,6 +309,7 @@ TextureHandle MainRenderer::get_framebuffer_texture(FramebufferHandle handle, ui
 // Helpers
 static void sort_commands()
 {
+    W_PROFILE_FUNCTION()
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
     std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
@@ -870,6 +873,8 @@ namespace dispatch
 
 void create_index_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	IndexBufferHandle handle;
 	uint32_t count;
 	DrawPrimitive primitive;
@@ -887,6 +892,8 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
 
 void create_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	uint32_t count;
 	VertexBufferLayoutHandle handle;
 	BufferLayoutElement* auxiliary;
@@ -899,6 +906,8 @@ void create_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexBufferHandle handle;
 	VertexBufferLayoutHandle layout_hnd;
 	uint32_t count;
@@ -916,6 +925,8 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
 
 void create_vertex_array(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexArrayHandle handle;
 	VertexBufferHandle vb;
 	IndexBufferHandle ib;
@@ -931,6 +942,8 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
 
 void create_uniform_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	UniformBufferHandle handle;
 	uint32_t size;
 	DrawMode mode;
@@ -947,6 +960,8 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
 
 void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderStorageBufferHandle handle;
 	uint32_t size;
 	DrawMode mode;
@@ -963,6 +978,8 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 void create_shader(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderHandle handle;
 	std::string filepath;
 	std::string name;
@@ -979,6 +996,8 @@ void create_shader(memory::LinearBuffer<>& buf)
 
 void create_texture_2D(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	TextureHandle handle;
 	Texture2DDescriptor descriptor;
 	buf.read(&handle);
@@ -989,6 +1008,8 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 
 void create_framebuffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	uint32_t width;
 	uint32_t height;
 	uint32_t count;
@@ -1016,6 +1037,8 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	IndexBufferHandle handle;
 	uint32_t count;
 	uint32_t* auxiliary;
@@ -1028,6 +1051,8 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
 
 void update_vertex_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexBufferHandle handle;
 	uint32_t size;
 	uint8_t* auxiliary;
@@ -1040,6 +1065,8 @@ void update_vertex_buffer(memory::LinearBuffer<>& buf)
 
 void update_uniform_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	UniformBufferHandle handle;
 	uint32_t size;
 	uint8_t* auxiliary;
@@ -1052,6 +1079,8 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderStorageBufferHandle handle;
 	uint32_t size;
 	uint8_t* auxiliary;
@@ -1064,6 +1093,8 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderHandle shader_handle;
 	UniformBufferHandle ubo_handle;
 	buf.read(&shader_handle);
@@ -1075,6 +1106,8 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderHandle shader_handle;
 	ShaderStorageBufferHandle ssbo_handle;
 	buf.read(&shader_handle);
@@ -1086,6 +1119,8 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	FramebufferHandle fb_handle;
 	uint32_t width;
 	uint32_t height;
@@ -1111,6 +1146,8 @@ void nop(memory::LinearBuffer<>& buf) { }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	IndexBufferHandle handle;
 	buf.read(&handle);
 	s_storage->index_buffers[handle.index] = nullptr;
@@ -1118,6 +1155,8 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 
 void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexBufferLayoutHandle handle;
 	buf.read(&handle);
 	s_storage->vertex_buffer_layouts[handle.index] = nullptr;
@@ -1125,6 +1164,8 @@ void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 
 void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexBufferHandle handle;
 	buf.read(&handle);
 	s_storage->vertex_buffers[handle.index] = nullptr;
@@ -1132,6 +1173,8 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 
 void destroy_vertex_array(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	VertexArrayHandle handle;
 	buf.read(&handle);
 	s_storage->vertex_arrays[handle.index] = nullptr;
@@ -1139,6 +1182,8 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 
 void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	UniformBufferHandle handle;
 	buf.read(&handle);
 	s_storage->uniform_buffers[handle.index] = nullptr;
@@ -1146,6 +1191,8 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 
 void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderStorageBufferHandle handle;
 	buf.read(&handle);
 	s_storage->shader_storage_buffers[handle.index] = nullptr;
@@ -1153,6 +1200,8 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 void destroy_shader(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	ShaderHandle handle;
 	buf.read(&handle);
 	hash_t hname = H_(s_storage->shaders[handle.index]->get_name().c_str());
@@ -1162,6 +1211,8 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	TextureHandle handle;
 	buf.read(&handle);
 	s_storage->textures[handle.index] = nullptr;
@@ -1169,6 +1220,8 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 	FramebufferHandle handle;
 	buf.read(&handle);
 	s_storage->framebuffers[handle.index] = nullptr;
@@ -1259,6 +1312,8 @@ void RenderQueue::set_render_target(FramebufferHandle fb)
 
 void RenderQueue::sort()
 {
+    W_PROFILE_FUNCTION()
+
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
     std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
@@ -1275,6 +1330,8 @@ void RenderQueue::reset()
 
 void RenderQueue::submit(const DrawCall& dc)
 {
+    W_PROFILE_FUNCTION()
+
 	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
 	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
 
@@ -1313,6 +1370,8 @@ void RenderQueue::submit(const DrawCall& dc)
 
 static void render_dispatch(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_FUNCTION()
+
 #pragma pack(push,1)
 	struct
 	{
@@ -1401,6 +1460,8 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 
 void RenderQueue::flush()
 {
+    W_PROFILE_FUNCTION()
+
 	if(command_buffer_.count == 0)
 		return;
 
@@ -1423,6 +1484,8 @@ void RenderQueue::flush()
 
 static void flush_command_buffer(CommandBuffer& cmdbuf)
 {
+    W_PROFILE_FUNCTION()
+
 	for(int ii=0; ii<cmdbuf.count; ++ii)
 	{
 		auto&& [key,cmd] = cmdbuf.entries[ii];
@@ -1436,6 +1499,8 @@ static void flush_command_buffer(CommandBuffer& cmdbuf)
 
 void MainRenderer::flush()
 {
+    W_PROFILE_FUNCTION()
+    
 	if(s_storage->profiling_enabled)
 		s_storage->query_timer->start();
 

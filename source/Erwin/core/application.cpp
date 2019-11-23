@@ -31,102 +31,145 @@ minimized_(false)
     W_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
 
-    // Initialize file system
-    filesystem::init();
-    // Initialize config
-    cfg::init(filesystem::get_config_dir() / "erwin.xml");
+    {
+        W_PROFILE_SCOPE("Application config")
+        // Initialize file system
+        filesystem::init();
+        // Initialize config
+        cfg::init(filesystem::get_config_dir() / "erwin.xml");
 
-    // Log events
-    if(cfg::get<bool>("erwin.logger.track_window_close_events"_h, false))
-    {
-        WLOGGER.track_event<WindowCloseEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_window_resize_events"_h, false))
-    {
-        WLOGGER.track_event<WindowResizeEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_framebuffer_resize_events"_h, false))
-    {
-        WLOGGER.track_event<FramebufferResizeEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_keyboard_events"_h, false))
-    {
-        WLOGGER.track_event<KeyboardEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_mouse_button_events"_h, false))
-    {
-        WLOGGER.track_event<MouseButtonEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_mouse_scroll_events"_h, false))
-    {
-        WLOGGER.track_event<MouseMovedEvent>();
-    }
-    if(cfg::get<bool>("erwin.logger.track_mouse_moved_events"_h, false))
-    {
-        WLOGGER.track_event<MouseScrollEvent>();
+        // Log events
+        if(cfg::get<bool>("erwin.logger.track_window_close_events"_h, false))
+        {
+            WLOGGER.track_event<WindowCloseEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_window_resize_events"_h, false))
+        {
+            WLOGGER.track_event<WindowResizeEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_framebuffer_resize_events"_h, false))
+        {
+            WLOGGER.track_event<FramebufferResizeEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_keyboard_events"_h, false))
+        {
+            WLOGGER.track_event<KeyboardEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_mouse_button_events"_h, false))
+        {
+            WLOGGER.track_event<MouseButtonEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_mouse_scroll_events"_h, false))
+        {
+            WLOGGER.track_event<MouseMovedEvent>();
+        }
+        if(cfg::get<bool>("erwin.logger.track_mouse_moved_events"_h, false))
+        {
+            WLOGGER.track_event<MouseScrollEvent>();
+        }
+
+        WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
+        WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
+
+        // Spawn logger thread
+        WLOGGER.spawn();
+        WLOGGER.sync();
+
+        // Log basic info
+        DLOGN("config") << "[Paths]" << std::endl;
+        DLOGI << "Executable path: " << WCC('p') << filesystem::get_self_dir() << WCC(0) << std::endl;
+        DLOGI << "Root dir:        " << WCC('p') << filesystem::get_root_dir() << WCC(0) << std::endl;
+        DLOGI << "Config dir:      " << WCC('p') << filesystem::get_config_dir() << WCC(0) << std::endl;
+
+        // Parse intern strings
+        istr::init("intern_strings.txt");
     }
 
-    WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
-    WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
-
-    // Spawn logger thread
-    WLOGGER.spawn();
-    WLOGGER.sync();
-
-    // Log basic info
-    DLOGN("config") << "[Paths]" << std::endl;
-    DLOGI << "Executable path: " << WCC('p') << filesystem::get_self_dir() << WCC(0) << std::endl;
-    DLOGI << "Root dir:        " << WCC('p') << filesystem::get_root_dir() << WCC(0) << std::endl;
-    DLOGI << "Config dir:      " << WCC('p') << filesystem::get_config_dir() << WCC(0) << std::endl;
-
-    // Parse intern strings
-    istr::init("intern_strings.txt");
-
-    // Initialize window
-    WindowProps props
     {
-        "ErwinEngine",
-        cfg::get<uint32_t>("erwin.display.width"_h,  1280),
-        cfg::get<uint32_t>("erwin.display.height"_h, 1024),
-        cfg::get<bool>("erwin.display.full"_h,       false),
-        cfg::get<bool>("erwin.display.topmost"_h,    false),
-        cfg::get<bool>("erwin.display.vsync"_h,      true)
-    };
-    window_ = Window::create(props);
+        W_PROFILE_SCOPE("Window creation")
+        // Initialize window
+        WindowProps props
+        {
+            "ErwinEngine",
+            cfg::get<uint32_t>("erwin.display.width"_h,  1280),
+            cfg::get<uint32_t>("erwin.display.height"_h, 1024),
+            cfg::get<bool>("erwin.display.full"_h,       false),
+            cfg::get<bool>("erwin.display.topmost"_h,    false),
+            cfg::get<bool>("erwin.display.vsync"_h,      true)
+        };
+        window_ = Window::create(props);
+    }
 
 #ifdef MR__
-    // Initialize framebuffer pool
-    FramebufferPool::init(window_->get_width(), window_->get_height());
-    // Initialize master renderer storage
-    MainRenderer::init();
-    MainRenderer::create_queue(0, SortKey::Order::ByDepthDescending); // Opaque 2D
-    MainRenderer::create_queue(1, SortKey::Order::Sequential); // Presentation
-    Renderer2D::init();
-    PostProcessingRenderer::init();
+    {
+        W_PROFILE_SCOPE("Renderer startup")
+        // Initialize framebuffer pool
+        FramebufferPool::init(window_->get_width(), window_->get_height());
+        // Initialize master renderer storage
+        MainRenderer::init();
+        MainRenderer::create_queue(0, SortKey::Order::ByDepthDescending); // Opaque 2D
+        MainRenderer::create_queue(1, SortKey::Order::Sequential); // Presentation
+        Renderer2D::init();
+        PostProcessingRenderer::init();
+    }
 #endif
 
-    // Generate ImGui overlay
-	IMGUI_LAYER = new ImGuiLayer();
-	push_overlay(IMGUI_LAYER);
+    {
+        W_PROFILE_SCOPE("ImGui overlay creation")
+        // Generate ImGui overlay
+    	IMGUI_LAYER = new ImGuiLayer();
+    	push_overlay(IMGUI_LAYER);
+    }
 
-	// Propagate input events to layers
-	layer_stack_.track_event<KeyboardEvent>();
-	layer_stack_.track_event<KeyTypedEvent>();
-	layer_stack_.track_event<MouseButtonEvent>();
-	layer_stack_.track_event<MouseScrollEvent>();
-	layer_stack_.track_event<MouseMovedEvent>();
-	layer_stack_.track_event<WindowResizeEvent>();
+    {
+        W_PROFILE_SCOPE("Layer event tracking setup")
+    	// Propagate input events to layers
+    	layer_stack_.track_event<KeyboardEvent>();
+    	layer_stack_.track_event<KeyTypedEvent>();
+    	layer_stack_.track_event<MouseButtonEvent>();
+    	layer_stack_.track_event<MouseScrollEvent>();
+    	layer_stack_.track_event<MouseMovedEvent>();
+    	layer_stack_.track_event<WindowResizeEvent>();
+    }
 
 	// React to window close events (and shutdown application)
 	EVENTBUS.subscribe(this, &Application::on_window_close_event);
 
-	on_load();
+    {
+        W_PROFILE_SCOPE("Application load")
+        on_load();
+    }
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
 }
 
+Application::~Application()
+{
+    {
+        W_PROFILE_SCOPE("Layer stack shutdown")
+        layer_stack_.clear();
+    }
+
+#ifdef MR__
+    {
+        W_PROFILE_SCOPE("Renderer shutdown")
+        FramebufferPool::shutdown();
+        PostProcessingRenderer::shutdown();
+        Renderer2D::shutdown();
+        MainRenderer::shutdown();
+    }
+#endif
+    {
+        W_PROFILE_SCOPE("Low level systems shutdown")
+        Input::kill();
+        WLOGGER.kill();
+        EventBus::Kill();
+    }
+}
+
 size_t Application::push_layer(Layer* layer)
 {
+    W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_layer(layer);
 	//DLOGR("core") << layer_stack_ << std::endl;
 	return index;
@@ -134,6 +177,7 @@ size_t Application::push_layer(Layer* layer)
 
 size_t Application::push_overlay(Layer* layer)
 {
+    W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_overlay(layer);
 	//DLOGR("core") << layer_stack_ << std::endl;
 	return index;
@@ -160,6 +204,7 @@ void Application::run()
 		// For each layer, update
 		if(!minimized_)
 		{
+            W_PROFILE_SCOPE("Layer updates")
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
@@ -167,13 +212,17 @@ void Application::run()
         MainRenderer::flush();
 #endif
 		// TODO: move this to render thread when we have one
-		IMGUI_LAYER->begin();
-		for(auto* layer: layer_stack_)
-			layer->on_imgui_render();
-		IMGUI_LAYER->end();
+        {
+            W_PROFILE_SCOPE("ImGui render")
+    		IMGUI_LAYER->begin();
+    		for(auto* layer: layer_stack_)
+    			layer->on_imgui_render();
+    		IMGUI_LAYER->end();
+        }
 
         if(!window_->is_vsync())
         {
+            W_PROFILE_SCOPE("Wait")
             auto active_d = frame_clock.get_elapsed_time();
             auto idle_duration = frame_duration_ns_ - active_d;
             std::this_thread::sleep_for(idle_duration);
@@ -182,26 +231,21 @@ void Application::run()
     	// To allow frame by frame update
     	game_clock_.release_flags();
 
-		// Update window
-        window_->update();
+        {
+            W_PROFILE_SCOPE("Window update")
+    		// Update window
+            window_->update();
+        }
 
-		WLOGGER.flush();
+        {
+            W_PROFILE_SCOPE("Logger flush")
+            WLOGGER.flush();
+        }
+
         frame_d = frame_clock.restart();
 	}
 
-    layer_stack_.clear();
-
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
-
-#ifdef MR__
-    FramebufferPool::shutdown();
-    PostProcessingRenderer::shutdown();
-    Renderer2D::shutdown();
-    MainRenderer::shutdown();
-#endif
-    Input::kill();
-    WLOGGER.kill();
-    EventBus::Kill();
 }
 
 bool Application::on_window_close_event(const WindowCloseEvent& e)

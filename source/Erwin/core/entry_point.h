@@ -12,7 +12,15 @@ namespace erwin
 
 int main(int argc, char** argv)
 {
+	W_PROFILE_BEGIN_SESSION("startup", "wprofile-startup.json");
 	auto app = erwin::create_application();
+	W_PROFILE_END_SESSION();
+
+	W_PROFILE_BEGIN_SESSION("runtime", "wprofile-runtime.json");
 	app->run();
+	W_PROFILE_END_SESSION();
+
+	W_PROFILE_BEGIN_SESSION("shutdown", "wprofile-shutdown.json");
 	delete app;
+	W_PROFILE_END_SESSION();
 }

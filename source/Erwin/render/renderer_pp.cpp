@@ -23,6 +23,8 @@ static PPStorage storage;
 
 void PostProcessingRenderer::init()
 {
+    W_PROFILE_FUNCTION()
+
 	float sq_vdata[20] = 
 	{
 		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
@@ -58,6 +60,8 @@ void PostProcessingRenderer::init()
 
 void PostProcessingRenderer::shutdown()
 {
+    W_PROFILE_FUNCTION()
+
 	MainRenderer::destroy(storage.pp_shader);
 	MainRenderer::destroy(storage.passthrough_shader);
 	MainRenderer::destroy(storage.pp_ubo);
@@ -69,6 +73,8 @@ void PostProcessingRenderer::shutdown()
 
 void PostProcessingRenderer::begin_pass(const PassState& state, const PostProcessingData& pp_data)
 {
+    W_PROFILE_FUNCTION()
+
 	storage.state_flags = state.encode();
 
 	// Set post processing data
@@ -79,6 +85,8 @@ void PostProcessingRenderer::begin_pass(const PassState& state, const PostProces
 
 void PostProcessingRenderer::end_pass()
 {
+    W_PROFILE_FUNCTION()
+    
 	// Display to screen
 	auto& q_presentation = MainRenderer::get_queue(1);
 	// DrawCall dc(q_presentation, DrawCall::Indexed, storage.passthrough_shader, storage.sq_va);
