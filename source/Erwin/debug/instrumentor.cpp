@@ -19,7 +19,12 @@ void Instrumentor::begin_session(const std::string& name, const std::string& fil
 {
     storage.out_stream.open(filepath);
     write_header();
-    storage.current_session = new InstrumentationSession{ name };
+    storage.current_session = new InstrumentationSession{ name, true };
+}
+
+void Instrumentor::set_session_enabled(bool value)
+{
+    storage.current_session->enabled = value;
 }
 
 void Instrumentor::end_session()
@@ -79,6 +84,9 @@ InstrumentationTimer::~InstrumentationTimer()
 
 void InstrumentationTimer::stop()
 {
+    if(!storage.current_session->enabled)
+        return;
+
     auto end_timepoint = std::chrono::high_resolution_clock::now();
 
     long long start = std::chrono::time_point_cast<std::chrono::microseconds>(start_timepoint_).time_since_epoch().count();

@@ -20,12 +20,14 @@ struct ProfileResult
 struct InstrumentationSession
 {
     std::string name;
+    bool enabled;
 };
 
 class Instrumentor
 {
 public:
     static void begin_session(const std::string& name, const std::string& filepath = "results.json");
+    static void set_session_enabled(bool value);
     static void end_session();
     static void write_profile(const ProfileResult& result);
     static void write_header();

@@ -17,6 +17,7 @@ int main(int argc, char** argv)
 	W_PROFILE_END_SESSION();
 
 	W_PROFILE_BEGIN_SESSION("runtime", "wprofile-runtime.json");
+	W_PROFILE_ENABLE_SESSION(false);
 	app->run();
 	W_PROFILE_END_SESSION();
 

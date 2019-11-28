@@ -4,7 +4,7 @@
 #include <memory>
 
 // Export JSON instrumentation profiles compatible with chrome://tracing
-// #define W_PROFILE
+#define W_PROFILE
 
 
 #ifdef _WIN32
@@ -39,11 +39,13 @@ inline void fatal() { exit(-1); }
 	#include "debug/instrumentor.h"
 	#define W_PROFILE_BEGIN_SESSION(name, filepath) erwin::Instrumentor::begin_session( name , filepath )
 	#define W_PROFILE_END_SESSION(name) erwin::Instrumentor::end_session()
+	#define W_PROFILE_ENABLE_SESSION(value) erwin::Instrumentor::set_session_enabled( value )
 	#define W_PROFILE_SCOPE(name) erwin::InstrumentationTimer timer##__LINE__( name );
 	#define W_PROFILE_FUNCTION() W_PROFILE_SCOPE( __PRETTY_FUNCTION__ )
 #else
 	#define W_PROFILE_BEGIN_SESSION(name, filepath)
 	#define W_PROFILE_END_SESSION(name)
+	#define W_PROFILE_ENABLE_SESSION(value)
 	#define W_PROFILE_SCOPE(name)
 	#define W_PROFILE_FUNCTION()
 #endif
