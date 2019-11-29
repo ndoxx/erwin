@@ -19,7 +19,12 @@ void Instrumentor::begin_session(const std::string& name, const std::string& fil
 {
     storage.out_stream.open(filepath);
     write_header();
-    storage.current_session = new InstrumentationSession{ name };
+    storage.current_session = new InstrumentationSession{ name, true };
+}
+
+void Instrumentor::set_session_enabled(bool value)
+{
+    storage.current_session->enabled = value;
 }
 
 void Instrumentor::end_session()
@@ -39,15 +44,15 @@ void Instrumentor::write_profile(const ProfileResult& result)
     std::string name = result.name;
     std::replace(name.begin(), name.end(), '"', '\'');
 
-    storage.out_stream << "{";
-    storage.out_stream << "\"cat\":\"function\",";
-    storage.out_stream << "\"dur\":" << (result.end - result.start) << ',';
-    storage.out_stream << "\"name\":\"" << name << "\",";
-    storage.out_stream << "\"ph\":\"X\",";
-    storage.out_stream << "\"pid\":0,";
-    storage.out_stream << "\"tid\":" << result.thread_id << ",";
-    storage.out_stream << "\"ts\":" << result.start;
-    storage.out_stream << "}";
+    storage.out_stream << "{"
+                       << "\"cat\":\"function\","
+                       << "\"dur\":" << (result.end - result.start) << ','
+                       << "\"name\":\"" << name << "\","
+                       << "\"ph\":\"X\","
+                       << "\"pid\":0,"
+                       << "\"tid\":" << result.thread_id << ","
+                       << "\"ts\":" << result.start
+                       << "}";
 
     storage.out_stream.flush();
 }
@@ -79,6 +84,9 @@ InstrumentationTimer::~InstrumentationTimer()
 
 void InstrumentationTimer::stop()
 {
+    if(!storage.current_session->enabled)
+        return;
+
     auto end_timepoint = std::chrono::high_resolution_clock::now();
 
     long long start = std::chrono::time_point_cast<std::chrono::microseconds>(start_timepoint_).time_since_epoch().count();

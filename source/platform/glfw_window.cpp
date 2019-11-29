@@ -95,6 +95,8 @@ GLFWWindow::~GLFWWindow()
 
 void GLFWWindow::init(const WindowProps& props)
 {
+    W_PROFILE_FUNCTION()
+
 	// Initialize GLFW if not already initialized
 	if(s_glfw_num_windows == 0)
 	{
@@ -273,6 +275,8 @@ void GLFWWindow::set_event_callbacks()
 
 void GLFWWindow::cleanup()
 {
+    W_PROFILE_FUNCTION()
+
 	glfwDestroyWindow(data_->window);
 	if(--s_glfw_num_windows == 0)
 	{
@@ -283,6 +287,8 @@ void GLFWWindow::cleanup()
 
 void GLFWWindow::update()
 {
+    W_PROFILE_FUNCTION()
+	
 	context_->swap_buffers();
 	glfwPollEvents();
 }

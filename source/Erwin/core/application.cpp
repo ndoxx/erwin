@@ -171,7 +171,6 @@ size_t Application::push_layer(Layer* layer)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_layer(layer);
-	//DLOGR("core") << layer_stack_ << std::endl;
 	return index;
 }
 
@@ -179,13 +178,19 @@ size_t Application::push_overlay(Layer* layer)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_overlay(layer);
-	//DLOGR("core") << layer_stack_ << std::endl;
 	return index;
 }
 
 void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
+
+    // Display layer stack composition
+    DLOG("application",1) << WCC(204,0,204) << "Layer stack composition:" << std::endl;
+    DLOG("application",1) << WCC(204,0,204) << layer_stack_ << std::endl;
+
+    // Profiling options
+    W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
 
     float target_fps = cfg::get<uint32_t>("erwin.display.target_fps"_h, 60);
     const std::chrono::nanoseconds frame_duration_ns_(uint32_t(1e9*1.0f/target_fps));
@@ -231,11 +236,8 @@ void Application::run()
     	// To allow frame by frame update
     	game_clock_.release_flags();
 
-        {
-            W_PROFILE_SCOPE("Window update")
-    		// Update window
-            window_->update();
-        }
+		// Update window
+        window_->update();
 
         {
             W_PROFILE_SCOPE("Logger flush")
