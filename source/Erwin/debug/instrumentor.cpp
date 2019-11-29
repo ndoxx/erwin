@@ -44,15 +44,15 @@ void Instrumentor::write_profile(const ProfileResult& result)
     std::string name = result.name;
     std::replace(name.begin(), name.end(), '"', '\'');
 
-    storage.out_stream << "{";
-    storage.out_stream << "\"cat\":\"function\",";
-    storage.out_stream << "\"dur\":" << (result.end - result.start) << ',';
-    storage.out_stream << "\"name\":\"" << name << "\",";
-    storage.out_stream << "\"ph\":\"X\",";
-    storage.out_stream << "\"pid\":0,";
-    storage.out_stream << "\"tid\":" << result.thread_id << ",";
-    storage.out_stream << "\"ts\":" << result.start;
-    storage.out_stream << "}";
+    storage.out_stream << "{"
+                       << "\"cat\":\"function\","
+                       << "\"dur\":" << (result.end - result.start) << ','
+                       << "\"name\":\"" << name << "\","
+                       << "\"ph\":\"X\","
+                       << "\"pid\":0,"
+                       << "\"tid\":" << result.thread_id << ","
+                       << "\"ts\":" << result.start
+                       << "}";
 
     storage.out_stream.flush();
 }

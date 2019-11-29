@@ -26,7 +26,7 @@ struct InstrumentationSession
 class Instrumentor
 {
 public:
-    static void begin_session(const std::string& name, const std::string& filepath = "results.json");
+    static void begin_session(const std::string& name, const std::string& filepath);
     static void set_session_enabled(bool value);
     static void end_session();
     static void write_profile(const ProfileResult& result);

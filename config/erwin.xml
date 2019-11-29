@@ -24,6 +24,10 @@
 		<bool name="track_mouse_moved_events"        value="false"/>
 	</logger>
 
+	<profiling>
+		<bool name="runtime_session_enabled" value="true"/>
+	</profiling>
+
     <display>
         <uint name="width"      value="1920"/>
         <uint name="height"     value="1080"/>

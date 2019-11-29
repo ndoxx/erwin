@@ -231,6 +231,8 @@ bool OGLShader::init_glsl_string(const std::string& name, const std::string& sou
 // Initialize shader from packed GLSL source
 bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 {
+    W_PROFILE_FUNCTION()
+
     name_ = name;
     filepath_ = glsl_file;
     // Read stream to buffer and parse full source
@@ -245,6 +247,8 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 // Initialize shader from SPIR-V file
 bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
 {
+    W_PROFILE_FUNCTION()
+
     name_ = name;
     filepath_ = spv_file;
 
@@ -323,6 +327,8 @@ void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, 
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
 {
+    W_PROFILE_FUNCTION()
+
 	std::vector<std::pair<ShaderType, std::string>> sources;
 
 	static const std::string type_token = "#type";
@@ -363,6 +369,8 @@ std::string OGLShader::parse_includes(const std::string& source)
 
 bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)
 {
+    W_PROFILE_FUNCTION()
+
 	DLOGN("shader") << "Building OpenGL Shader program: \"" << name_ << "\" " << std::endl;
 
 	std::vector<uint32_t> shader_ids;
@@ -421,6 +429,8 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 bool OGLShader::build_spirv(const fs::path& filepath)
 {
+    W_PROFILE_FUNCTION()
+
     DLOGN("shader") << "Building SPIR-V OpenGL Shader program: \"" << name_ << "\" " << std::endl;
     std::vector<uint32_t> shader_ids;
 
@@ -470,6 +480,8 @@ bool OGLShader::build_spirv(const fs::path& filepath)
 
 bool OGLShader::link(const std::vector<GLuint>& shader_ids)
 {
+    W_PROFILE_FUNCTION()
+
     // * Link program
     DLOGI << "Linking program." << std::endl;
     rd_handle_ = glCreateProgram();
@@ -512,6 +524,8 @@ struct BlockElement
 
 void OGLShader::introspect()
 {
+    W_PROFILE_FUNCTION()
+    
     // Interfaces to query
     static const std::vector<GLenum> interfaces
     {

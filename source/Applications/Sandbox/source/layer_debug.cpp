@@ -54,7 +54,7 @@ void DebugLayer::on_imgui_render()
 
 void DebugLayer::on_attach()
 {
-
+    enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 }
 
 void DebugLayer::on_detach()
