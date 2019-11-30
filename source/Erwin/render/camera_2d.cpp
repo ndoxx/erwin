@@ -16,10 +16,10 @@ FrustumSides::FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_s
 	glm::vec4 tr = to_world_space*glm::vec4(frustum.right, frustum.top, 0.f, 1.f);
 
 	// Compute side line coefficients from these points
-	side[0] = glm::vec3(tl.y-bl.y, bl.x-tl.x, tl.x*bl.y-bl.x*tl.y);
-	side[1] = glm::vec3(br.y-tr.y, tr.x-br.x, br.x*tr.y-tr.x*br.y);
-	side[2] = glm::vec3(bl.y-br.y, br.x-bl.x, bl.x*br.y-br.x*bl.y);
-	side[3] = glm::vec3(tr.y-tl.y, tl.x-tr.x, tr.x*tl.y-tl.x*tr.y);
+	side[0] = glm::vec3(tl.y-bl.y, bl.x-tl.x, tl.x*bl.y-bl.x*tl.y); // left
+	side[1] = glm::vec3(br.y-tr.y, tr.x-br.x, br.x*tr.y-tr.x*br.y); // right
+	side[2] = glm::vec3(bl.y-br.y, br.x-bl.x, bl.x*br.y-br.x*bl.y); // bottom
+	side[3] = glm::vec3(tr.y-tl.y, tl.x-tr.x, tr.x*tl.y-tl.x*tr.y); // top
 }
 
 
