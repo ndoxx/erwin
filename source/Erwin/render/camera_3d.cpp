@@ -1,4 +1,5 @@
 #include "render/camera_3d.h"
+#include "core/core.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/euler_angles.hpp"
@@ -10,6 +11,8 @@ FrustumPlanes::FrustumPlanes() {  }
 
 FrustumPlanes::FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world_space)
 {
+	W_PROFILE_FUNCTION()
+
 	// Compute frustum corners in world space
     glm::vec3 rbn = to_world_space*glm::vec4(frustum.right, frustum.bottom, frustum.near, 1.f);
     glm::vec3 rbf = to_world_space*glm::vec4(frustum.right, frustum.bottom, frustum.far,  1.f);
@@ -30,8 +33,9 @@ FrustumPlanes::FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world
 }
 
 PerspectiveCamera3D::PerspectiveCamera3D(const Frustum3D& frustum):
-pitch_(0.f),
 yaw_(0.f),
+pitch_(0.f),
+roll_(0.f),
 position_(0.f)
 {
 	set_projection(frustum);
@@ -51,8 +55,10 @@ void PerspectiveCamera3D::set_projection(const Frustum3D& frustum)
 
 void PerspectiveCamera3D::update_view_matrix()
 {
+	W_PROFILE_FUNCTION()
+	
 	transform_ = glm::translate(glm::mat4(1.f), position_)
-			   * glm::eulerAngleYXZ(yaw_, pitch_, 0.f);
+			   * glm::eulerAngleYXZ(yaw_, pitch_, roll_);
 	view_matrix_ = glm::inverse(transform_);
 	view_projection_matrix_ = projection_matrix_*view_matrix_;
 }

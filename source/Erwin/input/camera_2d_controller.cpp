@@ -34,13 +34,10 @@ void OrthographicCamera2DController::update(GameClock& clock)
 
 	if(Input::is_key_pressed(WKEY::W)) // UP
 		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_up();
-
-	if(Input::is_key_pressed(WKEY::A)) // LEFT
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
-
 	if(Input::is_key_pressed(WKEY::S)) // DOWN
 		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_up();
-	
+	if(Input::is_key_pressed(WKEY::A)) // LEFT
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::D)) // RIGHT
 		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 

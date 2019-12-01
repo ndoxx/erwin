@@ -1,4 +1,5 @@
 #include "render/camera_2d.h"
+#include "core/core.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -9,6 +10,8 @@ FrustumSides::FrustumSides() {  }
 
 FrustumSides::FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_space)
 {
+	W_PROFILE_FUNCTION()
+
 	// Compute frustum corners in world space
 	glm::vec4 bl = to_world_space*glm::vec4(frustum.left, frustum.bottom, 0.f, 1.f);
 	glm::vec4 br = to_world_space*glm::vec4(frustum.right, frustum.bottom, 0.f, 1.f);
@@ -44,6 +47,8 @@ void OrthographicCamera2D::set_projection(const Frustum2D& frustum)
 
 void OrthographicCamera2D::update_view_matrix()
 {
+	W_PROFILE_FUNCTION()
+
 	transform_ = glm::translate(glm::mat4(1.f), glm::vec3(position_,0.f))
 			   * glm::rotate(glm::mat4(1.f), glm::radians(angle_), glm::vec3(0.f,0.f,1.f));
 	view_matrix_ = glm::inverse(transform_);

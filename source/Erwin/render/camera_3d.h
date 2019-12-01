@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -29,20 +30,23 @@ public:
 	PerspectiveCamera3D(const Frustum3D& frustum);
 	~PerspectiveCamera3D();
 
-	inline const glm::vec3& get_position() const	 { return position_; }
-	inline void set_position(const glm::vec3& value) { position_ = value; update_view_matrix(); }
+	inline const glm::vec3& get_position() const { return position_; }
+	inline float get_yaw() const   { return yaw_; }
+	inline float get_pitch() const { return pitch_; }
+	inline float get_roll() const  { return roll_; }
+	inline std::tuple<float,float,float> get_angles() const { return {yaw_, pitch_, roll_}; }
 
-	inline float get_pitch() const	   { return pitch_; }
-	inline void set_pitch(float value) { pitch_ = value; update_view_matrix(); }
-	inline float get_yaw() const	   { return yaw_; }
+	inline void set_position(const glm::vec3& value) { position_ = value; update_view_matrix(); }
 	inline void set_yaw(float value)   { yaw_ = value; update_view_matrix(); }
-	inline std::pair<float,float> get_angles() const { return {pitch_, yaw_}; }
-	inline void set_angles(float pitch, float yaw)   { pitch_ = pitch; yaw_ = yaw; update_view_matrix(); }
-	inline void set_parameters(const glm::vec3& position, float pitch, float yaw)
+	inline void set_pitch(float value) { pitch_ = value; update_view_matrix(); }
+	inline void set_roll(float value)  { roll_ = value; update_view_matrix(); }
+	inline void set_angles(float yaw, float pitch, float roll) { yaw_ = yaw; pitch_ = pitch; roll_ = roll; update_view_matrix(); }
+	inline void set_parameters(const glm::vec3& position, float yaw, float pitch, float roll = 0.f)
 	{
 		position_ = position;
-		pitch_ = pitch;
 		yaw_ = yaw;
+		pitch_ = pitch;
+		roll_ = roll;
 		update_view_matrix();
 	}
 
@@ -65,8 +69,9 @@ private:
 
 private:
 	Frustum3D frustum_;
-	float pitch_;
 	float yaw_;
+	float pitch_;
+	float roll_;
 	glm::vec3 position_;
 	glm::mat4 transform_;
 	glm::mat4 view_matrix_;
