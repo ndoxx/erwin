@@ -61,11 +61,11 @@ minimized_(false)
         }
         if(cfg::get<bool>("erwin.logger.track_mouse_scroll_events"_h, false))
         {
-            WLOGGER.track_event<MouseMovedEvent>();
+            WLOGGER.track_event<MouseScrollEvent>();
         }
         if(cfg::get<bool>("erwin.logger.track_mouse_moved_events"_h, false))
         {
-            WLOGGER.track_event<MouseScrollEvent>();
+            WLOGGER.track_event<MouseMovedEvent>();
         }
 
         WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));

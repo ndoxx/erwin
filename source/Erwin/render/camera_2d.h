@@ -28,11 +28,12 @@ public:
 	OrthographicCamera2D(const Frustum2D& frustum);
 	~OrthographicCamera2D();
 
-	inline const glm::vec2& get_position() const	 { return position_; }
+	inline const glm::vec2& get_position() const { return position_; }
+	inline float get_angle() const { return angle_; }
+	
 	inline void set_position(const glm::vec2& value) { position_ = value; update_view_matrix(); }
-
-	inline float get_angle() const	   { return angle_; }
 	inline void set_angle(float value) { angle_ = value; update_view_matrix(); }
+	inline void set_parameters(const glm::vec2& position, float angle) { position_ = position; angle_ = angle; update_view_matrix(); }
 
 	inline const Frustum2D& get_frustum() const 			   { return frustum_; }
 	inline const glm::mat4& get_transform() const              { return transform_; }

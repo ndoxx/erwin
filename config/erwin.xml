@@ -25,7 +25,7 @@
 	</logger>
 
 	<profiling>
-		<bool name="runtime_session_enabled" value="true"/>
+		<bool name="runtime_session_enabled" value="false"/>
 	</profiling>
 
     <display>

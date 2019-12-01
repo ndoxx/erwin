@@ -98,6 +98,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/main_renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_3d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
@@ -106,6 +107,7 @@ set(SRC_RENDERER
 
 set(SRC_INPUT
     ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_2d_controller.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_3d_controller.cpp
   )
 
 set(SRC_PLATFORM

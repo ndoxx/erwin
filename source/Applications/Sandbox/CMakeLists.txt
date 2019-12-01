@@ -1,6 +1,7 @@
 set(SRC_SANDBOX
     source/sandbox_app.cpp
     source/layer_2d.cpp
+    source/layer_3d.cpp
     source/layer_presentation.cpp
     source/layer_debug.cpp
    )
