@@ -12,6 +12,7 @@
 #include "core/config.h"
 #include "filesystem/filesystem.h"
 #include "input/camera_2d_controller.h"
+#include "input/camera_3d_controller.h"
 #include "event/event.h"
 #include "event/window_events.h"
 #include "debug/logger.h"

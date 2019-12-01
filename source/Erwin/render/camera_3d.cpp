@@ -56,9 +56,9 @@ void PerspectiveCamera3D::set_projection(const Frustum3D& frustum)
 void PerspectiveCamera3D::update_view_matrix()
 {
 	W_PROFILE_FUNCTION()
-	
+
 	transform_ = glm::translate(glm::mat4(1.f), position_)
-			   * glm::eulerAngleYXZ(yaw_, pitch_, roll_);
+			   * glm::eulerAngleYXZ(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
 	view_matrix_ = glm::inverse(transform_);
 	view_projection_matrix_ = projection_matrix_*view_matrix_;
 }
