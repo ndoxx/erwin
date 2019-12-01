@@ -40,7 +40,7 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
-	std::cout << glm::to_string(camera_ctl_.get_camera().get_view_matrix()) << std::endl;
+	// std::cout << glm::to_string(camera_ctl_.get_camera().get_view_matrix()) << std::endl;
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)

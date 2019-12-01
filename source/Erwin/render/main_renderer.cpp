@@ -204,7 +204,8 @@ struct RendererStorage
 	FramebufferHandle default_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 
-	std::map<uint32_t, RenderQueue> queues_;
+	std::vector<RenderQueue> queues_;
+	std::map<hash_t, uint32_t> queue_names_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 
 	WScope<QueryTimer> query_timer;
@@ -256,18 +257,19 @@ void MainRenderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-void MainRenderer::create_queue(uint32_t name, SortKey::Order order)
+RenderQueue& MainRenderer::create_queue(hash_t name, SortKey::Order order)
 {
-	s_storage->queues_.emplace(std::piecewise_construct,
-              				   std::forward_as_tuple(name),
-              				   std::forward_as_tuple(order, s_storage->renderer_memory_));
+	uint32_t index = s_storage->queues_.size();
+	s_storage->queues_.emplace_back(order, s_storage->renderer_memory_);
+	s_storage->queue_names_[name] = index;
+	return s_storage->queues_.back();
 }
 
-RenderQueue& MainRenderer::get_queue(uint32_t name)
+RenderQueue& MainRenderer::get_queue(hash_t name)
 {
-	auto it = s_storage->queues_.find(name);
-	W_ASSERT(it != s_storage->queues_.end(), "Unknown queue name!");
-	return it->second;
+	auto it = s_storage->queue_names_.find(name);
+	W_ASSERT(it != s_storage->queue_names_.end(), "Unknown queue name!");
+	return s_storage->queues_[it->second];
 }
 
 AuxArena& MainRenderer::get_arena()
@@ -1509,7 +1511,7 @@ void MainRenderer::flush()
 	// Dispatch pre buffer commands
 	flush_command_buffer(s_storage->pre_buffer_);
 	// Sort and flush each queue
-	for(auto&& [name, queue]: s_storage->queues_)
+	for(auto& queue: s_storage->queues_)
 	{
 		queue.sort();
 		queue.flush();

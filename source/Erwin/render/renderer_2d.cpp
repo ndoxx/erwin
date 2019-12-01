@@ -33,7 +33,6 @@ struct Renderer2DStorage
 	UniformBufferHandle pass_ubo;
 	ShaderStorageBufferHandle instance_ssbo;
 	TextureHandle white_texture;
-	FramebufferHandle raw2d_framebuffer;
 	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
@@ -99,14 +98,6 @@ void Renderer2D::init()
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
-	FramebufferLayout layout =
-	{
-		{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-	};
-	storage.raw2d_framebuffer = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
-	auto& q_opaque_2d = MainRenderer::get_queue(0);
-	q_opaque_2d.set_render_target(storage.raw2d_framebuffer);
-
 	float sq_vdata[20] = 
 	{
 		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
@@ -123,7 +114,7 @@ void Renderer2D::init()
 	storage.sq_vbl = MainRenderer::create_vertex_buffer_layout({
 			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
 								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
-								 			    });
+								 			    	});
 	storage.sq_vbo = MainRenderer::create_vertex_buffer(storage.sq_vbl, sq_vdata, 20, DrawMode::Static);
 	storage.sq_va = MainRenderer::create_vertex_array(storage.sq_vbo, storage.sq_ibo);
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
@@ -206,7 +197,7 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		auto& q_opaque_2d = MainRenderer::get_queue(0);
+		auto& q_opaque_2d = MainRenderer::get_queue("Opaque2D"_h);
 
 		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, storage.sq_va);
 		dc.set_state(storage.state_flags);

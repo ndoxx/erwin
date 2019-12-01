@@ -53,9 +53,6 @@ void PostProcessingRenderer::init()
 	storage.pp_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
 
 	MainRenderer::shader_attach_uniform_buffer(storage.pp_shader, storage.pp_ubo);
-
-	auto& q_presentation = MainRenderer::get_queue(1);
-	q_presentation.set_render_target(MainRenderer::default_render_target());
 }
 
 void PostProcessingRenderer::shutdown()
@@ -88,7 +85,7 @@ void PostProcessingRenderer::end_pass()
     W_PROFILE_FUNCTION()
     
 	// Display to screen
-	auto& q_presentation = MainRenderer::get_queue(1);
+	auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
 	// DrawCall dc(q_presentation, DrawCall::Indexed, storage.passthrough_shader, storage.sq_va);
 	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
 	dc.set_state(storage.state_flags);

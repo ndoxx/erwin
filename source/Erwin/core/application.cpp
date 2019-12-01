@@ -107,8 +107,22 @@ minimized_(false)
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
         MainRenderer::init();
-        MainRenderer::create_queue(0, SortKey::Order::ByDepthDescending); // Opaque 2D
-        MainRenderer::create_queue(1, SortKey::Order::Sequential); // Presentation
+
+        {
+            auto& q = MainRenderer::create_queue("Opaque2D"_h, SortKey::Order::ByDepthDescending); // Opaque 2D
+            FramebufferLayout layout =
+            {
+                {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+            };
+            FramebufferHandle fb = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
+            q.set_render_target(fb);
+        }
+        {
+            auto& q = MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential); // Presentation
+            q.set_render_target(MainRenderer::default_render_target());
+        }
+
+        MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential); // Presentation
         Renderer2D::init();
         PostProcessingRenderer::init();
     }

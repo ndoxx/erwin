@@ -96,8 +96,8 @@ public:
 
 	static void init();
 	static void shutdown();
-	static void create_queue(uint32_t name, SortKey::Order order);
-	static RenderQueue& get_queue(uint32_t name);
+	static RenderQueue& create_queue(hash_t name, SortKey::Order order);
+	static RenderQueue& get_queue(hash_t name);
 	static AuxArena& get_arena();
 
 	static void set_profiling_enabled(bool value=true);
