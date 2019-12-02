@@ -22,7 +22,7 @@ public:
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new Layer3D());
-		push_layer(new Layer2D());
+		// push_layer(new Layer2D());
 		push_overlay(new PresentationLayer());
 		push_overlay(new DebugLayer());
 	}

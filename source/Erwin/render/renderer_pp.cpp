@@ -15,6 +15,7 @@ struct PPStorage
 	ShaderHandle passthrough_shader;
 	ShaderHandle pp_shader;
 	FramebufferHandle raw2d_framebuffer;
+	FramebufferHandle forward_framebuffer;
 
 	uint64_t state_flags;
 	PostProcessingData pp_data;
@@ -46,6 +47,7 @@ void PostProcessingRenderer::init()
 
 	// Get handle to Renderer2D's render target
 	storage.raw2d_framebuffer = FramebufferPool::get_framebuffer("fb_2d_raw"_h);
+	storage.forward_framebuffer = FramebufferPool::get_framebuffer("fb_forward"_h);
 
 	// storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.glsl", "passthrough");
 	storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
@@ -86,10 +88,14 @@ void PostProcessingRenderer::end_pass()
     
 	// Display to screen
 	auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
-	// DrawCall dc(q_presentation, DrawCall::Indexed, storage.passthrough_shader, storage.sq_va);
-	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
+	/*DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
 	dc.set_state(storage.state_flags);
 	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(storage.raw2d_framebuffer, 0));
+	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
+	dc.submit();*/
+	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
+	dc.set_state(storage.state_flags);
+	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(storage.forward_framebuffer, 0));
 	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
 	dc.submit();
 }

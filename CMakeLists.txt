@@ -96,6 +96,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_forward.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/main_renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_3d.cpp

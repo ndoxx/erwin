@@ -11,6 +11,7 @@
 #include "render/main_renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
+#include "render/renderer_forward.h"
 
 #include <iostream>
 
@@ -109,7 +110,16 @@ minimized_(false)
         MainRenderer::init();
 
         {
-            auto& q = MainRenderer::create_queue("Opaque2D"_h, SortKey::Order::ByDepthDescending); // Opaque 2D
+            auto& q = MainRenderer::create_queue("Forward"_h, SortKey::Order::ByDepthAscending);
+            FramebufferLayout layout =
+            {
+                {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+            };
+            FramebufferHandle fb = FramebufferPool::create_framebuffer("fb_forward"_h, make_scope<FbRatioConstraint>(), layout, true);
+            q.set_render_target(fb);
+        }
+        {
+            auto& q = MainRenderer::create_queue("Opaque2D"_h, SortKey::Order::ByDepthDescending);
             FramebufferLayout layout =
             {
                 {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
@@ -118,12 +128,13 @@ minimized_(false)
             q.set_render_target(fb);
         }
         {
-            auto& q = MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential); // Presentation
+            auto& q = MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential);
             q.set_render_target(MainRenderer::default_render_target());
         }
 
         MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential); // Presentation
         Renderer2D::init();
+        ForwardRenderer::init();
         PostProcessingRenderer::init();
     }
 #endif
@@ -170,6 +181,7 @@ Application::~Application()
         FramebufferPool::shutdown();
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
+        ForwardRenderer::shutdown();
         MainRenderer::shutdown();
     }
 #endif
