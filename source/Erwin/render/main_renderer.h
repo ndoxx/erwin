@@ -62,6 +62,7 @@ enum class RenderCommand: uint16_t
 	ShaderAttachUniformBuffer,
 	ShaderAttachStorageBuffer,
 	UpdateFramebuffer,
+	ClearFramebuffers,
 
 	Post,
 
@@ -125,6 +126,7 @@ public:
 	static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
 	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
+	static void clear_framebuffers();
 	static void destroy(IndexBufferHandle handle);
 	static void destroy(VertexBufferLayoutHandle handle);
 	static void destroy(VertexBufferHandle handle);
@@ -180,6 +182,8 @@ public:
 	void flush();
 	// Clear queue
 	void reset();
+
+	inline FramebufferHandle get_render_target() const { return render_target_; }
 
 private:
 	SortKey::Order order_;

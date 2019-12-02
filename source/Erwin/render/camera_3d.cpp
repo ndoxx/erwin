@@ -65,17 +65,17 @@ void PerspectiveCamera3D::update_view_matrix()
 
 glm::vec3 PerspectiveCamera3D::get_right() const
 {
-	return glm::vec3(glm::column(view_matrix_, 0));
+	return glm::vec3(glm::column(transform_, 0));
 }
 
 glm::vec3 PerspectiveCamera3D::get_up() const
 {
-	return glm::vec3(glm::column(view_matrix_, 1));
+	return glm::vec3(glm::column(transform_, 1));
 }
 
 glm::vec3 PerspectiveCamera3D::get_forward() const
 {
-	return glm::vec3(glm::column(view_matrix_, 2));
+	return glm::vec3(glm::column(transform_, 2));
 }
 
 

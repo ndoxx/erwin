@@ -20,8 +20,8 @@ aspect_ratio_(aspect_ratio),
 fovy_(fovy),
 znear_(znear),
 zfar_(zfar),
-camera_translation_speed_(1.f),
-camera_rotation_speed_(30.f * M_PI / 180.f),
+camera_translation_speed_(2.f),
+camera_rotation_speed_(2.f * M_PI / 180.f),
 camera_yaw_(camera_.get_yaw()),
 camera_pitch_(camera_.get_pitch()),
 camera_position_(camera_.get_position())
@@ -40,20 +40,25 @@ void PerspectiveFreeflyController::update(GameClock& clock)
 	float dt = clock.get_frame_duration();
 
 	// Translation
-	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 3.f : 1.f;
+	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 5.f : 1.f;
+
+	// Front direction
+	glm::vec3 front = camera_.get_forward();
+	front.y = 0.f;
+	glm::normalize(front);
 
 	if(Input::is_key_pressed(WKEY::W)) // FORWARD
-		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_forward();
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*front;
 	if(Input::is_key_pressed(WKEY::S)) // BACKWARD
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_forward();
+		camera_position_ += dt*speed_modifier*camera_translation_speed_*front;
 	if(Input::is_key_pressed(WKEY::A)) // LEFT
 		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::D)) // RIGHT
 		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::SPACE)) // UP
-		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_up();
+		camera_position_ += dt*speed_modifier*camera_translation_speed_*glm::vec3(0.f,1.f,0.f);
 	if(Input::is_key_pressed(WKEY::LEFT_CONTROL)) // DOWN
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_up();
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*glm::vec3(0.f,1.f,0.f);
 
 	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
 }
@@ -72,6 +77,9 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 		fovy_ *= 1.05f;
 	else
 		fovy_ *= 0.95f;
+
+	fovy_ = (fovy_>170.f) ? 170.f : fovy_;
+
 	// camera_translation_speed_ = ;
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
@@ -80,11 +88,18 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 
 bool PerspectiveFreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
+	if(!Input::is_mouse_button_pressed(WMOUSE::BUTTON_0))
+	{
+		last_mouse_x_ = event.x;
+		last_mouse_y_ = event.y;
+		return false;
+	}
+
 	float dx = event.x - last_mouse_x_;
 	float dy = event.y - last_mouse_y_;
 
-	camera_yaw_ = camera_rotation_speed_ * dy;
-	camera_pitch_ = camera_rotation_speed_ * dx;
+	camera_yaw_   -= camera_rotation_speed_ * dx;
+	camera_pitch_ -= camera_rotation_speed_ * dy;
 
 	last_mouse_x_ = event.x;
 	last_mouse_y_ = event.y;

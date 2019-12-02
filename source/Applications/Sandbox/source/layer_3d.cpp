@@ -40,7 +40,25 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
-	// std::cout << glm::to_string(camera_ctl_.get_camera().get_view_matrix()) << std::endl;
+	PassState pass_state;
+	pass_state.rasterizer_state.cull_mode = CullMode::Back;
+	pass_state.blend_state = BlendState::Opaque;
+	pass_state.depth_stencil_state.depth_test_enabled = true;
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+
+	ForwardRenderer::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
+	for(float xx=-10.f; xx<=10.f; xx+=2.f)
+	{
+		for(float yy=-10.f; yy<=10.f; yy+=2.f)
+		{
+			for(float zz=-10.f; zz<=10.f; zz+=2.f)
+			{
+				float scale = 2.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
+				ForwardRenderer::draw_colored_cube({xx,yy,zz}, scale, {fabs(xx/10.f),fabs(yy/10.f),fabs(zz/10.f),1.f});
+			}
+		}
+	}
+	ForwardRenderer::end_pass();
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)

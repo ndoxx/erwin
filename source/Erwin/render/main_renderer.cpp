@@ -724,6 +724,15 @@ void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint
 	push_command(type, cmd);
 }
 
+void MainRenderer::clear_framebuffers()
+{
+	RenderCommand type = RenderCommand::ClearFramebuffers;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	push_command(type, cmd);
+}
+
 void MainRenderer::destroy(IndexBufferHandle handle)
 {
 	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
@@ -1144,6 +1153,15 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 		s_storage->textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
+void clear_framebuffers(memory::LinearBuffer<>& buf)
+{
+	for(auto& queue: s_storage->queues_)
+	{
+		s_storage->framebuffers[queue.get_render_target().index]->bind();
+		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG);
+	}
+}
+
 void nop(memory::LinearBuffer<>& buf) { }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
@@ -1260,6 +1278,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::shader_attach_uniform_buffer,
 	&dispatch::shader_attach_storage_buffer,
 	&dispatch::update_framebuffer,
+	&dispatch::clear_framebuffers,
 
 	&dispatch::nop,
 

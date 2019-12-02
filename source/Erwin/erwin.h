@@ -18,6 +18,7 @@
 #include "debug/logger.h"
 
 #include "render/renderer_2d.h"
+#include "render/renderer_forward.h"
 #include "render/renderer_pp.h"
 
 #include "imgui.h"
