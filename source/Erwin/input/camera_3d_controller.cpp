@@ -40,7 +40,7 @@ void PerspectiveFreeflyController::update(GameClock& clock)
 	float dt = clock.get_frame_duration();
 
 	// Translation
-	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 3.f : 1.f;
+	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 5.f : 1.f;
 
 	// Front direction
 	glm::vec3 front = camera_.get_forward();
@@ -77,6 +77,9 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 		fovy_ *= 1.05f;
 	else
 		fovy_ *= 0.95f;
+
+	fovy_ = (fovy_>170.f) ? 170.f : fovy_;
+
 	// camera_translation_speed_ = ;
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
@@ -96,7 +99,7 @@ bool PerspectiveFreeflyController::on_mouse_moved_event(const MouseMovedEvent& e
 	float dy = event.y - last_mouse_y_;
 
 	camera_yaw_   -= camera_rotation_speed_ * dx;
-	camera_pitch_ += camera_rotation_speed_ * dy;
+	camera_pitch_ -= camera_rotation_speed_ * dy;
 
 	last_mouse_x_ = event.x;
 	last_mouse_y_ = event.y;

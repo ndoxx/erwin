@@ -17,9 +17,13 @@ public:
 	virtual ~Application();
 
 	virtual void on_load() { }
+	virtual void on_imgui_render() { }
 
 	size_t push_layer(Layer* layer);
 	size_t push_overlay(Layer* layer);
+
+	inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
+
 	void run();
 
 	static inline Application& get_instance() { return *pinstance_; }

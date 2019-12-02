@@ -136,12 +136,13 @@ void ForwardRenderer::end_pass()
 	flush();
 }
 
-void ForwardRenderer::draw_colored_cube(const glm::vec3& position, const glm::vec2& scale, const glm::vec4& tint)
+void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, const glm::vec4& tint)
 {
 	InstanceData instance_data;
 	instance_data.tint = tint;
 	instance_data.mvp = storage.pass_ubo_data.view_projection_matrix 
-				      * glm::translate(glm::mat4(1.f), position);
+				      * glm::translate(glm::mat4(1.f), position)
+				      * glm::scale(glm::mat4(1.f), glm::vec3(scale,scale,scale));
 
 	auto& q_forward = MainRenderer::get_queue("Forward"_h);
 	DrawCall dc(q_forward, DrawCall::Indexed, storage.forward_shader, storage.cube_va);

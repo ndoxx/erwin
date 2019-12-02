@@ -47,11 +47,17 @@ void Layer3D::on_update(GameClock& clock)
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 
 	ForwardRenderer::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
-	for(float xx=-10; xx<10; xx+=2)
-		for(float yy=-10; yy<10; yy+=2)
-			for(float zz=-10; zz<10; zz+=2)
-				ForwardRenderer::draw_colored_cube({xx,yy,zz}, {1.f,1.f}, {fabs(xx/10.f),fabs(yy/10.f),fabs(zz/10.f),1.f});
-	// ForwardRenderer::draw_colored_cube({0.f,0.f,-2.f}, {1.f,1.f}, {0.8f,0.2f,0.5f,1.f});
+	for(float xx=-10.f; xx<=10.f; xx+=2.f)
+	{
+		for(float yy=-10.f; yy<=10.f; yy+=2.f)
+		{
+			for(float zz=-10.f; zz<=10.f; zz+=2.f)
+			{
+				float scale = 2.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
+				ForwardRenderer::draw_colored_cube({xx,yy,zz}, scale, {fabs(xx/10.f),fabs(yy/10.f),fabs(zz/10.f),1.f});
+			}
+		}
+	}
 	ForwardRenderer::end_pass();
 }
 

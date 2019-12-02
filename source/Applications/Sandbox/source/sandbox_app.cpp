@@ -22,9 +22,13 @@ public:
 
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new Layer3D());
-		// push_layer(new Layer2D());
-		push_overlay(new PresentationLayer());
+		push_layer(new Layer2D());
+		presentation_layer_ = new PresentationLayer();
+		push_overlay(presentation_layer_);
 		push_overlay(new DebugLayer());
+
+	    set_layer_enabled(0, layer3d_enabled_);
+	    set_layer_enabled(1, layer2d_enabled_);
 	}
 
 	~Sandbox() = default;
@@ -37,6 +41,30 @@ public:
 
 		return false;
 	}
+
+	void on_imgui_render()
+	{
+	    ImGui::Begin("Layers");
+	    	if(ImGui::Checkbox("3D Forward", &layer3d_enabled_))
+	    	{
+	    		set_layer_enabled(0, layer3d_enabled_);
+	    		presentation_layer_->enable_forward_rendering(layer3d_enabled_);
+	    		MainRenderer::clear_framebuffers();
+	    	}
+	    	if(ImGui::Checkbox("2D Batched", &layer2d_enabled_))
+	    	{
+	    		set_layer_enabled(1, layer2d_enabled_);
+	    		presentation_layer_->enable_2d_rendering(layer2d_enabled_);
+	    		MainRenderer::clear_framebuffers();
+	    	}
+	    ImGui::End();
+	}
+
+private:
+	bool layer3d_enabled_ = true;
+	bool layer2d_enabled_ = false;
+
+	PresentationLayer* presentation_layer_;
 };
 
 Application* erwin::create_application()

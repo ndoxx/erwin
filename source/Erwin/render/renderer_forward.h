@@ -22,7 +22,7 @@ public:
 	// End a pass
 	static void end_pass();
 	// Draw a colored cube.
-	static void draw_colored_cube(const glm::vec3& position, const glm::vec2& scale, const glm::vec4& tint=glm::vec4(1.f));
+	static void draw_colored_cube(const glm::vec3& position, float scale, const glm::vec4& tint=glm::vec4(1.f));
 	// Force current batch to be pushed to render queue
 	static void flush();
 

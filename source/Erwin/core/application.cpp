@@ -248,6 +248,7 @@ void Application::run()
     		IMGUI_LAYER->begin();
     		for(auto* layer: layer_stack_)
     			layer->on_imgui_render();
+            this->on_imgui_render();
     		IMGUI_LAYER->end();
         }
 
