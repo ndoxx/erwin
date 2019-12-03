@@ -113,5 +113,21 @@ std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs)
 	return stream;
 }
 
+template <>
+bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event)
+{
+	bool handled = false;
+	for(auto it=layers_.end(); it!=layers_.begin();)
+	{
+		Layer* layer = *--it;
+		if(layer->on_event(event))
+		{
+			handled = true;
+			break;
+		}
+	}
+
+    return false;//handled;
+}
 
 } // namespace erwin

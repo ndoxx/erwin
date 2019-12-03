@@ -1,6 +1,7 @@
 #include <map>
 
 #include "render/renderer_2d.h"
+#include "render/common_geometry.h"
 #include "core/config.h"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -25,10 +26,6 @@ struct Batch2D
 
 struct Renderer2DStorage
 {
-	IndexBufferHandle sq_ibo;
-	VertexBufferLayoutHandle sq_vbl;
-	VertexBufferHandle sq_vbo;
-	VertexArrayHandle sq_va;
 	ShaderHandle batch_2d_shader;
 	UniformBufferHandle pass_ubo;
 	ShaderStorageBufferHandle instance_ssbo;
@@ -98,25 +95,8 @@ void Renderer2D::init()
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
-	float sq_vdata[20] = 
-	{
-		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
-		 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-		-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
-	};
-	uint32_t index_data[6] = { 0, 1, 2, 2, 3, 0 };
-
 	// storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
 	storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
-
-	storage.sq_ibo = MainRenderer::create_index_buffer(index_data, 6, DrawPrimitive::Triangles);
-	storage.sq_vbl = MainRenderer::create_vertex_buffer_layout({
-			    				 			    	{"a_position"_h, ShaderDataType::Vec3},
-								 			    	{"a_uv"_h,       ShaderDataType::Vec2},
-								 			    	});
-	storage.sq_vbo = MainRenderer::create_vertex_buffer(storage.sq_vbl, sq_vdata, 20, DrawMode::Static);
-	storage.sq_va = MainRenderer::create_vertex_array(storage.sq_vbo, storage.sq_ibo);
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
 	storage.instance_ssbo = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 	
@@ -138,10 +118,6 @@ void Renderer2D::shutdown()
 	MainRenderer::destroy(storage.white_texture);
 	MainRenderer::destroy(storage.instance_ssbo);
 	MainRenderer::destroy(storage.pass_ubo);
-	MainRenderer::destroy(storage.sq_va);
-	MainRenderer::destroy(storage.sq_vbo);
-	MainRenderer::destroy(storage.sq_vbl);
-	MainRenderer::destroy(storage.sq_ibo);
 	MainRenderer::destroy(storage.batch_2d_shader);
 }
 
@@ -199,7 +175,7 @@ static void flush_batch(Batch2D& batch)
 	{
 		auto& q_opaque_2d = MainRenderer::get_queue("Opaque2D"_h);
 
-		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, storage.sq_va);
+		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.state_flags);
 		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4));
 		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);

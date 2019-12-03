@@ -1,5 +1,6 @@
 #include "render/renderer_forward.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "render/common_geometry.h"
 
 namespace erwin
 {
@@ -17,10 +18,6 @@ struct InstanceData
 
 struct ForwardRenderer3DStorage
 {
-	IndexBufferHandle cube_ibo;
-	VertexBufferLayoutHandle cube_vbl;
-	VertexBufferHandle cube_vbo;
-	VertexArrayHandle cube_va;
 	ShaderHandle forward_shader;
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
@@ -42,58 +39,8 @@ void ForwardRenderer::init()
 
 	storage.num_draw_calls = 0;
 
-	float cube_vdata[24*3] = 
-	{
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f,  0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f
-	};
-	uint32_t index_data[12*3] =
-	{
-		0,  1,  2,
-		0,  2,  3,
-		4,  5,  6,
-		4,  6,  7,
-		8,  9,  10,
-		8,  10, 11,
-		12, 13, 14,
-		12, 14, 15,
-		16, 17, 18,
-		16, 18, 19,
-		20, 21, 22,
-		20, 22, 23
-	};
-
 	storage.forward_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_shader.glsl", "forward_shader");
 	// storage.forward_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_shader.spv", "forward_shader");
-
-	storage.cube_ibo = MainRenderer::create_index_buffer(index_data, 12*3, DrawPrimitive::Triangles);
-	storage.cube_vbl = MainRenderer::create_vertex_buffer_layout({
-			    				 			    	{"a_position"_h, ShaderDataType::Vec3}
-								 			    	});
-	storage.cube_vbo = MainRenderer::create_vertex_buffer(storage.cube_vbl, cube_vdata, 24*3, DrawMode::Static);
-	storage.cube_va = MainRenderer::create_vertex_array(storage.cube_vbo, storage.cube_ibo);
 	storage.instance_ubo = MainRenderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	
@@ -105,10 +52,6 @@ void ForwardRenderer::shutdown()
 {
 	MainRenderer::destroy(storage.forward_shader);
 	MainRenderer::destroy(storage.instance_ubo);
-	MainRenderer::destroy(storage.cube_va);
-	MainRenderer::destroy(storage.cube_vbo);
-	MainRenderer::destroy(storage.cube_vbl);
-	MainRenderer::destroy(storage.cube_ibo);
 }
 
 void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera3D& camera, uint8_t layer_id)
@@ -146,7 +89,7 @@ void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, 
 				      * glm::scale(glm::mat4(1.f), glm::vec3(scale,scale,scale));
 
 	auto& q_forward = MainRenderer::get_queue("Forward"_h);
-	DrawCall dc(q_forward, DrawCall::Indexed, storage.forward_shader, storage.cube_va);
+	DrawCall dc(q_forward, DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
 	dc.set_state(storage.state_flags);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData));
 	dc.set_key_depth(position.z, storage.layer_id);

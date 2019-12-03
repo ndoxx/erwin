@@ -8,6 +8,7 @@
 #include "input/input.h"
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
+#include "render/common_geometry.h"
 #include "render/main_renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
@@ -108,6 +109,8 @@ minimized_(false)
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
         MainRenderer::init();
+        // Create common geometry
+        CommonGeometry::init();
 
         {
             auto& q = MainRenderer::create_queue("Forward"_h, SortKey::Order::ByDepthAscending);
@@ -182,6 +185,7 @@ Application::~Application()
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
         ForwardRenderer::shutdown();
+        CommonGeometry::shutdown();
         MainRenderer::shutdown();
     }
 #endif

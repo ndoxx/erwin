@@ -58,8 +58,6 @@ void OrthographicCamera2DController::update(GameClock& clock)
 		camera_angle_ = 0.f;
 
 	// * Update camera
-	// camera_.set_position(camera_position_);
-	// camera_.set_angle(camera_angle_);
 	camera_.set_parameters(camera_position_, camera_angle_);
 }
 

@@ -62,5 +62,9 @@ private:
 	size_t overlay_pos_;
 };
 
+// Specialization to force propagation of window resize events even
+// if layer is disabled (to avoid shape stretching glitch on layer re-enabling)
+template <>
+bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event);
 
 } // namespace erwin
