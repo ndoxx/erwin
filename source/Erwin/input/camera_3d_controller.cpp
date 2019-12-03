@@ -28,7 +28,7 @@ camera_yaw_(camera_.get_yaw()),
 camera_pitch_(camera_.get_pitch()),
 camera_position_(camera_.get_position())
 {
-	std::tie(last_mouse_x_, last_mouse_y_) = Input::get_mouse_position();
+	//std::tie(last_mouse_x_, last_mouse_y_) = Input::get_mouse_position();
 }
 
 PerspectiveFreeflyController::~PerspectiveFreeflyController()
@@ -67,6 +67,8 @@ void PerspectiveFreeflyController::update(GameClock& clock)
 
 bool PerspectiveFreeflyController::on_window_resize_event(const WindowResizeEvent& event)
 {
+	win_width_ = event.width;
+	win_height_ = event.height;
 	aspect_ratio_ = event.width/float(event.height);
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
@@ -87,23 +89,27 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 	return false;
 }
 
+bool PerspectiveFreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
+{
+	if(event.button == WMOUSE::BUTTON_0 && event.pressed)
+	{
+		Input::show_cursor(false);
+		Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
+	}
+	if(event.button == WMOUSE::BUTTON_0 && !event.pressed)
+		Input::show_cursor(true);
+	return false;
+}
+
 bool PerspectiveFreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
 	if(!Input::is_mouse_button_pressed(WMOUSE::BUTTON_0))
-	{
-		last_mouse_x_ = event.x;
-		last_mouse_y_ = event.y;
 		return false;
-	}
 
-	float dx = event.x - last_mouse_x_;
-	float dy = event.y - last_mouse_y_;
+	camera_yaw_   -= camera_rotation_speed_ * (event.x-0.5f*win_width_);
+	camera_pitch_ -= camera_rotation_speed_ * (event.y-0.5f*win_height_);
 
-	camera_yaw_   -= camera_rotation_speed_ * dx;
-	camera_pitch_ -= camera_rotation_speed_ * dy;
-
-	last_mouse_x_ = event.x;
-	last_mouse_y_ = event.y;
+	Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
 
 	return false;
 }

@@ -63,6 +63,9 @@ void Layer3D::on_update(GameClock& clock)
 
 bool Layer3D::on_event(const MouseButtonEvent& event)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse) // TODO: Handle this automatically for all layers
+		camera_ctl_.on_mouse_button_event(event);
 	return false;
 }
 
@@ -74,12 +77,16 @@ bool Layer3D::on_event(const WindowResizeEvent& event)
 
 bool Layer3D::on_event(const MouseScrollEvent& event)
 {
-	camera_ctl_.on_mouse_scroll_event(event);
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse) // TODO: Handle this automatically for all layers
+		camera_ctl_.on_mouse_scroll_event(event);
 	return false;
 }
 
 bool Layer3D::on_event(const MouseMovedEvent& event)
 {
-	camera_ctl_.on_mouse_moved_event(event);
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse) // TODO: Handle this automatically for all layers
+		camera_ctl_.on_mouse_moved_event(event);
 	return false;
 }

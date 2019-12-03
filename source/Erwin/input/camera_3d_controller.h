@@ -21,6 +21,7 @@ public:
 	bool on_window_resize_event(const WindowResizeEvent& event);
 	bool on_mouse_scroll_event(const MouseScrollEvent& event);
 	bool on_mouse_moved_event(const MouseMovedEvent& event);
+	bool on_mouse_button_event(const MouseButtonEvent& event);
 
 private:
 	PerspectiveCamera3D camera_;
@@ -32,8 +33,8 @@ private:
 	float camera_rotation_speed_;
 	float camera_yaw_;
 	float camera_pitch_;
-	float last_mouse_x_;
-	float last_mouse_y_;
+	float win_width_;
+	float win_height_;
 	glm::vec3 camera_position_;
 };
 
