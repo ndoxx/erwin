@@ -2,6 +2,8 @@
 #include "input/input.h"
 #include "debug/logger.h"
 
+#include "glm/gtx/string_cast.hpp"
+
 namespace erwin
 {
 
@@ -21,7 +23,7 @@ fovy_(fovy),
 znear_(znear),
 zfar_(zfar),
 camera_translation_speed_(2.f),
-camera_rotation_speed_(2.f * M_PI / 180.f),
+camera_rotation_speed_(3.f * M_PI / 180.f),
 camera_yaw_(camera_.get_yaw()),
 camera_pitch_(camera_.get_pitch()),
 camera_position_(camera_.get_position())
@@ -48,9 +50,9 @@ void PerspectiveFreeflyController::update(GameClock& clock)
 	glm::normalize(front);
 
 	if(Input::is_key_pressed(WKEY::W)) // FORWARD
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*front;
-	if(Input::is_key_pressed(WKEY::S)) // BACKWARD
 		camera_position_ += dt*speed_modifier*camera_translation_speed_*front;
+	if(Input::is_key_pressed(WKEY::S)) // BACKWARD
+		camera_position_ -= dt*speed_modifier*camera_translation_speed_*front;
 	if(Input::is_key_pressed(WKEY::A)) // LEFT
 		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::D)) // RIGHT
@@ -80,7 +82,6 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 
 	fovy_ = (fovy_>170.f) ? 170.f : fovy_;
 
-	// camera_translation_speed_ = ;
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
 	return false;

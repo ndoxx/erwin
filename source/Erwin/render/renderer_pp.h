@@ -52,7 +52,7 @@ public:
 	static void shutdown();
 
 	static void begin_pass(const PassState& state, const PostProcessingData& pp_data);
-	static void blit(FramebufferHandle framebuffer);
+	static void blit(hash_t framebuffer, uint32_t index=0);
 	static void end_pass();
 };
 

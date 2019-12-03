@@ -54,7 +54,7 @@ void Layer3D::on_update(GameClock& clock)
 			for(float zz=-10.f; zz<=10.f; zz+=2.f)
 			{
 				float scale = 2.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
-				ForwardRenderer::draw_colored_cube({xx,yy,zz}, scale, {fabs(xx/10.f),fabs(yy/10.f),fabs(zz/10.f),1.f});
+				ForwardRenderer::draw_colored_cube({xx,yy,zz}, scale, {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
 			}
 		}
 	}

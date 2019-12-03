@@ -14,8 +14,6 @@ struct PPStorage
 
 	ShaderHandle passthrough_shader;
 	ShaderHandle pp_shader;
-	// FramebufferHandle raw2d_framebuffer;
-	// FramebufferHandle forward_framebuffer;
 
 	uint64_t state_flags;
 	PostProcessingData pp_data;
@@ -44,10 +42,6 @@ void PostProcessingRenderer::init()
 	storage.sq_va = MainRenderer::create_vertex_array(storage.sq_vbo, storage.sq_ibo);
 
 	storage.pp_ubo  = MainRenderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), DrawMode::Dynamic);
-
-	// Get handle to Renderer2D's render target
-	// storage.raw2d_framebuffer = FramebufferPool::get_framebuffer("fb_2d_raw"_h);
-	// storage.forward_framebuffer = FramebufferPool::get_framebuffer("fb_forward"_h);
 
 	// storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.glsl", "passthrough");
 	storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
@@ -78,42 +72,24 @@ void PostProcessingRenderer::begin_pass(const PassState& state, const PostProces
 
 	// Set post processing data
 	storage.pp_data = pp_data;
-	storage.pp_data.fb_size = {FramebufferPool::get_width("fb_2d_raw"_h),
-				  	   		   FramebufferPool::get_height("fb_2d_raw"_h)};
 }
 
-void PostProcessingRenderer::blit(FramebufferHandle framebuffer)
+void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
 {
     W_PROFILE_FUNCTION()
+	storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
     
 	auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
 	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
 	dc.set_state(storage.state_flags);
-	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(framebuffer, 0));
+	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
 	dc.submit();
 }
 
 void PostProcessingRenderer::end_pass()
 {
-    W_PROFILE_FUNCTION()
-    
-	// Display to screen
-	/*auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
-	{
-		DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
-		dc.set_state(storage.state_flags);
-		dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(storage.raw2d_framebuffer, 0));
-		dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
-		dc.submit();
-	}
-	{
-		DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, storage.sq_va);
-		dc.set_state(storage.state_flags);
-		dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(storage.forward_framebuffer, 0));
-		dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
-		dc.submit();
-	}*/
+
 }
 
 

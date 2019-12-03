@@ -88,9 +88,9 @@ void PresentationLayer::on_update(GameClock& clock)
 	pp_pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 	PostProcessingRenderer::begin_pass(pp_pass_state, pp_data_);
 	if(enable_2d_batched_)
-		PostProcessingRenderer::blit(FramebufferPool::get_framebuffer("fb_2d_raw"_h));
+		PostProcessingRenderer::blit("fb_2d_raw"_h);
 	if(enable_3d_forward_)
-		PostProcessingRenderer::blit(FramebufferPool::get_framebuffer("fb_forward"_h));
+		PostProcessingRenderer::blit("fb_forward"_h);
 	PostProcessingRenderer::end_pass();
 }
 

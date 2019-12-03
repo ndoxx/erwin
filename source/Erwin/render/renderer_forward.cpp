@@ -23,7 +23,7 @@ struct ForwardRenderer3DStorage
 	VertexArrayHandle cube_va;
 	ShaderHandle forward_shader;
 	UniformBufferHandle instance_ubo;
-	// UniformBufferHandle pass_ubo;
+	UniformBufferHandle pass_ubo;
 
 	PassUBOData pass_ubo_data;
 
@@ -95,10 +95,10 @@ void ForwardRenderer::init()
 	storage.cube_vbo = MainRenderer::create_vertex_buffer(storage.cube_vbl, cube_vdata, 24*3, DrawMode::Static);
 	storage.cube_va = MainRenderer::create_vertex_array(storage.cube_vbo, storage.cube_ibo);
 	storage.instance_ubo = MainRenderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
-	// storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	
 	MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.instance_ubo);
-	// MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.pass_ubo);
+	MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.pass_ubo);
 }
 
 void ForwardRenderer::shutdown()
@@ -118,6 +118,7 @@ void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera
 	// Reset stats
 	storage.num_draw_calls = 0;
 
+	// Pass state
 	storage.state_flags = state.encode();
 	storage.layer_id = layer_id;
 
@@ -126,7 +127,7 @@ void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera
 	storage.view_matrix = camera.get_view_matrix();
 	storage.frustum_planes = camera.get_frustum_planes();
 
-	// MainRenderer::update_uniform_buffer(storage.pass_ubo, &storage.pass_ubo_data, sizeof(PassUBOData));
+	MainRenderer::update_uniform_buffer(storage.pass_ubo, &storage.pass_ubo_data, sizeof(PassUBOData));
 }
 
 void ForwardRenderer::end_pass()

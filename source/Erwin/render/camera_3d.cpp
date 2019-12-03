@@ -75,7 +75,7 @@ glm::vec3 PerspectiveCamera3D::get_up() const
 
 glm::vec3 PerspectiveCamera3D::get_forward() const
 {
-	return glm::vec3(glm::column(transform_, 2));
+	return -glm::vec3(glm::column(transform_, 2)); // Forward vector towards negative z values
 }
 
 
