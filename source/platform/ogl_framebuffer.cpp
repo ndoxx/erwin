@@ -2,6 +2,8 @@
 #include "platform/ogl_texture.h"
 #include "debug/logger.h"
 
+#include "stb/stb_image_write.h"
+
 #include "glad/glad.h"
 
 namespace erwin
@@ -118,6 +120,30 @@ const Texture2D& OGLFramebuffer::get_named_texture(hash_t name)
 uint32_t OGLFramebuffer::get_texture_count()
 {
     return textures_.size();
+}
+
+void OGLFramebuffer::screenshot(const std::string& filepath)
+{
+    DLOGN("render") << "[Framebuffer] Saving screenshot:" << std::endl;
+
+    // Allocate buffer for image data
+    unsigned char* pixels = new unsigned char[width_ * height_ * 4];
+
+    // Retrieve pixel data
+    glFinish();
+    glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1); // Change alignment to 1 to avoid out of bounds writes,
+    glReadPixels(0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Write to png file
+    stbi_write_png(filepath.c_str(), width_, height_, 4, pixels, width_ * 4);
+
+    // Cleanup
+    delete[] pixels;
+
+    DLOGI << WCC('p') << filepath << std::endl;
 }
 
 void OGLFramebuffer::framebuffer_error_report()

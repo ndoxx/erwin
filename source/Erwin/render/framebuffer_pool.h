@@ -58,6 +58,8 @@ public:
 	static void shutdown();
 	// Get a framebuffer handle by name
 	static FramebufferHandle get_framebuffer(hash_t name);
+	// Check if a framebuffer has a depth texture attached
+	static bool has_depth(hash_t name);
 	// Get framebuffer dimensions
 	static uint32_t get_width(hash_t name);
 	static uint32_t get_height(hash_t name);

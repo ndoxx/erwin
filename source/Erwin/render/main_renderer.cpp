@@ -744,6 +744,23 @@ void MainRenderer::clear_framebuffers()
 	auto& cmdbuf = get_command_buffer(type).storage;
 	void* cmd = cmdbuf.head();
 
+	cmdbuf.write(&type);
+	
+	push_command(type, cmd);
+}
+
+void MainRenderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath)
+{
+	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
+
+	RenderCommand type = RenderCommand::FramebufferScreenshot;
+	auto& cmdbuf = get_command_buffer(type).storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&type);
+	cmdbuf.write(&fb);
+	cmdbuf.write_str(filepath.string());
+
 	push_command(type, cmd);
 }
 
@@ -1178,6 +1195,18 @@ void clear_framebuffers(memory::LinearBuffer<>& buf)
 
 void nop(memory::LinearBuffer<>& buf) { }
 
+void framebuffer_screenshot(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_FUNCTION()
+
+    FramebufferHandle handle;
+	std::string filepath;
+	buf.read(&handle);
+	buf.read_str(filepath);
+
+	s_storage->framebuffers[handle.index]->screenshot(filepath);
+}
+
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_FUNCTION()
@@ -1296,6 +1325,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 
 	&dispatch::nop,
 
+	&dispatch::framebuffer_screenshot,
 	&dispatch::destroy_index_buffer,
 	&dispatch::destroy_vertex_buffer_layout,
 	&dispatch::destroy_vertex_buffer,

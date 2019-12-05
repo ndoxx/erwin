@@ -31,6 +31,7 @@ enum PeekFlags: uint32_t
 	TONE_MAP = 1,
 	SPLIT_ALPHA = 2,
 	INVERT = 4,
+	DEPTH = 8,
 };
 
 struct PeekData
@@ -39,6 +40,7 @@ struct PeekData
 	float split_pos = 0.5f;
 	glm::vec2 texel_size;
 	glm::vec4 channel_filter;
+	glm::vec4 projection_parameters;
 };
 
 struct TexturePeekStorage
@@ -95,14 +97,31 @@ void TexturePeek::register_framebuffer(const std::string& framebuffer_name)
 {
 	hash_t hframebuffer = H_(framebuffer_name.c_str());
 	FramebufferHandle fb = FramebufferPool::get_framebuffer(hframebuffer);
+	bool has_depth = FramebufferPool::has_depth(hframebuffer);
 	uint32_t ntex = MainRenderer::get_framebuffer_texture_count(fb);
 	uint32_t pane_index = new_pane(framebuffer_name);
+
+	if(has_depth)
+		--ntex;
+
 	for(uint32_t ii=0; ii<ntex; ++ii)
 	{
 		TextureHandle texture_handle = MainRenderer::get_framebuffer_texture(fb, ii);
 		std::string tex_name = framebuffer_name + std::to_string(ii);
 		register_texture(pane_index, texture_handle, tex_name, false);
 	}
+
+	if(has_depth)
+	{
+		TextureHandle texture_handle = MainRenderer::get_framebuffer_texture(fb, ntex);
+		std::string tex_name = framebuffer_name + "_depth";
+		register_texture(pane_index, texture_handle, tex_name, true);
+	}
+}
+
+void TexturePeek::set_projection_parameters(const glm::vec4& proj_params)
+{
+	s_storage.peek_data_.projection_parameters = proj_params;
 }
 
 void TexturePeek::render()
@@ -110,15 +129,18 @@ void TexturePeek::render()
     if(s_storage.panes_.size() == 0)
     	return;
 
-    TextureHandle current_texture = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_].texture;
+    DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
+    TextureHandle current_texture = props.texture;
     
     // Update UBO data
     s_storage.peek_data_.texel_size = FramebufferPool::get_texel_size("fb_texture_view"_h);
     s_storage.peek_data_.flags = (s_storage.tone_map_ ? PeekFlags::TONE_MAP : PeekFlags::NONE)
     						   | (s_storage.invert_color_ ? PeekFlags::INVERT : PeekFlags::NONE)
-    						   | (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE);
+    						   | (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE)
+    						   | (props.is_depth ? PeekFlags::DEPTH : PeekFlags::NONE);
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
 
+    // Submit draw call
 	PassState pass_state;
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
@@ -157,24 +179,26 @@ void TexturePeek::on_imgui_render()
     ImGui::SliderInt("Texture", &s_storage.current_tex_, 0, ntex-1);
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
     ImGui::Text("name: %s", props.name.c_str());
-
-    ImGui::NextColumn();
-    ImGui::Checkbox("Tone mapping", &s_storage.tone_map_);
-    ImGui::SameLine(); ImGui::Checkbox("R##0", &s_storage.show_r_);
-    ImGui::SameLine(); ImGui::Checkbox("G##0", &s_storage.show_g_);
-    ImGui::SameLine(); ImGui::Checkbox("B##0", &s_storage.show_b_);
-    ImGui::SameLine(); ImGui::Checkbox("Invert", &s_storage.invert_color_);
     ImGui::SameLine();
     if(ImGui::Button("Save to file"))
         s_storage.save_image_ = true;
-
-
-    ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);
-    if(s_storage.split_alpha_)
+    
+    if(!props.is_depth)
     {
-        ImGui::SameLine();
-        ImGui::SliderFloat("Split pos.", &s_storage.peek_data_.split_pos, 0.f, 1.f);
-    }
+	    ImGui::NextColumn();
+	    ImGui::Checkbox("Tone mapping", &s_storage.tone_map_);
+	    ImGui::SameLine(); ImGui::Checkbox("R##0", &s_storage.show_r_);
+	    ImGui::SameLine(); ImGui::Checkbox("G##0", &s_storage.show_g_);
+	    ImGui::SameLine(); ImGui::Checkbox("B##0", &s_storage.show_b_);
+	    ImGui::SameLine(); ImGui::Checkbox("Invert", &s_storage.invert_color_);
+
+	    ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);
+	    if(s_storage.split_alpha_)
+	    {
+	        ImGui::SameLine();
+	        ImGui::SliderFloat("Split pos.", &s_storage.peek_data_.split_pos, 0.f, 1.f);
+	    }
+	}
 
     ImGui::EndChild();
 
@@ -192,17 +216,12 @@ void TexturePeek::on_imgui_render()
                                          ImVec2(0, 1), ImVec2(1, 0));
 
     // * Save image if needed
-    /*if(s_storage.save_image_)
+    if(s_storage.save_image_)
     {
-        Gfx::device->finish();
-        std::string filename = props.sampler_name + "_" + std::to_string(props.texture_index) + ".png";
-        if(save_fb_to_image(filename))
-            DLOGN("[DebugOverlayRenderer] Saved engine texture to file:", "core");
-        else
-            DLOGE("[DebugOverlayRenderer] Unable to save engine texture to file:", "core");
-        DLOGI("<p>" + filename + "</p>", "core");
+        std::string filename = props.name + ".png";
+        MainRenderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
-    }*/
+    }
 
     ImGui::End();
 }

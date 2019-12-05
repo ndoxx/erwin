@@ -6,6 +6,7 @@
 
 #include "erwin.h"
 
+#include "debug/texture_peek.h"
 #include "memory/memory_utils.h"
 #include "glm/gtx/string_cast.hpp"
 
@@ -23,7 +24,7 @@ void Layer3D::on_imgui_render()
 
 void Layer3D::on_attach()
 {
-
+	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 }
 
 void Layer3D::on_detach()
@@ -74,6 +75,7 @@ bool Layer3D::on_event(const MouseButtonEvent& event)
 bool Layer3D::on_event(const WindowResizeEvent& event)
 {
 	camera_ctl_.on_window_resize_event(event);
+	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	return false;
 }
 

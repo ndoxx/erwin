@@ -66,6 +66,8 @@ enum class RenderCommand: uint16_t
 
 	Post,
 
+	FramebufferScreenshot,
+
 	DestroyIndexBuffer,
 	DestroyVertexBufferLayout,
 	DestroyVertexBuffer,
@@ -132,6 +134,8 @@ public:
 	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
 	static void clear_framebuffers();
+
+	static void framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
 	static void destroy(IndexBufferHandle handle);
 	static void destroy(VertexBufferLayoutHandle handle);
 	static void destroy(VertexBufferHandle handle);

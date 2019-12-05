@@ -61,6 +61,7 @@ public:
 	glm::vec3 get_right() const;
 	glm::vec3 get_up() const;
 	glm::vec3 get_forward() const;
+	glm::vec4 get_projection_parameters() const;
 
 	inline FrustumPlanes get_frustum_planes() const { return FrustumPlanes(frustum_, transform_); }
 

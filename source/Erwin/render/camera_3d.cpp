@@ -78,5 +78,14 @@ glm::vec3 PerspectiveCamera3D::get_forward() const
 	return -glm::vec3(glm::column(transform_, 2)); // Forward vector towards negative z values
 }
 
+glm::vec4 PerspectiveCamera3D::get_projection_parameters() const
+{
+    const glm::mat4& P = projection_matrix_;
+    return {1.0f/P[0][0], 
+    		1.0f/P[1][1], 
+    		P[2][2]-1.0f, 
+    		P[2][3]};
+}
+
 
 } // namespace erwin

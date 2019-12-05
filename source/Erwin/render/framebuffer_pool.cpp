@@ -6,10 +6,16 @@
 namespace erwin
 {
 
+struct FramebufferProperties
+{
+	bool has_depth;
+};
+
 struct FramebufferPoolStorage
 {
 	std::map<hash_t, FramebufferHandle> framebuffers_;
 	std::map<hash_t, WScope<FbConstraint>> constraints_;
+	std::map<hash_t, FramebufferProperties> properties_;
 
 	uint32_t current_width_;
 	uint32_t current_height_;
@@ -61,6 +67,13 @@ FramebufferHandle FramebufferPool::get_framebuffer(hash_t name)
 	return it->second;
 }
 
+bool FramebufferPool::has_depth(hash_t name)
+{
+	auto it = s_storage.properties_.find(name);
+	W_ASSERT(it != s_storage.properties_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second.has_depth;
+}
+
 uint32_t FramebufferPool::get_width(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
@@ -105,6 +118,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	FramebufferHandle handle = MainRenderer::create_framebuffer(width, height, depth, stencil, layout);
 	s_storage.framebuffers_.insert(std::make_pair(name, handle));
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
+	s_storage.properties_.insert(std::make_pair(name, FramebufferProperties{depth}));
 
 	return handle;
 }

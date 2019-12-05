@@ -24,27 +24,34 @@ layout(std140, binding = 1) uniform peek_layout
 	float u_split_pos;
 	vec2 u_texel_size;
 	vec4 u_channel_filter;
+	vec4 u_proj_params;
 };
 
 #define FLAG_TONE_MAP     1
 #define FLAG_SPLIT_ALPHA  2
 #define FLAG_INVERT       4
+#define FLAG_DEPTH        8
 
-/*void main()
+float depth_view_from_tex(in sampler2D depthTex, in vec2 texCoords, in vec2 projParams)
 {
-	out_color = texture(us_input, v_uv);
-}*/
+    // Get screen space depth at coords
+    float depth_raw = texture2D(depthTex, texCoords).r;
+    // Convert to NDC depth (*2-1) and add P(2,2)
+    float depth_ndc_offset = depth_raw * 2.0f + projParams.x;
+    // Return positive linear depth
+    return projParams.y / depth_ndc_offset;
+}
 
 void main()
 {
-    /*if(b_isDepth)
+    if(bool(u_flags & FLAG_DEPTH))
     {
-        float linearDepth = depth_view_from_tex(us_input, texCoord, v4_proj_params.zw);
+        float linearDepth = depth_view_from_tex(us_input, v_uv, u_proj_params.zw);
         float depthRemapped = linearDepth / (linearDepth + 1.0);
         out_color = vec4(depthRemapped,depthRemapped,depthRemapped,1.f);
     }
     else
-    {*/
+    {
         // "screen" texture is a floating point color buffer
         vec4 sampleColor = texture(us_input, v_uv);
 
@@ -75,5 +82,5 @@ void main()
         }
 
         out_color = vec4(sampleColor.rgb, 1.f);
-    //}
+    }
 }
