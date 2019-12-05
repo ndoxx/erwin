@@ -1,0 +1,210 @@
+#include "debug/texture_peek.h"
+#include "debug/logger.h"
+#include "core/core.h"
+#include "render/main_renderer.h"
+#include "render/common_geometry.h"
+#include "imgui.h"
+
+#include <vector>
+#include <map>
+#include <iostream>
+
+namespace erwin
+{
+
+struct DebugTextureProperties
+{
+	TextureHandle texture;
+	bool is_depth;
+	std::string name;
+};
+
+struct DebugPane
+{
+	std::string name;
+	std::vector<DebugTextureProperties> properties;
+};
+
+enum PeekFlags: uint32_t
+{
+	NONE = 0,
+	TONE_MAP = 1,
+	SPLIT_ALPHA = 2,
+	INVERT = 4,
+};
+
+struct PeekData
+{
+	uint32_t flags = 0;
+	float split_pos = 0.5f;
+	glm::vec2 texel_size;
+	glm::vec4 channel_filter;
+};
+
+struct TexturePeekStorage
+{
+	std::vector<DebugPane> panes_;
+	int current_pane_;
+    int current_tex_;
+    bool tone_map_;
+    bool show_r_;
+    bool show_g_;
+    bool show_b_;
+    bool invert_color_;
+    bool split_alpha_;
+	bool save_image_;
+
+	ShaderHandle peek_shader_;
+	UniformBufferHandle pass_ubo_;
+
+	PeekData peek_data_;
+};
+static TexturePeekStorage s_storage;
+
+void TexturePeek::init()
+{
+	// Create resources
+	s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
+	// s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
+	s_storage.pass_ubo_ = MainRenderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), DrawMode::Dynamic);
+	MainRenderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
+
+	// Initialize GUI
+	s_storage.current_pane_ = 0;
+	s_storage.current_tex_ = 0;
+	s_storage.save_image_ = false;
+	s_storage.show_r_ = true;
+	s_storage.show_g_ = true;
+	s_storage.show_b_ = true;
+}
+
+uint32_t TexturePeek::new_pane(const std::string& name)
+{
+	uint32_t pane_index = s_storage.panes_.size();
+	s_storage.panes_.push_back(DebugPane{name});
+	return pane_index;
+}
+
+void TexturePeek::register_texture(uint32_t pane_index, TextureHandle texture, const std::string& name, bool is_depth)
+{
+	W_ASSERT(pane_index < s_storage.panes_.size(), "Pane index out of bounds.");
+	s_storage.panes_[pane_index].properties.push_back({texture, is_depth, name});
+}
+
+void TexturePeek::register_framebuffer(const std::string& framebuffer_name)
+{
+	hash_t hframebuffer = H_(framebuffer_name.c_str());
+	FramebufferHandle fb = FramebufferPool::get_framebuffer(hframebuffer);
+	uint32_t ntex = MainRenderer::get_framebuffer_texture_count(fb);
+	uint32_t pane_index = new_pane(framebuffer_name);
+	for(uint32_t ii=0; ii<ntex; ++ii)
+	{
+		TextureHandle texture_handle = MainRenderer::get_framebuffer_texture(fb, ii);
+		std::string tex_name = framebuffer_name + std::to_string(ii);
+		register_texture(pane_index, texture_handle, tex_name, false);
+	}
+}
+
+void TexturePeek::render()
+{
+    if(s_storage.panes_.size() == 0)
+    	return;
+
+    TextureHandle current_texture = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_].texture;
+    
+    // Update UBO data
+    s_storage.peek_data_.texel_size = FramebufferPool::get_texel_size("fb_texture_view"_h);
+    s_storage.peek_data_.flags = (s_storage.tone_map_ ? PeekFlags::TONE_MAP : PeekFlags::NONE)
+    						   | (s_storage.invert_color_ ? PeekFlags::INVERT : PeekFlags::NONE)
+    						   | (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE);
+    s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
+
+	PassState pass_state;
+	pass_state.rasterizer_state.cull_mode = CullMode::Back;
+	pass_state.blend_state = BlendState::Opaque;
+	pass_state.depth_stencil_state.depth_test_enabled = false;
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+
+	auto& q_texture_view = MainRenderer::get_queue("TexturePeek"_h);
+	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
+	dc.set_state(pass_state.encode());
+	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));
+	dc.set_texture("us_input"_h, current_texture);
+	dc.submit();
+}
+
+void TexturePeek::on_imgui_render()
+{
+    if(s_storage.panes_.size() == 0)
+    	return;
+
+    if(!ImGui::Begin("Texture peek"))
+    {
+        ImGui::End();
+        return;
+    }
+
+    // * Get render properties from GUI
+    ImGui::BeginChild("##peekctl", ImVec2(0, 3*ImGui::GetItemsLineHeightWithSpacing()));
+    ImGui::Columns(2, nullptr, false);
+
+    if(ImGui::SliderInt("Panel", &s_storage.current_pane_, 0, s_storage.panes_.size()-1))
+    {
+        s_storage.current_tex_ = 0;
+    }
+    int ntex = s_storage.panes_[s_storage.current_pane_].properties.size();
+
+    ImGui::SliderInt("Texture", &s_storage.current_tex_, 0, ntex-1);
+    DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
+    ImGui::Text("name: %s", props.name.c_str());
+
+    ImGui::NextColumn();
+    ImGui::Checkbox("Tone mapping", &s_storage.tone_map_);
+    ImGui::SameLine(); ImGui::Checkbox("R##0", &s_storage.show_r_);
+    ImGui::SameLine(); ImGui::Checkbox("G##0", &s_storage.show_g_);
+    ImGui::SameLine(); ImGui::Checkbox("B##0", &s_storage.show_b_);
+    ImGui::SameLine(); ImGui::Checkbox("Invert", &s_storage.invert_color_);
+    ImGui::SameLine();
+    if(ImGui::Button("Save to file"))
+        s_storage.save_image_ = true;
+
+
+    ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);
+    if(s_storage.split_alpha_)
+    {
+        ImGui::SameLine();
+        ImGui::SliderFloat("Split pos.", &s_storage.peek_data_.split_pos, 0.f, 1.f);
+    }
+
+    ImGui::EndChild();
+
+    // * Show image in window
+    float winx = std::max(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - 8.f, 0.f);
+    float winy = std::max(ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - 8.f, 0.f);
+
+	// Retrieve the native framebuffer texture handle
+	FramebufferHandle fb = FramebufferPool::get_framebuffer("fb_texture_view"_h);
+	TextureHandle texture = MainRenderer::get_framebuffer_texture(fb, 0);
+	void* framebuffer_texture_native = MainRenderer::get_native_texture_handle(texture);
+    ImGui::GetWindowDrawList()->AddImage(framebuffer_texture_native,
+                                         ImGui::GetCursorScreenPos(),
+                                         ImVec2(winx, winy),
+                                         ImVec2(0, 1), ImVec2(1, 0));
+
+    // * Save image if needed
+    /*if(s_storage.save_image_)
+    {
+        Gfx::device->finish();
+        std::string filename = props.sampler_name + "_" + std::to_string(props.texture_index) + ".png";
+        if(save_fb_to_image(filename))
+            DLOGN("[DebugOverlayRenderer] Saved engine texture to file:", "core");
+        else
+            DLOGE("[DebugOverlayRenderer] Unable to save engine texture to file:", "core");
+        DLOGI("<p>" + filename + "</p>", "core");
+        s_storage.save_image_ = false;
+    }*/
+
+    ImGui::End();
+}
+
+} // namespace erwin

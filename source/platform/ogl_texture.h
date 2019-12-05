@@ -18,6 +18,8 @@ public:
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
 
+	virtual void* get_native_handle() override;
+
 	inline uint32_t get_handle() const { return rd_handle_; }
 
 private:

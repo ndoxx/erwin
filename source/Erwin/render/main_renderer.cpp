@@ -299,6 +299,20 @@ TextureHandle MainRenderer::get_framebuffer_texture(FramebufferHandle handle, ui
 	return s_storage->framebuffer_textures_[handle.index].handles[index];
 }
 
+uint32_t MainRenderer::get_framebuffer_texture_count(FramebufferHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle.");
+	return s_storage->framebuffer_textures_[handle.index].handles.size();
+}
+
+#ifdef W_DEBUG
+void* MainRenderer::get_native_texture_handle(TextureHandle handle)
+{
+	W_ASSERT(is_valid(handle), "Invalid TextureHandle.");
+	return s_storage->textures[handle.index]->get_native_handle();
+}
+#endif
+
 /*
 		   _____                                          _     
 		  / ____|                                        | |    

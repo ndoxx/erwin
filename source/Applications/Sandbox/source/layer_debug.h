@@ -25,4 +25,6 @@ private:
 	bool frame_profiling_ = false;
 	int profile_num_frames_ = 60;
 	int frames_counter_ = 0;
+
+	bool texture_peek_ = false;
 };

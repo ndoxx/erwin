@@ -62,6 +62,7 @@ public:
 	static uint32_t get_width(hash_t name);
 	static uint32_t get_height(hash_t name);
 	static glm::vec2 get_size(hash_t name);
+	static glm::vec2 get_texel_size(hash_t name);
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);

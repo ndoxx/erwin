@@ -47,14 +47,14 @@ void Layer3D::on_update(GameClock& clock)
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 
 	ForwardRenderer::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
-	for(float xx=-10.f; xx<=10.f; xx+=2.f)
+	for(float xx=-10.f; xx<10.f; xx+=2.f)
 	{
-		for(float yy=-10.f; yy<=10.f; yy+=2.f)
+		for(float yy=-10.f; yy<10.f; yy+=2.f)
 		{
-			for(float zz=-10.f; zz<=10.f; zz+=2.f)
+			for(float zz=-10.f; zz<10.f; zz+=2.f)
 			{
 				float scale = 2.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
-				ForwardRenderer::draw_colored_cube({xx,yy,zz}, scale, {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
+				ForwardRenderer::draw_colored_cube({xx+1.f,yy+1.f,zz+1.f}, scale, {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
 			}
 		}
 	}
@@ -63,6 +63,8 @@ void Layer3D::on_update(GameClock& clock)
 
 bool Layer3D::on_event(const MouseButtonEvent& event)
 {
+	// BUG: Causes problems when screen center is within an ImGUI window
+	// Cursor stays hidden
 	ImGuiIO& io = ImGui::GetIO();
 	if(!io.WantCaptureMouse) // TODO: Handle this automatically for all layers
 		camera_ctl_.on_mouse_button_event(event);

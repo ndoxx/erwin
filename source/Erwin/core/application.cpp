@@ -4,6 +4,7 @@
 #include "core/config.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
+#include "debug/texture_peek.h"
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
 #include "filesystem/filesystem.h"
@@ -113,6 +114,7 @@ minimized_(false)
         CommonGeometry::init();
 
         {
+            DLOG("application",1) << "Creating queue: " << WCC('n') << "Forward" << std::endl;
             auto& q = MainRenderer::create_queue("Forward"_h, SortKey::Order::ByDepthAscending);
             FramebufferLayout layout =
             {
@@ -122,6 +124,7 @@ minimized_(false)
             q.set_render_target(fb);
         }
         {
+            DLOG("application",1) << "Creating queue: " << WCC('n') << "Opaque2D" << std::endl;
             auto& q = MainRenderer::create_queue("Opaque2D"_h, SortKey::Order::ByDepthDescending);
             FramebufferLayout layout =
             {
@@ -130,12 +133,27 @@ minimized_(false)
             FramebufferHandle fb = FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
             q.set_render_target(fb);
         }
+#ifdef W_DEBUG
         {
+            DLOG("application",1) << "Creating queue: " << WCC('n') << "TexturePeek" << std::endl;
+            auto& q = MainRenderer::create_queue("TexturePeek"_h, SortKey::Order::Sequential);
+            FramebufferLayout layout =
+            {
+                {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+            };
+            FramebufferHandle fb = FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), layout, true);
+            q.set_render_target(fb);
+        }
+#endif
+        {
+            DLOG("application",1) << "Creating queue: " << WCC('n') << "Presentation" << std::endl;
             auto& q = MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential);
             q.set_render_target(MainRenderer::default_render_target());
         }
-
-        MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential); // Presentation
+#ifdef W_DEBUG
+        MainRenderer::flush();
+        TexturePeek::init();
+#endif
         Renderer2D::init();
         ForwardRenderer::init();
         PostProcessingRenderer::init();

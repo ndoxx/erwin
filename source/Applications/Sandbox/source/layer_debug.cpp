@@ -1,4 +1,5 @@
 #include "layer_debug.h"
+#include "debug/texture_peek.h"
 
 #include <iostream>
 #include <iomanip>
@@ -39,7 +40,6 @@ void DebugLayer::on_imgui_render()
                 W_PROFILE_ENABLE_SESSION(true);
             }
         }
-
         if(frame_profiling_)
         {
             if(frames_counter_++ == profile_num_frames_)
@@ -49,12 +49,24 @@ void DebugLayer::on_imgui_render()
             }
         }
 #endif
+        if(ImGui::TreeNode("Debug Display"))
+        {
+            if(ImGui::Button("Texture Peek"))
+            {
+                texture_peek_ = !texture_peek_;
+            }
+        }
+        if(texture_peek_)
+            TexturePeek::on_imgui_render();
     ImGui::End();
 }
 
 void DebugLayer::on_attach()
 {
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
+
+    TexturePeek::register_framebuffer("fb_2d_raw");
+    TexturePeek::register_framebuffer("fb_forward");
 }
 
 void DebugLayer::on_detach()
@@ -64,7 +76,8 @@ void DebugLayer::on_detach()
 
 void DebugLayer::on_update(GameClock& clock)
 {
-
+    if(texture_peek_)
+        TexturePeek::render();
 }
 
 bool DebugLayer::on_event(const MouseButtonEvent& event)

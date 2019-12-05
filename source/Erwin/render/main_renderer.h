@@ -106,6 +106,11 @@ public:
 
 	static FramebufferHandle default_render_target();
 	static TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
+	static uint32_t get_framebuffer_texture_count(FramebufferHandle handle);
+
+#ifdef W_DEBUG
+	static void* get_native_texture_handle(TextureHandle handle);
+#endif
 
 	static void flush();
 

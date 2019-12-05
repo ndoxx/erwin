@@ -82,6 +82,7 @@ set(SRC_DEBUG
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/instrumentor.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/texture_peek.cpp
   )
 
 set(SRC_RENDERER
