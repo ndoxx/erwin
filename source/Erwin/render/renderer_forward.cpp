@@ -26,7 +26,7 @@ struct ForwardRenderer3DStorage
 
 	glm::mat4 view_matrix;
 	FrustumPlanes frustum_planes;
-	uint64_t state_flags;
+	PassState pass_state;
 
 	uint32_t num_draw_calls; // stats
 	uint8_t layer_id;
@@ -37,6 +37,12 @@ void ForwardRenderer::init()
 {
     W_PROFILE_FUNCTION()
 
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    FramebufferPool::create_framebuffer("fb_forward"_h, make_scope<FbRatioConstraint>(), layout, true);
+
 	storage.num_draw_calls = 0;
 
 	storage.forward_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_shader.glsl", "forward_shader");
@@ -45,7 +51,7 @@ void ForwardRenderer::init()
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	
 	MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.instance_ubo);
-	MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.pass_ubo);
+	// MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.pass_ubo);
 }
 
 void ForwardRenderer::shutdown()
@@ -62,7 +68,7 @@ void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera
 	storage.num_draw_calls = 0;
 
 	// Pass state
-	storage.state_flags = state.encode();
+	storage.pass_state = state;
 	storage.layer_id = layer_id;
 
 	// Set scene data
@@ -90,7 +96,7 @@ void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, 
 
 	auto& q_forward = MainRenderer::get_queue("Forward"_h);
 	DrawCall dc(q_forward, DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
-	dc.set_state(storage.state_flags);
+	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData));
 	dc.set_key_depth(position.z, storage.layer_id);
 	dc.submit();

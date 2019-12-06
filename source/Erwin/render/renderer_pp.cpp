@@ -11,7 +11,7 @@ struct PPStorage
 	ShaderHandle passthrough_shader;
 	ShaderHandle pp_shader;
 
-	uint64_t state_flags;
+	PassState pass_state;
 	PostProcessingData pp_data;
 };
 static PPStorage storage;
@@ -42,7 +42,7 @@ void PostProcessingRenderer::begin_pass(const PassState& state, const PostProces
 {
     W_PROFILE_FUNCTION()
 
-	storage.state_flags = state.encode();
+	storage.pass_state = state;
 
 	// Set post processing data
 	storage.pp_data = pp_data;
@@ -55,7 +55,7 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
     
 	auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
 	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
-	dc.set_state(storage.state_flags);
+	dc.set_state(storage.pass_state);
 	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
 	dc.submit();

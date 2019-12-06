@@ -35,7 +35,7 @@ struct Renderer2DStorage
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
-	uint64_t state_flags;
+	PassState pass_state;
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
@@ -91,6 +91,12 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 void Renderer2D::init()
 {
     W_PROFILE_FUNCTION()
+
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
 
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
@@ -149,7 +155,7 @@ void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& 
 	// Reset stats
 	storage.num_draw_calls = 0;
 
-	storage.state_flags = state.encode();
+	storage.pass_state = state;
 	storage.layer_id = layer_id;
 
 	// Set scene data
@@ -176,7 +182,7 @@ static void flush_batch(Batch2D& batch)
 		auto& q_opaque_2d = MainRenderer::get_queue("Opaque2D"_h);
 
 		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
-		dc.set_state(storage.state_flags);
+		dc.set_state(storage.pass_state);
 		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4));
 		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);
 		dc.set_texture("us_atlas"_h, batch.texture);

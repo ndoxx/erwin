@@ -82,6 +82,7 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
     
 	PassState pp_pass_state;
+	pp_pass_state.render_target = MainRenderer::default_render_target();
 	pp_pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pp_pass_state.blend_state = BlendState::Alpha;
 	pp_pass_state.depth_stencil_state.depth_test_enabled = false;

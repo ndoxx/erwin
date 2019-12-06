@@ -32,7 +32,7 @@ struct SortKey
 	void decode(uint64_t key);
 
 						      // -- meaning --
-	uint8_t view = 0;         // layer / viewport id
+	uint16_t view = 0;        // layer / viewport id
 	uint8_t shader = 0;       // could be "material ID" when I have a material system
 	uint32_t depth = 0;       // depth mantissa
 	uint32_t sequence = 0;    // for commands to be dispatched sequentially
@@ -117,6 +117,7 @@ public:
 	static void flush();
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
+	// PRE-BUFFER -> executed before draw commands
 	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
 	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
 	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
@@ -134,7 +135,7 @@ public:
 	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
 	static void clear_framebuffers();
-
+	// POST-BUFFER -> executed after draw commands
 	static void framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
 	static void destroy(IndexBufferHandle handle);
 	static void destroy(VertexBufferLayoutHandle handle);
@@ -181,8 +182,6 @@ public:
 	// * These functions change the queue state persistently
 	// Set clear color for associated render target
 	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
-	// Set the framebuffer this queue is going to draw to
-	void set_render_target(FramebufferHandle fb);
 	// Submit a draw call
 	void submit(const DrawCall& draw_call);
 	// Sort queue by sorting key
@@ -192,12 +191,9 @@ public:
 	// Clear queue
 	void reset();
 
-	inline FramebufferHandle get_render_target() const { return render_target_; }
-
 private:
 	SortKey::Order order_;
 	uint32_t clear_color_;
-	FramebufferHandle render_target_;
 	CommandBuffer command_buffer_;
 };
 
@@ -221,12 +217,9 @@ struct DrawCall
 
 	inline void set_state(const PassState& state)
 	{
+		W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
+		key.view = uint8_t(state.render_target.index); // TMP, will overflow if more than 255 framebuffers
 		state_flags = state.encode();
-	}
-
-	inline void set_state(uint64_t state)
-	{
-		state_flags = state;
 	}
 
 	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
@@ -257,14 +250,16 @@ struct DrawCall
 
 	inline void set_key_depth(float depth, uint8_t layer_id)
 	{
-		key.view = layer_id;
+		W_ASSERT(shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		key.view |= (layer_id<<8);
 		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
 	}
 
 	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
 	{
-		key.view = layer_id;
+		W_ASSERT(shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		key.view |= (layer_id<<8);
 		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 		key.sequence = sequence;
 	}

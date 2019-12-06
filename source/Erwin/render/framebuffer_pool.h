@@ -2,6 +2,7 @@
 
 #include <map>
 #include <cmath>
+#include <functional>
 #include "core/wtypes.h"
 #include "render/framebuffer_layout.h"
 #include "render/handles.h"
@@ -58,6 +59,8 @@ public:
 	static void shutdown();
 	// Get a framebuffer handle by name
 	static FramebufferHandle get_framebuffer(hash_t name);
+	// Visit all framebuffers
+	static void traverse_framebuffers(std::function<void(FramebufferHandle)> visitor);
 	// Check if a framebuffer has a depth texture attached
 	static bool has_depth(hash_t name);
 	// Get framebuffer dimensions

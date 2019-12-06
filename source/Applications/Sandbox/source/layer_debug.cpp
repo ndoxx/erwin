@@ -65,8 +65,8 @@ void DebugLayer::on_attach()
 {
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 
-    TexturePeek::register_framebuffer("fb_2d_raw");
     TexturePeek::register_framebuffer("fb_forward");
+    TexturePeek::register_framebuffer("fb_2d_raw");
 }
 
 void DebugLayer::on_detach()

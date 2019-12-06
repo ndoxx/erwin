@@ -3,11 +3,11 @@
 
 layout(location = 0) in vec3 in_position;
 
-layout(std140, binding = 0) uniform pass_data
+/*layout(std140, binding = 1) uniform pass_data
 {
 	mat4 u_view_projection;
-};
-layout(std140, binding = 1) uniform instance_data
+};*/
+layout(std140, binding = 0) uniform instance_data
 {
 	mat4 u_mvp;  // model-view-projection
 	vec4 u_tint; // tint
@@ -23,7 +23,7 @@ void main()
 
 layout(location = 0) out vec4 out_color;
 
-layout(std140, binding = 1) uniform instance_data
+layout(std140, binding = 0) uniform instance_data
 {
 	mat4 u_mvp;  // model-view-projection
 	vec4 u_tint; // tint

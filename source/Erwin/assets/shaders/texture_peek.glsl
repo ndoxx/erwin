@@ -35,7 +35,7 @@ layout(std140, binding = 1) uniform peek_layout
 float depth_view_from_tex(in sampler2D depthTex, in vec2 texCoords, in vec2 projParams)
 {
     // Get screen space depth at coords
-    float depth_raw = texture2D(depthTex, texCoords).r;
+    float depth_raw = texture(depthTex, texCoords).r;
     // Convert to NDC depth (*2-1) and add P(2,2)
     float depth_ndc_offset = depth_raw * 2.0f + projParams.x;
     // Return positive linear depth

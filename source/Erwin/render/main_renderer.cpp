@@ -32,7 +32,7 @@ namespace erwin
 */
 
 // Sorting key system
-constexpr uint8_t  k_view_bits       = 8;
+constexpr uint8_t  k_view_bits       = 16;
 constexpr uint8_t  k_draw_type_bits  = 2;
 constexpr uint8_t  k_shader_bits     = 8;
 constexpr uint8_t  k_depth_bits      = 32;
@@ -1186,11 +1186,11 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 
 void clear_framebuffers(memory::LinearBuffer<>& buf)
 {
-	for(auto& queue: s_storage->queues_)
+	FramebufferPool::traverse_framebuffers([](FramebufferHandle handle)
 	{
-		s_storage->framebuffers[queue.get_render_target().index]->bind();
+		s_storage->framebuffers[handle.index]->bind();
 		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG);
-	}
+	});
 }
 
 void nop(memory::LinearBuffer<>& buf) { }
@@ -1356,7 +1356,7 @@ RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
 {
-	render_target_.index = 0;
+
 }
 
 RenderQueue::~RenderQueue()
@@ -1368,11 +1368,6 @@ void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
 {
 	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
 	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
-}
-
-void RenderQueue::set_render_target(FramebufferHandle fb)
-{
-	render_target_ = fb;
 }
 
 void RenderQueue::sort()
@@ -1465,6 +1460,16 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		PassState state;
 		state.decode(dc.state_flags);
 
+		if(state.render_target == s_storage->default_framebuffer_)
+			Gfx::device->bind_default_framebuffer();
+		else
+		{
+			W_ASSERT(is_valid(state.render_target), "Invalid FramebufferHandle!");
+			s_storage->framebuffers[state.render_target.index]->bind();
+		}
+		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG); // TMP: flags will change for each queue
+
+
 		Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
 		
 		if(state.blend_state == BlendState::Alpha)
@@ -1529,15 +1534,6 @@ void RenderQueue::flush()
 
 	if(command_buffer_.count == 0)
 		return;
-
-	if(render_target_ == s_storage->default_framebuffer_)
-		Gfx::device->bind_default_framebuffer();
-	else
-	{
-		W_ASSERT(is_valid(render_target_), "Invalid FramebufferHandle!");
-		s_storage->framebuffers[render_target_.index]->bind();
-	}
-	Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG); // TMP: flags will change for each queue
 
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{

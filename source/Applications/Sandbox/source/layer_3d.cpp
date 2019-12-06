@@ -42,6 +42,7 @@ void Layer3D::on_update(GameClock& clock)
 	camera_ctl_.update(clock);
 
 	PassState pass_state;
+	pass_state.render_target = FramebufferPool::get_framebuffer("fb_forward"_h);
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
 	pass_state.depth_stencil_state.depth_test_enabled = true;

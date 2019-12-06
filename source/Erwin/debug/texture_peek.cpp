@@ -66,8 +66,14 @@ static TexturePeekStorage s_storage;
 void TexturePeek::init()
 {
 	// Create resources
-	s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
-	// s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+
+	// s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
+	s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
 	s_storage.pass_ubo_ = MainRenderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), DrawMode::Dynamic);
 	MainRenderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
 
@@ -142,6 +148,7 @@ void TexturePeek::render()
 
     // Submit draw call
 	PassState pass_state;
+	pass_state.render_target = FramebufferPool::get_framebuffer("fb_texture_view"_h);
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
 	pass_state.depth_stencil_state.depth_test_enabled = false;
@@ -149,7 +156,7 @@ void TexturePeek::render()
 
 	auto& q_texture_view = MainRenderer::get_queue("TexturePeek"_h);
 	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
-	dc.set_state(pass_state.encode());
+	dc.set_state(pass_state);
 	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));
 	dc.set_texture("us_input"_h, current_texture);
 	dc.submit();

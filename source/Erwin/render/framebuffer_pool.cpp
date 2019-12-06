@@ -67,6 +67,12 @@ FramebufferHandle FramebufferPool::get_framebuffer(hash_t name)
 	return it->second;
 }
 
+void FramebufferPool::traverse_framebuffers(std::function<void(FramebufferHandle)> visitor)
+{
+	for(auto&& [key, handle]: s_storage.framebuffers_)
+		visitor(handle);
+}
+
 bool FramebufferPool::has_depth(hash_t name)
 {
 	auto it = s_storage.properties_.find(name);
