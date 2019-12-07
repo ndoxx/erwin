@@ -215,7 +215,7 @@ struct RendererStorage
 	memory::HeapArea renderer_memory_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
-	AuxArena auxiliary_arena_;
+	MainRenderer::AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
 };
 std::unique_ptr<RendererStorage> s_storage;
@@ -275,11 +275,12 @@ RenderQueue& MainRenderer::get_queue(hash_t name)
 	return s_storage->queues_[it->second];
 }
 
-AuxArena& MainRenderer::get_arena()
+MainRenderer::AuxArena& MainRenderer::get_arena()
 {
 	return s_storage->auxiliary_arena_;
 }
 
+#ifdef W_DEBUG
 void MainRenderer::set_profiling_enabled(bool value)
 {
 	s_storage->profiling_enabled = value;
@@ -289,6 +290,7 @@ const MainRendererStats& MainRenderer::get_stats()
 {
 	return s_storage->stats;
 }
+#endif
 
 FramebufferHandle MainRenderer::default_render_target()
 {
@@ -325,45 +327,43 @@ void* MainRenderer::get_native_texture_handle(TextureHandle handle)
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
 
-// Helpers
-static void sort_commands()
+enum class RenderCommand: uint16_t
 {
-    W_PROFILE_RENDER_FUNCTION()
-	// Keys stored separately from commands to avoid touching data too
-	// much during sort calls
-    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first > item2.first;
-        });
-}
+	CreateIndexBuffer,
+	CreateVertexBufferLayout,
+	CreateVertexBuffer,
+	CreateVertexArray,
+	CreateUniformBuffer,
+	CreateShaderStorageBuffer,
+	CreateShader,
+	CreateTexture2D,
+	CreateFramebuffer,
 
-inline CommandBuffer& get_command_buffer(MainRenderer::Phase phase)
-{
-	switch(phase)
-	{
-		case MainRenderer::Phase::Pre:  return s_storage->pre_buffer_;
-		case MainRenderer::Phase::Post: return s_storage->post_buffer_;
-	}
-}
+	UpdateIndexBuffer,
+	UpdateVertexBuffer,
+	UpdateUniformBuffer,
+	UpdateShaderStorageBuffer,
+	ShaderAttachUniformBuffer,
+	ShaderAttachStorageBuffer,
+	UpdateFramebuffer,
+	ClearFramebuffers,
 
-inline CommandBuffer& get_command_buffer(RenderCommand command)
-{
-	MainRenderer::Phase phase = (command < RenderCommand::Post) ? MainRenderer::Phase::Pre : MainRenderer::Phase::Post;
-	return get_command_buffer(phase);
-}
+	Post,
 
-inline void push_command(RenderCommand type, void* cmd)
-{
-	auto& cmdbuf = get_command_buffer(type);
-	uint64_t key = ~uint64_t(cmdbuf.count);
-	cmdbuf.entries[cmdbuf.count++] = {key, cmd};
-}
+	FramebufferScreenshot,
+
+	DestroyIndexBuffer,
+	DestroyVertexBufferLayout,
+	DestroyVertexBuffer,
+	DestroyVertexArray,
+	DestroyUniformBuffer,
+	DestroyShaderStorageBuffer,
+	DestroyShader,
+	DestroyTexture2D,
+	DestroyFramebuffer,
+
+	Count
+};
 
 // Helper class for command buffer access
 class CommandWriter
@@ -378,19 +378,29 @@ public:
 	}
 
 	template <typename T>
-	inline void write(T* source)
-	{
-		cmdbuf_.storage.write(source);
-	}
-	inline void write_str(const std::string& str)
-	{
-		cmdbuf_.storage.write_str(str);
-	}
+	inline void write(T* source)                  { cmdbuf_.storage.write(source); }
+	inline void write_str(const std::string& str) { cmdbuf_.storage.write_str(str); }
 
 	inline void submit()
 	{
 		uint64_t key = ~uint64_t(cmdbuf_.count);
 		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
+	}
+
+private:
+	inline CommandBuffer& get_command_buffer(MainRenderer::Phase phase)
+	{
+		switch(phase)
+		{
+			case MainRenderer::Phase::Pre:  return s_storage->pre_buffer_;
+			case MainRenderer::Phase::Post: return s_storage->post_buffer_;
+		}
+	}
+
+	inline CommandBuffer& get_command_buffer(RenderCommand command)
+	{
+		MainRenderer::Phase phase = (command < RenderCommand::Post) ? MainRenderer::Phase::Pre : MainRenderer::Phase::Post;
+		return get_command_buffer(phase);
 	}
 
 private:
@@ -586,6 +596,7 @@ FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t heig
 	for(uint32_t ii=0; ii<tex_count; ++ii)
 	{
 		TextureHandle tex_handle = { s_storage->handles_[TextureHandleT]->acquire() };
+		W_ASSERT(is_valid(tex_handle), "No more free handle in handle pool.");
 		texture_vector.handles.push_back(tex_handle);
 	}
 	s_storage->framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
@@ -1272,12 +1283,6 @@ RenderQueue::~RenderQueue()
 
 }
 
-void RenderQueue::set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A)
-{
-	clear_color_ = (R << 0) + (G << 8) + (B << 16) + (A << 24);
-	Gfx::device->set_clear_color(R/255.f, G/255.f, B/255.f, A/255.f);
-}
-
 void RenderQueue::sort()
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1303,6 +1308,18 @@ void RenderQueue::submit(const DrawCall& dc)
 	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
 	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
 
+	void* ubo_data = nullptr;
+	void* ssbo_data = nullptr;
+	if(dc.UBO_data)
+	{
+		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
+		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
+	}
+	if(dc.SSBO_data)
+	{
+		ssbo_data = dc.SSBO_data;
+	}
+
 	auto& cmdbuf = command_buffer_.storage;
 	void* cmd = cmdbuf.head();
 
@@ -1319,17 +1336,6 @@ void RenderQueue::submit(const DrawCall& dc)
 	cmdbuf.write(&dc.offset);
 	cmdbuf.write(&dc.sampler);
 	cmdbuf.write(&dc.texture);
-	void* ubo_data = nullptr;
-	void* ssbo_data = nullptr;
-	if(dc.UBO_data)
-	{
-		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
-		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
-	}
-	if(dc.SSBO_data)
-	{
-		ssbo_data = dc.SSBO_data;
-	}
 	cmdbuf.write(&ubo_data);
 	cmdbuf.write(&ssbo_data);
 
@@ -1465,6 +1471,9 @@ void RenderQueue::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
 
+    // Set clear color
+    Gfx::device->set_clear_color(clear_color_.r, clear_color_.g, clear_color_.b, clear_color_.a);
+
     // Execute all draw commands in command buffer
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
@@ -1488,6 +1497,23 @@ static void flush_command_buffer(CommandBuffer& cmdbuf)
 		(*backend_dispatch[type])(cmdbuf.storage);
 	}
 	cmdbuf.reset();
+}
+
+static void sort_commands()
+{
+    W_PROFILE_RENDER_FUNCTION()
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
+    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first > item2.first;
+        });
 }
 
 void MainRenderer::flush()

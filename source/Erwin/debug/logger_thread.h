@@ -108,12 +108,14 @@ protected:
 	template <typename EventT>
 	bool log_event(const EventT& event)
 	{
+#ifdef W_DEBUG
 		if(event_filter_[ctti::type_id<EventT>()])
 		{
 			std::stringstream ss;
 			ss << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
 			enqueue(LogStatement{"event"_h, dbg::MsgType::EVENT, event.timestamp, 0, 0, "", ss.str()});
 		}
+#endif
         return false;
 	}
 

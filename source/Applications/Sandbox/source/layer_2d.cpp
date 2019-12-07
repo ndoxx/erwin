@@ -20,16 +20,17 @@ Layer2D::Layer2D(): Layer("2DLayer"), camera_ctl_(1280.f/1024.f, 1.f)
 void Layer2D::on_imgui_render()
 {
     ImGui::Begin("BatchRenderer2D");
+#ifdef W_DEBUG
     	if(ImGui::Checkbox("Profile", &enable_profiling_))
     		MainRenderer::set_profiling_enabled(enable_profiling_);
 
     	ImGui::Separator();
-
+#endif
         ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
     	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
     	ImGui::Checkbox("Trippy mode", &trippy_mode_);
     ImGui::End();
-
+#ifdef W_DEBUG
     if(enable_profiling_)
     {
     	static uint32_t s_frame_cnt = 0;
@@ -47,6 +48,7 @@ void Layer2D::on_imgui_render()
             }
     	ImGui::End();
     }
+#endif
 /*
 	// BUG#2 tracking
 	static uint32_t s_frame = 0;
@@ -123,7 +125,7 @@ void Layer2D::on_update(GameClock& clock)
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
 	pass_state.depth_stencil_state.depth_test_enabled = true;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
 	// Draw a grid of quads
 	Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());

@@ -86,7 +86,7 @@ void PresentationLayer::on_update(GameClock& clock)
 	pp_pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pp_pass_state.blend_state = BlendState::Alpha;
 	pp_pass_state.depth_stencil_state.depth_test_enabled = false;
-	pp_pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pp_pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 	PostProcessingRenderer::begin_pass(pp_pass_state, pp_data_);
 	if(enable_2d_batched_)
 		PostProcessingRenderer::blit("fb_2d_raw"_h);

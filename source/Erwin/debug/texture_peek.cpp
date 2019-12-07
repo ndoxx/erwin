@@ -132,6 +132,7 @@ void TexturePeek::set_projection_parameters(const glm::vec4& proj_params)
 
 void TexturePeek::render()
 {
+#ifdef W_DEBUG
     if(s_storage.panes_.size() == 0)
     	return;
 
@@ -152,7 +153,7 @@ void TexturePeek::render()
 	pass_state.rasterizer_state.cull_mode = CullMode::Back;
 	pass_state.blend_state = BlendState::Opaque;
 	pass_state.depth_stencil_state.depth_test_enabled = false;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
+	pass_state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 
 	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
 	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
@@ -160,10 +161,12 @@ void TexturePeek::render()
 	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));
 	dc.set_texture("us_input"_h, current_texture);
 	dc.submit();
+#endif
 }
 
 void TexturePeek::on_imgui_render()
 {
+#ifdef W_DEBUG
     if(s_storage.panes_.size() == 0)
     	return;
 
@@ -231,6 +234,7 @@ void TexturePeek::on_imgui_render()
     }
 
     ImGui::End();
+#endif
 }
 
 } // namespace erwin

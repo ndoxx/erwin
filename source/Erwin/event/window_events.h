@@ -10,10 +10,12 @@ struct WindowCloseEvent: public WEvent
 {
 	EVENT_NAME(WindowCloseEvent)
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "(void)";
     }
+#endif
 };
 
 struct WindowResizeEvent: public WEvent
@@ -27,10 +29,12 @@ struct WindowResizeEvent: public WEvent
 
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "new size: " << width << "x" << height;
     }
+#endif
 
     int width;
     int height;
@@ -47,10 +51,12 @@ struct FramebufferResizeEvent: public WEvent
 
     }
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "new size: " << width << "x" << height;
     }
+#endif
 
     int width;
     int height;
@@ -69,6 +75,7 @@ struct KeyboardEvent: public WEvent
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << (pressed ? "PRE " : "REL ");
@@ -82,6 +89,7 @@ struct KeyboardEvent: public WEvent
                    << (repeat ? " (r)" : "");
         }
     }
+#endif
 
     keymap::WKEY key;
     uint8_t mods;
@@ -99,10 +107,12 @@ struct KeyTypedEvent: public WEvent
 
     }
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << codepoint;
     }
+#endif
 
     unsigned int codepoint;
 };
@@ -117,11 +127,13 @@ struct MouseButtonEvent: public WEvent
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << (pressed ? "PRE " : "REL ");
         stream << keymap::modifier_string(mods) << keymap::MB_NAMES.at(button) << " @ (" << x << "," << y << ")";
     }
+#endif
 
     keymap::WMOUSE button;
     uint8_t mods;
@@ -140,10 +152,12 @@ struct MouseMovedEvent: public WEvent
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "cursor " << " @ (" << x << "," << y << ")";
     }
+#endif
 
     float x;
     float y;
@@ -159,10 +173,12 @@ struct MouseScrollEvent: public WEvent
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "(" << x_offset << "," << y_offset << ")";
     }
+#endif
 
     float x_offset;
     float y_offset;

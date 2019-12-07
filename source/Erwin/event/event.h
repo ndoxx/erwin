@@ -163,6 +163,10 @@ private:
 
 #define EVENTBUS EventBus::Instance()
 
-#define EVENT_NAME(C) virtual std::string get_name() const override { return #C; }
+#ifdef W_DEBUG
+    #define EVENT_NAME(C) virtual std::string get_name() const override { return #C; }
+#else
+    #define EVENT_NAME(C)
+#endif
 
 } // namespace erwin

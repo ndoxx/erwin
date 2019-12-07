@@ -43,50 +43,6 @@ struct MainRendererStats
 	float render_time = 0.f;
 };
 
-enum class RenderCommand: uint16_t
-{
-	CreateIndexBuffer,
-	CreateVertexBufferLayout,
-	CreateVertexBuffer,
-	CreateVertexArray,
-	CreateUniformBuffer,
-	CreateShaderStorageBuffer,
-	CreateShader,
-	CreateTexture2D,
-	CreateFramebuffer,
-
-	UpdateIndexBuffer,
-	UpdateVertexBuffer,
-	UpdateUniformBuffer,
-	UpdateShaderStorageBuffer,
-	ShaderAttachUniformBuffer,
-	ShaderAttachStorageBuffer,
-	UpdateFramebuffer,
-	ClearFramebuffers,
-
-	Post,
-
-	FramebufferScreenshot,
-
-	DestroyIndexBuffer,
-	DestroyVertexBufferLayout,
-	DestroyVertexBuffer,
-	DestroyVertexArray,
-	DestroyUniformBuffer,
-	DestroyShaderStorageBuffer,
-	DestroyShader,
-	DestroyTexture2D,
-	DestroyFramebuffer,
-
-	Count
-};
-
-typedef memory::MemoryArena<memory::LinearAllocator, 
-		    				memory::policy::SingleThread, 
-		    				memory::policy::NoBoundsChecking,
-		    				memory::policy::NoMemoryTagging,
-		    				memory::policy::NoMemoryTracking> AuxArena;
-
 class RenderQueue;
 class MainRenderer
 {
@@ -96,6 +52,11 @@ public:
 		Pre,
 		Post
 	};
+	typedef memory::MemoryArena<memory::LinearAllocator, 
+			    				memory::policy::SingleThread, 
+			    				memory::policy::NoBoundsChecking,
+			    				memory::policy::NoMemoryTagging,
+			    				memory::policy::NoMemoryTracking> AuxArena;
 
 	static void init();
 	static void shutdown();
@@ -103,15 +64,14 @@ public:
 	static RenderQueue& get_queue(hash_t name);
 	static AuxArena& get_arena();
 
-	static void set_profiling_enabled(bool value=true);
-	static const MainRendererStats& get_stats();
-
 	static FramebufferHandle default_render_target();
 	static TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
 	static uint32_t get_framebuffer_texture_count(FramebufferHandle handle);
 
 #ifdef W_DEBUG
 	static void* get_native_texture_handle(TextureHandle handle);
+	static void set_profiling_enabled(bool value=true);
+	static const MainRendererStats& get_stats();
 #endif
 
 	static void flush();
@@ -180,8 +140,8 @@ public:
 	~RenderQueue();
 
 	// * These functions change the queue state persistently
-	// Set clear color for associated render target
-	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
+	// Set clear color for this queue
+	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
 	// Submit a draw call
 	void submit(const DrawCall& draw_call);
 	// Sort queue by sorting key
@@ -193,7 +153,7 @@ public:
 
 private:
 	SortKey::Order order_;
-	uint32_t clear_color_;
+	glm::vec4 clear_color_;
 	CommandBuffer command_buffer_;
 };
 
@@ -221,6 +181,7 @@ struct DrawCall
 		W_ASSERT(is_valid(state.render_target), "Invalid FramebufferHandle!");
 		key.view = uint8_t(state.render_target.index); // TMP, will overflow if more than 255 framebuffers
 		state_flags = state.encode();
+		queue.set_clear_color(state.rasterizer_state.clear_color);
 	}
 
 	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)

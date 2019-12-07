@@ -25,8 +25,6 @@ protected:
 
 private:
 	float tt_ = 0.f;
-	bool enable_profiling_ = false;
-
 	bool enable_3d_forward_ = true;
 	bool enable_2d_batched_ = false;
 
