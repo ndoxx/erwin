@@ -99,7 +99,7 @@ public:
 
 	static void init();
 	static void shutdown();
-	static RenderQueue& create_queue(hash_t name, SortKey::Order order);
+	static RenderQueue& create_queue(const std::string& name, SortKey::Order order);
 	static RenderQueue& get_queue(hash_t name);
 	static AuxArena& get_arena();
 
@@ -218,6 +218,7 @@ struct DrawCall
 	inline void set_state(const PassState& state)
 	{
 		W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
+		W_ASSERT(is_valid(state.render_target), "Invalid FramebufferHandle!");
 		key.view = uint8_t(state.render_target.index); // TMP, will overflow if more than 255 framebuffers
 		state_flags = state.encode();
 	}

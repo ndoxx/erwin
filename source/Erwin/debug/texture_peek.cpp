@@ -154,7 +154,7 @@ void TexturePeek::render()
 	pass_state.depth_stencil_state.depth_test_enabled = false;
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,1.f);
 
-	auto& q_texture_view = MainRenderer::get_queue("TexturePeek"_h);
+	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
 	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
 	dc.set_state(pass_state);
 	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));

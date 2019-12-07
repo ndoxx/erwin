@@ -25,11 +25,6 @@ enum class ShaderType: uint8_t
 
 class Texture2D;
 
-struct ShaderStateCache
-{
-	static W_ID bound_shader;
-};
-
 class Shader
 {
 public:
@@ -42,25 +37,10 @@ public:
 	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) { return false; }
 	// Initialize shader from SPIR-V file
 	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) { return false; }
-
 	// Use this program
-	inline void bind() const
-	{
-		if(ShaderStateCache::bound_shader!=unique_id_)
-		{
-			ShaderStateCache::bound_shader = unique_id_;
-			bind_impl();
-		}
-	}
+	virtual void bind() const = 0;
 	// Stop using this program
-	inline void unbind() const
-	{
-		ShaderStateCache::bound_shader = 0;
-		unbind_impl();
-	}
-
-	virtual void bind_impl() const = 0;
-	virtual void unbind_impl() const = 0;
+	virtual void unbind() const = 0;
 	// Get texture slot associated to hash sampler name (uniform name)
 	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
 	// Attach a texture to a sampler without having to manipulate solts

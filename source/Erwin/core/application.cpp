@@ -113,16 +113,12 @@ minimized_(false)
         // Create common geometry
         CommonGeometry::init();
 
-        DLOG("application",1) << "Creating queue: " << WCC('n') << "Forward" << std::endl;
-        MainRenderer::create_queue("Forward"_h, SortKey::Order::ByDepthAscending);
-        DLOG("application",1) << "Creating queue: " << WCC('n') << "Opaque2D" << std::endl;
-        MainRenderer::create_queue("Opaque2D"_h, SortKey::Order::ByDepthDescending);
+        MainRenderer::create_queue("Forward", SortKey::Order::ByDepthAscending);
+        MainRenderer::create_queue("Opaque2D", SortKey::Order::ByDepthDescending);
 #ifdef W_DEBUG
-        DLOG("application",1) << "Creating queue: " << WCC('n') << "TexturePeek" << std::endl;
-        MainRenderer::create_queue("TexturePeek"_h, SortKey::Order::Sequential);
+        MainRenderer::create_queue("Debug2D", SortKey::Order::Sequential);
 #endif
-        DLOG("application",1) << "Creating queue: " << WCC('n') << "Presentation" << std::endl;
-        MainRenderer::create_queue("Presentation"_h, SortKey::Order::Sequential);
+        MainRenderer::create_queue("Presentation", SortKey::Order::Sequential);
 #ifdef W_DEBUG
         TexturePeek::init();
 #endif
