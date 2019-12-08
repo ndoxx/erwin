@@ -179,9 +179,8 @@ struct DrawCall
 	{
 		W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
 		W_ASSERT(is_valid(state.render_target), "Invalid FramebufferHandle!");
-		key.view = uint8_t(state.render_target.index); // TMP, will overflow if more than 255 framebuffers
+		key.view = uint8_t(state.render_target.index);
 		state_flags = state.encode();
-		queue.set_clear_color(state.rasterizer_state.clear_color);
 	}
 
 	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)

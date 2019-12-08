@@ -156,6 +156,7 @@ void TexturePeek::render()
 	pass_state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 
 	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
+	q_texture_view.set_clear_color(pass_state.rasterizer_state.clear_color); // TMP
 	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
 	dc.set_state(pass_state);
 	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));

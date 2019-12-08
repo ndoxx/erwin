@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+	<Options>
+		<BlobCompression>DEFLATE</BlobCompression>
+		<AllowGrouping>true</AllowGrouping>
+	</Options>
+
+	<TextureMaps>
+		<TextureMap name="albedo"    channels="4" compression="DXT5" filter_min="NEAREST" filter_mag="NEAREST" srgb="true"/>
+		<TextureMap name="normal"    channels="3" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false"/>
+		<TextureMap name="depth"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="metal"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="roughness" channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="ao"        channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		
+		<Group name="normal_depth" compression="DXT3" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+			<TextureMap name="normal"/>
+			<TextureMap name="depth"/>
+		</Group>
+		<Group name="mra" compression="DXT1" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+			<TextureMap name="metal"/>
+			<TextureMap name="roughness"/>
+			<TextureMap name="ao"/>
+		</Group>
+	</TextureMaps>
+</Config>

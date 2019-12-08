@@ -70,6 +70,7 @@ void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera
 	// Pass state
 	storage.pass_state = state;
 	storage.layer_id = layer_id;
+	MainRenderer::get_queue("Forward"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.pass_ubo_data.view_projection_matrix = camera.get_view_projection_matrix();

@@ -43,6 +43,7 @@ void PostProcessingRenderer::begin_pass(const PassState& state, const PostProces
     W_PROFILE_FUNCTION()
 
 	storage.pass_state = state;
+	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set post processing data
 	storage.pp_data = pp_data;

@@ -157,6 +157,7 @@ void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& 
 
 	storage.pass_state = state;
 	storage.layer_id = layer_id;
+	MainRenderer::get_queue("Opaque2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
