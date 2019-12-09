@@ -8,9 +8,10 @@
 #include "layer_2d.h"
 #include "layer_presentation.h"
 #include "layer_debug.h"
+#include "game.h"
 
 using namespace erwin;
-
+using namespace puyo;
 
 class Puyo: public Application
 {
@@ -19,14 +20,19 @@ public:
 	{
 		EVENTBUS.subscribe(this, &Puyo::on_keyboard_event);
 
-		filesystem::set_asset_dir("source/Applications/Puyo/assets");
+		filesystem::set_asset_dir("source/Applications/PoliPuyo/assets");
 		push_layer(new Layer2D());
 		presentation_layer_ = new PresentationLayer();
 		push_overlay(presentation_layer_);
 		push_overlay(new DebugLayer());
+
+		Game::init();
 	}
 
-	~Puyo() = default;
+	~Puyo()
+	{
+		Game::shutdown();
+	}
 
 	bool on_keyboard_event(const KeyboardEvent& e)
 	{

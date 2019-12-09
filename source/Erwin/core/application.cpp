@@ -115,6 +115,7 @@ minimized_(false)
 
         MainRenderer::create_queue("Forward", SortKey::Order::ByDepthAscending);
         MainRenderer::create_queue("Opaque2D", SortKey::Order::ByDepthDescending);
+        MainRenderer::create_queue("Transparent2D", SortKey::Order::ByDepthAscending);
 #ifdef W_DEBUG
         MainRenderer::create_queue("Debug2D", SortKey::Order::Sequential);
 #endif

@@ -10,23 +10,41 @@
 
 // using namespace erwin;
 
-static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
+#include "../Applications/PoliPuyo/source/dungeon.h"
+using namespace puyo;
+
+void show_dungeon(std::ostream& stream, const Dungeon& dungeon)
 {
-	return ((state^old_state)&mask) > 0;
+	for(int yy=dungeon.get_height()-1; yy>=0; --yy)
+	{
+		for(int xx=0; xx<dungeon.get_width(); ++xx)
+		{
+			const Cell& cell = dungeon.get_cell(xx,yy);
+			stream << "[" << (int)cell.type << "," << (int)cell.connectivity << "]";
+		}
+		stream << std::endl;
+	}
 }
 
 int main(int argc, char** argv)
 {
-	uint64_t A  = 0b01101011;
-	uint64_t B  = 0b01011011;
-	uint64_t C  = 0b01101011;
-	uint64_t M1 = 0b11110000;
-	uint64_t M2 = 0b00001111;
+	std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<uint8_t> dist5(1,5);
 
-	std::cout << has_mutated(A,C,M1) << std::endl;
-	std::cout << has_mutated(A,C,M2) << std::endl;
-	std::cout << has_mutated(A,B,M1) << std::endl;
-	std::cout << has_mutated(A,B,M2) << std::endl;
+	uint32_t w = 7, h = 16;
+	Dungeon dungeon(w,h);
+	for(int xx=0; xx<w; ++xx)
+	{
+		for(int yy=0; yy<h; ++yy)
+		{
+			dungeon.get_cell(xx,yy).type = dist5(rng);
+		}
+	}
+
+	dungeon.update_connectivity();
+
+	show_dungeon(std::cout, dungeon);
 
 	return 0;
 }

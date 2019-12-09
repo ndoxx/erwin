@@ -136,7 +136,8 @@ void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
 		case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
 		case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
 	}
-	uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
+	uint8_t filter = MAG_NEAREST | MIN_NEAREST;
+	// uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
 	// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
 	atlas.handle = MainRenderer::create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
@@ -180,9 +181,10 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		auto& q_opaque_2d = MainRenderer::get_queue("Opaque2D"_h);
+		bool transparent = (storage.pass_state.blend_state == BlendState::Alpha);
+		auto& q = MainRenderer::get_queue(transparent ? "Transparent2D"_h : "Opaque2D"_h);
 
-		DrawCall dc(q_opaque_2d, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+		DrawCall dc(q, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.pass_state);
 		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4));
 		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);

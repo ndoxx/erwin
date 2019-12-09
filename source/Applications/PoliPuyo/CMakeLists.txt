@@ -1,5 +1,7 @@
 set(SRC_PUYO
     source/puyo_app.cpp
+    source/dungeon.cpp
+    source/game.cpp
     source/layer_2d.cpp
     source/layer_presentation.cpp
     source/layer_debug.cpp
