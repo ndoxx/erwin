@@ -24,8 +24,6 @@ private:
 	OrthographicCamera2DController camera_ctl_;
 	TextureAtlas connectivity_atlas_;
 	TextureAtlas dungeon_atlas_;
-	std::vector<hash_t> con_tiles_;
-	std::vector<hash_t> dun_tiles_;
 	float tt_ = 0.f;
 	bool enable_profiling_ = false;
 };

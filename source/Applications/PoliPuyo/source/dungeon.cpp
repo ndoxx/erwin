@@ -4,6 +4,49 @@
 namespace puyo
 {
 
+using namespace erwin;
+
+static std::vector<hash_t> s_con_tiles =
+{
+	"connectivity_00"_h,
+	"connectivity_01"_h,
+	"connectivity_02"_h,
+	"connectivity_03"_h,
+	"connectivity_04"_h,
+	"connectivity_05"_h,
+	"connectivity_06"_h,
+	"connectivity_07"_h,
+	"connectivity_08"_h,
+	"connectivity_09"_h,
+	"connectivity_10"_h,
+	"connectivity_11"_h,
+	"connectivity_12"_h,
+	"connectivity_13"_h,
+	"connectivity_14"_h,
+	"connectivity_15"_h,
+};
+static std::vector<hash_t> s_dun_tiles =
+{
+	"dungeon_c"_h,
+	"dungeon_tl"_h,
+	"dungeon_t"_h,
+	"dungeon_tr"_h,
+	"dungeon_r"_h,
+	"dungeon_br"_h,
+	"dungeon_b"_h,
+	"dungeon_bl"_h,
+	"dungeon_l"_h,
+};
+static std::vector<glm::vec4> s_tints =
+{
+	{0.f,0.f,0.f,0.f},
+	{0.9275f, 0.1078f, 0.1373f, 1.f},
+	{0.2412f, 0.8706f, 0.1961f, 1.f},
+	{0.9647f, 0.7529f, 0.1275f, 1.f},
+	{0.1255f, 0.2686f, 0.9667f, 1.f},
+	{0.3765f, 0.0196f, 0.9333f, 1.f},
+};
+
 Dungeon::Dungeon(uint32_t width, uint32_t height):
 width_(width),
 height_(height)
@@ -43,6 +86,50 @@ void Dungeon::update_connectivity()
 			}
 		}
 	}
+}
+
+void Dungeon::update_renderables()
+{
+	renderables_.clear();
+
+	float scale_x = 0.1f;
+	float scale_y = 0.1f;
+	for(int yy=height_-1; yy>=0; --yy)
+	{
+		float pos_y = -1.f + 2.f*yy*scale_y;
+		for(int xx=0; xx<width_; ++xx)
+		{
+			float pos_x = -1.f + 2.f*xx*scale_x;
+			const Cell& cell = get_cell(xx,yy);
+			hash_t tile = s_con_tiles.at(cell.connectivity);
+			const glm::vec4& tint = s_tints[cell.type];
+
+			renderables_.push_back(Renderable{"connectivity"_h, tile, {scale_x,scale_y}, {pos_x,pos_y,0.f,1.f}, tint, true});
+			renderables_.push_back(Renderable{"dungeon"_h, "dungeon_c"_h, {scale_x,scale_y}, {pos_x,pos_y,-0.1f,1.f}});
+		}
+	}
+
+	// Dungeon walls
+	float pos_xl = -1.f - 2.f*scale_x;
+	float pos_xr = -1.f + 2.f*width_*scale_x;
+	float pos_yb = -1.f - 2.f*scale_y;
+	float pos_yt = -1.f + 2.f*height_*scale_y;
+	for(int yy=0; yy<height_; ++yy)
+	{
+		float pos_y = -1.f + 2.f*yy*scale_y;
+		renderables_.push_back(Renderable{"dungeon"_h, "dungeon_l"_h, {scale_x,scale_y}, {pos_xl,pos_y,-0.1f,1.f}});
+		renderables_.push_back(Renderable{"dungeon"_h, "dungeon_r"_h, {scale_x,scale_y}, {pos_xr,pos_y,-0.1f,1.f}});
+	}
+	for(int xx=0; xx<width_; ++xx)
+	{
+		float pos_x = -1.f + 2.f*xx*scale_y;
+		renderables_.push_back(Renderable{"dungeon"_h, "dungeon_b"_h, {scale_x,scale_y}, {pos_x,pos_yb,-0.1f,1.f}});
+		renderables_.push_back(Renderable{"dungeon"_h, "dungeon_t"_h, {scale_x,scale_y}, {pos_x,pos_yt,-0.1f,1.f}});
+	}
+	renderables_.push_back(Renderable{"dungeon"_h, "dungeon_tl"_h, {scale_x,scale_y}, {pos_xl,pos_yt,-0.1f,1.f}});
+	renderables_.push_back(Renderable{"dungeon"_h, "dungeon_tr"_h, {scale_x,scale_y}, {pos_xr,pos_yt,-0.1f,1.f}});
+	renderables_.push_back(Renderable{"dungeon"_h, "dungeon_bl"_h, {scale_x,scale_y}, {pos_xl,pos_yb,-0.1f,1.f}});
+	renderables_.push_back(Renderable{"dungeon"_h, "dungeon_br"_h, {scale_x,scale_y}, {pos_xr,pos_yb,-0.1f,1.f}});
 }
 
 void Dungeon::flood_fill(int x, int y, uint8_t type, Group& group)

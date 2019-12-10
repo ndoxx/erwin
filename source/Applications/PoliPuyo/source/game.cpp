@@ -26,6 +26,7 @@ void Game::init()
 		}
 	}
 	instance_->dungeon_->update_connectivity();
+	instance_->dungeon_->update_renderables();
 
 	std::set<Dungeon::Group> groups;
 	instance_->dungeon_->find_groups_4(groups);
