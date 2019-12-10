@@ -6,7 +6,6 @@
 	Modifications:
 		* Using if constexpr and std::is_pod instead of type dispatching to
 		  optimize NewArray and DeleteArray for POD types
-		* MemoryArena saves allocation size before the front sentinel 
 */
 
 #include <iostream>

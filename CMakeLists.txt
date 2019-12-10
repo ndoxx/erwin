@@ -56,6 +56,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp

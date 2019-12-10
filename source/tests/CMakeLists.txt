@@ -105,6 +105,7 @@ set(SRC_MEMORY
     test_memory.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
@@ -142,7 +143,18 @@ cotire(test_memory)
 
 set(SRC_NUCLEAR
     nuclear.cpp
-    ${CMAKE_SOURCE_DIR}/source/Applications/PoliPuyo/source/dungeon.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
    )
 
 add_executable(nuclear ${SRC_NUCLEAR})
