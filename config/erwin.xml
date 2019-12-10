@@ -28,15 +28,6 @@
 		<bool name="runtime_session_enabled" value="false"/>
 	</profiling>
 
-    <display>
-        <uint name="width"      value="1920"/>
-        <uint name="height"     value="1080"/>
-        <uint name="target_fps" value="60"/>
-        <bool name="full"       value="false"/>
-        <bool name="topmost"    value="true"/>
-        <bool name="vsync"      value="true"/>
-    </display>
-
     <renderer>
     	<Queue name="Opaque" sort="depth_descend"/>
     	<memory>

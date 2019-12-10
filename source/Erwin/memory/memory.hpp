@@ -168,6 +168,8 @@ private:
 	uint8_t* head_;
 };
 
+// TODO: OPTIMIZE - MemoryArena could be partially specialized for PoolAllocator
+//                  so as to avoid writing the allocation size before each element 
 template <typename AllocatorT, 
 		  typename ThreadPolicyT=policy::SingleThread,
 		  typename BoundsCheckerT=policy::NoBoundsChecking,

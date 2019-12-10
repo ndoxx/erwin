@@ -20,12 +20,16 @@ const fs::path& get_self_dir();
 const fs::path& get_root_dir();
 // Get config directory
 const fs::path& get_config_dir();
+// Get application configuration directory
+const fs::path& get_client_config_dir();
 // Get application asset directory if any
 const fs::path& get_asset_dir();
 // Get system asset directory
 const fs::path& get_system_asset_dir();
 // Set application asset directory
 void set_asset_dir(const fs::path& path);
+// Set application configuration directory
+void set_client_config_dir(const fs::path& path);
 
 // Get a stream to an asset in asset directory
 std::ifstream get_asset_stream(const fs::path& path);

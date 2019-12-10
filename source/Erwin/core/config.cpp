@@ -104,6 +104,19 @@ bool init(const fs::path& filepath)
 	return true;
 }
 
+bool init_client(const fs::path& filepath)
+{
+	xml::XMLFile cfg_f(filepath);
+	if(!cfg_f.read())
+	{
+		return false;
+	}
+
+	vmap.init(cfg_f.root, "client");
+
+	return true;
+}
+
 template <> size_t get(hash_t hname, size_t def)
 {
 	return vmap.get(hname, def);

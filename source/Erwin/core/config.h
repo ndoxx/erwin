@@ -12,6 +12,8 @@ namespace cfg
 
 // Init with engine config file
 extern bool init(const fs::path& filepath);
+// Init with client config file
+extern bool init_client(const fs::path& filepath);
 
 template <typename T> T get(hash_t hname, T def);
 template <> size_t      get(hash_t hname, size_t def);

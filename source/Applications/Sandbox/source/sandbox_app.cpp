@@ -16,11 +16,20 @@ using namespace erwin;
 class Sandbox: public Application
 {
 public:
-	Sandbox()
+	Sandbox() = default;
+	~Sandbox() = default;
+
+	virtual void on_client_init() override
+	{
+		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
+		filesystem::set_client_config_dir("source/Applications/Sandbox/config");
+		this->add_configuration("sandbox.xml");
+	}
+
+	virtual void on_load() override
 	{
 		EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
-		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		push_layer(new Layer3D());
 		push_layer(new Layer2D());
 		presentation_layer_ = new PresentationLayer();
@@ -31,18 +40,7 @@ public:
 	    set_layer_enabled(1, layer2d_enabled_);
 	}
 
-	~Sandbox() = default;
-
-	bool on_keyboard_event(const KeyboardEvent& e)
-	{
-		// Terminate on ESCAPE
-		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
-			EVENTBUS.publish(WindowCloseEvent());
-
-		return false;
-	}
-
-	void on_imgui_render()
+	virtual void on_imgui_render() override
 	{
 	    ImGui::Begin("Layers");
 	    	if(ImGui::Checkbox("3D Forward", &layer3d_enabled_))
@@ -58,6 +56,15 @@ public:
 	    		MainRenderer::clear_framebuffers();
 	    	}
 	    ImGui::End();
+	}
+
+	bool on_keyboard_event(const KeyboardEvent& e)
+	{
+		// Terminate on ESCAPE
+		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
+			EVENTBUS.publish(WindowCloseEvent());
+
+		return false;
 	}
 
 private:
