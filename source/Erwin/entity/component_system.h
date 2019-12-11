@@ -8,6 +8,8 @@ namespace erwin
 class ComponentSystem
 {
 public:
+	virtual bool init() = 0;
+	virtual void update(const GameClock& clock) = 0;
 
 private:
 };

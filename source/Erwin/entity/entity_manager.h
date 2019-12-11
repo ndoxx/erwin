@@ -1,20 +1,32 @@
 #pragma once
 
+/*
+	Original design by Rez Bot: https://www.youtube.com/watch?v=5KugyHKsXLQ
+*/
+
 #include <vector>
 #include <map>
 
 #include "EASTL/hash_map.h"
 #include "EASTL/vector.h"
 #include "entity/entity.h"
-#include "entity/component.h"
-#include "entity/component_system.h"
 
 namespace erwin
 {
 
+class Component;
+class ComponentSystem;
+class GameClock;
 class EntityManager
 {
 public:
+	EntityManager(const EntityManager&) = delete;
+	EntityManager(EntityManager&&) = delete;
+	EntityManager& operator=(const EntityManager&) = delete;
+	EntityManager& operator=(EntityManager&&) = delete;
+	EntityManager();
+	~EntityManager();
+
 	void create_systems();
 	void update(const GameClock& clock);
 	EntityID create_entity();

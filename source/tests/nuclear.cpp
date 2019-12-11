@@ -14,6 +14,7 @@
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
+#include "utils/ct_counter.h"
 
 using namespace erwin;
 
@@ -29,6 +30,46 @@ void init_logger()
 
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
+/*
+struct AutoCounter {};
+struct AutoCounter2 {};
+
+COUNTER_INC(AutoCounter);
+struct Foo
+{
+	static constexpr size_t ID = COUNTER_READ(AutoCounter);
+};
+
+COUNTER_INC(AutoCounter);
+struct Bar
+{
+	static constexpr size_t ID = COUNTER_READ(AutoCounter);
+};
+
+COUNTER_INC(AutoCounter2);
+struct Baz
+{
+	static constexpr size_t ID = COUNTER_READ(AutoCounter2);
+};
+
+COUNTER_INC(AutoCounter2);
+struct Qux
+{
+	static constexpr size_t ID = COUNTER_READ(AutoCounter2);
+};
+
+int main(int argc, char** argv)
+{
+	init_logger();
+
+	DLOG("nuclear",1) << Foo::ID << std::endl;
+	DLOG("nuclear",1) << Bar::ID << std::endl;
+	DLOG("nuclear",1) << Baz::ID << std::endl;
+	DLOG("nuclear",1) << Qux::ID << std::endl;
+
+	return 0;
+}*/
+
 
 typedef memory::MemoryArena<memory::PoolAllocator, 
 		    				memory::policy::SingleThread, 

@@ -78,10 +78,11 @@ set(SRC_MATH
   )
 
 set(SRC_ENTITY
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_system.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
   )
 
 set(SRC_DEBUG
@@ -191,13 +192,24 @@ set_target_properties(glfw PROPERTIES
   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglfw3.a"
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
 )
-# EASTL as a static import
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/eastl/include")
+
+# I can't link EASTL statically in liberwin (I tried hard building it with -fPIC but
+# it does not seem to work). As a result, for now, each client applications
+# MUST link against EASTL
+set(INC_EASTL
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAAssert/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EABase/include/Common
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAMain/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAStdC/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EATest/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAThread/include)
+target_include_directories(erwin PRIVATE "${INC_EASTL}")
 add_library(eastl STATIC IMPORTED)
 set_target_properties(eastl PROPERTIES
   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
-  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/eastl"
-  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EABase/include/Common"
+  INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
 )
 
 target_link_libraries(erwin
@@ -208,4 +220,4 @@ target_link_libraries(erwin
                       X11
                       glad
                       glfw
-                      eastl)
+                      )

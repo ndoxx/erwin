@@ -52,15 +52,22 @@ cd ../../../build
 cd ../source/vendor/eastl
 git submodule update --init
 bash ./build.sh
+# mkdir build
+# cd build
+# cmake .. -DEASTL_BUILD_TESTS:BOOL=ON -DEASTL_BUILD_BENCHMARK:BOOL=OFF
+# cmake -E env CXXFLAGS="-fPIC" cmake --build . --config Release
+# cd test
+# ctest -C Release -V
+# cd ../../
 cp build/libEASTL.a ../../../lib/
 cd ../../../build
 
 # Erwin lib and apps
-make erwin -j4
-make fudge -j4
-make internstr
-make sandbox
-make fractal
+# make erwin -j4
+# make fudge -j4
+# make internstr
+# make sandbox
+# make fractal
 
 # Initialize intern strings
 ../bin/internstr
