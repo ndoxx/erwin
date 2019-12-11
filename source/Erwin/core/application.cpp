@@ -14,6 +14,7 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "memory/arena.h"
 
 #include <iostream>
 
@@ -29,6 +30,7 @@ static ImGuiLayer* IMGUI_LAYER = nullptr;
 struct ApplicationStorage
 {
     std::vector<fs::path> configuration_files;
+    memory::HeapArea client_area;
 };
 static ApplicationStorage s_storage;
 
@@ -140,15 +142,27 @@ bool Application::init()
     // Configure client
     {
         W_PROFILE_SCOPE("Client configuration parsing")
-        DLOGN("application") << "Client configuration" << std::endl;
+        DLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file: s_storage.configuration_files)
             cfg::init_client(cfg_file);
     }
 
+    // Initialize client memory
+    {
+        W_PROFILE_SCOPE("Client memory init")
+        DLOGN("application") << "Initializing client memory" << std::endl;
+        size_t client_mem_size = cfg::get<size_t>("client.memory.area"_h, 1_MB);
+        if(!s_storage.client_area.init(client_mem_size))
+        {
+            DLOGF("application") << "Cannot allocate client memory." << std::endl;
+            return false;
+        }
+    }
+
+    // Create window
     {
         W_PROFILE_SCOPE("Window creation")
-        // Initialize window
         WindowProps props
         {
             cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),

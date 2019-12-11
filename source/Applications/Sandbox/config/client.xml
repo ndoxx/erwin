@@ -9,4 +9,7 @@
         <bool name="topmost"    value="true"/>
         <bool name="vsync"      value="true"/>
     </display>
+	<memory>
+    	<size name="area" value="2_MB"/>
+    </memory>>
 </Config>

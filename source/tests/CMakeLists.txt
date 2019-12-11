@@ -141,6 +141,13 @@ cotire(test_memory)
 
 # -------- NUCLEAR TEST -------- #
 
+set(SRC_ENTITY
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_system.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
+  )
+
 set(SRC_NUCLEAR
     nuclear.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp

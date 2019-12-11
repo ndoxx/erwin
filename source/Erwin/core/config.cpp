@@ -112,7 +112,8 @@ bool init_client(const fs::path& filepath)
 		return false;
 	}
 
-	vmap.init(cfg_f.root, "client");
+	// Use file name as root
+	vmap.init(cfg_f.root, filepath.stem().string());
 
 	return true;
 }

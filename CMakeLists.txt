@@ -77,6 +77,13 @@ set(SRC_MATH
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )
 
+set(SRC_ENTITY
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_system.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
+  )
+
 set(SRC_DEBUG
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
@@ -147,6 +154,7 @@ add_library(erwin SHARED
             ${SRC_CORE}
             ${SRC_FILESYSTEM}
             ${SRC_MATH}
+            ${SRC_ENTITY}
             ${SRC_DEBUG}
             ${SRC_RENDERER}
             ${SRC_INPUT}
@@ -183,6 +191,14 @@ set_target_properties(glfw PROPERTIES
   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglfw3.a"
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
 )
+# EASTL as a static import
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/eastl/include")
+add_library(eastl STATIC IMPORTED)
+set_target_properties(eastl PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/eastl"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EABase/include/Common"
+)
 
 target_link_libraries(erwin
                       m
@@ -191,4 +207,5 @@ target_link_libraries(erwin
                       pthread
                       X11
                       glad
-                      glfw)
+                      glfw
+                      eastl)

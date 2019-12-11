@@ -23,7 +23,7 @@ public:
 	{
 		filesystem::set_asset_dir("source/Applications/Sandbox/assets");
 		filesystem::set_client_config_dir("source/Applications/Sandbox/config");
-		this->add_configuration("sandbox.xml");
+		this->add_configuration("client.xml");
 	}
 
 	virtual void on_load() override

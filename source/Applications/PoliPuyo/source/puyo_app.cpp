@@ -27,7 +27,7 @@ public:
 	{
 		filesystem::set_asset_dir("source/Applications/PoliPuyo/assets");
 		// filesystem::set_client_config_dir("source/Applications/PoliPuyo/config");
-		// this->add_configuration("puyo.xml");
+		// this->add_configuration("client.xml");
 	}
 
 	virtual void on_load() override

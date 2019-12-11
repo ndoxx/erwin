@@ -1273,6 +1273,7 @@ queue(queue)
 
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
+clear_color_(0.f,0.f,0.f,1.f),
 command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
 {
 

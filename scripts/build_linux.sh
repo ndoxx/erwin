@@ -48,6 +48,12 @@ cd ../source/vendor/zlib
 make
 cp libz.a ../../../lib/
 cd ../../../build
+# EASTL
+cd ../source/vendor/eastl
+git submodule update --init
+bash ./build.sh
+cp build/libEASTL.a ../../../lib/
+cd ../../../build
 
 # Erwin lib and apps
 make erwin -j4
