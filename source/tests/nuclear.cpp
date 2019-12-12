@@ -30,7 +30,7 @@ void init_logger()
 
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
-/*
+
 struct AutoCounter {};
 struct AutoCounter2 {};
 
@@ -68,9 +68,9 @@ int main(int argc, char** argv)
 	DLOG("nuclear",1) << Qux::ID << std::endl;
 
 	return 0;
-}*/
+}
 
-
+/*
 typedef memory::MemoryArena<memory::PoolAllocator, 
 		    				memory::policy::SingleThread, 
 		    				memory::policy::SimpleBoundsChecking,
@@ -131,4 +131,4 @@ int main(int argc, char** argv)
     memory::hex_dump(std::cout, tf_pool.get_allocator().begin(), pool_size, "HEX DUMP");
 
 	return 0;
-}
+}*/

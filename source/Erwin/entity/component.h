@@ -3,7 +3,7 @@
 #include "EASTL/numeric_limits.h"
 #include "entity/entity_types.h"
 #include "memory/arena.h"
-#include "utils/ct_counter.h"
+#include "ctti/type_id.hpp"
 
 namespace erwin
 {
@@ -12,12 +12,14 @@ class Component
 {
 public:
 	Component();
+	virtual ~Component() = default;
 
 	virtual bool init(void* description) = 0;
 
-private:
 	inline EntityID get_parent_entity() const      { return parent_; }
 	inline uint64_t get_pool_index() const         { return pool_index_; }
+
+private:
 	inline void set_parent_entity(EntityID entity) { parent_ = entity; }
 	inline void set_pool_index(uint64_t index)     { pool_index_ = index; }
 
@@ -25,6 +27,9 @@ private:
 	EntityID parent_;
 	uint64_t pool_index_;
 };
+
+#define ID_DECLARATION( COMPONENT_NAME ) \
+	static constexpr ComponentID ID = ctti::type_id< COMPONENT_NAME >().hash()
 
 #define POOL_DECLARATION( DEFAULT_COUNT ) \
 	public: \
@@ -35,6 +40,7 @@ private:
 
 #ifdef W_DEBUG
 	#define POOL_DEFINITION( COMPONENT_NAME ) \
+		PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
 		void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
 		{ \
 			W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
@@ -50,6 +56,7 @@ private:
 		}
 #else
 	#define POOL_DEFINITION( COMPONENT_NAME ) \
+		PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
 		void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
 		{ \
 			W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \

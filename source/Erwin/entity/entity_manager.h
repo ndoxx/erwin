@@ -15,7 +15,7 @@ namespace erwin
 {
 
 class Component;
-class ComponentSystem;
+class BaseComponentSystem;
 class GameClock;
 class EntityManager
 {
@@ -35,7 +35,7 @@ public:
 private:
 	using Entities   = eastl::hash_map<EntityID, Entity>;
 	using Components = eastl::vector<eastl::vector<Component*>>;
-	using Systems    = eastl::vector<ComponentSystem*>;
+	using Systems    = eastl::vector<BaseComponentSystem*>;
 
 	Entities entities_;
 	Components components_;

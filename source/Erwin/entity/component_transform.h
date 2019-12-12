@@ -6,11 +6,10 @@
 namespace erwin
 {
 
-COUNTER_INC(ComponentAutoCounter);
 class ComponentTransform2D: public Component
 {
 public:
-	static constexpr ComponentID ID = COUNTER_READ(ComponentAutoCounter) - 1;
+	ID_DECLARATION(ComponentTransform2D);
 
 	glm::vec2 position;
 	float angle;

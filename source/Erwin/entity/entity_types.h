@@ -11,7 +11,5 @@ typedef uint64_t EntityID;
 static constexpr std::size_t k_invalid_pool_index = eastl::numeric_limits<std::size_t>::max();
 static constexpr uint64_t k_invalid_entity_id = eastl::numeric_limits<EntityID>::max();
 
-// Tag struct for automatic component ID generation
-struct ComponentAutoCounter {};
 
 } // namespace erwin

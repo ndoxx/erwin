@@ -10,7 +10,13 @@ namespace erwin
 class Entity
 {
 public:
+	using ComponentMap = eastl::hash_map<ComponentID, Component*, eastl::hash<ComponentID>, eastl::equal_to<ComponentID>/*, PooledEastlAllocator*/>;
+
 	explicit Entity(EntityID id);
+	Entity(const Entity&) = delete;
+	Entity(Entity&&) = default;
+	Entity& operator=(const Entity&) = delete;
+	Entity& operator=(Entity&&) = default;
 
 	inline EntityID get_id() const { return id_; }
 
@@ -23,8 +29,17 @@ public:
 		return nullptr;
 	}
 
+	inline const ComponentMap& get_components() const { return components_; }
+
+	template <typename ComponentT>
+	inline void add_component(ComponentT* pcmp)
+	{
+		W_ASSERT(components_.find(ComponentT::ID) == components_.end(), "Entity already has a component of this type.");
+		components_.emplace(ComponentT::ID, pcmp);
+	}
+
 private:
-	eastl::hash_map<ComponentID, Component*> components_;
+	ComponentMap components_;
 	EntityID id_;
 };
 
