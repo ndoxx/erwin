@@ -11,7 +11,9 @@ namespace erwin
 class Component
 {
 public:
-	Component();
+	friend class Entity;
+	
+	Component(): parent_(k_invalid_entity_id), pool_index_(k_invalid_pool_index) {}
 	virtual ~Component() = default;
 
 	virtual bool init(void* description) = 0;
@@ -28,44 +30,48 @@ private:
 	uint64_t pool_index_;
 };
 
+#define DEFAULT_COMPONENT_COUNT 32
+
+// Macro to generate a unique ID for a component (call in public)
 #define ID_DECLARATION( COMPONENT_NAME ) \
 	static constexpr ComponentID ID = ctti::type_id< COMPONENT_NAME >().hash()
 
-#define POOL_DECLARATION( DEFAULT_COUNT ) \
-	public: \
-		static PoolArena* s_ppool_; \
-		static void init_pool(void* begin, size_t max_count = DEFAULT_COUNT , const char* debug_name = nullptr ); \
-		static void destroy_pool(); \
-	private:
+// Macro to generate the declarations of component pool creation/destruction functions for a component (call in public)
+// Also generates operator overloads for new and delete
+#define POOL_DECLARATION( COMPONENT_NAME ) \
+	static PoolArena* s_ppool_; \
+	static void init_pool(void* begin, size_t max_count = DEFAULT_COMPONENT_COUNT , const char* debug_name = nullptr ); \
+	static void destroy_pool(); \
+	static void* operator new(size_t size); \
+	static void operator delete(void* ptr)
+	
 
-#ifdef W_DEBUG
-	#define POOL_DEFINITION( COMPONENT_NAME ) \
-		PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
-		void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
-		{ \
-			W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
-			s_ppool_ = new PoolArena(begin, sizeof(COMPONENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
-			if(debug_name) \
-				s_ppool_->set_debug_name(debug_name); \
-			else \
-				s_ppool_->set_debug_name(#COMPONENT_NAME); \
-		} \
-		void COMPONENT_NAME::destroy_pool() \
-		{ \
-			delete s_ppool_; \
-		}
-#else
-	#define POOL_DEFINITION( COMPONENT_NAME ) \
-		PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
-		void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
-		{ \
-			W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
-			s_ppool_ = new PoolArena(begin, sizeof(COMPONENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
-		} \
-		void COMPONENT_NAME::destroy_pool() \
-		{ \
-			delete s_ppool_; \
-		}
-#endif
+// Macro to generate the definitions of component pool creation/destruction functions for a component
+#define POOL_DEFINITION( COMPONENT_NAME ) \
+	PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
+	void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
+	{ \
+		W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
+		s_ppool_ = new PoolArena(begin, sizeof(COMPONENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
+		if(debug_name) \
+			s_ppool_->set_debug_name(debug_name); \
+		else \
+			s_ppool_->set_debug_name(#COMPONENT_NAME); \
+	} \
+	void COMPONENT_NAME::destroy_pool() \
+	{ \
+		delete s_ppool_; \
+	} \
+	void* COMPONENT_NAME::operator new(size_t size) \
+	{ \
+		(void)(size); \
+		W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+		return ::W_NEW( COMPONENT_NAME , (*s_ppool_) ); \
+	} \
+	void COMPONENT_NAME::operator delete(void* ptr) \
+	{ \
+		W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+		W_DELETE( (COMPONENT_NAME*)(ptr) , (*s_ppool_) ); \
+	}
 
 } // namespace erwin

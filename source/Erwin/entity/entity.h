@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "EASTL/hash_map.h"
 #include "entity/component.h"
+#include "core/core.h"
 
 namespace erwin
 {
@@ -12,11 +13,11 @@ class Entity
 public:
 	using ComponentMap = eastl::hash_map<ComponentID, Component*, eastl::hash<ComponentID>, eastl::equal_to<ComponentID>/*, PooledEastlAllocator*/>;
 
+	NON_COPYABLE(Entity);
 	explicit Entity(EntityID id);
-	Entity(const Entity&) = delete;
 	Entity(Entity&&) = default;
-	Entity& operator=(const Entity&) = delete;
 	Entity& operator=(Entity&&) = default;
+	~Entity();
 
 	inline EntityID get_id() const { return id_; }
 
@@ -35,6 +36,8 @@ public:
 	inline void add_component(ComponentT* pcmp)
 	{
 		W_ASSERT(components_.find(ComponentT::ID) == components_.end(), "Entity already has a component of this type.");
+		pcmp->set_parent_entity(id_);
+		pcmp->set_pool_index(0); // TMP
 		components_.emplace(ComponentT::ID, pcmp);
 	}
 

@@ -58,6 +58,16 @@ inline void fatal() { exit(-1); }
 	#define W_PROFILE_RENDER_FUNCTION()
 #endif
 
+// Macro to disallow copy and assign
+#define NON_COPYABLE( TYPE_NAME ) \
+	TYPE_NAME(const TYPE_NAME&) = delete; \
+	TYPE_NAME& operator=(const TYPE_NAME&) = delete
+
+// Macro to make a class non-movable
+#define NON_MOVABLE( TYPE_NAME ) \
+	TYPE_NAME(TYPE_NAME&&) = delete; \
+	TYPE_NAME& operator=(TYPE_NAME&&) = delete
+
 namespace erwin
 {
 	// Ref counting pointer and unique pointer aliases (for now)

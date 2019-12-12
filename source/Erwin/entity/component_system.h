@@ -42,16 +42,17 @@ class ComponentSystem: public BaseComponentSystem
 {
 public:
 	explicit ComponentSystem(EntityManager* manager): BaseComponentSystem(manager) {}
+	virtual ~ComponentSystem() = default;
 
-	virtual void on_entity_created(const Entity& entity) override final;
+	virtual void on_entity_submitted(const Entity& entity) override final;
 	virtual void on_entity_destroyed(const Entity& entity) override final;
 
+	virtual void update(const GameClock& clock) override = 0;
 	virtual bool init() = 0;
-	virtual void update(const GameClock& clock) = 0;
 
 protected:
-	using ComponentTuple     = eastl::tuple<eastl::add_pointer_t<CompsT>...>; // Tuple of component pointers
-	using Components         = eastl::vector<ComponentTuple/*, PooledEastlAllocator*/>;
+	using ComponentTuple = eastl::tuple<eastl::add_pointer_t<CompsT>...>; // Tuple of component pointers
+	using Components     = eastl::vector<ComponentTuple/*, PooledEastlAllocator*/>;
 
 	Components components_;
 
@@ -91,7 +92,7 @@ bool ComponentSystem<CompsT...>::process_entity_component(ComponentID id, Compon
 }
 
 template <typename... CompsT>
-void ComponentSystem<CompsT...>::on_entity_created(const Entity& entity)
+void ComponentSystem<CompsT...>::on_entity_submitted(const Entity& entity)
 {
 	// Loop through all entity's components
 	ComponentTuple ctuple;

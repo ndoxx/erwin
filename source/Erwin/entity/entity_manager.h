@@ -20,16 +20,16 @@ class GameClock;
 class EntityManager
 {
 public:
-	EntityManager(const EntityManager&) = delete;
-	EntityManager(EntityManager&&) = delete;
-	EntityManager& operator=(const EntityManager&) = delete;
-	EntityManager& operator=(EntityManager&&) = delete;
+	NON_COPYABLE(EntityManager);
+	NON_MOVABLE(EntityManager);
 	EntityManager();
 	~EntityManager();
 
-	void create_systems();
+	void register_system(BaseComponentSystem* psys);
 	void update(const GameClock& clock);
-	EntityID create_entity();
+
+	Entity& create_entity();
+	void submit_entity(EntityID entity);
 	void destroy_entity(EntityID entity);
 
 private:
@@ -38,8 +38,10 @@ private:
 	using Systems    = eastl::vector<BaseComponentSystem*>;
 
 	Entities entities_;
-	Components components_;
+	// Components components_; // TMP: For now, entities own their components
 	Systems systems_;
+
+	static EntityID s_next_entity_id;
 };
 
 

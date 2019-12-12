@@ -81,7 +81,6 @@ set(SRC_ENTITY
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/base_component_system.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
   )
 

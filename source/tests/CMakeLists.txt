@@ -141,13 +141,6 @@ cotire(test_memory)
 
 # -------- NUCLEAR TEST -------- #
 
-set(SRC_ENTITY
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_system.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
-  )
-
 set(SRC_NUCLEAR
     nuclear.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
@@ -162,15 +155,17 @@ set(SRC_NUCLEAR
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
    )
 
-add_executable(nuclear ${SRC_NUCLEAR})
+add_executable(nuclear ${SRC_NUCLEAR} ${SRC_ENTITY})
 
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
+target_include_directories(nuclear PRIVATE "${INC_EASTL}")
 
 set_target_properties(nuclear
     PROPERTIES
@@ -183,5 +178,6 @@ target_link_libraries(nuclear
                       # erwin # throws std::system_error
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(nuclear)

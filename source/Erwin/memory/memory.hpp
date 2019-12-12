@@ -172,6 +172,15 @@ public:
 		return range;
 	}
 
+	template <typename PoolT>
+	inline void* require_pool_block(size_t element_size, size_t max_count)
+	{
+		size_t decorated_size = element_size + PoolT::DECORATION_SIZE;
+		size_t pool_size = max_count * decorated_size;
+		auto block = require_block(pool_size);
+		return block.first;
+	}
+
 private:
 	size_t size_;
 	uint8_t* begin_;
@@ -211,9 +220,7 @@ public:
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
-#ifdef W_DEBUG
     inline void set_debug_name(const std::string& name) { debug_name_ = name; }
-#endif
 
 	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
@@ -281,9 +288,7 @@ private:
 	MemoryTaggerT  memory_tagger_;
 	MemoryTrackerT memory_tracker_;
 
-#ifdef W_DEBUG
 	std::string debug_name_;
-#endif
 };
 
 template <typename T, class ArenaT>
