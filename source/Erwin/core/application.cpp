@@ -14,6 +14,7 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "memory/arena.h"
 
 #include <iostream>
 
@@ -26,6 +27,13 @@ Application* Application::pinstance_ = nullptr;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
+struct ApplicationStorage
+{
+    std::vector<fs::path> configuration_files;
+    memory::HeapArea client_area;
+};
+static ApplicationStorage s_storage;
+
 Application::Application():
 is_running_(true),
 minimized_(false)
@@ -33,11 +41,54 @@ minimized_(false)
     // Create application singleton
     W_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
+    // Initialize file system
+    filesystem::init();
+}
 
+Application::~Application()
+{
+    {
+        W_PROFILE_SCOPE("Layer stack shutdown")
+        layer_stack_.clear();
+    }
+
+#ifdef MR__
+    {
+        W_PROFILE_SCOPE("Renderer shutdown")
+        FramebufferPool::shutdown();
+        PostProcessingRenderer::shutdown();
+        Renderer2D::shutdown();
+        ForwardRenderer::shutdown();
+        CommonGeometry::shutdown();
+        MainRenderer::shutdown();
+    }
+#endif
+    {
+        W_PROFILE_SCOPE("Low level systems shutdown")
+        Input::kill();
+        WLOGGER.kill();
+        EventBus::Kill();
+    }
+}
+
+void Application::add_configuration(const std::string& filename)
+{
+    fs::path filepath = filesystem::get_client_config_dir() / filename;
+    if(fs::exists(filepath))
+        s_storage.configuration_files.push_back(filepath);
+    else
+    {
+        DLOGW("application") << "Unable to find configuration file:" << std::endl;
+        DLOGI << "client configuration directory: " << WCC('p') << filesystem::get_client_config_dir() << std::endl;
+        DLOGI << "file path: " << WCC('p') << filepath << std::endl;
+    }
+}
+
+bool Application::init()
+{
     {
         W_PROFILE_SCOPE("Application config")
-        // Initialize file system
-        filesystem::init();
+
         // Initialize config
         cfg::init(filesystem::get_config_dir() / "erwin.xml");
 
@@ -88,17 +139,38 @@ minimized_(false)
         istr::init("intern_strings.txt");
     }
 
+    // Configure client
+    {
+        W_PROFILE_SCOPE("Client configuration parsing")
+        DLOGN("config") << "Parsing client configuration" << std::endl;
+        on_client_init();
+        for(auto&& cfg_file: s_storage.configuration_files)
+            cfg::init_client(cfg_file);
+    }
+
+    // Initialize client memory
+    {
+        W_PROFILE_SCOPE("Client memory init")
+        DLOGN("application") << "Initializing client memory" << std::endl;
+        size_t client_mem_size = cfg::get<size_t>("client.memory.area"_h, 1_MB);
+        if(!s_storage.client_area.init(client_mem_size))
+        {
+            DLOGF("application") << "Cannot allocate client memory." << std::endl;
+            return false;
+        }
+    }
+
+    // Create window
     {
         W_PROFILE_SCOPE("Window creation")
-        // Initialize window
         WindowProps props
         {
-            "ErwinEngine",
-            cfg::get<uint32_t>("erwin.display.width"_h,  1280),
-            cfg::get<uint32_t>("erwin.display.height"_h, 1024),
-            cfg::get<bool>("erwin.display.full"_h,       false),
-            cfg::get<bool>("erwin.display.topmost"_h,    false),
-            cfg::get<bool>("erwin.display.vsync"_h,      true)
+            cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),
+            cfg::get<uint32_t>("client.display.width"_h,  1280),
+            cfg::get<uint32_t>("client.display.height"_h, 1024),
+            cfg::get<bool>("client.display.full"_h,       false),
+            cfg::get<bool>("client.display.topmost"_h,    false),
+            cfg::get<bool>("client.display.vsync"_h,      true)
         };
         window_ = Window::create(props);
     }
@@ -132,23 +204,23 @@ minimized_(false)
     {
         W_PROFILE_SCOPE("ImGui overlay creation")
         // Generate ImGui overlay
-    	IMGUI_LAYER = new ImGuiLayer();
-    	push_overlay(IMGUI_LAYER);
+        IMGUI_LAYER = new ImGuiLayer();
+        push_overlay(IMGUI_LAYER);
     }
 
     {
         W_PROFILE_SCOPE("Layer event tracking setup")
-    	// Propagate input events to layers
-    	layer_stack_.track_event<KeyboardEvent>();
-    	layer_stack_.track_event<KeyTypedEvent>();
-    	layer_stack_.track_event<MouseButtonEvent>();
-    	layer_stack_.track_event<MouseScrollEvent>();
-    	layer_stack_.track_event<MouseMovedEvent>();
-    	layer_stack_.track_event<WindowResizeEvent>();
+        // Propagate input events to layers
+        layer_stack_.track_event<KeyboardEvent>();
+        layer_stack_.track_event<KeyTypedEvent>();
+        layer_stack_.track_event<MouseButtonEvent>();
+        layer_stack_.track_event<MouseScrollEvent>();
+        layer_stack_.track_event<MouseMovedEvent>();
+        layer_stack_.track_event<WindowResizeEvent>();
     }
 
-	// React to window close events (and shutdown application)
-	EVENTBUS.subscribe(this, &Application::on_window_close_event);
+    // React to window close events (and shutdown application)
+    EVENTBUS.subscribe(this, &Application::on_window_close_event);
 
     {
         W_PROFILE_SCOPE("Application load")
@@ -156,32 +228,7 @@ minimized_(false)
     }
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
-}
-
-Application::~Application()
-{
-    {
-        W_PROFILE_SCOPE("Layer stack shutdown")
-        layer_stack_.clear();
-    }
-
-#ifdef MR__
-    {
-        W_PROFILE_SCOPE("Renderer shutdown")
-        FramebufferPool::shutdown();
-        PostProcessingRenderer::shutdown();
-        Renderer2D::shutdown();
-        ForwardRenderer::shutdown();
-        CommonGeometry::shutdown();
-        MainRenderer::shutdown();
-    }
-#endif
-    {
-        W_PROFILE_SCOPE("Low level systems shutdown")
-        Input::kill();
-        WLOGGER.kill();
-        EventBus::Kill();
-    }
+    return true;
 }
 
 size_t Application::push_layer(Layer* layer)

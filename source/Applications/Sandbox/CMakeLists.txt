@@ -35,5 +35,6 @@ target_link_libraries(sandbox
 					            ierwin
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(sandbox)

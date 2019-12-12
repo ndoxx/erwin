@@ -43,6 +43,12 @@
 > apitrace trace --api=gl --output=sandbox.trace ../bin/sandbox
 > LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace sandbox.trace
 
+###Vérifier qu'une lib contient du code "relocatable"
+> ar -x libXXX.a  
+> readelf --relocs XXX.o | egrep '(GOT|PLT|JU?MP_SLOT)'
+
+Sortie vide -> pas compilée avec -fPIC.
+
 ##[GIT]
 ###SSH
 Créer une paire de clés RSA pour permettre une connexion SSH avec Github :

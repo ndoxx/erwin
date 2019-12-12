@@ -154,17 +154,15 @@ private:
 class FractalExplorer: public Application
 {
 public:
-	FractalExplorer()
+	FractalExplorer() = default;
+	~FractalExplorer() = default;
+
+	virtual void on_load() override
 	{
 		EVENTBUS.subscribe(this, &FractalExplorer::on_keyboard_event);
 
 		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
 		push_layer(new FractalLayer());
-	}
-
-	~FractalExplorer()
-	{
-
 	}
 
 	bool on_keyboard_event(const KeyboardEvent& e)

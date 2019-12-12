@@ -10,6 +10,7 @@
 #include "catch2/catch.hpp"
 #include "memory/memory.hpp"
 #include "memory/linear_allocator.h"
+#include "memory/pool_allocator.h"
 #include "memory/memory_utils.h"
 #include "debug/logger_common.h"
 
@@ -68,7 +69,7 @@ protected:
 	LinArena arena;
 };
 
-TEST_CASE_METHOD(LinArenaFixture, "new POD non-aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new POD non-aligned", "[mem]")
 {
 	POD* some_pod = W_NEW(POD, arena);
 	some_pod->a = 0x42424242;
@@ -82,7 +83,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD non-aligned", "[mem]")
 	W_DELETE(some_pod, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new POD aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new POD aligned", "[mem]")
 {
 	POD* some_pod = W_NEW_ALIGN(POD, arena, 16);
 	some_pod->a = 0x42424242;
@@ -98,7 +99,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD aligned", "[mem]")
 	W_DELETE(some_pod, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "multiple alignments test", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: multiple alignments test", "[mem]")
 {
 	for(uint32_t ALIGNMENT=2; ALIGNMENT<=128; ALIGNMENT*=2)
 	{
@@ -110,7 +111,7 @@ TEST_CASE_METHOD(LinArenaFixture, "multiple alignments test", "[mem]")
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(area.begin()), 512);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new POD array non-aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new POD array non-aligned", "[mem]")
 {
 	const uint32_t N = 10;
 
@@ -129,7 +130,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD array non-aligned", "[mem]")
 	W_DELETE_ARRAY(pod_array, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new POD array aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new POD array aligned", "[mem]")
 {
 	const uint32_t N = 10;
 
@@ -150,7 +151,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new POD array aligned", "[mem]")
 	W_DELETE_ARRAY(pod_array, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new non-POD non-aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new non-POD non-aligned", "[mem]")
 {
 	NonPOD* some_non_pod = W_NEW(NonPOD, arena)(10,8);
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(some_non_pod) - LinArena::BK_FRONT_SIZE, sizeof(NonPOD) + LinArena::DECORATION_SIZE);
@@ -161,7 +162,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new non-POD non-aligned", "[mem]")
 	W_DELETE(some_non_pod, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new non-POD aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new non-POD aligned", "[mem]")
 {
 	NonPOD* some_non_pod = W_NEW_ALIGN(NonPOD, arena, 32)(10,8);
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(some_non_pod) - LinArena::BK_FRONT_SIZE, sizeof(NonPOD) + LinArena::DECORATION_SIZE);
@@ -174,7 +175,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new non-POD aligned", "[mem]")
 	W_DELETE(some_non_pod, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new non-POD array non-aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new non-POD array non-aligned", "[mem]")
 {
 	const uint32_t N = 4;
 
@@ -189,7 +190,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new non-POD array non-aligned", "[mem]")
 	W_DELETE_ARRAY(non_pod_array, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "new non-POD array aligned", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: new non-POD array aligned", "[mem]")
 {
 	const uint32_t N = 4;
 
@@ -206,7 +207,7 @@ TEST_CASE_METHOD(LinArenaFixture, "new non-POD array aligned", "[mem]")
 	W_DELETE_ARRAY(non_pod_array, arena);
 }
 
-TEST_CASE_METHOD(LinArenaFixture, "multiple allocations", "[mem]")
+TEST_CASE_METHOD(LinArenaFixture, "Linear Arena: multiple allocations", "[mem]")
 {
 	for(int ii=0; ii<10; ++ii)
 	{
@@ -238,4 +239,43 @@ TEST_CASE_METHOD(LinArenaFixture, "multiple allocations", "[mem]")
 	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(area.begin()), 1_kB);
 
 	SUCCEED();
+}
+
+
+
+typedef memory::MemoryArena<memory::PoolAllocator, 
+		    				memory::policy::SingleThread, 
+		    				memory::policy::SimpleBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::SimpleMemoryTracking> PoolArena;
+
+class PoolArenaFixture
+{
+public:
+	typedef typename PoolArena::SIZE_TYPE SIZE_TYPE;
+	
+	PoolArenaFixture():
+	area(1_kB),
+	arena(area.begin(), sizeof(POD), 32, PoolArena::DECORATION_SIZE)
+	{
+
+	}
+
+protected:
+	memory::HeapArea area;
+	PoolArena arena;
+};
+
+TEST_CASE_METHOD(PoolArenaFixture, "Pool Arena: new/delete POD non-aligned", "[mem]")
+{
+	POD* some_pod = W_NEW(POD, arena);
+	some_pod->a = 0x42424242;
+	some_pod->b = 0xB16B00B5;
+	some_pod->c = 0xD0D0DADAD0D0DADA;
+	memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(some_pod) - PoolArena::BK_FRONT_SIZE, sizeof(POD) + PoolArena::DECORATION_SIZE);
+	
+	// Arena should write the complete allocation size just before user pointer
+	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(some_pod)-1) == sizeof(POD) + PoolArena::DECORATION_SIZE);
+
+	W_DELETE(some_pod, arena);
 }

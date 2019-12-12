@@ -100,14 +100,14 @@ void GLFWWindow::init(const WindowProps& props)
 	// Initialize GLFW if not already initialized
 	if(s_glfw_num_windows == 0)
 	{
-		DLOGN("core") << "Initializing GLFW." << std::endl;
+		DLOGN("render") << "Initializing GLFW." << std::endl;
 		if(!glfwInit())
 		{
-			DLOGF("core") << "Failed to initialize GLFW." << std::endl;
+			DLOGF("render") << "Failed to initialize GLFW." << std::endl;
 			fatal();
 		}
 
-		DLOG("core",0) << "[GLFW]" << std::endl;
+		DLOG("render",0) << "[GLFW]" << std::endl;
 		// Show GLFW version
 	    {
 	        int major, minor, rev;

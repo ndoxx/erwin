@@ -73,7 +73,7 @@ static void handle_includes(std::string& source, const fs::path& source_dir)
 {
     // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
     std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    source = rx::regex_replace(source, e_inc, [&](const std::smatch& m)
+    source = erwin::su::rx::regex_replace(source, e_inc, [&](const std::smatch& m)
     {
         std::string result = m[1].str();
         std::string filename = result.substr(1, result.size()-2);

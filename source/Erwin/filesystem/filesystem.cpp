@@ -34,6 +34,7 @@ static fs::path s_self_path;
 static fs::path s_conf_path;
 static fs::path s_root_path;
 static fs::path s_asset_path;
+static fs::path s_client_config_path;
 static fs::path s_sys_asset_path;
 
 void init()
@@ -62,6 +63,11 @@ const fs::path& get_config_dir()
 	return s_conf_path;
 }
 
+const fs::path& get_client_config_dir()
+{
+    return s_client_config_path;
+}
+
 const fs::path& get_asset_dir()
 {
 	return s_asset_path;
@@ -75,6 +81,11 @@ const fs::path& get_system_asset_dir()
 void set_asset_dir(const fs::path& path)
 {
 	s_asset_path = s_root_path / path;
+}
+
+void set_client_config_dir(const fs::path& path)
+{
+    s_client_config_path = s_root_path / path;
 }
 
 std::ifstream get_asset_stream(const fs::path& path)

@@ -6,7 +6,6 @@
 	Modifications:
 		* Using if constexpr and std::is_pod instead of type dispatching to
 		  optimize NewArray and DeleteArray for POD types
-		* MemoryArena saves allocation size before the front sentinel 
 */
 
 #include <iostream>
@@ -120,19 +119,29 @@ private:
 class HeapArea
 {
 public:
-	HeapArea(size_t size):
-	size_(size)
+	HeapArea() = default;
+	HeapArea(size_t size)
 	{
-		begin_ = new uint8_t[size_];
-		head_ = begin_;
-#ifdef HEAP_AREA_MEMSET_ENABLED
-		memset(begin_, AREA_MEMSET_VALUE, size_);
-#endif
+		init(size);
 	}
 
 	~HeapArea()
 	{
 		delete[] begin_;
+	}
+
+	inline bool init(size_t size)
+	{
+		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " Initializing:" << std::endl;
+		size_ = size;
+		begin_ = new uint8_t[size_];
+		head_ = begin_;
+#ifdef HEAP_AREA_MEMSET_ENABLED
+		memset(begin_, AREA_MEMSET_VALUE, size_);
+#endif
+		DLOGI << "Size:  " << WCC('v') << size_ << WCC(0) << "B" << std::endl;
+		DLOGI << "Begin: 0x" << std::hex << uint64_t(begin_) << std::dec << std::endl;
+		return true;
 	}
 
 	inline void* begin() { return begin_; }
@@ -163,12 +172,23 @@ public:
 		return range;
 	}
 
+	template <typename PoolT>
+	inline void* require_pool_block(size_t element_size, size_t max_count)
+	{
+		size_t decorated_size = element_size + PoolT::DECORATION_SIZE;
+		size_t pool_size = max_count * decorated_size;
+		auto block = require_block(pool_size);
+		return block.first;
+	}
+
 private:
 	size_t size_;
 	uint8_t* begin_;
 	uint8_t* head_;
 };
 
+// TODO: OPTIMIZE - MemoryArena could be partially specialized for PoolAllocator
+//                  so as to avoid writing the allocation size before each element 
 template <typename AllocatorT, 
 		  typename ThreadPolicyT=policy::SingleThread,
 		  typename BoundsCheckerT=policy::NoBoundsChecking,
@@ -200,9 +220,7 @@ public:
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
-#ifdef W_DEBUG
     inline void set_debug_name(const std::string& name) { debug_name_ = name; }
-#endif
 
 	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
@@ -270,9 +288,7 @@ private:
 	MemoryTaggerT  memory_tagger_;
 	MemoryTrackerT memory_tracker_;
 
-#ifdef W_DEBUG
 	std::string debug_name_;
-#endif
 };
 
 template <typename T, class ArenaT>

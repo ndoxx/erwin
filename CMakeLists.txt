@@ -56,6 +56,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
@@ -74,6 +75,13 @@ set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
+  )
+
+set(SRC_ENTITY
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/base_component_system.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
   )
 
 set(SRC_DEBUG
@@ -146,6 +154,7 @@ add_library(erwin SHARED
             ${SRC_CORE}
             ${SRC_FILESYSTEM}
             ${SRC_MATH}
+            ${SRC_ENTITY}
             ${SRC_DEBUG}
             ${SRC_RENDERER}
             ${SRC_INPUT}
@@ -183,6 +192,25 @@ set_target_properties(glfw PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
 )
 
+# I can't link EASTL statically in liberwin (I tried hard building it with -fPIC but
+# it does not seem to work). As a result, for now, each client applications
+# MUST link against EASTL
+set(INC_EASTL
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAAssert/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EABase/include/Common
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAMain/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAStdC/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EATest/include
+    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAThread/include)
+target_include_directories(erwin PRIVATE "${INC_EASTL}")
+add_library(eastl STATIC IMPORTED)
+set_target_properties(eastl PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
+  INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
+)
+
 target_link_libraries(erwin
                       m
                       z
@@ -190,4 +218,5 @@ target_link_libraries(erwin
                       pthread
                       X11
                       glad
-                      glfw)
+                      glfw
+                      )

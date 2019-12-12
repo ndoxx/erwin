@@ -27,11 +27,11 @@ void OGLContext::init()
 
 	if(!status)
 	{
-		DLOGF("core") << "Unable to load GLAD!" << std::endl;
+		DLOGF("render") << "Unable to load GLAD!" << std::endl;
 		fatal();
 	}
 
-	DLOG("core", 1) << "[OpenGL]" << std::endl;
+	DLOG("render", 1) << "[OpenGL]" << std::endl;
 	DLOGI << "Vendor:   " << glGetString(GL_VENDOR) << std::endl;
 	DLOGI << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 	DLOGI << "Version:  " << glGetString(GL_VERSION) << std::endl;

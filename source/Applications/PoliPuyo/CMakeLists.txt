@@ -31,5 +31,6 @@ target_link_libraries(puyo
 					            ierwin
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(puyo)

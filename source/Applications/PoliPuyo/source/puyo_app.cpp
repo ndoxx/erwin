@@ -16,7 +16,21 @@ using namespace puyo;
 class Puyo: public Application
 {
 public:
-	Puyo()
+	Puyo() = default;
+
+	~Puyo()
+	{
+		Game::shutdown();
+	}
+
+	virtual void on_client_init() override
+	{
+		filesystem::set_asset_dir("source/Applications/PoliPuyo/assets");
+		// filesystem::set_client_config_dir("source/Applications/PoliPuyo/config");
+		// this->add_configuration("client.xml");
+	}
+
+	virtual void on_load() override
 	{
 		EVENTBUS.subscribe(this, &Puyo::on_keyboard_event);
 
@@ -29,9 +43,9 @@ public:
 		Game::init();
 	}
 
-	~Puyo()
+	virtual void on_imgui_render() override
 	{
-		Game::shutdown();
+
 	}
 
 	bool on_keyboard_event(const KeyboardEvent& e)
@@ -41,11 +55,6 @@ public:
 			EVENTBUS.publish(WindowCloseEvent());
 
 		return false;
-	}
-
-	void on_imgui_render()
-	{
-
 	}
 
 private:

@@ -105,6 +105,7 @@ set(SRC_MEMORY
     test_memory.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
@@ -142,16 +143,29 @@ cotire(test_memory)
 
 set(SRC_NUCLEAR
     nuclear.cpp
-    ${CMAKE_SOURCE_DIR}/source/Applications/PoliPuyo/source/dungeon.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
    )
 
-add_executable(nuclear ${SRC_NUCLEAR})
+add_executable(nuclear ${SRC_NUCLEAR} ${SRC_ENTITY})
 
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
+target_include_directories(nuclear PRIVATE "${INC_EASTL}")
 
 set_target_properties(nuclear
     PROPERTIES
@@ -164,5 +178,6 @@ target_link_libraries(nuclear
                       # erwin # throws std::system_error
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(nuclear)
