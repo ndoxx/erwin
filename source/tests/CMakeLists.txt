@@ -156,6 +156,7 @@ set(SRC_NUCLEAR
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/utils/random.cpp
    )
 
 add_executable(nuclear ${SRC_NUCLEAR} ${SRC_ENTITY})

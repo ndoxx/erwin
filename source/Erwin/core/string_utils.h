@@ -6,6 +6,7 @@
 #include <locale>
 #include <regex>
 #include <functional>
+#include "core/wtypes.h"
 
 namespace erwin
 {
@@ -58,7 +59,7 @@ static inline std::string trim_copy(std::string s)
 }
 
 // Tokenize an input string into a vector of strings, specifying a delimiter
-static inline void tokenize(std::string str, std::vector<std::string>& dst, char delimiter=',')
+static inline void tokenize(const std::string& str, std::vector<std::string>& dst, char delimiter=',')
 {
     std::stringstream ss(str);
 
@@ -71,7 +72,7 @@ static inline void tokenize(std::string str, std::vector<std::string>& dst, char
 }
 
 // Tokenize an input string and call a visitor for each token
-static inline void tokenize(std::string str, char delimiter, std::function<void(const std::string&)> visit)
+static inline void tokenize(const std::string& str, char delimiter, std::function<void(const std::string&)> visit)
 {
     std::stringstream ss(str);
 

@@ -20,6 +20,8 @@
 #include "entity/entity_manager.h"
 #include "core/game_clock.h"
 
+#include "utils/random.h"
+
 using namespace erwin;
 
 void init_logger()
@@ -36,6 +38,37 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+int main(int argc, char** argv)
+{
+	init_logger();
+
+	XorShiftEngine rng;
+	rng.set_seed_time();
+	// rng.set_seed(0);
+	// rng.set_seed({123456789, 789456123});
+	// rng.set_seed_string("123456789:789456123");
+
+	auto seed = rng.get_seed();
+	DLOG("nuclear",1) << "Seed: " << seed << std::endl;
+
+	for(int ii=0; ii<10; ++ii)
+		DLOG("nuclear",1) << rng() << " ";
+	DLOG("nuclear",1) << std::endl;
+
+	std::uniform_int_distribution<int> dis(1,6);
+	for(int ii=0; ii<100; ++ii)
+		DLOG("nuclear",1) << dis(rng) << " ";
+	DLOG("nuclear",1) << std::endl;
+
+	std::uniform_real_distribution<float> fdis(-1.f,1.f);
+	for(int ii=0; ii<10; ++ii)
+		DLOG("nuclear",1) << fdis(rng) << " ";
+	DLOG("nuclear",1) << std::endl;
+
+	return 0;
+}
+
+/*
 class AComponent: public Component
 {
 public:
@@ -180,7 +213,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
+*/
 
 /*
 class DummyComponent: public Component
