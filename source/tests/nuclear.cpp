@@ -65,6 +65,21 @@ int main(int argc, char** argv)
 		DLOG("nuclear",1) << fdis(rng) << " ";
 	DLOG("nuclear",1) << std::endl;
 
+	int Nexp = 1000000;
+	std::array<uint32_t,64> bit_stats;
+	for(int ii=0; ii<64; ++ii)
+		bit_stats[ii] = 0;
+	for(int kk=0;kk<Nexp; ++kk)
+	{
+		uint64_t rnd = rng.rand64();
+		for(int ii=0; ii<64; ++ii)
+			bit_stats[ii] += uint32_t((rnd & (1ul<<ii))!=0);
+	}
+
+	for(int ii=0; ii<64; ++ii)
+		DLOG("nuclear",1) << ii << ": " << bit_stats[ii]/float(Nexp) << std::endl;
+
+
 	return 0;
 }
 

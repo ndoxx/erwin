@@ -18,19 +18,30 @@
 	#define W_API
 #endif
 
-#ifdef W_ENABLE_ASSERT
-	#include <cstdio>
-	#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
-	#ifdef __linux__ 
+// Macro to break into debugger
+#ifdef W_DEBUG
+	#ifdef __linux__
 		#include <csignal>
-		#define W_ASSERT(CND, ...) { if(!( CND )) { printf("Assertion Failed: %s\n", __VA_ARGS__ ); raise(SIGTRAP); } }
+		#define W_DEBUG_BREAK() raise(SIGTRAP)
 	#endif
-	#ifdef _WIN32 
-		#define W_ASSERT(CND, ...) { if(!( CND )) { printf("Assertion Failed: %s\n", __VA_ARGS__ ); __debugbreak(); } }
+	#ifdef _WIN32
+		#define W_DEBUG_BREAK() __debugbreak()
 	#endif
 #else
+	#define W_DEBUG_BREAK()
+#endif
+
+#ifdef W_ENABLE_ASSERT
+	#include <cstdio>
+	#define ASSERT_FMT_BUFFER_SIZE__ 128
+	static char ASSERT_FMT_BUFFER__[ASSERT_FMT_BUFFER_SIZE__];
+	#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
+	#define W_ASSERT_FMT(CND, FORMAT_STR, ...) { if(!( CND )) { snprintf(ASSERT_FMT_BUFFER__, ASSERT_FMT_BUFFER_SIZE__, FORMAT_STR, __VA_ARGS__); printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , ASSERT_FMT_BUFFER__ , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
+	#define W_ASSERT(CND, STR) { if(!( CND )) { printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , STR , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
+#else
 	#define W_STATIC_ERROR(FSTR, ...)
-	#define W_ASSERT(CND, ...)
+	#define W_ASSERT_FMT(CND, FORMAT_STR, ...)
+	#define W_ASSERT(CND, STR)
 #endif
 
 inline void fatal() { exit(-1); }

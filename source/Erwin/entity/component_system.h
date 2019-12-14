@@ -118,10 +118,10 @@ void ComponentSystem<CompsT...>::on_entity_destroyed(const Entity& entity)
 	auto it = entity_id_to_index_map_.find(entity.get_id());
 	if(it != entity_id_to_index_map_.end())
 	{
-		// Move back element to overwrite this one
+		// Move back element to overwrite this one (swap trick for fast deletion)
 		components_[it->second] = std::move(components_.back());
 		components_.pop_back();
-		// Figure out which entity the moved component belongs to,
+		// Figure out which entity the moved components belongs to,
 		// in order to update the entity to index map.
 		// Simply grab first component in tuple, as all components in this
 		// tuple belong to the same entity.
