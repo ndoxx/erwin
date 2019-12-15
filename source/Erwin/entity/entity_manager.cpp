@@ -16,19 +16,15 @@ EntityManager::EntityManager()
 
 EntityManager::~EntityManager()
 {
-	// Delete all components
-	// TMP: For now, entities own their components
-	/*for(auto&& vec: components_)
-		for(Component* pcmp: vec)
-			delete pcmp;*/
+	entities_.clear(); // TMP
+
+	// Delete all component managers
+	for(auto&& pmgr: components_)
+		delete pmgr;
+
 	// Free all systems
 	for(auto&& psys: systems_)
 		delete psys;
-}
-
-void EntityManager::register_system(BaseComponentSystem* psys)
-{
-	systems_.push_back(psys);
 }
 
 void EntityManager::update(const GameClock& clock)
@@ -37,22 +33,22 @@ void EntityManager::update(const GameClock& clock)
 		psys->update(clock);
 }
 
-Entity& EntityManager::create_entity()
+EntityID EntityManager::create_entity()
 {
 	EntityID id = s_next_entity_id++;
 	entities_.emplace(id,Entity(id));
 	DLOG("entity",1) << "Created new entity:" << std::endl;
 	DLOGI << "ID: " << id << std::endl;
-	return entities_.at(id);
+	return id;
 }
 
-void EntityManager::submit_entity(EntityID entity)
+void EntityManager::submit_entity(EntityID entity_id)
 {
-	auto it = entities_.find(entity);
+	auto it = entities_.find(entity_id);
 	if(it == entities_.end())
 	{
 		DLOGW("entity") << "Trying to submit non existing entity:" << std::endl;
-		DLOGI << "ID: " << entity << std::endl;
+		DLOGI << "ID: " << entity_id << std::endl;
 		return;
 	}
 	// Register entity in all systems
@@ -60,15 +56,24 @@ void EntityManager::submit_entity(EntityID entity)
 		psys->on_entity_submitted(it->second);
 }
 
-void EntityManager::destroy_entity(EntityID entity)
+void EntityManager::destroy_entity(EntityID entity_id)
 {
-	auto it = entities_.find(entity);
+	auto it = entities_.find(entity_id);
 	if(it == entities_.end())
 	{
 		DLOGW("entity") << "Trying to destroy non existing entity:" << std::endl;
-		DLOGI << "ID: " << entity << std::endl;
+		DLOGI << "ID: " << entity_id << std::endl;
 		return;
 	}
+
+	// Remove entity's components
+	Entity& entity = it->second;
+	for(auto&& [cid, pcmp]: entity.get_components())
+	{
+		size_t mgr_index = components_lookup_.at(cid);
+		components_.at(mgr_index)->remove(entity_id);
+	}
+
 	// Remove entity from all systems
 	for(auto&& psys: systems_)
 		psys->on_entity_destroyed(it->second);

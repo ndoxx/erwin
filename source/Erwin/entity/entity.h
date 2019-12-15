@@ -35,7 +35,7 @@ public:
 	template <typename ComponentT>
 	inline void add_component(ComponentT* pcmp)
 	{
-		W_ASSERT(components_.find(ComponentT::ID) == components_.end(), "Entity already has a component of this type.");
+		W_ASSERT_FMT(components_.find(ComponentT::ID) == components_.end(), "Entity %lu already has a component of this type: %s", id_, ComponentT::NAME.c_str());
 		pcmp->set_parent_entity(id_);
 		pcmp->set_pool_index(0); // TMP
 		components_.emplace(ComponentT::ID, pcmp);

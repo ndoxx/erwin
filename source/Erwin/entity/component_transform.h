@@ -11,8 +11,7 @@ namespace erwin
 class ComponentTransform2D: public Component
 {
 public:
-	ID_DECLARATION(ComponentTransform2D);
-	POOL_DECLARATION(ComponentTransform2D);
+	COMPONENT_DECLARATION(ComponentTransform2D);
 
 	glm::vec2 position;
 	float angle;
@@ -25,8 +24,7 @@ public:
 class ComponentTransform3D: public Component
 {
 public:
-	ID_DECLARATION(ComponentTransform3D);
-	POOL_DECLARATION(ComponentTransform3D);
+	COMPONENT_DECLARATION(ComponentTransform3D);
 
 	glm::vec3 position;
 	glm::quat rotation;

@@ -87,21 +87,19 @@ int main(int argc, char** argv)
 class AComponent: public Component
 {
 public:
-	ID_DECLARATION(AComponent);
-	POOL_DECLARATION(AComponent);
+	COMPONENT_DECLARATION(AComponent);
 
 	int a;
 
 	AComponent(): a(1) {}
 	virtual bool init(void* description) override final { return true; }
 };
-POOL_DEFINITION(AComponent);
+COMPONENT_DEFINITION(AComponent);
 
 class BComponent: public Component
 {
 public:
-	ID_DECLARATION(BComponent);
-	POOL_DECLARATION(BComponent);
+	COMPONENT_DECLARATION(BComponent);
 
 	int b1;
 	int b2;
@@ -109,20 +107,19 @@ public:
 	BComponent(): b1(10), b2(10) {}
 	virtual bool init(void* description) override final { return true; }
 };
-POOL_DEFINITION(BComponent);
+COMPONENT_DEFINITION(BComponent);
 
 class CComponent: public Component
 {
 public:
-	ID_DECLARATION(CComponent);
-	POOL_DECLARATION(CComponent);
+	COMPONENT_DECLARATION(CComponent);
 
 	long c;
 
 	CComponent(): c(0) {}
 	virtual bool init(void* description) override final { return true; }
 };
-POOL_DEFINITION(CComponent);
+COMPONENT_DEFINITION(CComponent);
 
 // Systems
 class ABAdderSystem: public ComponentSystem<AComponent, BComponent>
@@ -183,48 +180,44 @@ int main(int argc, char** argv)
 	size_t N = 32;
 
 	memory::HeapArea area(1_MB);
-	AComponent::init_pool(area.require_pool_block<PoolArena>(sizeof(AComponent), N), N);
-	BComponent::init_pool(area.require_pool_block<PoolArena>(sizeof(BComponent), N), N);
-	CComponent::init_pool(area.require_pool_block<PoolArena>(sizeof(CComponent), N), N);
 
-	EntityManager* pmgr = new EntityManager();
-	pmgr->register_system(new ABAdderSystem(pmgr));
-	pmgr->register_system(new BCAdderSystem(pmgr));
+	EntityManager mgr;
+	mgr.create_component_manager<AComponent>(area, N);
+	mgr.create_component_manager<BComponent>(area, N);
+	mgr.create_component_manager<CComponent>(area, N);
+	mgr.create_system<ABAdderSystem>();
+	mgr.create_system<BCAdderSystem>();
 
 	// Entities that contain A and B components
 	for(int ii=0; ii<4; ++ii)
 	{
-		Entity& ent = pmgr->create_entity();
-		ent.add_component(new AComponent());
-		ent.add_component(new BComponent());
-		pmgr->submit_entity(ent.get_id());
+		EntityID ent = mgr.create_entity();
+		mgr.create_component<AComponent>(ent);
+		mgr.create_component<BComponent>(ent);
+		mgr.submit_entity(ent);
 	}
 	// Entities that contain B and C components
 	for(int ii=0; ii<5; ++ii)
 	{
-		Entity& ent = pmgr->create_entity();
-		ent.add_component(new BComponent());
-		ent.add_component(new CComponent());
-		pmgr->submit_entity(ent.get_id());
+		EntityID ent = mgr.create_entity();
+		mgr.create_component<BComponent>(ent);
+		mgr.create_component<CComponent>(ent);
+		mgr.submit_entity(ent);
 	}
 	// Entities that contain A and C components (should be ignored)
 	for(int ii=0; ii<4; ++ii)
 	{
-		Entity& ent = pmgr->create_entity();
-		ent.add_component(new AComponent());
-		ent.add_component(new CComponent());
-		pmgr->submit_entity(ent.get_id());
+		EntityID ent = mgr.create_entity();
+		mgr.create_component<AComponent>(ent);
+		mgr.create_component<CComponent>(ent);
+		mgr.submit_entity(ent);
 	}
 
+	mgr.destroy_entity(0);
+
 	GameClock game_clock;
-	pmgr->update(game_clock);
-	pmgr->update(game_clock);
-
-	delete pmgr;
-
-	AComponent::destroy_pool();
-	BComponent::destroy_pool();
-	CComponent::destroy_pool();
+	mgr.update(game_clock);
+	mgr.update(game_clock);
 
 	return 0;
 }
@@ -235,7 +228,7 @@ class DummyComponent: public Component
 {
 public:
 	ID_DECLARATION(DummyComponent);
-	POOL_DECLARATION(DummyComponent);
+	COMPONENT_DECLARATION(DummyComponent);
 
 	uint32_t a;
 	uint32_t b;
@@ -244,7 +237,7 @@ public:
 	DummyComponent(): a(0xB16B00B5), b(0x42424242), c(0xD0D0DADAD0D0DADA) {}
 	virtual bool init(void* description) override final { return true; }
 };
-POOL_DEFINITION(DummyComponent);
+COMPONENT_DEFINITION(DummyComponent);
 
 int main(int argc, char** argv)
 {

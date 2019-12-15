@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "EASTL/numeric_limits.h"
 #include "entity/entity_types.h"
 #include "memory/arena.h"
@@ -32,22 +33,23 @@ private:
 
 #define DEFAULT_COMPONENT_COUNT 32
 
-// Macro to generate a unique ID for a component (call in public)
-#define ID_DECLARATION( COMPONENT_NAME ) \
-	static constexpr ComponentID ID = ctti::type_id< COMPONENT_NAME >().hash()
-
-// Macro to generate the declarations of component pool creation/destruction functions for a component (call in public)
-// Also generates operator overloads for new and delete
-#define POOL_DECLARATION( COMPONENT_NAME ) \
+// Macro to generate the declarations of:
+// - Static component ID and debug name
+// - Component pool creation/destruction functions
+// - Operator overloads for new and delete
+// MUST be called in public
+#define COMPONENT_DECLARATION( COMPONENT_NAME ) \
+	static constexpr ComponentID ID = ctti::type_id< COMPONENT_NAME >().hash(); \
+	static std::string NAME; \
 	static PoolArena* s_ppool_; \
 	static void init_pool(void* begin, size_t max_count = DEFAULT_COMPONENT_COUNT , const char* debug_name = nullptr ); \
 	static void destroy_pool(); \
 	static void* operator new(size_t size); \
 	static void operator delete(void* ptr)
-	
 
-// Macro to generate the definitions of component pool creation/destruction functions for a component
-#define POOL_DEFINITION( COMPONENT_NAME ) \
+// Macro to generate the definitions of symbols declared by previous macro
+#define COMPONENT_DEFINITION( COMPONENT_NAME ) \
+	std::string COMPONENT_NAME::NAME = #COMPONENT_NAME; \
 	PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
 	void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
 	{ \
