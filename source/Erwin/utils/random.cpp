@@ -53,6 +53,11 @@ std::ostream& operator <<(std::ostream& stream, XorShiftEngine::Seed rhs)
 	return stream;
 }
 
+XorShiftEngine::XorShiftEngine()
+{
+	seed();
+}
+
 uint64_t XorShiftEngine::rand64()
 {
 	uint64_t t = seed_.state_[0];
@@ -63,14 +68,14 @@ uint64_t XorShiftEngine::rand64()
 	return seed_.state_[1] + s;
 }
 
-void XorShiftEngine::set_seed_time()
+void XorShiftEngine::seed()
 {
 	using namespace std::chrono;
 	uint64_t epoch_ms = duration_cast<milliseconds>
 	(
 	    system_clock::now().time_since_epoch()
 	).count();
-	set_seed(epoch_ms);
+	seed(epoch_ms);
 }
 
 } // namespace erwin

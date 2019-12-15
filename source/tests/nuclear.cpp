@@ -37,16 +37,16 @@ void init_logger()
 
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
-
+/*
 int main(int argc, char** argv)
 {
 	init_logger();
 
 	XorShiftEngine rng;
-	rng.set_seed_time();
-	// rng.set_seed(0);
-	// rng.set_seed({123456789, 789456123});
-	// rng.set_seed_string("123456789:789456123");
+	rng.seed();
+	// rng.seed(0);
+	// rng.seed({123456789, 789456123});
+	// rng.seed_string("123456789:789456123");
 
 	auto seed = rng.get_seed();
 	DLOG("nuclear",1) << "Seed: " << seed << std::endl;
@@ -82,8 +82,8 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/
 
-/*
 class AComponent: public Component
 {
 public:
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-*/
+
 
 /*
 class DummyComponent: public Component
