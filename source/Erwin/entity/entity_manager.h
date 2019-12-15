@@ -19,12 +19,12 @@ namespace erwin
 class Component;
 class BaseComponentSystem;
 class GameClock;
-class EntityManager
+class W_API EntityManager
 {
 public:
 	NON_COPYABLE(EntityManager);
 	NON_MOVABLE(EntityManager);
-	EntityManager();
+	EntityManager() = default;
 	~EntityManager();
 
 	// Create a component system, only enabled for types inheritting from BaseComponentSystem
@@ -46,24 +46,54 @@ public:
 		components_lookup_.emplace(ComponentT::ID, index);
 	}
 
+	// Update all systems
 	void update(const GameClock& clock);
-
+	// Create a new entity and return its ID
 	EntityID create_entity();
+	// Register an entity's components into all relevant systems
+	void submit_entity(EntityID entity_id);
+	// Remove an entity from existence, destroying all of its components
+	void destroy_entity(EntityID entity_id);
 
+	// Create a new component for specified entity and optionally initialize it
 	template <typename ComponentT>
-	ComponentT& create_component(EntityID entity_id)
+	ComponentT& create_component(EntityID entity_id, void* p_component_description=nullptr)
 	{
-		// Create component
-		auto* pcmp = get_component_manager<ComponentT>()->create_component(entity_id);
-		// Register component in entity (TMP?)
+		// Create and initialize component
+		auto* pcmp = get_component_manager<ComponentT>()->create(entity_id);
+		pcmp->set_pool_index(get_component_manager_index<ComponentT>());
+		pcmp->set_parent_entity(entity_id);
+		if(p_component_description)
+			pcmp->init(p_component_description);
+
+		// Register component in entity
 		Entity& entity = get_entity(entity_id);
 		entity.add_component(pcmp);
+
 		return *pcmp;
 	}
 
-	void submit_entity(EntityID entity_id);
-	void destroy_entity(EntityID entity_id);
-
+private:
+	// * Helpers
+	// Retrieve component manager index from component type
+	template <typename ComponentT>
+	inline size_t get_component_manager_index()
+	{
+		auto it = components_lookup_.find(ComponentT::ID);
+		W_ASSERT_FMT(it != components_lookup_.end(), "No component manager for component ID: %lu", ComponentT::ID);
+		return it->second;
+	}
+	// Retrieve component manager and cast to correct type
+	template <typename ComponentT>
+	inline ComponentManager<ComponentT>* get_component_manager()
+	{
+		using CMgrT = ComponentManager<ComponentT>;
+		auto it = components_lookup_.find(ComponentT::ID);
+		W_ASSERT_FMT(it != components_lookup_.end(), "No component manager for component ID: %lu", ComponentT::ID);
+		size_t mgr_index = it->second;
+		return static_cast<CMgrT*>(components_[mgr_index]);
+	}
+	// Get an entity by ID
 	inline Entity& get_entity(EntityID id)
 	{
 		auto it = entities_.find(id);
@@ -72,27 +102,15 @@ public:
 	}
 
 private:
-	template <typename ComponentT>
-	inline ComponentManager<ComponentT>* get_component_manager()
-	{
-		// Retrieve component manager and cast to correct type
-		using CMgrT = ComponentManager<ComponentT>;
-		auto it = components_lookup_.find(ComponentT::ID);
-		W_ASSERT_FMT(it != components_lookup_.end(), "No component manager for component ID: %lu", ComponentT::ID);
-		size_t mgr_index = it->second;
-		return static_cast<CMgrT*>(components_[mgr_index]);
-	}
-
-private:
 	using Entities   = eastl::hash_map<EntityID, Entity>;
 	using Systems    = eastl::vector<BaseComponentSystem*>;
 	using Components = eastl::vector<BaseComponentManager*>;
+	using Lookup     = eastl::hash_map<ComponentID, size_t>;
 
 	Entities entities_;
 	Systems systems_;
 	Components components_;
-
-	eastl::hash_map<ComponentID, size_t> components_lookup_;
+	Lookup components_lookup_;
 
 	static EntityID s_next_entity_id;
 };

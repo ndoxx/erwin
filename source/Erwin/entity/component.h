@@ -12,12 +12,13 @@ namespace erwin
 class Component
 {
 public:
-	friend class Entity;
+	friend class EntityManager;
 	
 	Component(): parent_(k_invalid_entity_id), pool_index_(k_invalid_pool_index) {}
 	virtual ~Component() = default;
 
 	virtual bool init(void* description) = 0;
+	virtual const std::string& get_debug_name() const = 0;
 
 	inline EntityID get_parent_entity() const      { return parent_; }
 	inline uint64_t get_pool_index() const         { return pool_index_; }
@@ -42,6 +43,7 @@ private:
 	static constexpr ComponentID ID = ctti::type_id< COMPONENT_NAME >().hash(); \
 	static std::string NAME; \
 	static PoolArena* s_ppool_; \
+	virtual const std::string& get_debug_name() const override { return NAME; } \
 	static void init_pool(void* begin, size_t max_count = DEFAULT_COMPONENT_COUNT , const char* debug_name = nullptr ); \
 	static void destroy_pool(); \
 	static void* operator new(size_t size); \

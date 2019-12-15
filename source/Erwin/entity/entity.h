@@ -14,12 +14,15 @@ public:
 	using ComponentMap = eastl::hash_map<ComponentID, Component*, eastl::hash<ComponentID>, eastl::equal_to<ComponentID>/*, PooledEastlAllocator*/>;
 
 	NON_COPYABLE(Entity);
-	explicit Entity(EntityID id);
+	explicit Entity(EntityID id): id_(id) { }
 	Entity(Entity&&) = default;
 	Entity& operator=(Entity&&) = default;
-	~Entity();
+	~Entity() = default;
 
 	inline EntityID get_id() const { return id_; }
+
+	template <typename ComponentT>
+	inline void add_component(ComponentT* pcmp) { components_.emplace(ComponentT::ID, pcmp); }
 
 	template <typename ComponentT>
 	inline ComponentT* get_component() const
@@ -31,15 +34,6 @@ public:
 	}
 
 	inline const ComponentMap& get_components() const { return components_; }
-
-	template <typename ComponentT>
-	inline void add_component(ComponentT* pcmp)
-	{
-		W_ASSERT_FMT(components_.find(ComponentT::ID) == components_.end(), "Entity %lu already has a component of this type: %s", id_, ComponentT::NAME.c_str());
-		pcmp->set_parent_entity(id_);
-		pcmp->set_pool_index(0); // TMP
-		components_.emplace(ComponentT::ID, pcmp);
-	}
 
 private:
 	ComponentMap components_;

@@ -213,10 +213,9 @@ int main(int argc, char** argv)
 		mgr.submit_entity(ent);
 	}
 
-	mgr.destroy_entity(0);
-
 	GameClock game_clock;
 	mgr.update(game_clock);
+	mgr.destroy_entity(0);
 	mgr.update(game_clock);
 
 	return 0;
