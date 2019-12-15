@@ -9,26 +9,15 @@ namespace erwin
 
 EntityID EntityManager::s_next_entity_id = 0;
 
-EntityManager::EntityManager()
-{
-
-}
-
 EntityManager::~EntityManager()
 {
-	// Delete all components
-	// TMP: For now, entities own their components
-	/*for(auto&& vec: components_)
-		for(Component* pcmp: vec)
-			delete pcmp;*/
+	// Delete all component managers (and the components they hold)
+	for(auto&& pmgr: components_)
+		delete pmgr;
+
 	// Free all systems
 	for(auto&& psys: systems_)
 		delete psys;
-}
-
-void EntityManager::register_system(BaseComponentSystem* psys)
-{
-	systems_.push_back(psys);
 }
 
 void EntityManager::update(const GameClock& clock)
@@ -37,42 +26,57 @@ void EntityManager::update(const GameClock& clock)
 		psys->update(clock);
 }
 
-Entity& EntityManager::create_entity()
+EntityID EntityManager::create_entity()
 {
 	EntityID id = s_next_entity_id++;
 	entities_.emplace(id,Entity(id));
-	DLOG("entity",1) << "Created new entity:" << std::endl;
-	DLOGI << "ID: " << id << std::endl;
-	return entities_.at(id);
+	return id;
 }
 
-void EntityManager::submit_entity(EntityID entity)
+void EntityManager::submit_entity(EntityID entity_id)
 {
-	auto it = entities_.find(entity);
+	auto it = entities_.find(entity_id);
 	if(it == entities_.end())
 	{
 		DLOGW("entity") << "Trying to submit non existing entity:" << std::endl;
-		DLOGI << "ID: " << entity << std::endl;
+		DLOGI << "ID: " << WCC('v') << entity_id << std::endl;
 		return;
 	}
+
+	// Log stuff
+#ifdef W_DEBUG
+	DLOG("entity",0) << "Registered new entity:" << std::endl;
+	DLOGI << "ID:        " << WCC('v') << entity_id << std::endl;
+	for(auto&& [cid, pcmp]: it->second.get_components())
+		DLOGI << "Component: " << WCC('n') << pcmp->get_debug_name() << std::endl;
+#endif
+
 	// Register entity in all systems
 	for(auto&& psys: systems_)
 		psys->on_entity_submitted(it->second);
 }
 
-void EntityManager::destroy_entity(EntityID entity)
+void EntityManager::destroy_entity(EntityID entity_id)
 {
-	auto it = entities_.find(entity);
+	auto it = entities_.find(entity_id);
 	if(it == entities_.end())
 	{
 		DLOGW("entity") << "Trying to destroy non existing entity:" << std::endl;
-		DLOGI << "ID: " << entity << std::endl;
+		DLOGI << "ID: " << WCC('v') << entity_id << std::endl;
 		return;
 	}
+
+	// Remove entity's components
+	Entity& entity = it->second;
+	for(auto&& [cid, pcmp]: entity.get_components())
+		components_.at(pcmp->get_pool_index())->remove(entity_id);
+
 	// Remove entity from all systems
 	for(auto&& psys: systems_)
 		psys->on_entity_destroyed(it->second);
 	entities_.erase(it);
+
+	DLOG("entity",0) << "Destroyed entity " << WCC('v') << entity_id << std::endl;
 }
 
 
