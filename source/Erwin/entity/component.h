@@ -65,6 +65,7 @@ private:
 	void COMPONENT_NAME::destroy_pool() \
 	{ \
 		delete s_ppool_; \
+		s_ppool_ = nullptr; \
 	} \
 	void* COMPONENT_NAME::operator new(size_t size) \
 	{ \

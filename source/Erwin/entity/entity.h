@@ -29,7 +29,7 @@ public:
 	{
 		auto it = components_.find(ComponentT::ID);
 		if(it != components_.end())
-			return it->second;
+			return static_cast<ComponentT*>(it->second);
 		return nullptr;
 	}
 

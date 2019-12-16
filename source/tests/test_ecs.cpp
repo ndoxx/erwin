@@ -1,39 +1,16 @@
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <functional>
-#include <random>
-#include <type_traits>
-#include <cstdlib>
-#include <cstring>
-#include <bitset>
-
+#include "catch2/catch.hpp"
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
+#include "memory/pool_allocator.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
-
 #include "entity/component.h"
 #include "entity/component_system.h"
 #include "entity/entity_manager.h"
 #include "core/game_clock.h"
 
 using namespace erwin;
-
-void init_logger()
-{
-    WLOGGER.create_channel("memory", 3);
-	WLOGGER.create_channel("nuclear", 3);
-	WLOGGER.create_channel("entity", 3);
-	WLOGGER.attach_all("console_sink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.set_single_threaded(true);
-    WLOGGER.set_backtrace_on_error(false);
-    WLOGGER.spawn();
-    WLOGGER.sync();
-
-    DLOGN("nuclear") << "Nuclear test" << std::endl;
-}
 
 class AComponent: public Component
 {
@@ -124,41 +101,67 @@ public:
 	}
 };
 
-int main(int argc, char** argv)
+
+class ECSFixture
 {
-	init_logger();
+public:
 
-    memory::hex_dump_highlight(0xf0f0f0f0, WCB(200,50,0));
-    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,50,200));
-    memory::hex_dump_highlight(0xd0d0d0d0, WCB(50,120,0));
+	ECSFixture():
+	area(1_MB)
+	{
+		size_t N = 8;
+		mgr.create_component_manager<AComponent>(area, N);
+		mgr.create_component_manager<BComponent>(area, N);
+		mgr.create_component_manager<CComponent>(area, N);
+		mgr.create_system<ABAdderSystem>();
+		mgr.create_system<BCAdderSystem>();
 
-	size_t N = 8;
+		// Entities that contain A and B components
+		for(int ii=0; ii<4; ++ii)
+		{
+			EntityID ent = mgr.create_entity();
+			mgr.create_component<AComponent>(ent);
+			mgr.create_component<BComponent>(ent);
+			mgr.submit_entity(ent);
+		}
+		// Entities that contain B and C components
+		for(int ii=0; ii<4; ++ii)
+		{
+			EntityID ent = mgr.create_entity();
+			mgr.create_component<BComponent>(ent);
+			mgr.create_component<CComponent>(ent);
+			mgr.submit_entity(ent);
+		}
+	}
 
-	memory::HeapArea area(1_MB);
-
+protected:
+	memory::HeapArea area;
 	EntityManager mgr;
-	mgr.create_component_manager<AComponent>(area, N);
-	mgr.create_component_manager<BComponent>(area, N);
-	mgr.create_component_manager<CComponent>(area, N);
-	mgr.create_system<ABAdderSystem>();
-	mgr.create_system<BCAdderSystem>();
+};
 
-	// Entities that contain A and B components
+TEST_CASE_METHOD(ECSFixture, "Component filtering test: check processed entities", "[ecs]")
+{
+	GameClock game_clock;
+	mgr.update(game_clock);
+	area.debug_hex_dump(std::cout);
+
 	for(int ii=0; ii<4; ++ii)
 	{
-		EntityID ent = mgr.create_entity();
-		mgr.create_component<AComponent>(ent);
-		mgr.create_component<BComponent>(ent);
-		mgr.submit_entity(ent);
+		Entity& ent = mgr.get_entity(ii);
+		REQUIRE(ent.get_component<BComponent>()->b1 == 11);
+		REQUIRE(ent.get_component<BComponent>()->b2 == 9);
 	}
-	// Entities that contain B and C components
-	for(int ii=0; ii<4; ++ii)
+	for(int ii=4; ii<8; ++ii)
 	{
-		EntityID ent = mgr.create_entity();
-		mgr.create_component<BComponent>(ent);
-		mgr.create_component<CComponent>(ent);
-		mgr.submit_entity(ent);
+		Entity& ent = mgr.get_entity(ii);
+		REQUIRE(ent.get_component<CComponent>()->c == 10);
 	}
+}
+
+TEST_CASE_METHOD(ECSFixture, "Component filtering test: check ignored entities", "[ecs]")
+{
+	std::vector<EntityID> ids;
+
 	// Entities that contain A and C components (should be ignored)
 	for(int ii=0; ii<4; ++ii)
 	{
@@ -166,14 +169,16 @@ int main(int argc, char** argv)
 		mgr.create_component<AComponent>(ent);
 		mgr.create_component<CComponent>(ent);
 		mgr.submit_entity(ent);
+		ids.push_back(ent);
 	}
 
 	GameClock game_clock;
 	mgr.update(game_clock);
 	area.debug_hex_dump(std::cout);
-	mgr.destroy_entity(0);
-	mgr.update(game_clock);
-	area.debug_hex_dump(std::cout);
 
-	return 0;
+	for(EntityID id: ids)
+	{
+		Entity& ent = mgr.get_entity(id);
+		REQUIRE(ent.get_component<CComponent>()->c == 0);
+	}
 }

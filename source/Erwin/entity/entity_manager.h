@@ -73,6 +73,14 @@ public:
 		return *pcmp;
 	}
 
+	// Get an entity by ID
+	inline Entity& get_entity(EntityID id)
+	{
+		auto it = entities_.find(id);
+		W_ASSERT_FMT(it != entities_.end(), "Unknown entity ID: %lu", id);
+		return it->second;
+	}
+
 private:
 	// * Helpers
 	// Retrieve component manager index from component type
@@ -92,13 +100,6 @@ private:
 		W_ASSERT_FMT(it != components_lookup_.end(), "No component manager for component ID: %lu", ComponentT::ID);
 		size_t mgr_index = it->second;
 		return static_cast<CMgrT*>(components_[mgr_index]);
-	}
-	// Get an entity by ID
-	inline Entity& get_entity(EntityID id)
-	{
-		auto it = entities_.find(id);
-		W_ASSERT_FMT(it != entities_.end(), "Unknown entity ID: %lu", id);
-		return it->second;
 	}
 
 private:

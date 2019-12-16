@@ -181,6 +181,15 @@ public:
 		return block.first;
 	}
 
+#ifdef W_DEBUG
+	inline void debug_hex_dump(std::ostream& stream, size_t size=0)
+	{
+		if(size == 0)
+			size = size_t(head_-begin_);
+    	memory::hex_dump(stream, begin_, size, "HEX DUMP");
+	}
+#endif
+
 private:
 	size_t size_;
 	uint8_t* begin_;
