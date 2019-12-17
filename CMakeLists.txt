@@ -64,6 +64,11 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/assets/stb_build.cpp
   )
 
+set(SRC_EVENT
+    ${CMAKE_SOURCE_DIR}/source/Erwin/event/event.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/event/window_events.cpp
+  )
+
 set(SRC_FILESYSTEM
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/spv_file.cpp
@@ -152,6 +157,7 @@ endif()
 
 add_library(erwin SHARED
             ${SRC_CORE}
+            ${SRC_EVENT}
             ${SRC_FILESYSTEM}
             ${SRC_MATH}
             ${SRC_ENTITY}

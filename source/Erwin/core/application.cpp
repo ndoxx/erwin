@@ -67,7 +67,7 @@ Application::~Application()
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
         WLOGGER.kill();
-        EventBus::Kill();
+        EventBus::shutdown();
     }
 }
 
@@ -91,6 +91,9 @@ bool Application::init()
 
         // Initialize config
         cfg::init(filesystem::get_config_dir() / "erwin.xml");
+
+        // Initialize event bus
+        EventBus::init();
 
         // Log events
         if(cfg::get<bool>("erwin.logger.track_window_close_events"_h, false))

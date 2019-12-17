@@ -8,8 +8,9 @@ namespace erwin
 
 struct WindowCloseEvent: public WEvent
 {
-	EVENT_NAME(WindowCloseEvent)
-
+	EVENT_DECLARATION(WindowCloseEvent);
+    WindowCloseEvent() = default;
+    
 #ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
@@ -20,8 +21,9 @@ struct WindowCloseEvent: public WEvent
 
 struct WindowResizeEvent: public WEvent
 {
-	EVENT_NAME(WindowResizeEvent)
+	EVENT_DECLARATION(WindowResizeEvent);
 
+    WindowResizeEvent() = default;
 	WindowResizeEvent(int width, int height):
 	width(width),
 	height(height)
@@ -42,8 +44,9 @@ struct WindowResizeEvent: public WEvent
 
 struct FramebufferResizeEvent: public WEvent
 {
-    EVENT_NAME(FramebufferResizeEvent)
+    EVENT_DECLARATION(FramebufferResizeEvent);
 
+    FramebufferResizeEvent() = default;
     FramebufferResizeEvent(int width, int height):
     width(width),
     height(height)
@@ -64,8 +67,9 @@ struct FramebufferResizeEvent: public WEvent
 
 struct KeyboardEvent: public WEvent
 {
-	EVENT_NAME(KeyboardEvent)
+	EVENT_DECLARATION(KeyboardEvent);
 
+    KeyboardEvent() = default;
 	KeyboardEvent(keymap::WKEY key, uint8_t mods, bool pressed, bool repeat):
 	key(key),
 	mods(mods),
@@ -99,8 +103,9 @@ struct KeyboardEvent: public WEvent
 
 struct KeyTypedEvent: public WEvent
 {
-    EVENT_NAME(KeyTypedEvent)
+    EVENT_DECLARATION(KeyTypedEvent);
 
+    KeyTypedEvent() = default;
     KeyTypedEvent(unsigned int codepoint):
     codepoint(codepoint)
     {
@@ -119,8 +124,9 @@ struct KeyTypedEvent: public WEvent
 
 struct MouseButtonEvent: public WEvent
 {
-	EVENT_NAME(MouseButtonEvent)
+	EVENT_DECLARATION(MouseButtonEvent);
 
+    MouseButtonEvent() = default;
 	MouseButtonEvent(keymap::WMOUSE button, uint8_t mods, bool pressed, float x, float y):
 	button(button), mods(mods), pressed(pressed), x(x), y(y)
 	{
@@ -144,8 +150,9 @@ struct MouseButtonEvent: public WEvent
 
 struct MouseMovedEvent: public WEvent
 {
-	EVENT_NAME(MouseMovedEvent)
+	EVENT_DECLARATION(MouseMovedEvent);
 
+    MouseMovedEvent() = default;
 	MouseMovedEvent(float x, float y):
 	x(x), y(y)
 	{
@@ -165,8 +172,9 @@ struct MouseMovedEvent: public WEvent
 
 struct MouseScrollEvent: public WEvent
 {
-	EVENT_NAME(MouseScrollEvent)
+	EVENT_DECLARATION(MouseScrollEvent);
 	
+    MouseScrollEvent() = default;
 	MouseScrollEvent(float x_offset, float y_offset):
 	x_offset(x_offset), y_offset(y_offset)
 	{
