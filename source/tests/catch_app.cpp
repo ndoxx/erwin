@@ -15,6 +15,7 @@ using namespace erwin;
 
 int main(int argc, char* argv[])
 {
+    WLOGGER.create_channel("event", 3);
 	WLOGGER.create_channel("rng", 3);
     WLOGGER.create_channel("memory", 3);
 	WLOGGER.create_channel("entity", 3);

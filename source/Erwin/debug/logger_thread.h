@@ -7,7 +7,7 @@
 #include "ctti/type_id.hpp"
 
 #include "debug/logger_common.h"
-#include "event/event.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {

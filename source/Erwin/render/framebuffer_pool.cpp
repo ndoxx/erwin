@@ -2,6 +2,7 @@
 #include "render/main_renderer.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {

@@ -65,7 +65,7 @@ set(SRC_CORE
   )
 
 set(SRC_EVENT
-    ${CMAKE_SOURCE_DIR}/source/Erwin/event/event.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/event/event_bus.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/event/window_events.cpp
   )
 

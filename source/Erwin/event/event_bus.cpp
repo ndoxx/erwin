@@ -1,4 +1,4 @@
-#include "event/event.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {
@@ -27,6 +27,7 @@ EventBus::~EventBus()
 
 void EventBus::dispatch()
 {
+	// TODO: Handlers may fire events too, maybe we should continue to iterate till all queues are truly empty
 	for(auto&& [eid, q]: event_queues_)
 	{
         DelegateList* delegates = subscribers_[eid];
@@ -40,6 +41,8 @@ void EventBus::dispatch()
 	            if(handler == nullptr) continue;
 	            if(handler->exec(*q.front())) break; // If handler returns true, event is not propagated further
 	        }
+	        
+	        delete q.front();
 	        q.pop();
 	    }
 	}
