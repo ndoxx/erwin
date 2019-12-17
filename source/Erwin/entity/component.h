@@ -55,7 +55,7 @@ private:
 	PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
 	void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
 	{ \
-		W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
+		W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #COMPONENT_NAME); \
 		s_ppool_ = new PoolArena(begin, sizeof(COMPONENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
 		if(debug_name) \
 			s_ppool_->set_debug_name(debug_name); \
@@ -70,12 +70,12 @@ private:
 	void* COMPONENT_NAME::operator new(size_t size) \
 	{ \
 		(void)(size); \
-		W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+		W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #COMPONENT_NAME); \
 		return ::W_NEW( COMPONENT_NAME , (*s_ppool_) ); \
 	} \
 	void COMPONENT_NAME::operator delete(void* ptr) \
 	{ \
-		W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+		W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #COMPONENT_NAME); \
 		W_DELETE( (COMPONENT_NAME*)(ptr) , (*s_ppool_) ); \
 	}
 

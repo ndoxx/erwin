@@ -6,9 +6,10 @@
 // * Made EventBus a (thread-safe) singleton (not something I'm really proud of)
 
 #pragma once
-#include <map>
-#include <list>
 #include <memory>
+#include "EASTL/list.h"
+#include "EASTL/hash_map.h"
+#include "EASTL/queue.h"
 
 #include "ctti/type_id.hpp"
 
@@ -37,7 +38,7 @@ typedef uint64_t EventID;
     PoolArena* EVENT_NAME::s_ppool_ = nullptr; \
     void EVENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
     { \
-        W_ASSERT(s_ppool_==nullptr, "Memory pool is already initialized."); \
+        W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #EVENT_NAME); \
         s_ppool_ = new PoolArena(begin, sizeof(EVENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
         if(debug_name) \
             s_ppool_->set_debug_name(debug_name); \
@@ -52,12 +53,12 @@ typedef uint64_t EventID;
     void* EVENT_NAME::operator new(size_t size) \
     { \
         (void)(size); \
-        W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
         return ::W_NEW( EVENT_NAME , (*s_ppool_) ); \
     } \
     void EVENT_NAME::operator delete(void* ptr) \
     { \
-        W_ASSERT(s_ppool_, "Memory pool has not been created yet. Call init_pool()."); \
+        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
         W_DELETE( (EVENT_NAME*)(ptr) , (*s_ppool_) ); \
     }
 
@@ -87,7 +88,7 @@ public:
     NON_COPYABLE(EventBus);
     NON_MOVABLE(EventBus);
 
-    typedef std::list<AbstractDelegate<WEvent>*> DelegateList;
+    using DelegateList = eastl::list<AbstractDelegate<WEvent>*>;
 
     static void init();
     static void shutdown();
@@ -96,15 +97,26 @@ public:
     EventBus() = default;
     ~EventBus();
 
+    template<typename EventT>
+    void init_event_pool(memory::HeapArea& area, size_t max_events)
+    {
+        EventT::init_pool(area.require_pool_block<PoolArena>(sizeof(EventT), max_events), max_events);
+        event_queues_.emplace(eastl::piecewise_construct, eastl::make_tuple(EventT::ID), eastl::make_tuple());
+    }
+
+    template<typename EventT>
+    void destroy_event_pool()
+    {
+        EventT::destroy_pool();
+    }
+
     // Fire an event that will be handled instantly
     template<typename EventT>
     void publish(const EventT& event)
     {
-        DelegateList* delegates = subscribers[EventT::ID];
-
+        DelegateList* delegates = subscribers_[EventT::ID];
         if(delegates == nullptr) return;
 
-        // TODO: make it non-blocking (events handled in an event phase)
         for(auto&& handler: *delegates)
             if(handler != nullptr)
                 if(handler->exec(event)) // If handler returns true, event is not propagated further
@@ -113,22 +125,28 @@ public:
 
     // Fire an event that will be processed during the event phase
     template<typename EventT>
-    void enqueue(const EventT& event)
+    void enqueue(EventT* event)
     {
+        DelegateList* delegates = subscribers_[EventT::ID];
+        if(delegates == nullptr) return;
 
+        event_queues_[EventT::ID].push(event);
     }
+
+    // Dispatch all queued events to corresponding delegates
+    void dispatch();
 
     // Register a member function as an event handler
     template<typename ClassT, typename EventT>
     void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&))
     {
-        DelegateList* delegates = subscribers[EventT::ID];
+        DelegateList* delegates = subscribers_[EventT::ID];
 
         // First time initialization
         if(delegates == nullptr)
         {
             delegates = new DelegateList();
-            subscribers[EventT::ID] = delegates;
+            subscribers_[EventT::ID] = delegates;
         }
 
         delegates->push_back(new MemberDelegate<ClassT, WEvent, EventT>(instance, memberFunction));
@@ -138,23 +156,24 @@ public:
     template<typename EventT>
     void subscribe(bool (*freeFunction)(const EventT&))
     {
-        DelegateList* delegates = subscribers[EventT::ID];
+        DelegateList* delegates = subscribers_[EventT::ID];
 
         // First time initialization
         if(delegates == nullptr)
         {
             delegates = new DelegateList();
-            subscribers[EventT::ID] = delegates;
+            subscribers_[EventT::ID] = delegates;
         }
 
         delegates->push_back(new FreeDelegate<WEvent, EventT>(freeFunction));
     }
 
 private:
-    using Subscribers = std::map<EventID, DelegateList*>;
-    // using EventQueues = std::map<EventID, std::>;
+    using Subscribers = eastl::hash_map<EventID, DelegateList*>;
+    using EventQueues = eastl::hash_map<EventID, eastl::queue<WEvent*>>;
 
-    Subscribers subscribers;
+    Subscribers subscribers_;
+    EventQueues event_queues_;
 
     static std::unique_ptr<EventBus> p_instance_;
 };

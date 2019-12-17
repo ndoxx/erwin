@@ -31,6 +31,7 @@ struct ApplicationStorage
 {
     std::vector<fs::path> configuration_files;
     memory::HeapArea client_area;
+    memory::HeapArea system_area;
 };
 static ApplicationStorage s_storage;
 
@@ -67,6 +68,16 @@ Application::~Application()
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
         WLOGGER.kill();
+
+        EVENTBUS.destroy_event_pool<WindowCloseEvent>();
+        EVENTBUS.destroy_event_pool<WindowResizeEvent>();
+        EVENTBUS.destroy_event_pool<FramebufferResizeEvent>();
+        EVENTBUS.destroy_event_pool<KeyboardEvent>();
+        EVENTBUS.destroy_event_pool<KeyTypedEvent>();
+        EVENTBUS.destroy_event_pool<MouseButtonEvent>();
+        EVENTBUS.destroy_event_pool<MouseMovedEvent>();
+        EVENTBUS.destroy_event_pool<MouseScrollEvent>();
+
         EventBus::shutdown();
     }
 }
@@ -140,6 +151,31 @@ bool Application::init()
 
         // Parse intern strings
         istr::init("intern_strings.txt");
+    }
+
+    // Initialize system memory
+    {
+        W_PROFILE_SCOPE("System memory init")
+        DLOGN("application") << "Initializing system memory" << std::endl;
+        size_t system_mem_size = cfg::get<size_t>("erwin.memory.system_area"_h, 10_MB);
+        if(!s_storage.system_area.init(system_mem_size))
+        {
+            DLOGF("application") << "Cannot allocate system memory." << std::endl;
+            return false;
+        }
+    }
+
+    // Initialize system event pools
+    {
+        W_PROFILE_SCOPE("System event pools init")
+        EVENTBUS.init_event_pool<WindowCloseEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.WindowCloseEvent"_h, 8));
+        EVENTBUS.init_event_pool<WindowResizeEvent>     (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.WindowResizeEvent"_h, 8));
+        EVENTBUS.init_event_pool<FramebufferResizeEvent>(s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.FramebufferResizeEvent"_h, 8));
+        EVENTBUS.init_event_pool<KeyboardEvent>         (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.KeyboardEvent"_h, 8));
+        EVENTBUS.init_event_pool<KeyTypedEvent>         (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.KeyTypedEvent"_h, 8));
+        EVENTBUS.init_event_pool<MouseButtonEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseButtonEvent"_h, 8));
+        EVENTBUS.init_event_pool<MouseMovedEvent>       (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseMovedEvent"_h, 8));
+        EVENTBUS.init_event_pool<MouseScrollEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseScrollEvent"_h, 8));
     }
 
     // Configure client
@@ -272,6 +308,9 @@ void Application::run()
 	        continue;
 
 	    game_clock_.update(frame_d);
+
+        // Dispatch queued events
+        EVENTBUS.dispatch();
 
 		// For each layer, update
 		if(!minimized_)

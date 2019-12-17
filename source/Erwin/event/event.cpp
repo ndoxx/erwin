@@ -17,12 +17,32 @@ void EventBus::shutdown()
 
 EventBus::~EventBus()
 {
-    for(auto&& [key, delegates]: subscribers)
+    for(auto&& [key, delegates]: subscribers_)
     {
         for(auto&& handler: *delegates)
             delete handler;
         delete delegates;
     }
+}
+
+void EventBus::dispatch()
+{
+	for(auto&& [eid, q]: event_queues_)
+	{
+        DelegateList* delegates = subscribers_[eid];
+        if(delegates == nullptr) continue;
+
+        // TODO: Implement a timeout to distribute load across several frame
+        while(!q.empty())
+        {
+	        for(auto&& handler: *delegates)
+	        {        		
+	            if(handler == nullptr) continue;
+	            if(handler->exec(*q.front())) break; // If handler returns true, event is not propagated further
+	        }
+	        q.pop();
+	    }
+	}
 }
 
 } // namespace erwin
