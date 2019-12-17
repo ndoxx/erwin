@@ -23,7 +23,7 @@ free_list_(begin, element_size_, max_elements, 0, 0)
 
 void* PoolAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)
 {
-	W_ASSERT(size == element_size_, "[PoolAllocator] Allocation size does not fit initial requirement.");
+	W_ASSERT(size <= element_size_, "[PoolAllocator] Allocation size does not fit initial requirement.");
 	return free_list_.acquire();
 }
 

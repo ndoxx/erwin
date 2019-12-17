@@ -4,7 +4,7 @@
 #include <ostream>
 
 #include "core/layer.h"
-#include "event/event.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {

@@ -40,4 +40,18 @@
 	    </memory>
         <uint name="max_2d_batch_count" value="8192"/>
     </renderer>
+
+	<memory>
+    	<size name="system_area" value="10_MB"/>
+    	<max_events>
+			<uint name="WindowCloseEvent"       value="8"/>
+			<uint name="WindowResizeEvent"      value="8"/>
+			<uint name="FramebufferResizeEvent" value="8"/>
+			<uint name="KeyboardEvent"          value="16"/>
+			<uint name="KeyTypedEvent"          value="16"/>
+			<uint name="MouseButtonEvent"       value="16"/>
+			<uint name="MouseMovedEvent"        value="16"/>
+			<uint name="MouseScrollEvent"       value="16"/>
+    	</max_events>
+    </memory>>
 </Config>

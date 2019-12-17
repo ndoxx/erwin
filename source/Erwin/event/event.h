@@ -1,30 +1,61 @@
-// Adapted from https://medium.com/@savas/nomad-game-engine-part-7-the-event-system-45a809ccb68f
-// * Renamed some stuff to fit my conventions
-// * Using const references instead of pointers to pass events around
-// * Using constexpr ctti::type_id<>() instead of RTTI
-// * Leak free
-// * Made EventBus a (thread-safe) singleton (not something I'm really proud of)
-
 #pragma once
-#include <map>
-#include <list>
-#include <ostream>
-
 #include "ctti/type_id.hpp"
-
 #include "core/time_base.h"
-#include "core/singleton.hpp"
+#include "memory/arena.h"
 
 namespace erwin
 {
+
+typedef uint64_t EventID;
+
+#define DEFAULT_MAX_EVENT 128
+#define EVENT_DECLARATION( EVENT_NAME ) \
+    static std::string NAME; \
+    static constexpr EventID ID = ctti::type_id< EVENT_NAME >().hash(); \
+    static PoolArena* s_ppool_; \
+    virtual const std::string& get_name() const override { return NAME; } \
+    static void init_pool(void* begin, size_t max_count = DEFAULT_MAX_EVENT , const char* debug_name = nullptr ); \
+    static void destroy_pool(); \
+    static void* operator new(size_t size); \
+    static void operator delete(void* ptr)
+
+#define EVENT_DEFINITION( EVENT_NAME ) \
+    std::string EVENT_NAME::NAME = #EVENT_NAME; \
+    PoolArena* EVENT_NAME::s_ppool_ = nullptr; \
+    void EVENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
+    { \
+        W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #EVENT_NAME); \
+        s_ppool_ = new PoolArena(begin, sizeof(EVENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
+        if(debug_name) \
+            s_ppool_->set_debug_name(debug_name); \
+        else \
+            s_ppool_->set_debug_name(#EVENT_NAME); \
+    } \
+    void EVENT_NAME::destroy_pool() \
+    { \
+        delete s_ppool_; \
+        s_ppool_ = nullptr; \
+    } \
+    void* EVENT_NAME::operator new(size_t size) \
+    { \
+        (void)(size); \
+        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
+        return ::W_NEW( EVENT_NAME , (*s_ppool_) ); \
+    } \
+    void EVENT_NAME::operator delete(void* ptr) \
+    { \
+        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
+        W_DELETE( (EVENT_NAME*)(ptr) , (*s_ppool_) ); \
+    }
 
 // Base class for an event
 struct WEvent
 {
     WEvent(): timestamp(TimeBase::timestamp()) {}
+    virtual ~WEvent() = default;
 
+    virtual const std::string& get_name() const = 0;
 #ifdef W_DEBUG
-    virtual std::string get_name() const { return ""; }
     virtual void print(std::ostream& stream) const {}
     friend std::ostream& operator <<(std::ostream& stream, const WEvent& event)
     {
@@ -35,138 +66,5 @@ struct WEvent
 
     TimeStamp timestamp;
 };
-
-// Interface for function wrappers that the event bus can register
-class AbstractDelegate
-{
-public:
-    virtual ~AbstractDelegate() = default;
-    inline bool exec(const WEvent& event) { return call(event); }
-
-private:
-    virtual bool call(const WEvent& event) = 0;
-};
-
-// Member function wrapper, to allow classes to register their member functions as event handlers
-template<class T, class EventT>
-class MemberDelegate: public AbstractDelegate
-{
-public:
-    virtual ~MemberDelegate() = default;
-    typedef bool (T::*MemberFunction)(const EventT&);
-
-    MemberDelegate(T* instance, MemberFunction memberFunction): instance{ instance }, memberFunction{ memberFunction } {};
-
-    // Cast event to the correct type and call member function
-    inline bool call(const WEvent& event)
-    {
-        return (instance->*memberFunction)(static_cast<const EventT&>(event));
-    }
-
-private:
-    T* instance; // Pointer to class instance
-    MemberFunction memberFunction; // Pointer to member function
-};
-
-// Free function wrapper
-template<class EventT>
-class FreeDelegate: public AbstractDelegate
-{
-public:
-    virtual ~FreeDelegate() = default;
-    typedef bool (*FreeFunction)(const EventT&);
-
-    FreeDelegate(FreeFunction freeFunction): freeFunction{ freeFunction } {};
-
-    // Cast event to the correct type and call member function
-    inline bool call(const WEvent& event)
-    {
-        return (*freeFunction)(static_cast<const EventT&>(event));
-    }
-
-private:
-    FreeFunction freeFunction; // Pointer to member function
-};
-
-// Central message broker
-class EventBus: public Singleton<EventBus>
-{
-public:
-    typedef std::list<AbstractDelegate*> DelegateList;
-
-    friend EventBus& Singleton<EventBus>::Instance();
-    friend void Singleton<EventBus>::Kill();
-
-    // Send an event
-    template<typename EventT>
-    void publish(const EventT& event)
-    {
-        DelegateList* delegates = subscribers[ctti::type_id<EventT>()];
-
-        if(delegates == nullptr) return;
-
-        // TODO: make it non-blocking (events handled in an event phase)
-        for(auto&& handler: *delegates)
-            if(handler != nullptr)
-                if(handler->exec(event)) // If handler returns true, event is not propagated further
-                    break;
-    }
-
-    // Register a member function as an event handler
-    template<class T, class EventT>
-    void subscribe(T* instance, bool (T::*memberFunction)(const EventT&))
-    {
-        DelegateList* delegates = subscribers[ctti::type_id<EventT>()];
-
-        // First time initialization
-        if(delegates == nullptr)
-        {
-            delegates = new DelegateList();
-            subscribers[ctti::type_id<EventT>()] = delegates;
-        }
-
-        delegates->push_back(new MemberDelegate<T, EventT>(instance, memberFunction));
-    }
-
-    // Register a free function as an event handler
-    template<class EventT>
-    void subscribe(bool (*freeFunction)(const EventT&))
-    {
-        DelegateList* delegates = subscribers[ctti::type_id<EventT>()];
-
-        // First time initialization
-        if(delegates == nullptr)
-        {
-            delegates = new DelegateList();
-            subscribers[ctti::type_id<EventT>()] = delegates;
-        }
-
-        delegates->push_back(new FreeDelegate<EventT>(freeFunction));
-    }
-
-private:
-    EventBus(const EventBus&)=delete;
-    EventBus()=default;
-    ~EventBus()
-    {
-        for(auto&& [key, delegates]: subscribers)
-        {
-            for(auto&& handler: *delegates)
-                delete handler;
-            delete delegates;
-        }
-    }
-
-private:
-    std::unordered_map<ctti::unnamed_type_id_t, DelegateList*> subscribers;
-};
-
-#define EVENTBUS EventBus::Instance()
-
-#ifdef W_DEBUG
-    #define EVENT_NAME(C) virtual std::string get_name() const override { return #C; }
-#else
-    #define EVENT_NAME(C)
-#endif
 
 } // namespace erwin

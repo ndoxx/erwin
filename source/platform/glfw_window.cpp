@@ -9,6 +9,7 @@
 #include "../Erwin/core/core.h"
 
 #include "../Erwin/event/window_events.h"
+#include "../Erwin/event/event_bus.h"
 
 namespace erwin
 {
