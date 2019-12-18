@@ -23,6 +23,20 @@
 namespace erwin
 {
 
+// This macro allows us to perform the same action for all event classes.
+// When creating a new event type, simply add a line here, that's all.
+#define FOR_ALL_EVENTS                      \
+        DO_ACTION( WindowCloseEvent )       \
+        DO_ACTION( WindowResizeEvent )      \
+        DO_ACTION( FramebufferResizeEvent ) \
+        DO_ACTION( KeyboardEvent )          \
+        DO_ACTION( KeyTypedEvent )          \
+        DO_ACTION( MouseButtonEvent )       \
+        DO_ACTION( MouseMovedEvent )        \
+        DO_ACTION( MouseScrollEvent )
+
+
+
 Application* Application::pinstance_ = nullptr;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
@@ -34,6 +48,26 @@ struct ApplicationStorage
     memory::HeapArea system_area;
 };
 static ApplicationStorage s_storage;
+
+// Helper function to automatically configure an event pool's size
+template <typename EventT>
+static inline void init_event_pool()
+{
+    std::string config_key_str = "erwin.events.memory.max_pool." + EventT::NAME;
+    DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EventT::NAME << std::endl;
+    EVENTBUS.init_event_pool<EventT>(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8));
+}
+
+// Helper function to automatically configure an event tracking policy
+template <typename EventT>
+static inline void configure_event_tracking()
+{
+    std::string config_key_str = "erwin.events.track." + EventT::NAME;
+    if(cfg::get<bool>(H_(config_key_str.c_str()), false))
+    {
+        WLOGGER.track_event<EventT>();
+    }
+}
 
 Application::Application():
 is_running_(true),
@@ -69,14 +103,10 @@ Application::~Application()
         Input::kill();
         WLOGGER.kill();
 
-        EVENTBUS.destroy_event_pool<WindowCloseEvent>();
-        EVENTBUS.destroy_event_pool<WindowResizeEvent>();
-        EVENTBUS.destroy_event_pool<FramebufferResizeEvent>();
-        EVENTBUS.destroy_event_pool<KeyboardEvent>();
-        EVENTBUS.destroy_event_pool<KeyTypedEvent>();
-        EVENTBUS.destroy_event_pool<MouseButtonEvent>();
-        EVENTBUS.destroy_event_pool<MouseMovedEvent>();
-        EVENTBUS.destroy_event_pool<MouseScrollEvent>();
+        // Shutdown all event pools
+        #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
+        FOR_ALL_EVENTS
+        #undef DO_ACTION
 
         EventBus::shutdown();
     }
@@ -107,34 +137,9 @@ bool Application::init()
         EventBus::init();
 
         // Log events
-        if(cfg::get<bool>("erwin.logger.track_window_close_events"_h, false))
-        {
-            WLOGGER.track_event<WindowCloseEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_window_resize_events"_h, false))
-        {
-            WLOGGER.track_event<WindowResizeEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_framebuffer_resize_events"_h, false))
-        {
-            WLOGGER.track_event<FramebufferResizeEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_keyboard_events"_h, false))
-        {
-            WLOGGER.track_event<KeyboardEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_mouse_button_events"_h, false))
-        {
-            WLOGGER.track_event<MouseButtonEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_mouse_scroll_events"_h, false))
-        {
-            WLOGGER.track_event<MouseScrollEvent>();
-        }
-        if(cfg::get<bool>("erwin.logger.track_mouse_moved_events"_h, false))
-        {
-            WLOGGER.track_event<MouseMovedEvent>();
-        }
+        #define DO_ACTION( EVENT_NAME ) configure_event_tracking< EVENT_NAME >();
+        FOR_ALL_EVENTS
+        #undef DO_ACTION
 
         WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
         WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
@@ -168,14 +173,9 @@ bool Application::init()
     // Initialize system event pools
     {
         W_PROFILE_SCOPE("System event pools init")
-        EVENTBUS.init_event_pool<WindowCloseEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.WindowCloseEvent"_h, 8));
-        EVENTBUS.init_event_pool<WindowResizeEvent>     (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.WindowResizeEvent"_h, 8));
-        EVENTBUS.init_event_pool<FramebufferResizeEvent>(s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.FramebufferResizeEvent"_h, 8));
-        EVENTBUS.init_event_pool<KeyboardEvent>         (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.KeyboardEvent"_h, 8));
-        EVENTBUS.init_event_pool<KeyTypedEvent>         (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.KeyTypedEvent"_h, 8));
-        EVENTBUS.init_event_pool<MouseButtonEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseButtonEvent"_h, 8));
-        EVENTBUS.init_event_pool<MouseMovedEvent>       (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseMovedEvent"_h, 8));
-        EVENTBUS.init_event_pool<MouseScrollEvent>      (s_storage.system_area, cfg::get<uint32_t>("erwin.memory.max_events.MouseScrollEvent"_h, 8));
+        #define DO_ACTION( EVENT_NAME ) init_event_pool< EVENT_NAME >();
+        FOR_ALL_EVENTS
+        #undef DO_ACTION
     }
 
     // Configure client

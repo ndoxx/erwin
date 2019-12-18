@@ -14,15 +14,8 @@
 		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
 		<Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
 
-		<bool name="backtrace_on_error"              value="false"/>
-		<bool name="single_threaded"                 value="true"/>
-		<bool name="track_window_close_events"       value="true"/>
-		<bool name="track_window_resize_events"      value="true"/>
-		<bool name="track_framebuffer_resize_events" value="true"/>
-		<bool name="track_keyboard_events"           value="false"/>
-		<bool name="track_mouse_button_events"       value="true"/>
-		<bool name="track_mouse_scroll_events"       value="false"/>
-		<bool name="track_mouse_moved_events"        value="false"/>
+		<bool name="backtrace_on_error" value="false"/>
+		<bool name="single_threaded"    value="true"/>
 	</logger>
 
 	<profiling>
@@ -43,15 +36,31 @@
 
 	<memory>
     	<size name="system_area" value="10_MB"/>
-    	<max_events>
-			<uint name="WindowCloseEvent"       value="8"/>
-			<uint name="WindowResizeEvent"      value="8"/>
-			<uint name="FramebufferResizeEvent" value="8"/>
-			<uint name="KeyboardEvent"          value="16"/>
-			<uint name="KeyTypedEvent"          value="16"/>
-			<uint name="MouseButtonEvent"       value="16"/>
-			<uint name="MouseMovedEvent"        value="16"/>
-			<uint name="MouseScrollEvent"       value="16"/>
-    	</max_events>
-    </memory>>
+    </memory>
+
+    <events>
+		<memory>
+	    	<max_pool>
+				<uint name="WindowCloseEvent"       value="8"/>
+				<uint name="WindowResizeEvent"      value="8"/>
+				<uint name="FramebufferResizeEvent" value="8"/>
+				<uint name="KeyboardEvent"          value="16"/>
+				<uint name="KeyTypedEvent"          value="16"/>
+				<uint name="MouseButtonEvent"       value="16"/>
+				<uint name="MouseMovedEvent"        value="16"/>
+				<uint name="MouseScrollEvent"       value="16"/>
+	    	</max_pool>
+	    </memory>
+		<track>
+			<bool name="WindowCloseEvent"       value="true"/>
+			<bool name="WindowResizeEvent"      value="true"/>
+			<bool name="FramebufferResizeEvent" value="true"/>
+			<bool name="KeyboardEvent"          value="false"/>
+			<bool name="KeyTypedEvent"          value="false"/>
+			<bool name="MouseButtonEvent"       value="true"/>
+			<bool name="MouseMovedEvent"        value="false"/>
+			<bool name="MouseScrollEvent"       value="false"/>
+		</track>
+    </events>
+
 </Config>

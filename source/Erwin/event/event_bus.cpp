@@ -33,7 +33,7 @@ void EventBus::dispatch()
         DelegateList* delegates = subscribers_[eid];
         if(delegates == nullptr) continue;
 
-        // TODO: Implement a timeout to distribute load across several frame
+        // TODO: Implement a timeout to distribute load across several frames
         while(!q.empty())
         {
 	        for(auto&& handler: *delegates)

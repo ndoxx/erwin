@@ -1751,8 +1751,6 @@ Une arène possède une fonction allocate() et une fonction deallocate() qui ré
 ```
 Le paramètre "offset" est essentiellement utilisé pour l'allocation de tableaux de types non-POD, afin de pouvoir écrire le nombre d'instances sur 4 octets avant le tableau, mais néanmoins retourner un pointeur sur le début du tableau à l'utilisateur. Les paramètres "file" et "line" sont prévus pour recevoir l'évaluation des macros __FILE__ et __LINE__, ce qui renseigne le memory tracker sur lieu de l'allocation.
 
-###LinearAllocator
-
 ###HexDump bien classe
 memory/memory_utils.h propose une fonction hex_dump() qui réalise comme son nom l'indique un dump mémoire à une adresse donnée, sur une taille donnée. Il est possible de configurer le dumper via hex_dump_highlight() pour surligner d'une couleur particulière un certain motif sur 4 octets. 
 
@@ -1773,10 +1771,6 @@ Je prévois de lui coder un petit mode ASCII à l'occasion, et pourquoi pas de p
     [3] https://blog.molecular-matters.com/2011/07/08/memory-system-part-3/
     [4] https://blog.molecular-matters.com/2011/07/15/memory-system-part-4/
     [5] https://blog.molecular-matters.com/2011/08/03/memory-system-part-5/
-    [6] https://blog.molecular-matters.com/2012/08/14/memory-allocation
-        -strategies-a-linear-allocator/
-    [7] https://blog.molecular-matters.com/2012/09/17/memory-allocation
-        -strategies-a-pool-allocator/
     [8] https://blog.molecular-matters.com/2015/02/13/stateless-layered
         -multi-threaded-rendering-part-4-memory-management-synchronization/
 
@@ -1785,4 +1779,83 @@ Je prévois de lui coder un petit mode ASCII à l'occasion, et pourquoi pas de p
 ###Sources:
     [1] http://realtimecollisiondetection.net/blog/?p=86
 
+#[18-12-19]
+Long time no see... Il fallait que je code sans discontinuer, et j'accumule un retard de dingue dans ma prise de notes. Voici ce qu'il me faut documenter :
+    [X] Memory allocators
+        [X] LinearAllocator
+        [X] PoolAllocator
+        [X] Linear buffers
+    [ ] Renderer
+        [ ] Command buffers
+        [ ] Draw calls & render queues
+        [ ] Sorting key system
+        [ ] Handles
+        [ ] Pass state
+        [ ] Renderer front-ends
+            [ ] 2D batching
+        [ ] Common geometry
+    [ ] Instrumentation
+        [ ] Chrome tracing JSON export
+    [ ] Debug
+        [ ] Better asserts
+        [ ] Texture peek
+    [ ] Random number generation
+        [ ] XorShift128p
+    [ ] Entity component system (ECS)
+        [ ] Definitions
+        [ ] Component pools & predefined macros
+        [ ] Entity manager
+        [ ] Component systems & component filtering
+    [ ] Event system overhaul
+        [ ] Event queues & event pools
+        [ ] Dispatching
 
+Je m'attends à ce que le renderer soit documenté bien plus tard. C'est un système très complexe et encore en évolution, bien que fonctionnel.
+
+##Memory
+
+###LinearAllocator
+L'allocateur linéaire réserve un block d'une taille donnée sur une surface mémoire, et réalise des allocations de taille variable les unes à la suite des autres. Aucune désallocation n'est possible, la fonction reset() est appelée pour réinitialiser l'allocateur et réaliser la prochaine allocation au début du block. Cet allocateur est typiquement utilisé pour stocker des données qui changent d'une frame à l'autre, comme toutes les données auxiliaires du moteur de rendu.
+Mon implémentation peut gérer l'alignement et les offsets. A chaque fin d'allocation, un offset interne (head) est incrémenté de la taille totale allouée (en comptant le padding du à l'alignement). Cet offset est remis à 0 après un appel à la fonction reset(). Mon approche suit celle de [1] d'assez près.
+
+###LinearBuffer
+Les _LinearBuffer_ sont des buffers de taille fixe utilisant un schéma d'allocation linéaire pour écrire des données les unes à la suite des autres. Mon code étant ce qu'il est, je n'utilise pas d'arène et d'allocateur linéaire pour les définir, mais une implémentation entière. Je justifie ce choix par les modalités d'accès et les exigeances de l'interface très différentes chez _LinearBuffer_ (oui, j'aurais pu faire un wrapper autour d'une arène, mais bon).
+Un _LinearBuffer_ possède des fonctions read() et write() qui utilisent memcpy pour le transfert de données et modifient la valeur d'un head offset en interne. _LinearBuffer_ supporte aussi la lecture et l'écriture de strings via les fonctions read_str() et write_str(). Cet objet se comporte globalement comme un stream du C++, d'ailleurs, une fonction seek() permet de changer la position de la tête. L'allocation linéaire suppose encore une fois l'appel à une fonction reset() avant que le buffer ne soit rempli, un tel buffer convient pour stocker des données qui changent à chaque frame.
+Un cas d'utilisation typique est l'implémentation d'une *command queue*. On procède en deux temps :
+    - Ecrire des données les unes à la suite des autres
+    - Seek au début du buffer et lire les données
+Les command queues du moteur de rendu sont implémentées de la sorte.
+
+###PoolAllocator
+Cet allocateur est spécialisé pour réaliser des allocations de même taille à chaque fois. Techniquement, une taille de noeud est spécifiée à la construction de l'allocateur, et toutes les allocations futures doivent être de cette taille ou bien d'une taille inférieure. Donc il est tout à fait possible d'enregistrer des objets de types et de tailles différents tant que la taille de noeud spécifiée est plus grande ou égale à la taille du type le plus lourd.
+En interne, cet allocateur utilise une liste intrusive de pointeurs _FreeList_ qui permet d'accéder rapidement au slot libre le plus proche : devant l'adresse de chaque noeud, un pointeur vers le prochain slot libre libre est écrit. La _FreeList_ est initialisée à la construction et mise à jour à chaque allocation/désallocation du _PoolAllocator_. Le _PoolAllocateur_ en soit est un objet très simple, toute la complexité est cachée dans la free list. [2] m'a beaucoup aidé.
+Mon implémentation ne gère pas l'alignement pour l'instant, mais c'est prévu (pour quand j'en aurai besoin, c'est à dire...).
+
+J'utilise des memory pools essentiellement dans deux systèmes pour le moment : l'ECS et l'event bus. Chaque type de composant de l'ECS possède une pool statique et surcharge les opérateurs new et delete pour utiliser cette pool :
+```cpp
+    void* ComponentTransform2D::operator new(size_t size)
+    {
+        (void)(size);
+        return ::W_NEW( ComponentTransform2D , (*s_ppool_) );
+    }
+    void ComponentTransform2D::operator delete(void* ptr)
+    {
+        W_DELETE( (ComponentTransform2D*)(ptr) , (*s_ppool_) );
+    }
+```
+Ainsi le code suivant :
+```cpp
+    ComponentTransform2D* p_cmp = new ComponentTransform2D();
+```
+réalise en arrière plan une allocation pool hyper-rapide sans que l'on ait à s'en soucier.
+La dernière mouture de l'_EventBus_ supporte la mise en queue d'événements. Afin d'éviter les copies inutiles de données et l'allocation sur le tas, chaque type d'événement possède également une pool statique (à l'instar des composants de l'ECS) et définit des surcharges pour new et delete. Comme précédemment, on peut utiliser new avec le coeur léger :
+```cpp
+    EVENTBUS.enqueue(new CollideEvent(first, second));
+```
+
+
+###Sources:
+    [1] https://blog.molecular-matters.com/2012/08/14/memory-allocation
+        -strategies-a-linear-allocator/
+    [2] https://blog.molecular-matters.com/2012/09/17/memory-allocation
+        -strategies-a-pool-allocator/

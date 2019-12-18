@@ -107,6 +107,22 @@ public:
         delegates->push_back(new FreeDelegate<WEvent, EventT>(freeFunction));
     }
 
+    inline size_t get_unprocessed_count() const
+    {
+        size_t count = 0;
+        for(auto&& [eid, q]: event_queues_)
+            count += q.size();
+        return count;
+    }
+
+    inline bool empty() const
+    {
+        for(auto&& [eid, q]: event_queues_)
+            if(!q.empty())
+                return false;
+        return true;
+    }
+
 private:
     using Subscribers = eastl::hash_map<EventID, DelegateList*>;
     using EventQueues = eastl::hash_map<EventID, eastl::queue<WEvent*>>;
