@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <iostream>
 
 namespace erwin
 {
@@ -32,6 +31,13 @@ public:
 		head->next_ = next_;
 		next_ = head;
 	}
+ 
+#ifdef W_DEBUG
+	inline void* next(void* ptr)
+	{
+		return static_cast<Freelist*>(ptr)->next_;
+	}
+#endif
  
 private:
   Freelist* next_;

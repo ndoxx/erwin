@@ -58,5 +58,6 @@ void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::si
     return current + padding;
 }
 
+
 } // namespace memory
 } // namespace erwin

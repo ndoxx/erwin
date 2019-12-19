@@ -35,6 +35,76 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+
+struct Foo
+{
+	uint32_t a = 0x42424242;
+	uint32_t b = 0x69696969;
+	uint64_t c = 0xd1d1dadad1d1d3d3;
+};
+
+typedef memory::MemoryArena<memory::PoolAllocator, 
+		    				memory::policy::SingleThread, 
+		    				memory::policy::SimpleBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::SimpleMemoryTracking> MyPoolArena;
+
+// typedef memory::MemoryArena<memory::PoolAllocator, 
+// 		    				memory::policy::SingleThread, 
+// 		    				memory::policy::NoBoundsChecking,
+// 		    				memory::policy::NoMemoryTagging,
+// 		    				memory::policy::NoMemoryTracking> MyPoolArena;
+
+int main(int argc, char** argv)
+{
+	init_logger();
+
+    memory::hex_dump_highlight(0xf0f0f0f0, WCB(200,50,0));
+    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,50,200));
+    memory::hex_dump_highlight(0xd0d0d0d0, WCB(50,120,0));
+
+    uint32_t dump_size = 512_B;
+
+    uint32_t max_foo = 8;
+    uint32_t max_align = 16-1;
+    uint32_t node_size = sizeof(Foo) + max_align;
+
+	memory::HeapArea area(8_kB);
+	area.fill(0xaa);
+	MyPoolArena pool(area.require_pool_block<MyPoolArena>(node_size, max_foo), node_size, max_foo, MyPoolArena::DECORATION_SIZE);
+
+	std::vector<Foo*> foos;
+
+	area.debug_hex_dump(std::cout, dump_size);
+	for(int kk=0; kk<2; ++kk)
+	{
+		for(int ii=0; ii<8; ++ii)
+		{
+			Foo* foo = W_NEW_ALIGN(Foo, pool, 8);
+			foos.push_back(foo);
+		}
+		area.debug_hex_dump(std::cout, dump_size);
+
+		W_DELETE(foos[2], pool); foos[2] = std::move(foos.back()); foos.pop_back();
+		W_DELETE(foos[5], pool); foos[5] = std::move(foos.back()); foos.pop_back();
+		foos.push_back(W_NEW_ALIGN(Foo, pool, 16));
+		foos.push_back(W_NEW(Foo, pool));
+		area.debug_hex_dump(std::cout, dump_size);
+
+		for(Foo* foo: foos)
+		{
+			W_DELETE(foo, pool);
+		}
+		area.debug_hex_dump(std::cout, dump_size);
+
+		foos.clear();
+	}
+
+	return 0;
+}
+
+
+/*
 class AComponent: public Component
 {
 public:
@@ -177,3 +247,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/

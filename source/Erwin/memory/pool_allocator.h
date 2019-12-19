@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <utility>
+#include <ostream>
 #include "memory/free_list.h"
 
 namespace erwin
@@ -12,7 +13,7 @@ namespace memory
 class PoolAllocator
 {
 public:
-	PoolAllocator(void* begin, std::size_t element_size, std::size_t max_elements, std::size_t arena_decoration_size);
+	PoolAllocator(void* begin, std::size_t node_size, std::size_t max_nodes, std::size_t arena_decoration_size);
 
 	inline uint8_t* begin()             { return begin_; }
 	inline const uint8_t* begin() const { return begin_; }
@@ -24,8 +25,8 @@ public:
 	void reset();
 
 private:
-	std::size_t element_size_;
-	std::size_t max_elements_;
+	std::size_t node_size_;
+	std::size_t max_nodes_;
 	uint8_t* begin_;
 	uint8_t* end_;
 	Freelist free_list_;

@@ -188,6 +188,11 @@ public:
 			size = size_t(head_-begin_);
     	memory::hex_dump(stream, begin_, size, "HEX DUMP");
 	}
+
+	inline void fill(uint8_t filler)
+	{
+		std::fill(begin_, begin_+size_, filler);
+	}
 #endif
 
 private:
