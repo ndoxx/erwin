@@ -108,6 +108,8 @@ public:
 	static void destroy(FramebufferHandle handle);
 };
 
+constexpr std::size_t k_max_render_commands = 10000;
+
 struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;

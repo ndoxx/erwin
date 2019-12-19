@@ -10,6 +10,7 @@
 
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
+#include "memory/handle_pool.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
@@ -18,6 +19,7 @@
 #include "entity/component_system.h"
 #include "entity/entity_manager.h"
 #include "core/game_clock.h"
+#include "core/handle.h"
 
 using namespace erwin;
 
@@ -36,6 +38,60 @@ void init_logger()
 }
 
 
+
+HANDLE_DECLARATION( FooHandle );
+HANDLE_DEFINITION( FooHandle );
+
+HANDLE_DECLARATION( BarHandle );
+HANDLE_DEFINITION( BarHandle );
+
+template <typename HandleT>
+void display(const std::vector<HandleT>& handle_vec)
+{
+	for(auto&& hnd: handle_vec)
+		std::cout << hnd.index << " ";
+	std::cout << std::endl;
+}
+
+int main(int argc, char** argv)
+{
+	init_logger();
+
+	memory::HeapArea area(8_kB);
+	LinearArena handle_arena(area.require_block(2_kB));
+
+	FooHandle::init_pool(handle_arena);
+	BarHandle::init_pool(handle_arena);
+
+	std::vector<FooHandle> foo_handles;
+	std::vector<BarHandle> bar_handles;
+
+	for(int ii=0; ii<8; ++ii)
+		foo_handles.push_back(FooHandle::acquire());
+
+	display(foo_handles);
+	foo_handles[1].release(); foo_handles[1] = std::move(foo_handles.back()); foo_handles.pop_back();
+	foo_handles[2].release(); foo_handles[2] = std::move(foo_handles.back()); foo_handles.pop_back();
+	foo_handles[5].release(); foo_handles[5] = std::move(foo_handles.back()); foo_handles.pop_back();
+	display(foo_handles);
+
+	for(int ii=0; ii<15; ++ii)
+		bar_handles.push_back(BarHandle::acquire());
+
+	for(int ii=0; ii<8; ++ii)
+		foo_handles.push_back(FooHandle::acquire());
+
+	display(foo_handles);
+	display(bar_handles);
+
+
+	FooHandle::destroy_pool(handle_arena);
+	BarHandle::destroy_pool(handle_arena);
+
+	return 0;
+}
+
+/*
 struct Foo
 {
 	uint32_t a = 0x42424242;
@@ -102,7 +158,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
+*/
 
 /*
 class AComponent: public Component

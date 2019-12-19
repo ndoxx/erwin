@@ -43,7 +43,6 @@ W_HANDLE(FramebufferHandle);
 
 #undef W_HANDLE
 
-constexpr std::size_t k_max_render_commands = 10000;
 constexpr std::size_t k_max_handles[HandleType::Count] =
 {
 	128, // index buffers
