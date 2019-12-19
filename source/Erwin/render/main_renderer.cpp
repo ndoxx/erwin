@@ -20,6 +20,21 @@
 namespace erwin
 {
 
+// This macro allows us to perform the same action for all handle structs.
+// When creating a new renderer handle type, simply add a line here, and change allocation size.
+#define FOR_ALL_HANDLES                        \
+		DO_ACTION( IndexBufferHandle )         \
+		DO_ACTION( VertexBufferLayoutHandle )  \
+		DO_ACTION( VertexBufferHandle )        \
+		DO_ACTION( VertexArrayHandle )         \
+		DO_ACTION( UniformBufferHandle )       \
+		DO_ACTION( ShaderStorageBufferHandle ) \
+		DO_ACTION( TextureHandle )             \
+		DO_ACTION( ShaderHandle )              \
+		DO_ACTION( FramebufferHandle )
+
+constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(uint16_t) * k_max_handles + 1_kB;
+
 /*
 		  _  __              
 		 | |/ /              
@@ -113,18 +128,6 @@ struct FramebufferTextureVector
 	std::vector<TextureHandle> handles;
 };
 
-constexpr std::size_t k_handle_alloc_size = 2 * sizeof(uint16_t) * (k_max_handles[HandleType::IndexBufferHandleT]
- 										  						  + k_max_handles[HandleType::VertexBufferLayoutHandleT]
- 										  						  + k_max_handles[HandleType::VertexBufferHandleT]
- 										  						  + k_max_handles[HandleType::VertexArrayHandleT]
- 										  						  + k_max_handles[HandleType::UniformBufferHandleT]
- 										  						  + k_max_handles[HandleType::ShaderStorageBufferHandleT]
- 										  						  + k_max_handles[HandleType::TextureHandleT]
- 										  						  + k_max_handles[HandleType::ShaderHandleT]
- 										  						  + k_max_handles[HandleType::FramebufferHandleT])
-																  + HandleType::Count * sizeof(HandlePool)
-																  + 128_B;	// TODO: compute actual size
-
 struct RendererStorage
 {
 	RendererStorage():
@@ -150,32 +153,18 @@ struct RendererStorage
 		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
 		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
 
-#define MAKE_HANDLE_POOL( TYPE ) handles_[ TYPE ] = W_NEW(HandlePoolT<k_max_handles[ TYPE ]>, handle_arena_)
-		MAKE_HANDLE_POOL(HandleType::IndexBufferHandleT);
-		MAKE_HANDLE_POOL(HandleType::VertexBufferLayoutHandleT);
-		MAKE_HANDLE_POOL(HandleType::VertexBufferHandleT);
-		MAKE_HANDLE_POOL(HandleType::VertexArrayHandleT);
-		MAKE_HANDLE_POOL(HandleType::UniformBufferHandleT);
-		MAKE_HANDLE_POOL(HandleType::ShaderStorageBufferHandleT);
-		MAKE_HANDLE_POOL(HandleType::TextureHandleT);
-		MAKE_HANDLE_POOL(HandleType::ShaderHandleT);
-		MAKE_HANDLE_POOL(HandleType::FramebufferHandleT);
-#undef  MAKE_HANDLE_POOL
+		// Init handle pools
+		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(handle_arena_);
+		FOR_ALL_HANDLES
+		#undef DO_ACTION
 	}
 
 	~RendererStorage()
 	{
-#define DESTROY_HANDLE_POOL( TYPE ) W_DELETE(handles_[ TYPE ], handle_arena_)
-		DESTROY_HANDLE_POOL(HandleType::FramebufferHandleT);
-		DESTROY_HANDLE_POOL(HandleType::ShaderHandleT);
-		DESTROY_HANDLE_POOL(HandleType::TextureHandleT);
-		DESTROY_HANDLE_POOL(HandleType::ShaderStorageBufferHandleT);
-		DESTROY_HANDLE_POOL(HandleType::UniformBufferHandleT);
-		DESTROY_HANDLE_POOL(HandleType::VertexArrayHandleT);
-		DESTROY_HANDLE_POOL(HandleType::VertexBufferHandleT);
-		DESTROY_HANDLE_POOL(HandleType::VertexBufferLayoutHandleT);
-		DESTROY_HANDLE_POOL(HandleType::IndexBufferHandleT);
-#undef  DESTROY_HANDLE_POOL
+		// Destroy handle pools
+		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(handle_arena_);
+		FOR_ALL_HANDLES
+		#undef DO_ACTION
 
 		for(auto& ref: index_buffers) ref = nullptr;
 		for(auto& ref: vertex_buffer_layouts) ref = nullptr;
@@ -188,18 +177,16 @@ struct RendererStorage
 		for(auto& ref: framebuffers) ref = nullptr;
 	}
 
-	HandlePool* handles_[HandleType::Count];
-
 	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
-	WRef<IndexBuffer>         index_buffers[k_max_handles[HandleType::IndexBufferHandleT]];
-	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles[HandleType::VertexBufferLayoutHandleT]];
-	WRef<VertexBuffer>        vertex_buffers[k_max_handles[HandleType::VertexBufferHandleT]];
-	WRef<VertexArray>         vertex_arrays[k_max_handles[HandleType::VertexArrayHandleT]];
-	WRef<UniformBuffer>       uniform_buffers[k_max_handles[HandleType::UniformBufferHandleT]];
-	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_handles[HandleType::ShaderStorageBufferHandleT]];
-	WRef<Texture2D>			  textures[k_max_handles[HandleType::TextureHandleT]];
-	WRef<Shader>			  shaders[k_max_handles[HandleType::ShaderHandleT]];
-	WRef<Framebuffer>		  framebuffers[k_max_handles[HandleType::FramebufferHandleT]];
+	WRef<IndexBuffer>         index_buffers[k_max_handles];
+	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles];
+	WRef<VertexBuffer>        vertex_buffers[k_max_handles];
+	WRef<VertexArray>         vertex_arrays[k_max_handles];
+	WRef<UniformBuffer>       uniform_buffers[k_max_handles];
+	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_handles];
+	WRef<Texture2D>			  textures[k_max_handles];
+	WRef<Shader>			  shaders[k_max_handles];
+	WRef<Framebuffer>		  framebuffers[k_max_handles];
 
 	FramebufferHandle default_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
@@ -220,18 +207,6 @@ struct RendererStorage
 };
 std::unique_ptr<RendererStorage> s_storage;
 
-#define MAKE_VALIDATOR( HANDLE ) bool is_valid( HANDLE handle) { return s_storage->handles_[HandleType::HANDLE##T]->is_valid(handle.index); }
-		MAKE_VALIDATOR(IndexBufferHandle);
-		MAKE_VALIDATOR(VertexBufferLayoutHandle);
-		MAKE_VALIDATOR(VertexBufferHandle);
-		MAKE_VALIDATOR(VertexArrayHandle);
-		MAKE_VALIDATOR(UniformBufferHandle);
-		MAKE_VALIDATOR(ShaderStorageBufferHandle);
-		MAKE_VALIDATOR(TextureHandle);
-		MAKE_VALIDATOR(ShaderHandle);
-		MAKE_VALIDATOR(FramebufferHandle);
-#undef  MAKE_VALIDATOR
-
 void MainRenderer::init()
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -241,7 +216,7 @@ void MainRenderer::init()
 	s_storage = std::make_unique<RendererStorage>();
 	s_storage->query_timer = QueryTimer::create();
 	s_storage->profiling_enabled = false;
-	s_storage->default_framebuffer_ = { s_storage->handles_[FramebufferHandleT]->acquire() };
+	s_storage->default_framebuffer_ = FramebufferHandle::acquire();
 
 	DLOGI << "done" << std::endl;
 }
@@ -251,7 +226,7 @@ void MainRenderer::shutdown()
     W_PROFILE_RENDER_FUNCTION()
 	flush();
 	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
-	s_storage->handles_[FramebufferHandleT]->release(s_storage->default_framebuffer_.index);
+	s_storage->default_framebuffer_.release();
 	RendererStorage* rs = s_storage.release();
 	delete rs;
 	DLOGI << "done" << std::endl;
@@ -299,21 +274,21 @@ FramebufferHandle MainRenderer::default_render_target()
 
 TextureHandle MainRenderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
 {
-	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle.");
+	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	W_ASSERT(index < s_storage->framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
 	return s_storage->framebuffer_textures_[handle.index].handles[index];
 }
 
 uint32_t MainRenderer::get_framebuffer_texture_count(FramebufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle.");
+	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	return s_storage->framebuffer_textures_[handle.index].handles.size();
 }
 
 #ifdef W_DEBUG
 void* MainRenderer::get_native_texture_handle(TextureHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid TextureHandle.");
+	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
 	return s_storage->textures[handle.index]->get_native_handle();
 }
 #endif
@@ -411,8 +386,8 @@ private:
 
 IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
-	IndexBufferHandle handle = { s_storage->handles_[IndexBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	IndexBufferHandle handle = IndexBufferHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Allocate auxiliary data
 	uint32_t* auxiliary = nullptr;
@@ -438,8 +413,8 @@ IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32
 
 VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
 {
-	VertexBufferLayoutHandle handle = { s_storage->handles_[VertexBufferLayoutHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Allocate auxiliary data
 	std::vector<BufferLayoutElement> elts(elements);
@@ -459,10 +434,10 @@ VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::in
 
 VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
 {
-	W_ASSERT(is_valid(layout), "Invalid VertexBufferLayoutHandle!");
+	W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
-	VertexBufferHandle handle = { s_storage->handles_[VertexBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	VertexBufferHandle handle = VertexBufferHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Allocate auxiliary data
 	float* auxiliary = nullptr;
@@ -488,11 +463,11 @@ VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle l
 
 VertexArrayHandle MainRenderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
 {
-	W_ASSERT(is_valid(vb), "Invalid VertexBufferHandle!");
-	W_ASSERT(is_valid(ib), "Invalid IndexBufferHandle!");
+	W_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
+	W_ASSERT(ib.is_valid(), "Invalid IndexBufferHandle!");
 
-	VertexArrayHandle handle = { s_storage->handles_[VertexArrayHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	VertexArrayHandle handle = VertexArrayHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Write data
 	CommandWriter cw(RenderCommand::CreateVertexArray);
@@ -506,8 +481,8 @@ VertexArrayHandle MainRenderer::create_vertex_array(VertexBufferHandle vb, Index
 
 UniformBufferHandle MainRenderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
-	UniformBufferHandle handle = { s_storage->handles_[UniformBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	UniformBufferHandle handle = UniformBufferHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Allocate auxiliary data
 	uint8_t* auxiliary = nullptr;
@@ -533,8 +508,8 @@ UniformBufferHandle MainRenderer::create_uniform_buffer(const std::string& name,
 
 ShaderStorageBufferHandle MainRenderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
-	ShaderStorageBufferHandle handle = { s_storage->handles_[ShaderStorageBufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Allocate auxiliary data
 	uint8_t* auxiliary = nullptr;
@@ -560,8 +535,8 @@ ShaderStorageBufferHandle MainRenderer::create_shader_storage_buffer(const std::
 
 ShaderHandle MainRenderer::create_shader(const fs::path& filepath, const std::string& name)
 {
-	ShaderHandle handle = { s_storage->handles_[ShaderHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	ShaderHandle handle = ShaderHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	CommandWriter cw(RenderCommand::CreateShader);
 	cw.write(&handle);
@@ -574,8 +549,8 @@ ShaderHandle MainRenderer::create_shader(const fs::path& filepath, const std::st
 
 TextureHandle MainRenderer::create_texture_2D(const Texture2DDescriptor& desc)
 {
-	TextureHandle handle = { s_storage->handles_[TextureHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	TextureHandle handle = TextureHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	CommandWriter cw(RenderCommand::CreateTexture2D);
 	cw.write(&handle);
@@ -587,16 +562,16 @@ TextureHandle MainRenderer::create_texture_2D(const Texture2DDescriptor& desc)
 
 FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
 {
-	FramebufferHandle handle = { s_storage->handles_[FramebufferHandleT]->acquire() };
-	W_ASSERT(is_valid(handle), "No more free handle in handle pool.");
+	FramebufferHandle handle = FramebufferHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Create handles for framebuffer textures
 	FramebufferTextureVector texture_vector;
 	uint32_t tex_count = depth ? layout.get_count()+1 : layout.get_count(); // Take the depth texture into account
 	for(uint32_t ii=0; ii<tex_count; ++ii)
 	{
-		TextureHandle tex_handle = { s_storage->handles_[TextureHandleT]->acquire() };
-		W_ASSERT(is_valid(tex_handle), "No more free handle in handle pool.");
+		TextureHandle tex_handle = TextureHandle::acquire();
+		W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
 		texture_vector.handles.push_back(tex_handle);
 	}
 	s_storage->framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
@@ -621,7 +596,7 @@ FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t heig
 
 void MainRenderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
 {
-	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
+	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 	W_ASSERT(data, "No data!");
 
 	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage->auxiliary_arena_);
@@ -636,7 +611,7 @@ void MainRenderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data,
 
 void MainRenderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
 {
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
+	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 	W_ASSERT(data, "No data!");
 
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
@@ -651,7 +626,7 @@ void MainRenderer::update_vertex_buffer(VertexBufferHandle handle, void* data, u
 
 void MainRenderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
 {
-	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
+	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 	W_ASSERT(data, "No data!");
 
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
@@ -666,7 +641,7 @@ void MainRenderer::update_uniform_buffer(UniformBufferHandle handle, void* data,
 
 void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
 {
-	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
+	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 	W_ASSERT(data, "No data!");
 
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
@@ -681,8 +656,8 @@ void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 
 void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
 {
-	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
-	W_ASSERT(is_valid(ubo), "Invalid UniformBufferHandle!");
+	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+	W_ASSERT(ubo.is_valid(), "Invalid UniformBufferHandle!");
 
 	CommandWriter cw(RenderCommand::ShaderAttachUniformBuffer);
 	cw.write(&shader);
@@ -692,8 +667,8 @@ void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBuff
 
 void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
 {
-	W_ASSERT(is_valid(shader), "Invalid ShaderHandle!");
-	W_ASSERT(is_valid(ssbo), "Invalid ShaderStorageBufferHandle!");
+	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+	W_ASSERT(ssbo.is_valid(), "Invalid ShaderStorageBufferHandle!");
 
 	CommandWriter cw(RenderCommand::ShaderAttachStorageBuffer);
 	cw.write(&shader);
@@ -703,7 +678,7 @@ void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStora
 
 void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
 {
-	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
+	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
 	CommandWriter cw(RenderCommand::UpdateFramebuffer);
 	cw.write(&fb);
@@ -720,7 +695,7 @@ void MainRenderer::clear_framebuffers()
 
 void MainRenderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath)
 {
-	W_ASSERT(is_valid(fb), "Invalid FramebufferHandle!");
+	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
 	CommandWriter cw(RenderCommand::FramebufferScreenshot);
 	cw.write(&fb);
@@ -730,8 +705,8 @@ void MainRenderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& 
 
 void MainRenderer::destroy(IndexBufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid IndexBufferHandle!");
-	s_storage->handles_[IndexBufferHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyIndexBuffer);
 	cw.write(&handle);
@@ -740,8 +715,8 @@ void MainRenderer::destroy(IndexBufferHandle handle)
 
 void MainRenderer::destroy(VertexBufferLayoutHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferLayoutHandle!");
-	s_storage->handles_[VertexBufferLayoutHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
 	cw.write(&handle);
@@ -750,8 +725,8 @@ void MainRenderer::destroy(VertexBufferLayoutHandle handle)
 
 void MainRenderer::destroy(VertexBufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid VertexBufferHandle!");
-	s_storage->handles_[VertexBufferHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyVertexBuffer);
 	cw.write(&handle);
@@ -760,8 +735,8 @@ void MainRenderer::destroy(VertexBufferHandle handle)
 
 void MainRenderer::destroy(VertexArrayHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid VertexArrayHandle!");
-	s_storage->handles_[VertexArrayHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyVertexArray);
 	cw.write(&handle);
@@ -770,8 +745,8 @@ void MainRenderer::destroy(VertexArrayHandle handle)
 
 void MainRenderer::destroy(UniformBufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid UniformBufferHandle!");
-	s_storage->handles_[UniformBufferHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyUniformBuffer);
 	cw.write(&handle);
@@ -780,8 +755,8 @@ void MainRenderer::destroy(UniformBufferHandle handle)
 
 void MainRenderer::destroy(ShaderStorageBufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid ShaderStorageBufferHandle!");
-	s_storage->handles_[ShaderStorageBufferHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
 	cw.write(&handle);
@@ -790,8 +765,8 @@ void MainRenderer::destroy(ShaderStorageBufferHandle handle)
 
 void MainRenderer::destroy(ShaderHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid ShaderHandle!");
-	s_storage->handles_[ShaderHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
+	handle.release();
 	
 	CommandWriter cw(RenderCommand::DestroyShader);
 	cw.write(&handle);
@@ -800,8 +775,8 @@ void MainRenderer::destroy(ShaderHandle handle)
 
 void MainRenderer::destroy(TextureHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid TextureHandle!");
-	s_storage->handles_[TextureHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
+	handle.release();
 	
 	CommandWriter cw(RenderCommand::DestroyTexture2D);
 	cw.write(&handle);
@@ -810,8 +785,8 @@ void MainRenderer::destroy(TextureHandle handle)
 
 void MainRenderer::destroy(FramebufferHandle handle)
 {
-	W_ASSERT(is_valid(handle), "Invalid FramebufferHandle!");
-	s_storage->handles_[FramebufferHandleT]->release(handle.index);
+	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
+	handle.release();
 
 	CommandWriter cw(RenderCommand::DestroyFramebuffer);
 	cw.write(&handle);
@@ -897,7 +872,7 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
 
 	s_storage->vertex_arrays[handle.index] = VertexArray::create();
 	s_storage->vertex_arrays[handle.index]->set_vertex_buffer(s_storage->vertex_buffers[vb.index]);
-	if(is_valid(ib))
+	if(ib.is_valid())
 		s_storage->vertex_arrays[handle.index]->set_index_buffer(s_storage->index_buffers[ib.index]);
 }
 
@@ -1214,7 +1189,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 	{
 		uint16_t tex_index = texture_vector.handles[ii].index;
 		s_storage->textures[tex_index] = nullptr;
-		s_storage->handles_[TextureHandleT]->release(tex_index);
+		texture_vector.handles[ii].release();
 	}
 	s_storage->framebuffer_textures_.erase(handle.index);
 }
@@ -1306,8 +1281,8 @@ void RenderQueue::submit(const DrawCall& dc)
 {
     W_PROFILE_RENDER_FUNCTION()
 
-	W_ASSERT(is_valid(dc.VAO), "Invalid VertexArrayHandle!");
-	W_ASSERT(is_valid(dc.shader), "Invalid ShaderHandle!");
+	W_ASSERT(dc.VAO.is_valid(), "Invalid VertexArrayHandle!");
+	W_ASSERT(dc.shader.is_valid(), "Invalid ShaderHandle!");
 
 	void* ubo_data = nullptr;
 	void* ssbo_data = nullptr;
@@ -1435,7 +1410,7 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		last_shader_index = dc.shader_handle.index;
 	}
 
-	if(is_valid(dc.texture_handle))
+	if(dc.texture_handle.is_valid())
 	{
 		auto& texture = *s_storage->textures[dc.texture_handle.index];
 		shader.attach_texture(dc.sampler, texture);

@@ -118,6 +118,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/common_geometry.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/handles.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )

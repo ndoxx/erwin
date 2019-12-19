@@ -180,7 +180,7 @@ struct DrawCall
 	inline void set_state(const PassState& state)
 	{
 		W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
-		W_ASSERT(is_valid(state.render_target), "Invalid FramebufferHandle!");
+		W_ASSERT(state.render_target.is_valid(), "Invalid FramebufferHandle!");
 		key.view = uint8_t(state.render_target.index);
 		state_flags = state.encode();
 	}

@@ -1,11 +1,16 @@
 #pragma once
 
+#include <cstdint>
+#include "ctti/type_id.hpp"
+#include "memory/handle_pool.h"
+#include "memory/arena.h"
+
 namespace erwin
 {
 
 typedef uint64_t HandleID;
-static constexpr uint16_t k_invalid_handle = 0xffff;
-static constexpr size_t   k_max_handles = 128;
+static constexpr uint16_t    k_invalid_handle = 0xffff;
+static constexpr std::size_t k_max_handles = 128;
 
 #define HANDLE_DECLARATION(HANDLE_NAME) \
 	struct HANDLE_NAME \
@@ -15,8 +20,8 @@ static constexpr size_t   k_max_handles = 128;
 		static void init_pool(LinearArena& arena); \
 		static void destroy_pool(LinearArena& arena); \
 		static HANDLE_NAME acquire(); \
-		inline void release()  { s_ppool_->release(index); index = k_invalid_handle; } \
-		inline bool is_valid() { return s_ppool_->is_valid(index); } \
+		inline void release()  { s_ppool_->release(index); } \
+		inline bool is_valid() const { return s_ppool_->is_valid(index); } \
 		inline bool operator ==(const HANDLE_NAME& o) const { return index==o.index; } \
 		inline bool operator !=(const HANDLE_NAME& o) const { return index!=o.index; } \
 		uint32_t index = k_invalid_handle; \

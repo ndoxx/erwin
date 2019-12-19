@@ -10,7 +10,6 @@
 
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
-#include "memory/handle_pool.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
