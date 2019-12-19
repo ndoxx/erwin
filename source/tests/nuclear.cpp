@@ -19,11 +19,14 @@
 #include "entity/entity_manager.h"
 #include "core/game_clock.h"
 
+#include "core/job_system.h"
+
 using namespace erwin;
 
 void init_logger()
 {
     WLOGGER.create_channel("memory", 3);
+    WLOGGER.create_channel("thread", 3);
 	WLOGGER.create_channel("nuclear", 3);
 	WLOGGER.create_channel("entity", 3);
 	WLOGGER.attach_all("console_sink", std::make_unique<dbg::ConsoleSink>());
@@ -35,6 +38,35 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+using namespace std::chrono_literals;
+
+int main(int argc, char** argv)
+{
+	init_logger();
+
+	memory::HeapArea area(8_kB);
+	JobSystem::init(area, 32);
+
+	JobSystem::execute([]()
+	{
+		DLOG("nuclear",1) << "plip" << std::endl;
+		std::this_thread::sleep_for(500ms);
+		DLOG("nuclear",1) << "plop" << std::endl;
+	});
+
+	JobSystem::wait();
+
+	JobSystem::shutdown();
+
+	return 0;
+}
+
+
+
+
+
+
+/*
 class AComponent: public Component
 {
 public:
@@ -177,3 +209,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/

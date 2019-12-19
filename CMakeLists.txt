@@ -54,6 +54,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/job_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
