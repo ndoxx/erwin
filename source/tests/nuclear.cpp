@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <bitset>
+#include <atomic>
 
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
@@ -20,6 +21,7 @@
 #include "core/game_clock.h"
 
 #include "core/job_system.h"
+#include "core/clock.hpp"
 
 using namespace erwin;
 
@@ -44,17 +46,33 @@ int main(int argc, char** argv)
 {
 	init_logger();
 
-	memory::HeapArea area(8_kB);
-	JobSystem::init(area, 32);
+	uint32_t n_jobs = 33;
 
-	JobSystem::execute([]()
+	std::atomic<uint64_t> payload_duration_ns;
+
+	memory::HeapArea area(32_kB);
+	JobSystem::init(area, 100);
+
+	nanoClock exterior_clock;
+
+	for(int ii=0; ii<n_jobs; ++ii)
 	{
-		DLOG("nuclear",1) << "plip" << std::endl;
-		std::this_thread::sleep_for(500ms);
-		DLOG("nuclear",1) << "plop" << std::endl;
-	});
+		JobSystem::execute([&payload_duration_ns]()
+		{
+			nanoClock payload_clock;
+			std::this_thread::sleep_for(100ms);
+	        payload_duration_ns.fetch_add(payload_clock.get_elapsed_time().count(), std::memory_order_relaxed);
+		});
+
+		// std::this_thread::sleep_for(15ms);
+	}
 
 	JobSystem::wait();
+
+	uint64_t exterior_duration_ns = exterior_clock.get_elapsed_time().count();
+    DLOGW("nuclear") << "Exterior duration:         " << exterior_duration_ns << "ns" << std::endl;
+    DLOGW("nuclear") << "Payload duration:          " << payload_duration_ns  << "ns" << std::endl;
+    DLOGW("nuclear") << "Theoretical overhead /job: " << 1e-6*(3*exterior_duration_ns - payload_duration_ns)/(1.f*n_jobs)  << "ms" << std::endl;
 
 	JobSystem::shutdown();
 
