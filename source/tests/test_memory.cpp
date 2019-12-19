@@ -13,6 +13,7 @@
 #include "memory/pool_allocator.h"
 #include "memory/memory_utils.h"
 #include "debug/logger_common.h"
+#include "core/handle.h"
 
 using namespace erwin;
 
@@ -278,4 +279,155 @@ TEST_CASE_METHOD(PoolArenaFixture, "Pool Arena: new/delete POD non-aligned", "[m
 	REQUIRE(*(reinterpret_cast<SIZE_TYPE*>(some_pod)-1) == sizeof(POD) + PoolArena::DECORATION_SIZE);
 
 	W_DELETE(some_pod, arena);
+}
+
+/* // TODO: Test pool arena aligned allocations
+
+typedef memory::MemoryArena<memory::PoolAllocator, 
+		    				memory::policy::SingleThread, 
+		    				memory::policy::SimpleBoundsChecking,
+		    				memory::policy::NoMemoryTagging,
+		    				memory::policy::SimpleMemoryTracking> MyPoolArena;
+
+// typedef memory::MemoryArena<memory::PoolAllocator, 
+// 		    				memory::policy::SingleThread, 
+// 		    				memory::policy::NoBoundsChecking,
+// 		    				memory::policy::NoMemoryTagging,
+// 		    				memory::policy::NoMemoryTracking> MyPoolArena;
+
+
+    uint32_t dump_size = 512_B;
+
+    uint32_t max_foo = 8;
+    uint32_t max_align = 16-1;
+    uint32_t node_size = sizeof(Foo) + max_align;
+
+	memory::HeapArea area(8_kB);
+	area.fill(0xaa);
+	MyPoolArena pool(area.require_pool_block<MyPoolArena>(node_size, max_foo), node_size, max_foo, MyPoolArena::DECORATION_SIZE);
+
+	std::vector<Foo*> foos;
+
+	area.debug_hex_dump(std::cout, dump_size);
+	for(int kk=0; kk<2; ++kk)
+	{
+		for(int ii=0; ii<8; ++ii)
+		{
+			Foo* foo = W_NEW_ALIGN(Foo, pool, 8);
+			foos.push_back(foo);
+		}
+		area.debug_hex_dump(std::cout, dump_size);
+
+		W_DELETE(foos[2], pool); foos[2] = std::move(foos.back()); foos.pop_back();
+		W_DELETE(foos[5], pool); foos[5] = std::move(foos.back()); foos.pop_back();
+		foos.push_back(W_NEW_ALIGN(Foo, pool, 16));
+		foos.push_back(W_NEW(Foo, pool));
+		area.debug_hex_dump(std::cout, dump_size);
+
+		for(Foo* foo: foos)
+		{
+			W_DELETE(foo, pool);
+		}
+		area.debug_hex_dump(std::cout, dump_size);
+
+		foos.clear();
+	}
+*/
+
+
+
+HANDLE_DECLARATION( FooHandle );
+HANDLE_DEFINITION( FooHandle );
+HANDLE_DECLARATION( BarHandle );
+HANDLE_DEFINITION( BarHandle );
+
+class HandleFixture
+{
+public:
+	HandleFixture():
+	area(3_kB),
+	arena(area.require_block(2_kB))
+	{
+		FooHandle::init_pool(arena);
+		BarHandle::init_pool(arena);
+	}
+
+	~HandleFixture()
+	{
+		FooHandle::destroy_pool(arena);
+		BarHandle::destroy_pool(arena);
+	}
+
+protected:
+	memory::HeapArea area;
+	LinearArena arena;
+};
+
+TEST_CASE_METHOD(HandleFixture, "Assessing default handle properties", "[hnd]")
+{
+	FooHandle foo;
+
+	REQUIRE(foo.index == k_invalid_handle);
+	REQUIRE(!foo.is_valid());
+}
+
+TEST_CASE_METHOD(HandleFixture, "Acquiring a single handle of one type", "[hnd]")
+{
+	FooHandle foo = FooHandle::acquire();
+
+	REQUIRE(foo.index == 0);
+}
+
+TEST_CASE_METHOD(HandleFixture, "Acquiring two consecutive handles", "[hnd]")
+{
+	FooHandle foo0 = FooHandle::acquire();
+	FooHandle foo1 = FooHandle::acquire();
+
+	REQUIRE(foo0.index == 0);
+	REQUIRE(foo1.index == 1);
+}
+
+TEST_CASE_METHOD(HandleFixture, "Handle equal operation", "[hnd]")
+{
+	FooHandle foo0 = FooHandle::acquire();
+	FooHandle foo1 = foo0;
+
+	REQUIRE(foo0 == foo1);
+}
+
+TEST_CASE_METHOD(HandleFixture, "Handle not equal operation", "[hnd]")
+{
+	FooHandle foo0 = FooHandle::acquire();
+	FooHandle foo1 = FooHandle::acquire();
+
+	REQUIRE(foo0 != foo1);
+}
+
+TEST_CASE_METHOD(HandleFixture, "Acquiring a single handle of each type", "[hnd]")
+{
+	FooHandle foo = FooHandle::acquire();
+	BarHandle bar = BarHandle::acquire();
+
+	REQUIRE(foo.index == 0);
+	REQUIRE(bar.index == 0);
+}
+
+TEST_CASE_METHOD(HandleFixture, "Checking that handle indices are reused", "[hnd]")
+{
+	FooHandle foo0 = FooHandle::acquire();
+	FooHandle foo1 = FooHandle::acquire();
+	FooHandle foo2 = FooHandle::acquire();
+	FooHandle foo3 = FooHandle::acquire();
+
+	foo1.release();
+	foo3.release();
+
+	REQUIRE(!foo1.is_valid());
+	REQUIRE(!foo3.is_valid());
+
+	FooHandle foo4 = FooHandle::acquire();
+	FooHandle foo5 = FooHandle::acquire();
+
+	REQUIRE(foo4.index == 3);
+	REQUIRE(foo5.index == 1);
 }

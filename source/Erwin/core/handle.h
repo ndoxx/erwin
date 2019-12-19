@@ -37,6 +37,7 @@ static constexpr std::size_t k_max_handles = 128;
 	void HANDLE_NAME::destroy_pool(LinearArena& arena) \
 	{ \
 		W_DELETE(s_ppool_, arena); \
+		s_ppool_ = nullptr; \
 	} \
 	HANDLE_NAME HANDLE_NAME::acquire() \
 	{ \

@@ -33,7 +33,7 @@ namespace erwin
 		DO_ACTION( ShaderHandle )              \
 		DO_ACTION( FramebufferHandle )
 
-constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(uint16_t) * k_max_handles + 1_kB;
+constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_handles>);
 
 /*
 		  _  __              
@@ -141,6 +141,7 @@ struct RendererStorage
 		pre_buffer_.storage.set_debug_name("CB-Pre");
 		post_buffer_.storage.set_debug_name("CB-Post");
 		auxiliary_arena_.set_debug_name("Auxiliary");
+		handle_arena_.set_debug_name("RenderHandles");
 #endif
 
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
