@@ -6,12 +6,12 @@
 #include <condition_variable>
 #include <mutex>
 #include <vector>
-#include <queue>
+#include "atomic_queue/atomic_queue.h"
 
 /*
 	TODO:
-	[ ] Use AtomicQueue instead of std::queue + mutex to reduce overhead
-		-> https://github.com/max0x7ba/atomic_queue
+	[X] Use AtomicQueue instead of std::queue + mutex to reduce overhead
+		-> https://github.com/max0x7ba/atomic_queue.git
 	[ ] Handle job dependencies
 	[ ] Work stealing scheme?
 */
@@ -21,17 +21,18 @@ namespace erwin
 
 HANDLE_DEFINITION( JobHandle );
 
+constexpr size_t k_handle_alloc_size = 2 * sizeof(HandlePoolT<JobSystem::k_max_jobs>);
+
 struct Job
 {
 	JobSystem::JobFunction function;
-	uint64_t id;
+	uint16_t id;
 };
 
 static struct JobSystemStorage
 {
 	std::vector<std::thread> threads;
-	std::queue<Job*> jobs;
-	std::mutex job_queue_mutex;
+	atomic_queue::AtomicQueue2<Job,JobSystem::k_max_jobs> jobs;
     std::mutex wake_mutex;
     std::mutex wait_mutex;
     std::condition_variable cv_wake; // To wake worker threads
@@ -41,7 +42,7 @@ static struct JobSystemStorage
     uint64_t current_status;
     uint32_t threads_count;
 
-	PoolArena* p_job_pool;
+	LinearArena* handle_arena;
 } s_storage;
 
 static void thread_run(uint32_t tid)
@@ -49,24 +50,16 @@ static void thread_run(uint32_t tid)
     while(s_storage.running.load(std::memory_order_acquire))
 	{
         // Get a job you lazy bastard
-        if(!s_storage.jobs.empty())
+        if(!s_storage.jobs.was_empty())
         {
-        	Job* job = nullptr;
-	        {
-	        	std::lock_guard<std::mutex> job_lock(s_storage.job_queue_mutex);
-	        	job = s_storage.jobs.front();
-	        	s_storage.jobs.pop();
-	        }
-	        if(job)
-	        {
-	        	DLOG("thread",1) << "Thread " << tid << " took the job " << job->id << std::endl;
-	        	s_storage.status.fetch_add(1, std::memory_order_relaxed);
-        		job->function();
-        		// Notify main thread that the job is done
-	        	s_storage.cv_wait.notify_one();
-        		W_DELETE(job, (*s_storage.p_job_pool));
-	        	DLOG("thread",1) << "Thread " << tid << " finished the job " << job->id << std::endl;
-        	}
+    		Job job = s_storage.jobs.pop();
+        	DLOG("thread",1) << "Thread " << tid << " took the job " << job.id << std::endl;
+    		job.function();
+    		JobHandle::release(job.id);
+    		// Notify main thread that the job is done
+        	s_storage.status.fetch_add(1, std::memory_order_relaxed);
+        	s_storage.cv_wait.notify_one();
+        	DLOG("thread",1) << "Thread " << tid << " finished the job " << job.id << std::endl;
         }
         else // No job -> wait
         {
@@ -81,9 +74,8 @@ void JobSystem::init(memory::HeapArea& area, size_t max_jobs)
 	DLOGN("thread") << "Initializing job system." << std::endl;
 
 	// Initialize memory
-    size_t max_align = 64-1;
-	size_t node_size = sizeof(Job) + max_align;
-	s_storage.p_job_pool = new PoolArena(area.require_pool_block<PoolArena>(node_size, max_jobs), node_size, max_jobs, PoolArena::DECORATION_SIZE);
+	s_storage.handle_arena = new LinearArena(area.require_block(k_handle_alloc_size));
+	JobHandle::init_pool(*s_storage.handle_arena);
 
 	// Find the number of CPU cores
 	uint32_t CPU_cores_count = std::thread::hardware_concurrency();
@@ -112,26 +104,25 @@ void JobSystem::shutdown()
 	for(uint32_t ii=0; ii<s_storage.threads_count; ++ii)
     	s_storage.threads[ii].join();
 
-	delete s_storage.p_job_pool;
+	JobHandle::destroy_pool(*s_storage.handle_arena);
+    delete s_storage.handle_arena;
 
 	DLOGI << "done" << std::endl;
 }
 
-void JobSystem::execute(JobFunction function)
+JobHandle JobSystem::execute(JobFunction function)
 {
-	static uint64_t s_job_id = 0;
+	JobHandle handle = JobHandle::acquire();
 	++s_storage.current_status;
 
 	// Enqueue new job
-	Job* job = W_NEW_ALIGN(Job, (*s_storage.p_job_pool), 64) { function, s_job_id++ };
-	DLOG("thread",1) << "Enqueuing job " << job->id << std::endl;
-    {
-    	std::lock_guard<std::mutex> job_lock(s_storage.job_queue_mutex);
-    	s_storage.jobs.push(job);
-    }
+	DLOG("thread",1) << "Enqueuing job " << handle.index << std::endl;
+    s_storage.jobs.push(Job{ function, handle.index });
 
     // Wake one worker thread
 	s_storage.cv_wake.notify_one();
+
+	return handle;
 }
 
 void JobSystem::wait()

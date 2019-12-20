@@ -20,11 +20,12 @@ static constexpr std::size_t k_max_handles = 128;
 		static void init_pool(LinearArena& arena); \
 		static void destroy_pool(LinearArena& arena); \
 		static HANDLE_NAME acquire(); \
+		static void release(uint16_t index); \
 		inline void release()  { s_ppool_->release(index); } \
 		inline bool is_valid() const { return s_ppool_->is_valid(index); } \
 		inline bool operator ==(const HANDLE_NAME& o) const { return index==o.index; } \
 		inline bool operator !=(const HANDLE_NAME& o) const { return index!=o.index; } \
-		uint32_t index = k_invalid_handle; \
+		uint16_t index = k_invalid_handle; \
 	}
 
 #define HANDLE_DEFINITION(HANDLE_NAME) \
@@ -42,6 +43,10 @@ static constexpr std::size_t k_max_handles = 128;
 	HANDLE_NAME HANDLE_NAME::acquire() \
 	{ \
 		return HANDLE_NAME{ s_ppool_->acquire() }; \
+	} \
+	void HANDLE_NAME::release(uint16_t index) \
+	{ \
+		s_ppool_->release(index); \
 	}
 
 } // namespace erwin
