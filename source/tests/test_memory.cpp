@@ -337,9 +337,9 @@ typedef memory::MemoryArena<memory::PoolAllocator,
 
 
 HANDLE_DECLARATION( FooHandle );
-HANDLE_DEFINITION( FooHandle );
+HANDLE_DEFINITION( FooHandle, 128 );
 HANDLE_DECLARATION( BarHandle );
-HANDLE_DEFINITION( BarHandle );
+HANDLE_DEFINITION( BarHandle, 128 );
 
 class HandleFixture
 {
@@ -430,4 +430,99 @@ TEST_CASE_METHOD(HandleFixture, "Checking that handle indices are reused", "[hnd
 
 	REQUIRE(foo4.index == 3);
 	REQUIRE(foo5.index == 1);
+}
+
+
+
+ROBUST_HANDLE_DECLARATION( BazHandle );
+ROBUST_HANDLE_DEFINITION( BazHandle, 8 );
+ROBUST_HANDLE_DECLARATION( QuxHandle );
+ROBUST_HANDLE_DEFINITION( QuxHandle, 8 );
+
+class RobustHandleFixture
+{
+public:
+	RobustHandleFixture():
+	area(3_kB),
+	arena(area.require_block(2_kB))
+	{
+		BazHandle::init_pool(arena);
+		QuxHandle::init_pool(arena);
+	}
+
+	~RobustHandleFixture()
+	{
+		BazHandle::destroy_pool(arena);
+		QuxHandle::destroy_pool(arena);
+	}
+
+protected:
+	memory::HeapArea area;
+	LinearArena arena;
+};
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Assessing default handle properties", "[hnd]")
+{
+	BazHandle baz;
+
+	REQUIRE(baz.index == k_invalid_robust_handle);
+	REQUIRE(baz.counter == k_invalid_robust_handle);
+	REQUIRE(!baz.is_valid());
+}
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Acquiring a single handle of one type", "[hnd]")
+{
+	BazHandle baz = BazHandle::acquire();
+
+	REQUIRE(baz.index == 0);
+	REQUIRE(baz.counter == 0);
+}
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Acquiring two consecutive handles", "[hnd]")
+{
+	BazHandle baz0 = BazHandle::acquire();
+	BazHandle baz1 = BazHandle::acquire();
+
+	REQUIRE(baz0.index == 0);
+	REQUIRE(baz0.counter == 0);
+	REQUIRE(baz1.index == 1);
+	REQUIRE(baz1.counter == 0);
+}
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Assessing counter", "[hnd]")
+{
+	BazHandle baz = BazHandle::acquire();
+	BazHandle baz_copy = baz;
+	baz.release();
+	REQUIRE(!baz.is_valid());
+
+	baz = BazHandle::acquire();
+	REQUIRE(baz.is_valid());
+	REQUIRE(!baz_copy.is_valid());
+	REQUIRE(baz_copy.index == baz.index);
+	REQUIRE(baz.counter > baz_copy.counter);
+}
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Handle equal/not equal operations", "[hnd]")
+{
+	BazHandle baz = BazHandle::acquire();
+	BazHandle baz_copy = baz;
+
+	REQUIRE(baz_copy == baz);
+
+	baz.release();
+	baz = BazHandle::acquire();
+
+	REQUIRE(baz_copy != baz);
+}
+
+TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Acquiring a single handle of each type", "[hnd]")
+{
+	BazHandle baz = BazHandle::acquire();
+	QuxHandle qux = QuxHandle::acquire();
+
+	REQUIRE(baz.index == 0);
+	REQUIRE(baz.counter == 0);
+	REQUIRE(qux.index == 0);
+	REQUIRE(qux.counter == 0);
 }

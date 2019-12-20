@@ -23,6 +23,8 @@
 #include "core/job_system.h"
 #include "core/clock.hpp"
 
+#include "core/handle.h"
+
 using namespace erwin;
 
 void init_logger()
@@ -51,13 +53,13 @@ int main(int argc, char** argv)
 	std::atomic<uint64_t> payload_duration_ns;
 
 	memory::HeapArea area(32_kB);
-	JobSystem::init(area, 100);
+	JobSystem::init(area);
 
 	nanoClock exterior_clock;
 
 	for(int ii=0; ii<n_jobs; ++ii)
 	{
-		JobSystem::execute([&payload_duration_ns]()
+		JobSystem::schedule([&payload_duration_ns]()
 		{
 			nanoClock payload_clock;
 			std::this_thread::sleep_for(100ms);
@@ -67,20 +69,16 @@ int main(int argc, char** argv)
 		// std::this_thread::sleep_for(15ms);
 	}
 
-	JobSystem::wait();
+	JobSystem::shutdown();
 
 	uint64_t exterior_duration_ns = exterior_clock.get_elapsed_time().count();
     DLOGW("nuclear") << "Exterior duration:         " << exterior_duration_ns << "ns" << std::endl;
     DLOGW("nuclear") << "Payload duration:          " << payload_duration_ns  << "ns" << std::endl;
     DLOGW("nuclear") << "Theoretical overhead /job: " << 1e-6*(3*exterior_duration_ns - payload_duration_ns)/(1.f*n_jobs)  << "ms" << std::endl;
 
-	JobSystem::shutdown();
 
 	return 0;
 }
-
-
-
 
 
 

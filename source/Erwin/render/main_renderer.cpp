@@ -33,7 +33,7 @@ namespace erwin
 		DO_ACTION( ShaderHandle )              \
 		DO_ACTION( FramebufferHandle )
 
-constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_handles>);
+constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
 
 /*
 		  _  __              
@@ -179,15 +179,15 @@ struct RendererStorage
 	}
 
 	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
-	WRef<IndexBuffer>         index_buffers[k_max_handles];
-	WRef<BufferLayout>        vertex_buffer_layouts[k_max_handles];
-	WRef<VertexBuffer>        vertex_buffers[k_max_handles];
-	WRef<VertexArray>         vertex_arrays[k_max_handles];
-	WRef<UniformBuffer>       uniform_buffers[k_max_handles];
-	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_handles];
-	WRef<Texture2D>			  textures[k_max_handles];
-	WRef<Shader>			  shaders[k_max_handles];
-	WRef<Framebuffer>		  framebuffers[k_max_handles];
+	WRef<IndexBuffer>         index_buffers[k_max_render_handles];
+	WRef<BufferLayout>        vertex_buffer_layouts[k_max_render_handles];
+	WRef<VertexBuffer>        vertex_buffers[k_max_render_handles];
+	WRef<VertexArray>         vertex_arrays[k_max_render_handles];
+	WRef<UniformBuffer>       uniform_buffers[k_max_render_handles];
+	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
+	WRef<Texture2D>			  textures[k_max_render_handles];
+	WRef<Shader>			  shaders[k_max_render_handles];
+	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
 
 	FramebufferHandle default_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;

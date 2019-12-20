@@ -19,20 +19,36 @@
 namespace erwin
 {
 
-HANDLE_DEFINITION( JobHandle );
+// Job queue configuration
+static constexpr size_t k_max_jobs = 128;
+static constexpr bool   k_minimize_contention = true;
+static constexpr bool   k_maximize_throughput = true;
+static constexpr bool   k_SPSC = false;
 
-constexpr size_t k_handle_alloc_size = 2 * sizeof(HandlePoolT<JobSystem::k_max_jobs>);
+// Handles
+constexpr size_t k_handle_alloc_size = 2 * sizeof(HandlePoolT<k_max_jobs>);
+ROBUST_HANDLE_DEFINITION( JobHandle, k_max_jobs );
+
 
 struct Job
 {
-	JobSystem::JobFunction function;
-	uint16_t id;
+	JobSystem::JobFunction function = [](){};
+	JobHandle handle;
+	JobHandle parent;
 };
 
 static struct JobSystemStorage
 {
+	template <typename T>
+	using AtomicQueue2 = atomic_queue::AtomicQueue2<T,
+												    k_max_jobs, 
+												    k_minimize_contention, 
+												    k_maximize_throughput, 
+												    false, // TOTAL_ORDER
+												    k_SPSC>;
+
 	std::vector<std::thread> threads;
-	atomic_queue::AtomicQueue2<Job,JobSystem::k_max_jobs> jobs;
+	AtomicQueue2<Job> jobs;
     std::mutex wake_mutex;
     std::mutex wait_mutex;
     std::condition_variable cv_wake; // To wake worker threads
@@ -53,13 +69,23 @@ static void thread_run(uint32_t tid)
         if(!s_storage.jobs.was_empty())
         {
     		Job job = s_storage.jobs.pop();
-        	DLOG("thread",1) << "Thread " << tid << " took the job " << job.id << std::endl;
+
+    		// TODO: Check dependencies
+    		// Following code will break because handle indices are reused
+    		/*if(job.parent.is_valid())
+    		{
+    			// Parent job has not finished yet, push the job back to the queue
+    			s_storage.jobs.push(std::move(job));
+    			continue;
+    		}*/
+
+        	// DLOG("thread",1) << "Thread " << tid << " took the job " << job.id << std::endl;
     		job.function();
-    		JobHandle::release(job.id);
+    		job.handle.release();
     		// Notify main thread that the job is done
         	s_storage.status.fetch_add(1, std::memory_order_relaxed);
         	s_storage.cv_wait.notify_one();
-        	DLOG("thread",1) << "Thread " << tid << " finished the job " << job.id << std::endl;
+        	// DLOG("thread",1) << "Thread " << tid << " finished the job " << job.id << std::endl;
         }
         else // No job -> wait
         {
@@ -69,7 +95,7 @@ static void thread_run(uint32_t tid)
 	}
 }
 
-void JobSystem::init(memory::HeapArea& area, size_t max_jobs)
+void JobSystem::init(memory::HeapArea& area)
 {
 	DLOGN("thread") << "Initializing job system." << std::endl;
 
@@ -96,6 +122,8 @@ void JobSystem::init(memory::HeapArea& area, size_t max_jobs)
 
 void JobSystem::shutdown()
 {
+	DLOGN("thread") << "Waiting for jobs to finish." << std::endl;
+	wait();
 	DLOGN("thread") << "Shutting down job system." << std::endl;
 
 	// Notify all threads they are going to die
@@ -110,19 +138,29 @@ void JobSystem::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-JobHandle JobSystem::execute(JobFunction function)
+JobHandle JobSystem::schedule(JobFunction function, JobHandle parent)
 {
 	JobHandle handle = JobHandle::acquire();
 	++s_storage.current_status;
 
 	// Enqueue new job
-	DLOG("thread",1) << "Enqueuing job " << handle.index << std::endl;
-    s_storage.jobs.push(Job{ function, handle.index });
+	// DLOG("thread",1) << "Enqueuing job " << handle.index << std::endl;
+    s_storage.jobs.push(Job{ function, handle, parent });
 
     // Wake one worker thread
 	s_storage.cv_wake.notify_one();
 
 	return handle;
+}
+
+bool JobSystem::is_busy()
+{
+	return s_storage.status.load(std::memory_order_relaxed) < s_storage.current_status;
+}
+
+bool JobSystem::is_work_done(JobHandle handle)
+{
+	return !handle.is_valid();
 }
 
 void JobSystem::wait()
@@ -134,7 +172,17 @@ void JobSystem::wait()
     std::unique_lock<std::mutex> lock(s_storage.wait_mutex);
     s_storage.cv_wait.wait(lock, []()
     {
-        return s_storage.status.load(std::memory_order_relaxed) >= s_storage.current_status;
+        return !is_busy();
+    });
+}
+
+void JobSystem::wait_for(JobHandle handle)
+{
+	// Same as before but we wait for the passed handle to be invalidated by a worker thread.
+    std::unique_lock<std::mutex> lock(s_storage.wait_mutex);
+    s_storage.cv_wait.wait(lock, [&handle]()
+    {
+        return !handle.is_valid();
     });
 }
 

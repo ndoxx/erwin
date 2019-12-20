@@ -9,18 +9,27 @@
 namespace erwin
 {
 
-HANDLE_DECLARATION( JobHandle );
+ROBUST_HANDLE_DECLARATION( JobHandle );
 
 class JobSystem
 {
 public:
-	static constexpr size_t k_max_jobs = 128;
 	using JobFunction = std::function<void(void)>;
 
-	static void init(memory::HeapArea& area, size_t max_jobs);
+	// Initialize job system's memory and spawn worker threads
+	static void init(memory::HeapArea& area);
+	// Wait for all jobs to finish, join worker threads and destroy system storage
 	static void shutdown();
-	static JobHandle execute(JobFunction function);
+	// Enqueue a new job for asynchronous execution and return a handle for this job
+	static JobHandle schedule(JobFunction function, JobHandle parent = JobHandle{});
+	// Non-blockingly check if any worker threads are busy
+	static bool is_busy();
+	// Non-blockingly check if a job is processed
+	static bool is_work_done(JobHandle handle);
+	// Hold execution on this thread till all jobs are processed
 	static void wait();
+	// Hold execution on this thread till a particular job is processed
+	static void wait_for(JobHandle handle);
 };
 
 
