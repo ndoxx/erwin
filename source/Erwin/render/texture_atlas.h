@@ -20,7 +20,7 @@ struct TextureAtlas
 	inline uint32_t get_height() const { return descriptor.texture_height; }
 
 	cat::CATDescriptor descriptor;
-	TextureHandle handle;
+	TextureHandle texture;
 
 private:
 	std::map<hash_t, glm::vec4> remapping;

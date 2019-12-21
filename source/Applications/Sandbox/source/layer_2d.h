@@ -22,7 +22,7 @@ protected:
 
 private:
 	OrthographicCamera2DController camera_ctl_;
-	TextureAtlas atlas_;
+	TextureAtlasHandle atlas_;
 	std::vector<hash_t> tiles_;
 	float tt_ = 0.f;
 	bool trippy_mode_ = false;

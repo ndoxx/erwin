@@ -34,7 +34,6 @@ public:
 	{
 		EVENTBUS.subscribe(this, &Puyo::on_keyboard_event);
 
-		filesystem::set_asset_dir("source/Applications/PoliPuyo/assets");
 		push_layer(new Layer2D());
 		presentation_layer_ = new PresentationLayer();
 		push_overlay(presentation_layer_);

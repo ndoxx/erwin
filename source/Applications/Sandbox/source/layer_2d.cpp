@@ -64,8 +64,7 @@ void Layer2D::on_imgui_render()
 
 void Layer2D::on_attach()
 {
-	atlas_.load("textures/atlas/set1.cat");
-	Renderer2D::register_atlas("set1"_h, atlas_);
+	atlas_ = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
 	// List of random sub-textures to use
 	tiles_ =
@@ -143,7 +142,7 @@ void Layer2D::on_update(GameClock& clock)
 
 			// hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
 			hash_t tile = tiles_.at((yy/3 + xx/5)%(tiles_.size()-1));
-			Renderer2D::draw_quad({pos_x,pos_y,0.f,1.f}, {xx_scale,yy_scale}, atlas_.get_uv(tile), "set1"_h);
+			Renderer2D::draw_quad({pos_x,pos_y,0.f,1.f}, {xx_scale,yy_scale}, tile, atlas_);
 		}
 	}
 	for(int xx=0; xx<5; ++xx)

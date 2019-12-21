@@ -14,11 +14,10 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "asset/asset_manager.h"
 #include "memory/arena.h"
 
 #include <iostream>
-
-#define MR__
 
 namespace erwin
 {
@@ -86,8 +85,10 @@ Application::~Application()
         W_PROFILE_SCOPE("Layer stack shutdown")
         layer_stack_.clear();
     }
-
-#ifdef MR__
+    {
+        W_PROFILE_SCOPE("Asset Manager shutdown")
+        AssetManager::shutdown();
+    }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
         FramebufferPool::shutdown();
@@ -97,7 +98,6 @@ Application::~Application()
         CommonGeometry::shutdown();
         MainRenderer::shutdown();
     }
-#endif
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
@@ -214,7 +214,6 @@ bool Application::init()
         window_ = Window::create(props);
     }
 
-#ifdef MR__
     {
         W_PROFILE_SCOPE("Renderer startup")
         // Initialize framebuffer pool
@@ -237,8 +236,10 @@ bool Application::init()
         Renderer2D::init();
         ForwardRenderer::init();
         PostProcessingRenderer::init();
+
+        // Initialize asset manager
+        AssetManager::init(s_storage.client_area);
     }
-#endif
 
     {
         W_PROFILE_SCOPE("ImGui overlay creation")
@@ -319,9 +320,9 @@ void Application::run()
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
-#ifdef MR__
+
         MainRenderer::flush();
-#endif
+        
 		// TODO: move this to render thread when we have one
         {
             W_PROFILE_SCOPE("ImGui render")

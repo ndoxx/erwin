@@ -62,12 +62,17 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/utils/random.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/assets/stb_build.cpp
   )
 
 set(SRC_EVENT
     ${CMAKE_SOURCE_DIR}/source/Erwin/event/event_bus.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/event/window_events.cpp
+  )
+
+set(SRC_ASSET
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/asset_manager.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/handles.cpp
   )
 
 set(SRC_FILESYSTEM
@@ -160,6 +165,7 @@ endif()
 add_library(erwin SHARED
             ${SRC_CORE}
             ${SRC_EVENT}
+            ${SRC_ASSET}
             ${SRC_FILESYSTEM}
             ${SRC_MATH}
             ${SRC_ENTITY}
@@ -177,6 +183,7 @@ target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/taskflow")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
