@@ -32,6 +32,8 @@ public:
 	// Hold execution on this thread till a particular job is processed
 	static void wait_for(JobHandle handle);
 
+	
+	// Cleanup job pool. Called automatically at the start of schedule() and during shutdown
 	static void cleanup();
 };
 
