@@ -11,23 +11,21 @@ namespace erwin
 namespace memory
 {
 
-LinearAllocator::LinearAllocator(std::size_t size)
+LinearAllocator::LinearAllocator(void* begin, void* end)
 {
-
+    init(begin, end);
 }
 
-LinearAllocator::LinearAllocator(void* begin, void* end):
-begin_(static_cast<uint8_t*>(begin)),
-end_(static_cast<uint8_t*>(end)),
-current_offset_(0)
+LinearAllocator::LinearAllocator(std::pair<void*,void*> ptr_range)
 {
-
+    init(ptr_range.first, ptr_range.second);
 }
 
-LinearAllocator::LinearAllocator(std::pair<void*,void*> ptr_range):
-LinearAllocator(ptr_range.first, ptr_range.second)
+void LinearAllocator::init(void* begin, void* end)
 {
-
+    begin_ = static_cast<uint8_t*>(begin);
+    end_ = static_cast<uint8_t*>(end);
+    current_offset_ = 0;
 }
 
 void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)

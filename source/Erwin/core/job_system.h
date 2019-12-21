@@ -21,7 +21,8 @@ public:
 	// Wait for all jobs to finish, join worker threads and destroy system storage
 	static void shutdown();
 	// Enqueue a new job for asynchronous execution and return a handle for this job
-	static JobHandle schedule(JobFunction function, JobHandle parent = JobHandle{});
+	// This should not be used for jobs with dependencies
+	static JobHandle schedule(JobFunction function);
 	// Non-blockingly check if any worker threads are busy
 	static bool is_busy();
 	// Non-blockingly check if a job is processed
@@ -30,6 +31,8 @@ public:
 	static void wait();
 	// Hold execution on this thread till a particular job is processed
 	static void wait_for(JobHandle handle);
+
+	static void cleanup();
 };
 
 

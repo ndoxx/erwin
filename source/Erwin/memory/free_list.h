@@ -10,7 +10,10 @@ namespace memory
 class Freelist
 {
 public:
+	Freelist() = default;
 	Freelist(void* begin, std::size_t element_size, std::size_t max_elements, std::size_t alignment, std::size_t offset);
+
+	void init(void* begin, std::size_t element_size, std::size_t max_elements, std::size_t alignment, std::size_t offset);
 
 	inline void* acquire()
 	{
