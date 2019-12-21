@@ -11,10 +11,12 @@ namespace memory
 class LinearAllocator
 {
 public:
-	explicit LinearAllocator(std::size_t size);
-
+	LinearAllocator() = default;
 	LinearAllocator(void* begin, void* end);
 	LinearAllocator(std::pair<void*,void*> ptr_range);
+
+	void init(void* begin, void* end);
+	inline void init(std::pair<void*,void*> ptr_range) { init(ptr_range.first, ptr_range.second); }
 
 	inline uint8_t* begin()             { return begin_; }
 	inline const uint8_t* begin() const { return begin_; }

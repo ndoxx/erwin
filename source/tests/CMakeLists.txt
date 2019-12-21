@@ -74,6 +74,7 @@ set(SRC_ENGINE_TEST
     test_ecs.cpp
     test_rng.cpp
     test_event.cpp
+    test_jobs.cpp
    )
 
 add_executable(test_erwin ${SRC_ENGINE_TEST})

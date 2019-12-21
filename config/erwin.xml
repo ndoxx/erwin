@@ -3,6 +3,7 @@
 	<logger>
 		<Channel name="application" verbosity="3"/>
 		<Channel name="memory"      verbosity="3"/>
+		<Channel name="thread"      verbosity="3"/>
 		<Channel name="entity"      verbosity="3"/>
 		<Channel name="render"      verbosity="1"/>
 		<Channel name="shader"      verbosity="1"/>

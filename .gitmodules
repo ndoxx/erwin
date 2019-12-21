@@ -44,3 +44,9 @@
 [submodule "source/vendor/eastl"]
 	path = source/vendor/eastl
 	url = https://github.com/electronicarts/EASTL.git
+[submodule "source/vendor/atomic_queue"]
+	path = source/vendor/atomic_queue
+	url = https://github.com/max0x7ba/atomic_queue.git
+[submodule "source/vendor/taskflow"]
+	path = source/vendor/taskflow
+	url = https://github.com/cpp-taskflow/cpp-taskflow.git

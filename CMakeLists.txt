@@ -54,6 +54,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/job_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
@@ -118,6 +119,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/common_geometry.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/handles.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )

@@ -188,6 +188,11 @@ public:
 			size = size_t(head_-begin_);
     	memory::hex_dump(stream, begin_, size, "HEX DUMP");
 	}
+
+	inline void fill(uint8_t filler)
+	{
+		std::fill(begin_, begin_+size_, filler);
+	}
 #endif
 
 private:
@@ -213,10 +218,13 @@ public:
 	static constexpr uint32_t DECORATION_SIZE = BK_FRONT_SIZE
 											  + BoundsCheckerT::SIZE_BACK;
 
+	MemoryArena(): is_initialized_(false) { }
+
 	// Wrap the allocator ctor
     template <typename... ArgsT>
     explicit MemoryArena(ArgsT&&... args):
-    allocator_(std::forward<ArgsT>(args)...)
+    allocator_(std::forward<ArgsT>(args)...),
+    is_initialized_(true)
     {
 
     }
@@ -226,10 +234,19 @@ public:
     	memory_tracker_.report();
     }
 
+    template <typename... ArgsT>
+    inline void init(ArgsT&&... args)
+    {
+    	allocator_.init(std::forward<ArgsT>(args)...);
+    	is_initialized_ = true;
+    }
+
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
     inline void set_debug_name(const std::string& name) { debug_name_ = name; }
+
+    inline bool is_initialized() const { return is_initialized_; }
 
 	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
@@ -298,6 +315,7 @@ private:
 	MemoryTrackerT memory_tracker_;
 
 	std::string debug_name_;
+	bool is_initialized_;
 };
 
 template <typename T, class ArenaT>

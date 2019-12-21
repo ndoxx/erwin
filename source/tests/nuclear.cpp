@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <bitset>
+#include <atomic>
 
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
@@ -19,11 +20,17 @@
 #include "entity/entity_manager.h"
 #include "core/game_clock.h"
 
+#include "core/job_system.h"
+#include "core/clock.hpp"
+
+#include "core/handle.h"
+
 using namespace erwin;
 
 void init_logger()
 {
     WLOGGER.create_channel("memory", 3);
+    WLOGGER.create_channel("thread", 3);
 	WLOGGER.create_channel("nuclear", 3);
 	WLOGGER.create_channel("entity", 3);
 	WLOGGER.attach_all("console_sink", std::make_unique<dbg::ConsoleSink>());
@@ -35,6 +42,47 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+using namespace std::chrono_literals;
+
+int main(int argc, char** argv)
+{
+	init_logger();
+
+	uint32_t n_jobs = 33;
+
+	std::atomic<uint64_t> payload_duration_ns;
+
+	memory::HeapArea area(32_kB);
+	JobSystem::init(area);
+
+	nanoClock exterior_clock;
+
+	for(int ii=0; ii<n_jobs; ++ii)
+	{
+		JobSystem::schedule([&payload_duration_ns]()
+		{
+			nanoClock payload_clock;
+			std::this_thread::sleep_for(100ms);
+	        payload_duration_ns.fetch_add(payload_clock.get_elapsed_time().count(), std::memory_order_relaxed);
+		});
+
+		// std::this_thread::sleep_for(15ms);
+	}
+
+	JobSystem::shutdown();
+
+	uint64_t exterior_duration_ns = exterior_clock.get_elapsed_time().count();
+    DLOGW("nuclear") << "Exterior duration:         " << exterior_duration_ns << "ns" << std::endl;
+    DLOGW("nuclear") << "Payload duration:          " << payload_duration_ns  << "ns" << std::endl;
+    DLOGW("nuclear") << "Theoretical overhead /job: " << 1e-6*(3*exterior_duration_ns - payload_duration_ns)/(1.f*n_jobs)  << "ms" << std::endl;
+
+
+	return 0;
+}
+
+
+
+/*
 class AComponent: public Component
 {
 public:
@@ -177,3 +225,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/
