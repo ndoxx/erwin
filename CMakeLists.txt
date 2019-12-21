@@ -73,6 +73,7 @@ set(SRC_ASSET
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/asset_manager.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/handles.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/texture_atlas.cpp
   )
 
 set(SRC_FILESYSTEM
@@ -113,7 +114,6 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_layout.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp

@@ -1,4 +1,4 @@
-#include "render/texture_atlas.h"
+#include "asset/texture_atlas.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
 
@@ -15,7 +15,7 @@ void TextureAtlas::load(const fs::path& filepath)
 	{
 		DLOGI << "CAT: " << WCC('p') << filepath << WCC(0) << std::endl;
 
-		descriptor.filepath = filesystem::get_asset_dir() / filepath;
+		descriptor.filepath = filepath;
 		cat::read_cat(descriptor);
 
 		float width = get_width();

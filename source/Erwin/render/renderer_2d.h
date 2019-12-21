@@ -26,6 +26,10 @@ public:
 	}
 	// Draw a colored quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.
 	static void draw_colored_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs={0.f,0.f,1.f,1.f});
+	static inline void draw_colored_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs={0.f,0.f,1.f,1.f})
+	{
+		draw_colored_quad(glm::vec4(position, 0.f, 1.f), scale, tint, uvs);
+	}
 	// Force current batch to be pushed to render queue
 	static void flush();
 

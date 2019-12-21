@@ -1,8 +1,8 @@
 #include "asset/asset_manager.h"
+#include "asset/texture_atlas.h"
 #include "memory/arena.h"
 #include "render/main_renderer.h"
 #include "render/renderer_2d.h"
-#include "render/texture_atlas.h"
 #include "debug/logger.h"
 
 namespace erwin
@@ -31,7 +31,7 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 
 	TextureAtlasHandle handle = TextureAtlasHandle::acquire();
 	TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
-	atlas->load(filepath);
+	atlas->load(filesystem::get_asset_dir() / filepath);
 
 	// * Register atlas
 	ImageFormat format;
@@ -70,6 +70,26 @@ void AssetManager::release_texture_atlas(TextureAtlasHandle handle)
 	DLOGI << "handle: " << WCC('v') << handle.index << std::endl;
 }
 
+ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
+{
+	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
+
+	std::string shader_name = name.empty() ? filepath.stem().string() : name;
+	ShaderHandle handle = MainRenderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
+
+	DLOGI << "handle: " << WCC('v') << handle.index << std::endl;
+	return handle;
+}
+
+void AssetManager::release_shader(ShaderHandle handle)
+{
+	W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
+	DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
+
+	MainRenderer::destroy(handle);
+
+	DLOGI << "handle: " << WCC('v') << handle.index << std::endl;
+}
 
 
 // ---------------- PRIVATE API ----------------
