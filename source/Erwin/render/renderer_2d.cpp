@@ -2,8 +2,10 @@
 
 #include "render/renderer_2d.h"
 #include "render/common_geometry.h"
+#include "asset/texture_atlas.h"
 #include "core/config.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "asset/asset_manager.h"
 
 namespace erwin
 {
@@ -40,18 +42,9 @@ struct Renderer2DStorage
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
 	uint8_t layer_id;
-	std::map<hash_t, Batch2D> batches;
+	std::map<uint16_t, Batch2D> batches;
 };
 static Renderer2DStorage storage;
-
-static void create_batch(hash_t atlas_name, TextureHandle texture)
-{
-	storage.batches.insert(std::make_pair(atlas_name, Batch2D()));
-	auto& batch = storage.batches[atlas_name];
-	batch.count = 0;
-	batch.max_depth = -1.f;
-	batch.texture = texture;
-}
 
 // TMP: MOVE this to proper collision trait class?
 static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, const FrustumSides& fs)
@@ -88,6 +81,16 @@ static bool frustum_cull(const glm::vec2& position, const glm::vec2& scale, cons
 	return false;
 }
 
+static void create_batch(uint16_t index, TextureHandle handle)
+{
+	storage.batches.insert(std::make_pair(index, Batch2D()));
+
+	auto& batch = storage.batches[index];
+	batch.count = 0;
+	batch.max_depth = -1.f;
+	batch.texture = handle;
+}
+
 void Renderer2D::init()
 {
     W_PROFILE_FUNCTION()
@@ -114,7 +117,7 @@ void Renderer2D::init()
 								  					 				   			&storage.white_texture_data,
 								  					 				   			ImageFormat::RGBA8,
 								  					 				   			MAG_NEAREST | MIN_NEAREST});
-	create_batch(0, storage.white_texture);
+	::erwin::create_batch(0, storage.white_texture);
 }
 
 void Renderer2D::shutdown()
@@ -127,26 +130,9 @@ void Renderer2D::shutdown()
 	MainRenderer::destroy(storage.batch_2d_shader);
 }
 
-void Renderer2D::register_atlas(hash_t name, TextureAtlas& atlas)
+void Renderer2D::create_batch(TextureHandle handle)
 {
-	ImageFormat format;
-	switch(atlas.descriptor.texture_compression)
-	{
-		case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
-		case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
-		case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
-	}
-	uint8_t filter = MAG_NEAREST | MIN_NEAREST;
-	// uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
-	// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
-
-	atlas.handle = MainRenderer::create_texture_2D(Texture2DDescriptor{atlas.descriptor.texture_width,
-								  					 				   atlas.descriptor.texture_height,
-								  					 				   atlas.descriptor.texture_blob,
-								  					 				   format,
-								  					 				   filter});
-
-	create_batch(name, atlas.handle);
+	::erwin::create_batch(handle.index, handle);
 }
 
 void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id)
@@ -199,13 +185,35 @@ static void flush_batch(Batch2D& batch)
 	}
 }
 
-void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& uvs, hash_t atlas, const glm::vec4& tint)
+void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, hash_t tile, TextureAtlasHandle atlas_handle, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::vec2(position), scale, storage.frustum_sides)) return;
 
 	// Get appropriate batch
-	auto& batch = storage.batches[atlas];
+	const TextureAtlas& atlas = AssetManager::get(atlas_handle);
+	auto& batch = storage.batches[atlas.texture.index];
+
+	// Check that current batch has enough space, if not, upload batch and start to fill next batch
+	if(batch.count == storage.max_batch_count)
+		flush_batch(batch);
+
+	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
+	if(position.z > batch.max_depth)
+		batch.max_depth = position.z; // TMP: this must be in view space
+
+	glm::vec4 uvs = atlas.get_uv(tile);
+	batch.instance_data[batch.count] = {uvs, tint, position, scale};
+	++batch.count;
+}
+
+void Renderer2D::draw_colored_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs)
+{
+	// * Frustum culling
+	if(frustum_cull(glm::vec2(position), scale, storage.frustum_sides)) return;
+
+	// Get appropriate batch
+	auto& batch = storage.batches[0];
 
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(batch.count == storage.max_batch_count)

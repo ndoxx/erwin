@@ -10,6 +10,6 @@
         <bool name="vsync"      value="true"/>
     </display>
 	<memory>
-    	<size name="area" value="2_MB"/>
+    	<size name="area" value="10_MB"/>
     </memory>>
 </Config>

@@ -26,11 +26,6 @@ set_target_properties(ierwin PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/"
 )
 
-# TMP --------------------
-# target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-# TMP --------------------
-
-
 target_link_libraries(sandbox
 					            ierwin
                       pthread

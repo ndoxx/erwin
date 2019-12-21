@@ -46,14 +46,17 @@ struct PostProcessingData
 class PostProcessingRenderer
 {
 public:
+	static void begin_pass(const PassState& state, const PostProcessingData& pp_data);
+	static void blit(hash_t framebuffer, uint32_t index=0);
+	static void end_pass();
+
+private:
+	friend class Application;
+	
 	// Initialize renderer
 	static void init();
 	// Destroy renderer
 	static void shutdown();
-
-	static void begin_pass(const PassState& state, const PostProcessingData& pp_data);
-	static void blit(hash_t framebuffer, uint32_t index=0);
-	static void end_pass();
 };
 
 } // namespace erwin

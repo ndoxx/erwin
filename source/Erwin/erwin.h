@@ -20,6 +20,7 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_forward.h"
 #include "render/renderer_pp.h"
+#include "asset/asset_manager.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

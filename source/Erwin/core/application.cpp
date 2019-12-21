@@ -14,11 +14,10 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "asset/asset_manager.h"
 #include "memory/arena.h"
 
 #include <iostream>
-
-#define MR__
 
 namespace erwin
 {
@@ -49,15 +48,6 @@ struct ApplicationStorage
 };
 static ApplicationStorage s_storage;
 
-// Helper function to automatically configure an event pool's size
-template <typename EventT>
-static inline void init_event_pool()
-{
-    std::string config_key_str = "erwin.events.memory.max_pool." + EventT::NAME;
-    DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EventT::NAME << std::endl;
-    EVENTBUS.init_event_pool<EventT>(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8));
-}
-
 // Helper function to automatically configure an event tracking policy
 template <typename EventT>
 static inline void configure_event_tracking()
@@ -86,8 +76,10 @@ Application::~Application()
         W_PROFILE_SCOPE("Layer stack shutdown")
         layer_stack_.clear();
     }
-
-#ifdef MR__
+    {
+        W_PROFILE_SCOPE("Asset Manager shutdown")
+        AssetManager::shutdown();
+    }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
         FramebufferPool::shutdown();
@@ -97,7 +89,6 @@ Application::~Application()
         CommonGeometry::shutdown();
         MainRenderer::shutdown();
     }
-#endif
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
@@ -173,7 +164,13 @@ bool Application::init()
     // Initialize system event pools
     {
         W_PROFILE_SCOPE("System event pools init")
-        #define DO_ACTION( EVENT_NAME ) init_event_pool< EVENT_NAME >();
+        #define DO_ACTION( EVENT_NAME ) \
+        { \
+            std::string config_key_str = "erwin.events.memory.max_pool." + EVENT_NAME::NAME; \
+            DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EVENT_NAME::NAME << std::endl; \
+            EVENTBUS.init_event_pool< EVENT_NAME >(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8)); \
+        }
+
         FOR_ALL_EVENTS
         #undef DO_ACTION
     }
@@ -214,7 +211,6 @@ bool Application::init()
         window_ = Window::create(props);
     }
 
-#ifdef MR__
     {
         W_PROFILE_SCOPE("Renderer startup")
         // Initialize framebuffer pool
@@ -237,8 +233,10 @@ bool Application::init()
         Renderer2D::init();
         ForwardRenderer::init();
         PostProcessingRenderer::init();
+
+        // Initialize asset manager
+        AssetManager::init(s_storage.client_area);
     }
-#endif
 
     {
         W_PROFILE_SCOPE("ImGui overlay creation")
@@ -319,9 +317,9 @@ void Application::run()
 			for(auto* layer: layer_stack_)
 				layer->update(game_clock_);
 		}
-#ifdef MR__
+
         MainRenderer::flush();
-#endif
+        
 		// TODO: move this to render thread when we have one
         {
             W_PROFILE_SCOPE("ImGui render")

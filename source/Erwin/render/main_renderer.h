@@ -47,19 +47,12 @@ class RenderQueue;
 class MainRenderer
 {
 public:
-	enum class Phase
-	{
-		Pre,
-		Post
-	};
 	typedef memory::MemoryArena<memory::LinearAllocator, 
 			    				memory::policy::SingleThread, 
 			    				memory::policy::NoBoundsChecking,
 			    				memory::policy::NoMemoryTagging,
 			    				memory::policy::NoMemoryTracking> AuxArena;
-
-	static void init();
-	static void shutdown();
+			    				
 	static RenderQueue& create_queue(const std::string& name, SortKey::Order order);
 	static RenderQueue& get_queue(hash_t name);
 	static AuxArena& get_arena();
@@ -106,6 +99,12 @@ public:
 	static void destroy(ShaderHandle handle);
 	static void destroy(TextureHandle handle);
 	static void destroy(FramebufferHandle handle);
+
+private:
+	friend class Application;
+
+	static void init();
+	static void shutdown();
 };
 
 constexpr std::size_t k_max_render_commands = 10000;

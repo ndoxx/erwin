@@ -364,18 +364,24 @@ public:
 	}
 
 private:
-	inline CommandBuffer& get_command_buffer(MainRenderer::Phase phase)
+	enum class Phase
+	{
+		Pre,
+		Post
+	};
+
+	inline CommandBuffer& get_command_buffer(Phase phase)
 	{
 		switch(phase)
 		{
-			case MainRenderer::Phase::Pre:  return s_storage->pre_buffer_;
-			case MainRenderer::Phase::Post: return s_storage->post_buffer_;
+			case Phase::Pre:  return s_storage->pre_buffer_;
+			case Phase::Post: return s_storage->post_buffer_;
 		}
 	}
 
 	inline CommandBuffer& get_command_buffer(RenderCommand command)
 	{
-		MainRenderer::Phase phase = (command < RenderCommand::Post) ? MainRenderer::Phase::Pre : MainRenderer::Phase::Post;
+		Phase phase = (command < RenderCommand::Post) ? Phase::Pre : Phase::Post;
 		return get_command_buffer(phase);
 	}
 

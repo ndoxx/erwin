@@ -13,10 +13,6 @@ namespace erwin
 class ForwardRenderer
 {
 public:
-	// Initialize renderer
-	static void init();
-	// Destroy renderer
-	static void shutdown();
 	// Start a new pass
 	static void begin_pass(const PassState& state, const PerspectiveCamera3D& camera, uint8_t layer_id);
 	// End a pass
@@ -28,6 +24,14 @@ public:
 
 	// Stats
 	static uint32_t get_draw_call_count();
+
+private:
+	friend class Application;
+
+	// Initialize renderer
+	static void init();
+	// Destroy renderer
+	static void shutdown();
 };
 
 } // namespace erwin
