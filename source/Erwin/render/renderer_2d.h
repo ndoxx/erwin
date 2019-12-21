@@ -4,7 +4,6 @@
 #include "render/render_state.h" // For access to enums
 #include "render/camera_2d.h"
 #include "render/main_renderer.h"
-#include "render/texture_atlas.h"
 #include "asset/handles.h"
 #include "glm/glm.hpp"
 
@@ -15,12 +14,6 @@ namespace erwin
 class Renderer2D
 {
 public:
-	// Initialize renderer
-	static void init();
-	// Destroy renderer
-	static void shutdown();
-	// Register a texture for batching
-	static void create_batch(TextureHandle handle);
 	// Start a new pass
 	static void begin_pass(const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id);
 	// End a pass
@@ -38,6 +31,17 @@ public:
 
 	// Stats
 	static uint32_t get_draw_call_count();
+
+private:
+	friend class Application;
+	friend class AssetManager;
+
+	// Initialize renderer
+	static void init();
+	// Destroy renderer
+	static void shutdown();
+	// Register a texture for batching
+	static void create_batch(TextureHandle handle);
 };
 
 } // namespace erwin

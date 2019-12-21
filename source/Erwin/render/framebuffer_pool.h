@@ -54,9 +54,6 @@ private:
 class FramebufferPool
 {
 public:
-	static void init(uint32_t initial_width, uint32_t initial_height);
-	// Destroy all framebuffers stored in this pool
-	static void shutdown();
 	// Get a framebuffer handle by name
 	static FramebufferHandle get_framebuffer(hash_t name);
 	// Visit all framebuffers
@@ -71,6 +68,14 @@ public:
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);
+
+private:
+	friend class Application;
+
+	// Initialize pool with default framebuffer dimensions
+	static void init(uint32_t initial_width, uint32_t initial_height);
+	// Destroy all framebuffers stored in this pool
+	static void shutdown();
 };
 
 } // namespace erwin
