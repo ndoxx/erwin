@@ -26,7 +26,7 @@ public:
 	virtual void bind() const override;
 	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
-	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const override;
+	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const override;
 
 	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) override;
 	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) override;

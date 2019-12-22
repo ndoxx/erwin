@@ -188,7 +188,6 @@ struct DrawCall
 	{
 		uint64_t state_flags;
 		void* UBO_data;
-		hash_t sampler;
 
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
@@ -260,9 +259,10 @@ struct DrawCall
 		}
 	}
 
-	inline void set_texture(hash_t smp, TextureHandle tex)
+	// TMP: only one texture for now
+	inline void set_texture(TextureHandle tex)
 	{
-		data.sampler = smp;
+		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		data.texture = tex;
 	}
 

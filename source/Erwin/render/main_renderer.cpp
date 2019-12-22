@@ -1367,12 +1367,10 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		shader.bind();
 		last_shader_index = data.shader.index;
 	}
-
-	if(data.texture.is_valid())
+	if(data.texture.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
 		auto& texture = *s_storage->textures[data.texture.index];
-		shader.attach_texture(data.sampler, texture);
-		texture.bind();
+		shader.attach_texture_2D(texture, 0); // TMP: Only one texture supported for now, so bind to slot 0
 	}
 	if(data.UBO_data)
 	{

@@ -14,11 +14,14 @@ void main()
 #type fragment
 #version 460 core
 
+#include "include/common.glsl"
+
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-layout(binding = 0) uniform sampler2D us_input;
+
+SAMPLER_2D_(0);
 
 void main()
 {
-	out_color = texture(us_input, v_uv);
+	out_color = texture(SAMPLER_2D_0, v_uv);
 }

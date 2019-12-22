@@ -64,7 +64,7 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
     
 	static DrawCall dc(DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 	dc.set_state(storage.pass_state);
-	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
+	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
 	MainRenderer::submit("Presentation"_h, dc);
 }

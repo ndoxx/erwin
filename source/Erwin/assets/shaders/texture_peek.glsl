@@ -13,10 +13,11 @@ void main()
 
 #type fragment
 #version 460 core
+#include "include/common.glsl"
 
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-layout(binding = 0) uniform sampler2D us_input;
+SAMPLER_2D_(0);
 
 layout(std140, binding = 1) uniform peek_layout
 {
@@ -46,14 +47,14 @@ void main()
 {
     if(bool(u_flags & FLAG_DEPTH))
     {
-        float linearDepth = depth_view_from_tex(us_input, v_uv, u_proj_params.zw);
+        float linearDepth = depth_view_from_tex(SAMPLER_2D_0, v_uv, u_proj_params.zw);
         float depthRemapped = linearDepth / (linearDepth + 1.0);
         out_color = vec4(depthRemapped,depthRemapped,depthRemapped,1.f);
     }
     else
     {
         // "screen" texture is a floating point color buffer
-        vec4 sampleColor = texture(us_input, v_uv);
+        vec4 sampleColor = texture(SAMPLER_2D_0, v_uv);
 
         // Filter channels
         sampleColor.rgb *= u_channel_filter.rgb;

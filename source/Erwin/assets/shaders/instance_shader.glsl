@@ -39,15 +39,17 @@ void main()
 
 #type fragment
 #version 460 core
+#include "include/common.glsl"
 
-layout(binding = 0) uniform sampler2D us_atlas;
+SAMPLER_2D_(0);  // Atlas (diffuse)
+
 layout(location = 2) in vec2 v_uv;
 layout(location = 3) in vec4 v_tint;
 layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    out_color = texture(us_atlas, v_uv) * v_tint;
+    out_color = texture(SAMPLER_2D_0, v_uv) * v_tint;
     // out_color = vec4(v_uv, 0.f, 1.f);
     // out_color = vec4(1.f, 0.f, 0.f, 1.f);
 }

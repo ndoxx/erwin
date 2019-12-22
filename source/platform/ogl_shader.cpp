@@ -146,6 +146,22 @@ static std::string ogl_interface_to_string(GLenum iface)
     }
 }
 
+static inline hash_t slot_to_sampler2D_name(int32_t slot)
+{
+    switch(slot)
+    {
+        case 0: return "SAMPLER_2D_0"_h;
+        case 1: return "SAMPLER_2D_1"_h;
+        case 2: return "SAMPLER_2D_2"_h;
+        case 3: return "SAMPLER_2D_3"_h;
+        case 4: return "SAMPLER_2D_4"_h;
+        case 5: return "SAMPLER_2D_5"_h;
+        case 6: return "SAMPLER_2D_6"_h;
+        case 7: return "SAMPLER_2D_7"_h;
+        default: return 0;
+    }
+}
+
 static std::string get_shader_error_report(GLuint ShaderID)
 {
     char* log = nullptr;
@@ -288,11 +304,10 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
     return texture_slots_.at(sampler);
 }
 
-void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
+void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
 {
-    uint32_t slot = get_texture_slot(sampler);
     texture.bind(slot);
-    send_uniform<int>(sampler, slot);
+    send_uniform<int>(slot_to_sampler2D_name(slot), slot);
 }
 
 void OGLShader::attach_shader_storage(WRef<ShaderStorageBuffer> buffer)
