@@ -164,7 +164,7 @@ private:
 */
 struct DrawCall
 {
-	enum Type
+	enum Type: uint8_t
 	{
 		Indexed,
 		Array,
@@ -174,35 +174,66 @@ struct DrawCall
 		Count
 	};
 
+	#pragma pack(push,1)
+	struct DrawCallData
+	{
+		uint64_t state_flags;
+		void* UBO_data;
+		void* SSBO_data;
+		hash_t sampler;
+
+		ShaderHandle shader;
+		VertexArrayHandle VAO;
+		UniformBufferHandle UBO;
+		ShaderStorageBufferHandle SSBO;
+		TextureHandle texture; // TODO: allow multiple textures
+		Type type;
+
+		uint32_t UBO_size;
+		uint32_t SSBO_size;
+		uint32_t count;
+		uint32_t instance_count;
+		uint32_t offset;
+	} data;
+	#pragma pack(pop)
+
+	SortKey key;
+
 	DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
 
-	inline void set_state(const PassState& state)
+	inline void set_state(uint64_t state)
 	{
-		W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
-		W_ASSERT(state.render_target.is_valid(), "Invalid FramebufferHandle!");
-		key.view = uint8_t(state.render_target.index);
-		state_flags = state.encode();
+		// W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
+		// W_ASSERT(state.render_target.is_valid(), "Invalid FramebufferHandle!");
+		data.state_flags = state;
+		// Extract render target ID to use as view ID
+		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
 	}
 
-	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
+	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size)
 	{
-		UBO = ubo;
-		UBO_data = data;
-		UBO_size = size;
+		data.UBO = ubo;
+		data.UBO_size = size;
+
+		if(UBO_data)
+		{
+			data.UBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(data.UBO_data, UBO_data, size);
+		}
 	}
 
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size, uint32_t inst_count)
+	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count)
 	{
-		SSBO = ssbo;
-		SSBO_data = data;
-		SSBO_size = size;
-		instance_count = inst_count;
+		data.SSBO = ssbo;
+		data.SSBO_data = SSBO_data;
+		data.SSBO_size = size;
+		data.instance_count = inst_count;
 	}
 
 	inline void set_texture(hash_t smp, TextureHandle tex)
 	{
-		sampler = smp;
-		texture = tex;
+		data.sampler = smp;
+		data.texture = tex;
 	}
 
 	inline void submit()
@@ -212,40 +243,24 @@ struct DrawCall
 
 	inline void set_key_depth(float depth, uint8_t layer_id)
 	{
-		W_ASSERT(shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		key.view |= (layer_id<<8);
-		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
+		key.shader = data.shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
 	}
 
 	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
 	{
-		W_ASSERT(shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		key.view |= (layer_id<<8);
-		key.shader = shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
+		key.shader = data.shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 		key.sequence = sequence;
 	}
 
-	Type type;
-	ShaderHandle shader;
-	VertexArrayHandle VAO;
-	UniformBufferHandle UBO;
-	ShaderStorageBufferHandle SSBO;
-	void* UBO_data;
-	void* SSBO_data;
-	uint32_t UBO_size;
-	uint32_t SSBO_size;
-	uint32_t count;
-	uint32_t instance_count;
-	uint32_t offset;
-	uint64_t state_flags;
-
-	hash_t sampler;
-	TextureHandle texture; // TODO: allow multiple textures
-
-	SortKey key;
 private:
 	RenderQueue& queue;
 };
+
+
 
 } // namespace erwin

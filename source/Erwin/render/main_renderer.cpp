@@ -1239,18 +1239,17 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 };
 
 DrawCall::DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset):
-type(type),
-shader(shader),
-VAO(VAO),
-UBO_data(nullptr),
-SSBO_data(nullptr),
-UBO_size(0),
-SSBO_size(0),
-count(count),
-offset(offset),
 queue(queue)
 {
-
+	data.type       = type;
+	data.shader     = shader;
+	data.VAO        = VAO;
+	data.UBO_data   = nullptr;
+	data.SSBO_data  = nullptr;
+	data.UBO_size   = 0;
+	data.SSBO_size  = 0;
+	data.count      = count;
+	data.offset     = offset;
 }
 
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
@@ -1288,39 +1287,13 @@ void RenderQueue::submit(const DrawCall& dc)
 {
     W_PROFILE_RENDER_FUNCTION()
 
-	W_ASSERT(dc.VAO.is_valid(), "Invalid VertexArrayHandle!");
-	W_ASSERT(dc.shader.is_valid(), "Invalid ShaderHandle!");
-
-	void* ubo_data = nullptr;
-	void* ssbo_data = nullptr;
-	if(dc.UBO_data)
-	{
-		ubo_data = W_NEW_ARRAY_DYNAMIC(uint8_t, dc.UBO_size, s_storage->auxiliary_arena_);
-		memcpy(ubo_data, dc.UBO_data, dc.UBO_size);
-	}
-	if(dc.SSBO_data)
-	{
-		ssbo_data = dc.SSBO_data;
-	}
+	W_ASSERT(dc.data.VAO.is_valid(), "Invalid VertexArrayHandle!");
+	W_ASSERT(dc.data.shader.is_valid(), "Invalid ShaderHandle!");
 
 	auto& cmdbuf = command_buffer_.storage;
 	void* cmd = cmdbuf.head();
 
-	cmdbuf.write(&dc.type);
-	cmdbuf.write(&dc.state_flags);
-	cmdbuf.write(&dc.VAO);
-	cmdbuf.write(&dc.shader);
-	cmdbuf.write(&dc.UBO);
-	cmdbuf.write(&dc.SSBO);
-	cmdbuf.write(&dc.UBO_size);
-	cmdbuf.write(&dc.SSBO_size);
-	cmdbuf.write(&dc.count);
-	cmdbuf.write(&dc.instance_count);
-	cmdbuf.write(&dc.offset);
-	cmdbuf.write(&dc.sampler);
-	cmdbuf.write(&dc.texture);
-	cmdbuf.write(&ubo_data);
-	cmdbuf.write(&ssbo_data);
+	cmdbuf.write(&dc.data);
 
 	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(order_), cmd};
 }
@@ -1335,26 +1308,7 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
-#pragma pack(push,1)
-	struct
-	{
-		DrawCall::Type type;
-		uint64_t state_flags;
-		VertexArrayHandle va_handle;
-		ShaderHandle shader_handle;
-		UniformBufferHandle ubo_handle;
-		ShaderStorageBufferHandle ssbo_handle;
-		uint32_t ubo_size;
-		uint32_t ssbo_size;
-		uint32_t count;
-		uint32_t instance_count;
-		uint32_t offset;
-		hash_t sampler;
-		TextureHandle texture_handle;
-		void* ubo_data;
-		void* ssbo_data;
-	} dc;
-#pragma pack(pop)
+    DrawCall::DrawCallData dc;
 	buf.read(&dc); // Read all in one go
 
 	// * If pass state has changed, decode it, find which parts have changed and update device state
@@ -1410,32 +1364,32 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 
 	// * Detect if a new shader needs to be used, update and bind shader resources
 	static uint16_t last_shader_index = 0xffff;
-	auto& shader = *s_storage->shaders[dc.shader_handle.index];
-	if(dc.shader_handle.index != last_shader_index)
+	auto& shader = *s_storage->shaders[dc.shader.index];
+	if(dc.shader.index != last_shader_index)
 	{
 		shader.bind();
-		last_shader_index = dc.shader_handle.index;
+		last_shader_index = dc.shader.index;
 	}
 
-	if(dc.texture_handle.is_valid())
+	if(dc.texture.is_valid())
 	{
-		auto& texture = *s_storage->textures[dc.texture_handle.index];
+		auto& texture = *s_storage->textures[dc.texture.index];
 		shader.attach_texture(dc.sampler, texture);
 		texture.bind();
 	}
-	if(dc.ubo_data)
+	if(dc.UBO_data)
 	{
-		auto& ubo = *s_storage->uniform_buffers[dc.ubo_handle.index];
-		ubo.stream(dc.ubo_data, dc.ubo_size, 0);
+		auto& ubo = *s_storage->uniform_buffers[dc.UBO.index];
+		ubo.stream(dc.UBO_data, dc.UBO_size, 0);
 	}
-	if(dc.ssbo_data)
+	if(dc.SSBO_data)
 	{
-		auto& ssbo = *s_storage->shader_storage_buffers[dc.ssbo_handle.index];
-		ssbo.stream(dc.ssbo_data, dc.ssbo_size, 0);
+		auto& ssbo = *s_storage->shader_storage_buffers[dc.SSBO.index];
+		ssbo.stream(dc.SSBO_data, dc.SSBO_size, 0);
 	}
 
 	// * Execute draw call
-	auto& va = *s_storage->vertex_arrays[dc.va_handle.index];
+	auto& va = *s_storage->vertex_arrays[dc.VAO.index];
 	switch(dc.type)
 	{
 		case DrawCall::Indexed:

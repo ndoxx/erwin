@@ -79,7 +79,7 @@ void Layer2D::on_attach()
 
 void Layer2D::on_detach()
 {
-	AssetManager::release_texture_atlas(atlas_);
+	AssetManager::release(atlas_);
 }
 
 void Layer2D::on_update(GameClock& clock)
@@ -91,15 +91,8 @@ void Layer2D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
-	PassState pass_state;
-	pass_state.render_target = FramebufferPool::get_framebuffer("fb_2d_raw"_h);
-	pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pass_state.blend_state = BlendState::Opaque;
-	pass_state.depth_stencil_state.depth_test_enabled = true;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
-
 	// Draw a grid of quads
-	Renderer2D::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
+	Renderer2D::begin_pass(camera_ctl_.get_camera(), false, get_layer_id());
 	for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;

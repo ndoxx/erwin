@@ -5,7 +5,7 @@
 
 // Export JSON instrumentation profiles compatible with chrome://tracing
 #define W_PROFILE
-#define W_PROFILE_RENDER
+// #define W_PROFILE_RENDER
 
 
 #ifdef _WIN32

@@ -81,13 +81,7 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
     
-	PassState pp_pass_state;
-	pp_pass_state.render_target = MainRenderer::default_render_target();
-	pp_pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pp_pass_state.blend_state = BlendState::Alpha;
-	pp_pass_state.depth_stencil_state.depth_test_enabled = false;
-	pp_pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
-	PostProcessingRenderer::begin_pass(pp_pass_state, pp_data_);
+	PostProcessingRenderer::begin_pass(pp_data_);
 	if(enable_2d_batched_)
 		PostProcessingRenderer::blit("fb_2d_raw"_h);
 	if(enable_3d_forward_)

@@ -58,6 +58,7 @@ struct TexturePeekStorage
 
 	ShaderHandle peek_shader_;
 	UniformBufferHandle pass_ubo_;
+	uint64_t pass_state_;
 
 	PeekData peek_data_;
 };
@@ -84,6 +85,19 @@ void TexturePeek::init()
 	s_storage.show_r_ = true;
 	s_storage.show_g_ = true;
 	s_storage.show_b_ = true;
+
+	// State
+	PassState state;
+	state.render_target = FramebufferPool::get_framebuffer("fb_texture_view"_h);
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
+
+	s_storage.pass_state_ = state.encode();
+
+	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
+	q_texture_view.set_clear_color(state.rasterizer_state.clear_color); // TMP
 }
 
 uint32_t TexturePeek::new_pane(const std::string& name)
@@ -148,17 +162,9 @@ void TexturePeek::render()
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
 
     // Submit draw call
-	PassState pass_state;
-	pass_state.render_target = FramebufferPool::get_framebuffer("fb_texture_view"_h);
-	pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pass_state.blend_state = BlendState::Opaque;
-	pass_state.depth_stencil_state.depth_test_enabled = false;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
-
 	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
-	q_texture_view.set_clear_color(pass_state.rasterizer_state.clear_color); // TMP
 	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
-	dc.set_state(pass_state);
+	dc.set_state(s_storage.pass_state_);
 	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));
 	dc.set_texture("us_input"_h, current_texture);
 	dc.submit();

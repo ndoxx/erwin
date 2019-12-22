@@ -1,6 +1,7 @@
 #include "render/renderer_forward.h"
-#include "glm/gtc/matrix_transform.hpp"
 #include "render/common_geometry.h"
+#include "render/main_renderer.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace erwin
 {
@@ -26,7 +27,7 @@ struct ForwardRenderer3DStorage
 
 	glm::mat4 view_matrix;
 	FrustumPlanes frustum_planes;
-	PassState pass_state;
+	uint64_t pass_state;
 
 	uint32_t num_draw_calls; // stats
 	uint8_t layer_id;
@@ -60,15 +61,22 @@ void ForwardRenderer::shutdown()
 	MainRenderer::destroy(storage.instance_ubo);
 }
 
-void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera3D& camera, uint8_t layer_id)
+void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, bool transparent, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
+
+	PassState state;
+	state.render_target = FramebufferPool::get_framebuffer("fb_forward"_h);
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = true;
+	state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
 	// Reset stats
 	storage.num_draw_calls = 0;
 
 	// Pass state
-	storage.pass_state = state;
+	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
 	MainRenderer::get_queue("Forward"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
@@ -82,9 +90,7 @@ void ForwardRenderer::begin_pass(const PassState& state, const PerspectiveCamera
 
 void ForwardRenderer::end_pass()
 {
-    W_PROFILE_FUNCTION()
-    
-	flush();
+
 }
 
 void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, const glm::vec4& tint)
@@ -103,11 +109,6 @@ void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, 
 	dc.submit();
 
 	++storage.num_draw_calls;
-}
-
-void ForwardRenderer::flush()
-{
-
 }
 
 uint32_t ForwardRenderer::get_draw_call_count()

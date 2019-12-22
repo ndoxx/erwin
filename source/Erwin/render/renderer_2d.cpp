@@ -2,10 +2,11 @@
 
 #include "render/renderer_2d.h"
 #include "render/common_geometry.h"
+#include "render/main_renderer.h"
+#include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
 #include "core/config.h"
 #include "glm/gtc/matrix_transform.hpp"
-#include "asset/asset_manager.h"
 
 namespace erwin
 {
@@ -37,7 +38,8 @@ struct Renderer2DStorage
 	glm::mat4 view_projection_matrix;
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
-	PassState pass_state;
+	uint64_t pass_state;
+	bool state_transparent;
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
@@ -135,14 +137,22 @@ void Renderer2D::create_batch(TextureHandle handle)
 	::erwin::create_batch(handle.index, handle);
 }
 
-void Renderer2D::begin_pass(const PassState& state, const OrthographicCamera2D& camera, uint8_t layer_id)
+void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
 
+	PassState state;
+	state.render_target = FramebufferPool::get_framebuffer("fb_2d_raw"_h);
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = true;
+	state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
+
+	storage.state_transparent = (state.blend_state == BlendState::Alpha);
 	// Reset stats
 	storage.num_draw_calls = 0;
 
-	storage.pass_state = state;
+	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
 	MainRenderer::get_queue("Opaque2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
@@ -167,8 +177,7 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		bool transparent = (storage.pass_state.blend_state == BlendState::Alpha);
-		auto& q = MainRenderer::get_queue(transparent ? "Transparent2D"_h : "Opaque2D"_h);
+		auto& q = MainRenderer::get_queue(storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h);
 
 		DrawCall dc(q, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.pass_state);

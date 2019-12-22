@@ -1,8 +1,6 @@
 #pragma once
 
 #include "core/wtypes.h"
-#include "render/render_state.h" // For access to enums
-#include "render/main_renderer.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -46,7 +44,7 @@ struct PostProcessingData
 class PostProcessingRenderer
 {
 public:
-	static void begin_pass(const PassState& state, const PostProcessingData& pp_data);
+	static void begin_pass(const PostProcessingData& pp_data);
 	static void blit(hash_t framebuffer, uint32_t index=0);
 	static void end_pass();
 

@@ -13,10 +13,10 @@ class AssetManager
 {
 public:
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
-	static void release_texture_atlas(TextureAtlasHandle handle);
-
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
-	static void release_shader(ShaderHandle handle);
+	
+	static void release(TextureAtlasHandle handle);
+	static void release(ShaderHandle handle);
 
 private:
 	friend class Renderer2D;

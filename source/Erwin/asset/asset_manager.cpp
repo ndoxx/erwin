@@ -60,7 +60,7 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	return handle;
 }
 
-void AssetManager::release_texture_atlas(TextureAtlasHandle handle)
+void AssetManager::release(TextureAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing texture atlas:" << std::endl;
@@ -81,7 +81,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	return handle;
 }
 
-void AssetManager::release_shader(ShaderHandle handle)
+void AssetManager::release(ShaderHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;

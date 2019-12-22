@@ -1,5 +1,6 @@
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
+#include "render/main_renderer.h"
 
 namespace erwin
 {
@@ -11,7 +12,7 @@ struct PPStorage
 	ShaderHandle passthrough_shader;
 	ShaderHandle pp_shader;
 
-	PassState pass_state;
+	uint64_t pass_state;
 	PostProcessingData pp_data;
 };
 static PPStorage storage;
@@ -38,11 +39,18 @@ void PostProcessingRenderer::shutdown()
 	MainRenderer::destroy(storage.pp_ubo);
 }
 
-void PostProcessingRenderer::begin_pass(const PassState& state, const PostProcessingData& pp_data)
+void PostProcessingRenderer::begin_pass(const PostProcessingData& pp_data)
 {
     W_PROFILE_FUNCTION()
 
-	storage.pass_state = state;
+	PassState state;
+	state.render_target = MainRenderer::default_render_target();
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = BlendState::Alpha;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
+
+	storage.pass_state = state.encode();
 	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set post processing data

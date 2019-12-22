@@ -41,14 +41,7 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
-	PassState pass_state;
-	pass_state.render_target = FramebufferPool::get_framebuffer("fb_forward"_h);
-	pass_state.rasterizer_state.cull_mode = CullMode::Back;
-	pass_state.blend_state = BlendState::Opaque;
-	pass_state.depth_stencil_state.depth_test_enabled = true;
-	pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
-
-	ForwardRenderer::begin_pass(pass_state, camera_ctl_.get_camera(), get_layer_id());
+	ForwardRenderer::begin_pass(camera_ctl_.get_camera(), false, get_layer_id());
 	for(float xx=-10.f; xx<10.f; xx+=2.f)
 	{
 		for(float yy=-10.f; yy<10.f; yy+=2.f)

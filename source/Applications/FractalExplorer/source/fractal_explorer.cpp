@@ -66,6 +66,12 @@ public:
 		MainRenderer::shader_attach_uniform_buffer(shader_, mandel_ubo_);
 	}
 
+	virtual void on_detach() override
+	{
+		MainRenderer::destroy(mandel_ubo_);
+		AssetManager::release(shader_);
+	}
+
 protected:
 	virtual void on_update(GameClock& clock) override
 	{
