@@ -162,12 +162,11 @@ void TexturePeek::render()
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
 
     // Submit draw call
-	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
-	DrawCall dc(q_texture_view, DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
+	DrawCall dc(DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
 	dc.set_state(s_storage.pass_state_);
-	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData));
+	dc.set_per_instance_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture("us_input"_h, current_texture);
-	dc.submit();
+	MainRenderer::submit("Debug2D"_h, dc);
 #endif
 }
 

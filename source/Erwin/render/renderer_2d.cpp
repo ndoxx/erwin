@@ -177,15 +177,13 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		auto& q = MainRenderer::get_queue(storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h);
-
-		DrawCall dc(q, DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+		DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.pass_state);
-		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4));
-		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count);
+		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
+		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture("us_atlas"_h, batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		dc.submit();
+		MainRenderer::submit((storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h), dc);
 
 		++storage.num_draw_calls;
 		batch.count = 0;

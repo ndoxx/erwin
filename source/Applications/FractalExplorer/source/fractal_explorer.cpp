@@ -98,12 +98,10 @@ protected:
 		pass_state.depth_stencil_state.depth_test_enabled = false;
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
-		DrawCall dc(MainRenderer::get_queue("Presentation"_h), 
-					DrawCall::Indexed, shader_, 
-					CommonGeometry::get_vertex_array("screen_quad"_h));
-		dc.set_state(pass_state);
-		dc.set_per_instance_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData));
-		dc.submit();
+		DrawCall dc(DrawCall::Indexed, shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
+		dc.set_state(pass_state.encode());
+		dc.set_per_instance_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DrawCall::CopyData);
+		MainRenderer::submit("Presentation"_h, dc);
 	}
 
 	virtual bool on_event(const WindowResizeEvent& event) override

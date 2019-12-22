@@ -44,6 +44,7 @@ struct MainRendererStats
 };
 
 class RenderQueue;
+struct DrawCall;
 class MainRenderer
 {
 public:
@@ -67,6 +68,7 @@ public:
 	static const MainRendererStats& get_stats();
 #endif
 
+	static inline void submit(hash_t queue, const DrawCall& dc);
 	static void flush();
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
@@ -158,6 +160,12 @@ private:
 	CommandBuffer command_buffer_;
 };
 
+inline void MainRenderer::submit(hash_t queue, const DrawCall& dc)
+{
+	get_queue(queue).submit(dc);
+}
+
+
 /*
 	TODO: 
 	- Compress data size as much as possible
@@ -172,6 +180,12 @@ struct DrawCall
 		ArrayInstanced,
 
 		Count
+	};
+
+	enum DataOwnership: uint8_t
+	{
+		ForwardData = 0, // Do not copy data, forward pointer as is
+		CopyData = 1     // Copy data to renderer memory
 	};
 
 	#pragma pack(push,1)
@@ -199,7 +213,7 @@ struct DrawCall
 
 	SortKey key;
 
-	DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
+	DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
 
 	inline void set_state(uint64_t state)
 	{
@@ -210,35 +224,37 @@ struct DrawCall
 		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
 	}
 
-	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size)
+	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size, DataOwnership copy)
 	{
+		data.UBO_data = UBO_data;
 		data.UBO = ubo;
 		data.UBO_size = size;
 
-		if(UBO_data)
+		if(UBO_data && copy)
 		{
 			data.UBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
 			memcpy(data.UBO_data, UBO_data, size);
 		}
 	}
 
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count)
+	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
 	{
-		data.SSBO = ssbo;
 		data.SSBO_data = SSBO_data;
+		data.SSBO = ssbo;
 		data.SSBO_size = size;
 		data.instance_count = inst_count;
+
+		if(SSBO_data && copy)
+		{
+			data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(data.SSBO_data, SSBO_data, size);
+		}
 	}
 
 	inline void set_texture(hash_t smp, TextureHandle tex)
 	{
 		data.sampler = smp;
 		data.texture = tex;
-	}
-
-	inline void submit()
-	{
-		queue.submit(*this);
 	}
 
 	inline void set_key_depth(float depth, uint8_t layer_id)
@@ -256,9 +272,6 @@ struct DrawCall
 		key.shader = data.shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 		key.sequence = sequence;
 	}
-
-private:
-	RenderQueue& queue;
 };
 
 

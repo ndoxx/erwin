@@ -62,12 +62,11 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
     W_PROFILE_FUNCTION()
 	storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
     
-	auto& q_presentation = MainRenderer::get_queue("Presentation"_h);
-	DrawCall dc(q_presentation, DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+	DrawCall dc(DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_texture("us_input"_h, MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
-	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData));
-	dc.submit();
+	dc.set_per_instance_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
+	MainRenderer::submit("Presentation"_h, dc);
 }
 
 void PostProcessingRenderer::end_pass()
