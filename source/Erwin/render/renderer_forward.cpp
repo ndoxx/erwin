@@ -101,7 +101,7 @@ void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, 
 				      * glm::translate(glm::mat4(1.f), position)
 				      * glm::scale(glm::mat4(1.f), glm::vec3(scale,scale,scale));
 
-	DrawCall dc(DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
+	static DrawCall dc(DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(position.z, storage.layer_id);

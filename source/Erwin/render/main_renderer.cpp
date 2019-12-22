@@ -1238,19 +1238,6 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::destroy_framebuffer,
 };
 
-DrawCall::DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count, uint32_t offset)
-{
-	data.type       = type;
-	data.shader     = shader;
-	data.VAO        = VAO;
-	data.UBO_data   = nullptr;
-	data.SSBO_data  = nullptr;
-	data.UBO_size   = 0;
-	data.SSBO_size  = 0;
-	data.count      = count;
-	data.offset     = offset;
-}
-
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 clear_color_(0.f,0.f,0.f,1.f),
@@ -1292,7 +1279,10 @@ void RenderQueue::submit(const DrawCall& dc)
 	auto& cmdbuf = command_buffer_.storage;
 	void* cmd = cmdbuf.head();
 
+	cmdbuf.write(&dc.type);
 	cmdbuf.write(&dc.data);
+	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
+		cmdbuf.write(&dc.instance_data);
 
 	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(order_), cmd};
 }
@@ -1361,47 +1351,53 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
-    DrawCall::DrawCallData dc;
-	buf.read(&dc); // Read all in one go
+    DrawCall::DrawCallType type;
+    DrawCall::Data data;
+    DrawCall::InstanceData idata;
+	buf.read(&type);
+	buf.read(&data); // Read all in one go
 
-	handle_state(dc.state_flags);
+	handle_state(data.state_flags);
 
 	// * Detect if a new shader needs to be used, update and bind shader resources
 	static uint16_t last_shader_index = 0xffff;
-	auto& shader = *s_storage->shaders[dc.shader.index];
-	if(dc.shader.index != last_shader_index)
+	auto& shader = *s_storage->shaders[data.shader.index];
+	if(data.shader.index != last_shader_index)
 	{
 		shader.bind();
-		last_shader_index = dc.shader.index;
+		last_shader_index = data.shader.index;
 	}
 
-	if(dc.texture.is_valid())
+	if(data.texture.is_valid())
 	{
-		auto& texture = *s_storage->textures[dc.texture.index];
-		shader.attach_texture(dc.sampler, texture);
+		auto& texture = *s_storage->textures[data.texture.index];
+		shader.attach_texture(data.sampler, texture);
 		texture.bind();
 	}
-	if(dc.UBO_data)
+	if(data.UBO_data)
 	{
-		auto& ubo = *s_storage->uniform_buffers[dc.UBO.index];
-		ubo.stream(dc.UBO_data, dc.UBO_size, 0);
-	}
-	if(dc.SSBO_data)
-	{
-		auto& ssbo = *s_storage->shader_storage_buffers[dc.SSBO.index];
-		ssbo.stream(dc.SSBO_data, dc.SSBO_size, 0);
+		auto& ubo = *s_storage->uniform_buffers[data.UBO.index];
+		ubo.stream(data.UBO_data, data.UBO_size, 0);
 	}
 
 	// * Execute draw call
-	auto& va = *s_storage->vertex_arrays[dc.VAO.index];
-	switch(dc.type)
+	auto& va = *s_storage->vertex_arrays[data.VAO.index];
+	switch(type)
 	{
 		case DrawCall::Indexed:
-			Gfx::device->draw_indexed(va, dc.count, dc.offset);
+			Gfx::device->draw_indexed(va, data.count, data.offset);
 			break;
 		case DrawCall::IndexedInstanced:
-			Gfx::device->draw_indexed_instanced(va, dc.instance_count);
+		{
+			buf.read(&idata); // Read all in one go
+			if(idata.SSBO_data)
+			{
+				auto& ssbo = *s_storage->shader_storage_buffers[idata.SSBO.index];
+				ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
+			}
+			Gfx::device->draw_indexed_instanced(va, idata.instance_count);
 			break;
+		}
 		default:
 			W_ASSERT(false, "Specified draw call type is unsupported at the moment.");
 			break;

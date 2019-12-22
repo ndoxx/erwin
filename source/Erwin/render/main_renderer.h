@@ -165,14 +165,9 @@ inline void MainRenderer::submit(hash_t queue, const DrawCall& dc)
 	get_queue(queue).submit(dc);
 }
 
-
-/*
-	TODO: 
-	- Compress data size as much as possible
-*/
 struct DrawCall
 {
-	enum Type: uint8_t
+	enum DrawCallType: uint8_t
 	{
 		Indexed,
 		Array,
@@ -189,31 +184,45 @@ struct DrawCall
 	};
 
 	#pragma pack(push,1)
-	struct DrawCallData
+	struct Data
 	{
 		uint64_t state_flags;
 		void* UBO_data;
-		void* SSBO_data;
 		hash_t sampler;
 
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
 		UniformBufferHandle UBO;
-		ShaderStorageBufferHandle SSBO;
 		TextureHandle texture; // TODO: allow multiple textures
-		Type type;
 
 		uint32_t UBO_size;
-		uint32_t SSBO_size;
 		uint32_t count;
-		uint32_t instance_count;
 		uint32_t offset;
 	} data;
+	struct InstanceData
+	{
+		void* SSBO_data;
+		uint32_t SSBO_size;
+		uint32_t instance_count;
+		ShaderStorageBufferHandle SSBO;
+	} instance_data;
 	#pragma pack(pop)
 
 	SortKey key;
+	DrawCallType type;
 
-	DrawCall(Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
+	DrawCall(DrawCallType dc_type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
+	{
+		type            = dc_type;
+		data.shader     = shader;
+		data.VAO        = VAO;
+		data.UBO_data   = nullptr;
+		data.UBO_size   = 0;
+		data.count      = count;
+		data.offset     = offset;
+		instance_data.SSBO_data  = nullptr;
+		instance_data.SSBO_size  = 0;
+	}
 
 	inline void set_state(uint64_t state)
 	{
@@ -239,15 +248,15 @@ struct DrawCall
 
 	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
 	{
-		data.SSBO_data = SSBO_data;
-		data.SSBO = ssbo;
-		data.SSBO_size = size;
-		data.instance_count = inst_count;
+		instance_data.SSBO_data = SSBO_data;
+		instance_data.SSBO = ssbo;
+		instance_data.SSBO_size = size;
+		instance_data.instance_count = inst_count;
 
 		if(SSBO_data && copy)
 		{
-			data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
-			memcpy(data.SSBO_data, SSBO_data, size);
+			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(instance_data.SSBO_data, SSBO_data, size);
 		}
 	}
 
