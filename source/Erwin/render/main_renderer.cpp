@@ -1353,7 +1353,6 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 
     DrawCall::DrawCallType type;
     DrawCall::Data data;
-    DrawCall::InstanceData idata;
 	buf.read(&type);
 	buf.read(&data); // Read all in one go
 
@@ -1375,7 +1374,7 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 	if(data.UBO_data)
 	{
 		auto& ubo = *s_storage->uniform_buffers[data.UBO.index];
-		ubo.stream(data.UBO_data, data.UBO_size, 0);
+		ubo.stream(data.UBO_data, 0, 0);
 	}
 
 	// * Execute draw call
@@ -1387,13 +1386,15 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 			break;
 		case DrawCall::IndexedInstanced:
 		{
-			buf.read(&idata); // Read all in one go
+			// Read additional data needed for instanced rendering
+    		DrawCall::InstanceData idata;
+			buf.read(&idata);
 			if(idata.SSBO_data)
 			{
 				auto& ssbo = *s_storage->shader_storage_buffers[idata.SSBO.index];
 				ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
 			}
-			Gfx::device->draw_indexed_instanced(va, idata.instance_count);
+			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;
 		}
 		default:
