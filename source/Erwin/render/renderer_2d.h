@@ -4,7 +4,7 @@
 #include "render/camera_2d.h"
 #include "asset/handles.h"
 #include "render/handles.h"
-#include "glm/glm.hpp"
+#include "entity/component_transform.h"
 
 namespace erwin
 {
@@ -18,17 +18,9 @@ public:
 	// End a pass
 	static void end_pass();
 	// Draw a textured quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.
-	static void draw_quad(const glm::vec4& position, const glm::vec2& scale, hash_t tile, TextureAtlasHandle atlas, const glm::vec4& tint=glm::vec4(1.f));
-	static inline void draw_quad(const glm::vec2& position, const glm::vec2& scale, hash_t tile, TextureAtlasHandle atlas, const glm::vec4& tint=glm::vec4(1.f))
-	{
-		draw_quad(glm::vec4(position, 0.f, 1.f), scale, tile, atlas, tint);
-	}
+	static void draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas, hash_t tile, const glm::vec4& tint=glm::vec4(1.f));
 	// Draw a colored quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.
-	static void draw_colored_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs={0.f,0.f,1.f,1.f});
-	static inline void draw_colored_quad(const glm::vec2& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs={0.f,0.f,1.f,1.f})
-	{
-		draw_colored_quad(glm::vec4(position, 0.f, 1.f), scale, tint, uvs);
-	}
+	static void draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint);
 	// Force current batch to be pushed to render queue
 	static void flush();
 

@@ -93,18 +93,17 @@ void ForwardRenderer::end_pass()
 
 }
 
-void ForwardRenderer::draw_colored_cube(const glm::vec3& position, float scale, const glm::vec4& tint)
+void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, const glm::vec4& tint)
 {
 	InstanceData instance_data;
 	instance_data.tint = tint;
 	instance_data.mvp = storage.pass_ubo_data.view_projection_matrix 
-				      * glm::translate(glm::mat4(1.f), position)
-				      * glm::scale(glm::mat4(1.f), glm::vec3(scale,scale,scale));
+				      * transform.get_model_matrix();
 
 	static DrawCall dc(DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
-	dc.set_key_depth(position.z, storage.layer_id);
+	dc.set_key_depth(transform.position.z, storage.layer_id);
 	MainRenderer::submit("Forward"_h, dc);
 
 	++storage.num_draw_calls;

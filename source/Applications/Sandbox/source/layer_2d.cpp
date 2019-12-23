@@ -102,12 +102,12 @@ void Layer2D::on_update(GameClock& clock)
 		for(int yy=0; yy<len_grid_; ++yy)
 		{
 			float yy_offset = trippy_mode_ ? 3.0f/len_grid_ * sin(2*2*M_PI*yy/(1.f+len_grid_))*cos(0.2f*2*M_PI*tt_) : 0.f;
-			float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.f/float(len_grid_-1);
+			// float yy_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.f/float(len_grid_-1);
 			float pos_y = -1.f + 2.f*yy/float(len_grid_-1) + yy_offset;
 
 			// hash_t tile = tiles_.at((xx+yy)%(tiles_.size()-1));
 			hash_t tile = tiles_.at((yy/3 + xx/5)%(tiles_.size()-1));
-			Renderer2D::draw_quad({pos_x,pos_y,0.f,1.f}, {xx_scale,yy_scale}, tile, atlas_);
+			Renderer2D::draw_quad(ComponentTransform2D({pos_x,pos_y,0.f},0.f,xx_scale), atlas_, tile);
 		}
 	}
 	for(int xx=0; xx<5; ++xx)
@@ -119,7 +119,7 @@ void Layer2D::on_update(GameClock& clock)
 			float pos_y = -1.f + 2.f*yy/float(5-1);
 			float yy_scale = 1.f/float(5-1);
 			glm::vec4 color((xx+1)/6.f, (yy+1)/6.f, (xx+yy)/10.f, 1.f);
-			Renderer2D::draw_colored_quad({pos_x,pos_y,-0.2f,1.f}, {xx_scale,yy_scale}, color);
+			Renderer2D::draw_colored_quad(ComponentTransform2D({pos_x,pos_y,-0.2f},0.f,xx_scale), color);
 		}
 	}
 	Renderer2D::end_pass();

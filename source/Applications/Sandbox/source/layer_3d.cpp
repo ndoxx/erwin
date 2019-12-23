@@ -49,7 +49,10 @@ void Layer3D::on_update(GameClock& clock)
 			for(float zz=-10.f; zz<10.f; zz+=2.f)
 			{
 				float scale = 2.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
-				ForwardRenderer::draw_colored_cube({xx+1.f,yy+1.f,zz+1.f}, scale, {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
+				glm::vec3 euler = {xx/10.f,yy/10.f,zz/10.f};
+				euler *= sin(2*M_PI*tt_/5.f);
+				ForwardRenderer::draw_colored_cube(ComponentTransform3D({xx+1.f,yy+1.f,zz+1.f}, euler, scale),
+												   {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
 			}
 		}
 	}

@@ -2,7 +2,7 @@
 
 #include "core/wtypes.h"
 #include "render/camera_3d.h"
-#include "glm/glm.hpp"
+#include "entity/component_transform.h"
 
 namespace erwin
 {
@@ -16,7 +16,7 @@ public:
 	// End a pass
 	static void end_pass();
 	// Draw a colored cube.
-	static void draw_colored_cube(const glm::vec3& position, float scale, const glm::vec4& tint=glm::vec4(1.f));
+	static void draw_colored_cube(const ComponentTransform3D& transform, const glm::vec4& tint=glm::vec4(1.f));
 
 	// Stats
 	static uint32_t get_draw_call_count();
