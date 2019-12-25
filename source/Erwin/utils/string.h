@@ -99,6 +99,17 @@ static inline size_t parse_size(const std::string& input, char delimiter='_')
     return size;
 }
 
+static inline void center(std::string& input, int size)
+{
+    int diff = size - input.size();
+    if(diff <= 0)
+        return;
+
+    int before = diff / 2;
+    int after  = before + diff % 2;
+    input = std::string(before, ' ') + input + std::string(after, ' ');
+}
+
 namespace rx
 {
 // Regex replace with a callback

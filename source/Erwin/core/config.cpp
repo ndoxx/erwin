@@ -1,6 +1,6 @@
 #include "core/config.h"
 #include "core/core.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/value_map.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"

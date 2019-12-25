@@ -8,14 +8,11 @@ namespace erwin
 
 void TextureAtlas::load(const fs::path& filepath)
 {
-	DLOGN("texture") << "Loading texture atlas: " << std::endl;
-
 	// Check file type
 	std::string extension = filepath.extension().string();
 	if(!extension.compare(".cat"))
 	{
-		DLOGI << "CAT: " << WCC('p') << filepath << WCC(0) << std::endl;
-
+		DLOG("texture",1) << "Loading CAT file" << std::endl;
 		descriptor.filepath = filepath;
 		cat::read_cat(descriptor);
 
@@ -52,6 +49,7 @@ void TextureAtlas::load(const fs::path& filepath)
 									  					 			  filter});
 
 		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " sub-textures in atlas." << std::endl;
+		DLOG("texture",1) << "TextureHandle: " << WCC('v') << texture.index << std::endl;
 	}
 }
 

@@ -7,13 +7,11 @@ namespace erwin
 
 void Material::load(const fs::path& filepath)
 {
-	DLOGN("texture") << "Loading material: " << std::endl;
 	// Check file type
 	std::string extension = filepath.extension().string();
 	if(!extension.compare(".tom"))
 	{
-		DLOGI << "TOM: " << WCC('p') << filepath << WCC(0) << std::endl;
-
+		DLOG("texture",1) << "Loading TOM file" << std::endl;
 		descriptor.filepath = filepath;
 		tom::read_tom(descriptor);
 
@@ -40,7 +38,14 @@ void Material::load(const fs::path& filepath)
 			++texture_count;
 		}
 
-		DLOGI << "Found " << WCC('v') << texture_count << WCC(0) << " texture maps." << std::endl;
+#ifdef W_DEBUG
+		DLOGI << "Found " << WCC('v') << texture_count << WCC(0) << " texture maps. TextureHandles: { ";
+		for(int ii=0; ii<texture_count; ++ii)
+		{
+			DLOG("texture",1) << WCC('v') << textures[ii].index << " ";
+		}
+		DLOG("texture",1) << WCC(0) << "}" << std::endl;
+#endif
 	}
 }
 

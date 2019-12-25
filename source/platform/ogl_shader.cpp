@@ -7,7 +7,7 @@
 #include "platform/ogl_buffer.h"
 #include "core/core.h"
 #include "core/wtypes.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/intern_string.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"

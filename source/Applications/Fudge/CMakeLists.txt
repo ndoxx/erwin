@@ -46,5 +46,6 @@ target_link_libraries(fudge
                       bz2
                       harfbuzz
                       freetype
+                      eastl
                       )
 cotire(fudge)

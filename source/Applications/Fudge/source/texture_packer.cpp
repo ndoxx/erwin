@@ -119,12 +119,13 @@ static TextureCompression parse_compression(const std::string& compression_str, 
 	}
 }
 
-static void handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
+static bool handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
 {
 	// For each registered group, ordered by priority,
 	// if in_tex_maps contains all required maps for this group,
 	// construct new texture map, copy data and override parameters,
 	// then remove old maps.
+	bool has_changed = false;
 	for(auto&& [key, spec]: s_group_specs)
 	{
 		if(spec.qualify(in_tex_maps))
@@ -159,8 +160,13 @@ static void handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, u
         		stbi_image_free(in_tex_maps.at(hname).data);
         		in_tex_maps.erase(hname);
 		    }
+		    // Add new texture map
+		    in_tex_maps.insert(std::make_pair(H_(tmap.name.c_str()), tmap));
+			has_changed = true;
 		}
 	}
+
+	return has_changed;
 }
 
 bool configure(const fs::path& filepath)
@@ -354,7 +360,16 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 
     // * Group texture maps where possible
     if(s_allow_grouping)
-    	handle_groups(texture_maps, width, height);
+    {
+    	if(handle_groups(texture_maps, width, height))
+    	{
+    		DLOG("fudge",1) << "New texture map composition: " << std::endl;
+    		for(auto&& [key,dat]: texture_maps)
+    		{
+    			DLOGI << dat.name << std::endl;
+    		}
+    	}
+    }
 
     // * Compress textures if needed
     for(auto&& [key, tmap]: texture_maps)

@@ -45,6 +45,7 @@ struct ApplicationStorage
     std::vector<fs::path> configuration_files;
     memory::HeapArea client_area;
     memory::HeapArea system_area;
+    memory::HeapArea render_area;
 };
 static ApplicationStorage s_storage;
 
@@ -161,6 +162,18 @@ bool Application::init()
         }
     }
 
+    // Initialize renderer memory
+    {
+        W_PROFILE_SCOPE("Renderer memory init")
+        DLOGN("application") << "Initializing renderer memory" << std::endl;
+        size_t renderer_mem_size = cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB);
+        if(!s_storage.render_area.init(renderer_mem_size))
+        {
+            DLOGF("application") << "Cannot allocate renderer memory." << std::endl;
+            return false;
+        }
+    }
+
     // Initialize system event pools
     {
         W_PROFILE_SCOPE("System event pools init")
@@ -216,7 +229,7 @@ bool Application::init()
         // Initialize framebuffer pool
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
-        MainRenderer::init();
+        MainRenderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
 
@@ -263,6 +276,16 @@ bool Application::init()
         W_PROFILE_SCOPE("Application load")
         on_load();
     }
+
+    // Show memory content
+#ifdef W_DEBUG
+    DLOG("memory",1) << WCC(204,153,0) << "--- System memory area ---" << std::endl;
+    s_storage.system_area.debug_show_content();
+    DLOG("memory",1) << WCC(204,153,0) << "--- Render memory area ---" << std::endl;
+    s_storage.render_area.debug_show_content();
+    DLOG("memory",1) << WCC(204,153,0) << "--- Client memory area ---" << std::endl;
+    s_storage.client_area.debug_show_content();
+#endif
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
     return true;

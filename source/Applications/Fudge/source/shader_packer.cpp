@@ -2,7 +2,7 @@
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
 #include "core/core.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "debug/logger.h"
 
 #include <vector>

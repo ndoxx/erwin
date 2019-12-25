@@ -114,7 +114,7 @@ public:
 private:
 	friend class Application;
 
-	static void init();
+	static void init(memory::HeapArea& area);
 	static void shutdown();
 };
 

@@ -130,12 +130,12 @@ struct FramebufferTextureVector
 
 struct RendererStorage
 {
-	RendererStorage():
-	renderer_memory_(cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB)),
-	pre_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB))),
-	post_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB))),
-	auxiliary_arena_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB))),
-	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
+	RendererStorage(memory::HeapArea& area):
+	renderer_memory_(area),
+	pre_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB), "CB-Pre")),
+	post_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB), "CB-Post")),
+	auxiliary_arena_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB), "Auxiliary")),
+	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size, "RenderHandles"))
 	{
 #ifdef W_DEBUG
 		pre_buffer_.storage.set_debug_name("CB-Pre");
@@ -200,7 +200,7 @@ struct RendererStorage
 	bool profiling_enabled;
 	MainRendererStats stats;
 
-	memory::HeapArea renderer_memory_;
+	memory::HeapArea& renderer_memory_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	MainRenderer::AuxArena auxiliary_arena_;
@@ -208,13 +208,13 @@ struct RendererStorage
 };
 std::unique_ptr<RendererStorage> s_storage;
 
-void MainRenderer::init()
+void MainRenderer::init(memory::HeapArea& area)
 {
     W_PROFILE_RENDER_FUNCTION()
 	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
-	s_storage = std::make_unique<RendererStorage>();
+	s_storage = std::make_unique<RendererStorage>(area);
 	s_storage->query_timer = QueryTimer::create();
 	s_storage->profiling_enabled = false;
 	s_storage->default_framebuffer_ = FramebufferHandle::acquire();
@@ -1241,7 +1241,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 clear_color_(0.f,0.f,0.f,1.f),
-command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
+command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB), "RenderQueue"))
 {
 
 }

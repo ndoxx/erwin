@@ -30,9 +30,11 @@ static struct AssetManagerStorage
 
 TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 {
-	DLOGN("asset") << "[AssetManager] Creating new texture atlas:" << std::endl;
-
 	TextureAtlasHandle handle = TextureAtlasHandle::acquire();
+	DLOGN("asset") << "[AssetManager] Creating new texture atlas:" << std::endl;
+	DLOG("asset",1) << "TextureAtlasHandle: " << WCC('v') << handle.index << std::endl;
+	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
+
 	TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
 	atlas->load(filesystem::get_asset_dir() / filepath);
 
@@ -40,22 +42,22 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	Renderer2D::create_batch(atlas->texture); // TODO: this should be conditional
 	s_storage.texture_atlases_[handle.index] = atlas;
 
-	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	return handle;
 }
 
 MaterialHandle AssetManager::load_material(const fs::path& filepath)
 {
-	DLOGN("asset") << "[AssetManager] Creating new material:" << std::endl;
-
 	MaterialHandle handle = MaterialHandle::acquire();
+	DLOGN("asset") << "[AssetManager] Creating new material:" << std::endl;
+	DLOG("asset",1) << "MaterialHandle: " << WCC('v') << handle.index << std::endl;
+	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
+
 	Material* material = W_NEW(Material, s_storage.material_pool_);
 	material->load(filesystem::get_asset_dir() / filepath);
 
 	// Register material
 	s_storage.materials_[handle.index] = material;
 
-	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	return handle;
 }
 
@@ -66,7 +68,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	std::string shader_name = name.empty() ? filepath.stem().string() : name;
 	ShaderHandle handle = MainRenderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
 
-	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
+	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
 	return handle;
 }
 
@@ -109,9 +111,9 @@ void AssetManager::release(ShaderHandle handle)
 
 void AssetManager::init(memory::HeapArea& area)
 {
-	s_storage.handle_arena_.init(area.require_block(k_handle_alloc_size));
-	s_storage.texture_atlas_pool_.init(area.require_pool_block<PoolArena>(sizeof(TextureAtlas), k_max_atlases), sizeof(TextureAtlas), k_max_atlases, PoolArena::DECORATION_SIZE);
-	s_storage.material_pool_.init(area.require_pool_block<PoolArena>(sizeof(Material), k_max_materials), sizeof(Material), k_max_materials, PoolArena::DECORATION_SIZE);
+	s_storage.handle_arena_.init(area.require_block(k_handle_alloc_size, "AssetHandles"));
+	s_storage.texture_atlas_pool_.init(area.require_pool_block<PoolArena>(sizeof(TextureAtlas), k_max_atlases, "AtlasPool"), sizeof(TextureAtlas), k_max_atlases, PoolArena::DECORATION_SIZE);
+	s_storage.material_pool_.init(area.require_pool_block<PoolArena>(sizeof(Material), k_max_materials, "MaterialPool"), sizeof(Material), k_max_materials, PoolArena::DECORATION_SIZE);
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
 	s_storage.materials_.resize(k_max_materials, nullptr);

@@ -3,7 +3,7 @@
 	<logger>
 		<Channel name="application" verbosity="3"/>
 		<Channel name="asset"       verbosity="3"/>
-		<Channel name="memory"      verbosity="1"/>
+		<Channel name="memory"      verbosity="3"/>
 		<Channel name="thread"      verbosity="1"/>
 		<Channel name="entity"      verbosity="1"/>
 		<Channel name="render"      verbosity="1"/>
@@ -37,7 +37,7 @@
     </renderer>
 
 	<memory>
-    	<size name="system_area" value="10_MB"/>
+    	<size name="system_area" value="1_MB"/>
     </memory>
 
     <events>

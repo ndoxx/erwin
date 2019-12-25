@@ -1,5 +1,5 @@
 #include "core/value_map.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 
