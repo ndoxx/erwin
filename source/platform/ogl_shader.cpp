@@ -304,6 +304,11 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
     return texture_slots_.at(sampler);
 }
 
+uint32_t OGLShader::get_texture_count() const
+{
+    return texture_slots_.size();
+}
+
 void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
 {
     texture.bind(slot);

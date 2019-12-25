@@ -79,7 +79,7 @@ void read_tom(TOMDescriptor& desc)
 
     // Read block descriptors
 	std::vector<BlockDescriptor> blocks;
-    blocks.reserve(num_maps);
+    blocks.resize(num_maps);
     ifs.read(reinterpret_cast<char*>(blocks.data()), num_maps*sizeof(BlockDescriptor));
 
     for(auto&& block: blocks)

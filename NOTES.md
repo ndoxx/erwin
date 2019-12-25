@@ -13,16 +13,31 @@
     https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
         [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
         stocker dans les CAT files.
-    [X] Supporter SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V
-    https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
-    https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
     [/] Ecrire un renderer 2D multi-threaded
         [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
     [ ] Ecrire un renderer 3D multi-threaded
-    [X] Ecrire un script de building pour tout le projet (gère les deps...)
     [ ] Gérer le callback d'erreurs OpenGL
     https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml
+
+##TODOC:
+    [ ] Renderer
+        [ ] Command buffers
+        [ ] Draw calls & render queues
+        [ ] Sorting key system
+        [ ] Handles
+        [ ] Pass state
+        [ ] Renderer front-ends
+            [ ] 2D batching
+        [ ] Common geometry
+        [ ] Texture slots & shader macro
+    [ ] Entity component system (ECS)
+        [ ] Definitions
+        [ ] Component pools & predefined macros
+        [ ] Entity manager
+        [ ] Component systems & component filtering
+    [ ] Event system overhaul
+        [ ] Event queues & event pools
+        [ ] Dispatching
 
 ##OPT:
     [X] Réduire le nombre de calls à glBindBufferBase (UBO/SSBO attach)
@@ -1580,7 +1595,9 @@ Pour les différents outils SPIR-V :
     [4] https://github.com/KhronosGroup/SPIRV-Headers/blob/master/include
         /spirv/unified1/spirv.hpp11
     [5] https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
-
+    [6] https://www.khronos.org/opengl/wiki/SPIR-V
+    [7] https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
+    [8] https://eleni.mutantstargoat.com/hikiko/2018/03/04/opengl-spirv/
 #[11-10-19]
 ##Config
 core/config.h/cpp définissent un ensemble de fonctions pour :
@@ -1780,37 +1797,7 @@ Je prévois de lui coder un petit mode ASCII à l'occasion, et pourquoi pas de p
     [1] http://realtimecollisiondetection.net/blog/?p=86
 
 #[18-12-19]
-Long time no see... Il fallait que je code sans discontinuer, et j'accumule un retard de dingue dans ma prise de notes. Voici ce qu'il me faut documenter :
-    [X] Memory allocators
-        [X] LinearAllocator
-        [X] PoolAllocator
-        [X] Linear buffers
-    [ ] Renderer
-        [ ] Command buffers
-        [ ] Draw calls & render queues
-        [ ] Sorting key system
-        [ ] Handles
-        [ ] Pass state
-        [ ] Renderer front-ends
-            [ ] 2D batching
-        [ ] Common geometry
-    [ ] Instrumentation
-        [ ] Chrome tracing JSON export
-    [ ] Debug
-        [ ] Better asserts
-        [ ] Texture peek
-    [ ] Random number generation
-        [ ] XorShift128p
-    [ ] Entity component system (ECS)
-        [ ] Definitions
-        [ ] Component pools & predefined macros
-        [ ] Entity manager
-        [ ] Component systems & component filtering
-    [ ] Event system overhaul
-        [ ] Event queues & event pools
-        [ ] Dispatching
-
-Je m'attends à ce que le renderer soit documenté bien plus tard. C'est un système très complexe et encore en évolution, bien que fonctionnel.
+Long time no see... Il fallait que je code sans discontinuer, et j'accumule un retard de dingue dans ma prise de notes. Je m'attends à ce que le renderer soit documenté bien plus tard. C'est un système très complexe et encore en évolution, bien que fonctionnel.
 
 ##Memory
 
@@ -1859,3 +1846,224 @@ La dernière mouture de l'_EventBus_ supporte la mise en queue d'événements. A
         -strategies-a-linear-allocator/
     [2] https://blog.molecular-matters.com/2012/09/17/memory-allocation
         -strategies-a-pool-allocator/
+
+
+#[24-12-19]
+
+##Instrumentation system
+Je réfléchissais à coder un module d'instrumentation compatible avec Chrome-tracing après avoir vu ça en conférence (je ne me souviens plus laquelle). Chrome-tracing est un outil de profiling de Google Chrome qui permet à l'origine de surveiller le flow des différents processus du navigateur et d'afficher tout un tas de statistiques sur les temps d'exécution de chaque fonction.
+Cet outil peut lire des fichiers JSON en entrée, et l'API est bien documentée. Donc c'est une nouvelle mode chez les gamedevs de s'en servir comme outil de profiling visuel pour leurs moteurs. En particulier, Cherno (voir [1]) a fourni un exemple de code sur un gist Github, près à l'emploi. Je suis parti sur cette implémentation pour faire le mien, dans debug/instrumentor.h/cpp.
+
+![Vue Chrome-Tracing des appels d'Erwin engine en runtime.\label{figChromeTracing}](../../Erwin_rel/screens_erwin/erwin_8a_instrumentor.png)
+
+###Instrumentor
+La classe _Instrumentor_ est un gestionnaire de session d'instrumentation. Sa raison d'être est la nécessité de séparer les informations de profiling en trois temps pour une meilleure lecture : startup / runtime / shutdown. On commence une nouvelle session en appelant Instrumentor::begin_session() avec en arguments un nom de session et un chemin d'accès pour le JSON exporté. Instrumentor::end_session() termine la session courante et Instrumentor::set_session_enabled( value ) permet d'activer / désactiver une session. J'ai codé cette dernière fonctionnalité pour pouvoir désactiver par défaut la session runtime qui produit une grande quantité de données rapidement. Instrumentor::write_profile() permet d'exporter des données de profiling de la session courante, on y force un stream flush pour garantir que les données sont écrites dans le fichier même en cas de crash.
+
+###InstrumentationTimer
+_InstrumentationTimer_ est un scoped-timer, c'est à dire qu'il commence à compter dès sa construction, et exporte sa mesure à la destruction via Instrumentor::write_profile().
+
+###Macros
+core/core.h présente plusieurs macros qui facilitent sérieusement l'utilisation de ce système :
+
+```cpp
+#ifdef W_PROFILE
+    #include "debug/instrumentor.h"
+    #define W_PROFILE_BEGIN_SESSION(name, filepath) \
+        erwin::Instrumentor::begin_session( name , filepath )
+    #define W_PROFILE_END_SESSION(name) erwin::Instrumentor::end_session()
+    #define W_PROFILE_ENABLE_SESSION(value) erwin::Instrumentor::set_session_enabled( value )
+    #define W_PROFILE_SCOPE(name) erwin::InstrumentationTimer timer##__LINE__( name );
+    #define W_PROFILE_FUNCTION() W_PROFILE_SCOPE( __PRETTY_FUNCTION__ )
+#else
+    #define W_PROFILE_BEGIN_SESSION(name, filepath)
+    #define W_PROFILE_END_SESSION(name)
+    #define W_PROFILE_ENABLE_SESSION(value)
+    #define W_PROFILE_SCOPE(name)
+    #define W_PROFILE_FUNCTION()
+#endif
+#ifdef W_PROFILE_RENDER
+    #define W_PROFILE_RENDER_SCOPE(name) erwin::InstrumentationTimer timer##__LINE__( name );
+    #define W_PROFILE_RENDER_FUNCTION() W_PROFILE_RENDER_SCOPE( __PRETTY_FUNCTION__ )
+#else
+    #define W_PROFILE_RENDER_SCOPE(name)
+    #define W_PROFILE_RENDER_FUNCTION()
+#endif
+```
+Comme on peut le voir, le profiling générique est séparé du profiling des fonctions de rendu. Le profiling du rendu génère énormément de données en runtime, donc je préfère le désactiver complètement la plupart du temps. Les macros peuvent être activées / désactivées dans le code en définissant / omettant les symboles __W_PROFILE__ et __W_PROFILE_RENDER__.
+Le code un peu étrange de W_PROFILE_SCOPE sert à générer un nom de variable complètement unique pour le timer par *token pasting* avec le numéro de ligne. W_PROFILE_FUNCTION est un raccourci utilisant le symbole __PRETTY_FUNCTION__ pour passer à W_PROFILE_SCOPE le nom de la fonction courante.
+
+Les sessions sont créées et détruites dans le point d'entrée :
+```cpp
+int main(int argc, char** argv)
+{
+    W_PROFILE_BEGIN_SESSION("startup", "wprofile-startup.json");
+    auto app = erwin::create_application();
+    if(!app->init())
+    {
+        delete app;
+        return -1;
+    }
+    W_PROFILE_END_SESSION();
+
+    W_PROFILE_BEGIN_SESSION("runtime", "wprofile-runtime.json");
+    app->run();
+    W_PROFILE_END_SESSION();
+
+    W_PROFILE_BEGIN_SESSION("shutdown", "wprofile-shutdown.json");
+    delete app;
+    W_PROFILE_END_SESSION();
+
+    return 0;
+}
+```
+Il est toujours possible d'activer la session runtime depuis le widget de profiling, on peut même choisir un nombre de frames exact à enregistrer.
+
+![Widget ImGui d'instrumentation runtime.\label{figInstrumentorGUI}](../../Erwin_rel/screens_erwin/erwin_8b_instrumentor_gui.png)
+
+Mais certaines fonctions ne sont appelées qu'à la première frame, et donc pour profiler celles-ci il faut pouvoir choisir d'activer / désactiver la session dès le lancement du programme, c'est pourquoi la session runtime est configurable via une propriété de erwin.xml au lancement de l'application, après composition de la LayerStack :
+```cpp
+W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
+```
+
+###Utilisation
+L'utilisation est vraiment sans prise de tête :
+```cpp
+void some_function()
+{
+    {
+        W_PROFILE_SCOPE("Preparing coffee")
+        // do stuff
+    }
+    {
+        W_PROFILE_SCOPE("Drinking coffee")
+        // do stuff
+    }
+}
+
+void some_other_function()
+{
+    W_PROFILE_FUNCTION()
+    // do stuff
+}
+
+```
+
+##Random Engine
+Je ne repose plus sur les classes random de la STL. Après avoir vu [2] de l'excellente chaîne de Rez Bot (un des devs des Sims), j'ai entrepris de développer mon propre random engine.
+
+###XorShiftEngine
+L'algo *XorShift128+* répond à l'essentiel de mes cas d'utilisation, et je l'ai donc choisi comme première implémentation d'un random engine du nom de _XorShiftEngine_, dans utils/random.h. Cet algo est beaucoup plus rapide qu'un Mersenne Twister et produit une très bonne entropie. Il repose sur un état interne de 2 * 64 bits qui doit être initialisé lors du seeding. Je peux néanmoins seeder le moteur aléatoire avec une simple valeur de 64 bits, grâce à une petite astuce. Le papier "xoshiro" [4] précise (et c'est d'ailleurs mentionné dans l'article Wiki [3]), qu'on peut utiliser deux passes d'un algo *SplitMix64* (qui lui, demande un état de 64 bits) pour initialiser l'état sur 128 bits d'un générateur XorShift. Ce choix particulier permet d'éviter un état nul à l'initialisation, les linear scramblers ne sont pas capables de sortir d'un tel état.
+J'ai réalisé un test statistique (voir test_rng.cpp), où je regarde la probabilité de chaque bit d'être à 1. Je peux confirmer que sur 1e7 lancés, les probabilités pour chaque bit convergent vers 0.5 (contrairement à rand() de la libc, par exemple, qui est très prédictible pour les deux derniers bits de poids faible).
+Features :
+    - Le moteur peut être seedé avec la date courante (comme dans l'ancien temps avec srand(time(NULL))), via la fonction seed() sans argument.
+    - Le moteur peut être seedé avec une string de format "XXXXX:YYYYY" pour contrôler l'état exact.
+    - Il peut produire des nombres pseudo-aléatoires sur 32 bits ou bien sur 64 bits avec les méthodes respectives rand() et rand64() (ou de manière équivalente l'opérateur parenthèses).
+    - _XorShiftEngine_ est compatible avec les distributions de la STL.
+
+Utilisation :
+```cpp
+    XorShiftEngine rng;
+    rng.seed();
+    // rng.seed(123456789);
+    // rng.seed({123456789,987654321});
+    // rng.seed("123456789:987654321");
+
+    DLOG("rng",1) << rng() << " " << rng.rand64() << " " << rng.rand() << " ";
+
+    std::uniform_int_distribution<int> dis(1,6);
+    std::uniform_real_distribution<float> fdis(-1.f,1.f);
+    DLOG("rng",1) << dis(rng) << " ";
+    DLOG("rng",1) << fdis(rng) << " " << std::endl;
+```
+
+###Sources:
+    [1] https://gist.github.com/TheCherno/31f135eea6ee729ab5f26a6908eb3a5e
+    [2] https://www.youtube.com/watch?v=ulb8t0a_cQ4
+    [3] https://en.wikipedia.org/wiki/Xorshift
+    [4] http://vigna.di.unimi.it/ftp/papers/ScrambledLinear.pdf
+
+##Client config
+Chaque application client peut définir un ou plusieurs fichiers XML de configuration. La classe _Application_ propose une méthode virtuelle on_client_init() que le client peut surcharger, afin d'y déclarer des chemins d'accès via l'interface *filesystem*, ainsi qu'une méthode add_configuration() qui ajoute un chemin d'accès à la liste des fichiers de configuration à charger lors de l'initialisation du client. Pour la Sandbox, ça donne :
+```cpp
+virtual void on_client_init() override
+{
+    filesystem::set_asset_dir("source/Applications/Sandbox/assets");
+    filesystem::set_client_config_dir("source/Applications/Sandbox/config");
+    this->add_configuration("client.xml");
+}
+```
+Avec le fichier de configuration suivant :
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+    <display>
+        <string name="title"    value="Sandbox"/>
+        <uint name="width"      value="1920"/>
+        <uint name="height"     value="1080"/>
+        <uint name="target_fps" value="60"/>
+        <bool name="full"       value="false"/>
+        <bool name="topmost"    value="true"/>
+        <bool name="vsync"      value="true"/>
+    </display>
+    <memory>
+        <size name="area" value="10_MB"/>
+    </memory>>
+</Config>
+```
+Comme on peut le voir, j'ai bougé la configuration de la fenêtre côté client, ce qui fait beaucoup plus de sens. Noter l'existence d'une arène mémoire spécifique au client, dont la taille peut être configurée via un tel fichier de config (j'y reviendrai quand je documenterai l'ECS).
+
+La clé d'accès à ces propriétés dépend du nom de fichier de config. Pour l'exemple précédent, le fichier se nomme client.xml, donc le noeud racine s'appèlera *client*, et pour accéder à la propriété *width* on a le chemin d'accès *client.display.width*. Le fichier client.xml est un peu particulier, car _Application_ cherche les propriétés de la racine *client*, notamment pour la création de la fenêtre :
+```cpp
+// Create window
+{
+    W_PROFILE_SCOPE("Window creation")
+    WindowProps props
+    {
+        cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),
+        cfg::get<uint32_t>("client.display.width"_h,  1280),
+        cfg::get<uint32_t>("client.display.height"_h, 1024),
+        cfg::get<bool>("client.display.full"_h,       false),
+        cfg::get<bool>("client.display.topmost"_h,    false),
+        cfg::get<bool>("client.display.vsync"_h,      true)
+    };
+    window_ = Window::create(props);
+}
+```
+Par conséquent, ces propriétés *doivent* se trouver dans un fichier nommé client.xml pour pouvoir servir d'override. Mais rien n'empêche le client de déclarer d'autres fichiers de configuration pour un usage interne.
+
+#[25-12-19]
+
+##Debug
+
+###Asserts
+J'ai des macros d'assertion un peu plus utilse qu'avant. C'est encore une vidéo de Rez Bot (voir [1]) qui m'a motivé à améliorer ce système. J'ai maintenant la possibilité de passer des chaînes formatées en utilisant la macro *W_ASSERT_FMT* :
+```cpp
+W_ASSERT_FMT(lookup_.find(entity_id) == lookup_.end(), \
+    "Entity %lu already has a component of this type: %s", \
+    entity_id, ComponentT::NAME.c_str());
+```
+Les macros *W_ASSERT* et *W_ASSERT_FMT* affichent également le fichier incriminé, le numéro de ligne et la fonction où l'assertion échoue, et font usage de la couleur pour une meilleure lisibilité. *W_ASSERT_FMT* utilise un snprintf en sous-main pour formatter la chaîne à afficher, ce buffer global nommé *ASSERT_FMT_BUFFER__* est de taille *ASSERT_FMT_BUFFER_SIZE__* (128 octets actuellement).
+Une macro *W_DEBUG_BREAK* OS-dependent est utilisée par les assertions, mais peut maintenant être appelée n'importe où dans le code.
+
+Le système de Rez Bot pousse le bouchon encore plus loin : il développe des classes GUI OS spécifiques qui lui permettent d'afficher des fenêtres modales en cas d'assertion, de sorte que chaque assertion peut être ignorée, pour une seule fois ou pour toujours, ou bien conduire à un debug break. Quand j'aurrai un peu de temps, je pense explorer cette direction. Un système d'erreurs bien chiadé peut constituer un gain de temps considérable à la longue.
+
+###TexturePeek
+La classe _TexturePeek_ est un pseudo-(renderer front-end) qui permet d'afficher n'importe quelle texture (engine ou non) préalablement enregistrée, dans un widget ImGui, avec quelques options de traîtement (color channel filtering, alpha split, inversion, tone mapping) et export png. Les depth textures sont linéarisées avant rendu. C'est un portage et une amélioration de la fonctionnalité "Framebuffer Peek" de WCore. Ce widget est affichable depuis le widget de debug/profiling du _DebugLayer_ de la Sandbox.
+
+![Widget ImGui Texture Peek.\label{figTexturePeek}](../../Erwin_rel/screens_erwin/erwin_8c_texture_peek.png)
+
+La classe _OGLFramebuffer_ incorpore maintenant une fonction screenshot(1) qui prend en argument un chemin d'accès (stb_image utilisé en sous-main), et _MainRenderer_ peut enregistrer une commande de screenshot via MainRenderer::framebuffer_screenshot(2). _TexturePeek_ utilise un framebuffer dédié et se sert de cette fonctionnalité de screenshot pour l'export png.
+
+Pour enregistrer un framebuffer, c'est très simple :
+```cpp
+void DebugLayer::on_attach()
+{
+    TexturePeek::register_framebuffer("fb_forward");
+    TexturePeek::register_framebuffer("fb_2d_raw");
+}
+```
+On peut enregistrer une texture indépendante via TexturePeek::register_texture(4) en précisant un index de panneau, un texture handle, un nom et un booléen pour déclarer s'il s'agit ou non d'une depth texture.
+
+
+###Sources:
+    [1] https://www.youtube.com/watch?v=8Orghz-ZMuw

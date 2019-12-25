@@ -25,11 +25,12 @@ void Layer3D::on_imgui_render()
 void Layer3D::on_attach()
 {
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
+	material_ = AssetManager::load_material("textures/map/beachSand.tom");
 }
 
 void Layer3D::on_detach()
 {
-
+	AssetManager::release(material_);
 }
 
 void Layer3D::on_update(GameClock& clock)

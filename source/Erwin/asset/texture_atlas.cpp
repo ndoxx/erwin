@@ -1,4 +1,5 @@
 #include "asset/texture_atlas.h"
+#include "render/main_renderer.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
 
@@ -31,9 +32,34 @@ void TextureAtlas::load(const fs::path& filepath)
 					      (remap.x+remap.w)/width, (remap.y+remap.h)/height);
 		    remapping.insert(std::make_pair(H_(remap.name), uvs/*+correction*/));
 		});
-	}
 
-	DLOG("texture",1) << "Found " << remapping.size() << " sub-textures in atlas." << std::endl;
+		// Create texture
+		ImageFormat format;
+		switch(descriptor.texture_compression)
+		{
+			case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+			case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
+			case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
+		}
+		uint8_t filter = MAG_NEAREST | MIN_NEAREST;
+		// uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
+		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
+
+		texture = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
+									  					 			  descriptor.texture_height,
+									  					 			  descriptor.texture_blob,
+									  					 			  format,
+									  					 			  filter});
+
+		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " sub-textures in atlas." << std::endl;
+	}
 }
+
+void TextureAtlas::release()
+{
+	MainRenderer::destroy(texture);
+	descriptor.release();
+}
+
 
 } // namespace erwin
