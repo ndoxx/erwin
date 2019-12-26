@@ -8,7 +8,7 @@
 		<Channel name="entity"      verbosity="1"/>
 		<Channel name="render"      verbosity="1"/>
 		<Channel name="shader"      verbosity="1"/>
-		<Channel name="texture"     verbosity="3"/>
+		<Channel name="texture"     verbosity="1"/>
 		<Channel name="util"        verbosity="1"/>
 		<Channel name="config"      verbosity="3"/>
 
@@ -25,34 +25,35 @@
 	</profiling>
 
     <renderer>
-    	<Queue name="Opaque" sort="depth_descend"/>
-    	<memory>
-	    	<size name="renderer_area"   value="32_MB"/>
-	    	<size name="queue_buffer"    value="512_kB"/>
-	    	<size name="pre_buffer"      value="512_kB"/>
-	    	<size name="post_buffer"     value="512_kB"/>
-	    	<size name="auxiliary_arena" value="20_MB"/>
-	    </memory>
         <uint name="max_2d_batch_count" value="8192"/>
     </renderer>
 
 	<memory>
+	    <!-- Renderer memory -->
+	    <size name="renderer_area" value="32_MB"/>
+	    <renderer>
+	    	<size name="queue_buffer"    value="512_kB"/>
+	    	<size name="pre_buffer"      value="512_kB"/>
+	    	<size name="post_buffer"     value="512_kB"/>
+	    	<size name="auxiliary_arena" value="20_MB"/>
+	    </renderer>
+
+	    <!-- Generic system memory -->
     	<size name="system_area" value="1_MB"/>
+	    <!-- Event pool max nodes -->
+	    <event_pool>
+			<uint name="WindowCloseEvent"       value="8"/>
+			<uint name="WindowResizeEvent"      value="8"/>
+			<uint name="FramebufferResizeEvent" value="8"/>
+			<uint name="KeyboardEvent"          value="16"/>
+			<uint name="KeyTypedEvent"          value="16"/>
+			<uint name="MouseButtonEvent"       value="16"/>
+			<uint name="MouseMovedEvent"        value="16"/>
+			<uint name="MouseScrollEvent"       value="16"/>
+	    </event_pool>
     </memory>
 
     <events>
-		<memory>
-	    	<max_pool>
-				<uint name="WindowCloseEvent"       value="8"/>
-				<uint name="WindowResizeEvent"      value="8"/>
-				<uint name="FramebufferResizeEvent" value="8"/>
-				<uint name="KeyboardEvent"          value="16"/>
-				<uint name="KeyTypedEvent"          value="16"/>
-				<uint name="MouseButtonEvent"       value="16"/>
-				<uint name="MouseMovedEvent"        value="16"/>
-				<uint name="MouseScrollEvent"       value="16"/>
-	    	</max_pool>
-	    </memory>
 		<track>
 			<bool name="WindowCloseEvent"       value="true"/>
 			<bool name="WindowResizeEvent"      value="true"/>

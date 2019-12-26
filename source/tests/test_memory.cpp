@@ -257,7 +257,7 @@ public:
 	
 	PoolArenaFixture():
 	area(3_kB),
-	arena(area, sizeof(POD), PoolArena::DECORATION_SIZE, 32, "PoolArena")
+	arena(area, sizeof(POD) + PoolArena::DECORATION_SIZE, 32, "PoolArena")
 	{
 
 	}

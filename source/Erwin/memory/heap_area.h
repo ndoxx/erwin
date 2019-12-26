@@ -57,6 +57,10 @@ public:
 		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
 
 		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " allocated aligned block:" << std::endl;
+		if(debug_name)
+		{
+			DLOGI << "Name:      "   << WCC('n') << debug_name << std::endl;
+		}
 		DLOGI << "Size:      "   << WCC('v') << size                                                 << WCC(0) << "B" << std::endl;
 		DLOGI << "Padding:   "   << WCC('v') << padding                                              << WCC(0) << "B" << std::endl;
 		DLOGI << "Remaining: "   << WCC('v') << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << WCC(0) << "B" << std::endl;
@@ -70,10 +74,9 @@ public:
 		return range;
 	}
 
-	inline void* require_pool_block(size_t element_size, size_t decoration_size, size_t max_count, const char* debug_name=nullptr)
+	inline void* require_pool_block(size_t element_size, size_t max_count, const char* debug_name=nullptr)
 	{
-		size_t decorated_size = element_size + decoration_size;
-		size_t pool_size = max_count * decorated_size;
+		size_t pool_size = max_count * element_size;
 		auto block = require_block(pool_size, debug_name);
 		return block.first;
 	}

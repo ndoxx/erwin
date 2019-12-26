@@ -16,6 +16,7 @@
 #include "memory/linear_allocator.h"
 #include "memory/handle_pool.h"
 #include "core/config.h"
+#include "filesystem/filesystem.h"
 
 namespace erwin
 {
@@ -132,9 +133,9 @@ struct RendererStorage
 {
 	RendererStorage(memory::HeapArea& area):
 	renderer_memory_(area),
-	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB), "CB-Pre"),
-	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB), "CB-Post"),
-	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB), "Auxiliary"),
+	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre"),
+	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post"),
+	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary"),
 	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles")
 	{
 #ifdef W_DEBUG
@@ -1239,7 +1240,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 clear_color_(0.f,0.f,0.f,1.f),
-command_buffer_(area, cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB), "RenderQueue")
+command_buffer_(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue")
 {
 
 }
@@ -1471,7 +1472,9 @@ void MainRenderer::flush()
 	// Dispatch post buffer commands
 	flush_command_buffer(s_storage->post_buffer_);
 	// Reset auxiliary memory arena for next frame
-	s_storage->auxiliary_arena_.get_allocator().reset();
+	s_storage->auxiliary_arena_.reset();
+	// Reset resource arena for next frame
+	filesystem::reset_arena();
 
 	if(s_storage->profiling_enabled)
 	{

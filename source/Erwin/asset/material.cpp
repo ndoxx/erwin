@@ -12,6 +12,7 @@ void Material::load(const fs::path& filepath)
 	if(!extension.compare(".tom"))
 	{
 		DLOG("texture",1) << "Loading TOM file" << std::endl;
+		tom::TOMDescriptor descriptor;
 		descriptor.filepath = filepath;
 		tom::read_tom(descriptor);
 
@@ -54,8 +55,9 @@ void Material::release()
 	for(auto&& handle: textures)
 		if(handle.is_valid())
 			MainRenderer::destroy(handle);
-
-	descriptor.release();
+		
+	// Resources allocated by the descriptor are located inside the filesystem's resource arena
+	// This arena should be reset frequently, we don't need to care about freeing the resources here
 }
 
 

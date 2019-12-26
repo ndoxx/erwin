@@ -13,20 +13,23 @@ void TextureAtlas::load(const fs::path& filepath)
 	if(!extension.compare(".cat"))
 	{
 		DLOG("texture",1) << "Loading CAT file" << std::endl;
+		cat::CATDescriptor descriptor;
 		descriptor.filepath = filepath;
 		cat::read_cat(descriptor);
 
-		float width = get_width();
-		float height = get_height();
+		width = descriptor.texture_width;
+		height = descriptor.texture_height;
+		float fwidth = width;
+		float fheight = height;
 
 		// Apply half-pixel correction if linear filtering is used
-		/*glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/width, 0.5f/height, -0.5f/width, -0.5f/height)
+		/*glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/fwidth, 0.5f/fheight, -0.5f/fwidth, -0.5f/fheight)
 													 : glm::vec4(0.f);*/
 
 		cat::traverse_remapping(descriptor, [&](const cat::CATAtlasRemapElement& remap)
 		{
-			glm::vec4 uvs((remap.x)/width, (remap.y)/height, 
-					      (remap.x+remap.w)/width, (remap.y+remap.h)/height);
+			glm::vec4 uvs((remap.x)/fwidth, (remap.y)/fheight, 
+					      (remap.x+remap.w)/fwidth, (remap.y+remap.h)/fheight);
 		    remapping.insert(std::make_pair(H_(remap.name), uvs/*+correction*/));
 		});
 
@@ -56,7 +59,9 @@ void TextureAtlas::load(const fs::path& filepath)
 void TextureAtlas::release()
 {
 	MainRenderer::destroy(texture);
-	descriptor.release();
+	
+	// Resources allocated by the descriptor are located inside the filesystem's resource arena
+	// This arena should be reset frequently, we don't need to care about freeing the resources here
 }
 
 

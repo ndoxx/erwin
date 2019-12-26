@@ -13,7 +13,6 @@ struct Material
 	void load(const fs::path& filepath);
 	void release();
 
-	tom::TOMDescriptor descriptor;  // TODO: find a better allocation scheme for temporary data
 	std::array<TextureHandle, 8> textures;
 	size_t texture_count = 0;
 };

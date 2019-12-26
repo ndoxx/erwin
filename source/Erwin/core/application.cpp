@@ -166,7 +166,7 @@ bool Application::init()
     {
         W_PROFILE_SCOPE("Renderer memory init")
         DLOGN("application") << "Initializing renderer memory" << std::endl;
-        size_t renderer_mem_size = cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB);
+        size_t renderer_mem_size = cfg::get<size_t>("erwin.memory.renderer_area"_h, 20_MB);
         if(!s_storage.render_area.init(renderer_mem_size))
         {
             DLOGF("application") << "Cannot allocate renderer memory." << std::endl;
@@ -179,7 +179,7 @@ bool Application::init()
         W_PROFILE_SCOPE("System event pools init")
         #define DO_ACTION( EVENT_NAME ) \
         { \
-            std::string config_key_str = "erwin.events.memory.max_pool." + EVENT_NAME::NAME; \
+            std::string config_key_str = "erwin.memory.event_pool." + EVENT_NAME::NAME; \
             DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EVENT_NAME::NAME << std::endl; \
             EVENTBUS.init_event_pool< EVENT_NAME >(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8)); \
         }
@@ -207,6 +207,9 @@ bool Application::init()
             DLOGF("application") << "Cannot allocate client memory." << std::endl;
             return false;
         }
+
+        // Setup filesystem arena
+        filesystem::init_arena(s_storage.client_area, cfg::get<size_t>("client.memory.filesystem.assets"_h, 10_MB));
     }
 
     // Create window

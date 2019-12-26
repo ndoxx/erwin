@@ -155,6 +155,11 @@ public:
     	is_initialized_ = true;
     }
 
+    inline void shutdown()
+    {
+    	is_initialized_ = false;
+    }
+
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
@@ -218,6 +223,13 @@ public:
         memory_tagger_.tag_deallocation(begin, decorated_size);
 
 		allocator_.deallocate(begin);
+		thread_guard_.leave();
+	}
+
+	inline void reset()
+	{
+		thread_guard_.enter();
+		allocator_.reset();
 		thread_guard_.leave();
 	}
 
