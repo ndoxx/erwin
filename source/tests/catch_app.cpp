@@ -15,13 +15,13 @@ using namespace erwin;
 
 int main(int argc, char* argv[])
 {
-    WLOGGER.create_channel("thread", 3);
-    WLOGGER.create_channel("event", 3);
-	WLOGGER.create_channel("rng", 3);
-    WLOGGER.create_channel("memory", 3);
-	WLOGGER.create_channel("entity", 3);
-    WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.set_single_threaded(true);
+    WLOGGER(create_channel("thread", 3));
+    WLOGGER(create_channel("event", 3));
+	WLOGGER(create_channel("rng", 3));
+    WLOGGER(create_channel("memory", 3));
+	WLOGGER(create_channel("entity", 3));
+    WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
+    WLOGGER(set_single_threaded(true));
 
     memory::hex_dump_highlight(0xf0f0f0f0, WCB(200,50,0));
     memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,50,200));

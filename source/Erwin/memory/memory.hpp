@@ -331,13 +331,15 @@ template <typename ThreadPolicyT=policy::SingleThread>
 class LinearBuffer
 {
 public:
-	LinearBuffer(HeapArea& area, std::size_t size, const char* debug_name):
-	debug_name_(debug_name)
+	LinearBuffer(HeapArea& area, std::size_t size, const char* debug_name)
 	{
     	std::pair<void*,void*> range = area.require_block(size, debug_name);
     	begin_ = static_cast<uint8_t*>(range.first);
     	end_ = static_cast<uint8_t*>(range.second);
     	head_ = begin_;
+#ifdef W_DEBUG
+    	debug_name_ = debug_name;
+#endif
 	}
 
 #ifdef W_DEBUG

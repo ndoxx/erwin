@@ -30,7 +30,7 @@ void TextureAtlas::load(const fs::path& filepath)
 		{
 			glm::vec4 uvs((remap.x)/fwidth, (remap.y)/fheight, 
 					      (remap.x+remap.w)/fwidth, (remap.y+remap.h)/fheight);
-		    remapping.insert(std::make_pair(H_(remap.name), uvs/*+correction*/));
+		    remapping.insert(eastl::make_pair(H_(remap.name), uvs/*+correction*/));
 		});
 
 		// Create texture
@@ -59,7 +59,7 @@ void TextureAtlas::load(const fs::path& filepath)
 void TextureAtlas::release()
 {
 	MainRenderer::destroy(texture);
-	
+
 	// Resources allocated by the descriptor are located inside the filesystem's resource arena
 	// This arena should be reset frequently, we don't need to care about freeing the resources here
 }

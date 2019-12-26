@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include "EASTL/hash_map.h"
 
 #include "render/handles.h"
 #include "filesystem/filesystem.h"
@@ -26,7 +26,7 @@ struct TextureAtlas
 	uint32_t height;
 
 private:
-	std::map<hash_t, glm::vec4> remapping;
+	eastl::hash_map<hash_t, glm::vec4> remapping;
 };
 
 } // namespace erwin

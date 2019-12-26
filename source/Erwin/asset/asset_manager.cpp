@@ -5,6 +5,7 @@
 #include "render/main_renderer.h"
 #include "render/renderer_2d.h"
 #include "debug/logger.h"
+#include "EASTL/vector.h"
 
 namespace erwin
 {
@@ -17,8 +18,8 @@ constexpr std::size_t k_handle_alloc_size = 2 * 2 * sizeof(HandlePoolT<k_max_ass
 
 static struct AssetManagerStorage
 {
-	std::vector<TextureAtlas*> texture_atlases_;
-	std::vector<Material*> materials_;
+	eastl::vector<TextureAtlas*> texture_atlases_;
+	eastl::vector<Material*> materials_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -144,13 +145,13 @@ void AssetManager::shutdown()
 const TextureAtlas& AssetManager::get(TextureAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
-	return *s_storage.texture_atlases_.at(handle.index);
+	return *s_storage.texture_atlases_[handle.index];
 }
 
 const Material& AssetManager::get(MaterialHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
-	return *s_storage.materials_.at(handle.index);
+	return *s_storage.materials_[handle.index];
 }
 
 

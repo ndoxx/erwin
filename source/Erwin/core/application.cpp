@@ -56,7 +56,7 @@ static inline void configure_event_tracking()
     std::string config_key_str = "erwin.events.track." + EventT::NAME;
     if(cfg::get<bool>(H_(config_key_str.c_str()), false))
     {
-        WLOGGER.track_event<EventT>();
+        WLOGGER(track_event<EventT>());
     }
 }
 
@@ -93,7 +93,7 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
-        WLOGGER.kill();
+        WLOGGER(kill());
 
         // Shutdown all event pools
         #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
@@ -133,12 +133,12 @@ bool Application::init()
         FOR_ALL_EVENTS
         #undef DO_ACTION
 
-        WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
-        WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
+        WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
+        WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
 
         // Spawn logger thread
-        WLOGGER.spawn();
-        WLOGGER.sync();
+        WLOGGER(spawn());
+        WLOGGER(sync());
 
         // Log basic info
         DLOGN("config") << "[Paths]" << std::endl;
@@ -372,7 +372,7 @@ void Application::run()
 
         {
             W_PROFILE_SCOPE("Logger flush")
-            WLOGGER.flush();
+            WLOGGER(flush());
         }
 
         frame_d = frame_clock.restart();
