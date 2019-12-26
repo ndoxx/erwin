@@ -44,7 +44,7 @@ private:
 	static std::string NAME; \
 	static PoolArena* s_ppool_; \
 	virtual const std::string& get_debug_name() const override { return NAME; } \
-	static void init_pool(void* begin, size_t max_count = DEFAULT_COMPONENT_COUNT , const char* debug_name = nullptr ); \
+    static void init_pool(memory::HeapArea& area, size_t node_size, size_t max_count, const char* debug_name); \
 	static void destroy_pool(); \
 	static void* operator new(size_t size); \
 	static void operator delete(void* ptr)
@@ -53,10 +53,10 @@ private:
 #define COMPONENT_DEFINITION( COMPONENT_NAME ) \
 	std::string COMPONENT_NAME::NAME = #COMPONENT_NAME; \
 	PoolArena* COMPONENT_NAME::s_ppool_ = nullptr; \
-	void COMPONENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
+	void COMPONENT_NAME::init_pool(memory::HeapArea& area, size_t node_size, size_t max_count, const char* debug_name) \
 	{ \
 		W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #COMPONENT_NAME); \
-		s_ppool_ = new PoolArena(begin, sizeof(COMPONENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
+		s_ppool_ = new PoolArena(area, sizeof(COMPONENT_NAME), PoolArena::DECORATION_SIZE, max_count, debug_name); \
 		if(debug_name) \
 			s_ppool_->set_debug_name(debug_name); \
 		else \

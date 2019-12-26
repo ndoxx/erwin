@@ -143,8 +143,8 @@ void JobSystem::init(memory::HeapArea& area)
 	// Initialize memory
 	size_t max_align = 64-1;
 	size_t node_size = sizeof(Job) + max_align;
-	s_storage.handle_arena.init(area.require_block(k_handle_alloc_size, "JobHandles"));
-	s_storage.job_pool.init(area.require_pool_block<PoolArena>(node_size, k_max_jobs), node_size, k_max_jobs, PoolArena::DECORATION_SIZE);
+	s_storage.handle_arena.init(area, k_handle_alloc_size, "JobHandles");
+	s_storage.job_pool.init(area, node_size, PoolArena::DECORATION_SIZE, k_max_jobs, "JobPool");
 	JobHandle::init_pool(s_storage.handle_arena);
 
 	// Find the number of CPU cores

@@ -2,6 +2,7 @@
 #include "ctti/type_id.hpp"
 #include "core/time_base.h"
 #include "memory/arena.h"
+#include "memory/heap_area.h"
 
 namespace erwin
 {
@@ -14,7 +15,7 @@ typedef uint64_t EventID;
     static constexpr EventID ID = ctti::type_id< EVENT_NAME >().hash(); \
     static PoolArena* s_ppool_; \
     virtual const std::string& get_name() const override { return NAME; } \
-    static void init_pool(void* begin, size_t max_count = DEFAULT_MAX_EVENT , const char* debug_name = nullptr ); \
+    static void init_pool(memory::HeapArea& area, size_t node_size, size_t max_events, const char* debug_name); \
     static void destroy_pool(); \
     static void* operator new(size_t size); \
     static void operator delete(void* ptr)
@@ -22,10 +23,10 @@ typedef uint64_t EventID;
 #define EVENT_DEFINITION( EVENT_NAME ) \
     std::string EVENT_NAME::NAME = #EVENT_NAME; \
     PoolArena* EVENT_NAME::s_ppool_ = nullptr; \
-    void EVENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
+    void EVENT_NAME::init_pool(memory::HeapArea& area, size_t node_size, size_t max_events, const char* debug_name) \
     { \
         W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #EVENT_NAME); \
-        s_ppool_ = new PoolArena(begin, sizeof(EVENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
+        s_ppool_ = new PoolArena(area, node_size, PoolArena::DECORATION_SIZE, max_events, debug_name); \
         if(debug_name) \
             s_ppool_->set_debug_name(debug_name); \
         else \

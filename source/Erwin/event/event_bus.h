@@ -39,7 +39,7 @@ public:
     template<typename EventT>
     void init_event_pool(memory::HeapArea& area, size_t max_events)
     {
-        EventT::init_pool(area.require_pool_block<PoolArena>(sizeof(EventT), max_events, EventT::NAME.c_str()), max_events);
+        EventT::init_pool(area, sizeof(EventT), max_events, EventT::NAME.c_str());
         event_queues_.emplace(eastl::piecewise_construct, eastl::make_tuple(EventT::ID), eastl::make_tuple());
     }
 

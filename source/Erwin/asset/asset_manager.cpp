@@ -111,9 +111,9 @@ void AssetManager::release(ShaderHandle handle)
 
 void AssetManager::init(memory::HeapArea& area)
 {
-	s_storage.handle_arena_.init(area.require_block(k_handle_alloc_size, "AssetHandles"));
-	s_storage.texture_atlas_pool_.init(area.require_pool_block<PoolArena>(sizeof(TextureAtlas), k_max_atlases, "AtlasPool"), sizeof(TextureAtlas), k_max_atlases, PoolArena::DECORATION_SIZE);
-	s_storage.material_pool_.init(area.require_pool_block<PoolArena>(sizeof(Material), k_max_materials, "MaterialPool"), sizeof(Material), k_max_materials, PoolArena::DECORATION_SIZE);
+	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
+	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas), PoolArena::DECORATION_SIZE, k_max_atlases, "AtlasPool");
+	s_storage.material_pool_.init(area, sizeof(Material), PoolArena::DECORATION_SIZE, k_max_materials, "MaterialPool");
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
 	s_storage.materials_.resize(k_max_materials, nullptr);

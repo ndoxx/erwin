@@ -132,14 +132,12 @@ struct RendererStorage
 {
 	RendererStorage(memory::HeapArea& area):
 	renderer_memory_(area),
-	pre_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB), "CB-Pre")),
-	post_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB), "CB-Post")),
-	auxiliary_arena_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB), "Auxiliary")),
-	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size, "RenderHandles"))
+	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB), "CB-Pre"),
+	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB), "CB-Post"),
+	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB), "Auxiliary"),
+	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles")
 	{
 #ifdef W_DEBUG
-		pre_buffer_.storage.set_debug_name("CB-Pre");
-		post_buffer_.storage.set_debug_name("CB-Post");
 		auxiliary_arena_.set_debug_name("Auxiliary");
 		handle_arena_.set_debug_name("RenderHandles");
 #endif
@@ -1241,7 +1239,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 clear_color_(0.f,0.f,0.f,1.f),
-command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB), "RenderQueue"))
+command_buffer_(area, cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB), "RenderQueue")
 {
 
 }

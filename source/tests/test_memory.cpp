@@ -59,8 +59,8 @@ public:
 	typedef typename LinArena::SIZE_TYPE SIZE_TYPE;
 	
 	LinArenaFixture():
-	area(1_kB),
-	arena(area.begin(), area.end())
+	area(3_kB),
+	arena(area, 2_kB, "LinArena")
 	{
 
 	}
@@ -256,8 +256,8 @@ public:
 	typedef typename PoolArena::SIZE_TYPE SIZE_TYPE;
 	
 	PoolArenaFixture():
-	area(1_kB),
-	arena(area.begin(), sizeof(POD), 32, PoolArena::DECORATION_SIZE)
+	area(3_kB),
+	arena(area, sizeof(POD), PoolArena::DECORATION_SIZE, 32, "PoolArena")
 	{
 
 	}
@@ -346,7 +346,7 @@ class HandleFixture
 public:
 	HandleFixture():
 	area(3_kB),
-	arena(area.require_block(2_kB))
+	arena(area, 2_kB, "LinearArena")
 	{
 		FooHandle::init_pool(arena);
 		BarHandle::init_pool(arena);
@@ -444,7 +444,7 @@ class RobustHandleFixture
 public:
 	RobustHandleFixture():
 	area(3_kB),
-	arena(area.require_block(2_kB))
+	arena(area, 2_kB, "LinearArena")
 	{
 		BazHandle::init_pool(arena);
 		QuxHandle::init_pool(arena);

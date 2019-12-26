@@ -124,9 +124,9 @@ struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;
 
-	CommandBuffer(std::pair<void*,void*> ptr_range):
+	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name):
 	count(0),
-	storage(ptr_range)
+	storage(area, size, debug_name)
 	{
 
 	}
