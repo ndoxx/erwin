@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+	<Options>
+		<BlobCompression>DEFLATE</BlobCompression>
+		<AllowGrouping>true</AllowGrouping>
+	</Options>
+
+	<TextureMaps>
+		<!-- Specify all possible texture maps encountered as single files -->
+		<TextureMap name="albedo"    channels="4" compression="DXT5" filter_min="NEAREST" filter_mag="NEAREST" srgb="true"/>
+		<TextureMap name="normal"    channels="3" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false"/>
+		<TextureMap name="depth"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="metal"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="roughness" channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="ao"        channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		
+		<!-- Specify groups of texture maps to be packed together in a texture blob -->
+		<Group name="normal_depth" compression="DXT3" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+			<TextureMap name="normal"/>
+			<TextureMap name="depth"/>
+		</Group>
+		<Group name="mra" compression="DXT1" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+			<TextureMap name="metal"/>
+			<TextureMap name="roughness"/>
+			<TextureMap name="ao"/>
+		</Group>
+
+		<!-- Specify the possible layouts of texture maps and groups -->
+		<!-- After texture map grouping, if a layout matches, its texture slot order will be observed during TOM export -->
+		<Layout name="a_nd_mra">
+			<Slot texture="albedo"/>       <!-- SLOT_0 -->
+			<Slot texture="normal_depth"/> <!-- SLOT_1 -->
+			<Slot texture="mra"/>          <!-- SLOT_2 -->
+		</Layout>
+	</TextureMaps>
+</Config>
