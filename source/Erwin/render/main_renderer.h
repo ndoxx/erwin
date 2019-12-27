@@ -5,15 +5,14 @@
 #include <utility>
 
 #include "filesystem/filesystem.h"
+#include "memory/arena.h"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
 #include "render/framebuffer_layout.h"
-#include "memory/arena.h"
-
 #include "render/texture.h" // TMP: for Texture2DDescriptor
 #include "render/handles.h"
-
 #include "render/framebuffer_pool.h"
+#include "asset/handles.h"
 
 namespace erwin
 {
@@ -113,9 +112,12 @@ public:
 
 private:
 	friend class Application;
+	friend class RenderQueue;
 
 	static void init(memory::HeapArea& area);
 	static void shutdown();
+
+	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
 
 constexpr std::size_t k_max_render_commands = 10000;
@@ -202,6 +204,7 @@ struct DrawCall
 		VertexArrayHandle VAO;
 		UniformBufferHandle UBO;
 		TextureHandle texture;
+		MaterialHandle material;
 
 		uint32_t count;
 		uint32_t offset;
@@ -277,6 +280,13 @@ struct DrawCall
 	{
 		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		data.texture = tex;
+	}
+
+	// Set a material
+	inline void set_material(MaterialHandle mat)
+	{
+		W_ASSERT_FMT(mat.is_valid(), "Invalid MaterialHandle of index: %hu", mat.index);
+		data.material = mat;
 	}
 
 	// Compute the sorting key for depth ascending/descending policies

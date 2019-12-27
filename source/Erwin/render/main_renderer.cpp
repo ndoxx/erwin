@@ -17,6 +17,8 @@
 #include "memory/handle_pool.h"
 #include "core/config.h"
 #include "filesystem/filesystem.h"
+#include "asset/asset_manager.h"
+#include "asset/material.h"
 
 namespace erwin
 {
@@ -1346,7 +1348,7 @@ static void handle_state(uint64_t state_flags)
 	}
 }
 
-static void render_dispatch(memory::LinearBuffer<>& buf)
+void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
@@ -1365,10 +1367,20 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		shader.bind();
 		last_shader_index = data.shader.index;
 	}
-	if(data.texture.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	if(data.material.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	{
+		auto& material = AssetManager::get(data.material);
+		for(uint32_t ii=0; ii<material.texture_count; ++ii)
+		{
+			TextureHandle texture_hnd = material.textures[ii];
+			auto& texture = *s_storage->textures[texture_hnd.index];
+			shader.attach_texture_2D(texture, ii);
+		}
+	}
+	else if(data.texture.index != k_invalid_handle) 
 	{
 		auto& texture = *s_storage->textures[data.texture.index];
-		shader.attach_texture_2D(texture, 0); // TMP: Only one texture supported for now, so bind to slot 0
+		shader.attach_texture_2D(texture, 0); // Bind single texture to slot 0
 	}
 	if(data.UBO_data)
 	{
@@ -1414,7 +1426,7 @@ void RenderQueue::flush()
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
 		command_buffer_.storage.seek(cmd);
-		render_dispatch(command_buffer_.storage);
+		MainRenderer::render_dispatch(command_buffer_.storage);
 	}
 }
 

@@ -96,6 +96,62 @@ void CommonGeometry::init()
 		s_storage.vertex_arrays_.insert(std::make_pair("cube"_h, VAO));
 	}
 
+	// UV Cube
+	{
+		float vdata[24*5] =
+		{
+		     0.5f, -0.5f,  0.5f,   1.0f, 1.0f,
+		     0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		    -0.5f,  0.5f,  0.5f,   0.0f, 0.0f,
+		    -0.5f, -0.5f,  0.5f,   0.0f, 1.0f,
+		     0.5f, -0.5f, -0.5f,   1.0f, 0.0f,
+		     0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		     0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
+		     0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		    -0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
+		    -0.5f,  0.5f, -0.5f,   1.0f, 0.0f,
+		     0.5f,  0.5f, -0.5f,   0.0f, 0.0f,
+		     0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		    -0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		    -0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		    -0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
+		    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
+		     0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		     0.5f,  0.5f, -0.5f,   1.0f, 0.0f,
+		    -0.5f,  0.5f, -0.5f,   0.0f, 0.0f,
+		    -0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
+		     0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
+		     0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		    -0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		    -0.5f, -0.5f, -0.5f,   0.0f, 1.0f
+		};
+		uint32_t idata[12*3] =
+		{
+			0,  1,  2,
+			0,  2,  3,
+			4,  5,  6,
+			4,  6,  7,
+			8,  9,  10,
+			8,  10, 11,
+			12, 13, 14,
+			12, 14, 15,
+			16, 17, 18,
+			16, 18, 19,
+			20, 21, 22,
+			20, 22, 23
+		};
+
+		IndexBufferHandle IBO = MainRenderer::create_index_buffer(idata, 12*3, DrawPrimitive::Triangles);
+		VertexBufferLayoutHandle VBL = MainRenderer::create_vertex_buffer_layout({
+				    				   {"a_position"_h, ShaderDataType::Vec3},
+				    				   {"a_uv"_h, ShaderDataType::Vec2}
+									  });
+		VertexBufferHandle VBO = MainRenderer::create_vertex_buffer(VBL, vdata, 24*5, DrawMode::Static);
+		VertexArrayHandle VAO = MainRenderer::create_vertex_array(VBO, IBO);
+
+		s_storage.vertex_arrays_.insert(std::make_pair("cube_uv"_h, VAO));
+	}
+
 	MainRenderer::flush();
 }
 

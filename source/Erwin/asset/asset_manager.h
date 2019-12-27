@@ -28,6 +28,7 @@ public:
 private:
 	friend class Renderer2D;
 	friend class Application;
+	friend class MainRenderer;
 
 	static void init(memory::HeapArea& area);
 	static void shutdown();

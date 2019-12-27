@@ -19,7 +19,8 @@ struct InstanceData
 
 struct ForwardRenderer3DStorage
 {
-	ShaderHandle forward_shader;
+	ShaderHandle forward_colored;
+	ShaderHandle forward_textured;
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
 
@@ -46,18 +47,23 @@ void ForwardRenderer::init()
 
 	storage.num_draw_calls = 0;
 
-	storage.forward_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_shader.glsl", "forward_shader");
-	// storage.forward_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_shader.spv", "forward_shader");
+	storage.forward_colored = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_colored.glsl", "forward_colored");
+	// storage.forward_colored = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_colored.spv", "forward_colored");
+	storage.forward_textured = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_textured.glsl", "forward_textured");
+	// storage.forward_textured = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_textured.spv", "forward_textured");
+
 	storage.instance_ubo = MainRenderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	
-	MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.instance_ubo);
-	// MainRenderer::shader_attach_uniform_buffer(storage.forward_shader, storage.pass_ubo);
+	MainRenderer::shader_attach_uniform_buffer(storage.forward_colored, storage.instance_ubo);
+	MainRenderer::shader_attach_uniform_buffer(storage.forward_textured, storage.instance_ubo);
+	// MainRenderer::shader_attach_uniform_buffer(storage.forward_colored, storage.pass_ubo);
 }
 
 void ForwardRenderer::shutdown()
 {
-	MainRenderer::destroy(storage.forward_shader);
+	MainRenderer::destroy(storage.forward_colored);
+	MainRenderer::destroy(storage.forward_textured);
 	MainRenderer::destroy(storage.instance_ubo);
 }
 
@@ -100,7 +106,7 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 	instance_data.mvp = storage.pass_ubo_data.view_projection_matrix 
 				      * transform.get_model_matrix();
 
-	static DrawCall dc(DrawCall::Indexed, storage.forward_shader, CommonGeometry::get_vertex_array("cube"_h));
+	static DrawCall dc(DrawCall::Indexed, storage.forward_colored, CommonGeometry::get_vertex_array("cube"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(transform.position.z, storage.layer_id);
@@ -108,6 +114,26 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 
 	++storage.num_draw_calls;
 }
+
+void ForwardRenderer::draw_cube(const ComponentTransform3D& transform, MaterialHandle material, const glm::vec4& tint)
+{
+	W_ASSERT_FMT(material.is_valid(), "Invalid MaterialHandle of index %hu.", material.index);
+
+	InstanceData instance_data;
+	instance_data.tint = tint;
+	instance_data.mvp = storage.pass_ubo_data.view_projection_matrix 
+				      * transform.get_model_matrix();
+
+	static DrawCall dc(DrawCall::Indexed, storage.forward_textured, CommonGeometry::get_vertex_array("cube_uv"_h));
+	dc.set_state(storage.pass_state);
+	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
+	dc.set_key_depth(transform.position.z, storage.layer_id);
+	dc.set_material(material);
+	MainRenderer::submit("Forward"_h, dc);
+
+	++storage.num_draw_calls;
+}
+
 
 uint32_t ForwardRenderer::get_draw_call_count()
 {

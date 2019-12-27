@@ -3,6 +3,7 @@
 #include "core/wtypes.h"
 #include "render/camera_3d.h"
 #include "entity/component_transform.h"
+#include "asset/handles.h"
 
 namespace erwin
 {
@@ -15,8 +16,10 @@ public:
 	static void begin_pass(const PerspectiveCamera3D& camera, bool transparent, uint8_t layer_id);
 	// End a pass
 	static void end_pass();
-	// Draw a colored cube.
+	// Draw a colored cube
 	static void draw_colored_cube(const ComponentTransform3D& transform, const glm::vec4& tint=glm::vec4(1.f));
+	// Draw a textured cube
+	static void draw_cube(const ComponentTransform3D& transform, MaterialHandle material, const glm::vec4& tint=glm::vec4(1.f));
 
 	// Stats
 	static uint32_t get_draw_call_count();
