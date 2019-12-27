@@ -7,6 +7,7 @@
 #include "asset/texture_atlas.h"
 #include "core/config.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/vec_swizzle.hpp"
 
 namespace erwin
 {
@@ -39,7 +40,7 @@ struct Renderer2DStorage
 	glm::mat4 view_matrix;
 	FrustumSides frustum_sides;
 	uint64_t pass_state;
-	bool state_transparent;
+	bool state_transparent; // TODO: maybe this should belong to batch properties
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
@@ -192,10 +193,10 @@ static void flush_batch(Batch2D& batch)
 	}
 }
 
-void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, hash_t tile, TextureAtlasHandle atlas_handle, const glm::vec4& tint)
+void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas_handle, hash_t tile, const glm::vec4& tint)
 {
 	// * Frustum culling
-	if(frustum_cull(glm::vec2(position), scale, storage.frustum_sides)) return;
+	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), storage.frustum_sides)) return;
 
 	// Get appropriate batch
 	const TextureAtlas& atlas = AssetManager::get(atlas_handle);
@@ -206,18 +207,18 @@ void Renderer2D::draw_quad(const glm::vec4& position, const glm::vec2& scale, ha
 		flush_batch(batch);
 
 	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
-	if(position.z > batch.max_depth)
-		batch.max_depth = position.z; // TMP: this must be in view space
+	if(transform.position.z > batch.max_depth)
+		batch.max_depth = transform.position.z; // TMP: this must be in view space
 
 	glm::vec4 uvs = atlas.get_uv(tile);
-	batch.instance_data[batch.count] = {uvs, tint, position, scale};
+	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
 	++batch.count;
 }
 
-void Renderer2D::draw_colored_quad(const glm::vec4& position, const glm::vec2& scale, const glm::vec4& tint, const glm::vec4& uvs)
+void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint)
 {
 	// * Frustum culling
-	if(frustum_cull(glm::vec2(position), scale, storage.frustum_sides)) return;
+	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), storage.frustum_sides)) return;
 
 	// Get appropriate batch
 	auto& batch = storage.batches[0];
@@ -227,10 +228,10 @@ void Renderer2D::draw_colored_quad(const glm::vec4& position, const glm::vec2& s
 		flush_batch(batch);
 
 	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
-	if(position.z > batch.max_depth)
-		batch.max_depth = position.z; // TMP: this must be in view space
+	if(transform.position.z > batch.max_depth)
+		batch.max_depth = transform.position.z; // TMP: this must be in view space
 
-	batch.instance_data[batch.count] = {uvs, tint, position, scale};
+	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
 	++batch.count;
 }
 

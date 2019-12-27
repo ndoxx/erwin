@@ -52,9 +52,16 @@ struct GroupSpec
 	}
 };
 
+struct LayoutSpec
+{
+	std::vector<hash_t> slots;
+	std::string name;
+};
+
 static Compression s_blob_compression = Compression::Deflate;
 static std::unordered_map<hash_t, TexmapSpec> s_texmap_specs;
 static std::vector<std::pair<hash_t, GroupSpec>> s_group_specs;
+static std::vector<LayoutSpec> s_layout_specs;
 static bool s_allow_grouping = false;
 
 static TextureFilter parse_filter(const std::string& min_filter_str, const std::string& mag_filter_str)
@@ -119,12 +126,13 @@ static TextureCompression parse_compression(const std::string& compression_str, 
 	}
 }
 
-static void handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
+static bool handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
 {
 	// For each registered group, ordered by priority,
 	// if in_tex_maps contains all required maps for this group,
 	// construct new texture map, copy data and override parameters,
 	// then remove old maps.
+	bool has_changed = false;
 	for(auto&& [key, spec]: s_group_specs)
 	{
 		if(spec.qualify(in_tex_maps))
@@ -159,8 +167,33 @@ static void handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, u
         		stbi_image_free(in_tex_maps.at(hname).data);
         		in_tex_maps.erase(hname);
 		    }
+		    // Add new texture map
+		    in_tex_maps.insert(std::make_pair(H_(tmap.name.c_str()), tmap));
+			has_changed = true;
 		}
 	}
+
+	return has_changed;
+}
+
+static const LayoutSpec* find_layout(std::unordered_map<hash_t, TexmapData>& texture_maps)
+{
+	for(const auto& spec: s_layout_specs)
+	{
+		// For a layout to match, we need all of the layout's slots present in texture_maps,
+		// nothing more and nothing less
+		if(spec.slots.size() != texture_maps.size())
+			continue;
+
+		bool all_in = true;
+		for(hash_t slot: spec.slots)
+			all_in &= (texture_maps.find(slot)!=texture_maps.end());
+
+		if(all_in)
+			return &spec;
+	}
+
+	return nullptr;
 }
 
 bool configure(const fs::path& filepath)
@@ -172,7 +205,7 @@ bool configure(const fs::path& filepath)
 		return false;
 	}
 
-	// Configure options
+	// * Configure options
 	auto* opt_node = cfg.root->first_node("Options");
 	std::string blob_compression_str;
 	if(xml::parse_node(opt_node, "BlobCompression", blob_compression_str))
@@ -184,7 +217,7 @@ bool configure(const fs::path& filepath)
 	}
 	xml::parse_node(opt_node, "AllowGrouping", s_allow_grouping);
 
-	// Register texture maps
+	// * Register texture maps
 	auto* tmaps_node = cfg.root->first_node("TextureMaps");
 	if(!tmaps_node)
 	{
@@ -221,7 +254,7 @@ bool configure(const fs::path& filepath)
     if(!s_allow_grouping)
     	return true;
 
-    // Register groups
+    // * Register groups
     for(auto* group_node=tmaps_node->first_node("Group");
         group_node;
         group_node=group_node->next_sibling("Group"))
@@ -270,6 +303,29 @@ bool configure(const fs::path& filepath)
 	    s_group_specs.push_back(std::make_pair(H_(spec.texmap_spec.name.c_str()), spec));
 	    // Also register internal texture map specs as a regular texture map spec.
 	    s_texmap_specs.insert(std::make_pair(H_(spec.texmap_spec.name.c_str()), spec.texmap_spec));
+    }
+
+    // * Register layouts
+    for(auto* layout_node=tmaps_node->first_node("Layout");
+        layout_node;
+        layout_node=layout_node->next_sibling("Layout"))
+    {
+    	LayoutSpec layout_spec;
+
+    	// Get layout name
+        xml::parse_attribute(layout_node, "name", layout_spec.name);
+
+    	// Register each slot
+	    for(auto* slot_node=layout_node->first_node("Slot");
+	        slot_node;
+	        slot_node=slot_node->next_sibling("Slot"))
+	    {
+	    	std::string texture;
+        	xml::parse_attribute(slot_node, "texture", texture);
+	    	layout_spec.slots.push_back(H_(texture.c_str()));
+	    }
+	    // Register layout
+	    s_layout_specs.push_back(layout_spec);
     }
 
     return true;
@@ -354,7 +410,16 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 
     // * Group texture maps where possible
     if(s_allow_grouping)
-    	handle_groups(texture_maps, width, height);
+    {
+    	if(handle_groups(texture_maps, width, height))
+    	{
+    		DLOG("fudge",1) << "New texture map composition: " << std::endl;
+    		for(auto&& [key,dat]: texture_maps)
+    		{
+    			DLOGI << dat.name << std::endl;
+    		}
+    	}
+    }
 
     // * Compress textures if needed
     for(auto&& [key, tmap]: texture_maps)
@@ -378,8 +443,31 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 		((s_blob_compression==Compression::Deflate) ? tom::LosslessCompression::Deflate : tom::LosslessCompression::None),
 		TextureWrap::REPEAT
 	};
+
+    // Find a matching layout, if found, strictly follow slot order
+    std::vector<std::pair<hash_t, TexmapData*>> ordered_tmap;
+    const LayoutSpec* layout = find_layout(texture_maps);
+    if(layout == nullptr)
+    {
+    	DLOGW("fudge") << "Cannot find a valid material layout for this collection." << std::endl;
+    	for(auto&& [key, tmap]: texture_maps)
+    		ordered_tmap.push_back(std::make_pair(key,&tmap));
+    }
+    else
+    {
+    	DLOG("fudge",1) << "Detected material layout: " << WCC('n') << layout->name << std::endl;
+    	for(auto&& hslot: layout->slots)
+    		ordered_tmap.push_back(std::make_pair(hslot, &texture_maps[hslot]));
+
+	    DLOG("fudge",1) << "Slots:" << std::endl;
+		for(int ii=0; ii<ordered_tmap.size(); ++ii)
+		{
+			DLOGI << ii << ": " << ordered_tmap[ii].second->name << std::endl;
+		}
+    }
+
 	// Construct and push texture map descriptors
-	for(auto&& [key, tmap]: texture_maps)
+	for(auto&& [key, tmap]: ordered_tmap)
 	{
         const TexmapSpec& spec = s_texmap_specs.at(key);
         uint32_t size = width * height * spec.channels;
@@ -390,7 +478,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 			spec.srgb,
 			spec.compression,
 			size,
-			tmap.data,
+			tmap->data,
 			key
 		};
 

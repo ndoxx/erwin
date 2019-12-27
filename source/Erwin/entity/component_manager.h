@@ -29,7 +29,7 @@ public:
 	ComponentManager(memory::HeapArea& area, size_t max_components)
 	{
 		// Initialize component pool
-		ComponentT::init_pool(area.require_pool_block<PoolArena>(sizeof(ComponentT), max_components), max_components);
+		ComponentT::init_pool(area, sizeof(ComponentT), max_components, ComponentT::NAME.c_str());
 	}
 
 	virtual ~ComponentManager()

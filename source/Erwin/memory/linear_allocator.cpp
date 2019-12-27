@@ -1,5 +1,6 @@
 #include "memory/linear_allocator.h"
 #include "memory/memory_utils.h"
+#include "memory/heap_area.h"
 #include "core/core.h"
 
 #include <iostream>
@@ -11,20 +12,17 @@ namespace erwin
 namespace memory
 {
 
-LinearAllocator::LinearAllocator(void* begin, void* end)
+LinearAllocator::LinearAllocator(HeapArea& area, std::size_t size, const char* debug_name)
 {
-    init(begin, end);
+    init(area, size, debug_name);
 }
 
-LinearAllocator::LinearAllocator(std::pair<void*,void*> ptr_range)
+void LinearAllocator::init(HeapArea& area, std::size_t size, const char* debug_name)
 {
-    init(ptr_range.first, ptr_range.second);
-}
+    std::pair<void*,void*> range = area.require_block(size, debug_name);
 
-void LinearAllocator::init(void* begin, void* end)
-{
-    begin_ = static_cast<uint8_t*>(begin);
-    end_ = static_cast<uint8_t*>(end);
+    begin_ = static_cast<uint8_t*>(range.first);
+    end_ = static_cast<uint8_t*>(range.second);
     current_offset_ = 0;
 }
 

@@ -7,7 +7,7 @@
 #include "platform/ogl_buffer.h"
 #include "core/core.h"
 #include "core/wtypes.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/intern_string.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
@@ -302,6 +302,11 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
 {
     W_ASSERT(texture_slots_.find(sampler)!=texture_slots_.end(), "Unknown sampler name!");
     return texture_slots_.at(sampler);
+}
+
+uint32_t OGLShader::get_texture_count() const
+{
+    return texture_slots_.size();
 }
 
 void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const

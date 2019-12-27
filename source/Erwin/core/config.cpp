@@ -1,6 +1,6 @@
 #include "core/config.h"
 #include "core/core.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/value_map.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
@@ -28,7 +28,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     	uint32_t chan_verbosity=0;
 		if(!xml::parse_attribute(chan, "name", chan_name)) continue;
 		xml::parse_attribute(chan, "verbosity", chan_verbosity);
-		WLOGGER.create_channel(chan_name, chan_verbosity);
+		WLOGGER(create_channel(chan_name, chan_verbosity));
 	}
 
 	// Add and configure sinks
@@ -81,11 +81,11 @@ static void init_logger(rapidxml::xml_node<>* node)
 
     	if(attach_all)
     	{
-			WLOGGER.attach_all(sink_name, std::move(p_sink));
+			WLOGGER(attach_all(sink_name, std::move(p_sink)));
     	}
     	else if(!chan_hnames.empty())
     	{
-			WLOGGER.attach(sink_name, std::move(p_sink), chan_hnames);
+			WLOGGER(attach(sink_name, std::move(p_sink), chan_hnames));
     	}
     }
 }

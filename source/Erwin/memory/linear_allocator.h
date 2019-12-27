@@ -8,15 +8,14 @@ namespace erwin
 namespace memory
 {
 
+class HeapArea;
 class LinearAllocator
 {
 public:
 	LinearAllocator() = default;
-	LinearAllocator(void* begin, void* end);
-	LinearAllocator(std::pair<void*,void*> ptr_range);
+	LinearAllocator(HeapArea& area, std::size_t size, const char* debug_name);
 
-	void init(void* begin, void* end);
-	inline void init(std::pair<void*,void*> ptr_range) { init(ptr_range.first, ptr_range.second); }
+	void init(HeapArea& area, std::size_t size, const char* debug_name);
 
 	inline uint8_t* begin()             { return begin_; }
 	inline const uint8_t* begin() const { return begin_; }

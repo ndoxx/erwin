@@ -43,6 +43,8 @@ public:
 	virtual void unbind() const = 0;
 	// Get texture slot associated to hash sampler name (uniform name)
 	virtual uint32_t get_texture_slot(hash_t sampler) const = 0;
+	// Get the number of texture slots
+	virtual uint32_t get_texture_count() const = 0;
 	// Attach a texture to a sampler without having to manipulate solts
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const = 0;
 

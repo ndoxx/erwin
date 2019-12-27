@@ -1,5 +1,5 @@
 #include "utils/random.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/core.h"
 
 #include <chrono>

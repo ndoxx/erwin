@@ -137,7 +137,7 @@ private:
     std::unordered_map<ctti::unnamed_type_id_t, bool> event_filter_; // Controls which tracked events are propagated to the sinks
 };
 
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED==1
 struct Logger
 {
 	static std::unique_ptr<LoggerThread> LOGGER_THREAD;
@@ -146,6 +146,9 @@ struct Logger
 
 } // namespace dbg
 
-#define WLOGGER if constexpr(!LOGGING_ENABLED); else (*dbg::Logger::LOGGER_THREAD)
-
+#if LOGGING_ENABLED==1
+    #define WLOGGER( INSTR ) (*dbg::Logger::LOGGER_THREAD).INSTR;
+#else
+    #define WLOGGER( INSTR )
+#endif
 } // namespace erwin

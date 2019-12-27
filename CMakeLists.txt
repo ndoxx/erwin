@@ -60,6 +60,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/heap_area.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/utils/random.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
   )
@@ -74,6 +75,7 @@ set(SRC_ASSET
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/asset_manager.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/handles.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/texture_atlas.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/material.cpp
   )
 
 set(SRC_FILESYSTEM
@@ -231,6 +233,7 @@ target_link_libraries(erwin
                       z
                       stdc++fs
                       pthread
+                      atomic
                       X11
                       glad
                       glfw

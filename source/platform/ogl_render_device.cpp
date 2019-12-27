@@ -57,7 +57,7 @@ void OGLRenderDevice::draw_indexed(const VertexArray& vertexArray,
 				   (bool(count) ? count : vertexArray.get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
 				   (void*)(offset * sizeof(GLuint)));
-    vertexArray.unbind();
+    // vertexArray.unbind();
 }
 
 void OGLRenderDevice::draw_array(const VertexArray& vertexArray,
@@ -69,7 +69,7 @@ void OGLRenderDevice::draw_array(const VertexArray& vertexArray,
     glDrawArrays(OGLPrimitive[prim], 
                  offset, 
                  (bool(count) ? count : vertexArray.get_vertex_buffer().get_count()));
-    vertexArray.unbind();
+    // vertexArray.unbind();
 }
 
 void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
@@ -83,7 +83,7 @@ void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
                             GL_UNSIGNED_INT,
                             (void*)(offset * sizeof(GLuint)),
                             instance_count);
-    vertexArray.unbind();
+    // vertexArray.unbind();
 }
 
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)

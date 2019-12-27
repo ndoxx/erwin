@@ -2,6 +2,7 @@
 #include "ctti/type_id.hpp"
 #include "core/time_base.h"
 #include "memory/arena.h"
+#include "memory/heap_area.h"
 
 namespace erwin
 {
@@ -12,40 +13,39 @@ typedef uint64_t EventID;
 #define EVENT_DECLARATION( EVENT_NAME ) \
     static std::string NAME; \
     static constexpr EventID ID = ctti::type_id< EVENT_NAME >().hash(); \
-    static PoolArena* s_ppool_; \
+    static PoolArena s_pool_; \
     virtual const std::string& get_name() const override { return NAME; } \
-    static void init_pool(void* begin, size_t max_count = DEFAULT_MAX_EVENT , const char* debug_name = nullptr ); \
+    static void init_pool(memory::HeapArea& area, size_t node_size, size_t max_events, const char* debug_name); \
     static void destroy_pool(); \
     static void* operator new(size_t size); \
     static void operator delete(void* ptr)
 
 #define EVENT_DEFINITION( EVENT_NAME ) \
     std::string EVENT_NAME::NAME = #EVENT_NAME; \
-    PoolArena* EVENT_NAME::s_ppool_ = nullptr; \
-    void EVENT_NAME::init_pool(void* begin, size_t max_count, const char* debug_name) \
+    PoolArena EVENT_NAME::s_pool_; \
+    void EVENT_NAME::init_pool(memory::HeapArea& area, size_t node_size, size_t max_events, const char* debug_name) \
     { \
-        W_ASSERT_FMT(s_ppool_==nullptr, "Memory pool for %s is already initialized.", #EVENT_NAME); \
-        s_ppool_ = new PoolArena(begin, sizeof(EVENT_NAME), max_count, PoolArena::DECORATION_SIZE); \
+        W_ASSERT_FMT(!s_pool_.is_initialized(), "Memory pool for %s is already initialized.", #EVENT_NAME); \
+        s_pool_.init(area, node_size + PoolArena::DECORATION_SIZE, max_events, debug_name); \
         if(debug_name) \
-            s_ppool_->set_debug_name(debug_name); \
+            s_pool_.set_debug_name(debug_name); \
         else \
-            s_ppool_->set_debug_name(#EVENT_NAME); \
+            s_pool_.set_debug_name(#EVENT_NAME); \
     } \
     void EVENT_NAME::destroy_pool() \
     { \
-        delete s_ppool_; \
-        s_ppool_ = nullptr; \
+        s_pool_.shutdown(); \
     } \
     void* EVENT_NAME::operator new(size_t size) \
     { \
         (void)(size); \
-        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
-        return ::W_NEW( EVENT_NAME , (*s_ppool_) ); \
+        W_ASSERT_FMT(s_pool_.is_initialized(), "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
+        return ::W_NEW( EVENT_NAME , s_pool_ ); \
     } \
     void EVENT_NAME::operator delete(void* ptr) \
     { \
-        W_ASSERT_FMT(s_ppool_, "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
-        W_DELETE( (EVENT_NAME*)(ptr) , (*s_ppool_) ); \
+        W_ASSERT_FMT(s_pool_.is_initialized(), "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
+        W_DELETE( (EVENT_NAME*)(ptr) , s_pool_ ); \
     }
 
 // Base class for an event

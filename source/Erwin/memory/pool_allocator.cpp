@@ -1,4 +1,5 @@
 #include "memory/pool_allocator.h"
+#include "memory/heap_area.h"
 #include "memory/memory_utils.h"
 #include "core/core.h"
 
@@ -11,23 +12,19 @@ namespace erwin
 namespace memory
 {
 
-PoolAllocator::PoolAllocator(void* begin, std::size_t node_size, std::size_t max_nodes, std::size_t arena_decoration_size):
-node_size_(node_size+arena_decoration_size),
-max_nodes_(max_nodes),
-begin_(static_cast<uint8_t*>(begin)),
-end_(static_cast<uint8_t*>(begin) + max_nodes*node_size_),
-free_list_(begin, node_size_, max_nodes, 0, 0)
+PoolAllocator::PoolAllocator(HeapArea& area, std::size_t node_size, std::size_t max_nodes, const char* debug_name)
 {
-
+    init(area, node_size, max_nodes, debug_name);
 }
 
-void PoolAllocator::init(void* begin, std::size_t node_size, std::size_t max_nodes, std::size_t arena_decoration_size)
+void PoolAllocator::init(HeapArea& area, std::size_t node_size, std::size_t max_nodes, const char* debug_name)
 {
-    node_size_ = node_size+arena_decoration_size;
+    node_size_ = node_size;
     max_nodes_ = max_nodes;
+    void* begin = area.require_pool_block(node_size_, max_nodes_, debug_name);
     begin_ = static_cast<uint8_t*>(begin);
-    end_ =static_cast<uint8_t*>(begin) + max_nodes*node_size_;
-    free_list_.init(begin, node_size_, max_nodes, 0, 0);
+    end_   = begin_ + max_nodes_*node_size_;
+    free_list_.init(begin_, node_size_, max_nodes_, 0, 0);
 }
 
 void* PoolAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)

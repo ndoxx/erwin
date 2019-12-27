@@ -45,6 +45,7 @@ struct ApplicationStorage
     std::vector<fs::path> configuration_files;
     memory::HeapArea client_area;
     memory::HeapArea system_area;
+    memory::HeapArea render_area;
 };
 static ApplicationStorage s_storage;
 
@@ -55,7 +56,7 @@ static inline void configure_event_tracking()
     std::string config_key_str = "erwin.events.track." + EventT::NAME;
     if(cfg::get<bool>(H_(config_key_str.c_str()), false))
     {
-        WLOGGER.track_event<EventT>();
+        WLOGGER(track_event<EventT>());
     }
 }
 
@@ -92,7 +93,7 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::kill();
-        WLOGGER.kill();
+        WLOGGER(kill());
 
         // Shutdown all event pools
         #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
@@ -132,12 +133,12 @@ bool Application::init()
         FOR_ALL_EVENTS
         #undef DO_ACTION
 
-        WLOGGER.set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true));
-        WLOGGER.set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true));
+        WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
+        WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
 
         // Spawn logger thread
-        WLOGGER.spawn();
-        WLOGGER.sync();
+        WLOGGER(spawn());
+        WLOGGER(sync());
 
         // Log basic info
         DLOGN("config") << "[Paths]" << std::endl;
@@ -161,12 +162,24 @@ bool Application::init()
         }
     }
 
+    // Initialize renderer memory
+    {
+        W_PROFILE_SCOPE("Renderer memory init")
+        DLOGN("application") << "Initializing renderer memory" << std::endl;
+        size_t renderer_mem_size = cfg::get<size_t>("erwin.memory.renderer_area"_h, 20_MB);
+        if(!s_storage.render_area.init(renderer_mem_size))
+        {
+            DLOGF("application") << "Cannot allocate renderer memory." << std::endl;
+            return false;
+        }
+    }
+
     // Initialize system event pools
     {
         W_PROFILE_SCOPE("System event pools init")
         #define DO_ACTION( EVENT_NAME ) \
         { \
-            std::string config_key_str = "erwin.events.memory.max_pool." + EVENT_NAME::NAME; \
+            std::string config_key_str = "erwin.memory.event_pool." + EVENT_NAME::NAME; \
             DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EVENT_NAME::NAME << std::endl; \
             EVENTBUS.init_event_pool< EVENT_NAME >(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8)); \
         }
@@ -194,6 +207,9 @@ bool Application::init()
             DLOGF("application") << "Cannot allocate client memory." << std::endl;
             return false;
         }
+
+        // Setup filesystem arena
+        filesystem::init_arena(s_storage.client_area, cfg::get<size_t>("client.memory.filesystem.assets"_h, 10_MB));
     }
 
     // Create window
@@ -216,7 +232,7 @@ bool Application::init()
         // Initialize framebuffer pool
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
-        MainRenderer::init();
+        MainRenderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
 
@@ -263,6 +279,16 @@ bool Application::init()
         W_PROFILE_SCOPE("Application load")
         on_load();
     }
+
+    // Show memory content
+#ifdef W_DEBUG
+    DLOG("memory",1) << WCC(204,153,0) << "--- System memory area ---" << std::endl;
+    s_storage.system_area.debug_show_content();
+    DLOG("memory",1) << WCC(204,153,0) << "--- Render memory area ---" << std::endl;
+    s_storage.render_area.debug_show_content();
+    DLOG("memory",1) << WCC(204,153,0) << "--- Client memory area ---" << std::endl;
+    s_storage.client_area.debug_show_content();
+#endif
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
     return true;
@@ -346,7 +372,7 @@ void Application::run()
 
         {
             W_PROFILE_SCOPE("Logger flush")
-            WLOGGER.flush();
+            WLOGGER(flush());
         }
 
         frame_d = frame_clock.restart();

@@ -16,6 +16,9 @@
 #include "memory/linear_allocator.h"
 #include "memory/handle_pool.h"
 #include "core/config.h"
+#include "filesystem/filesystem.h"
+#include "asset/asset_manager.h"
+#include "asset/material.h"
 
 namespace erwin
 {
@@ -130,16 +133,14 @@ struct FramebufferTextureVector
 
 struct RendererStorage
 {
-	RendererStorage():
-	renderer_memory_(cfg::get<size_t>("erwin.renderer.memory.renderer_area"_h, 20_MB)),
-	pre_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.pre_buffer"_h, 512_kB))),
-	post_buffer_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.post_buffer"_h, 512_kB))),
-	auxiliary_arena_(renderer_memory_.require_block(cfg::get<size_t>("erwin.renderer.memory.auxiliary_arena"_h, 2_MB))),
-	handle_arena_(renderer_memory_.require_block(k_handle_alloc_size))
+	RendererStorage(memory::HeapArea& area):
+	renderer_memory_(area),
+	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre"),
+	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post"),
+	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary"),
+	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles")
 	{
 #ifdef W_DEBUG
-		pre_buffer_.storage.set_debug_name("CB-Pre");
-		post_buffer_.storage.set_debug_name("CB-Post");
 		auxiliary_arena_.set_debug_name("Auxiliary");
 		handle_arena_.set_debug_name("RenderHandles");
 #endif
@@ -200,7 +201,7 @@ struct RendererStorage
 	bool profiling_enabled;
 	MainRendererStats stats;
 
-	memory::HeapArea renderer_memory_;
+	memory::HeapArea& renderer_memory_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	MainRenderer::AuxArena auxiliary_arena_;
@@ -208,13 +209,13 @@ struct RendererStorage
 };
 std::unique_ptr<RendererStorage> s_storage;
 
-void MainRenderer::init()
+void MainRenderer::init(memory::HeapArea& area)
 {
     W_PROFILE_RENDER_FUNCTION()
 	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
-	s_storage = std::make_unique<RendererStorage>();
+	s_storage = std::make_unique<RendererStorage>(area);
 	s_storage->query_timer = QueryTimer::create();
 	s_storage->profiling_enabled = false;
 	s_storage->default_framebuffer_ = FramebufferHandle::acquire();
@@ -1241,7 +1242,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
 order_(order),
 clear_color_(0.f,0.f,0.f,1.f),
-command_buffer_(area.require_block(cfg::get<size_t>("erwin.renderer.memory.queue_buffer"_h, 512_kB)))
+command_buffer_(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue")
 {
 
 }
@@ -1347,13 +1348,12 @@ static void handle_state(uint64_t state_flags)
 	}
 }
 
-static void render_dispatch(memory::LinearBuffer<>& buf)
+void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
     DrawCall::DrawCallType type;
     DrawCall::Data data;
-    DrawCall::InstanceData idata;
 	buf.read(&type);
 	buf.read(&data); // Read all in one go
 
@@ -1367,15 +1367,25 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 		shader.bind();
 		last_shader_index = data.shader.index;
 	}
-	if(data.texture.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	if(data.material.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	{
+		auto& material = AssetManager::get(data.material);
+		for(uint32_t ii=0; ii<material.texture_count; ++ii)
+		{
+			TextureHandle texture_hnd = material.textures[ii];
+			auto& texture = *s_storage->textures[texture_hnd.index];
+			shader.attach_texture_2D(texture, ii);
+		}
+	}
+	else if(data.texture.index != k_invalid_handle) 
 	{
 		auto& texture = *s_storage->textures[data.texture.index];
-		shader.attach_texture_2D(texture, 0); // TMP: Only one texture supported for now, so bind to slot 0
+		shader.attach_texture_2D(texture, 0); // Bind single texture to slot 0
 	}
 	if(data.UBO_data)
 	{
 		auto& ubo = *s_storage->uniform_buffers[data.UBO.index];
-		ubo.stream(data.UBO_data, data.UBO_size, 0);
+		ubo.stream(data.UBO_data, 0, 0);
 	}
 
 	// * Execute draw call
@@ -1387,13 +1397,15 @@ static void render_dispatch(memory::LinearBuffer<>& buf)
 			break;
 		case DrawCall::IndexedInstanced:
 		{
-			buf.read(&idata); // Read all in one go
+			// Read additional data needed for instanced rendering
+    		DrawCall::InstanceData idata;
+			buf.read(&idata);
 			if(idata.SSBO_data)
 			{
 				auto& ssbo = *s_storage->shader_storage_buffers[idata.SSBO.index];
 				ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
 			}
-			Gfx::device->draw_indexed_instanced(va, idata.instance_count);
+			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;
 		}
 		default:
@@ -1414,7 +1426,7 @@ void RenderQueue::flush()
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
 		command_buffer_.storage.seek(cmd);
-		render_dispatch(command_buffer_.storage);
+		MainRenderer::render_dispatch(command_buffer_.storage);
 	}
 }
 
@@ -1472,7 +1484,9 @@ void MainRenderer::flush()
 	// Dispatch post buffer commands
 	flush_command_buffer(s_storage->post_buffer_);
 	// Reset auxiliary memory arena for next frame
-	s_storage->auxiliary_arena_.get_allocator().reset();
+	s_storage->auxiliary_arena_.reset();
+	// Reset resource arena for next frame
+	filesystem::reset_arena();
 
 	if(s_storage->profiling_enabled)
 	{
