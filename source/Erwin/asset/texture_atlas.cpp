@@ -54,6 +54,10 @@ void TextureAtlas::load(const fs::path& filepath)
 		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " sub-textures in atlas." << std::endl;
 		DLOG("texture",1) << "TextureHandle: " << WCC('v') << texture.index << std::endl;
 	}
+	else
+	{
+		DLOGE("texture") << "Invalid input file." << std::endl;
+	}
 }
 
 void TextureAtlas::release()

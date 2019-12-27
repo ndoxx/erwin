@@ -5,7 +5,7 @@
 namespace erwin
 {
 
-void Material::load(const fs::path& filepath)
+void Material::load(const fs::path& filepath, const MaterialLayout& layout)
 {
 	// Check file type
 	std::string extension = filepath.extension().string();
@@ -15,6 +15,17 @@ void Material::load(const fs::path& filepath)
 		tom::TOMDescriptor descriptor;
 		descriptor.filepath = filepath;
 		tom::read_tom(descriptor);
+
+		// Check layout compatibility
+		bool valid_layout = (layout.texture_count == descriptor.texture_maps.size());
+		uint32_t slot = 0;
+		for(auto&& tmap: descriptor.texture_maps)
+			valid_layout &= (layout.texture_slots[slot++] == tmap.name);
+
+		if(!valid_layout)
+		{
+			DLOGE("texture") << "Material layout is incompatible with this TOM file." << std::endl;
+		}
 
 		// Create and register all texture maps
 		for(auto&& tmap: descriptor.texture_maps)
@@ -48,6 +59,10 @@ void Material::load(const fs::path& filepath)
 		DLOG("texture",1) << WCC(0) << "}" << std::endl;
 #endif
 	}
+	else
+	{
+		DLOGE("texture") << "Invalid input file." << std::endl;
+	}
 }
 
 void Material::release()
@@ -55,7 +70,7 @@ void Material::release()
 	for(auto&& handle: textures)
 		if(handle.is_valid())
 			MainRenderer::destroy(handle);
-		
+
 	// Resources allocated by the descriptor are located inside the filesystem's resource arena
 	// This arena should be reset frequently, we don't need to care about freeing the resources here
 }

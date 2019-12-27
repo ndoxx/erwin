@@ -9,17 +9,19 @@
 
 namespace erwin
 {
-constexpr std::size_t k_handle_alloc_size = 2 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
+constexpr std::size_t k_handle_alloc_size = 3 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
 
 #define FOR_ALL_HANDLES                 \
 		DO_ACTION( TextureAtlasHandle ) \
-		DO_ACTION( MaterialHandle )
+		DO_ACTION( MaterialHandle )     \
+		DO_ACTION( MaterialLayoutHandle )
 
 
 static struct AssetManagerStorage
 {
 	eastl::vector<TextureAtlas*> texture_atlases_;
 	eastl::vector<Material*> materials_;
+	eastl::vector<MaterialLayout> material_layouts_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -46,15 +48,18 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	return handle;
 }
 
-MaterialHandle AssetManager::load_material(const fs::path& filepath)
+MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLayoutHandle layout)
 {
+	W_ASSERT_FMT(layout.is_valid(), "MaterialLayoutHandle of index %hu is invalid.", layout.index);
+
 	MaterialHandle handle = MaterialHandle::acquire();
 	DLOGN("asset") << "[AssetManager] Creating new material:" << std::endl;
 	DLOG("asset",1) << "MaterialHandle: " << WCC('v') << handle.index << std::endl;
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
 	Material* material = W_NEW(Material, s_storage.material_pool_);
-	material->load(filesystem::get_asset_dir() / filepath);
+	const MaterialLayout& ml = s_storage.material_layouts_[layout.index]; 
+	material->load(filesystem::get_asset_dir() / filepath, ml);
 
 	// Register material
 	s_storage.materials_[handle.index] = material;
@@ -70,6 +75,25 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	ShaderHandle handle = MainRenderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
 
 	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
+	return handle;
+}
+
+MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash_t>& texture_slots)
+{
+	MaterialLayoutHandle handle = MaterialLayoutHandle::acquire();
+	DLOGN("asset") << "[AssetManager] Creating new material layout:" << std::endl;
+	DLOG("asset",1) << "MaterialLayoutHandle: " << WCC('v') << handle.index << std::endl;
+
+	// Sanity check
+	uint32_t texture_count = texture_slots.size();
+	W_ASSERT_FMT(texture_count <= k_max_texture_slots, "Too many texture slots, expect %lu max, got %u instead.", k_max_texture_slots, texture_count);
+
+	// Initialize material layout
+	MaterialLayout& ml = s_storage.material_layouts_[handle.index];
+	ml.texture_count = texture_count;
+	for(uint32_t ii=0; ii<texture_count; ++ii)
+		ml.texture_slots[ii] = texture_slots[ii];
+
 	return handle;
 }
 
@@ -107,6 +131,13 @@ void AssetManager::release(ShaderHandle handle)
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 }
 
+void AssetManager::release(MaterialLayoutHandle handle)
+{
+	W_ASSERT_FMT(handle.is_valid(), "MaterialLayoutHandle of index %hu is invalid.", handle.index);
+	DLOGN("asset") << "[AssetManager] Releasing material layout:" << std::endl;
+	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
+	handle.release();
+}
 
 // ---------------- PRIVATE API ----------------
 
@@ -118,6 +149,7 @@ void AssetManager::init(memory::HeapArea& area)
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
 	s_storage.materials_.resize(k_max_materials, nullptr);
+	s_storage.material_layouts_.resize(k_max_material_layouts);
 
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);

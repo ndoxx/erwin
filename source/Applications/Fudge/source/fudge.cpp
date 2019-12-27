@@ -81,10 +81,10 @@ static void show_logo()
 
 static void init_logger()
 {
-    WLOGGER.create_channel("fudge", 3);
-    WLOGGER.attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log"));
-    WLOGGER.set_single_threaded(true);
+    WLOGGER(create_channel("fudge", 3));
+    WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
+    WLOGGER(attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log")));
+    WLOGGER(set_single_threaded(true));
 }
 
 static bool cmd_option_exists(const char** begin, const char** end, const std::string& option)
