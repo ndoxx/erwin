@@ -15,11 +15,11 @@
 		<TextureMap name="ao"        channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
 		
 		<!-- Specify groups of texture maps to be packed together in a texture blob -->
-		<Group name="normal_depth" compression="DXT3" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+		<Group name="normal_depth" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
 			<TextureMap name="normal"/>
 			<TextureMap name="depth"/>
 		</Group>
-		<Group name="mra" compression="DXT1" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
+		<Group name="mra" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
 			<TextureMap name="metal"/>
 			<TextureMap name="roughness"/>
 			<TextureMap name="ao"/>

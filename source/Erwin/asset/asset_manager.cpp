@@ -7,6 +7,10 @@
 #include "debug/logger.h"
 #include "EASTL/vector.h"
 
+#include "debug/texture_peek.h"
+
+#define DEBUG_TEXTURES
+
 namespace erwin
 {
 constexpr std::size_t k_handle_alloc_size = 3 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
@@ -60,6 +64,15 @@ MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLay
 	Material* material = W_NEW(Material, s_storage.material_pool_);
 	const MaterialLayout& ml = s_storage.material_layouts_[layout.index]; 
 	material->load(filesystem::get_asset_dir() / filepath, ml);
+
+#ifdef DEBUG_TEXTURES
+	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+	for(uint32_t ii=0; ii<material->texture_count; ++ii)
+	{
+		std::string name = "Slot_" + std::to_string(ii);
+		TexturePeek::register_texture(pane, material->textures[ii], name, false);
+	}
+#endif
 
 	// Register material
 	s_storage.materials_[handle.index] = material;

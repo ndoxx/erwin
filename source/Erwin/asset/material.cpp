@@ -34,7 +34,8 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout)
 			ImageFormat format;
 			switch(tmap.compression)
 			{
-				case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+				// case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
+				case TextureCompression::None: format = ImageFormat::RGBA8; break;
 				case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
 				case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
 			}
@@ -45,6 +46,7 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout)
 										  					 				    	format,
 										  					 				    	tmap.filter,
 										  					 				    	descriptor.address_UV});
+
 			// TODO: choose slot according to texture map name
 			textures[texture_count] = tex;
 			++texture_count;
