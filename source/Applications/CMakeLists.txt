@@ -1,5 +1,5 @@
 subdirs(InternString)
 subdirs(Fudge)
 subdirs(Sandbox)
-subdirs(PoliPuyo)
+#subdirs(PoliPuyo)
 subdirs(FractalExplorer)
