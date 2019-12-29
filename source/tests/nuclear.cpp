@@ -15,67 +15,92 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 
-#include "entity/component.h"
-#include "entity/component_system.h"
-#include "entity/entity_manager.h"
-#include "core/game_clock.h"
-
-#include "core/job_system.h"
-#include "core/clock.hpp"
-
-#include "core/handle.h"
+#include "asset/procedural_geometry.h"
+#include "render/buffer_layout.h"
 
 using namespace erwin;
 
 void init_logger()
 {
-    WLOGGER.create_channel("memory", 3);
-    WLOGGER.create_channel("thread", 3);
-	WLOGGER.create_channel("nuclear", 3);
-	WLOGGER.create_channel("entity", 3);
-	WLOGGER.attach_all("console_sink", std::make_unique<dbg::ConsoleSink>());
-    WLOGGER.set_single_threaded(true);
-    WLOGGER.set_backtrace_on_error(false);
-    WLOGGER.spawn();
-    WLOGGER.sync();
+    WLOGGER(create_channel("memory", 3));
+    WLOGGER(create_channel("thread", 3));
+	WLOGGER(create_channel("nuclear", 3));
+	WLOGGER(create_channel("entity", 3));
+	WLOGGER(attach_all("console_sink", std::make_unique<dbg::ConsoleSink>()));
+    WLOGGER(set_single_threaded(true));
+    WLOGGER(set_backtrace_on_error(false));
+    WLOGGER(spawn());
+    WLOGGER(sync());
 
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
-
-using namespace std::chrono_literals;
 
 int main(int argc, char** argv)
 {
 	init_logger();
 
-	uint32_t n_jobs = 33;
-
-	std::atomic<uint64_t> payload_duration_ns;
-
-	memory::HeapArea area(32_kB);
-	JobSystem::init(area);
-
-	nanoClock exterior_clock;
-
-	for(int ii=0; ii<n_jobs; ++ii)
 	{
-		JobSystem::schedule([&payload_duration_ns]()
-		{
-			nanoClock payload_clock;
-			std::this_thread::sleep_for(100ms);
-	        payload_duration_ns.fetch_add(payload_clock.get_elapsed_time().count(), std::memory_order_relaxed);
-		});
+		DLOGN("nuclear") << "Position/UV" << std::endl;
 
-		// std::this_thread::sleep_for(15ms);
+		BufferLayout layout({
+				    			{"a_position"_h, ShaderDataType::Vec3},
+								{"a_uv"_h,       ShaderDataType::Vec2},
+							});
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+
+		pg::make_cube(layout, vdata, idata);
+
+		for(int ii=0; ii<vdata.size()/5; ++ii)
+		{
+			DLOG("nuclear",1) << "(" << vdata[5*ii+0] << "," << vdata[5*ii+1] << "," << vdata[5*ii+2] << ") "
+							  << "(" << vdata[5*ii+3] << "," << vdata[5*ii+4] << ") " << std::endl;
+		}
 	}
 
-	JobSystem::shutdown();
+	{
+		DLOGN("nuclear") << "Position/Normal/UV" << std::endl;
 
-	uint64_t exterior_duration_ns = exterior_clock.get_elapsed_time().count();
-    DLOGW("nuclear") << "Exterior duration:         " << exterior_duration_ns << "ns" << std::endl;
-    DLOGW("nuclear") << "Payload duration:          " << payload_duration_ns  << "ns" << std::endl;
-    DLOGW("nuclear") << "Theoretical overhead /job: " << 1e-6*(3*exterior_duration_ns - payload_duration_ns)/(1.f*n_jobs)  << "ms" << std::endl;
+		BufferLayout layout({
+				    			{"a_position"_h, ShaderDataType::Vec3},
+				    			{"a_normal"_h,   ShaderDataType::Vec3},
+								{"a_uv"_h,       ShaderDataType::Vec2},
+							});
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
 
+		pg::make_cube(layout, vdata, idata);
+
+		for(int ii=0; ii<vdata.size()/8; ++ii)
+		{
+			DLOG("nuclear",1) << "(" << vdata[8*ii+0] << "," << vdata[8*ii+1] << "," << vdata[8*ii+2] << ") "
+							  << "(" << vdata[8*ii+3] << "," << vdata[8*ii+4] << "," << vdata[8*ii+5] << ") "
+							  << "(" << vdata[8*ii+6] << "," << vdata[8*ii+7] << ") " << std::endl;
+		}
+	}
+
+	{
+		DLOGN("nuclear") << "Position/Normal/Tangent/UV" << std::endl;
+
+		BufferLayout layout({
+				    			{"a_position"_h, ShaderDataType::Vec3},
+				    			{"a_normal"_h,   ShaderDataType::Vec3},
+				    			{"a_tangent"_h,  ShaderDataType::Vec3},
+								{"a_uv"_h,       ShaderDataType::Vec2},
+							});
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+
+		pg::make_cube(layout, vdata, idata);
+
+		for(int ii=0; ii<vdata.size()/11; ++ii)
+		{
+			DLOG("nuclear",1) << "(" << vdata[11*ii+0] << "," << vdata[11*ii+1] << "," << vdata[11*ii+2] << ") "
+							  << "(" << vdata[11*ii+3] << "," << vdata[11*ii+4] << "," << vdata[11*ii+5] << ") "
+							  << "(" << vdata[11*ii+6] << "," << vdata[11*ii+7] << "," << vdata[11*ii+8] << ") "
+							  << "(" << vdata[11*ii+9] << "," << vdata[11*ii+10] << ") " << std::endl;
+		}
+	}
 
 	return 0;
 }

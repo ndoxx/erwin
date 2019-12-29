@@ -62,6 +62,11 @@ public:
 	static TextureHandle 	 get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
 	// Get the number of attachments in a given framebuffer
 	static uint32_t 		 get_framebuffer_texture_count(FramebufferHandle handle);
+	// Create a layout for a vertex buffer. Creation is immediate as it does not imply render API stuff,
+	// however, layout destruction need be deferred and is handled by a command.
+	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
+	// Get a buffer layout from its handle
+	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
 	// * Draw call queue management and submission
 	// Create a render queue, specifying a name whose hash is used to retrieve it later on, and a draw order policy
@@ -75,9 +80,8 @@ public:
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands
-	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
-	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	static IndexBufferHandle         create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);

@@ -2,6 +2,7 @@
 #include "render/main_renderer.h"
 #include "core/core.h"
 #include "debug/logger.h"
+#include "asset/procedural_geometry.h"
 
 #include <vector>
 #include <map>
@@ -15,141 +16,68 @@ struct CommonGeometryStorage
 };
 static CommonGeometryStorage s_storage;
 
+static void make_geometry(hash_t hname, VertexBufferLayoutHandle layout, const std::vector<float>& vdata, const std::vector<uint32_t>& idata)
+{
+	IndexBufferHandle IBO = MainRenderer::create_index_buffer(idata.data(), idata.size(), DrawPrimitive::Triangles);
+	VertexBufferHandle VBO = MainRenderer::create_vertex_buffer(layout, vdata.data(), vdata.size(), DrawMode::Static);
+	VertexArrayHandle VAO = MainRenderer::create_vertex_array(VBO, IBO);
+
+	s_storage.vertex_arrays_.insert(std::make_pair(hname, VAO));
+}
+
 void CommonGeometry::init()
 {
 	DLOGN("render") << "Creating procedural common geometry" << std::endl;
 
+	// Buffer layouts are created immediately, so their data can be queried here and now
+	VertexBufferLayoutHandle pos_VBL    = MainRenderer::create_vertex_buffer_layout({
+			    						  	{"a_position"_h, ShaderDataType::Vec3},
+										  });
+	VertexBufferLayoutHandle pos_uv_VBL = MainRenderer::create_vertex_buffer_layout({
+			    						  	{"a_position"_h, ShaderDataType::Vec3},
+										  	{"a_uv"_h,       ShaderDataType::Vec2},
+										  });
+	VertexBufferLayoutHandle PBR_VBL    = MainRenderer::create_vertex_buffer_layout({
+			    						  	{"a_position"_h, ShaderDataType::Vec3},
+			    						  	{"a_normal"_h,   ShaderDataType::Vec3},
+			    						  	{"a_tangent"_h,  ShaderDataType::Vec3},
+										  	{"a_uv"_h,       ShaderDataType::Vec2},
+										  });
+
 	// Screen-space textured quad
 	{
-		float vdata[20] = 
-		{
-			-1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f,   0.0f, 1.0f
-		};
-		uint32_t idata[6] = { 0, 1, 2, 2, 3, 0 };
-
-		IndexBufferHandle IBO = MainRenderer::create_index_buffer(idata, 6, DrawPrimitive::Triangles);
-		VertexBufferLayoutHandle VBL = MainRenderer::create_vertex_buffer_layout({
-				    					{"a_position"_h, ShaderDataType::Vec3},
-										{"a_uv"_h,       ShaderDataType::Vec2},
-									});
-		VertexBufferHandle VBO = MainRenderer::create_vertex_buffer(VBL, vdata, 20, DrawMode::Static);
-		VertexArrayHandle VAO = MainRenderer::create_vertex_array(VBO, IBO);
-
-		s_storage.vertex_arrays_.insert(std::make_pair("screen_quad"_h, VAO));
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = MainRenderer::get_vertex_buffer_layout(pos_uv_VBL);
+		pg::make_plane(layout, vdata, idata);
+		make_geometry("screen_quad"_h, pos_uv_VBL, vdata, idata);
 	}
 
 	// Cube
 	{
-		float vdata[24*3] = 
-		{
-			 0.5f, -0.5f,  0.5f,
-			 0.5f,  0.5f,  0.5f,
-			-0.5f,  0.5f,  0.5f,
-			-0.5f, -0.5f,  0.5f,
-			 0.5f, -0.5f, -0.5f,
-			 0.5f,  0.5f, -0.5f,
-			 0.5f,  0.5f,  0.5f,
-			 0.5f, -0.5f,  0.5f,
-			-0.5f, -0.5f, -0.5f,
-			-0.5f,  0.5f, -0.5f,
-			 0.5f,  0.5f, -0.5f,
-			 0.5f, -0.5f, -0.5f,
-			-0.5f, -0.5f,  0.5f,
-			-0.5f,  0.5f,  0.5f,
-			-0.5f,  0.5f, -0.5f,
-			-0.5f, -0.5f, -0.5f,
-			 0.5f,  0.5f,  0.5f,
-			 0.5f,  0.5f, -0.5f,
-			-0.5f,  0.5f, -0.5f,
-			-0.5f,  0.5f,  0.5f,
-			 0.5f, -0.5f, -0.5f,
-			 0.5f, -0.5f,  0.5f,
-			-0.5f, -0.5f,  0.5f,
-			-0.5f, -0.5f, -0.5f
-		};
-		uint32_t idata[12*3] =
-		{
-			0,  1,  2,
-			0,  2,  3,
-			4,  5,  6,
-			4,  6,  7,
-			8,  9,  10,
-			8,  10, 11,
-			12, 13, 14,
-			12, 14, 15,
-			16, 17, 18,
-			16, 18, 19,
-			20, 21, 22,
-			20, 22, 23
-		};
-
-		IndexBufferHandle IBO = MainRenderer::create_index_buffer(idata, 12*3, DrawPrimitive::Triangles);
-		VertexBufferLayoutHandle VBL = MainRenderer::create_vertex_buffer_layout({
-				    				   {"a_position"_h, ShaderDataType::Vec3}
-									  });
-		VertexBufferHandle VBO = MainRenderer::create_vertex_buffer(VBL, vdata, 24*3, DrawMode::Static);
-		VertexArrayHandle VAO = MainRenderer::create_vertex_array(VBO, IBO);
-
-		s_storage.vertex_arrays_.insert(std::make_pair("cube"_h, VAO));
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = MainRenderer::get_vertex_buffer_layout(pos_VBL);
+		pg::make_cube(layout, vdata, idata);
+		make_geometry("cube"_h, pos_VBL, vdata, idata);
 	}
 
 	// UV Cube
 	{
-		float vdata[24*5] =
-		{
-		     0.5f, -0.5f,  0.5f,   1.0f, 1.0f,
-		     0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
-		    -0.5f,  0.5f,  0.5f,   0.0f, 0.0f,
-		    -0.5f, -0.5f,  0.5f,   0.0f, 1.0f,
-		     0.5f, -0.5f, -0.5f,   1.0f, 0.0f,
-		     0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
-		     0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
-		     0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
-		    -0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
-		    -0.5f,  0.5f, -0.5f,   1.0f, 0.0f,
-		     0.5f,  0.5f, -0.5f,   0.0f, 0.0f,
-		     0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
-		    -0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
-		    -0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
-		    -0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
-		    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
-		     0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
-		     0.5f,  0.5f, -0.5f,   1.0f, 0.0f,
-		    -0.5f,  0.5f, -0.5f,   0.0f, 0.0f,
-		    -0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
-		     0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
-		     0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
-		    -0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
-		    -0.5f, -0.5f, -0.5f,   0.0f, 1.0f
-		};
-		uint32_t idata[12*3] =
-		{
-			0,  1,  2,
-			0,  2,  3,
-			4,  5,  6,
-			4,  6,  7,
-			8,  9,  10,
-			8,  10, 11,
-			12, 13, 14,
-			12, 14, 15,
-			16, 17, 18,
-			16, 18, 19,
-			20, 21, 22,
-			20, 22, 23
-		};
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = MainRenderer::get_vertex_buffer_layout(pos_uv_VBL);
+		pg::make_cube(layout, vdata, idata);
+		make_geometry("cube_uv"_h, pos_uv_VBL, vdata, idata);
+	}
 
-		IndexBufferHandle IBO = MainRenderer::create_index_buffer(idata, 12*3, DrawPrimitive::Triangles);
-		VertexBufferLayoutHandle VBL = MainRenderer::create_vertex_buffer_layout({
-				    				   {"a_position"_h, ShaderDataType::Vec3},
-				    				   {"a_uv"_h, ShaderDataType::Vec2}
-									  });
-		VertexBufferHandle VBO = MainRenderer::create_vertex_buffer(VBL, vdata, 24*5, DrawMode::Static);
-		VertexArrayHandle VAO = MainRenderer::create_vertex_array(VBO, IBO);
-
-		s_storage.vertex_arrays_.insert(std::make_pair("cube_uv"_h, VAO));
+	// PBR Cube
+	{
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = MainRenderer::get_vertex_buffer_layout(PBR_VBL);
+		pg::make_cube(layout, vdata, idata);
+		make_geometry("cube_pbr"_h, PBR_VBL, vdata, idata);
 	}
 
 	MainRenderer::flush();

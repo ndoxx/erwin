@@ -140,7 +140,7 @@ void ForwardRenderer::draw_cube(const ComponentTransform3D& transform, MaterialH
 				      * model_matrix;
 	instance_data.m   = model_matrix;
 
-	static DrawCall dc(DrawCall::Indexed, storage.forward_PBR, CommonGeometry::get_vertex_array("cube_uv"_h));
+	static DrawCall dc(DrawCall::Indexed, storage.forward_PBR, CommonGeometry::get_vertex_array("cube_pbr"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(transform.position.z, storage.layer_id);
