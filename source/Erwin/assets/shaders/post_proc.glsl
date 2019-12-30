@@ -13,9 +13,9 @@ void main()
 
 #type fragment
 #version 460 core
-
-#include "include/post_proc_inc.glsl"
 #include "include/common.glsl"
+#include "include/post_proc_inc.glsl"
+#include "include/fxaa.glsl"
 
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
@@ -47,6 +47,8 @@ layout(std140, binding = 0) uniform post_proc_layout
 void main()
 {
 	vec4 in_hdr = texture(SAMPLER_2D_0, v_uv);
+    // vec4 in_hdr = vec4(FXAA(SAMPLER_2D_0, v_uv, u_fb_size), 1.f);
+
 	vec3 color = in_hdr.rgb;
 
 	// Chromatic aberration

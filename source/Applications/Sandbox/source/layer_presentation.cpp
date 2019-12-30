@@ -82,10 +82,10 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
     
 	PostProcessingRenderer::begin_pass(pp_data_);
-	if(enable_2d_batched_)
-		PostProcessingRenderer::blit("fb_2d_raw"_h);
 	if(enable_3d_forward_)
 		PostProcessingRenderer::blit("fb_forward"_h);
+    if(enable_2d_batched_)
+        PostProcessingRenderer::blit("fb_2d_raw"_h);
 	PostProcessingRenderer::end_pass();
 }
 

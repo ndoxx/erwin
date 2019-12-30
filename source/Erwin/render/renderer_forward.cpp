@@ -1,9 +1,10 @@
 #include "render/renderer_forward.h"
 #include "render/common_geometry.h"
 #include "render/main_renderer.h"
-#include "glm/gtc/matrix_transform.hpp"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/matrix_access.hpp"
 
 namespace erwin
 {
@@ -86,7 +87,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, bool transpa
 	// Pass state
 	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
-	MainRenderer::get_queue("Forward"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
+	MainRenderer::get_queue("ForwardOpaque"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.pass_ubo_data.view_projection_matrix = camera.get_view_projection_matrix();
@@ -118,7 +119,7 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(transform.position.z, storage.layer_id);
-	MainRenderer::submit("Forward"_h, dc);
+	MainRenderer::submit("ForwardOpaque"_h, dc); // TODO: handle transparency
 
 	++storage.num_draw_calls;
 }
@@ -139,14 +140,18 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 				      * model_matrix;
 	instance_data.m   = model_matrix;
 
+	// Compute clip depth for the sorting key
+	glm::vec4 clip = glm::column(instance_data.mvp, 3);
+	float depth = clip.z/clip.w;
+
 	MainRenderer::shader_attach_uniform_buffer(material.shader, storage.instance_ubo);
 	static DrawCall dc(DrawCall::Indexed, material.shader, VAO);
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
-	dc.set_key_depth(transform.position.z, storage.layer_id);
+	dc.set_key_depth(depth, storage.layer_id);
 	for(uint32_t ii=0; ii<material.texture_count; ++ii)
 		dc.set_texture(material.textures[ii], ii);
-	MainRenderer::submit("Forward"_h, dc);
+	MainRenderer::submit("ForwardOpaque"_h, dc); // TODO: handle transparency
 
 	++storage.num_draw_calls;
 }

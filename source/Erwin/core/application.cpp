@@ -236,7 +236,8 @@ bool Application::init()
         // Create common geometry
         CommonGeometry::init();
 
-        MainRenderer::create_queue("Forward", SortKey::Order::ByDepthAscending);
+        MainRenderer::create_queue("ForwardOpaque", SortKey::Order::ByDepthDescending);
+        // MainRenderer::create_queue("ForwardTransparent", SortKey::Order::ByDepthAscending);
         MainRenderer::create_queue("Opaque2D", SortKey::Order::ByDepthDescending);
         MainRenderer::create_queue("Transparent2D", SortKey::Order::ByDepthAscending);
 #ifdef W_DEBUG
