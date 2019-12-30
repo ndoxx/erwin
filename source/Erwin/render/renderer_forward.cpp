@@ -2,6 +2,8 @@
 #include "render/common_geometry.h"
 #include "render/main_renderer.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "asset/asset_manager.h"
+#include "asset/material.h"
 
 namespace erwin
 {
@@ -23,7 +25,6 @@ struct InstanceData
 struct ForwardRenderer3DStorage
 {
 	ShaderHandle forward_colored;
-	ShaderHandle forward_PBR;
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
 
@@ -53,15 +54,11 @@ void ForwardRenderer::init()
 
 	storage.forward_colored = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_colored.glsl", "forward_colored");
 	// storage.forward_colored = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_colored.spv", "forward_colored");
-	storage.forward_PBR = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_PBR.glsl", "forward_PBR");
-	// storage.forward_PBR = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/forward_PBR.spv", "forward_PBR");
 
 	storage.instance_ubo = MainRenderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
 	storage.pass_ubo = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	
 	MainRenderer::shader_attach_uniform_buffer(storage.forward_colored, storage.instance_ubo);
-	MainRenderer::shader_attach_uniform_buffer(storage.forward_PBR, storage.instance_ubo);
-	// MainRenderer::shader_attach_uniform_buffer(storage.forward_colored, storage.pass_ubo);
 
 	storage.bias_matrix = glm::translate(glm::scale(glm::mat4(1.f),glm::vec3(0.5f)),glm::vec3(0.5f));
 }
@@ -69,7 +66,6 @@ void ForwardRenderer::init()
 void ForwardRenderer::shutdown()
 {
 	MainRenderer::destroy(storage.forward_colored);
-	MainRenderer::destroy(storage.forward_PBR);
 	MainRenderer::destroy(storage.instance_ubo);
 }
 
@@ -127,12 +123,15 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 	++storage.num_draw_calls;
 }
 
-void ForwardRenderer::draw_cube(const ComponentTransform3D& transform, MaterialHandle material, const glm::vec4& tint)
+void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, MaterialHandle material_handle, const glm::vec4& tint)
 {
-	W_ASSERT_FMT(material.is_valid(), "Invalid MaterialHandle of index %hu.", material.index);
+	W_ASSERT_FMT(material_handle.is_valid(), "Invalid MaterialHandle of index %hu.", material_handle.index);
+	W_ASSERT_FMT(VAO.is_valid(), "Invalid VertexArrayHandle of index %hu.", VAO.index);
+	const Material& material = AssetManager::get(material_handle);
 
 	glm::mat4 model_matrix = transform.get_model_matrix();
 	InstanceData instance_data;
+	// TODO: tint should be a material property
 	instance_data.tint = tint;
 	instance_data.mvp = storage.pass_ubo_data.view_projection_matrix 
 				      * model_matrix;
@@ -140,11 +139,13 @@ void ForwardRenderer::draw_cube(const ComponentTransform3D& transform, MaterialH
 				      * model_matrix;
 	instance_data.m   = model_matrix;
 
-	static DrawCall dc(DrawCall::Indexed, storage.forward_PBR, CommonGeometry::get_vertex_array("cube_pbr"_h));
+	MainRenderer::shader_attach_uniform_buffer(material.shader, storage.instance_ubo);
+	static DrawCall dc(DrawCall::Indexed, material.shader, VAO);
 	dc.set_state(storage.pass_state);
 	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(transform.position.z, storage.layer_id);
-	dc.set_material(material);
+	for(uint32_t ii=0; ii<material.texture_count; ++ii)
+		dc.set_texture(material.textures[ii], ii);
 	MainRenderer::submit("Forward"_h, dc);
 
 	++storage.num_draw_calls;

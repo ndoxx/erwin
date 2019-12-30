@@ -200,6 +200,7 @@ static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, s
 	vdata.resize(tl_storage.vertex_count*vertex_size);
 	idata.resize(tl_storage.triangle_count*3);
 	// Interleave vertex data
+	// For each vertex
 	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
 	{
 		uint32_t offset = 0;
@@ -283,7 +284,7 @@ void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vect
 
 	set_triangle(0, 1, 2);
 	set_triangle(2, 3, 0);
-	
+
 	build_shape(layout, vdata, idata, params);
 }
 

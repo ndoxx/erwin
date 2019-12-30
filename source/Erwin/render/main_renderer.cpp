@@ -17,8 +17,6 @@
 #include "memory/handle_pool.h"
 #include "core/config.h"
 #include "filesystem/filesystem.h"
-#include "asset/asset_manager.h"
-#include "asset/material.h"
 
 namespace erwin
 {
@@ -1347,20 +1345,12 @@ void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 		shader.bind();
 		last_shader_index = data.shader.index;
 	}
-	if(data.material.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	uint32_t slot = 0;
+	while(data.textures[slot].index != k_invalid_handle && slot < k_max_texture_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		auto& material = AssetManager::get(data.material);
-		for(uint32_t ii=0; ii<material.texture_count; ++ii)
-		{
-			TextureHandle texture_hnd = material.textures[ii];
-			auto& texture = *s_storage->textures[texture_hnd.index];
-			shader.attach_texture_2D(texture, ii);
-		}
-	}
-	else if(data.texture.index != k_invalid_handle) 
-	{
-		auto& texture = *s_storage->textures[data.texture.index];
-		shader.attach_texture_2D(texture, 0); // Bind single texture to slot 0
+		auto& texture = *s_storage->textures[data.textures[slot].index];
+		shader.attach_texture_2D(texture, slot);
+		++slot;
 	}
 	if(data.UBO_data)
 	{

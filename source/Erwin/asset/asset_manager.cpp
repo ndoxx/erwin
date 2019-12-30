@@ -52,7 +52,7 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	return handle;
 }
 
-MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLayoutHandle layout)
+MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLayoutHandle layout, ShaderHandle shader_handle)
 {
 	W_ASSERT_FMT(layout.is_valid(), "MaterialLayoutHandle of index %hu is invalid.", layout.index);
 
@@ -63,7 +63,7 @@ MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLay
 
 	Material* material = W_NEW(Material, s_storage.material_pool_);
 	const MaterialLayout& ml = s_storage.material_layouts_[layout.index]; 
-	material->load(filesystem::get_asset_dir() / filepath, ml);
+	material->load(filesystem::get_asset_dir() / filepath, ml, shader_handle);
 
 #ifdef DEBUG_TEXTURES
 	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
@@ -99,7 +99,7 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 
 	// Sanity check
 	uint32_t texture_count = texture_slots.size();
-	W_ASSERT_FMT(texture_count <= k_max_texture_slots, "Too many texture slots, expect %lu max, got %u instead.", k_max_texture_slots, texture_count);
+	W_ASSERT_FMT(texture_count <= k_max_texture_slots, "Too many texture slots, expect %u max, got %u instead.", k_max_texture_slots, texture_count);
 
 	// Initialize material layout
 	MaterialLayout& ml = s_storage.material_layouts_[handle.index];

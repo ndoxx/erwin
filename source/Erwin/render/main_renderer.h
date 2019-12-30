@@ -12,7 +12,7 @@
 #include "render/texture.h" // TMP: for Texture2DDescriptor
 #include "render/handles.h"
 #include "render/framebuffer_pool.h"
-#include "asset/handles.h"
+#include "render/renderer_config.h"
 
 namespace erwin
 {
@@ -124,8 +124,6 @@ private:
 	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
 
-constexpr std::size_t k_max_render_commands = 10000;
-
 struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;
@@ -207,8 +205,7 @@ struct DrawCall
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
 		UniformBufferHandle UBO;
-		TextureHandle texture;
-		MaterialHandle material;
+		TextureHandle textures[k_max_texture_slots];
 
 		uint32_t count;
 		uint32_t offset;
@@ -279,18 +276,12 @@ struct DrawCall
 		}
 	}
 
-	// Set a single texture bound to slot 0 for this draw call
-	inline void set_texture(TextureHandle tex)
+	// Set a texture at a given slot
+	inline void set_texture(TextureHandle tex, uint32_t slot=0)
 	{
 		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
-		data.texture = tex;
-	}
-
-	// Set a material
-	inline void set_material(MaterialHandle mat)
-	{
-		W_ASSERT_FMT(mat.is_valid(), "Invalid MaterialHandle of index: %hu", mat.index);
-		data.material = mat;
+		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
+		data.textures[slot] = tex;
 	}
 
 	// Compute the sorting key for depth ascending/descending policies

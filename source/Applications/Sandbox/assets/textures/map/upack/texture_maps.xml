@@ -7,22 +7,22 @@
 
 	<TextureMaps>
 		<!-- Specify all possible texture maps encountered as single files -->
-		<TextureMap name="albedo"    channels="4" compression="DXT5" filter_min="NEAREST" filter_mag="NEAREST" srgb="true"/>
-		<TextureMap name="normal"    channels="3" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false"/>
-		<TextureMap name="depth"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
-		<TextureMap name="metal"     channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
-		<TextureMap name="roughness" channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
-		<TextureMap name="ao"        channels="1" compression="None" filter_min="NEAREST" filter_mag="NEAREST"/>
+		<TextureMap name="albedo"    channels="4" compression="DXT5" filter_min="LINEAR" filter_mag="LINEAR" srgb="true"/>
+		<TextureMap name="normal"    channels="3" compression="None" filter_min="LINEAR" filter_mag="LINEAR" srgb="false"/>
+		<TextureMap name="depth"     channels="1" compression="None" filter_min="LINEAR" filter_mag="LINEAR"/>
+		<TextureMap name="metal"     channels="1" compression="None" filter_min="LINEAR" filter_mag="LINEAR"/>
+		<TextureMap name="roughness" channels="1" compression="None" filter_min="LINEAR" filter_mag="LINEAR"/>
+		<TextureMap name="ao"        channels="1" compression="None" filter_min="LINEAR" filter_mag="LINEAR"/>
 		
 		<!-- Specify groups of texture maps to be packed together in a texture blob -->
-		<Group name="normal_depth" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
-			<TextureMap name="normal"/>
-			<TextureMap name="depth"/>
+		<Group name="normal_depth" compression="None" filter_min="LINEAR" filter_mag="LINEAR" srgb="false">
+			<TextureMap name="normal"/> <!-- Channels: R,G,B -->
+			<TextureMap name="depth"/>  <!-- Channel: A -->
 		</Group>
-		<Group name="mra" compression="None" filter_min="NEAREST" filter_mag="NEAREST" srgb="false">
-			<TextureMap name="metal"/>
-			<TextureMap name="roughness"/>
-			<TextureMap name="ao"/>
+		<Group name="mra" compression="None" filter_min="LINEAR" filter_mag="LINEAR" srgb="false">
+			<TextureMap name="metal"/>     <!-- Channel: R -->
+			<TextureMap name="roughness"/> <!-- Channel: G -->
+			<TextureMap name="ao"/>        <!-- Channel: B -->
 		</Group>
 
 		<!-- Specify the possible layouts of texture maps and groups -->
