@@ -24,5 +24,6 @@ protected:
 private:
 	PerspectiveFreeflyController camera_ctl_;
 	MaterialHandle material_;
+	ShaderHandle forward_opaque_pbr_;
 	float tt_ = 0.f;
 };

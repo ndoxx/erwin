@@ -15,7 +15,7 @@ class AssetManager
 {
 public:
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
-	static MaterialHandle load_material(const fs::path& filepath, MaterialLayoutHandle layout);
+	static MaterialHandle load_material(const fs::path& filepath, MaterialLayoutHandle layout, ShaderHandle shader_handle);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 
 	static MaterialLayoutHandle create_material_layout(const std::vector<hash_t>& texture_slots);
@@ -28,7 +28,7 @@ public:
 private:
 	friend class Renderer2D;
 	friend class Application;
-	friend class MainRenderer;
+	friend class ForwardRenderer;
 
 	static void init(memory::HeapArea& area);
 	static void shutdown();

@@ -9,6 +9,7 @@ namespace erwin
 
 using namespace keymap;
 
+// Helper function to get "top" dimension from FOV and z-near
 inline float fovy_znear_to_top(float fovy, float znear)
 {
 	return znear * tan(0.5f * fovy * (M_PI / 180.f));
@@ -38,30 +39,31 @@ PerspectiveFreeflyController::~PerspectiveFreeflyController()
 
 void PerspectiveFreeflyController::update(GameClock& clock)
 {
-	// * Handle inputs
+	// Translational magnitude
 	float dt = clock.get_frame_duration();
-
-	// Translation
 	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 5.f : 1.f;
+	float translation = dt * speed_modifier * camera_translation_speed_;
 
-	// Front direction
+	// Front direction is the normalized projection of the camera forward axis on the horizontal plane
 	glm::vec3 front = camera_.get_forward();
 	front.y = 0.f;
-	glm::normalize(front);
+	front = glm::normalize(front);
 
+	// Handle keyboard inputs
 	if(Input::is_key_pressed(WKEY::W)) // FORWARD
-		camera_position_ += dt*speed_modifier*camera_translation_speed_*front;
+		camera_position_ += translation*front;
 	if(Input::is_key_pressed(WKEY::S)) // BACKWARD
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*front;
+		camera_position_ -= translation*front;
 	if(Input::is_key_pressed(WKEY::A)) // LEFT
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*camera_.get_right();
+		camera_position_ -= translation*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::D)) // RIGHT
-		camera_position_ += dt*speed_modifier*camera_translation_speed_*camera_.get_right();
+		camera_position_ += translation*camera_.get_right();
 	if(Input::is_key_pressed(WKEY::SPACE)) // UP
-		camera_position_ += dt*speed_modifier*camera_translation_speed_*glm::vec3(0.f,1.f,0.f);
+		camera_position_ += translation*glm::vec3(0.f,1.f,0.f);
 	if(Input::is_key_pressed(WKEY::LEFT_CONTROL)) // DOWN
-		camera_position_ -= dt*speed_modifier*camera_translation_speed_*glm::vec3(0.f,1.f,0.f);
+		camera_position_ -= translation*glm::vec3(0.f,1.f,0.f);
 
+	// Update camera parameters
 	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
 }
 
@@ -77,12 +79,10 @@ bool PerspectiveFreeflyController::on_window_resize_event(const WindowResizeEven
 
 bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
 {
-	if(event.y_offset<0)
-		fovy_ *= 1.05f;
-	else
-		fovy_ *= 0.95f;
-
-	fovy_ = (fovy_>170.f) ? 170.f : fovy_;
+	// Update and constrain FOV
+	fovy_ *= (event.y_offset<0) ? 1.05f : 0.95f;
+	fovy_  = (fovy_>120.f) ? 120.f : fovy_;
+	fovy_  = (fovy_<20.f)  ? 20.f  : fovy_;
 
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
@@ -91,11 +91,13 @@ bool PerspectiveFreeflyController::on_mouse_scroll_event(const MouseScrollEvent&
 
 bool PerspectiveFreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
 {
+	// On left mouse button press, hide cursor and center cursor
 	if(event.button == WMOUSE::BUTTON_0 && event.pressed)
 	{
 		Input::show_cursor(false);
 		Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
 	}
+	// On LMB release, show cursor
 	if(event.button == WMOUSE::BUTTON_0 && !event.pressed)
 		Input::show_cursor(true);
 	return false;
@@ -103,12 +105,19 @@ bool PerspectiveFreeflyController::on_mouse_button_event(const MouseButtonEvent&
 
 bool PerspectiveFreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
+	// Camera rotates only when left mouse button is pressed
 	if(!Input::is_mouse_button_pressed(WMOUSE::BUTTON_0))
 		return false;
 
+	// Update and constrain yaw and pitch
 	camera_yaw_   -= camera_rotation_speed_ * (event.x-0.5f*win_width_);
+	camera_yaw_    = (camera_yaw_>360.f) ? camera_yaw_-360.f : camera_yaw_;
+	camera_yaw_    = (camera_yaw_<0.f)   ? 360.f-camera_yaw_ : camera_yaw_;
 	camera_pitch_ -= camera_rotation_speed_ * (event.y-0.5f*win_height_);
+	camera_pitch_  = (camera_pitch_> 89.f) ?  89.f : camera_pitch_;
+	camera_pitch_  = (camera_pitch_<-89.f) ? -89.f : camera_pitch_;
 
+	// Set cursor back to the center of the screen
 	Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
 
 	return false;

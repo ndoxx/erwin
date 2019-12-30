@@ -12,7 +12,7 @@
 #include "render/texture.h" // TMP: for Texture2DDescriptor
 #include "render/handles.h"
 #include "render/framebuffer_pool.h"
-#include "asset/handles.h"
+#include "render/renderer_config.h"
 
 namespace erwin
 {
@@ -62,6 +62,11 @@ public:
 	static TextureHandle 	 get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
 	// Get the number of attachments in a given framebuffer
 	static uint32_t 		 get_framebuffer_texture_count(FramebufferHandle handle);
+	// Create a layout for a vertex buffer. Creation is immediate as it does not imply render API stuff,
+	// however, layout destruction need be deferred and is handled by a command.
+	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
+	// Get a buffer layout from its handle
+	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
 	// * Draw call queue management and submission
 	// Create a render queue, specifying a name whose hash is used to retrieve it later on, and a draw order policy
@@ -75,9 +80,8 @@ public:
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands
-	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
-	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	static IndexBufferHandle         create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
@@ -119,8 +123,6 @@ private:
 
 	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
-
-constexpr std::size_t k_max_render_commands = 10000;
 
 struct CommandBuffer
 {
@@ -203,8 +205,7 @@ struct DrawCall
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
 		UniformBufferHandle UBO;
-		TextureHandle texture;
-		MaterialHandle material;
+		TextureHandle textures[k_max_texture_slots];
 
 		uint32_t count;
 		uint32_t offset;
@@ -275,18 +276,12 @@ struct DrawCall
 		}
 	}
 
-	// Set a single texture bound to slot 0 for this draw call
-	inline void set_texture(TextureHandle tex)
+	// Set a texture at a given slot
+	inline void set_texture(TextureHandle tex, uint32_t slot=0)
 	{
 		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
-		data.texture = tex;
-	}
-
-	// Set a material
-	inline void set_material(MaterialHandle mat)
-	{
-		W_ASSERT_FMT(mat.is_valid(), "Invalid MaterialHandle of index: %hu", mat.index);
-		data.material = mat;
+		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
+		data.textures[slot] = tex;
 	}
 
 	// Compute the sorting key for depth ascending/descending policies

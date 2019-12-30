@@ -5,7 +5,7 @@
 namespace erwin
 {
 
-void Material::load(const fs::path& filepath, const MaterialLayout& layout)
+void Material::load(const fs::path& filepath, const MaterialLayout& layout, ShaderHandle shader_handle)
 {
 	// Check file type
 	std::string extension = filepath.extension().string();
@@ -30,14 +30,12 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout)
 		// Create and register all texture maps
 		for(auto&& tmap: descriptor.texture_maps)
 		{
-			// TODO: handle sRGB hint
 			ImageFormat format;
 			switch(tmap.compression)
 			{
-				// case TextureCompression::None: format = ImageFormat::SRGB_ALPHA; break;
-				case TextureCompression::None: format = ImageFormat::RGBA8; break;
-				case TextureCompression::DXT1: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1; break;
-				case TextureCompression::DXT5: format = ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5; break;
+				case TextureCompression::None: format = tmap.srgb ? ImageFormat::SRGB_ALPHA : ImageFormat::RGBA8; break;
+				case TextureCompression::DXT1: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT1; break;
+				case TextureCompression::DXT5: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT5; break;
 			}
 
 			TextureHandle tex = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
@@ -60,6 +58,9 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout)
 		}
 		DLOG("texture",1) << WCC(0) << "}" << std::endl;
 #endif
+
+		// Setup shader
+		shader = shader_handle;
 	}
 	else
 	{

@@ -17,8 +17,6 @@
 #include "memory/handle_pool.h"
 #include "core/config.h"
 #include "filesystem/filesystem.h"
-#include "asset/asset_manager.h"
-#include "asset/material.h"
 
 namespace erwin
 {
@@ -295,6 +293,23 @@ void* MainRenderer::get_native_texture_handle(TextureHandle handle)
 }
 #endif
 
+VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
+{
+	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
+
+	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>((BufferLayoutElement*)elements.data(), elements.size());
+
+	return handle;
+}
+
+const BufferLayout& MainRenderer::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
+{
+	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
+
+	return *s_storage->vertex_buffer_layouts[handle.index];
+}
+
 /*
 		   _____                                          _     
 		  / ____|                                        | |    
@@ -307,7 +322,6 @@ void* MainRenderer::get_native_texture_handle(TextureHandle handle)
 enum class RenderCommand: uint16_t
 {
 	CreateIndexBuffer,
-	CreateVertexBufferLayout,
 	CreateVertexBuffer,
 	CreateVertexArray,
 	CreateUniformBuffer,
@@ -392,7 +406,7 @@ private:
 	void* head_;
 };
 
-IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+IndexBufferHandle MainRenderer::create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
 	IndexBufferHandle handle = IndexBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -419,28 +433,7 @@ IndexBufferHandle MainRenderer::create_index_buffer(uint32_t* index_data, uint32
 	return handle;
 }
 
-VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements)
-{
-	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
-	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
-
-	// Allocate auxiliary data
-	std::vector<BufferLayoutElement> elts(elements);
-	uint32_t count = elts.size();
-	BufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(BufferLayoutElement, elts.size(), s_storage->auxiliary_arena_);
-	memcpy(auxiliary, elts.data(), elts.size() * sizeof(BufferLayoutElement));
-
-	// Write data
-	CommandWriter cw(RenderCommand::CreateVertexBufferLayout);
-	cw.write(&handle);
-	cw.write(&count);
-	cw.write(&auxiliary);
-	cw.submit();
-
-	return handle;
-}
-
-VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode)
+VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode)
 {
 	W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
@@ -834,20 +827,6 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
 	s_storage->index_buffers[handle.index] = IndexBuffer::create(auxiliary, count, primitive, mode);
 }
 
-void create_vertex_buffer_layout(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	uint32_t count;
-	VertexBufferLayoutHandle handle;
-	BufferLayoutElement* auxiliary;
-	buf.read(&handle);
-	buf.read(&count);
-	buf.read(&auxiliary);
-
-	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(auxiliary, count);
-}
-
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1208,7 +1187,6 @@ typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
 static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Count] =
 {
 	&dispatch::create_index_buffer,
-	&dispatch::create_vertex_buffer_layout,
 	&dispatch::create_vertex_buffer,
 	&dispatch::create_vertex_array,
 	&dispatch::create_uniform_buffer,
@@ -1367,20 +1345,12 @@ void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 		shader.bind();
 		last_shader_index = data.shader.index;
 	}
-	if(data.material.index != k_invalid_handle) // Don't use is_valid() here, we only want to discriminate default initialized data
+	uint32_t slot = 0;
+	while(data.textures[slot].index != k_invalid_handle && slot < k_max_texture_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		auto& material = AssetManager::get(data.material);
-		for(uint32_t ii=0; ii<material.texture_count; ++ii)
-		{
-			TextureHandle texture_hnd = material.textures[ii];
-			auto& texture = *s_storage->textures[texture_hnd.index];
-			shader.attach_texture_2D(texture, ii);
-		}
-	}
-	else if(data.texture.index != k_invalid_handle) 
-	{
-		auto& texture = *s_storage->textures[data.texture.index];
-		shader.attach_texture_2D(texture, 0); // Bind single texture to slot 0
+		auto& texture = *s_storage->textures[data.textures[slot].index];
+		shader.attach_texture_2D(texture, slot);
+		++slot;
 	}
 	if(data.UBO_data)
 	{

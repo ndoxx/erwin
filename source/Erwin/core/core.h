@@ -5,8 +5,6 @@
 
 // Export JSON instrumentation profiles compatible with chrome://tracing
 #define W_PROFILE
-// #define W_PROFILE_RENDER
-
 
 #ifdef _WIN32
 	#ifdef W_BUILD_LIB
@@ -60,13 +58,6 @@ inline void fatal() { exit(-1); }
 	#define W_PROFILE_ENABLE_SESSION(value)
 	#define W_PROFILE_SCOPE(name)
 	#define W_PROFILE_FUNCTION()
-#endif
-#ifdef W_PROFILE_RENDER
-	#define W_PROFILE_RENDER_SCOPE(name) erwin::InstrumentationTimer timer##__LINE__( name );
-	#define W_PROFILE_RENDER_FUNCTION() W_PROFILE_RENDER_SCOPE( __PRETTY_FUNCTION__ )
-#else
-	#define W_PROFILE_RENDER_SCOPE(name)
-	#define W_PROFILE_RENDER_FUNCTION()
 #endif
 
 // Macro to disallow copy and assign
