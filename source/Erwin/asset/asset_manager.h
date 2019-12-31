@@ -19,11 +19,13 @@ public:
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 
 	static MaterialLayoutHandle create_material_layout(const std::vector<hash_t>& texture_slots);
+	static UniformBufferHandle create_material_data_buffer(uint32_t size);
 	
 	static void release(TextureAtlasHandle handle);
 	static void release(TextureGroupHandle handle);
 	static void release(ShaderHandle handle);
 	static void release(MaterialLayoutHandle handle);
+	static void release(UniformBufferHandle handle);
 
 private:
 	friend class Renderer2D;

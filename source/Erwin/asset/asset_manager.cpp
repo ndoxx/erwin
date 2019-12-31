@@ -110,6 +110,11 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 	return handle;
 }
 
+UniformBufferHandle AssetManager::create_material_data_buffer(uint32_t size)
+{
+	return MainRenderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
+}
+
 void AssetManager::release(TextureAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
@@ -150,6 +155,11 @@ void AssetManager::release(MaterialLayoutHandle handle)
 	DLOGN("asset") << "[AssetManager] Releasing material layout:" << std::endl;
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	handle.release();
+}
+
+void AssetManager::release(UniformBufferHandle handle)
+{
+	MainRenderer::destroy(handle);
 }
 
 // ---------------- PRIVATE API ----------------

@@ -13,17 +13,20 @@ layout(location = 2) out vec3 v_view_dir_t;  // Vertex view direction, tangent s
 layout(location = 3) out vec3 v_light_dir_v; // Light direction, view space
 layout(location = 4) out mat3 v_TBN;         // TBN matrix for normal mapping
 
-layout(std140, binding = 0) uniform instance_data
+layout(std140, binding = 0) uniform pass_data
+{
+	mat4 u_m4_vp;  // view-projection
+	mat4 u_m4_v;   // view
+};
+layout(std140, binding = 1) uniform instance_data
 {
 	mat4 u_m4_mvp;  // model-view-projection
 	mat4 u_m4_mv;   // model-view
 	mat4 u_m4_m;    // model
-	vec4 u_v4_tint; // tint TODO: move to a material uniform block
 };
-layout(std140, binding = 1) uniform pass_data
+layout(std140, binding = 2) uniform material_data
 {
-	mat4 u_m4_vp;  // view-projection
-	mat4 u_m4_v;   // view
+	vec4 u_v4_tint; // tint
 };
 
 // Directional light position, world space 
@@ -70,17 +73,20 @@ layout(location = 4) in mat3 v_TBN;         // TBN matrix for normal mapping
 
 layout(location = 0) out vec4 out_color;
 
-layout(std140, binding = 0) uniform instance_data
+layout(std140, binding = 0) uniform pass_data
+{
+	mat4 u_m4_vp;  // view-projection
+	mat4 u_m4_v;   // view
+};
+layout(std140, binding = 1) uniform instance_data
 {
 	mat4 u_m4_mvp;  // model-view-projection
 	mat4 u_m4_mv;   // model-view
 	mat4 u_m4_m;    // model
-	vec4 u_v4_tint; // tint
 };
-layout(std140, binding = 1) uniform pass_data
+layout(std140, binding = 2) uniform material_data
 {
-	mat4 u_m4_vp;  // view-projection
-	mat4 u_m4_v;   // view
+	vec4 u_v4_tint; // tint
 };
 
 const vec3 v3_light_color = vec3(0.95f,0.85f,0.5f);
