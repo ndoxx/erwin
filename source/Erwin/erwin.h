@@ -23,6 +23,7 @@
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "asset/asset_manager.h"
+#include "asset/material.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

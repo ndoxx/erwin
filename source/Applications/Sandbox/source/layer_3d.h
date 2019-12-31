@@ -1,8 +1,21 @@
 #pragma once
 
 #include "erwin.h"
+#include <vector>
 
 using namespace erwin;
+
+struct PBRMaterialData
+{
+	glm::vec4 tint;
+};
+
+struct Cube
+{
+	ComponentTransform3D transform;
+	Material material;
+	PBRMaterialData material_data;
+};
 
 class Layer3D: public Layer
 {
@@ -23,7 +36,10 @@ protected:
 
 private:
 	PerspectiveFreeflyController camera_ctl_;
-	MaterialHandle material_;
+	TextureGroupHandle tg_;
+	UniformBufferHandle pbr_material_ubo_;
 	ShaderHandle forward_opaque_pbr_;
 	float tt_ = 0.f;
+
+	std::vector<Cube> scene_;
 };

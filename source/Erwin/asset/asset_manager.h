@@ -10,20 +10,22 @@ namespace erwin
 {
 
 struct TextureAtlas;
-struct Material;
+struct TextureGroup;
 class AssetManager
 {
 public:
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
-	static MaterialHandle load_material(const fs::path& filepath, MaterialLayoutHandle layout, ShaderHandle shader_handle);
+	static TextureGroupHandle load_texture_group(const fs::path& filepath, MaterialLayoutHandle layout);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 
 	static MaterialLayoutHandle create_material_layout(const std::vector<hash_t>& texture_slots);
+	static UniformBufferHandle create_material_data_buffer(uint32_t size);
 	
 	static void release(TextureAtlasHandle handle);
-	static void release(MaterialHandle handle);
+	static void release(TextureGroupHandle handle);
 	static void release(ShaderHandle handle);
 	static void release(MaterialLayoutHandle handle);
+	static void release(UniformBufferHandle handle);
 
 private:
 	friend class Renderer2D;
@@ -33,7 +35,7 @@ private:
 	static void init(memory::HeapArea& area);
 	static void shutdown();
 	static const TextureAtlas& get(TextureAtlasHandle handle);
-	static const Material& get(MaterialHandle handle);
+	static const TextureGroup& get(TextureGroupHandle handle);
 };
 
 

@@ -17,19 +17,19 @@ constexpr std::size_t k_handle_alloc_size = 3 * 2 * sizeof(HandlePoolT<k_max_ass
 
 #define FOR_ALL_HANDLES                 \
 		DO_ACTION( TextureAtlasHandle ) \
-		DO_ACTION( MaterialHandle )     \
+		DO_ACTION( TextureGroupHandle ) \
 		DO_ACTION( MaterialLayoutHandle )
 
 
 static struct AssetManagerStorage
 {
 	eastl::vector<TextureAtlas*> texture_atlases_;
-	eastl::vector<Material*> materials_;
+	eastl::vector<TextureGroup*> texture_groups_;
 	eastl::vector<MaterialLayout> material_layouts_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
-	PoolArena material_pool_;
+	PoolArena texture_group_pool_;
 } s_storage;
 
 
@@ -52,30 +52,30 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	return handle;
 }
 
-MaterialHandle AssetManager::load_material(const fs::path& filepath, MaterialLayoutHandle layout, ShaderHandle shader_handle)
+TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath, MaterialLayoutHandle layout)
 {
 	W_ASSERT_FMT(layout.is_valid(), "MaterialLayoutHandle of index %hu is invalid.", layout.index);
 
-	MaterialHandle handle = MaterialHandle::acquire();
-	DLOGN("asset") << "[AssetManager] Creating new material:" << std::endl;
-	DLOG("asset",1) << "MaterialHandle: " << WCC('v') << handle.index << std::endl;
+	TextureGroupHandle handle = TextureGroupHandle::acquire();
+	DLOGN("asset") << "[AssetManager] Creating new texture group:" << std::endl;
+	DLOG("asset",1) << "TextureGroupHandle: " << WCC('v') << handle.index << std::endl;
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
-	Material* material = W_NEW(Material, s_storage.material_pool_);
+	TextureGroup* tg = W_NEW(TextureGroup, s_storage.texture_group_pool_);
 	const MaterialLayout& ml = s_storage.material_layouts_[layout.index]; 
-	material->load(filesystem::get_asset_dir() / filepath, ml, shader_handle);
+	tg->load(filesystem::get_asset_dir() / filepath, ml);
 
 #ifdef DEBUG_TEXTURES
 	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-	for(uint32_t ii=0; ii<material->texture_count; ++ii)
+	for(uint32_t ii=0; ii<tg->texture_count; ++ii)
 	{
 		std::string name = "Slot_" + std::to_string(ii);
-		TexturePeek::register_texture(pane, material->textures[ii], name, false);
+		TexturePeek::register_texture(pane, tg->textures[ii], name, false);
 	}
 #endif
 
-	// Register material
-	s_storage.materials_[handle.index] = material;
+	// Register group
+	s_storage.texture_groups_[handle.index] = tg;
 
 	return handle;
 }
@@ -110,6 +110,11 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 	return handle;
 }
 
+UniformBufferHandle AssetManager::create_material_data_buffer(uint32_t size)
+{
+	return MainRenderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
+}
+
 void AssetManager::release(TextureAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
@@ -122,14 +127,14 @@ void AssetManager::release(TextureAtlasHandle handle)
 	handle.release();
 }
 
-void AssetManager::release(MaterialHandle handle)
+void AssetManager::release(TextureGroupHandle handle)
 {
-	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
-	DLOGN("asset") << "[AssetManager] Releasing material:" << std::endl;
-	Material* material = s_storage.materials_.at(handle.index);
-	material->release();
-	W_DELETE(material, s_storage.material_pool_);
-	s_storage.materials_[handle.index] = nullptr;
+	W_ASSERT_FMT(handle.is_valid(), "TextureGroupHandle of index %hu is invalid.", handle.index);
+	DLOGN("asset") << "[AssetManager] Releasing texture group:" << std::endl;
+	TextureGroup* tg = s_storage.texture_groups_.at(handle.index);
+	tg->release();
+	W_DELETE(tg, s_storage.texture_group_pool_);
+	s_storage.texture_groups_[handle.index] = nullptr;
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	handle.release();
 }
@@ -152,16 +157,21 @@ void AssetManager::release(MaterialLayoutHandle handle)
 	handle.release();
 }
 
+void AssetManager::release(UniformBufferHandle handle)
+{
+	MainRenderer::destroy(handle);
+}
+
 // ---------------- PRIVATE API ----------------
 
 void AssetManager::init(memory::HeapArea& area)
 {
 	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
 	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "AtlasPool");
-	s_storage.material_pool_.init(area, sizeof(Material) + PoolArena::DECORATION_SIZE, k_max_materials, "MaterialPool");
+	s_storage.texture_group_pool_.init(area, sizeof(TextureGroup) + PoolArena::DECORATION_SIZE, k_max_texture_groups, "TextureGroupPool");
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
-	s_storage.materials_.resize(k_max_materials, nullptr);
+	s_storage.texture_groups_.resize(k_max_texture_groups, nullptr);
 	s_storage.material_layouts_.resize(k_max_material_layouts);
 
 	// Init handle pools
@@ -177,9 +187,9 @@ void AssetManager::shutdown()
 		if(atlas)
 			W_DELETE(atlas, s_storage.texture_atlas_pool_);
 
-	for(Material* material: s_storage.materials_)
-		if(material)
-			W_DELETE(material, s_storage.material_pool_);
+	for(TextureGroup* tg: s_storage.texture_groups_)
+		if(tg)
+			W_DELETE(tg, s_storage.texture_group_pool_);
 
 	// Destroy handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(s_storage.handle_arena_);
@@ -193,10 +203,10 @@ const TextureAtlas& AssetManager::get(TextureAtlasHandle handle)
 	return *s_storage.texture_atlases_[handle.index];
 }
 
-const Material& AssetManager::get(MaterialHandle handle)
+const TextureGroup& AssetManager::get(TextureGroupHandle handle)
 {
-	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
-	return *s_storage.materials_[handle.index];
+	W_ASSERT_FMT(handle.is_valid(), "TextureGroupHandle of index %hu is invalid.", handle.index);
+	return *s_storage.texture_groups_[handle.index];
 }
 
 
