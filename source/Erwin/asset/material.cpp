@@ -1,11 +1,12 @@
 #include "asset/material.h"
 #include "render/texture_common.h"
 #include "render/main_renderer.h"
+#include "filesystem/tom_file.h"
 
 namespace erwin
 {
 
-void Material::load(const fs::path& filepath, const MaterialLayout& layout, ShaderHandle shader_handle)
+void TextureGroup::load(const fs::path& filepath, const MaterialLayout& layout)
 {
 	// Check file type
 	std::string extension = filepath.extension().string();
@@ -58,9 +59,6 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout, Shad
 		}
 		DLOG("texture",1) << WCC(0) << "}" << std::endl;
 #endif
-
-		// Setup shader
-		shader = shader_handle;
 	}
 	else
 	{
@@ -68,7 +66,7 @@ void Material::load(const fs::path& filepath, const MaterialLayout& layout, Shad
 	}
 }
 
-void Material::release()
+void TextureGroup::release()
 {
 	for(auto&& handle: textures)
 		if(handle.is_valid())

@@ -39,6 +39,11 @@ public:
 	uniform_scale(uniform_scale)
 	{}
 
+	inline void set_rotation(const glm::vec3& euler_angles)
+	{
+		rotation = glm::quat(euler_angles);
+	}
+
 	inline glm::mat4 get_model_matrix() const
 	{
 		return glm::translate(glm::mat4(1.f), position) 

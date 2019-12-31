@@ -2,8 +2,8 @@
 
 #include <array>
 #include "filesystem/filesystem.h"
-#include "filesystem/tom_file.h"
 #include "render/handles.h"
+#include "asset/handles.h"
 #include "render/renderer_config.h"
 
 namespace erwin
@@ -17,15 +17,23 @@ struct MaterialLayout
 	uint32_t texture_count;
 };
 
-struct Material
+// Set of texture maps used by one or multiple materials
+struct TextureGroup
 {
-	void load(const fs::path& filepath, const MaterialLayout& layout, ShaderHandle shader_handle);
+	void load(const fs::path& filepath, const MaterialLayout& layout);
 	void release();
 
 	std::array<TextureHandle, k_max_texture_slots> textures;
-	size_t texture_count = 0;
-	ShaderHandle shader;
+	uint32_t texture_count = 0;
 };
 
+// Associates a shader with all uniform and sampler data needed for it to perform
+struct Material
+{
+	ShaderHandle shader;
+	TextureGroupHandle texture_group;
+	void* data;
+	uint32_t data_size;
+};
 
 } // namespace erwin

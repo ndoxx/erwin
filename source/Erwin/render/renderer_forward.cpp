@@ -124,11 +124,9 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 	++storage.num_draw_calls;
 }
 
-void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, MaterialHandle material_handle, const glm::vec4& tint)
+void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material, const glm::vec4& tint)
 {
-	W_ASSERT_FMT(material_handle.is_valid(), "Invalid MaterialHandle of index %hu.", material_handle.index);
 	W_ASSERT_FMT(VAO.is_valid(), "Invalid VertexArrayHandle of index %hu.", VAO.index);
-	const Material& material = AssetManager::get(material_handle);
 
 	glm::mat4 model_matrix = transform.get_model_matrix();
 	InstanceData instance_data;
@@ -152,8 +150,9 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	dc.set_state(storage.pass_state);
 	dc.set_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(depth, storage.layer_id);
-	for(uint32_t ii=0; ii<material.texture_count; ++ii)
-		dc.set_texture(material.textures[ii], ii);
+	const TextureGroup& tg = AssetManager::get(material.texture_group);
+	for(uint32_t ii=0; ii<tg.texture_count; ++ii)
+		dc.set_texture(tg.textures[ii], ii);
 	MainRenderer::submit("ForwardOpaque"_h, dc); // TODO: handle transparency
 
 	++storage.num_draw_calls;
