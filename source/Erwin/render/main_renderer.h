@@ -200,12 +200,12 @@ struct DrawCall
 	struct Data
 	{
 		uint64_t state_flags;
-		void* UBO_data;
 
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
-		UniformBufferHandle UBO;
 		TextureHandle textures[k_max_texture_slots];
+		UniformBufferHandle UBOs[k_max_UBO_slots];
+		void* UBOs_data[k_max_UBO_slots];
 
 		uint32_t count;
 		uint32_t offset;
@@ -227,7 +227,6 @@ struct DrawCall
 		type            = dc_type;
 		data.shader     = shader;
 		data.VAO        = VAO;
-		data.UBO_data   = nullptr;
 		data.count      = count;
 		data.offset     = offset;
 		instance_data.SSBO_data  = nullptr;
@@ -245,22 +244,9 @@ struct DrawCall
 		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
 	}
 
-	// Setup a UBO configuration for this specific draw call
-	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size, DataOwnership copy)
-	{
-		data.UBO_data = UBO_data;
-		data.UBO = ubo;
-
-		if(UBO_data && copy)
-		{
-			data.UBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
-			memcpy(data.UBO_data, UBO_data, size);
-		}
-	}
-
 	// Set instance data array containing all information necessary to render instance_count instances of the same geometry
 	// Only available for instanced draw calls
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
+	inline void set_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
 	{
 		W_ASSERT(type == DrawCall::IndexedInstanced || type == DrawCall::ArrayInstanced, "Cannot set instance data for non-instanced draw call.");
 
@@ -273,6 +259,20 @@ struct DrawCall
 		{
 			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
 			memcpy(instance_data.SSBO_data, SSBO_data, size);
+		}
+	}
+
+	// Setup a UBO configuration for this specific draw call
+	inline void set_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size, DataOwnership copy, uint32_t slot=0)
+	{
+		W_ASSERT_FMT(slot<k_max_UBO_slots, "UBO slot out of bounds: %u", slot);
+		data.UBOs_data[slot] = UBO_data;
+		data.UBOs[slot] = ubo;
+
+		if(UBO_data && copy)
+		{
+			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(data.UBOs_data[slot], UBO_data, size);
 		}
 	}
 

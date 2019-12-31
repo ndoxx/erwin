@@ -1,4 +1,4 @@
-// Compute a TBN matrix for tangent space transformation
+// Compute a TBN matrix for tangent space to view space transformation
 mat3 TBN(mat3 normal_matrix, vec3 normal, vec3 tangent)
 {
     vec3 N = normalize(normal_matrix * normal);

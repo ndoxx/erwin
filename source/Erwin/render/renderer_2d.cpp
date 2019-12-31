@@ -180,8 +180,8 @@ static void flush_batch(Batch2D& batch)
 	{
 		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.pass_state);
-		dc.set_per_instance_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
-		dc.set_instance_data_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
+		dc.set_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
+		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
 		MainRenderer::submit((storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h), dc);

@@ -41,7 +41,7 @@ void Layer3D::on_update(GameClock& clock)
 {
 	float dt = clock.get_frame_duration();
 	tt_ += dt;
-	if(tt_>=5.f)
+	if(tt_>=10.f)
 		tt_ = 0.f;
 
 	camera_ctl_.update(clock);
@@ -56,8 +56,8 @@ void Layer3D::on_update(GameClock& clock)
 			for(float zz=-10.f; zz<10.f; zz+=2.f)
 			{
 				float scale = 3.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
-				glm::vec3 euler = {xx/10.f,yy/10.f,zz/10.f};
-				euler *= 0.2*sin(2*M_PI*tt_/5.f);
+				glm::vec3 euler = {(1.f-yy/8.f)*xx/10.f,yy/10.f,(1.f-yy/8.f)*zz/10.f};
+				euler *= 1.0f*sin(2*M_PI*tt_/10.f);
 				ForwardRenderer::draw_mesh(cube_pbr, ComponentTransform3D({xx+1.f,yy+1.f,zz+1.f}, euler, scale),
 									  	   material_, {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f});
 			}

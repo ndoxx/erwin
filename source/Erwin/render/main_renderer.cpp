@@ -1352,10 +1352,12 @@ void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 		shader.attach_texture_2D(texture, slot);
 		++slot;
 	}
-	if(data.UBO_data)
+	slot = 0;
+	while(data.UBOs[slot].index != k_invalid_handle && slot < k_max_UBO_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		auto& ubo = *s_storage->uniform_buffers[data.UBO.index];
-		ubo.stream(data.UBO_data, 0, 0);
+		auto& ubo = *s_storage->uniform_buffers[data.UBOs[slot].index];
+		ubo.stream(data.UBOs_data[slot], 0, 0);
+		++slot;
 	}
 
 	// * Execute draw call

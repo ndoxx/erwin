@@ -39,14 +39,14 @@ void main()
     mat3 TBN_inv = transpose(v_TBN);
 
     // Light position, view space
-    vec4 light_pos_v = u_m4_mv*vec4(light_position_w, 0.f);
+    vec4 light_pos_v = u_m4_v*vec4(-light_position_w, 0.f);
     // Vertex position, view space
     vec4 vertex_pos_v = u_m4_mv*vec4(a_position, 1.f);
     
     v_view_dir_v = normalize(-vertex_pos_v.xyz/vertex_pos_v.w);
     v_view_dir_t = normalize(TBN_inv * v_view_dir_v);
     // light direction = position for directional light
-    v_light_dir_v = normalize(light_pos_v.xyz);
+    v_light_dir_v = normalize(-light_pos_v.xyz);
 	v_uv = a_uv;
 }
 

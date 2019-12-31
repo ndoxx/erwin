@@ -35,33 +35,23 @@ inline void reset_storage()
 	tl_storage.line_count = 0;
 }
 
-inline void next()
+inline void add_vertex(const glm::vec3& position, const glm::vec2& uv)
 {
 	// W_ASSERT(tl_storage.vertex_count+1<k_max_vertices, "Vertex data is full.");
+	tl_storage.position[tl_storage.vertex_count] = position;
+	tl_storage.uv[tl_storage.vertex_count] = uv;
 	++tl_storage.vertex_count;
 }
 
-inline void set_position(float x, float y, float z)
+inline void add_vertex(glm::vec3&& position, glm::vec2&& uv)
 {
-	tl_storage.position[tl_storage.vertex_count] = { x, y, z };
+	// W_ASSERT(tl_storage.vertex_count+1<k_max_vertices, "Vertex data is full.");
+	tl_storage.position[tl_storage.vertex_count] = std::move(position);
+	tl_storage.uv[tl_storage.vertex_count] = std::move(uv);
+	++tl_storage.vertex_count;
 }
 
-inline void set_normal(float x, float y, float z)
-{
-	tl_storage.normal[tl_storage.vertex_count] = { x, y, z };
-}
-
-inline void set_tangent(float x, float y, float z)
-{
-	tl_storage.tangent[tl_storage.vertex_count] = { x, y, z };
-}
-
-inline void set_uv(float u, float v)
-{
-	tl_storage.uv[tl_storage.vertex_count] = { u, v };
-}
-
-inline void set_triangle(uint32_t a, uint32_t b, uint32_t c)
+inline void add_triangle(uint32_t a, uint32_t b, uint32_t c)
 {
 	tl_storage.triangles[3*tl_storage.triangle_count+0] = a;
 	tl_storage.triangles[3*tl_storage.triangle_count+1] = b;
@@ -69,7 +59,7 @@ inline void set_triangle(uint32_t a, uint32_t b, uint32_t c)
 	++tl_storage.triangle_count;
 }
 
-inline void set_line(uint32_t a, uint32_t b)
+inline void add_line(uint32_t a, uint32_t b)
 {
 	tl_storage.lines[2*tl_storage.line_count+0] = a;
 	tl_storage.lines[2*tl_storage.line_count+1] = b;
@@ -229,44 +219,44 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
 
 	// Setup position and UV vertex data, all th rest can be computed from this
-    set_position( 0.5f, -0.5f,  0.5f); set_uv(1.0f, 1.0f); next();
-    set_position( 0.5f,  0.5f,  0.5f); set_uv(1.0f, 0.0f); next();
-    set_position(-0.5f,  0.5f,  0.5f); set_uv(0.0f, 0.0f); next();
-    set_position(-0.5f, -0.5f,  0.5f); set_uv(0.0f, 1.0f); next();
-    set_position( 0.5f, -0.5f, -0.5f); set_uv(1.0f, 0.0f); next();
-    set_position( 0.5f,  0.5f, -0.5f); set_uv(1.0f, 1.0f); next();
-    set_position( 0.5f,  0.5f,  0.5f); set_uv(0.0f, 1.0f); next();
-    set_position( 0.5f, -0.5f,  0.5f); set_uv(0.0f, 0.0f); next();
-    set_position(-0.5f, -0.5f, -0.5f); set_uv(1.0f, 1.0f); next();
-    set_position(-0.5f,  0.5f, -0.5f); set_uv(1.0f, 0.0f); next();
-    set_position( 0.5f,  0.5f, -0.5f); set_uv(0.0f, 0.0f); next();
-    set_position( 0.5f, -0.5f, -0.5f); set_uv(0.0f, 1.0f); next();
-    set_position(-0.5f, -0.5f,  0.5f); set_uv(1.0f, 0.0f); next();
-    set_position(-0.5f,  0.5f,  0.5f); set_uv(1.0f, 1.0f); next();
-    set_position(-0.5f,  0.5f, -0.5f); set_uv(0.0f, 1.0f); next();
-    set_position(-0.5f, -0.5f, -0.5f); set_uv(0.0f, 0.0f); next();
-    set_position( 0.5f,  0.5f,  0.5f); set_uv(1.0f, 1.0f); next();
-    set_position( 0.5f,  0.5f, -0.5f); set_uv(1.0f, 0.0f); next();
-    set_position(-0.5f,  0.5f, -0.5f); set_uv(0.0f, 0.0f); next();
-    set_position(-0.5f,  0.5f,  0.5f); set_uv(0.0f, 1.0f); next();
-    set_position( 0.5f, -0.5f, -0.5f); set_uv(1.0f, 1.0f); next();
-    set_position( 0.5f, -0.5f,  0.5f); set_uv(1.0f, 0.0f); next();
-    set_position(-0.5f, -0.5f,  0.5f); set_uv(0.0f, 0.0f); next();
-    set_position(-0.5f, -0.5f, -0.5f); set_uv(0.0f, 1.0f); next();
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f});
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f});
 
     // Setup index data
-	set_triangle(0,  1,  2); 
-	set_triangle(0,  2,  3); 
-	set_triangle(4,  5,  6); 
-	set_triangle(4,  6,  7); 
-	set_triangle(8,  9,  10);
-	set_triangle(8,  10, 11);
-	set_triangle(12, 13, 14);
-	set_triangle(12, 14, 15);
-	set_triangle(16, 17, 18);
-	set_triangle(16, 18, 19);
-	set_triangle(20, 21, 22);
-	set_triangle(20, 22, 23);
+	add_triangle(0,  1,  2); 
+	add_triangle(0,  2,  3); 
+	add_triangle(4,  5,  6); 
+	add_triangle(4,  6,  7); 
+	add_triangle(8,  9,  10);
+	add_triangle(8,  10, 11);
+	add_triangle(12, 13, 14);
+	add_triangle(12, 14, 15);
+	add_triangle(16, 17, 18);
+	add_triangle(16, 18, 19);
+	add_triangle(20, 21, 22);
+	add_triangle(20, 22, 23);
 
 	// Build interleaved vertex data according to input specifications
 	build_shape(layout, vdata, idata, params);
@@ -277,13 +267,13 @@ void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vect
 	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
 
-	set_position(-1.0f, -1.0f, 0.0f); set_uv(0.0f, 0.0f); next();
-	set_position( 1.0f, -1.0f, 0.0f); set_uv(1.0f, 0.0f); next();
-	set_position( 1.0f,  1.0f, 0.0f); set_uv(1.0f, 1.0f); next();
-	set_position(-1.0f,  1.0f, 0.0f); set_uv(0.0f, 1.0f); next();
+	add_vertex({-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f});
+	add_vertex({ 1.0f, -1.0f, 0.0f}, {1.0f, 0.0f});
+	add_vertex({ 1.0f,  1.0f, 0.0f}, {1.0f, 1.0f});
+	add_vertex({-1.0f,  1.0f, 0.0f}, {0.0f, 1.0f});
 
-	set_triangle(0, 1, 2);
-	set_triangle(2, 3, 0);
+	add_triangle(0, 1, 2);
+	add_triangle(2, 3, 0);
 
 	build_shape(layout, vdata, idata, params);
 }

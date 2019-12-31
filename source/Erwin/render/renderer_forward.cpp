@@ -117,7 +117,7 @@ void ForwardRenderer::draw_colored_cube(const ComponentTransform3D& transform, c
 
 	static DrawCall dc(DrawCall::Indexed, storage.forward_colored, CommonGeometry::get_vertex_array("cube"_h));
 	dc.set_state(storage.pass_state);
-	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
+	dc.set_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(transform.position.z, storage.layer_id);
 	MainRenderer::submit("ForwardOpaque"_h, dc); // TODO: handle transparency
 
@@ -144,10 +144,13 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
 
+	// TODO: this should happen only once
 	MainRenderer::shader_attach_uniform_buffer(material.shader, storage.instance_ubo);
+	MainRenderer::shader_attach_uniform_buffer(material.shader, storage.pass_ubo);
+	
 	static DrawCall dc(DrawCall::Indexed, material.shader, VAO);
 	dc.set_state(storage.pass_state);
-	dc.set_per_instance_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
+	dc.set_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData);
 	dc.set_key_depth(depth, storage.layer_id);
 	for(uint32_t ii=0; ii<material.texture_count; ++ii)
 		dc.set_texture(material.textures[ii], ii);
