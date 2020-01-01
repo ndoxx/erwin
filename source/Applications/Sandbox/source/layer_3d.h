@@ -36,7 +36,8 @@ protected:
 
 private:
 	PerspectiveFreeflyController camera_ctl_;
-	TextureGroupHandle tg_;
+	TextureGroupHandle tg_sandstone_;
+	TextureGroupHandle tg_sand_;
 	UniformBufferHandle pbr_material_ubo_;
 	ShaderHandle forward_opaque_pbr_;
 	float tt_ = 0.f;

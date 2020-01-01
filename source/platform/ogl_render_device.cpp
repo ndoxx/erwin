@@ -52,7 +52,7 @@ void OGLRenderDevice::draw_indexed(const VertexArray& vertexArray,
                                    uint32_t count,
 								   std::size_t offset)
 {
-	vertexArray.bind();
+	// vertexArray.bind();
 	glDrawElements(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()], 
 				   (bool(count) ? count : vertexArray.get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
@@ -65,7 +65,7 @@ void OGLRenderDevice::draw_array(const VertexArray& vertexArray,
                                  uint32_t count,
                                  std::size_t offset)
 {
-    vertexArray.bind();
+    // vertexArray.bind();
     glDrawArrays(OGLPrimitive[prim], 
                  offset, 
                  (bool(count) ? count : vertexArray.get_vertex_buffer().get_count()));
@@ -77,7 +77,7 @@ void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
                                              uint32_t elements_count,
                                              std::size_t offset)
 {
-    vertexArray.bind();
+    // vertexArray.bind();
     glDrawElementsInstanced(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()],
                             (bool(elements_count) ? elements_count : vertexArray.get_index_buffer().get_count()),
                             GL_UNSIGNED_INT,

@@ -1338,30 +1338,48 @@ void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 	handle_state(data.state_flags);
 
 	// * Detect if a new shader needs to be used, update and bind shader resources
-	static uint16_t last_shader_index = 0xffff;
+	static uint16_t last_shader_index = k_invalid_handle;
+	static uint16_t last_texture_index[k_max_texture_slots];
 	auto& shader = *s_storage->shaders[data.shader.index];
 	if(data.shader.index != last_shader_index)
 	{
 		shader.bind();
 		last_shader_index = data.shader.index;
+		std::fill(last_texture_index, last_texture_index+k_max_texture_slots, k_invalid_handle);
 	}
 	uint32_t slot = 0;
 	while(data.textures[slot].index != k_invalid_handle && slot < k_max_texture_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		auto& texture = *s_storage->textures[data.textures[slot].index];
-		shader.attach_texture_2D(texture, slot);
+		// Avoid texture switching if not necessary
+		if(data.textures[slot].index != last_texture_index[slot])
+		{
+			auto& texture = *s_storage->textures[data.textures[slot].index];
+			shader.attach_texture_2D(texture, slot);
+			last_texture_index[slot] = data.textures[slot].index;
+		}
 		++slot;
 	}
 	slot = 0;
 	while(data.UBOs[slot].index != k_invalid_handle && slot < k_max_UBO_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		auto& ubo = *s_storage->uniform_buffers[data.UBOs[slot].index];
-		ubo.stream(data.UBOs_data[slot], 0, 0);
+		if(data.UBOs_data[slot])
+		{
+			auto& ubo = *s_storage->uniform_buffers[data.UBOs[slot].index];
+			ubo.stream(data.UBOs_data[slot], 0, 0);
+		}
 		++slot;
 	}
 
 	// * Execute draw call
+	static uint16_t last_VAO_index = k_invalid_handle;
 	auto& va = *s_storage->vertex_arrays[data.VAO.index];
+	// Avoid switching vertex array when possible
+	if(data.VAO.index != last_VAO_index)
+	{
+		va.bind();
+		last_VAO_index = data.VAO.index;
+	}
+
 	switch(type)
 	{
 		case DrawCall::Indexed:

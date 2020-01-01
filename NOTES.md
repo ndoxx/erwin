@@ -39,15 +39,6 @@
         [ ] Event queues & event pools
         [ ] Dispatching
 
-##OPT:
-    [X] Réduire le nombre de calls à glBindBufferBase (UBO/SSBO attach)
-        -> Un shader pourrait les enregistrer une fois pour toutes et les lier depuis la fonction bind.
-
-###GO MT - ROADMAP:
-    [X] Command queues
-    [X] Master renderer
-    [ ] Gfx resources manag.
-
 ##[Command Galore]
 ###Callgrind profiling
 > valgrind --tool=callgrind ../bin/sandbox

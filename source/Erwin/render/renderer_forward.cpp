@@ -118,7 +118,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	
-	static DrawCall dc(DrawCall::Indexed, material.shader, VAO);
+	DrawCall dc(DrawCall::Indexed, material.shader, VAO);
 	dc.set_state(storage.pass_state);
 	dc.set_UBO(storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
 	dc.set_UBO(material.ubo, material.data, material.data_size, DrawCall::CopyData, 1);
