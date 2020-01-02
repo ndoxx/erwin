@@ -20,6 +20,7 @@ public:
 
 	inline const std::string& get_name() const  { return debug_name_; }
 	inline void set_enabled(bool value)         { enabled_ = value; }
+	inline void toggle()                        { enabled_ = !enabled_; }
 	inline void set_layer_id(uint8_t layer_id)  { layer_id_ = layer_id; }
 	inline uint8_t get_layer_id() const         { return layer_id_; }
 	inline bool is_enabled() const              { return enabled_; }

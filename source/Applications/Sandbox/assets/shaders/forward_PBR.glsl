@@ -15,14 +15,14 @@ layout(location = 4) out mat3 v_TBN;         // TBN matrix for normal mapping
 
 layout(std140, binding = 0) uniform pass_data
 {
-	mat4 u_m4_vp;  // view-projection
 	mat4 u_m4_v;   // view
+	mat4 u_m4_vp;  // view-projection
 };
 layout(std140, binding = 1) uniform instance_data
 {
-	mat4 u_m4_mvp;  // model-view-projection
-	mat4 u_m4_mv;   // model-view
 	mat4 u_m4_m;    // model
+	mat4 u_m4_mv;   // model-view
+	mat4 u_m4_mvp;  // model-view-projection
 };
 layout(std140, binding = 2) uniform material_data
 {
@@ -75,14 +75,14 @@ layout(location = 0) out vec4 out_color;
 
 layout(std140, binding = 0) uniform pass_data
 {
-	mat4 u_m4_vp;  // view-projection
 	mat4 u_m4_v;   // view
+	mat4 u_m4_vp;  // view-projection
 };
 layout(std140, binding = 1) uniform instance_data
 {
-	mat4 u_m4_mvp;  // model-view-projection
-	mat4 u_m4_mv;   // model-view
 	mat4 u_m4_m;    // model
+	mat4 u_m4_mv;   // model-view
+	mat4 u_m4_mvp;  // model-view-projection
 };
 layout(std140, binding = 2) uniform material_data
 {

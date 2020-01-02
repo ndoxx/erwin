@@ -64,6 +64,10 @@ public:
 		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
 			EVENTBUS.publish(WindowCloseEvent());
 
+		// Toggle ImGui layer on TAB
+		if(e.pressed && e.key == keymap::WKEY::TAB)
+			toggle_imgui_layer();
+
 		return false;
 	}
 

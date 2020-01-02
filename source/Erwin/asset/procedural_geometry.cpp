@@ -1,6 +1,7 @@
 #include "asset/procedural_geometry.h"
 #include "core/core.h"
 #include "core/intern_string.h"
+#include "utils/constexpr_math.h"
 #include "glm/glm.hpp"
 
 #include <numeric>
@@ -35,7 +36,7 @@ inline void reset_storage()
 	tl_storage.line_count = 0;
 }
 
-inline void add_vertex(const glm::vec3& position, const glm::vec2& uv)
+inline void add_vertex(const glm::vec3& position, const glm::vec2& uv={0.f,0.f})
 {
 	// W_ASSERT(tl_storage.vertex_count+1<k_max_vertices, "Vertex data is full.");
 	tl_storage.position[tl_storage.vertex_count] = position;
@@ -277,6 +278,65 @@ void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vect
 
 	build_shape(layout, vdata, idata, params);
 }
+
+void make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+{
+	// Ignore parameters for now, only z-plane available
+	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
+
+	// Constants to get normalized vertex positions
+	static constexpr float PHI = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
+	static constexpr float ONE_N = 1.0f/(utils::fsqrt(2.0f+PHI)); // norm of any icosahedron vertex position
+	static constexpr float PHI_N = PHI*ONE_N;
+
+    add_vertex({-ONE_N,  PHI_N,  0.f  });
+    add_vertex({ ONE_N,  PHI_N,  0.f  });
+    add_vertex({-ONE_N, -PHI_N,  0.f  });
+    add_vertex({ ONE_N, -PHI_N,  0.f  });
+    add_vertex({ 0.f,   -ONE_N,  PHI_N});
+    add_vertex({ 0.f,    ONE_N,  PHI_N});
+    add_vertex({ 0.f,   -ONE_N, -PHI_N});
+    add_vertex({ 0.f,    ONE_N, -PHI_N});
+    add_vertex({ PHI_N,  0.f,   -ONE_N});
+    add_vertex({ PHI_N,  0.f,    ONE_N});
+    add_vertex({-PHI_N,  0.f,   -ONE_N});
+    add_vertex({-PHI_N,  0.f,    ONE_N});
+
+    // Compute UVs
+	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
+    {
+    	// Compute positions in spherical coordinates
+    	const glm::vec3& pos = tl_storage.position[ii];
+		float phi = atan2(pos.y, pos.x);
+		float theta = acos(pos.z); // Position is normalized -> r = 1
+		// Remap latitude and longitude angles to [0,1] and use them as UVs
+		tl_storage.uv[ii] = {0.5f+phi/(2*M_PI), theta/M_PI};
+    }
+
+    add_triangle(0,  11, 5);
+    add_triangle(0,  5,  1);
+    add_triangle(0,  1,  7);
+    add_triangle(0,  7,  10);
+    add_triangle(0,  10, 11);
+    add_triangle(1,  5,  9);
+    add_triangle(5,  11, 4);
+    add_triangle(11, 10, 2);
+    add_triangle(10, 7,  6);
+    add_triangle(7,  1,  8);
+    add_triangle(3,  9,  4);
+    add_triangle(3,  4,  2);
+    add_triangle(3,  2,  6);
+    add_triangle(3,  6,  8);
+    add_triangle(3,  8,  9);
+    add_triangle(4,  9,  5);
+    add_triangle(2,  4,  11);
+    add_triangle(6,  2,  10);
+    add_triangle(8,  6,  7);
+    add_triangle(9,  8,  1);
+
+	build_shape(layout, vdata, idata, params);
+}
+
 
 } // namespace pg
 } // namespace erwin

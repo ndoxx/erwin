@@ -309,6 +309,12 @@ size_t Application::push_overlay(Layer* layer)
 	return index;
 }
 
+void Application::toggle_imgui_layer()
+{
+    if(IMGUI_LAYER)
+        IMGUI_LAYER->toggle();
+}
+
 void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
@@ -347,14 +353,17 @@ void Application::run()
 
         MainRenderer::flush();
         
-		// TODO: move this to render thread when we have one
+		// TODO: move this to renderer
         {
             W_PROFILE_SCOPE("ImGui render")
-    		IMGUI_LAYER->begin();
-    		for(auto* layer: layer_stack_)
-    			layer->on_imgui_render();
-            this->on_imgui_render();
-    		IMGUI_LAYER->end();
+            if(IMGUI_LAYER->is_enabled())
+            {
+        		IMGUI_LAYER->begin();
+        		for(auto* layer: layer_stack_)
+        			layer->on_imgui_render();
+                this->on_imgui_render();
+        		IMGUI_LAYER->end();
+            }
         }
 
         if(!window_->is_vsync())

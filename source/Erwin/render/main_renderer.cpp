@@ -1267,22 +1267,22 @@ void RenderQueue::submit(const DrawCall& dc)
 }
 
 // Helper function to identify which part of the pass state has changed
-/*static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
+static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
 {
 	return ((state^old_state)&mask) > 0;
-}*/
+}
 
 static void handle_state(uint64_t state_flags)
 {
 	// * If pass state has changed, decode it, find which parts have changed and update device state
-	static uint64_t last_state = 0xffffffffffffffff;
+	static uint64_t last_state = PassState().encode(); // Initialized as default state
 	if(state_flags != last_state)
 	{
 		PassState state;
 		state.decode(state_flags);
 
-		/*if(has_mutated(state_flags, last_state, k_framebuffer_mask))
-		{*/
+		if(has_mutated(state_flags, last_state, k_framebuffer_mask))
+		{
 			if(state.render_target == s_storage->default_framebuffer_)
 				Gfx::device->bind_default_framebuffer();
 			else
@@ -1292,35 +1292,35 @@ static void handle_state(uint64_t state_flags)
 							| (state.depth_stencil_state.depth_test_enabled   ? ClearFlags::CLEAR_DEPTH_FLAG : ClearFlags::CLEAR_NONE)
 							| (state.depth_stencil_state.stencil_test_enabled ? ClearFlags::CLEAR_STENCIL_FLAG : ClearFlags::CLEAR_NONE);
 			Gfx::device->clear(clear_flags); // TMP: Ok for now, but this will not allow to blend the result of multiple passes
-		//}
+		}
 
-		//if(has_mutated(state_flags, last_state, k_cull_mode_mask))
+		if(has_mutated(state_flags, last_state, k_cull_mode_mask))
 			Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
 		
-		/*if(has_mutated(state_flags, last_state, k_transp_mask))
-		{*/
+		if(has_mutated(state_flags, last_state, k_transp_mask))
+		{
 			if(state.blend_state == BlendState::Alpha)
 				Gfx::device->set_std_blending();
 			else
 				Gfx::device->disable_blending();
-		//}
+		}
 
-		/*if(has_mutated(state_flags, last_state, k_stencil_test_mask))
-		{*/
+		if(has_mutated(state_flags, last_state, k_stencil_test_mask))
+		{
 			Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
 			if(state.depth_stencil_state.stencil_test_enabled)
 			{
 				Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
 				Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
 			}
-		//}
+		}
 
-		/*if(has_mutated(state_flags, last_state, k_depth_test_mask))
-		{*/
+		if(has_mutated(state_flags, last_state, k_depth_test_mask))
+		{
 			Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
 			if(state.depth_stencil_state.depth_test_enabled)
 				Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
-		//}
+		}
 	
 		last_state = state_flags;
 	}

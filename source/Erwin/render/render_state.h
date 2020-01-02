@@ -137,6 +137,11 @@ struct PassState
         depth_stencil_state.stencil_func         = StencilFunc(    (state & k_stencil_func_mask) >> k_stencil_func_shift);
         depth_stencil_state.stencil_operator     = StencilOperator((state & k_stencil_op_mask)   >> k_stencil_op_shift);
     }
+
+    static inline bool is_transparent(uint64_t pass_state)
+    {
+        return bool((pass_state & k_transp_mask) >> k_transp_shift);
+    }
 };
 
 } // namespace erwin

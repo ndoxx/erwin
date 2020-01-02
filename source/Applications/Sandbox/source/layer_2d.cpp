@@ -33,19 +33,13 @@ void Layer2D::on_imgui_render()
 #ifdef W_DEBUG
     if(enable_profiling_)
     {
-    	static uint32_t s_frame_cnt = 0;
     	const auto& mr_stats = MainRenderer::get_stats();
     	uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
     	ImGui::Begin("Stats");
         	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);
         	ImGui::Separator();
         	ImGui::PlotVar("Draw time (µs)", mr_stats.render_time, 0.0f, 7000.f);
-    	
-            if(++s_frame_cnt>200)
-            {
-                s_frame_cnt = 0;
-                ImGui::PlotVarFlushOldEntries();
-            }
+            ImGui::PlotVarFlushOldEntries();
     	ImGui::End();
     }
 #endif

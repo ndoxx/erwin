@@ -80,6 +80,15 @@ void CommonGeometry::init()
 		make_geometry("cube_pbr"_h, PBR_VBL, vdata, idata);
 	}
 
+	// PBR Icosahedron
+	{
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = MainRenderer::get_vertex_buffer_layout(PBR_VBL);
+		pg::make_icosahedron(layout, vdata, idata);
+		make_geometry("icosahedron_pbr"_h, PBR_VBL, vdata, idata);
+	}
+
 	MainRenderer::flush();
 }
 

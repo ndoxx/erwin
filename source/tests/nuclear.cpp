@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 
-		pg::make_cube(layout, vdata, idata);
+		pg::make_icosahedron(layout, vdata, idata);
 
 		for(int ii=0; ii<vdata.size()/5; ++ii)
 		{
@@ -58,53 +58,9 @@ int main(int argc, char** argv)
 		}
 	}
 
-	{
-		DLOGN("nuclear") << "Position/Normal/UV" << std::endl;
-
-		BufferLayout layout({
-				    			{"a_position"_h, ShaderDataType::Vec3},
-				    			{"a_normal"_h,   ShaderDataType::Vec3},
-								{"a_uv"_h,       ShaderDataType::Vec2},
-							});
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-
-		pg::make_cube(layout, vdata, idata);
-
-		for(int ii=0; ii<vdata.size()/8; ++ii)
-		{
-			DLOG("nuclear",1) << "(" << vdata[8*ii+0] << "," << vdata[8*ii+1] << "," << vdata[8*ii+2] << ") "
-							  << "(" << vdata[8*ii+3] << "," << vdata[8*ii+4] << "," << vdata[8*ii+5] << ") "
-							  << "(" << vdata[8*ii+6] << "," << vdata[8*ii+7] << ") " << std::endl;
-		}
-	}
-
-	{
-		DLOGN("nuclear") << "Position/Normal/Tangent/UV" << std::endl;
-
-		BufferLayout layout({
-				    			{"a_position"_h, ShaderDataType::Vec3},
-				    			{"a_normal"_h,   ShaderDataType::Vec3},
-				    			{"a_tangent"_h,  ShaderDataType::Vec3},
-								{"a_uv"_h,       ShaderDataType::Vec2},
-							});
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-
-		pg::make_cube(layout, vdata, idata);
-
-		for(int ii=0; ii<vdata.size()/11; ++ii)
-		{
-			DLOG("nuclear",1) << "(" << vdata[11*ii+0] << "," << vdata[11*ii+1] << "," << vdata[11*ii+2] << ") "
-							  << "(" << vdata[11*ii+3] << "," << vdata[11*ii+4] << "," << vdata[11*ii+5] << ") "
-							  << "(" << vdata[11*ii+6] << "," << vdata[11*ii+7] << "," << vdata[11*ii+8] << ") "
-							  << "(" << vdata[11*ii+9] << "," << vdata[11*ii+10] << ") " << std::endl;
-		}
-	}
 
 	return 0;
 }
-
 
 
 /*
