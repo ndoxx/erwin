@@ -17,6 +17,10 @@ layout(std140, binding = 0) uniform pass_data
 {
 	mat4 u_m4_v;   // view
 	mat4 u_m4_vp;  // view-projection
+
+	vec4 u_v4_light_position_w; // Directional light position, world space
+	vec4 u_v4_light_color;
+	float u_f_light_ambient_strength;
 };
 layout(std140, binding = 1) uniform instance_data
 {
@@ -29,9 +33,6 @@ layout(std140, binding = 2) uniform material_data
 	vec4 u_v4_tint; // tint
 };
 
-// Directional light position, world space 
-const vec3 light_position_w = normalize(vec3(0.f,0.3f,-1.f));
-
 void main()
 {
 	gl_Position = u_m4_mvp*vec4(a_position, 1.f);
@@ -42,7 +43,7 @@ void main()
     mat3 TBN_inv = transpose(v_TBN);
 
     // Light position, view space
-    vec4 light_pos_v = u_m4_v*vec4(-light_position_w, 0.f);
+    vec4 light_pos_v = u_m4_v*vec4(-u_v4_light_position_w.xyz, 0.f);
     // Vertex position, view space
     vec4 vertex_pos_v = u_m4_mv*vec4(a_position, 1.f);
     
@@ -77,6 +78,10 @@ layout(std140, binding = 0) uniform pass_data
 {
 	mat4 u_m4_v;   // view
 	mat4 u_m4_vp;  // view-projection
+
+	vec4 u_v4_light_position_w; // Directional light position, world space
+	vec4 u_v4_light_color;
+	float u_f_light_ambient_strength;
 };
 layout(std140, binding = 1) uniform instance_data
 {
@@ -89,8 +94,6 @@ layout(std140, binding = 2) uniform material_data
 	vec4 u_v4_tint; // tint
 };
 
-const vec3 v3_light_color = vec3(0.95f,0.85f,0.5f);
-const float f_ambient_strength = 0.1f;
 const float f_parallax_height_scale = 0.1f;
 
 void main()
@@ -111,14 +114,14 @@ void main()
 	float frag_ao        = frag_mra.z;
 
 	// Apply BRDF
-    vec3 radiance = CookTorrance(v3_light_color,
+    vec3 radiance = CookTorrance(u_v4_light_color.rgb,
                                  v_light_dir_v,
                                  frag_normal,
                                  v_view_dir_v,
                                  frag_albedo,
                                  frag_metallic,
                                  frag_roughness);
-    vec3 ambient = (frag_ao * f_ambient_strength) * frag_albedo;
+    vec3 ambient = (frag_ao * u_f_light_ambient_strength) * frag_albedo;
     vec3 total_light = radiance + ambient;
 
     out_color = vec4(total_light,frag_alpha);

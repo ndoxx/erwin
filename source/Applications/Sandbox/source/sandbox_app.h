@@ -28,6 +28,7 @@ public:
 
 	void window_layer_config(bool* p_open);
 	void window_post_processing(bool* p_open);
+	void window_lighting(bool* p_open);
 #ifdef W_PROFILE
 	void window_profiling(bool* p_open);
 	void window_render_stats(bool* p_open);

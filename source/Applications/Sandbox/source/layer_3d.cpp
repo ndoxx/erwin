@@ -57,6 +57,10 @@ void Layer3D::on_attach()
 	// TMP: this is awkward
 	for(Cube& cube: scene_)
 		cube.material.data = &cube.material_data;
+
+	dir_light_.set_position(90.f, 160.f);
+	dir_light_.color    = {0.95f,0.85f,0.5f};
+	dir_light_.ambient_strength = 0.1f;
 }
 
 void Layer3D::on_detach()
@@ -90,7 +94,7 @@ void Layer3D::on_update(GameClock& clock)
 	// Draw scene
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 
-	ForwardRenderer::begin_pass(camera_ctl_.get_camera(), false, get_layer_id());
+	ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, false, get_layer_id());
 	for(auto&& cube: scene_)
 		ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 	ForwardRenderer::end_pass();

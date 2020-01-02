@@ -43,6 +43,7 @@ void Sandbox::on_imgui_render()
 	static bool show_app_layer_config_window = false;
 	static bool show_app_post_processing_window = false;
 	static bool show_app_render_stats_window = false;
+	static bool show_app_lighting_window = false;
 
 	if(ImGui::BeginMainMenuBar())
 	{
@@ -67,6 +68,11 @@ void Sandbox::on_imgui_render()
         	ImGui::MenuItem("Tweaks", NULL, &show_app_post_processing_window);
         	ImGui::EndMenu();
         }
+    	if(ImGui::BeginMenu("Scene"))
+        {
+        	ImGui::MenuItem("Lighting", NULL, &show_app_lighting_window);
+        	ImGui::EndMenu();
+        }
     	ImGui::EndMainMenuBar();
 	}
 
@@ -74,6 +80,7 @@ void Sandbox::on_imgui_render()
 
 	if(show_app_layer_config_window)    window_layer_config(&show_app_layer_config_window);
 	if(show_app_post_processing_window) window_post_processing(&show_app_post_processing_window);
+	if(show_app_lighting_window)        window_lighting(&show_app_lighting_window);
 	if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);
 #ifdef W_PROFILE
     MainRenderer::set_profiling_enabled(show_app_render_stats_window);
@@ -157,6 +164,29 @@ void Sandbox::window_post_processing(bool* p_open)
             ImGui::SliderFloat3("Balance", (float*)&presentation_layer_->pp_data_.vib_balance, 0.0f, 1.0f);
             ImGui::TreePop();
             ImGui::Separator();
+        }
+    	ImGui::End();
+    }
+}
+
+void Sandbox::window_lighting(bool* p_open)
+{
+    if(ImGui::Begin("Lighting", p_open))
+    {
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Directional light"))
+        {
+        	static float inclination_deg   = 90.0f;
+        	static float arg_periapsis_deg = 160.0f;
+            if(ImGui::SliderFloat("Inclination", &inclination_deg, 0.0f, 180.0f))
+            	layer_3d_->dir_light_.set_position(inclination_deg, arg_periapsis_deg);
+            if(ImGui::SliderFloat("Arg. periapsis", &arg_periapsis_deg, 0.0f, 360.0f))
+            	layer_3d_->dir_light_.set_position(inclination_deg, arg_periapsis_deg);
+
+            ImGui::SliderFloat("Brightness", &layer_3d_->dir_light_.brightness, 0.0f, 30.0f);
+            ImGui::SliderFloat("Ambient str.", &layer_3d_->dir_light_.ambient_strength, 0.0f, 0.5f);
+            ImGui::ColorEdit3("Color", (float*)&layer_3d_->dir_light_.color);
+            ImGui::TreePop();
         }
     	ImGui::End();
     }

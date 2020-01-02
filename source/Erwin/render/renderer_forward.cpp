@@ -13,6 +13,9 @@ struct PassUBOData
 {
 	glm::mat4 view_matrix;
 	glm::mat4 view_projection_matrix;
+	glm::vec4 light_position;
+	glm::vec4 light_color;
+	float light_ambient_strength;
 };
 
 struct InstanceData
@@ -65,7 +68,7 @@ void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle m
 	MainRenderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, bool transparent, uint8_t layer_id)
+void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, bool transparent, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
 
@@ -92,6 +95,9 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, bool transpa
 	// Set scene data
 	s_storage.pass_ubo_data.view_matrix = camera.get_view_matrix();
 	s_storage.pass_ubo_data.view_projection_matrix = camera.get_view_projection_matrix();
+	s_storage.pass_ubo_data.light_position = glm::vec4(dir_light.position, 0.f);
+	s_storage.pass_ubo_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
+	s_storage.pass_ubo_data.light_ambient_strength = dir_light.ambient_strength;
 	s_storage.frustum_planes = camera.get_frustum_planes();
 
 	MainRenderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.pass_ubo_data, sizeof(PassUBOData));

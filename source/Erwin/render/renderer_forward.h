@@ -4,6 +4,7 @@
 #include "render/camera_3d.h"
 #include "entity/component_transform.h"
 #include "render/handles.h"
+#include "render/light.h"
 
 namespace erwin
 {
@@ -16,7 +17,7 @@ public:
 	// Register a shader for forward rendering
 	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo);
 	// Start a new pass
-	static void begin_pass(const PerspectiveCamera3D& camera, bool transparent, uint8_t layer_id);
+	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, bool transparent, uint8_t layer_id);
 	// End a pass
 	static void end_pass();
 	// Draw a textured mesh
