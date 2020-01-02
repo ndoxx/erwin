@@ -7,6 +7,8 @@ using namespace erwin;
 class Layer2D: public Layer
 {
 public:
+	friend class Sandbox;
+	
 	Layer2D();
 	~Layer2D() = default;
 
@@ -27,5 +29,4 @@ private:
 	float tt_ = 0.f;
 	bool trippy_mode_ = false;
 	int len_grid_ = 100;
-	bool enable_profiling_ = false;
 };

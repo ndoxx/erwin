@@ -7,6 +7,8 @@ using namespace erwin;
 class DebugLayer: public Layer
 {
 public:
+	friend class Sandbox;
+
 	DebugLayer();
 	~DebugLayer() = default;
 
@@ -21,10 +23,5 @@ protected:
 	virtual bool on_event(const MouseScrollEvent& event) override;
 
 private:
-	bool enable_runtime_profiling_ = false;
-	bool frame_profiling_ = false;
-	int profile_num_frames_ = 60;
-	int frames_counter_ = 0;
-
 	bool texture_peek_ = false;
 };

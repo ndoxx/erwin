@@ -23,7 +23,7 @@ public:
 	static void set_projection_parameters(const glm::vec4& proj_params);
 
 	static void render();
-	static void on_imgui_render();
+	static void on_imgui_render(bool* p_open);
 };
 
 

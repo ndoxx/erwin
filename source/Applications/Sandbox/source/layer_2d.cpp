@@ -19,41 +19,7 @@ Layer2D::Layer2D(): Layer("2DLayer"), camera_ctl_(1280.f/1024.f, 1.f)
 
 void Layer2D::on_imgui_render()
 {
-    ImGui::Begin("BatchRenderer2D");
-#ifdef W_DEBUG
-    	if(ImGui::Checkbox("Profile", &enable_profiling_))
-    		MainRenderer::set_profiling_enabled(enable_profiling_);
-
-    	ImGui::Separator();
-#endif
-        ImGui::SliderInt("Grid size", &len_grid_, 10, 500);
-    	ImGui::Text("Drawing %d squares.", len_grid_*len_grid_);
-    	ImGui::Checkbox("Trippy mode", &trippy_mode_);
-    ImGui::End();
-#ifdef W_DEBUG
-    if(enable_profiling_)
-    {
-    	const auto& mr_stats = MainRenderer::get_stats();
-    	uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
-    	ImGui::Begin("Stats");
-        	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);
-        	ImGui::Separator();
-        	ImGui::PlotVar("Draw time (µs)", mr_stats.render_time, 0.0f, 7000.f);
-            ImGui::PlotVarFlushOldEntries();
-    	ImGui::End();
-    }
-#endif
-/*
-	// BUG#2 tracking
-	static uint32_t s_frame = 0;
-	static int s_displayed = 0;
-    if(mr_stats.render_time>1500 && s_displayed<25)
-    {
-    	DLOGW("render") << "Frame: " << s_frame << std::endl;
-    	++s_displayed;
-    }
-    ++s_frame;
-*/
+	
 }
 
 void Layer2D::on_attach()

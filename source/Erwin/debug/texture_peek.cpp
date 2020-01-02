@@ -170,13 +170,13 @@ void TexturePeek::render()
 #endif
 }
 
-void TexturePeek::on_imgui_render()
+void TexturePeek::on_imgui_render(bool* p_open)
 {
 #ifdef W_DEBUG
     if(s_storage.panes_.size() == 0)
     	return;
 
-    if(!ImGui::Begin("Texture peek"))
+    if(!ImGui::Begin("Texture peek", p_open))
     {
         ImGui::End();
         return;

@@ -20,6 +20,8 @@ struct Cube
 class Layer3D: public Layer
 {
 public:
+	friend class Sandbox;
+	
 	Layer3D();
 	~Layer3D() = default;
 

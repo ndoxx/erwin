@@ -7,6 +7,8 @@ using namespace erwin;
 class PresentationLayer: public Layer
 {
 public:
+	friend class Sandbox;
+
 	PresentationLayer();
 	~PresentationLayer() = default;
 
