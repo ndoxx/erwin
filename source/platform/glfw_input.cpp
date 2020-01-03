@@ -32,5 +32,17 @@ std::pair<float,float> GLFWInput::get_mouse_position_impl() const
 	return { (float)xpos, (float)ypos };
 }
 
+void GLFWInput::set_mouse_position_impl(float x, float y) const
+{
+	GLFWwindow* window = static_cast<GLFWwindow*>(Application::get_instance().get_window().get_native());
+	glfwSetCursorPos(window, x, y);
+}
+
+void GLFWInput::show_cursor_impl(bool value) const
+{
+	GLFWwindow* window = static_cast<GLFWwindow*>(Application::get_instance().get_window().get_native());
+	glfwSetInputMode(window, GLFW_CURSOR, value ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+}
+
 
 } // namespace erwin

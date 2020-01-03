@@ -2,28 +2,38 @@
 
 #include <cstdint>
 #include <utility>
+#include <ostream>
+#include "memory/free_list.h"
 
 namespace erwin
 {
 namespace memory
 {
 
+class HeapArea;
 class PoolAllocator
 {
 public:
-	explicit PoolAllocator(std::size_t size);
+	PoolAllocator() = default;
+	PoolAllocator(HeapArea& area, std::size_t node_size, std::size_t max_nodes, const char* debug_name);
 
-	PoolAllocator(void* begin, void* end, std::size_t max_size);
-	PoolAllocator(std::pair<void*,void*> ptr_range, std::size_t max_size);
+	void init(HeapArea& area, std::size_t node_size, std::size_t max_nodes, const char* debug_name);
 
-	void* allocate(std::size_t size, std::size_t alignment, std::size_t offset);
+	inline uint8_t* begin()             { return begin_; }
+	inline const uint8_t* begin() const { return begin_; }
+	inline uint8_t* end()               { return end_; }
+	inline const uint8_t* end() const   { return end_; }
+
+	void* allocate(std::size_t size, std::size_t alignment=0, std::size_t offset=0);
 	void deallocate(void* ptr);
 	void reset();
 
 private:
+	std::size_t node_size_;
+	std::size_t max_nodes_;
 	uint8_t* begin_;
 	uint8_t* end_;
-	std::size_t max_size_;
+	Freelist free_list_;
 };
 
 

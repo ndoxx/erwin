@@ -6,7 +6,6 @@
 	Modifications:
 		* Using if constexpr and std::is_pod instead of type dispatching to
 		  optimize NewArray and DeleteArray for POD types
-		* MemoryArena saves allocation size before the front sentinel 
 */
 
 #include <iostream>
@@ -18,9 +17,8 @@
 #include <type_traits>
 #include <algorithm>
 
-#include "core/core.h"
 #include "debug/logger.h"
-#include "memory/memory_utils.h"
+#include "memory/heap_area.h"
 
 // Useful to avoid uninitialized reads with Valgrind during hexdumps
 // Disable for retail build
@@ -115,60 +113,10 @@ private:
 	int32_t num_allocs_ = 0;
 };
 
-}
+} // namespace policy
 
-class HeapArea
-{
-public:
-	HeapArea(size_t size):
-	size_(size)
-	{
-		begin_ = new uint8_t[size_];
-		head_ = begin_;
-#ifdef HEAP_AREA_MEMSET_ENABLED
-		memset(begin_, AREA_MEMSET_VALUE, size_);
-#endif
-	}
-
-	~HeapArea()
-	{
-		delete[] begin_;
-	}
-
-	inline void* begin() { return begin_; }
-	inline void* end()   { return begin_+size_+1; }
-	inline std::pair<void*,void*> range() { return {begin(), end()}; }
-
-	// Get a range of pointers to a memory block within area, and advance head
-	inline std::pair<void*,void*> require_block(size_t size)
-	{
-		// Page align returned block to avoid false sharing if multiple threads access this area
-        size_t padding = utils::alignment_padding((std::size_t)(head_), 64);
-		W_ASSERT(head_ + size + padding < end(), "[HeapArea] Out of memory!");
-
-    	// Mark padding area
-#ifdef HEAP_AREA_PADDING_MAGIC
-    	std::fill(head_, head_ + padding, AREA_PADDING_MARK);
-#endif
-
-		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
-
-		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " allocated aligned block:" << std::endl;
-		DLOGI << "Size:      "   << WCC('v') << size                                                 << WCC(0) << "B" << std::endl;
-		DLOGI << "Padding:   "   << WCC('v') << padding                                              << WCC(0) << "B" << std::endl;
-		DLOGI << "Remaining: "   << WCC('v') << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << WCC(0) << "B" << std::endl;
-		DLOGI << "Address:   0x" << std::hex << uint64_t(head_ + padding)                            << std::dec << std::endl;
-
-		head_ += size + padding;
-		return range;
-	}
-
-private:
-	size_t size_;
-	uint8_t* begin_;
-	uint8_t* head_;
-};
-
+// TODO: OPTIMIZE - MemoryArena could be partially specialized for PoolAllocator
+//                  so as to avoid writing the allocation size before each element 
 template <typename AllocatorT, 
 		  typename ThreadPolicyT=policy::SingleThread,
 		  typename BoundsCheckerT=policy::NoBoundsChecking,
@@ -184,10 +132,13 @@ public:
 	static constexpr uint32_t DECORATION_SIZE = BK_FRONT_SIZE
 											  + BoundsCheckerT::SIZE_BACK;
 
+	MemoryArena(): is_initialized_(false) { }
+
 	// Wrap the allocator ctor
     template <typename... ArgsT>
     explicit MemoryArena(ArgsT&&... args):
-    allocator_(std::forward<ArgsT>(args)...)
+    allocator_(std::forward<ArgsT>(args)...),
+    is_initialized_(true)
     {
 
     }
@@ -197,12 +148,24 @@ public:
     	memory_tracker_.report();
     }
 
+    template <typename... ArgsT>
+    inline void init(ArgsT&&... args)
+    {
+    	allocator_.init(std::forward<ArgsT>(args)...);
+    	is_initialized_ = true;
+    }
+
+    inline void shutdown()
+    {
+    	is_initialized_ = false;
+    }
+
     inline       AllocatorT& get_allocator()       { return allocator_; }
     inline const AllocatorT& get_allocator() const { return allocator_; }
 
-#ifdef W_DEBUG
     inline void set_debug_name(const std::string& name) { debug_name_ = name; }
-#endif
+
+    inline bool is_initialized() const { return is_initialized_; }
 
 	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
 	{
@@ -263,6 +226,13 @@ public:
 		thread_guard_.leave();
 	}
 
+	inline void reset()
+	{
+		thread_guard_.enter();
+		allocator_.reset();
+		thread_guard_.leave();
+	}
+
 private:
 	AllocatorT     allocator_;
 	ThreadPolicyT  thread_guard_;
@@ -270,9 +240,8 @@ private:
 	MemoryTaggerT  memory_tagger_;
 	MemoryTrackerT memory_tracker_;
 
-#ifdef W_DEBUG
 	std::string debug_name_;
-#endif
+	bool is_initialized_;
 };
 
 template <typename T, class ArenaT>
@@ -362,12 +331,15 @@ template <typename ThreadPolicyT=policy::SingleThread>
 class LinearBuffer
 {
 public:
-	LinearBuffer(std::pair<void*,void*> ptr_range):
-	begin_(static_cast<uint8_t*>(ptr_range.first)),
-	end_(static_cast<uint8_t*>(ptr_range.second)),
-	head_(begin_)
+	LinearBuffer(HeapArea& area, std::size_t size, const char* debug_name)
 	{
-
+    	std::pair<void*,void*> range = area.require_block(size, debug_name);
+    	begin_ = static_cast<uint8_t*>(range.first);
+    	end_ = static_cast<uint8_t*>(range.second);
+    	head_ = begin_;
+#ifdef W_DEBUG
+    	debug_name_ = debug_name;
+#endif
 	}
 
 #ifdef W_DEBUG

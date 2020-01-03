@@ -296,7 +296,7 @@ static const std::unordered_map<WMOUSE, std::string> MB_NAMES =
 	{WMOUSE::BUTTON_8, "BUTTON_8"},
 };
 
-static bool is_modifier_key(WKEY key)
+[[maybe_unused]] static bool is_modifier_key(WKEY key)
 {
 	return (key == keymap::WKEY::LEFT_CONTROL  ||
             key == keymap::WKEY::LEFT_SHIFT    ||
@@ -306,7 +306,7 @@ static bool is_modifier_key(WKEY key)
             key == keymap::WKEY::RIGHT_ALT);
 }
 
-static std::string modifier_string(int mods)
+[[maybe_unused]] static std::string modifier_string(int mods)
 {
 	if(mods==0)
 		return "";

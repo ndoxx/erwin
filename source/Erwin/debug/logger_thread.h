@@ -7,7 +7,7 @@
 #include "ctti/type_id.hpp"
 
 #include "debug/logger_common.h"
-#include "event/event.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {
@@ -108,12 +108,14 @@ protected:
 	template <typename EventT>
 	bool log_event(const EventT& event)
 	{
+#ifdef W_DEBUG
 		if(event_filter_[ctti::type_id<EventT>()])
 		{
 			std::stringstream ss;
 			ss << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
 			enqueue(LogStatement{"event"_h, dbg::MsgType::EVENT, event.timestamp, 0, 0, "", ss.str()});
 		}
+#endif
         return false;
 	}
 
@@ -135,7 +137,7 @@ private:
     std::unordered_map<ctti::unnamed_type_id_t, bool> event_filter_; // Controls which tracked events are propagated to the sinks
 };
 
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED==1
 struct Logger
 {
 	static std::unique_ptr<LoggerThread> LOGGER_THREAD;
@@ -144,6 +146,9 @@ struct Logger
 
 } // namespace dbg
 
-#define WLOGGER if constexpr(!LOGGING_ENABLED); else (*dbg::Logger::LOGGER_THREAD)
-
+#if LOGGING_ENABLED==1
+    #define WLOGGER( INSTR ) (*dbg::Logger::LOGGER_THREAD).INSTR;
+#else
+    #define WLOGGER( INSTR )
+#endif
 } // namespace erwin

@@ -2,6 +2,7 @@
 #include "core/window.h"
 #include "event/event.h"
 #include "debug/logger.h"
+#include "debug/logger_sink.h"
 #include "debug/logger_thread.h"
 
 using namespace erwin;
@@ -160,7 +161,7 @@ struct VictimThread
     std::atomic<bool> thread_state;
 };
 
-Window* Window::create(const WindowProps& props)
+WScope<Window> Window::create(const WindowProps& props)
 {
     return nullptr;
 }

@@ -9,6 +9,7 @@
 #include "cereal/archives/json.hpp"
 
 #include "debug/logger.h"
+#include "debug/logger_sink.h"
 #include "debug/logger_thread.h"
 
 using namespace erwin;

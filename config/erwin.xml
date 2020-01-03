@@ -2,46 +2,68 @@
 <Config>
 	<logger>
 		<Channel name="application" verbosity="3"/>
-		<Channel name="memory"      verbosity="3"/>
-		<Channel name="render"      verbosity="3"/>
+		<Channel name="asset"       verbosity="3"/>
+		<Channel name="memory"      verbosity="1"/>
+		<Channel name="thread"      verbosity="1"/>
+		<Channel name="entity"      verbosity="1"/>
+		<Channel name="render"      verbosity="1"/>
 		<Channel name="shader"      verbosity="3"/>
-		<Channel name="texture"     verbosity="3"/>
-		<Channel name="util"        verbosity="3"/>
+		<Channel name="texture"     verbosity="1"/>
+		<Channel name="util"        verbosity="1"/>
 		<Channel name="config"      verbosity="3"/>
 
 		<Sink name="ConsoleSink"    type="ConsoleSink" channels="all"/>
 		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
 		<Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
 
-		<bool name="backtrace_on_error"              value="false"/>
-		<bool name="single_threaded"                 value="true"/>
-		<bool name="track_window_close_events"       value="true"/>
-		<bool name="track_window_resize_events"      value="true"/>
-		<bool name="track_framebuffer_resize_events" value="true"/>
-		<bool name="track_keyboard_events"           value="false"/>
-		<bool name="track_mouse_button_events"       value="true"/>
-		<bool name="track_mouse_scroll_events"       value="false"/>
-		<bool name="track_mouse_moved_events"        value="false"/>
+		<bool name="backtrace_on_error" value="false"/>
+		<bool name="single_threaded"    value="true"/>
 	</logger>
 
-    <display>
-        <uint name="width"      value="1920"/>
-        <uint name="height"     value="1080"/>
-        <uint name="target_fps" value="60"/>
-        <bool name="full"       value="false"/>
-        <bool name="topmost"    value="true"/>
-        <bool name="vsync"      value="true"/>
-    </display>
+	<profiling>
+		<bool name="runtime_session_enabled" value="false"/>
+	</profiling>
 
     <renderer>
-    	<Queue name="Opaque" sort="depth_descend"/>
-    	<memory>
-	    	<size name="renderer_area"   value="32_MB"/>
+        <uint name="max_2d_batch_count" value="8192"/>
+    </renderer>
+
+	<memory>
+	    <!-- Renderer memory -->
+	    <size name="renderer_area" value="32_MB"/>
+	    <renderer>
 	    	<size name="queue_buffer"    value="512_kB"/>
 	    	<size name="pre_buffer"      value="512_kB"/>
 	    	<size name="post_buffer"     value="512_kB"/>
-	    	<size name="auxiliary_arena" value="16_MB"/>
-	    </memory>
-        <uint name="max_2d_batch_count" value="8192"/>
-    </renderer>
+	    	<size name="auxiliary_arena" value="20_MB"/>
+	    </renderer>
+
+	    <!-- Generic system memory -->
+    	<size name="system_area" value="1_MB"/>
+	    <!-- Event pool max nodes -->
+	    <event_pool>
+			<uint name="WindowCloseEvent"       value="8"/>
+			<uint name="WindowResizeEvent"      value="8"/>
+			<uint name="FramebufferResizeEvent" value="8"/>
+			<uint name="KeyboardEvent"          value="16"/>
+			<uint name="KeyTypedEvent"          value="16"/>
+			<uint name="MouseButtonEvent"       value="16"/>
+			<uint name="MouseMovedEvent"        value="16"/>
+			<uint name="MouseScrollEvent"       value="16"/>
+	    </event_pool>
+    </memory>
+
+    <events>
+		<track>
+			<bool name="WindowCloseEvent"       value="true"/>
+			<bool name="WindowResizeEvent"      value="true"/>
+			<bool name="FramebufferResizeEvent" value="true"/>
+			<bool name="KeyboardEvent"          value="false"/>
+			<bool name="KeyTypedEvent"          value="false"/>
+			<bool name="MouseButtonEvent"       value="true"/>
+			<bool name="MouseMovedEvent"        value="false"/>
+			<bool name="MouseScrollEvent"       value="false"/>
+		</track>
+    </events>
+
 </Config>

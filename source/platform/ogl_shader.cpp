@@ -7,7 +7,7 @@
 #include "platform/ogl_buffer.h"
 #include "core/core.h"
 #include "core/wtypes.h"
-#include "core/string_utils.h"
+#include "utils/string.h"
 #include "core/intern_string.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
@@ -146,6 +146,22 @@ static std::string ogl_interface_to_string(GLenum iface)
     }
 }
 
+static inline hash_t slot_to_sampler2D_name(int32_t slot)
+{
+    switch(slot)
+    {
+        case 0: return "SAMPLER_2D_0"_h;
+        case 1: return "SAMPLER_2D_1"_h;
+        case 2: return "SAMPLER_2D_2"_h;
+        case 3: return "SAMPLER_2D_3"_h;
+        case 4: return "SAMPLER_2D_4"_h;
+        case 5: return "SAMPLER_2D_5"_h;
+        case 6: return "SAMPLER_2D_6"_h;
+        case 7: return "SAMPLER_2D_7"_h;
+        default: return 0;
+    }
+}
+
 static std::string get_shader_error_report(GLuint ShaderID)
 {
     char* log = nullptr;
@@ -231,6 +247,8 @@ bool OGLShader::init_glsl_string(const std::string& name, const std::string& sou
 // Initialize shader from packed GLSL source
 bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 {
+    W_PROFILE_FUNCTION()
+
     name_ = name;
     filepath_ = glsl_file;
     // Read stream to buffer and parse full source
@@ -245,6 +263,8 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 // Initialize shader from SPIR-V file
 bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
 {
+    W_PROFILE_FUNCTION()
+
     name_ = name;
     filepath_ = spv_file;
 
@@ -254,12 +274,26 @@ bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
     return success;
 }
 
-void OGLShader::bind_impl() const
+void OGLShader::bind() const
 {
     glUseProgram(rd_handle_);
+
+    // Bind resources
+    for(auto&& [key, ubo]: uniform_buffers_)
+    {
+        hash_t hname = H_(ubo->get_name().c_str());
+        GLint binding_point = block_bindings_.at(hname);
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(*ubo).get_handle());
+    }
+    for(auto&& [key, ssbo]: shader_storage_buffers_)
+    {
+        hash_t hname = H_(ssbo->get_name().c_str());
+        GLint binding_point = block_bindings_.at(hname);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(*ssbo).get_handle());
+    }
 }
 
-void OGLShader::unbind_impl() const
+void OGLShader::unbind() const
 {
     glUseProgram(0);
 }
@@ -270,14 +304,28 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
     return texture_slots_.at(sampler);
 }
 
-void OGLShader::attach_texture(hash_t sampler, const Texture2D& texture) const
+uint32_t OGLShader::get_texture_count() const
 {
-    uint32_t slot = get_texture_slot(sampler);
-    texture.bind(slot);
-    send_uniform<int>(sampler, slot);
+    return texture_slots_.size();
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
+void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
+{
+    texture.bind(slot);
+    send_uniform<int>(slot_to_sampler2D_name(slot), slot);
+}
+
+void OGLShader::attach_shader_storage(WRef<ShaderStorageBuffer> buffer)
+{
+    shader_storage_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+}
+
+void OGLShader::attach_uniform_buffer(WRef<UniformBuffer> buffer)
+{
+    uniform_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+}
+
+void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);
@@ -287,7 +335,7 @@ void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
 }
 
-void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
+void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = block_bindings_.at(hname);
@@ -299,6 +347,8 @@ void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size
 
 std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
 {
+    W_PROFILE_FUNCTION()
+
 	std::vector<std::pair<ShaderType, std::string>> sources;
 
 	static const std::string type_token = "#type";
@@ -339,6 +389,8 @@ std::string OGLShader::parse_includes(const std::string& source)
 
 bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)
 {
+    W_PROFILE_FUNCTION()
+
 	DLOGN("shader") << "Building OpenGL Shader program: \"" << name_ << "\" " << std::endl;
 
 	std::vector<uint32_t> shader_ids;
@@ -397,6 +449,8 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 bool OGLShader::build_spirv(const fs::path& filepath)
 {
+    W_PROFILE_FUNCTION()
+
     DLOGN("shader") << "Building SPIR-V OpenGL Shader program: \"" << name_ << "\" " << std::endl;
     std::vector<uint32_t> shader_ids;
 
@@ -446,6 +500,8 @@ bool OGLShader::build_spirv(const fs::path& filepath)
 
 bool OGLShader::link(const std::vector<GLuint>& shader_ids)
 {
+    W_PROFILE_FUNCTION()
+
     // * Link program
     DLOGI << "Linking program." << std::endl;
     rd_handle_ = glCreateProgram();
@@ -488,6 +544,8 @@ struct BlockElement
 
 void OGLShader::introspect()
 {
+    W_PROFILE_FUNCTION()
+    
     // Interfaces to query
     static const std::vector<GLenum> interfaces
     {

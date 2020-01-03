@@ -22,6 +22,8 @@ public:
 	virtual void bind(uint32_t slot = 0) const = 0;
 	virtual void unbind() const = 0;
 
+	virtual void* get_native_handle() = 0;
+
     inline W_ID get_unique_id() const { return unique_id_; }
 
 protected:

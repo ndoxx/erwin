@@ -8,18 +8,22 @@ namespace erwin
 
 struct WindowCloseEvent: public WEvent
 {
-	EVENT_NAME(WindowCloseEvent)
-
+	EVENT_DECLARATION(WindowCloseEvent);
+    WindowCloseEvent() = default;
+    
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "(void)";
     }
+#endif
 };
 
 struct WindowResizeEvent: public WEvent
 {
-	EVENT_NAME(WindowResizeEvent)
+	EVENT_DECLARATION(WindowResizeEvent);
 
+    WindowResizeEvent() = default;
 	WindowResizeEvent(int width, int height):
 	width(width),
 	height(height)
@@ -27,10 +31,12 @@ struct WindowResizeEvent: public WEvent
 
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "new size: " << width << "x" << height;
     }
+#endif
 
     int width;
     int height;
@@ -38,8 +44,9 @@ struct WindowResizeEvent: public WEvent
 
 struct FramebufferResizeEvent: public WEvent
 {
-    EVENT_NAME(FramebufferResizeEvent)
+    EVENT_DECLARATION(FramebufferResizeEvent);
 
+    FramebufferResizeEvent() = default;
     FramebufferResizeEvent(int width, int height):
     width(width),
     height(height)
@@ -47,10 +54,12 @@ struct FramebufferResizeEvent: public WEvent
 
     }
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "new size: " << width << "x" << height;
     }
+#endif
 
     int width;
     int height;
@@ -58,8 +67,9 @@ struct FramebufferResizeEvent: public WEvent
 
 struct KeyboardEvent: public WEvent
 {
-	EVENT_NAME(KeyboardEvent)
+	EVENT_DECLARATION(KeyboardEvent);
 
+    KeyboardEvent() = default;
 	KeyboardEvent(keymap::WKEY key, uint8_t mods, bool pressed, bool repeat):
 	key(key),
 	mods(mods),
@@ -69,6 +79,7 @@ struct KeyboardEvent: public WEvent
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << (pressed ? "PRE " : "REL ");
@@ -82,6 +93,7 @@ struct KeyboardEvent: public WEvent
                    << (repeat ? " (r)" : "");
         }
     }
+#endif
 
     keymap::WKEY key;
     uint8_t mods;
@@ -91,37 +103,43 @@ struct KeyboardEvent: public WEvent
 
 struct KeyTypedEvent: public WEvent
 {
-    EVENT_NAME(KeyTypedEvent)
+    EVENT_DECLARATION(KeyTypedEvent);
 
+    KeyTypedEvent() = default;
     KeyTypedEvent(unsigned int codepoint):
     codepoint(codepoint)
     {
 
     }
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << codepoint;
     }
+#endif
 
     unsigned int codepoint;
 };
 
 struct MouseButtonEvent: public WEvent
 {
-	EVENT_NAME(MouseButtonEvent)
+	EVENT_DECLARATION(MouseButtonEvent);
 
+    MouseButtonEvent() = default;
 	MouseButtonEvent(keymap::WMOUSE button, uint8_t mods, bool pressed, float x, float y):
 	button(button), mods(mods), pressed(pressed), x(x), y(y)
 	{
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << (pressed ? "PRE " : "REL ");
         stream << keymap::modifier_string(mods) << keymap::MB_NAMES.at(button) << " @ (" << x << "," << y << ")";
     }
+#endif
 
     keymap::WMOUSE button;
     uint8_t mods;
@@ -132,18 +150,21 @@ struct MouseButtonEvent: public WEvent
 
 struct MouseMovedEvent: public WEvent
 {
-	EVENT_NAME(MouseMovedEvent)
+	EVENT_DECLARATION(MouseMovedEvent);
 
+    MouseMovedEvent() = default;
 	MouseMovedEvent(float x, float y):
 	x(x), y(y)
 	{
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "cursor " << " @ (" << x << "," << y << ")";
     }
+#endif
 
     float x;
     float y;
@@ -151,18 +172,21 @@ struct MouseMovedEvent: public WEvent
 
 struct MouseScrollEvent: public WEvent
 {
-	EVENT_NAME(MouseScrollEvent)
+	EVENT_DECLARATION(MouseScrollEvent);
 	
+    MouseScrollEvent() = default;
 	MouseScrollEvent(float x_offset, float y_offset):
 	x_offset(x_offset), y_offset(y_offset)
 	{
 		
 	}
 
+#ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
         stream << "(" << x_offset << "," << y_offset << ")";
     }
+#endif
 
     float x_offset;
     float y_offset;

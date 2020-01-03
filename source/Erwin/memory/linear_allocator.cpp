@@ -1,5 +1,6 @@
 #include "memory/linear_allocator.h"
 #include "memory/memory_utils.h"
+#include "memory/heap_area.h"
 #include "core/core.h"
 
 #include <iostream>
@@ -11,23 +12,18 @@ namespace erwin
 namespace memory
 {
 
-LinearAllocator::LinearAllocator(std::size_t size)
+LinearAllocator::LinearAllocator(HeapArea& area, std::size_t size, const char* debug_name)
 {
-
+    init(area, size, debug_name);
 }
 
-LinearAllocator::LinearAllocator(void* begin, void* end):
-begin_(static_cast<uint8_t*>(begin)),
-end_(static_cast<uint8_t*>(end)),
-current_offset_(0)
+void LinearAllocator::init(HeapArea& area, std::size_t size, const char* debug_name)
 {
+    std::pair<void*,void*> range = area.require_block(size, debug_name);
 
-}
-
-LinearAllocator::LinearAllocator(std::pair<void*,void*> ptr_range):
-LinearAllocator(ptr_range.first, ptr_range.second)
-{
-
+    begin_ = static_cast<uint8_t*>(range.first);
+    end_ = static_cast<uint8_t*>(range.second);
+    current_offset_ = 0;
 }
 
 void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)
@@ -57,6 +53,7 @@ void* LinearAllocator::allocate(std::size_t size, std::size_t alignment, std::si
     current_offset_ += padding + size;
     return current + padding;
 }
+
 
 } // namespace memory
 } // namespace erwin

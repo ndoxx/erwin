@@ -1,6 +1,9 @@
 set(SRC_SANDBOX
     source/sandbox_app.cpp
-    source/layer_test.cpp
+    source/layer_2d.cpp
+    source/layer_3d.cpp
+    source/layer_presentation.cpp
+    source/layer_debug.cpp
    )
 
 add_executable(sandbox ${SRC_SANDBOX})
@@ -23,14 +26,10 @@ set_target_properties(ierwin PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/"
 )
 
-# TMP --------------------
-# target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-# TMP --------------------
-
-
 target_link_libraries(sandbox
 					            ierwin
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(sandbox)

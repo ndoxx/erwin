@@ -14,12 +14,22 @@ class W_API Application
 {
 public:
 	Application();
-	virtual ~Application() = default;
+	virtual ~Application();
 
+	virtual void on_client_init() { }
 	virtual void on_load() { }
+	virtual void on_imgui_render() { }
 
 	size_t push_layer(Layer* layer);
 	size_t push_overlay(Layer* layer);
+
+	inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
+	void toggle_imgui_layer();
+
+	// Add an XML configuration file to be parsed at the end of init()
+	void add_configuration(const std::string& filename);
+
+	bool init();
 	void run();
 
 	static inline Application& get_instance() { return *pinstance_; }

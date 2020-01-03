@@ -16,6 +16,7 @@ set(SRC_FUDGE
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
    )
 
 add_executable(fudge ${SRC_FUDGE})
@@ -46,5 +47,6 @@ target_link_libraries(fudge
                       bz2
                       harfbuzz
                       freetype
+                      eastl
                       )
 cotire(fudge)

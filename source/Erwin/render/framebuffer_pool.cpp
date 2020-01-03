@@ -2,14 +2,21 @@
 #include "render/main_renderer.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {
+
+struct FramebufferProperties
+{
+	bool has_depth;
+};
 
 struct FramebufferPoolStorage
 {
 	std::map<hash_t, FramebufferHandle> framebuffers_;
 	std::map<hash_t, WScope<FbConstraint>> constraints_;
+	std::map<hash_t, FramebufferProperties> properties_;
 
 	uint32_t current_width_;
 	uint32_t current_height_;
@@ -48,9 +55,58 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 void FramebufferPool::shutdown()
 {
 	for(auto&& [name, fb]: s_storage.framebuffers_)
-		MainRenderer::destroy_framebuffer(fb);
+		MainRenderer::destroy(fb);
 
 	DLOGN("render") << "Framebuffer pool released." << std::endl;
+}
+
+FramebufferHandle FramebufferPool::get_framebuffer(hash_t name)
+{
+	// Check that a framebuffer is registered to this name
+	auto it = s_storage.framebuffers_.find(name);
+	W_ASSERT(it != s_storage.framebuffers_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second;
+}
+
+void FramebufferPool::traverse_framebuffers(std::function<void(FramebufferHandle)> visitor)
+{
+	for(auto&& [key, handle]: s_storage.framebuffers_)
+		visitor(handle);
+}
+
+bool FramebufferPool::has_depth(hash_t name)
+{
+	auto it = s_storage.properties_.find(name);
+	W_ASSERT(it != s_storage.properties_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second.has_depth;
+}
+
+uint32_t FramebufferPool::get_width(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second->get_width(s_storage.current_width_);
+}
+
+uint32_t FramebufferPool::get_height(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return it->second->get_height(s_storage.current_height_);
+}
+
+glm::vec2 FramebufferPool::get_size(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return {it->second->get_width(s_storage.current_width_), it->second->get_height(s_storage.current_height_)};
+}
+
+glm::vec2 FramebufferPool::get_texel_size(hash_t name)
+{
+	auto it = s_storage.constraints_.find(name);
+	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return {1.f/it->second->get_width(s_storage.current_width_), 1.f/it->second->get_height(s_storage.current_height_)};
 }
 
 FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
@@ -69,6 +125,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	FramebufferHandle handle = MainRenderer::create_framebuffer(width, height, depth, stencil, layout);
 	s_storage.framebuffers_.insert(std::make_pair(name, handle));
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
+	s_storage.properties_.insert(std::make_pair(name, FramebufferProperties{depth}));
 
 	return handle;
 }

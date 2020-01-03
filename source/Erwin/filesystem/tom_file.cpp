@@ -1,4 +1,5 @@
 #include "filesystem/tom_file.h"
+#include "filesystem/filesystem.h"
 #include "core/core.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
@@ -46,7 +47,12 @@ struct BlockDescriptor
 
 void TextureMapDescriptor::release()
 {
-	delete[] data;
+    if(filesystem::is_arena_initialized())
+    {
+        W_DELETE_ARRAY(data, filesystem::get_arena());
+    }
+    else
+	   delete[] data;
 }
 
 void TOMDescriptor::release()
@@ -79,7 +85,7 @@ void read_tom(TOMDescriptor& desc)
 
     // Read block descriptors
 	std::vector<BlockDescriptor> blocks;
-    blocks.reserve(num_maps);
+    blocks.resize(num_maps);
     ifs.read(reinterpret_cast<char*>(blocks.data()), num_maps*sizeof(BlockDescriptor));
 
     for(auto&& block: blocks)
@@ -121,7 +127,12 @@ void read_tom(TOMDescriptor& desc)
 	uint64_t offset = 0;
     for(auto&& tmap: desc.texture_maps)
     {
-    	tmap.data = new uint8_t[tmap.size];
+        if(filesystem::is_arena_initialized())
+        {
+            tmap.data = W_NEW_ARRAY_DYNAMIC(uint8_t, tmap.size, filesystem::get_arena());
+        }
+        else
+    	   tmap.data = new uint8_t[tmap.size];
     	memcpy(tmap.data, blob+offset, tmap.size);
     	offset += tmap.size;
     }

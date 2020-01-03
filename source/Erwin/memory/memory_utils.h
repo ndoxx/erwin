@@ -22,7 +22,25 @@ static inline std::size_t alignment_padding(std::size_t base_address, std::size_
 	return padding;
 }
 
+// Return a human readable size string
+extern std::string human_size(std::size_t bytes);
+
 } // namespace utils
+
+#ifdef W_DEBUG
+namespace debug
+{
+
+struct AreaItem
+{
+	std::string name;
+	std::size_t begin;
+	std::size_t end;
+	std::size_t size;
+};
+
+} // namespace debug
+#endif
 
 extern void hex_dump_highlight(uint32_t word, const WCB& wcb);
 extern void hex_dump_clear_highlights();

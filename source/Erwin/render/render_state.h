@@ -2,6 +2,7 @@
 
 #include "glm/glm.hpp"
 #include "core/wtypes.h"
+#include "render/handles.h"
 
 namespace erwin
 {
@@ -78,8 +79,12 @@ struct DepthStencilState
     bool       depth_test_enabled    = false;
 };
 
+// Render target
+constexpr uint8_t  k_framebuffer_bits   = 16;
+constexpr uint64_t k_framebuffer_shift  = uint64_t(64) - k_framebuffer_bits;
+constexpr uint64_t k_framebuffer_mask   = uint64_t(0xffff) << k_framebuffer_shift;
 // Transparency bit
-constexpr uint64_t k_transp_shift       = uint64_t(64) - 1;
+constexpr uint64_t k_transp_shift       = k_framebuffer_shift - 1;
 constexpr uint64_t k_transp_mask        = uint64_t(1) << k_transp_shift;
 // Cull mode (none / front / back)
 constexpr uint8_t  k_cull_mode_bits     = 2;
@@ -107,10 +112,12 @@ struct PassState
     BlendState        blend_state    = BlendState::Opaque;
     RasterizerState   rasterizer_state;
     DepthStencilState depth_stencil_state;
+    FramebufferHandle render_target;
 
     inline uint64_t encode() const
     {
-        return (((uint64_t)blend_state                              << k_transp_shift)       & k_transp_mask)
+        return (((uint64_t)render_target.index                      << k_framebuffer_shift)  & k_framebuffer_mask)
+             | (((uint64_t)blend_state                              << k_transp_shift)       & k_transp_mask)
              | (((uint64_t)rasterizer_state.cull_mode               << k_cull_mode_shift)    & k_cull_mode_mask)
              | (((uint64_t)depth_stencil_state.depth_test_enabled   << k_depth_test_shift)   & k_depth_test_mask)
              | (((uint64_t)depth_stencil_state.stencil_test_enabled << k_stencil_test_shift) & k_stencil_test_mask)
@@ -121,6 +128,7 @@ struct PassState
 
     inline void decode(uint64_t state)
     {
+        render_target.index                      = uint16_t(       (state & k_framebuffer_mask)  >> k_framebuffer_shift);
         blend_state                              = BlendState(     (state & k_transp_mask)       >> k_transp_shift);
         rasterizer_state.cull_mode               = CullMode(       (state & k_cull_mode_mask)    >> k_cull_mode_shift);
         depth_stencil_state.depth_test_enabled   = bool(           (state & k_depth_test_mask)   >> k_depth_test_shift);
@@ -128,6 +136,11 @@ struct PassState
         depth_stencil_state.depth_func           = DepthFunc(      (state & k_depth_func_mask)   >> k_depth_func_shift);
         depth_stencil_state.stencil_func         = StencilFunc(    (state & k_stencil_func_mask) >> k_stencil_func_shift);
         depth_stencil_state.stencil_operator     = StencilOperator((state & k_stencil_op_mask)   >> k_stencil_op_shift);
+    }
+
+    static inline bool is_transparent(uint64_t pass_state)
+    {
+        return bool((pass_state & k_transp_mask) >> k_transp_shift);
     }
 };
 

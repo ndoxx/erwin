@@ -31,11 +31,21 @@ public:
 	{
 		return INSTANCE_->get_mouse_position_impl();
 	}
+	inline static void set_mouse_position(float x, float y)
+	{
+		INSTANCE_->set_mouse_position_impl(x,y);
+	}
+	inline static void show_cursor(bool value)
+	{
+		INSTANCE_->show_cursor_impl(value);
+	}
 
 protected:
 	virtual bool is_key_pressed_impl(keymap::WKEY keycode) const = 0;
 	virtual bool is_mouse_button_pressed_impl(keymap::WMOUSE button) const = 0;
 	virtual std::pair<float,float> get_mouse_position_impl() const = 0;
+	virtual void set_mouse_position_impl(float x, float y) const = 0;
+	virtual void show_cursor_impl(bool value) const = 0;
 
 private:
 	static Input* INSTANCE_;

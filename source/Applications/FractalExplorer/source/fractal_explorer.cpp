@@ -9,6 +9,7 @@
 #include "render/buffer.h"
 #include "render/shader.h"
 #include "render/render_device.h"
+#include "render/common_geometry.h"
 #include "platform/ogl_shader.h"
 #include "platform/ogl_texture.h"
 
@@ -60,35 +61,15 @@ public:
 
 	virtual void on_attach() override
 	{
-		shader_bank_.load(filesystem::get_asset_dir() / "shaders/mandelbrot.glsl");
-		// shader_bank_.load(filesystem::get_asset_dir() / "shaders/mandelbrot.spv");
+		shader_ = AssetManager::load_shader("shaders/mandelbrot.glsl");
+		mandel_ubo_ = MainRenderer::create_uniform_buffer("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
+		MainRenderer::shader_attach_uniform_buffer(shader_, mandel_ubo_);
+	}
 
-		// Create vertex array with a quad
-		BufferLayout vertex_tex_layout =
-		{
-		    {"a_position"_h, ShaderDataType::Vec3},
-		    {"a_uv"_h,       ShaderDataType::Vec2},
-		};
-		float sq_vdata[20] = 
-		{
-			-1.0f, -1.0f, 0.0f,   -1.0f, -1.0f,
-			 1.0f, -1.0f, 0.0f,   1.0f, -1.0f,
-			 1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f,   -1.0f, 1.0f
-		};
-		uint32_t sq_idata[6] =
-		{
-			0, 1, 2,   2, 3, 0
-		};
-		auto quad_vb = VertexBuffer::create(sq_vdata, 20, vertex_tex_layout);
-		auto quad_ib = IndexBuffer::create(sq_idata, 6, DrawPrimitive::Triangles);
-		quad_va_ = VertexArray::create();
-		quad_va_->set_index_buffer(quad_ib);
-		quad_va_->set_vertex_buffer(quad_vb);
-
-		mandel_ubo_ = UniformBuffer::create("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
-		const auto& shader = shader_bank_.get("mandelbrot"_h);
-		shader.attach_uniform_buffer(*mandel_ubo_);
+	virtual void on_detach() override
+	{
+		MainRenderer::destroy(mandel_ubo_);
+		AssetManager::release(shader_);
 	}
 
 protected:
@@ -109,13 +90,18 @@ protected:
 		data_.max_iter = (float)max_iter_;
 		data_.time = float(2*M_PI*tt_);
 		data_.view_projection = glm::inverse(camera_ctl_.get_camera().get_view_projection_matrix());
-		mandel_ubo_->stream(&data_, sizeof(MandelbrotData), 0);
 
-		const auto& shader = shader_bank_.get("mandelbrot"_h);
-		shader.bind();
+		PassState pass_state;
+		pass_state.render_target = MainRenderer::default_render_target();
+		pass_state.rasterizer_state.cull_mode = CullMode::Back;
+		pass_state.blend_state = BlendState::Opaque;
+		pass_state.depth_stencil_state.depth_test_enabled = false;
+		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
-   		Gfx::device->draw_indexed(*quad_va_);
-		shader.unbind();
+		DrawCall dc(DrawCall::Indexed, shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
+		dc.set_state(pass_state.encode());
+		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DrawCall::CopyData);
+		MainRenderer::submit("Presentation"_h, dc);
 	}
 
 	virtual bool on_event(const WindowResizeEvent& event) override
@@ -138,10 +124,10 @@ protected:
 	}
 
 private:
+	ShaderHandle shader_;
+	UniformBufferHandle mandel_ubo_;
 	OrthographicCamera2DController camera_ctl_;
-	ShaderBank shader_bank_;
-	WRef<VertexArray> quad_va_;
-	WRef<UniformBuffer> mandel_ubo_;
+
 	float tt_ = 0.f;
 	float fps_;
 	bool show_menu_;
@@ -154,17 +140,19 @@ private:
 class FractalExplorer: public Application
 {
 public:
-	FractalExplorer()
+	FractalExplorer() = default;
+	~FractalExplorer() = default;
+
+	virtual void on_client_init() override
+	{
+		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
+	}
+
+	virtual void on_load() override
 	{
 		EVENTBUS.subscribe(this, &FractalExplorer::on_keyboard_event);
 
-		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
 		push_layer(new FractalLayer());
-	}
-
-	~FractalExplorer()
-	{
-
 	}
 
 	bool on_keyboard_event(const KeyboardEvent& e)

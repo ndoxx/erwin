@@ -1,4 +1,5 @@
 #include "memory/memory_utils.h"
+#include "utils/string.h"
 
 #include <iomanip>
 #include <cstdint>
@@ -8,19 +9,31 @@ namespace erwin
 {
 namespace memory
 {
+namespace utils
+{
+
+std::string human_size(std::size_t bytes)
+{
+	static std::string suffix[] = {"B", "kB", "MB", "GB", "TB"};
+	static int length = 5;
+
+	int i = 0;
+	double dblBytes = bytes;
+
+	if (bytes > 1024) {
+		for (i = 0; (bytes / 1024) > 0 && i<length-1; i++, bytes /= 1024)
+			dblBytes = bytes / 1024.0;
+	}
+
+	static char output[200];
+	sprintf(output, "%.02lf %s", dblBytes, suffix[i].c_str());
+	return output;
+}
+
+} // namespace utils
+
 
 static std::map<uint32_t, WCB> s_highlights;
-
-static void center(std::string& input, int size)
-{
-	int diff = size - input.size();
-	if(diff <= 0)
-		return;
-
-	int before = diff / 2;
-	int after  = before + diff % 2;
-	input = std::string(before, ' ') + input + std::string(after, ' ');
-}
 
 void hex_dump_highlight(uint32_t word, const WCB& wcb)
 {
@@ -45,7 +58,7 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std
 	std::size_t end_offset = 32-std::size_t(end)%32;
 
 	std::string dump_title = title.size() ? title : "HEX DUMP";
-	center(dump_title,12);
+	su::center(dump_title,12);
 	stream << WCC(102,153,0) << "/-" << WCC(0,130,10) << dump_title << WCC(102,153,0) << "-\\" << std::endl;
 	stream << std::hex;
 	while(current < end+end_offset/4)

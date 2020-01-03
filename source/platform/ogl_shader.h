@@ -23,12 +23,17 @@ public:
 	// Initialize shader from SPIR-V file
 	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) override;
 
-	virtual void bind_impl() const override;
-	virtual void unbind_impl() const override;
+	virtual void bind() const override;
+	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
-	virtual void attach_texture(hash_t sampler, const Texture2D& texture) const override;
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;
-	virtual void attach_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
+	virtual uint32_t get_texture_count() const override;
+	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const override;
+
+	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) override;
+	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) override;
+
+	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;
+	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
 
     // Uniform management
     template <typename T>
@@ -58,6 +63,8 @@ private:
     std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
     std::map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
     std::map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
+    std::map<W_ID, WRef<UniformBuffer>> uniform_buffers_;
+    std::map<W_ID, WRef<ShaderStorageBuffer>> shader_storage_buffers_;
     fs::path filepath_;
 };
 

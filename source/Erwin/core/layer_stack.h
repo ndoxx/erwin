@@ -4,7 +4,7 @@
 #include <ostream>
 
 #include "core/layer.h"
-#include "event/event.h"
+#include "event/event_bus.h"
 
 namespace erwin
 {
@@ -55,12 +55,16 @@ private:
         return false;//handled;
 	}
 
-	void update_layer_priorities();
+	void update_layer_ids();
 
 private:
 	std::vector<Layer*> layers_;
 	size_t overlay_pos_;
 };
 
+// Specialization to force propagation of window resize events even
+// if layer is disabled (to avoid shape stretching glitch on layer re-enabling)
+template <>
+bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event);
 
 } // namespace erwin

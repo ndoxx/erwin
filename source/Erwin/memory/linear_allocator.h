@@ -8,13 +8,14 @@ namespace erwin
 namespace memory
 {
 
+class HeapArea;
 class LinearAllocator
 {
 public:
-	explicit LinearAllocator(std::size_t size);
+	LinearAllocator() = default;
+	LinearAllocator(HeapArea& area, std::size_t size, const char* debug_name);
 
-	LinearAllocator(void* begin, void* end);
-	LinearAllocator(std::pair<void*,void*> ptr_range);
+	void init(HeapArea& area, std::size_t size, const char* debug_name);
 
 	inline uint8_t* begin()             { return begin_; }
 	inline const uint8_t* begin() const { return begin_; }

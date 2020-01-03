@@ -15,9 +15,6 @@ endif()
 # -------- LOGGER TEST -------- #
 
 set(SRC_TEST_LOGGER
-    ${SRC_DEBUG}
-    ${SRC_MATH}
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     test_logger.cpp
    )
 
@@ -34,7 +31,9 @@ set_target_properties(test_logger
 )
 
 target_link_libraries(test_logger
-                      pthread)
+                      erwin
+                      pthread
+                      eastl)
 cotire(test_logger)
 
 
@@ -42,9 +41,6 @@ cotire(test_logger)
 
 
 set(SRC_TEST_SERIAL
-    ${SRC_LOG}
-    ${SRC_MATH}
-    ${SRC_CORE}
     test_serial.cpp
    )
 
@@ -62,99 +58,52 @@ set_target_properties(test_serial
 )
 
 target_link_libraries(test_serial
+                      erwin
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(test_serial)
 
 
+# -------- ENGINE TEST -------- #
 
-# -------- CONFIGURATION TEST -------- #
-
-set(SRC_TEST_CONFIG
-    ${SRC_LOG}
-    ${SRC_MATH}
-    ${SRC_CORE}
-    test_config.cpp
-   )
-
-add_executable(test_config ${SRC_TEST_CONFIG})
-
-target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
-target_include_directories(test_config PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
-
-set_target_properties(test_config
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/test"
-)
-
-target_link_libraries(test_config
-                      pthread
-                      stdc++fs
-                      )
-cotire(test_config)
-
-
-# -------- MEMORY TEST -------- #
-
-set(SRC_MEMORY
+set(SRC_ENGINE_TEST
     catch_app.cpp
     test_memory.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
+    test_ecs.cpp
+    test_rng.cpp
+    test_event.cpp
+    test_jobs.cpp
    )
 
-add_executable(test_memory ${SRC_MEMORY})
+add_executable(test_erwin ${SRC_ENGINE_TEST})
 
-target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
-target_include_directories(test_memory PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/Catch2/single_include")
+target_include_directories(test_erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
+target_include_directories(test_erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(test_erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(test_erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(test_erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/Catch2/single_include")
 
-set_target_properties(test_memory
+set_target_properties(test_erwin
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/test"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/test"
 )
 
-target_link_libraries(test_memory
-                      # erwin # throws std::system_error
+target_link_libraries(test_erwin
+                      erwin
                       pthread
                       stdc++fs
+                      eastl
                       )
-cotire(test_memory)
+cotire(test_erwin)
 
 # -------- NUCLEAR TEST -------- #
 
 set(SRC_NUCLEAR
     nuclear.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
-    #${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/xml_file.cpp
    )
 
 add_executable(nuclear ${SRC_NUCLEAR})
@@ -164,6 +113,7 @@ target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
+target_include_directories(nuclear PRIVATE "${INC_EASTL}")
 
 set_target_properties(nuclear
     PROPERTIES
@@ -173,8 +123,9 @@ set_target_properties(nuclear
 )
 
 target_link_libraries(nuclear
-                      # erwin # throws std::system_error
+                      erwin
                       pthread
                       stdc++fs
+                      eastl
                       )
 cotire(nuclear)

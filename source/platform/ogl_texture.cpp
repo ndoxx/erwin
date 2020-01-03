@@ -252,5 +252,10 @@ void OGLTexture2D::unbind() const
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void* OGLTexture2D::get_native_handle()
+{
+    // Cast to void* directly for compatibility with ImGUI
+    return (void*)(uint64_t)(rd_handle_);
+}
 
 } // namespace erwin

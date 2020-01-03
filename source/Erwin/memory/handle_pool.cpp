@@ -59,4 +59,63 @@ void HandlePool::reset()
 		dense[ii] = ii;
 }
 
+
+
+RobustHandlePool::RobustHandlePool(uint64_t max_handles):
+count_(0),
+max_handles_(max_handles)
+{
+	reset();
+}
+
+RobustHandlePool::HandleInternal RobustHandlePool::acquire()
+{
+	if(count_ < max_handles_)
+	{
+		uint64_t index = count_++;
+
+		HandleInternal* dense  = get_dense_ptr();
+		HandleInternal  handle = dense[index];
+		HandleInternal* sparse = get_sparse_ptr();
+		sparse[handle.index] = {index, 0};
+		return handle;
+	}
+
+	return {INVALID_HANDLE, INVALID_HANDLE};
+}
+
+void RobustHandlePool::release(uint64_t handle)
+{
+	HandleInternal* dense    = get_dense_ptr();
+	HandleInternal* sparse   = get_sparse_ptr();
+	HandleInternal  internal = sparse[handle];
+	--count_;
+	HandleInternal temp = dense[count_];
+	dense[count_] = {handle, temp.counter++};
+	sparse[temp.index] = internal;
+	dense[internal.index] = temp;
+}
+
+bool RobustHandlePool::is_valid(HandleInternal handle) const
+{
+	if(handle.index == INVALID_HANDLE)
+		return false;
+
+	HandleInternal* dense  = get_dense_ptr();
+	HandleInternal* sparse = get_sparse_ptr();
+	HandleInternal  index  = sparse[handle.index];
+
+	return (index.index < count_) 
+		&& (dense[index.index].index == handle.index) 
+		&& (dense[index.index].counter == handle.counter);
+}
+
+void RobustHandlePool::reset()
+{
+	count_ = 0;
+	HandleInternal* dense = get_dense_ptr();
+	for(uint64_t ii=0; ii<max_handles_; ++ii)
+		dense[ii] = {ii,0};
+}
+
 } // namespace erwin

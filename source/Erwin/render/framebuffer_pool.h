@@ -2,10 +2,12 @@
 
 #include <map>
 #include <cmath>
+#include <functional>
 #include "core/wtypes.h"
 #include "render/framebuffer_layout.h"
 #include "render/handles.h"
 #include "event/window_events.h"
+#include "glm/glm.hpp"
 
 namespace erwin
 {
@@ -52,12 +54,28 @@ private:
 class FramebufferPool
 {
 public:
-	static void init(uint32_t initial_width, uint32_t initial_height);
-	// Destroy all framebuffers stored in this pool
-	static void shutdown();
+	// Get a framebuffer handle by name
+	static FramebufferHandle get_framebuffer(hash_t name);
+	// Visit all framebuffers
+	static void traverse_framebuffers(std::function<void(FramebufferHandle)> visitor);
+	// Check if a framebuffer has a depth texture attached
+	static bool has_depth(hash_t name);
+	// Get framebuffer dimensions
+	static uint32_t get_width(hash_t name);
+	static uint32_t get_height(hash_t name);
+	static glm::vec2 get_size(hash_t name);
+	static glm::vec2 get_texel_size(hash_t name);
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);
+
+private:
+	friend class Application;
+
+	// Initialize pool with default framebuffer dimensions
+	static void init(uint32_t initial_width, uint32_t initial_height);
+	// Destroy all framebuffers stored in this pool
+	static void shutdown();
 };
 
 } // namespace erwin

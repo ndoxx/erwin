@@ -9,6 +9,7 @@
 #include "../Erwin/core/core.h"
 
 #include "../Erwin/event/window_events.h"
+#include "../Erwin/event/event_bus.h"
 
 namespace erwin
 {
@@ -95,17 +96,19 @@ GLFWWindow::~GLFWWindow()
 
 void GLFWWindow::init(const WindowProps& props)
 {
+    W_PROFILE_FUNCTION()
+
 	// Initialize GLFW if not already initialized
 	if(s_glfw_num_windows == 0)
 	{
-		DLOGN("core") << "Initializing GLFW." << std::endl;
+		DLOGN("render") << "Initializing GLFW." << std::endl;
 		if(!glfwInit())
 		{
-			DLOGF("core") << "Failed to initialize GLFW." << std::endl;
+			DLOGF("render") << "Failed to initialize GLFW." << std::endl;
 			fatal();
 		}
 
-		DLOG("core",0) << "[GLFW]" << std::endl;
+		DLOG("render",0) << "[GLFW]" << std::endl;
 		// Show GLFW version
 	    {
 	        int major, minor, rev;
@@ -273,6 +276,8 @@ void GLFWWindow::set_event_callbacks()
 
 void GLFWWindow::cleanup()
 {
+    W_PROFILE_FUNCTION()
+
 	glfwDestroyWindow(data_->window);
 	if(--s_glfw_num_windows == 0)
 	{
@@ -283,6 +288,8 @@ void GLFWWindow::cleanup()
 
 void GLFWWindow::update()
 {
+    W_PROFILE_FUNCTION()
+	
 	context_->swap_buffers();
 	glfwPollEvents();
 }

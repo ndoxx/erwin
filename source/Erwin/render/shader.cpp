@@ -7,8 +7,6 @@
 namespace erwin
 {
 
-W_ID ShaderStateCache::bound_shader = 0;
-
 WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
 {
 	switch(Gfx::get_api())

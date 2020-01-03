@@ -1,18 +1,18 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 #include <utility>
 
 #include "filesystem/filesystem.h"
+#include "memory/arena.h"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
 #include "render/framebuffer_layout.h"
-#include "memory/arena.h"
-
 #include "render/texture.h" // TMP: for Texture2DDescriptor
 #include "render/handles.h"
-
 #include "render/framebuffer_pool.h"
+#include "render/renderer_config.h"
 
 namespace erwin
 {
@@ -30,13 +30,11 @@ struct SortKey
 	uint64_t encode(SortKey::Order type) const;
 	void decode(uint64_t key);
 
-						  // -- dependencies --     -- meaning --
-	uint8_t view;         // queue global state?	layer / viewport id
-	uint8_t transparency; // queue type 			blending type: opaque / transparent
-	uint8_t shader;       // command data / type    could mean "material ID" when I have a material system
-	bool is_draw;         // command data / type 	whether or not the command performs a draw call
-	uint32_t depth;       // command data / type 	depth mantissa
-	uint32_t sequence;    // command data / type 	for commands to be dispatched sequentially
+						      // -- meaning --
+	uint16_t view = 0;        // layer / viewport id
+	uint8_t shader = 0;       // could be "material ID" when I have a material system
+	uint32_t depth = 0;       // depth mantissa
+	uint32_t sequence = 0;    // for commands to be dispatched sequentially
 };
 
 struct MainRendererStats
@@ -44,98 +42,95 @@ struct MainRendererStats
 	float render_time = 0.f;
 };
 
-enum class RenderCommand: uint16_t
-{
-	CreateIndexBuffer,
-	CreateVertexBufferLayout,
-	CreateVertexBuffer,
-	CreateVertexArray,
-	CreateUniformBuffer,
-	CreateShaderStorageBuffer,
-	CreateShader,
-	CreateTexture2D,
-	CreateFramebuffer,
-
-	UpdateIndexBuffer,
-	UpdateVertexBuffer,
-	UpdateUniformBuffer,
-	UpdateShaderStorageBuffer,
-	ShaderAttachUniformBuffer,
-	ShaderAttachStorageBuffer,
-	UpdateFramebuffer,
-
-	Post,
-
-	DestroyIndexBuffer,
-	DestroyVertexBufferLayout,
-	DestroyVertexBuffer,
-	DestroyVertexArray,
-	DestroyUniformBuffer,
-	DestroyShaderStorageBuffer,
-	DestroyShader,
-	DestroyTexture2D,
-	DestroyFramebuffer,
-
-	Count
-};
-
 class RenderQueue;
+struct DrawCall;
 class MainRenderer
 {
 public:
-	enum class Phase
-	{
-		Pre,
-		Post
-	};
-
-	static void init();
-	static void shutdown();
-	static void create_queue(uint32_t name, SortKey::Order order);
-	static RenderQueue& get_queue(uint32_t name);
-
-	static void set_profiling_enabled(bool value=true);
-	static const MainRendererStats& get_stats();
-
+	typedef memory::MemoryArena<memory::LinearAllocator, 
+			    				memory::policy::SingleThread, 
+			    				memory::policy::NoBoundsChecking,
+			    				memory::policy::NoMemoryTagging,
+			    				memory::policy::NoMemoryTracking> AuxArena;
+			    				
+	// * The following functions have immediate effect
+	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
+	static AuxArena& 		 get_arena();
+	// Get a handle to the default framebuffer (screen)
 	static FramebufferHandle default_render_target();
+	// Get a handle to a specified color or depth attachment of a given framebuffer
+	static TextureHandle 	 get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
+	// Get the number of attachments in a given framebuffer
+	static uint32_t 		 get_framebuffer_texture_count(FramebufferHandle handle);
+	// Create a layout for a vertex buffer. Creation is immediate as it does not imply render API stuff,
+	// however, layout destruction need be deferred and is handled by a command.
+	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
+	// Get a buffer layout from its handle
+	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
-	static void flush();
+	// * Draw call queue management and submission
+	// Create a render queue, specifying a name whose hash is used to retrieve it later on, and a draw order policy
+	static RenderQueue& 	 create_queue(const std::string& name, SortKey::Order order);
+	// Get a render queue by name
+	static RenderQueue& 	 get_queue(hash_t name);
+	// Send a draw call to a particular queue
+	static inline void 		 submit(hash_t queue, const DrawCall& dc);
+	// Force renderer to dispatch all commands in command buffers and render queues
+	static void 			 flush();
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
-	static IndexBufferHandle         create_index_buffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	static VertexBufferLayoutHandle  create_vertex_buffer_layout(const std::initializer_list<BufferLayoutElement>& elements);
-	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	// PRE-BUFFER -> executed before draw commands
+	static IndexBufferHandle         create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
 	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
 	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
-	static void update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
-	static void update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
-	static void update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
-	static void update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
-	static void shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
-	static void shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
-	static void update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
-	static void destroy_index_buffer(IndexBufferHandle handle);
-	static void destroy_vertex_buffer_layout(VertexBufferLayoutHandle handle);
-	static void destroy_vertex_buffer(VertexBufferHandle handle);
-	static void destroy_vertex_array(VertexArrayHandle handle);
-	static void destroy_uniform_buffer(UniformBufferHandle handle);
-	static void destroy_shader_storage_buffer(ShaderStorageBufferHandle handle);
-	static void destroy_shader(ShaderHandle handle);
-	static void destroy_texture_2D(TextureHandle handle);
-	static void destroy_framebuffer(FramebufferHandle handle);
+	static void 					 update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
+	static void 					 update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
+	static void 					 update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
+	static void 					 update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
+	static void 					 shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
+	static void 					 shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
+	static void 					 update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
+	static void 					 clear_framebuffers();
+	// POST-BUFFER -> executed after draw commands
+	static void 					 framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
+	static void 					 destroy(IndexBufferHandle handle);
+	static void 					 destroy(VertexBufferLayoutHandle handle);
+	static void 					 destroy(VertexBufferHandle handle);
+	static void 					 destroy(VertexArrayHandle handle);
+	static void 					 destroy(UniformBufferHandle handle);
+	static void 					 destroy(ShaderStorageBufferHandle handle);
+	static void 					 destroy(ShaderHandle handle);
+	static void 					 destroy(TextureHandle handle);
+	static void 					 destroy(FramebufferHandle handle);
+
+#ifdef W_DEBUG
+	static void* get_native_texture_handle(TextureHandle handle);
+	static void set_profiling_enabled(bool value=true);
+	static const MainRendererStats& get_stats();
+#endif
+
+private:
+	friend class Application;
+	friend class RenderQueue;
+
+	static void init(memory::HeapArea& area);
+	static void shutdown();
+
+	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
 
 struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;
 
-	CommandBuffer(std::pair<void*,void*> ptr_range):
+	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name):
 	count(0),
-	storage(ptr_range)
+	storage(area, size, debug_name)
 	{
 
 	}
@@ -161,10 +156,8 @@ public:
 	~RenderQueue();
 
 	// * These functions change the queue state persistently
-	// Set clear color for associated render target
-	void set_clear_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A=255);
-	// Set the framebuffer this queue is going to draw to
-	void set_render_target(FramebufferHandle fb);
+	// Set clear color for this queue
+	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
 	// Submit a draw call
 	void submit(const DrawCall& draw_call);
 	// Sort queue by sorting key
@@ -176,19 +169,18 @@ public:
 
 private:
 	SortKey::Order order_;
-	SortKey key_;
-	uint32_t clear_color_;
-	FramebufferHandle render_target_;
+	glm::vec4 clear_color_;
 	CommandBuffer command_buffer_;
 };
 
-/*
-	TODO: 
-	- Compress data size as much as possible
-*/
+inline void MainRenderer::submit(hash_t queue, const DrawCall& dc)
+{
+	get_queue(queue).submit(dc);
+}
+
 struct DrawCall
 {
-	enum Type
+	enum DrawCallType: uint8_t
 	{
 		Indexed,
 		Array,
@@ -198,63 +190,117 @@ struct DrawCall
 		Count
 	};
 
-	DrawCall(RenderQueue& queue, Type type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0);
-
-	inline void set_state(const PassState& state)
+	enum DataOwnership: uint8_t
 	{
-		state_flags = state.encode();
+		ForwardData = 0, // Do not copy data, forward pointer as is
+		CopyData = 1     // Copy data to renderer memory
+	};
+
+	#pragma pack(push,1)
+	struct Data
+	{
+		uint64_t state_flags;
+
+		ShaderHandle shader;
+		VertexArrayHandle VAO;
+		TextureHandle textures[k_max_texture_slots];
+		UniformBufferHandle UBOs[k_max_UBO_slots];
+		void* UBOs_data[k_max_UBO_slots];
+
+		uint32_t count;
+		uint32_t offset;
+	} data;
+	struct InstanceData
+	{
+		void* SSBO_data;
+		uint32_t SSBO_size;
+		uint32_t instance_count;
+		ShaderStorageBufferHandle SSBO;
+	} instance_data;
+	#pragma pack(pop)
+
+	SortKey key;
+	DrawCallType type;
+
+	DrawCall(DrawCallType dc_type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
+	{
+		type            = dc_type;
+		data.shader     = shader;
+		data.VAO        = VAO;
+		data.count      = count;
+		data.offset     = offset;
+		instance_data.SSBO_data  = nullptr;
+		instance_data.SSBO_size  = 0;
+		key.shader = data.shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
 	}
 
+	// Set the full render state associated to this draw call
 	inline void set_state(uint64_t state)
 	{
-		state_flags = state;
+		// W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
+		// W_ASSERT(state.render_target.is_valid(), "Invalid FramebufferHandle!");
+		data.state_flags = state;
+		// Extract render target ID to use as view ID
+		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
 	}
 
-	inline void set_per_instance_UBO(UniformBufferHandle ubo, void* data, uint32_t size)
+	// Set instance data array containing all information necessary to render instance_count instances of the same geometry
+	// Only available for instanced draw calls
+	inline void set_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
 	{
-		UBO = ubo;
-		UBO_data = data;
-		UBO_size = size;
+		W_ASSERT(type == DrawCall::IndexedInstanced || type == DrawCall::ArrayInstanced, "Cannot set instance data for non-instanced draw call.");
+
+		instance_data.SSBO_data = SSBO_data;
+		instance_data.SSBO = ssbo;
+		instance_data.SSBO_size = size;
+		instance_data.instance_count = inst_count;
+
+		if(SSBO_data && copy)
+		{
+			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(instance_data.SSBO_data, SSBO_data, size);
+		}
 	}
 
-	inline void set_instance_data_SSBO(ShaderStorageBufferHandle ssbo, void* data, uint32_t size, uint32_t inst_count)
+	// Setup a UBO configuration for this specific draw call
+	inline void set_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size, DataOwnership copy, uint32_t slot=0)
 	{
-		SSBO = ssbo;
-		SSBO_data = data;
-		SSBO_size = size;
-		instance_count = inst_count;
+		W_ASSERT_FMT(slot<k_max_UBO_slots, "UBO slot out of bounds: %u", slot);
+		data.UBOs_data[slot] = UBO_data;
+		data.UBOs[slot] = ubo;
+
+		if(UBO_data && copy)
+		{
+			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			memcpy(data.UBOs_data[slot], UBO_data, size);
+		}
 	}
 
-	inline void set_texture(hash_t smp, TextureHandle tex)
+	// Set a texture at a given slot
+	inline void set_texture(TextureHandle tex, uint32_t slot=0)
 	{
-		sampler = smp;
-		texture = tex;
+		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
+		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
+		data.textures[slot] = tex;
 	}
 
-	inline void submit()
+	// Compute the sorting key for depth ascending/descending policies
+	inline void set_key_depth(float depth, uint8_t layer_id)
 	{
-		queue.submit(*this);
+		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		key.view |= (layer_id<<8);
+		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
 	}
 
-	Type type;
-	ShaderHandle shader;
-	VertexArrayHandle VAO;
-	UniformBufferHandle UBO;
-	ShaderStorageBufferHandle SSBO;
-	void* UBO_data;
-	void* SSBO_data;
-	uint32_t UBO_size;
-	uint32_t SSBO_size;
-	uint32_t count;
-	uint32_t instance_count;
-	uint32_t offset;
-	uint64_t state_flags;
-
-	hash_t sampler;
-	TextureHandle texture; // TODO: allow multiple textures
-
-private:
-	RenderQueue& queue;
+	// Compute the sorting key for the sequential policy
+	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
+	{
+		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
+		key.view |= (layer_id<<8);
+		key.sequence = sequence;
+	}
 };
+
+
 
 } // namespace erwin

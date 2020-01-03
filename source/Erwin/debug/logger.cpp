@@ -52,7 +52,7 @@ void LoggerStream::prepare(hash_t channel, MsgType msg_type, uint8_t severity, i
 void LoggerStream::submit(const std::string& message)
 {
 	stmt_.message = message;
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED==1
     Logger::LOGGER_THREAD->enqueue(stmt_);
 #endif
 }

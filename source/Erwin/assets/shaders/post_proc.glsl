@@ -13,12 +13,14 @@ void main()
 
 #type fragment
 #version 460 core
-
+#include "include/common.glsl"
 #include "include/post_proc_inc.glsl"
+#include "include/fxaa.glsl"
 
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
-layout(binding = 0) uniform sampler2D us_input;
+
+SAMPLER_2D_(0);
 
 layout(std140, binding = 0) uniform post_proc_layout
 {
@@ -44,12 +46,14 @@ layout(std140, binding = 0) uniform post_proc_layout
 
 void main()
 {
-	vec4 in_hdr = texture(us_input, v_uv);
+	vec4 in_hdr = texture(SAMPLER_2D_0, v_uv);
+    // vec4 in_hdr = vec4(FXAA(SAMPLER_2D_0, v_uv, u_fb_size), 1.f);
+
 	vec3 color = in_hdr.rgb;
 
 	// Chromatic aberration
     if(bool(u_flags & PP_EN_CHROMATIC_ABERRATION))
-    	color = chromatic_aberration_rgb(us_input, v_uv, u_fb_size, u_ca_shift, u_ca_strength);
+    	color = chromatic_aberration_rgb(SAMPLER_2D_0, v_uv, u_fb_size, u_ca_shift, u_ca_strength);
 
     // Tone mapping
     if(bool(u_flags & PP_EN_EXPOSURE_TONE_MAPPING))

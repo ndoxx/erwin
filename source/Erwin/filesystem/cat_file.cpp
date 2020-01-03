@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "filesystem/cat_file.h"
+#include "filesystem/filesystem.h"
 #include "core/core.h"
 #include "core/z_wrapper.h"
 
@@ -32,6 +33,26 @@ struct CATHeader
 #define CAT_VERSION_MAJOR 1
 #define CAT_VERSION_MINOR 1
 
+// Helper functions to (de)allocate data blobs inside the filesystem resource arena if possible, on the heap if not
+static inline void* new_blob(std::size_t size)
+{
+    if(filesystem::is_arena_initialized())
+    {
+        return W_NEW_ARRAY_DYNAMIC(uint8_t, size, filesystem::get_arena());
+    }
+    else
+        return new uint8_t[size];
+}
+static inline void delete_blob(void* ptr)
+{
+    if(filesystem::is_arena_initialized())
+    {
+        W_DELETE_ARRAY(static_cast<uint8_t*>(ptr), filesystem::get_arena());
+    }
+    else
+        delete[] static_cast<uint8_t*>(ptr);
+}
+
 void read_cat(CATDescriptor& desc)
 {
     std::ifstream ifs(desc.filepath, std::ios::binary);
@@ -52,22 +73,23 @@ void read_cat(CATDescriptor& desc)
     desc.lossless_compression = (LosslessCompression)header.lossless_compression;
 
     // Read data blobs
-    char* texture_blob = new char[desc.texture_blob_size];
+    char* texture_blob = (char*)new_blob(desc.texture_blob_size);
     ifs.read(texture_blob, desc.texture_blob_size);
     // Inflate (decompress) blob if needed
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
-        uint8_t* inflated = new uint8_t[header.blob_inflate_size];
+        uint8_t* inflated = (uint8_t*)new_blob(header.blob_inflate_size);
         erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), desc.texture_blob_size, inflated, header.blob_inflate_size);
         desc.texture_blob = inflated;
-        delete[] texture_blob;
+        // delete[] texture_blob;
+        delete_blob(texture_blob);
     }
     else
     {
         desc.texture_blob = texture_blob;
     }
 
-    desc.remapping_blob = new char[desc.remapping_blob_size];
+    desc.remapping_blob = new_blob(desc.remapping_blob_size);
     ifs.read(reinterpret_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
 
     ifs.close();
@@ -75,8 +97,8 @@ void read_cat(CATDescriptor& desc)
 
 void CATDescriptor::release()
 {
-	delete[] static_cast<char*>(texture_blob);
-	delete[] static_cast<char*>(remapping_blob);
+    delete_blob(texture_blob);
+    delete_blob(remapping_blob);
 }
 
 void write_cat(const CATDescriptor& desc)

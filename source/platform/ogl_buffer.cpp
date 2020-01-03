@@ -201,7 +201,7 @@ void OGLUniformBuffer::map(void* data)
 void OGLUniformBuffer::stream(void* data, uint32_t size, uint32_t offset)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, (size!=0 ? size : struct_size_), data);
 }
 
 // ----------------------------------------------------------------------------------
