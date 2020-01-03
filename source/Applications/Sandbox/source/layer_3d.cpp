@@ -74,9 +74,10 @@ void Layer3D::on_detach()
 void Layer3D::on_update(GameClock& clock)
 {
 	float dt = clock.get_frame_duration();
-	tt_ += dt;
-	if(tt_>=10.f)
-		tt_ = 0.f;
+	static float tt = 0.f;
+	tt += dt;
+	if(tt>=10.f)
+		tt = 0.f;
 
 	camera_ctl_.update(clock);
 
@@ -87,7 +88,7 @@ void Layer3D::on_update(GameClock& clock)
 		float yy = cube.transform.position.y;
 		float zz = cube.transform.position.z;
 		glm::vec3 euler = {(1.f-yy/8.f)*xx/10.f,yy/10.f,(1.f-yy/8.f)*zz/10.f};
-		euler *= 1.0f*sin(2*M_PI*tt_/10.f);
+		euler *= 1.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}
 

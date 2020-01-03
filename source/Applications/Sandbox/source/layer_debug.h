@@ -21,7 +21,4 @@ protected:
 	virtual bool on_event(const MouseButtonEvent& event) override;
 	virtual bool on_event(const WindowResizeEvent& event) override;
 	virtual bool on_event(const MouseScrollEvent& event) override;
-
-private:
-	bool texture_peek_ = false;
 };

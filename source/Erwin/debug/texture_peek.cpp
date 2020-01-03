@@ -55,6 +55,7 @@ struct TexturePeekStorage
     bool invert_color_;
     bool split_alpha_;
 	bool save_image_;
+	bool enabled_;
 
 	ShaderHandle peek_shader_;
 	UniformBufferHandle pass_ubo_;
@@ -85,6 +86,7 @@ void TexturePeek::init()
 	s_storage.show_r_ = true;
 	s_storage.show_g_ = true;
 	s_storage.show_b_ = true;
+	s_storage.enabled_ = false;
 
 	// State
 	PassState state;
@@ -144,10 +146,15 @@ void TexturePeek::set_projection_parameters(const glm::vec4& proj_params)
 	s_storage.peek_data_.projection_parameters = proj_params;
 }
 
+void TexturePeek::set_enabled(bool value)
+{
+	s_storage.enabled_ = value;
+}
+
 void TexturePeek::render()
 {
 #ifdef W_DEBUG
-    if(s_storage.panes_.size() == 0)
+    if(!s_storage.enabled_ || s_storage.panes_.size() == 0)
     	return;
 
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];

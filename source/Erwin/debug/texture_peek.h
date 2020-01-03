@@ -22,6 +22,7 @@ public:
 	static void register_framebuffer(const std::string& framebuffer_name);
 	static void set_projection_parameters(const glm::vec4& proj_params);
 
+	static void set_enabled(bool value); 
 	static void render();
 	static void on_imgui_render(bool* p_open);
 };

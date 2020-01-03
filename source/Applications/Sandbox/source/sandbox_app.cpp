@@ -18,7 +18,11 @@ void Sandbox::on_load()
 	push_overlay(debug_layer_        = new DebugLayer());
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
-
+#ifdef W_DEBUG
+    TexturePeek::register_framebuffer("fb_forward");
+    TexturePeek::register_framebuffer("fb_2d_raw");
+#endif
+    
     set_layer_enabled(0, layer3d_enabled_);
     set_layer_enabled(1, layer2d_enabled_);
 }
@@ -76,7 +80,7 @@ void Sandbox::on_imgui_render()
     	ImGui::EndMainMenuBar();
 	}
 
-	debug_layer_->texture_peek_ = show_app_texture_peek_window;
+	TexturePeek::set_enabled(show_app_texture_peek_window);
 
 	if(show_app_layer_config_window)    window_layer_config(&show_app_layer_config_window);
 	if(show_app_post_processing_window) window_post_processing(&show_app_post_processing_window);
@@ -91,16 +95,14 @@ void Sandbox::on_imgui_render()
 
 void Sandbox::toggle_layer_3d()
 {
-	set_layer_enabled(0, layer3d_enabled_);
+	layer_3d_->set_enabled(layer3d_enabled_);
 	presentation_layer_->enable_forward_rendering(layer3d_enabled_);
-	MainRenderer::clear_framebuffers();
 }
 
 void Sandbox::toggle_layer_2d()
 {
-	set_layer_enabled(1, layer2d_enabled_);
+	layer_2d_->set_enabled(layer2d_enabled_);
 	presentation_layer_->enable_2d_rendering(layer2d_enabled_);
-	MainRenderer::clear_framebuffers();
 }
 
 void Sandbox::window_layer_config(bool* p_open)

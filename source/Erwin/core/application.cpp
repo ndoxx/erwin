@@ -351,6 +351,10 @@ void Application::run()
 				layer->update(game_clock_);
 		}
 
+#ifdef W_DEBUG
+        TexturePeek::render();
+#endif
+
         MainRenderer::flush();
         
 		// TODO: move this to renderer

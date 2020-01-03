@@ -43,7 +43,6 @@ private:
 	UniformBufferHandle pbr_material_ubo_;
 	ShaderHandle forward_opaque_pbr_;
 	DirectionalLight dir_light_;
-	float tt_ = 0.f;
 
 	std::vector<Cube> scene_;
 };
