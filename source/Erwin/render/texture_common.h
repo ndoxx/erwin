@@ -38,6 +38,7 @@ enum class ImageFormat: uint8_t
     RGBA16F,
     RGB32F,
     RGBA32F,
+    SRGB8,
     SRGB_ALPHA,
     RG16_SNORM,
     RGB16_SNORM,

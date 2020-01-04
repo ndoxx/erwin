@@ -32,11 +32,33 @@ void TextureGroup::load(const fs::path& filepath, const MaterialLayout& layout)
 		for(auto&& tmap: descriptor.texture_maps)
 		{
 			ImageFormat format;
-			switch(tmap.compression)
+			if(tmap.channels==4)
 			{
-				case TextureCompression::None: format = tmap.srgb ? ImageFormat::SRGB_ALPHA : ImageFormat::RGBA8; break;
-				case TextureCompression::DXT1: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT1; break;
-				case TextureCompression::DXT5: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT5; break;
+				switch(tmap.compression)
+				{
+					case TextureCompression::None: format = tmap.srgb ? ImageFormat::SRGB_ALPHA : ImageFormat::RGBA8; break;
+					case TextureCompression::DXT1: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT1; break;
+					case TextureCompression::DXT5: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT5; break;
+				}
+			}
+			else if(tmap.channels==3)
+			{
+				switch(tmap.compression)
+				{
+					case TextureCompression::None: format = tmap.srgb ? ImageFormat::SRGB8 : ImageFormat::RGB8; break;
+					case TextureCompression::DXT1: format = tmap.srgb ? ImageFormat::COMPRESSED_SRGB_S3TC_DXT1 : ImageFormat::COMPRESSED_RGB_S3TC_DXT1; break;
+					default:
+					{
+						format = ImageFormat::RGB8;
+						DLOGE("texture") << "Unsupported compression option, defaulting to RGB8." << std::endl;
+					}
+				}
+			}
+			else
+			{
+				format = ImageFormat::RGBA8;
+				DLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << tmap.channels << std::endl;
+				DLOGI << "Defaulting to RGBA8." << std::endl;
 			}
 
 			TextureHandle tex = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
@@ -46,7 +68,6 @@ void TextureGroup::load(const fs::path& filepath, const MaterialLayout& layout)
 										  					 				    	tmap.filter,
 										  					 				    	descriptor.address_UV});
 
-			// TODO: choose slot according to texture map name
 			textures[texture_count] = tex;
 			++texture_count;
 		}

@@ -38,8 +38,8 @@ protected:
 
 private:
 	PerspectiveFreeflyController camera_ctl_;
-	TextureGroupHandle tg_sandstone_;
-	TextureGroupHandle tg_sand_;
+	TextureGroupHandle tg_0_;
+	TextureGroupHandle tg_1_;
 	UniformBufferHandle pbr_material_ubo_;
 	ShaderHandle forward_opaque_pbr_;
 	DirectionalLight dir_light_;

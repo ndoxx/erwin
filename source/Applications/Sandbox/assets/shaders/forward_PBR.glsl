@@ -94,7 +94,7 @@ layout(std140, binding = 2) uniform material_data
 	vec4 u_v4_tint; // tint
 };
 
-const float f_parallax_height_scale = 0.1f;
+const float f_parallax_height_scale = 0.05f;
 
 void main()
 {
