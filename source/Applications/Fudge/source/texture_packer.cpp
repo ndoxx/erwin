@@ -149,18 +149,20 @@ static bool handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, u
             };
 
             // Merge data according to spec layout
-            // tmap.data = new uint8_t[width*height*spec.texmap_spec.channels];
-            tmap.data = new uint8_t[width*height*4];
+            tmap.data = new uint8_t[width*height*spec.texmap_spec.channels];
             for(int ii=0; ii<spec.texmap_spec.channels; ++ii)
 	        {
 	 			auto&& [hname, offset] = spec.layout[ii];
 	 			uint8_t* sub_data = in_tex_maps.at(hname).data;
-	 			uint32_t sub_channels = in_tex_maps.at(hname).channels;
+	 			// uint32_t sub_channels = in_tex_maps.at(hname).channels;
+
+	 			// We force 4 color channels when loading image, so we assume here that sub_data
+	 			// can be accessed the way it is. However, the output texture map can have only
+	 			// 3 channels.
 
 		        for(int yy=0; yy<tmap.height; ++yy)
 		            for(int xx=0; xx<tmap.width; ++xx)
-		                tmap.data[4 * (yy * width + xx) + ii] = sub_data[sub_channels * (yy * width + xx) + offset];
-		                // tmap.data[spec.texmap_spec.channels * (yy * width + xx) + ii] = sub_data[sub_channels * (yy * width + xx) + offset];
+		                tmap.data[spec.texmap_spec.channels * (yy * width + xx) + ii] = sub_data[4 * (yy * width + xx) + offset];
 		    }
 
 		    // Remove old texture maps
@@ -364,7 +366,6 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
             const TexmapSpec& spec = it->second;
 
             // Load data
-            // tmap.data = stbi_load(entry.path().string().c_str(), &tmap.width, &tmap.height, &tmap.channels, spec.channels);
             tmap.data = stbi_load(entry.path().string().c_str(), &tmap.width, &tmap.height, &tmap.channels, 4);
             tmap.compression = spec.compression;
             if(!tmap.data)
@@ -473,7 +474,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 	for(auto&& [key, tmap]: ordered_tmap)
 	{
         const TexmapSpec& spec = s_texmap_specs.at(key);
-        uint32_t size = width * height * 4;//spec.channels;
+        uint32_t size = width * height * spec.channels;
 		tom::TextureMapDescriptor tm_desc
 		{
 			spec.filter,

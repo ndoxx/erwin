@@ -118,6 +118,8 @@ std::string get_file_as_string(const fs::path& path)
 
 std::ifstream binary_stream(const fs::path& path)
 {
+    W_ASSERT(fs::exists(path), "File does not exist.");
+    
     return std::ifstream(path, std::ios::binary);
 }
 
