@@ -29,6 +29,7 @@ static std::map<ImageFormat, FormatDescriptor> FORMAT_DESCRIPTOR =
     {ImageFormat::RGBA16F,                         {GL_RGBA16F,                             GL_RGBA,            					GL_HALF_FLOAT,     				   false}},
     {ImageFormat::RGB32F,                          {GL_RGB32F,                              GL_RGB,             					GL_FLOAT, 	       				   false}},
     {ImageFormat::RGBA32F,                         {GL_RGBA32F,                             GL_RGBA,            					GL_FLOAT, 	       				   false}},
+    {ImageFormat::SRGB8,                           {GL_SRGB8,                               GL_RGB,                                 GL_UNSIGNED_BYTE,                  false}},
     {ImageFormat::SRGB_ALPHA,                      {GL_SRGB_ALPHA,                          GL_RGBA,            					GL_UNSIGNED_BYTE,  				   false}},
     {ImageFormat::RG16_SNORM,                      {GL_RG16_SNORM,                          GL_RG,              					GL_SHORT, 		   				   false}},
     {ImageFormat::RGB16_SNORM,                     {GL_RGB16_SNORM,                         GL_RGB,             					GL_SHORT, 		   				   false}},
