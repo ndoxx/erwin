@@ -51,8 +51,6 @@ public:
 	static WRef<Texture2D> create(const fs::path& filepath);
 	// Create a 2D texture from descriptor
 	static WRef<Texture2D> create(const Texture2DDescriptor& descriptor);
-    // Generate a list of textures (maps) from a TOM file
-    static std::map<hash_t, WRef<Texture2D>> create_maps(const fs::path& filepath);
 };
 
 } // namespace erwin

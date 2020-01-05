@@ -17,6 +17,9 @@ void TextureAtlas::load(const fs::path& filepath)
 		descriptor.filepath = filepath;
 		cat::read_cat(descriptor);
 
+		// Make sure this is a texture atlas
+		W_ASSERT(descriptor.remapping_type == cat::RemappingType::TextureAtlas, "Invalid remapping type for a texture atlas.");
+
 		width = descriptor.texture_width;
 		height = descriptor.texture_height;
 		float fwidth = width;
@@ -26,7 +29,7 @@ void TextureAtlas::load(const fs::path& filepath)
 		/*glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/fwidth, 0.5f/fheight, -0.5f/fwidth, -0.5f/fheight)
 													 : glm::vec4(0.f);*/
 
-		cat::traverse_remapping(descriptor, [&](const cat::CATAtlasRemapElement& remap)
+		cat::traverse_texture_remapping(descriptor, [&](const cat::CATAtlasRemapElement& remap)
 		{
 			glm::vec4 uvs((remap.x)/fwidth, (remap.y)/fheight, 
 					      (remap.x+remap.w)/fwidth, (remap.y+remap.h)/fheight);

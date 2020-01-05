@@ -23,6 +23,7 @@ struct CATHeader
     uint16_t texture_height;        // Height of texture in pixels
     uint16_t texture_compression;   // Type of (lossy) texture compression
     uint16_t lossless_compression;  // Type of (lossless) blob compression
+    uint16_t remapping_type;        // Texture atlas or font remapping?
     uint64_t texture_blob_size;     // Size of texture blob
     uint64_t blob_inflate_size;     // Size of inflated texture blob (after blob decompression)
     uint64_t remapping_blob_size;   // Size of remapping table
@@ -31,7 +32,7 @@ struct CATHeader
 
 #define CAT_MAGIC 0x54414357 // ASCII(WCAT)
 #define CAT_VERSION_MAJOR 1
-#define CAT_VERSION_MINOR 1
+#define CAT_VERSION_MINOR 2
 
 // Helper functions to (de)allocate data blobs inside the filesystem resource arena if possible, on the heap if not
 static inline void* new_blob(std::size_t size)
@@ -71,6 +72,7 @@ void read_cat(CATDescriptor& desc)
     desc.remapping_blob_size  = header.remapping_blob_size;
     desc.texture_compression  = (TextureCompression)header.texture_compression;
     desc.lossless_compression = (LosslessCompression)header.lossless_compression;
+    desc.remapping_type       = (RemappingType)header.remapping_type;
 
     // Read data blobs
     char* texture_blob = (char*)new_blob(desc.texture_blob_size);
@@ -112,6 +114,7 @@ void write_cat(const CATDescriptor& desc)
     header.remapping_blob_size  = desc.remapping_blob_size;
     header.texture_compression  = (uint16_t)desc.texture_compression;
     header.lossless_compression = (uint16_t)desc.lossless_compression;
+    header.remapping_type       = (uint16_t)desc.remapping_type;
 
     std::ofstream ofs(desc.filepath, std::ios::binary);
 
@@ -141,12 +144,20 @@ void write_cat(const CATDescriptor& desc)
     ofs.close();
 }
 
-void traverse_remapping(const CATDescriptor& desc, std::function<void(const CATAtlasRemapElement&)> visit)
+void traverse_texture_remapping(const CATDescriptor& desc, std::function<void(const CATAtlasRemapElement&)> visit)
 {
 	uint32_t num_remap = desc.remapping_blob_size / sizeof(CATAtlasRemapElement);
 	for(int ii=0; ii<num_remap; ++ii)
 		visit(*(reinterpret_cast<const CATAtlasRemapElement*>(desc.remapping_blob) + ii));
 }
+
+void traverse_font_remapping(const CATDescriptor& desc, std::function<void(const CATFontRemapElement&)> visit)
+{
+    uint32_t num_remap = desc.remapping_blob_size / sizeof(CATFontRemapElement);
+    for(int ii=0; ii<num_remap; ++ii)
+        visit(*(reinterpret_cast<const CATFontRemapElement*>(desc.remapping_blob) + ii));
+}
+
 
 } // namespace cat
 } // namespace erwin

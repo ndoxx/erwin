@@ -20,6 +20,23 @@ namespace fudge
 namespace atlas
 {
 
+static Compression s_blob_compression = Compression::Deflate;
+
+// Set lossless compression, only affects CAT export
+void set_compression(Compression compression)
+{
+    s_blob_compression = compression;
+}
+
+/*
+              _______        _                            _   _           
+             |__   __|      | |                      /\  | | | |          
+                | | _____  _| |_ _   _ _ __ ___     /  \ | |_| | __ _ ___ 
+                | |/ _ \ \/ / __| | | | '__/ _ \   / /\ \| __| |/ _` / __|
+                | |  __/>  <| |_| |_| | | |  __/  / ____ \ |_| | (_| \__ \
+                |_|\___/_/\_\\__|\__,_|_|  \___| /_/    \_\__|_|\__,_|___/
+*/
+
 // For image texture atlas
 struct ImageData
 {
@@ -32,45 +49,7 @@ struct ImageData
     int channels;       // Number of color channels
 };
 
-// For font texture atlas
-struct Character
-{
-    unsigned long index; // Character index
-    unsigned char* data; // Bitmap data
-    int x;               // Character position in atlas
-    int y;
-    unsigned int width; // Size of glyph
-    unsigned int height;
-    long advance;        // Offset to advance to next glyph
-    int bearing_x;       // Offset from baseline to left/top of glyph
-    int bearing_y;
-};
-
-static FT_Library ft_;
-
-static Compression s_blob_compression = Compression::Deflate;
-
-void init_fonts()
-{
-    // Init freetype
-    if(FT_Init_FreeType(&ft_))
-    {
-        DLOGE("fudge") << "Could not init FreeType Library." << std::endl;
-        exit(0);
-    }
-}
-
-void release_fonts()
-{
-    // Cleanup freetype
-    FT_Done_FreeType(ft_);
-}
-
-void set_compression(Compression compression)
-{
-	s_blob_compression = compression;
-}
-
+// Blit all input images into a single array, and construct remapping data
 static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width, uint32_t height, bool inverse_y, std::vector<cat::CATAtlasRemapElement>& remap)
 {
     // Allocate block data array
@@ -120,6 +99,7 @@ static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width,
     return uncomp;
 }
 
+// Export texture atlas as a PNG image together with a text file containing remapping data
 static void export_atlas_png(uint8_t* uncomp, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, int out_w, int out_h)
 {
     fs::path out_atlas = output_dir / (out_name + ".png");
@@ -142,10 +122,10 @@ static void export_atlas_png(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
     stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
 }
 
+// Export texture atlas as a binary CAT file containing both a (compressed) texture blob and a remapping table 
 static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h)
 {
     uint8_t* tex_blob = fudge::compress_dxt_5(uncomp, out_w, out_h);
-
     uint32_t dxt_size = out_w*out_h;
 
     // Export
@@ -162,63 +142,13 @@ static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRem
         (uint32_t)(remap.size()*sizeof(cat::CATAtlasRemapElement)),
         TextureCompression::DXT5,
         (s_blob_compression == Compression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
+        cat::RemappingType::TextureAtlas
     });
     // Cleanup
     delete[] tex_blob;
 }
 
-static void export_font_atlas_png(const std::vector<Character>& characters, const fs::path& output_dir, const std::string& out_name, int out_w, int out_h)
-{
-    fs::path out_atlas = output_dir / (out_name + ".png");
-    fs::path out_remap = output_dir / (out_name + ".txt");
-
-    // * Pack images in an atlas
-    // Allocate output data array
-    unsigned char* output = new unsigned char[4*out_w*out_h];
-    memset(output, 0, 4*out_w*out_h);
-
-    // Open remapping file
-    std::ofstream ofs(out_remap);
-    // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
-    ofs << "# index x y w h advance bearing_x bearing_y" << std::endl;
-
-    // Create the atlas texture
-    for(int ii=0; ii<characters.size(); ++ii)
-    {
-        const Character& charac = characters[ii];
-        
-        // Set remapping file
-        // advance is bitshifted by 6 (2^6=64) to get value in pixels
-        ofs << charac.index << " " << charac.x << " " << out_h-charac.y - charac.height << " " << charac.width << " " << charac.height << " "
-            << (charac.advance>>6) << " " << charac.bearing_x << " " << charac.bearing_y << std::endl;
-
-        // Blit atlas image data
-        for(int xx=0; xx<charac.width; ++xx)
-        {
-            int out_x = charac.x + xx;
-            for(int yy=0; yy<charac.height; ++yy)
-            {
-                int out_y = charac.y + yy;
-                char value = charac.data[yy * charac.width + xx];
-                output[4 * (out_y * out_w + out_x) + 0] = value ? 255 : 0; // R channel
-                output[4 * (out_y * out_w + out_x) + 1] = value ? 255 : 0; // G channel
-                output[4 * (out_y * out_w + out_x) + 2] = value ? 255 : 0; // B channel
-                output[4 * (out_y * out_w + out_x) + 3] = value;           // A channel
-            }
-        }
-    }
-    ofs.close();
-
-    // Export
-    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
-    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, output, out_w * 4);
-
-    // Cleanup
-    delete[] output;
-}
-
+// Explore a directory containing multiple images, load them, blit them, build and export a texture atlas
 void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compression compr)
 {
     std::vector<rect_xywh> rectangles;
@@ -237,7 +167,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
             img.y = 0;
             if(!img.data)
             {
-    			DLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
+                DLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
                 continue;
             }
 
@@ -301,6 +231,143 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
     delete[] uncomp;
     for(auto&& img: images)
         stbi_image_free(img.data);
+}
+
+/*
+              ______          _             _   _           
+             |  ____|        | |       /\  | | | |          
+             | |__ ___  _ __ | |_     /  \ | |_| | __ _ ___ 
+             |  __/ _ \| '_ \| __|   / /\ \| __| |/ _` / __|
+             | | | (_) | | | | |_   / ____ \ |_| | (_| \__ \
+             |_|  \___/|_| |_|\__| /_/    \_\__|_|\__,_|___/
+*/
+
+// For font texture atlas
+struct Character
+{
+    unsigned long index; // Character index
+    unsigned char* data; // Bitmap data
+    int x;               // Character position in atlas
+    int y;
+    unsigned int width; // Size of glyph
+    unsigned int height;
+    long advance;        // Offset to advance to next glyph
+    int bearing_x;       // Offset from baseline to left/top of glyph
+    int bearing_y;
+};
+
+static FT_Library ft_;
+
+void init_fonts()
+{
+    // Init freetype
+    if(FT_Init_FreeType(&ft_))
+    {
+        DLOGE("fudge") << "Could not init FreeType Library." << std::endl;
+        exit(0);
+    }
+}
+
+void release_fonts()
+{
+    // Cleanup freetype
+    FT_Done_FreeType(ft_);
+}
+
+static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32_t width, uint32_t height, bool inverse_y, std::vector<cat::CATFontRemapElement>& remap)
+{
+    // Allocate block data array
+    unsigned char* uncomp = new unsigned char[4*width*height];
+    memset(uncomp, 0, 4*width*height);
+
+    // Allocate remapping data array
+    remap.reserve(characters.size());
+
+    // Create the uncompressed atlas texture
+    for(int ii=0; ii<characters.size(); ++ii)
+    {
+        const Character& charac = characters[ii];
+        
+        // Push remapping element
+        cat::CATFontRemapElement elt =
+        {
+            charac.index,
+            uint16_t(charac.x),
+            uint16_t(height-charac.y - charac.height),
+            uint16_t(charac.width),
+            uint16_t(charac.height),
+            uint16_t(charac.bearing_x),
+            uint16_t(charac.bearing_y),
+            (charac.advance>>6) // advance is bitshifted by 6 (2^6=64) to get value in pixels
+        };
+        remap.push_back(elt);
+
+        // Blit atlas image data
+        for(int yy=0; yy<charac.height; ++yy)
+        {
+            int out_y = inverse_y ? (height - 1) - (charac.y + yy) : charac.y + yy;
+            for(int xx=0; xx<charac.width; ++xx)
+            {
+                int out_x = charac.x + xx;
+                char value = charac.data[yy * charac.width + xx];
+                uncomp[4 * (out_y * width + out_x) + 0] = value ? 255 : 0; // R channel
+                uncomp[4 * (out_y * width + out_x) + 1] = value ? 255 : 0; // G channel
+                uncomp[4 * (out_y * width + out_x) + 2] = value ? 255 : 0; // B channel
+                uncomp[4 * (out_y * width + out_x) + 3] = value;           // A channel
+            }
+        }
+    }
+
+    return uncomp;
+}
+
+static void export_font_atlas_png(uint8_t* uncomp, const std::vector<cat::CATFontRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, int out_w, int out_h)
+{
+    fs::path out_atlas = output_dir / (out_name + ".png");
+    fs::path out_remap = output_dir / (out_name + ".txt");
+
+    // Write remapping file
+    std::ofstream ofs(out_remap);
+    // Write comment for column names
+    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
+    ofs << "# index x y w h bearing_x bearing_y advance" << std::endl;
+
+    for(auto&& elt: remap)
+        ofs << elt.index << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << " "
+            << elt.bearing_x << " " << elt.bearing_y << " " << elt.advance << std::endl;
+
+    ofs.close();
+
+    // Export
+    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
+    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
+}
+
+static void export_font_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATFontRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h)
+{
+    uint8_t* tex_blob = fudge::compress_dxt_5(uncomp, out_w, out_h);
+    uint32_t dxt_size = out_w*out_h;
+
+    // Export
+    fs::path out_atlas = output_dir / (out_name + ".cat");
+    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+    cat::write_cat(
+    {
+        out_atlas,
+        tex_blob,
+        (void*)remap.data(),
+        out_w,
+        out_h,
+        dxt_size, // Blob size
+        (uint32_t)(remap.size()*sizeof(cat::CATFontRemapElement)),
+        TextureCompression::DXT5,
+        (s_blob_compression == Compression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
+        cat::RemappingType::FontAtlas
+    });
+
+    // Cleanup
+    delete[] tex_blob;
 }
 
 void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Compression compr, uint32_t raster_size)
@@ -386,11 +453,46 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
         characters[ii].y = rectangles[ii].y;
     }
 
+    // * Generate uncompressed atlas data
+    // Pad size to multiple of 4 if necessary
+    if(compr == Compression::DXT5)
+    {
+        if(out_w%4)
+        {
+            out_w += (4-out_w%4);
+            DLOG("fudge",1) << "Padded width to: "  << WCC('v') << out_w << std::endl;
+        }
+        if(out_h%4)
+        {
+            out_h += (4-out_h%4);
+            DLOG("fudge",1) << "Padded height to: " << WCC('v') << out_h << std::endl;
+        }
+    }
+
     // * Export
+    std::vector<cat::CATFontRemapElement> remap;
     std::string font_name = input_font.stem().string();
-    export_font_atlas_png(characters, output_dir, font_name, out_w, out_h);
+    // export_font_atlas_png(characters, output_dir, font_name, out_w, out_h);
+    uint8_t* uncomp = nullptr;
+    switch(compr)
+    {
+        case Compression::None:
+        {
+            uncomp = blit_font_atlas(characters, out_w, out_h, false, remap);
+            export_font_atlas_png(uncomp, remap, output_dir, font_name, out_w, out_h);
+            break;
+        }
+        case Compression::DXT5:
+        {
+            uncomp = blit_font_atlas(characters, out_w, out_h, true, remap);
+            export_font_atlas_cat(uncomp, remap, output_dir, font_name, out_w, out_h);
+            break;
+        }
+        default: break;
+    }
 
     // Cleanup
+    delete[] uncomp;
     for(auto&& charac: characters)
         delete[] charac.data;
 

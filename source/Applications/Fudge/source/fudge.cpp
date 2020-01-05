@@ -164,7 +164,7 @@ int main(int argc, char const *argv[])
                     default:       tex_c = fudge::Compression::None; break;
                 }
                 fudge::Compression blob_c;
-                switch(H_(tex_compression.c_str()))
+                switch(H_(blob_compression.c_str()))
                 {
                     case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
                     default:          blob_c = fudge::Compression::None; break;
@@ -204,9 +204,25 @@ int main(int argc, char const *argv[])
                 batch; batch=batch->next_sibling("batch"))
             {
                 // Configure batch
-                std::string input_path, output_path;
+                std::string input_path, output_path, tex_compression("none"), blob_compression("none");
                 if(!xml::parse_attribute(batch, "input", input_path)) continue;
                 if(!xml::parse_attribute(batch, "output", output_path)) continue;
+                xml::parse_node(batch, "texture_compression", tex_compression);
+                xml::parse_node(batch, "blob_compression", blob_compression);
+
+                fudge::Compression tex_c;
+                switch(H_(tex_compression.c_str()))
+                {
+                    case "DXT5"_h: tex_c = fudge::Compression::DXT5; break;
+                    default:       tex_c = fudge::Compression::None; break;
+                }
+                fudge::Compression blob_c;
+                switch(H_(blob_compression.c_str()))
+                {
+                    case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
+                    default:          blob_c = fudge::Compression::None; break;
+                }
+                fudge::atlas::set_compression(blob_c);
 
                 DLOGN("fudge") << "Iterating fonts directory:" << std::endl;
                 DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
@@ -217,7 +233,7 @@ int main(int argc, char const *argv[])
                        (fudge::far::need_create(entry) || s_force_font_rebuild))
                     {
                         DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
-                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, fudge::Compression::None, 32);
+                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, tex_c, 32);
                         DLOGR("fudge") << std::endl;
                     }
                 }

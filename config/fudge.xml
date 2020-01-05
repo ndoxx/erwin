@@ -15,7 +15,10 @@
 		</texture>
 		<font>
 			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
-				   output="source/Applications/Sandbox/assets/textures/atlas"/>
+				   output="source/Applications/Sandbox/assets/textures/atlas">
+				<texture_compression>DXT5</texture_compression>
+				<blob_compression>deflate</blob_compression>
+			</batch>
 			<!--<batch input="source/Applications/PoliPuyo/assets/textures/atlas/upack"
 				   output="source/Applications/PoliPuyo/assets/textures/atlas"/>-->
 		</font>
