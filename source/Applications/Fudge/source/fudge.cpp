@@ -96,6 +96,45 @@ static bool cmd_option_exists(const char** begin, const char** end, const std::s
     return std::find(begin, end, option) != end;
 }
 
+static bool parse_atlas_export_options(rapidxml::xml_node<>* export_node, fudge::atlas::AtlasExportOptions& options)
+{
+    if(export_node == nullptr)
+    {
+        DLOGW("fudge") << "No export node detected, setting default export options." << std::endl;
+        return false;
+    }
+
+    hash_t file_type           = xml::parse_node_h(export_node, "file_type");
+    hash_t texture_compression = xml::parse_node_h(export_node, "texture_compression");
+    hash_t blob_compression    = xml::parse_node_h(export_node, "blob_compression");
+
+    switch(file_type)
+    {
+        case "PNG"_h: options.file_type = fudge::atlas::FileType::PNG; break;
+        case "CAT"_h: options.file_type = fudge::atlas::FileType::CAT; break;
+        default:      options.file_type = fudge::atlas::FileType::PNG; break;
+    }
+
+    switch(texture_compression)
+    {
+        case "none"_h: options.texture_compression = TextureCompression::None; break;
+        case "DXT1"_h: options.texture_compression = TextureCompression::DXT1; break;
+        case "DXT5"_h: options.texture_compression = TextureCompression::DXT5; break;
+        default:       options.texture_compression = TextureCompression::None; break;
+    }
+
+    switch(blob_compression)
+    {
+        case "none"_h:    options.blob_compression = fudge::BlobCompression::None; break;
+        case "deflate"_h: options.blob_compression = fudge::BlobCompression::Deflate; break;
+        default:          options.blob_compression = fudge::BlobCompression::None; break;
+    }
+
+    // TODO: sanity check
+
+    return true;
+}
+
 int main(int argc, char const *argv[])
 {
     init_logger();
@@ -151,25 +190,12 @@ int main(int argc, char const *argv[])
                 batch; batch=batch->next_sibling("batch"))
             {
                 // Configure batch
-                std::string input_path, output_path, tex_compression("none"), blob_compression("none");
+                std::string input_path, output_path;
                 if(!xml::parse_attribute(batch, "input", input_path)) continue;
                 if(!xml::parse_attribute(batch, "output", output_path)) continue;
-                xml::parse_node(batch, "texture_compression", tex_compression);
-                xml::parse_node(batch, "blob_compression", blob_compression);
 
-                fudge::Compression tex_c;
-                switch(H_(tex_compression.c_str()))
-                {
-                    case "DXT5"_h: tex_c = fudge::Compression::DXT5; break;
-                    default:       tex_c = fudge::Compression::None; break;
-                }
-                fudge::Compression blob_c;
-                switch(H_(blob_compression.c_str()))
-                {
-                    case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
-                    default:          blob_c = fudge::Compression::None; break;
-                }
-                fudge::atlas::set_compression(blob_c);
+                fudge::atlas::AtlasExportOptions options;
+                parse_atlas_export_options(batch->first_node("export"), options);
 
                 // Iterate directory
                 DLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
@@ -180,7 +206,7 @@ int main(int argc, char const *argv[])
                     {
                         DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
-                        fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, tex_c);
+                        fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, options);
                         DLOGR("fudge") << std::endl;
                     }
                 }
@@ -204,25 +230,12 @@ int main(int argc, char const *argv[])
                 batch; batch=batch->next_sibling("batch"))
             {
                 // Configure batch
-                std::string input_path, output_path, tex_compression("none"), blob_compression("none");
+                std::string input_path, output_path;
                 if(!xml::parse_attribute(batch, "input", input_path)) continue;
                 if(!xml::parse_attribute(batch, "output", output_path)) continue;
-                xml::parse_node(batch, "texture_compression", tex_compression);
-                xml::parse_node(batch, "blob_compression", blob_compression);
 
-                fudge::Compression tex_c;
-                switch(H_(tex_compression.c_str()))
-                {
-                    case "DXT5"_h: tex_c = fudge::Compression::DXT5; break;
-                    default:       tex_c = fudge::Compression::None; break;
-                }
-                fudge::Compression blob_c;
-                switch(H_(blob_compression.c_str()))
-                {
-                    case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
-                    default:          blob_c = fudge::Compression::None; break;
-                }
-                fudge::atlas::set_compression(blob_c);
+                fudge::atlas::AtlasExportOptions options;
+                parse_atlas_export_options(batch->first_node("export"), options);
 
                 DLOGN("fudge") << "Iterating fonts directory:" << std::endl;
                 DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
@@ -233,7 +246,7 @@ int main(int argc, char const *argv[])
                        (fudge::far::need_create(entry) || s_force_font_rebuild))
                     {
                         DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
-                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, tex_c, 32);
+                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, options, 32);
                         DLOGR("fudge") << std::endl;
                     }
                 }

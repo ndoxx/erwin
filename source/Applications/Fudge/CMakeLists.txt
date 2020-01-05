@@ -7,16 +7,6 @@ set(SRC_FUDGE
     source/texture_packer.cpp
     source/shader_packer.cpp
     source/optimal_packing.cpp
-    ${SRC_FILESYSTEM}
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
    )
 
 add_executable(fudge ${SRC_FUDGE})
@@ -40,6 +30,7 @@ set_target_properties(freetype PROPERTIES
 )
 
 target_link_libraries(fudge
+                      erwin
                       stdc++fs
                       pthread
                       png

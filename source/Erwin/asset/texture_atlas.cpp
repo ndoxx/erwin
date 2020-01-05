@@ -6,6 +6,7 @@
 namespace erwin
 {
 
+// BUG#5: CAT texture atlas files with no texture compression do not work
 void TextureAtlas::load(const fs::path& filepath)
 {
 	// Check file type

@@ -4,6 +4,7 @@
 
 #include "filesystem/cat_file.h"
 #include "debug/logger.h"
+#include "core/core.h"
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
@@ -19,14 +20,6 @@ namespace fudge
 {
 namespace atlas
 {
-
-static Compression s_blob_compression = Compression::Deflate;
-
-// Set lossless compression, only affects CAT export
-void set_compression(Compression compression)
-{
-    s_blob_compression = compression;
-}
 
 /*
               _______        _                            _   _           
@@ -99,57 +92,66 @@ static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width,
     return uncomp;
 }
 
-// Export texture atlas as a PNG image together with a text file containing remapping data
-static void export_atlas_png(uint8_t* uncomp, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, int out_w, int out_h)
+// BUG#5: CAT texture atlas files with no texture compression do not work
+static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h, const AtlasExportOptions& options)
 {
-    fs::path out_atlas = output_dir / (out_name + ".png");
-    fs::path out_remap = output_dir / (out_name + ".txt");
-
-    // Write remapping file
-    std::ofstream ofs(out_remap);
-    // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
-    ofs << "# name x y w h" << std::endl;
-
-    for(auto&& elt: remap)
-        ofs << elt.name << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << std::endl;
-
-    ofs.close();
-
-    // Export
-    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
-    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
-}
-
-// Export texture atlas as a binary CAT file containing both a (compressed) texture blob and a remapping table 
-static void export_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATAtlasRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h)
-{
-    uint8_t* tex_blob = fudge::compress_dxt_5(uncomp, out_w, out_h);
-    uint32_t dxt_size = out_w*out_h;
-
-    // Export
-    fs::path out_atlas = output_dir / (out_name + ".cat");
-    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-    cat::write_cat(
+    if(options.file_type == FileType::CAT)
     {
-        out_atlas,
-        tex_blob,
-        (void*)remap.data(),
-        out_w,
-        out_h,
-        dxt_size, // Blob size
-        (uint32_t)(remap.size()*sizeof(cat::CATAtlasRemapElement)),
-        TextureCompression::DXT5,
-        (s_blob_compression == Compression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
-        cat::RemappingType::TextureAtlas
-    });
-    // Cleanup
-    delete[] tex_blob;
+        W_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression not yet supported.");
+
+        uint32_t blob_size = 4*out_w*out_h;
+        if(options.texture_compression == TextureCompression::DXT5)
+        {
+            uint8_t* compressed_data = fudge::compress_dxt_5(data, out_w, out_h);
+            delete[] data;
+            data = compressed_data;
+            blob_size = out_w*out_h;
+        }
+
+        // Export
+        fs::path out_atlas = output_dir / (out_name + ".cat");
+        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        cat::write_cat(
+        {
+            out_atlas,
+            data,
+            (void*)remap.data(),
+            out_w,
+            out_h,
+            blob_size, // Blob size
+            (uint32_t)(remap.size()*sizeof(cat::CATAtlasRemapElement)),
+            options.texture_compression,
+            (options.blob_compression == BlobCompression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
+            cat::RemappingType::TextureAtlas
+        });
+    }
+    else
+    {
+        fs::path out_atlas = output_dir / (out_name + ".png");
+        fs::path out_remap = output_dir / (out_name + ".txt");
+
+        // Write remapping file
+        std::ofstream ofs(out_remap);
+        // Write comment for column names
+        ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
+        ofs << "# name x y w h" << std::endl;
+
+        for(auto&& elt: remap)
+            ofs << elt.name << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << std::endl;
+
+        ofs.close();
+
+        // Export
+        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        DLOGI << "export: " << WCC('p') << out_remap << std::endl;
+        stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
+    }
+    
+    delete[] data;
 }
 
 // Explore a directory containing multiple images, load them, blit them, build and export a texture atlas
-void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compression compr)
+void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const AtlasExportOptions& options)
 {
     std::vector<rect_xywh> rectangles;
     std::vector<ImageData> images;
@@ -190,9 +192,8 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
         images[ii].y = rectangles[ii].y;
     }
 
-    // * Generate uncompressed atlas data
-    // Pad size to multiple of 4 if necessary
-    if(compr == Compression::DXT5)
+    // * Pad size to multiple of 4 if necessary
+    if(options.texture_compression == TextureCompression::DXT5)
     {
         if(out_w%4)
         {
@@ -209,26 +210,11 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, Compressi
     // * Export
     std::vector<cat::CATAtlasRemapElement> remap;
     std::string dir_name = input_dir.stem().string();
-    uint8_t* uncomp = nullptr;
-    switch(compr)
-    {
-        case Compression::None:
-        {
-            uncomp = blit_atlas(images, out_w, out_h, false, remap);
-            export_atlas_png(uncomp, remap, output_dir, dir_name, out_w, out_h);
-            break;
-        }
-        case Compression::DXT5:
-        {
-            uncomp = blit_atlas(images, out_w, out_h, true, remap);
-            export_atlas_cat(uncomp, remap, output_dir, dir_name, out_w, out_h);
-            break;
-        }
-        default: break;
-    }
+    bool invert_y = (options.texture_compression != TextureCompression::None);
+    uint8_t* uncomp = blit_atlas(images, out_w, out_h, invert_y, remap);
+    export_atlas(uncomp, remap, output_dir, dir_name, out_w, out_h, options);
 
     // Cleanup
-    delete[] uncomp;
     for(auto&& img: images)
         stbi_image_free(img.data);
 }
@@ -274,11 +260,12 @@ void release_fonts()
     FT_Done_FreeType(ft_);
 }
 
-static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32_t width, uint32_t height, bool inverse_y, std::vector<cat::CATFontRemapElement>& remap)
+static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32_t width, uint32_t height, bool inverse_y, bool RGBA, std::vector<cat::CATFontRemapElement>& remap)
 {
     // Allocate block data array
-    unsigned char* uncomp = new unsigned char[4*width*height];
-    memset(uncomp, 0, 4*width*height);
+    uint32_t n_channels = RGBA ? 4 : 1;
+    unsigned char* data = new unsigned char[n_channels*width*height];
+    memset(data, 0, n_channels*width*height);
 
     // Allocate remapping data array
     remap.reserve(characters.size());
@@ -303,74 +290,92 @@ static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32
         remap.push_back(elt);
 
         // Blit atlas image data
-        for(int yy=0; yy<charac.height; ++yy)
+        if(RGBA)
         {
-            int out_y = inverse_y ? (height - 1) - (charac.y + yy) : charac.y + yy;
-            for(int xx=0; xx<charac.width; ++xx)
+            for(int yy=0; yy<charac.height; ++yy)
             {
-                int out_x = charac.x + xx;
-                char value = charac.data[yy * charac.width + xx];
-                uncomp[4 * (out_y * width + out_x) + 0] = value ? 255 : 0; // R channel
-                uncomp[4 * (out_y * width + out_x) + 1] = value ? 255 : 0; // G channel
-                uncomp[4 * (out_y * width + out_x) + 2] = value ? 255 : 0; // B channel
-                uncomp[4 * (out_y * width + out_x) + 3] = value;           // A channel
+                int out_y = inverse_y ? (height - 1) - (charac.y + yy) : charac.y + yy;
+                for(int xx=0; xx<charac.width; ++xx)
+                {
+                    int out_x = charac.x + xx;
+                    char value = charac.data[yy * charac.width + xx];
+                    data[4 * (out_y * width + out_x) + 0] = value ? 255 : 0; // R channel
+                    data[4 * (out_y * width + out_x) + 1] = value ? 255 : 0; // G channel
+                    data[4 * (out_y * width + out_x) + 2] = value ? 255 : 0; // B channel
+                    data[4 * (out_y * width + out_x) + 3] = value;           // A channel
+                }
+            }
+        }
+        else
+        {
+            for(int yy=0; yy<charac.height; ++yy)
+            {
+                int out_y = inverse_y ? (height - 1) - (charac.y + yy) : charac.y + yy;
+                for(int xx=0; xx<charac.width; ++xx)
+                {
+                    int out_x = charac.x + xx;
+                    char value = charac.data[yy * charac.width + xx];
+                    data[(out_y * width + out_x)] = value;
+                }
             }
         }
     }
 
-    return uncomp;
+    return data;
 }
 
-static void export_font_atlas_png(uint8_t* uncomp, const std::vector<cat::CATFontRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, int out_w, int out_h)
+static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h, const AtlasExportOptions& options)
 {
-    fs::path out_atlas = output_dir / (out_name + ".png");
-    fs::path out_remap = output_dir / (out_name + ".txt");
-
-    // Write remapping file
-    std::ofstream ofs(out_remap);
-    // Write comment for column names
-    ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
-    ofs << "# index x y w h bearing_x bearing_y advance" << std::endl;
-
-    for(auto&& elt: remap)
-        ofs << elt.index << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << " "
-            << elt.bearing_x << " " << elt.bearing_y << " " << elt.advance << std::endl;
-
-    ofs.close();
-
-    // Export
-    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-    DLOGI << "export: " << WCC('p') << out_remap << std::endl;
-    stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, uncomp, out_w * 4);
-}
-
-static void export_font_atlas_cat(uint8_t* uncomp, const std::vector<cat::CATFontRemapElement>& remap, const fs::path& output_dir, const std::string& out_name, uint32_t out_w, uint32_t out_h)
-{
-    uint8_t* tex_blob = fudge::compress_dxt_5(uncomp, out_w, out_h);
-    uint32_t dxt_size = out_w*out_h;
-
-    // Export
-    fs::path out_atlas = output_dir / (out_name + ".cat");
-    DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-    cat::write_cat(
+    if(options.file_type == FileType::CAT)
     {
-        out_atlas,
-        tex_blob,
-        (void*)remap.data(),
-        out_w,
-        out_h,
-        dxt_size, // Blob size
-        (uint32_t)(remap.size()*sizeof(cat::CATFontRemapElement)),
-        TextureCompression::DXT5,
-        (s_blob_compression == Compression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
-        cat::RemappingType::FontAtlas
-    });
+        uint32_t blob_size = out_w*out_h;
+        W_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression incompatible with single channel font atlas.");
+        W_ASSERT(options.texture_compression != TextureCompression::DXT5, "DXT5 compression incompatible with single channel font atlas.");
 
-    // Cleanup
-    delete[] tex_blob;
+        // Export
+        fs::path out_atlas = output_dir / (out_name + ".cat");
+        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        cat::write_cat(
+        {
+            out_atlas,
+            data,
+            (void*)remap.data(),
+            out_w,
+            out_h,
+            blob_size,
+            (uint32_t)(remap.size()*sizeof(cat::CATFontRemapElement)),
+            options.texture_compression,
+            (options.blob_compression == BlobCompression::Deflate) ? cat::LosslessCompression::Deflate : cat::LosslessCompression::None,
+            cat::RemappingType::FontAtlas
+        });
+    }
+    else
+    {
+        fs::path out_atlas = output_dir / (out_name + ".png");
+        fs::path out_remap = output_dir / (out_name + ".txt");
+
+        // Write remapping file
+        std::ofstream ofs(out_remap);
+        // Write comment for column names
+        ofs << "# x: left to right, y: bottom to top, coords are for bottom left corner of sub-image" << std::endl;
+        ofs << "# index x y w h bearing_x bearing_y advance" << std::endl;
+
+        for(auto&& elt: remap)
+            ofs << elt.index << " " << elt.x << " " << elt.y << " " << elt.w << " " << elt.h << " "
+                << elt.bearing_x << " " << elt.bearing_y << " " << elt.advance << std::endl;
+
+        ofs.close();
+
+        // Export
+        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        DLOGI << "export: " << WCC('p') << out_remap << std::endl;
+        stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
+    }
+
+    delete[] data;
 }
 
-void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Compression compr, uint32_t raster_size)
+void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, const AtlasExportOptions& options, uint32_t raster_size)
 {
     // * Create a new face using Freetype, and load each character
     // Open font file as binary and load into freetype
@@ -453,46 +458,15 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, Com
         characters[ii].y = rectangles[ii].y;
     }
 
-    // * Generate uncompressed atlas data
-    // Pad size to multiple of 4 if necessary
-    if(compr == Compression::DXT5)
-    {
-        if(out_w%4)
-        {
-            out_w += (4-out_w%4);
-            DLOG("fudge",1) << "Padded width to: "  << WCC('v') << out_w << std::endl;
-        }
-        if(out_h%4)
-        {
-            out_h += (4-out_h%4);
-            DLOG("fudge",1) << "Padded height to: " << WCC('v') << out_h << std::endl;
-        }
-    }
-
     // * Export
     std::vector<cat::CATFontRemapElement> remap;
     std::string font_name = input_font.stem().string();
-    // export_font_atlas_png(characters, output_dir, font_name, out_w, out_h);
-    uint8_t* uncomp = nullptr;
-    switch(compr)
-    {
-        case Compression::None:
-        {
-            uncomp = blit_font_atlas(characters, out_w, out_h, false, remap);
-            export_font_atlas_png(uncomp, remap, output_dir, font_name, out_w, out_h);
-            break;
-        }
-        case Compression::DXT5:
-        {
-            uncomp = blit_font_atlas(characters, out_w, out_h, true, remap);
-            export_font_atlas_cat(uncomp, remap, output_dir, font_name, out_w, out_h);
-            break;
-        }
-        default: break;
-    }
+    bool invert_y = false;
+    bool RGBA     = (options.file_type == FileType::PNG);
+    uint8_t* uncomp = blit_font_atlas(characters, out_w, out_h, invert_y, RGBA, remap);
+    export_font_atlas(uncomp, remap, output_dir, font_name, out_w, out_h, options);
 
     // Cleanup
-    delete[] uncomp;
     for(auto&& charac: characters)
         delete[] charac.data;
 

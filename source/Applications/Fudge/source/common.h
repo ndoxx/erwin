@@ -1,12 +1,12 @@
 #pragma once
+#include "render/texture_common.h"
 
 namespace fudge
 {
 
-enum class Compression: uint8_t
+enum class BlobCompression: uint8_t
 {
     None = 0,
-    DXT5,
     Deflate
 };
 

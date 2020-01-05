@@ -58,7 +58,7 @@ struct LayoutSpec
 	std::string name;
 };
 
-static Compression s_blob_compression = Compression::Deflate;
+static BlobCompression s_blob_compression = BlobCompression::Deflate;
 static std::unordered_map<hash_t, TexmapSpec> s_texmap_specs;
 static std::vector<std::pair<hash_t, GroupSpec>> s_group_specs;
 static std::vector<LayoutSpec> s_layout_specs;
@@ -215,9 +215,9 @@ bool configure(const fs::path& filepath)
 	if(xml::parse_node(opt_node, "BlobCompression", blob_compression_str))
 	{
 		if(!blob_compression_str.compare("DEFLATE"))
-			s_blob_compression = Compression::Deflate;
+			s_blob_compression = BlobCompression::Deflate;
 		else
-			s_blob_compression = Compression::None;
+			s_blob_compression = BlobCompression::None;
 	}
 	xml::parse_node(opt_node, "AllowGrouping", s_allow_grouping);
 
@@ -444,7 +444,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 		output_dir / out_file_name,
 		(uint16_t)width,
 		(uint16_t)height,
-		((s_blob_compression==Compression::Deflate) ? tom::LosslessCompression::Deflate : tom::LosslessCompression::None),
+		((s_blob_compression==BlobCompression::Deflate) ? tom::LosslessCompression::Deflate : tom::LosslessCompression::None),
 		TextureWrap::REPEAT
 	};
 
