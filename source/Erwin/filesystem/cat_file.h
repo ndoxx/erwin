@@ -49,7 +49,7 @@ struct CATFontRemapElement
     uint16_t h;
     uint16_t bearing_x;
     uint16_t bearing_y;
-    int64_t  advance;
+    uint16_t advance;
 };
 
 struct CATDescriptor

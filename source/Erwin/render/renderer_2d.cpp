@@ -37,7 +37,9 @@ struct Renderer2DStorage
 	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
+	glm::mat4 projection_matrix;
 	glm::mat4 view_matrix;
+	glm::vec2 fb_size;
 	FrustumSides frustum_sides;
 	uint64_t pass_state;
 	bool state_transparent; // TODO: maybe this should belong to batch properties
@@ -160,7 +162,9 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
 	storage.view_matrix = camera.get_view_matrix();
+	storage.projection_matrix = camera.get_projection_matrix();
 	storage.frustum_sides = camera.get_frustum_sides();
+	storage.fb_size = FramebufferPool::get_size("fb_2d_raw"_h);
 
 	// Reset batch instance data pointers
 	for(auto&& [key, batch]: storage.batches)
@@ -234,6 +238,59 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
 	++batch.count;
 }
+
+void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle, float x, float y, float scale, const glm::vec4& tint)
+{
+	// Get font atlas
+	const FontAtlas& font = AssetManager::get(font_handle);
+
+	Batch2D batch;
+	batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), MainRenderer::get_arena());
+	batch.max_depth = 0.f;
+	batch.texture = font.texture;
+	batch.count = 0;
+
+    float ar = storage.fb_size.x / storage.fb_size.y;
+
+	std::string::const_iterator itc;
+    for(itc = text.begin(); itc != text.end(); ++itc)
+    {
+    	uint64_t index = uint64_t(*itc);
+    	if(index == ' ')
+    	{
+    		x += 20.f /storage.fb_size.x;
+    		continue;
+    	}
+
+    	const FontAtlas::RemappingElement& remap = font.get_remapping(index);
+
+    	float xpos = -1.f + x + remap.bearing.x/storage.fb_size.x;
+    	float ypos = -1.f + y + remap.bearing.y/storage.fb_size.y;
+
+    	glm::vec2 vscale = {remap.size_px.x/storage.fb_size.x, remap.size_px.y/storage.fb_size.y};
+
+    	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale};
+
+    	// WTF 2.5
+    	x += 2.5f * remap.advance / storage.fb_size.x;
+    }
+
+	if(batch.count)
+	{
+		glm::mat4 id(1.f);
+
+		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+		dc.set_state(storage.pass_state);
+		dc.set_UBO(storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
+		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
+		dc.set_texture(batch.texture);
+		dc.set_key_depth(batch.max_depth, storage.layer_id);
+		MainRenderer::submit((storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h), dc);
+
+		++storage.num_draw_calls;
+	}
+}
+
 
 void Renderer2D::flush()
 {
