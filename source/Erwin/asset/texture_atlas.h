@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EASTL/hash_map.h"
+#include "EASTL/vector.h"
 
 #include "render/handles.h"
 #include "filesystem/filesystem.h"
@@ -34,9 +35,11 @@ struct FontAtlas
 	struct RemappingElement
 	{
 		glm::vec4 uvs;
-		glm::ivec2 size_px;
-		glm::ivec2 bearing;
-		int64_t advance;
+	    uint16_t w = 0;
+	    uint16_t h = 0;
+	    int16_t bearing_x = 0;
+	    int16_t bearing_y = 0;
+	    uint16_t advance = 0;
 	};
 
 	// Load texture data from file and prepare descriptor for later renderer submission
@@ -53,7 +56,7 @@ struct FontAtlas
 	uint32_t height;
 
 private:
-	eastl::hash_map<uint64_t, RemappingElement> remapping;
+	eastl::hash_map<uint64_t,RemappingElement> remapping;
 };
 
 } // namespace erwin

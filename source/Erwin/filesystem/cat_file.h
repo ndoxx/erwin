@@ -47,8 +47,8 @@ struct CATFontRemapElement
     uint16_t y;
     uint16_t w;
     uint16_t h;
-    uint16_t bearing_x;
-    uint16_t bearing_y;
+    int16_t bearing_x;
+    int16_t bearing_y;
     uint16_t advance;
 };
 

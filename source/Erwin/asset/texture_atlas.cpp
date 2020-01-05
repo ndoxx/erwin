@@ -93,14 +93,30 @@ void FontAtlas::load(const fs::path& filepath)
 		float fwidth = width;
 		float fheight = height;
 
-		// Apply half-pixel correction if linear filtering is used
-		/*glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/fwidth, 0.5f/fheight, -0.5f/fwidth, -0.5f/fheight)
-													 : glm::vec4(0.f);*/
+		// Get maximal index and resize remapping table accordingly
+		/*uint64_t max_index = 0;
+		cat::traverse_font_remapping(descriptor, [&](const cat::CATFontRemapElement& remap)
+		{
+			if(remap.index > max_index)
+				max_index = remap.index;
+		});
+		remapping.resize(max_index);*/
+
+		// Half-pixel correction
+		glm::vec4 correction = glm::vec4(0.5f/fwidth, 0.5f/fheight, -0.5f/fwidth, -0.5f/fheight);
 
 		cat::traverse_font_remapping(descriptor, [&](const cat::CATFontRemapElement& remap)
 		{
 			glm::vec4 uvs((remap.x)/fwidth, (remap.y)/fheight, (remap.x+remap.w)/fwidth, (remap.y+remap.h)/fheight);
-		    remapping.insert(eastl::make_pair(remap.index, RemappingElement{uvs/*+correction*/, {remap.w, remap.h}, {remap.bearing_x, remap.bearing_y}, remap.advance}));
+		    remapping[remap.index] = RemappingElement
+		    {
+		    	uvs+correction, 
+		    	remap.w, 
+		    	remap.h,
+		    	remap.bearing_x,
+		    	remap.bearing_y,
+		    	remap.advance
+		    };
 		});
 
 		// Create texture

@@ -283,11 +283,15 @@ static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32
             uint16_t(height-charac.y - charac.height),
             uint16_t(charac.width),
             uint16_t(charac.height),
-            uint16_t(charac.bearing_x),
-            uint16_t(charac.bearing_y),
+            int16_t(charac.bearing_x),
+            int16_t(charac.bearing_y),
             uint16_t(charac.advance>>6) // advance is bitshifted by 6 (2^6=64) to get value in pixels
         };
         remap.push_back(elt);
+
+        // Skip null size characters
+        if(charac.data == nullptr)
+            continue;
 
         // Blit atlas image data
         if(RGBA)
@@ -397,6 +401,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
     FT_UInt index;
     FT_ULong cc = FT_Get_First_Char(face, &index);
     std::vector<Character> characters;
+    std::vector<Character> null_characters;
     std::vector<rect_xywh> rectangles;
     while(true)
     {
@@ -404,16 +409,6 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
         if(FT_Load_Char(face, cc, FT_LOAD_RENDER))
         {
             DLOGE("fudge") << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
-            cc = FT_Get_Next_Char(face, cc, &index);
-            if(!index)
-                break;
-            continue;
-        }
-        // Null size characters (like space and DEL) have no pixel data, they will need special treatment in the engine,
-        // but we don't save them in the atlas.
-        if(face->glyph->bitmap.width == 0 && face->glyph->bitmap.rows == 0)
-        {
-            DLOGW("fudge") << "Glyph: \'" << std::to_string(cc) << "\' has null size." << std::endl;
             cc = FT_Get_Next_Char(face, cc, &index);
             if(!index)
                 break;
@@ -433,11 +428,18 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
             face->glyph->bitmap_top,
         };
         // Copy bitmap buffer to new buffer, because next iteration will modify this data
-        character.data = new unsigned char[character.width*character.height];
-        memcpy(character.data, face->glyph->bitmap.buffer, character.width*character.height);
+        // Null size characters (like space and DEL) have no pixel data, they will need special treatment in the engine,
+        // but we don't save them in the atlas.
+        if(face->glyph->bitmap.width != 0 && face->glyph->bitmap.rows != 0)
+        {
+            character.data = new unsigned char[character.width*character.height];
+            memcpy(character.data, face->glyph->bitmap.buffer, character.width*character.height);
+            rectangles.push_back({0,0,(int)character.width,(int)character.height});
+            characters.push_back(character);
+        }
+        else
+            null_characters.push_back(character);
 
-        characters.push_back(character);
-        rectangles.push_back({0,0,(int)character.width,(int)character.height});
 
         // Get next character, if index is null it means that we don't have a next character
         cc = FT_Get_Next_Char(face, cc, &index);
@@ -457,6 +459,8 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
         characters[ii].x = rectangles[ii].x;
         characters[ii].y = rectangles[ii].y;
     }
+    // Append null characters to the character list
+    characters.insert(characters.end(), null_characters.begin(), null_characters.end());
 
     // * Export
     std::vector<cat::CATFontRemapElement> remap;
@@ -468,7 +472,8 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
 
     // Cleanup
     for(auto&& charac: characters)
-        delete[] charac.data;
+        if(charac.data)
+            delete[] charac.data;
 
     FT_Done_Face(face);
 }

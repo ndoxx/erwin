@@ -84,7 +84,8 @@ void Layer2D::on_update(GameClock& clock)
 			Renderer2D::draw_colored_quad(ComponentTransform2D({pos_x,pos_y,-0.2f},0.f,xx_scale), color);
 		}
 	}*/
-	Renderer2D::draw_text("Plip plop here is some text.", arial_, 0.1f, 0.1f, 20.f, {1.f,0.7f,0.f,1.f});
+	Renderer2D::draw_text("The quick brown fox jumps over the lazy dog.", arial_, 0.f, 0.f, 1.f, {1.f,0.7f,0.f,1.f});
+	Renderer2D::draw_text("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", arial_, 0.f, 0.1f, 1.f, {1.f,0.5f,0.f,1.f});
 	Renderer2D::end_pass();
 }
 

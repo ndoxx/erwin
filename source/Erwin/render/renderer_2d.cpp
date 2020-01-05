@@ -255,24 +255,22 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	std::string::const_iterator itc;
     for(itc = text.begin(); itc != text.end(); ++itc)
     {
-    	uint64_t index = uint64_t(*itc);
-    	if(index == ' ')
+    	const FontAtlas::RemappingElement& remap = font.get_remapping(*itc);
+    	// Handle null size characters
+    	if(remap.w == 0)
     	{
-    		x += 20.f /storage.fb_size.x;
+    		x += remap.advance / storage.fb_size.x;
     		continue;
     	}
 
-    	const FontAtlas::RemappingElement& remap = font.get_remapping(index);
+    	float xpos = x + (remap.bearing_x+0.5f*remap.w)/storage.fb_size.y;
+    	float ypos = y + (remap.bearing_y-0.5f*remap.h)/storage.fb_size.y;
 
-    	float xpos = -1.f + x + remap.bearing.x/storage.fb_size.x;
-    	float ypos = -1.f + y + remap.bearing.y/storage.fb_size.y;
-
-    	glm::vec2 vscale = {remap.size_px.x/storage.fb_size.x, remap.size_px.y/storage.fb_size.y};
+    	glm::vec2 vscale = {remap.w/storage.fb_size.x, remap.h/storage.fb_size.y};
 
     	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale};
 
-    	// WTF 2.5
-    	x += 2.5f * remap.advance / storage.fb_size.x;
+    	x += 1.2f*remap.advance / storage.fb_size.y;
     }
 
 	if(batch.count)
@@ -281,7 +279,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 
 		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
 		dc.set_state(storage.pass_state);
-		dc.set_UBO(storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
+		dc.set_UBO(storage.pass_ubo, &storage.projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
