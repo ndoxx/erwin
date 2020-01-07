@@ -98,7 +98,7 @@ protected:
 		pass_state.depth_stencil_state.depth_test_enabled = false;
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
-		DrawCall dc(DrawCall::Indexed, shader_, CommonGeometry::get_vertex_array("screen_quad"_h));
+		DrawCall dc(DrawCall::Indexed, shader_, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_state(pass_state.encode());
 		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DrawCall::CopyData);
 		MainRenderer::submit("Presentation"_h, dc);

@@ -50,7 +50,7 @@ void CommonGeometry::init()
 		std::vector<uint32_t> idata;
 		const auto& layout = MainRenderer::get_vertex_buffer_layout(pos_uv_VBL);
 		pg::make_plane(layout, vdata, idata);
-		make_geometry("screen_quad"_h, pos_uv_VBL, vdata, idata);
+		make_geometry("quad"_h, pos_uv_VBL, vdata, idata);
 	}
 
 	// Cube

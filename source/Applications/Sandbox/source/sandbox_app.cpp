@@ -188,6 +188,7 @@ void Sandbox::window_lighting(bool* p_open)
             ImGui::SliderFloat("Brightness", &layer_3d_->dir_light_.brightness, 0.0f, 30.0f);
             ImGui::SliderFloat("Ambient str.", &layer_3d_->dir_light_.ambient_strength, 0.0f, 0.5f);
             ImGui::ColorEdit3("Color", (float*)&layer_3d_->dir_light_.color);
+            ImGui::ColorEdit3("Amb. color", (float*)&layer_3d_->dir_light_.ambient_color);
             ImGui::TreePop();
         }
     	ImGui::End();

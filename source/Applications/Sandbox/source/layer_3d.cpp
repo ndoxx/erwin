@@ -27,12 +27,15 @@ void Layer3D::on_attach()
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	MaterialLayoutHandle layout_a_nd_mra = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mra"_h});
 	forward_opaque_pbr_ = AssetManager::load_shader("shaders/forward_PBR.glsl");
+	forward_sun_        = AssetManager::load_shader("shaders/forward_sun.glsl");
 	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mra);
 	tg_1_               = AssetManager::load_texture_group("textures/map/beachSand.tom", layout_a_nd_mra);
 	pbr_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(PBRMaterialData));
+	sun_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(SunMaterialData));
 	AssetManager::release(layout_a_nd_mra);
 
 	ForwardRenderer::register_shader(forward_opaque_pbr_, pbr_material_ubo_);
+	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
 	// Setup scene
 	for(float xx=-10.f; xx<10.f; xx+=2.f)
@@ -59,8 +62,17 @@ void Layer3D::on_attach()
 		cube.material.data = &cube.material_data;
 
 	dir_light_.set_position(90.f, 160.f);
-	dir_light_.color    = {0.95f,0.85f,0.5f};
+	dir_light_.color         = {0.95f,0.85f,0.5f};
+	dir_light_.ambient_color = {0.95f,0.85f,0.5f};
 	dir_light_.ambient_strength = 0.1f;
+	dir_light_.brightness = 3.7f;
+
+
+	// Setup Sun
+	sun_material_.shader = forward_sun_;
+	sun_material_.ubo = sun_material_ubo_;
+	sun_material_.data = &sun_material_data_;
+	sun_material_.data_size = sizeof(SunMaterialData);
 }
 
 void Layer3D::on_detach()
@@ -81,6 +93,9 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
+	// Update sun quad
+	sun_material_data_.color = glm::vec4(dir_light_.color, 1.f);
+
 	// Update scene
 	for(Cube& cube: scene_)
 	{
@@ -91,14 +106,37 @@ void Layer3D::on_update(GameClock& clock)
 		euler *= 1.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}
+}
 
-	// Draw scene
+void Layer3D::on_render()
+{
+	VertexArrayHandle quad     = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle cube_uv  = CommonGeometry::get_vertex_array("cube_uv"_h);
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 
-	ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, false, get_layer_id());
-	for(auto&& cube: scene_)
-		ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
-	ForwardRenderer::end_pass();
+	// Draw sun
+	{
+		PassOptions options;
+		options.set_transparency(false);
+		options.set_layer_id(get_layer_id());
+		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
+		ForwardRenderer::end_pass();
+	}
+
+	// Draw scene geometry
+	{
+		PassOptions options;
+		options.set_transparency(false);
+		options.set_layer_id(get_layer_id());
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		for(auto&& cube: scene_)
+			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
+		ForwardRenderer::end_pass();
+	}
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)

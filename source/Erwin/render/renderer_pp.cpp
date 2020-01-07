@@ -62,7 +62,7 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
     W_PROFILE_FUNCTION()
 	storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
     
-	static DrawCall dc(DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+	static DrawCall dc(DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_state(storage.pass_state);
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);

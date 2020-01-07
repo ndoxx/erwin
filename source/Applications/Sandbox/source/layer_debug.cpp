@@ -26,11 +26,6 @@ void DebugLayer::on_detach()
 
 }
 
-void DebugLayer::on_update(GameClock& clock)
-{
-
-}
-
 bool DebugLayer::on_event(const MouseButtonEvent& event)
 {
 	return false;

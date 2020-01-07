@@ -39,7 +39,10 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_SATURATION, enable_saturation_);
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
-    
+}
+
+void PresentationLayer::on_render()
+{
 	PostProcessingRenderer::begin_pass(pp_data_);
 	if(enable_3d_forward_)
 		PostProcessingRenderer::blit("fb_forward"_h);

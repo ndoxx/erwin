@@ -114,7 +114,7 @@ void FontAtlas::load(const fs::path& filepath)
 		    	remap.w, 
 		    	remap.h,
 		    	remap.bearing_x,
-		    	remap.bearing_y,
+		    	int16_t(remap.bearing_y-std::max(0,remap.h-remap.bearing_y)),
 		    	remap.advance
 		    };
 		});
@@ -127,7 +127,8 @@ void FontAtlas::load(const fs::path& filepath)
 		texture = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
 									  					 			  descriptor.texture_height,
 									  					 			  descriptor.texture_blob,
-									  					 			  ImageFormat::RGBA8,//ImageFormat::R8,
+									  					 			  ImageFormat::RGBA8,
+									  					 			  // ImageFormat::R8,
 									  					 			  filter});
 
 		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " characters in atlas." << std::endl;

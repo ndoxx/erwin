@@ -38,6 +38,7 @@
     [ ] Event system overhaul
         [ ] Event queues & event pools
         [ ] Dispatching
+    [ ] Text rendering
 
 ##[Command Galore]
 ###Callgrind profiling

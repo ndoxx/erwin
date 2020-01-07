@@ -31,7 +31,7 @@ public:
 	glm::quat rotation;
 	float uniform_scale;
 
-	ComponentTransform3D(): position(0.f), uniform_scale(1.f) {}
+	ComponentTransform3D(): position(0.f), rotation({0.f,0.f,0.f}), uniform_scale(1.f) {}
 	// Euler angles are in the order: pitch, yaw, roll
 	ComponentTransform3D(const glm::vec3& position, const glm::vec3& euler_angles, float uniform_scale):
 	position(position),

@@ -183,7 +183,7 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_state(storage.pass_state);
 		dc.set_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
@@ -242,6 +242,9 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 
 void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle, float x, float y, float scale, const glm::vec4& tint)
 {
+	// Ad hoc rescaling of character advance parameter
+	constexpr float k_adv_factor = 1.05f;
+
 	// Get font atlas
 	const FontAtlas& font = AssetManager::get(font_handle);
 
@@ -260,25 +263,26 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
     	// Handle null size characters
     	if(remap.w == 0)
     	{
-    		x += scale*remap.advance / storage.fb_size.y;
+    		x += k_adv_factor*scale*remap.advance / storage.fb_size.y;
     		continue;
     	}
 
+    	// NOTE: bearing_y is modified in FontAtlas to properly offset lower than baseline characters
     	float xpos = x + scale*(remap.bearing_x+0.5f*remap.w)/storage.fb_size.y;
-    	float ypos = y + scale*(remap.bearing_y-std::max(0,int16_t(remap.h)-remap.bearing_y))/storage.fb_size.y;
+    	float ypos = y + scale*(remap.bearing_y)/storage.fb_size.y;
 
     	glm::vec2 vscale = {scale*remap.w/storage.fb_size.x, scale*remap.h/storage.fb_size.y};
 
     	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale};
 
-    	x += scale*remap.advance / storage.fb_size.y;
+    	x += k_adv_factor*scale*remap.advance / storage.fb_size.y;
     }
 
 	if(batch.count)
 	{
 		glm::mat4 id(1.f);
 
-		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("screen_quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_state(storage.pass_state);
 		dc.set_UBO(storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);

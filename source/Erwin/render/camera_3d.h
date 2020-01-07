@@ -34,7 +34,7 @@ public:
 	inline float get_yaw() const   { return yaw_; }
 	inline float get_pitch() const { return pitch_; }
 	inline float get_roll() const  { return roll_; }
-	inline std::tuple<float,float,float> get_angles() const { return {yaw_, pitch_, roll_}; }
+	inline glm::vec3 get_angles() const { return {yaw_, pitch_, roll_}; }
 
 	inline void set_position(const glm::vec3& value) { position_ = value; update_view_matrix(); }
 	inline void set_yaw(float value)   { yaw_ = value; update_view_matrix(); }

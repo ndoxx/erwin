@@ -344,12 +344,19 @@ void Application::run()
         EVENTBUS.dispatch();
 
 		// For each layer, update
-		if(!minimized_)
 		{
             W_PROFILE_SCOPE("Layer updates")
-			for(auto* layer: layer_stack_)
-				layer->update(game_clock_);
+    		for(auto* layer: layer_stack_)
+    			layer->update(game_clock_);
 		}
+
+        // For each layer, render
+        if(!minimized_)
+        {
+            W_PROFILE_SCOPE("Layer render")
+            for(auto* layer: layer_stack_)
+                layer->render();
+        }
 
 #ifdef W_DEBUG
         TexturePeek::render();

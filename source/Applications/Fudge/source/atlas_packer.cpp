@@ -318,8 +318,7 @@ static uint8_t* blit_font_atlas(const std::vector<Character>& characters, uint32
                 for(int xx=0; xx<charac.width; ++xx)
                 {
                     int out_x = charac.x + xx;
-                    char value = charac.data[yy * charac.width + xx];
-                    data[(out_y * width + out_x)] = value;
+                    data[(out_y * width + out_x)] = charac.data[yy * charac.width + xx];
                 }
             }
         }
@@ -333,6 +332,7 @@ static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemap
     if(options.file_type == FileType::CAT)
     {
         uint32_t blob_size = 4*out_w*out_h;
+        // uint32_t blob_size = out_w*out_h;
         W_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression incompatible with single channel font atlas.");
         W_ASSERT(options.texture_compression != TextureCompression::DXT5, "DXT5 compression incompatible with single channel font atlas.");
 
@@ -440,7 +440,6 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
         else
             null_characters.push_back(character);
 
-
         // Get next character, if index is null it means that we don't have a next character
         cc = FT_Get_Next_Char(face, cc, &index);
         if(!index)
@@ -466,7 +465,8 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
     std::vector<cat::CATFontRemapElement> remap;
     std::string font_name = input_font.stem().string();
     bool invert_y = true;
-    bool RGBA     = true;//(options.file_type == FileType::PNG);
+    bool RGBA     = true;
+    // bool RGBA     = (options.file_type == FileType::PNG);
     uint8_t* uncomp = blit_font_atlas(characters, out_w, out_h, invert_y, RGBA, remap);
     export_font_atlas(uncomp, remap, output_dir, font_name, out_w, out_h, options);
 

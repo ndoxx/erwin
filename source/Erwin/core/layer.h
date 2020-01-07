@@ -25,13 +25,15 @@ public:
 	inline uint8_t get_layer_id() const         { return layer_id_; }
 	inline bool is_enabled() const              { return enabled_; }
 	inline void update(GameClock& clock)        { if(enabled_) on_update(clock); }
+	inline void render()                        { if(enabled_) on_render(); }
 
 	virtual void on_attach() { }
 	virtual void on_detach() { }
 	virtual void on_imgui_render() { }
 
 protected:
-	virtual void on_update(GameClock& clock) = 0;
+	virtual void on_update(GameClock& clock) { }
+	virtual void on_render() { }
 
 	REACT(KeyboardEvent)
 	REACT(KeyTypedEvent)
