@@ -189,6 +189,11 @@ void Sandbox::window_lighting(bool* p_open)
             ImGui::SliderFloat("Ambient str.", &layer_3d_->dir_light_.ambient_strength, 0.0f, 0.5f);
             ImGui::ColorEdit3("Color", (float*)&layer_3d_->dir_light_.color);
             ImGui::ColorEdit3("Amb. color", (float*)&layer_3d_->dir_light_.ambient_color);
+
+            ImGui::Separator();
+            ImGui::SliderFloat("App. diameter", &layer_3d_->sun_material_data_.scale, 0.1f, 0.4f);
+
+
             ImGui::TreePop();
         }
     	ImGui::End();

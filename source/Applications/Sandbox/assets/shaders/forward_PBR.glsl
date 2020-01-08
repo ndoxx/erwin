@@ -17,6 +17,8 @@ layout(location = 4) out mat3 v_TBN;         // TBN matrix for normal mapping
 layout(std140, binding = 2) uniform material_data
 {
 	vec4 u_v4_tint; // tint
+	int u_flags;
+	float u_f_emissive_scale;
 };
 
 void main()
@@ -49,9 +51,11 @@ void main()
 #include "include/parallax.glsl"
 #include "include/forward_ubos.glsl"
 
+#define PBR_EN_EMISSIVE 1
+
 SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal - depth
-SAMPLER_2D_(2); // metallic - roughness - ambient occlusion
+SAMPLER_2D_(2); // metallic - ambient occlusion - roughness
 
 layout(location = 0) in vec2 v_uv;          // Texture coordinates
 layout(location = 1) in vec3 v_view_dir_v;  // Vertex view direction, view space
@@ -64,6 +68,8 @@ layout(location = 0) out vec4 out_color;
 layout(std140, binding = 2) uniform material_data
 {
 	vec4 u_v4_tint; // tint
+	int u_flags;
+	float u_f_emissive_scale;
 };
 
 const float f_parallax_height_scale = 0.05f;
@@ -80,10 +86,11 @@ void main()
 	vec3 frag_albedo = frag_color.rgb * u_v4_tint.rgb;
 	float frag_alpha = frag_color.a;
 	vec3 frag_normal = v_TBN*normalize(texture(SAMPLER_2D_1, tex_coord).xyz * 2.f - 1.f);
-	vec3 frag_mra    = texture(SAMPLER_2D_2, tex_coord).xyz;
-	float frag_metallic  = frag_mra.x;
-	float frag_roughness = frag_mra.y;
-	float frag_ao        = frag_mra.z;
+	vec4 frag_mare    = texture(SAMPLER_2D_2, tex_coord);
+	float frag_metallic  = frag_mare.x;
+	float frag_ao        = frag_mare.y;
+	float frag_roughness = frag_mare.z;
+	float frag_emissive  = frag_mare.w;
 
 	// Apply BRDF
     vec3 radiance = CookTorrance(u_v4_light_color.rgb,
@@ -95,6 +102,11 @@ void main()
                                  frag_roughness);
     vec3 ambient = (frag_ao * u_f_light_ambient_strength) * frag_albedo * u_v4_light_ambient_color.rgb;
     vec3 total_light = radiance + ambient;
+
+    if(bool(u_flags & PBR_EN_EMISSIVE))
+    {
+    	total_light += u_f_emissive_scale * frag_emissive * frag_albedo;
+    }
 
     out_color = vec4(total_light,frag_alpha);
 }

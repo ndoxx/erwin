@@ -7,7 +7,11 @@ using namespace erwin;
 
 struct PBRMaterialData
 {
+	inline void enable_emissivity() { flags |= (1<<0); }
+
 	glm::vec4 tint;
+	int flags;
+	float emissive_scale;
 };
 
 struct Cube
@@ -20,6 +24,8 @@ struct Cube
 struct SunMaterialData
 {
 	glm::vec4 color;
+	float scale;
+	float brightness;
 };
 
 class Layer3D: public Layer
@@ -46,6 +52,7 @@ private:
 	PerspectiveFreeflyController camera_ctl_;
 	TextureGroupHandle tg_0_;
 	TextureGroupHandle tg_1_;
+	TextureGroupHandle tg_2_;
 	UniformBufferHandle pbr_material_ubo_;
 	UniformBufferHandle sun_material_ubo_;
 	ShaderHandle forward_opaque_pbr_;

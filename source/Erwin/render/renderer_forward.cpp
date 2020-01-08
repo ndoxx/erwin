@@ -14,6 +14,7 @@ struct PassUBOData
 	glm::mat4 view_matrix;
 	glm::mat4 view_projection_matrix;
 	glm::vec4 eye_position;
+	glm::vec4 camera_params;
 	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
 	glm::vec4 light_position;
 	glm::vec4 light_color;
@@ -101,10 +102,13 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_size("fb_forward"_h);
+	float near = camera.get_frustum().near;
+	float far  = camera.get_frustum().far;
 
 	s_storage.pass_ubo_data.view_matrix = camera.get_view_matrix();
 	s_storage.pass_ubo_data.view_projection_matrix = camera.get_view_projection_matrix();
 	s_storage.pass_ubo_data.eye_position = glm::vec4(camera.get_position(), 1.f);
+	s_storage.pass_ubo_data.camera_params = glm::vec4(near,far,0.f,0.f);
 	s_storage.pass_ubo_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
 	s_storage.pass_ubo_data.light_position = glm::vec4(dir_light.position, 0.f);
 	s_storage.pass_ubo_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;

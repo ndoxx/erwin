@@ -25,14 +25,17 @@ void Layer3D::on_imgui_render()
 void Layer3D::on_attach()
 {
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
-	MaterialLayoutHandle layout_a_nd_mra = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mra"_h});
+	MaterialLayoutHandle layout_a_nd_mar  = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mar"_h});
+	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
 	forward_opaque_pbr_ = AssetManager::load_shader("shaders/forward_PBR.glsl");
 	forward_sun_        = AssetManager::load_shader("shaders/forward_sun.glsl");
-	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mra);
-	tg_1_               = AssetManager::load_texture_group("textures/map/beachSand.tom", layout_a_nd_mra);
+	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mar);
+	tg_1_               = AssetManager::load_texture_group("textures/map/beachSand.tom", layout_a_nd_mar);
+	tg_2_               = AssetManager::load_texture_group("textures/map/testEmissive.tom", layout_a_nd_mare);
 	pbr_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(PBRMaterialData));
 	sun_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(SunMaterialData));
-	AssetManager::release(layout_a_nd_mra);
+	AssetManager::release(layout_a_nd_mar);
+	AssetManager::release(layout_a_nd_mare);
 
 	ForwardRenderer::register_shader(forward_opaque_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
@@ -56,6 +59,15 @@ void Layer3D::on_attach()
 			}
 		}
 	}
+
+	Cube emissive_cube;
+	emissive_cube.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 2.f};
+	emissive_cube.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube.material_data.tint = {1.f,1.f,1.f,1.f};
+	emissive_cube.material_data.enable_emissivity();
+	emissive_cube.material_data.emissive_scale = 3.f;
+	scene_.push_back(emissive_cube);
+
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
 	for(Cube& cube: scene_)
@@ -73,12 +85,15 @@ void Layer3D::on_attach()
 	sun_material_.ubo = sun_material_ubo_;
 	sun_material_.data = &sun_material_data_;
 	sun_material_.data_size = sizeof(SunMaterialData);
+
+	sun_material_data_.scale = 0.2f;
 }
 
 void Layer3D::on_detach()
 {
 	AssetManager::release(tg_0_);
 	AssetManager::release(tg_1_);
+	AssetManager::release(tg_2_);
 	AssetManager::release(forward_opaque_pbr_);
 	AssetManager::release(pbr_material_ubo_);
 }
@@ -93,8 +108,9 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
-	// Update sun quad
+	// Update sun
 	sun_material_data_.color = glm::vec4(dir_light_.color, 1.f);
+	sun_material_data_.brightness = dir_light_.brightness;
 
 	// Update scene
 	for(Cube& cube: scene_)

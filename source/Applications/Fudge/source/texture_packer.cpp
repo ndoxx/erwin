@@ -8,7 +8,7 @@
 
 #include "stb/stb_image.h"
 #include <fstream>
-#include <unordered_map>
+#include <map>
 
 using namespace erwin;
 
@@ -43,7 +43,7 @@ struct GroupSpec
 	std::vector<hash_t> sub_maps;
 	std::vector<std::pair<hash_t, uint32_t>> layout;
 
-	bool qualify(const std::unordered_map<hash_t, TexmapData>& tmaps)
+	bool qualify(const std::map<hash_t, TexmapData>& tmaps)
 	{
 		bool ret = true;
 		for(hash_t name: sub_maps)
@@ -59,7 +59,7 @@ struct LayoutSpec
 };
 
 static BlobCompression s_blob_compression = BlobCompression::Deflate;
-static std::unordered_map<hash_t, TexmapSpec> s_texmap_specs;
+static std::map<hash_t, TexmapSpec> s_texmap_specs;
 static std::vector<std::pair<hash_t, GroupSpec>> s_group_specs;
 static std::vector<LayoutSpec> s_layout_specs;
 static bool s_allow_grouping = false;
@@ -126,7 +126,7 @@ static TextureCompression parse_compression(const std::string& compression_str, 
 	}
 }
 
-static bool handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
+static bool handle_groups(std::map<hash_t, TexmapData>& in_tex_maps, uint32_t width, uint32_t height)
 {
 	// For each registered group, ordered by priority,
 	// if in_tex_maps contains all required maps for this group,
@@ -180,7 +180,7 @@ static bool handle_groups(std::unordered_map<hash_t, TexmapData>& in_tex_maps, u
 	return has_changed;
 }
 
-static const LayoutSpec* find_layout(std::unordered_map<hash_t, TexmapData>& texture_maps)
+static const LayoutSpec* find_layout(std::map<hash_t, TexmapData>& texture_maps)
 {
 	for(const auto& spec: s_layout_specs)
 	{
@@ -339,7 +339,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 {
     DLOGN("fudge") << "Processing directory: " << WCC('p') << input_dir.stem() << std::endl;
 
-    std::unordered_map<hash_t, TexmapData> texture_maps;
+    std::map<hash_t, TexmapData> texture_maps;
 
     uint32_t width = 0;
     uint32_t height = 0;

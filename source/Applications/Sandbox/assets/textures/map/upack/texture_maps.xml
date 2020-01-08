@@ -7,30 +7,42 @@
 
 	<TextureMaps>
 		<!-- Specify all possible texture maps encountered as single files -->
-		<TextureMap name="albedo"    channels="4" compression="DXT5" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="true"/>
-		<TextureMap name="normal"    channels="3" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false"/>
-		<TextureMap name="depth"     channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
-		<TextureMap name="metal"     channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
-		<TextureMap name="roughness" channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
-		<TextureMap name="ao"        channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
+		<TextureMap name="albedo"     channels="4" compression="DXT5" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="true"/>
+		<TextureMap name="normal"     channels="3" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false"/>
+		<TextureMap name="depth"      channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
+		<TextureMap name="metal"      channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
+		<TextureMap name="roughness"  channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
+		<TextureMap name="ao"         channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
+		<TextureMap name="emissivity" channels="1" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR"/>
 		
 		<!-- Specify groups of texture maps to be packed together in a texture blob -->
 		<Group name="normal_depth" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false">
 			<TextureMap name="normal"/> <!-- Channels: R,G,B -->
 			<TextureMap name="depth"/>  <!-- Channel: A -->
 		</Group>
-		<Group name="mra" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false">
+		<Group name="mare" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false">
+			<TextureMap name="metal"/>      <!-- Channel: R -->
+			<TextureMap name="ao"/>         <!-- Channel: G -->
+			<TextureMap name="roughness"/>  <!-- Channel: B -->
+			<TextureMap name="emissivity"/> <!-- Channel: A -->
+		</Group>
+		<Group name="mar" compression="None" filter_min="LINEAR_MIPMAP_NEAREST" filter_mag="LINEAR" srgb="false">
 			<TextureMap name="metal"/>     <!-- Channel: R -->
-			<TextureMap name="roughness"/> <!-- Channel: G -->
-			<TextureMap name="ao"/>        <!-- Channel: B -->
+			<TextureMap name="ao"/>        <!-- Channel: G -->
+			<TextureMap name="roughness"/> <!-- Channel: B -->
 		</Group>
 
 		<!-- Specify the possible layouts of texture maps and groups -->
 		<!-- After texture map grouping, if a layout matches, its texture slot order will be observed during TOM export -->
-		<Layout name="a_nd_mra">
+		<Layout name="a_nd_mare">
 			<Slot texture="albedo"/>       <!-- SLOT_0 -->
 			<Slot texture="normal_depth"/> <!-- SLOT_1 -->
-			<Slot texture="mra"/>          <!-- SLOT_2 -->
+			<Slot texture="mare"/>         <!-- SLOT_2 -->
+		</Layout>
+		<Layout name="a_nd_mar">
+			<Slot texture="albedo"/>       <!-- SLOT_0 -->
+			<Slot texture="normal_depth"/> <!-- SLOT_1 -->
+			<Slot texture="mar"/>          <!-- SLOT_2 -->
 		</Layout>
 	</TextureMaps>
 </Config>

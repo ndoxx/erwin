@@ -10,6 +10,8 @@ layout(location = 0) out vec2 v_uv; // Texture coordinates
 layout(std140, binding = 2) uniform material_data
 {
 	vec4 u_v4_sun_color;
+    float u_f_sun_scale;
+    float u_f_sun_brightness;
 };
 
 void main()
@@ -18,14 +20,15 @@ void main()
     // gl_Position = pos.xyww;
 
     // * Simple billboarding routine: draw a fixed size screen facing quad at the sun's position
+    float far = u_v4_camera_params.y;
     // Get the screen-space position of the sun's center
-    gl_Position = u_m4_vp * (u_v4_eye_w+u_v4_light_position_w);
+    gl_Position = u_m4_vp * (u_v4_eye_w+u_v4_light_position_w*far);
     // Perspective divide
     gl_Position /= gl_Position.w;
     // Move vertex in screen-space directly
-    gl_Position.xy += a_position.xy * vec2(0.2, u_v4_framebuffer_size.z*0.2);
-    // Draw far
-    gl_Position.z = 0.999999f;
+    // float scale = u_f_sun_scale*smoothstep(0.1f,5.f,u_f_sun_brightness);
+    // gl_Position.xy += a_position.xy * vec2(scale, u_v4_framebuffer_size.z*scale);
+    gl_Position.xy += a_position.xy * vec2(u_f_sun_scale, u_v4_framebuffer_size.z*u_f_sun_scale);
 
 	v_uv = 2.f*a_uv-1.f;
 }
@@ -42,6 +45,8 @@ layout(location = 0) out vec4 out_color;
 layout(std140, binding = 2) uniform material_data
 {
     vec4 u_v4_sun_color;
+    float u_f_sun_scale;
+    float u_f_sun_brightness;
 };
 
 float circle(in vec2 v2_uv, in float radius, in float blur)
@@ -60,5 +65,10 @@ float sun(in vec2 v2_uv, in float radius, in float blur)
 
 void main()
 {
-    out_color = u_v4_sun_color*sun(v_uv, 2.f, 1.f) + vec4(1.f)*sun(v_uv, 0.5f, 1.f);
+    // float center_sat = smoothstep(0.5f,10.f,u_f_sun_brightness);
+    // float halo = smoothstep(0.01f,1.f,u_f_sun_brightness);
+    // out_color = halo*u_v4_sun_color*sun(v_uv, 2.f, 1.f) + vec4(5.f*center_sat)*sun(v_uv, 0.5f*center_sat, 1.f);
+    out_color = u_v4_sun_color*sun(v_uv, 2.f, 1.f) 
+              + mix(u_v4_sun_color,vec4(1.0f),0.5f)*sun(v_uv, 0.5f, 1.f) 
+              + vec4(1.f)*sun(v_uv, 0.3f, 1.f);
 }
