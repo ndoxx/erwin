@@ -39,6 +39,7 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_SATURATION, enable_saturation_);
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
+    pp_data_.set_flag_enabled(PP_EN_FXAA, enable_fxaa_);
 }
 
 void PresentationLayer::on_render()
@@ -46,6 +47,8 @@ void PresentationLayer::on_render()
 	PostProcessingRenderer::begin_pass(pp_data_);
 	if(enable_3d_forward_)
 		PostProcessingRenderer::blit("fb_forward"_h);
+	if(enable_bloom_)
+		PostProcessingRenderer::lighten("bloom_combine"_h);
     if(enable_2d_batched_)
         PostProcessingRenderer::blit("fb_2d_raw"_h);
 	PostProcessingRenderer::end_pass();

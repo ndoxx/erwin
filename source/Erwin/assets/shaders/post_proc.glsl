@@ -43,17 +43,23 @@ layout(std140, binding = 0) uniform post_proc_layout
 #define PP_EN_SATURATION            8
 #define PP_EN_CONTRAST              16
 #define PP_EN_GAMMA                 32
+#define PP_EN_FXAA                  64
 
 void main()
 {
-	vec4 in_hdr = texture(SAMPLER_2D_0, v_uv);
-    // vec4 in_hdr = vec4(FXAA(SAMPLER_2D_0, v_uv, u_fb_size), 1.f);
+    vec4 in_hdr = vec4(0.f);
+
+	//  FXAA
+    if(bool(u_flags & PP_EN_FXAA))
+        in_hdr = FXAA(SAMPLER_2D_0, v_uv, u_fb_size);
+    else
+        in_hdr = texture(SAMPLER_2D_0, v_uv);
 
 	vec3 color = in_hdr.rgb;
 
 	// Chromatic aberration
     if(bool(u_flags & PP_EN_CHROMATIC_ABERRATION))
-    	color = chromatic_aberration_rgb(SAMPLER_2D_0, v_uv, u_fb_size, u_ca_shift, u_ca_strength);
+    	color = mix(color,chromatic_aberration_rgb(SAMPLER_2D_0, v_uv, u_fb_size, u_ca_shift, u_ca_strength),0.5f);
 
     // Tone mapping
     if(bool(u_flags & PP_EN_EXPOSURE_TONE_MAPPING))

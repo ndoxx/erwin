@@ -13,7 +13,8 @@ enum PPFlags: uint8_t
 	PP_EN_VIBRANCE = 4,
 	PP_EN_SATURATION = 8,
 	PP_EN_CONTRAST = 16,
-	PP_EN_GAMMA = 32
+	PP_EN_GAMMA = 32,
+	PP_EN_FXAA = 64
 };
 
 // #pragma pack(push,1)
@@ -46,6 +47,7 @@ class PostProcessingRenderer
 public:
 	static void begin_pass(const PostProcessingData& pp_data);
 	static void blit(hash_t framebuffer, uint32_t index=0);
+	static void lighten(hash_t framebuffer, uint32_t index=0);
 	static void end_pass();
 
 private:

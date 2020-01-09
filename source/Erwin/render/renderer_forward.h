@@ -49,6 +49,8 @@ public:
 	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, PassOptions options);
 	// End a pass
 	static void end_pass();
+	// Lauch bloom pass
+	static void bloom_pass();
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);

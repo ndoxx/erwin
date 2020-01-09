@@ -92,6 +92,7 @@ OGLFramebuffer::~OGLFramebuffer()
 void OGLFramebuffer::bind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
+    glViewport(0, 0, width_, height_);
 }
 
 void OGLFramebuffer::unbind()
