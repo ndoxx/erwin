@@ -27,7 +27,7 @@ struct SortKey
 		Sequential
 	};
 
-	uint64_t encode(SortKey::Order type) const;
+	uint64_t encode() const;
 	void decode(uint64_t key);
 
 						      // -- meaning --
@@ -35,6 +35,9 @@ struct SortKey
 	uint8_t shader = 0;       // could be "material ID" when I have a material system
 	uint32_t depth = 0;       // depth mantissa
 	uint32_t sequence = 0;    // for commands to be dispatched sequentially
+	bool blending = false;    // affects the draw_type bit
+
+	SortKey::Order order;
 };
 
 struct MainRendererStats
@@ -70,7 +73,7 @@ public:
 
 	// * Draw call queue management and submission
 	// Create a render queue, specifying a name whose hash is used to retrieve it later on, and a draw order policy
-	static RenderQueue& 	 create_queue(const std::string& name, SortKey::Order order);
+	static RenderQueue& 	 create_queue(const std::string& name);
 	// Get a render queue by name
 	static RenderQueue& 	 get_queue(hash_t name);
 	// Send a draw call to a particular queue
@@ -152,7 +155,7 @@ class RenderQueue
 public:
 	friend class MainRenderer;
 
-	RenderQueue(SortKey::Order order, memory::HeapArea& area);
+	RenderQueue(memory::HeapArea& area);
 	~RenderQueue();
 
 	// * These functions change the queue state persistently
@@ -168,7 +171,6 @@ public:
 	void reset();
 
 private:
-	SortKey::Order order_;
 	glm::vec4 clear_color_;
 	CommandBuffer command_buffer_;
 };
@@ -242,6 +244,7 @@ struct DrawCall
 		data.state_flags = state;
 		// Extract render target ID to use as view ID
 		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
+		key.blending = PassState::is_transparent(state);
 	}
 
 	// Set instance data array containing all information necessary to render instance_count instances of the same geometry
@@ -290,6 +293,7 @@ struct DrawCall
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		key.view |= (layer_id<<8);
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
+		key.order = PassState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
 
 	// Compute the sorting key for the sequential policy
@@ -298,6 +302,7 @@ struct DrawCall
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		key.view |= (layer_id<<8);
 		key.sequence = sequence;
+		key.order = SortKey::Order::Sequential;
 	}
 };
 

@@ -70,13 +70,13 @@ constexpr uint64_t k_2_shader_mask   = uint64_t(0x000000ff) << k_2_shader_shift;
 constexpr uint64_t k_3_seq_mask      = uint64_t(0xffffffff) << k_3_seq_shift;
 constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
 
-uint64_t SortKey::encode(SortKey::Order type) const
+uint64_t SortKey::encode() const
 {
 	uint64_t head = ((uint64_t(view)         << k_view_shift     ) & k_view_mask)
-				  | ((uint64_t(0)	   	     << k_draw_type_shift) & k_draw_type_mask);
+				  | ((uint64_t(blending)	 << k_draw_type_shift) & k_draw_type_mask);
 
 	uint64_t body = 0;
-	switch(type)
+	switch(order)
 	{
 		case SortKey::Order::ByShader:
 		{
@@ -232,13 +232,13 @@ void MainRenderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-RenderQueue& MainRenderer::create_queue(const std::string& name, SortKey::Order order)
+RenderQueue& MainRenderer::create_queue(const std::string& name)
 {
     DLOG("render",1) << "[MainRenderer] Creating queue: " << WCC('n') << name << std::endl;
     DLOGI << "Priority index: " << WCC('v') << s_storage->queues_.size() << std::endl;
 	hash_t hname = H_(name.c_str());
 	uint32_t index = s_storage->queues_.size();
-	s_storage->queues_.emplace_back(order, s_storage->renderer_memory_);
+	s_storage->queues_.emplace_back(s_storage->renderer_memory_);
 	s_storage->queue_names_[hname] = index;
 	return s_storage->queues_.back();
 }
@@ -1217,8 +1217,7 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::destroy_framebuffer,
 };
 
-RenderQueue::RenderQueue(SortKey::Order order, memory::HeapArea& area):
-order_(order),
+RenderQueue::RenderQueue(memory::HeapArea& area):
 clear_color_(0.f,0.f,0.f,1.f),
 command_buffer_(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue")
 {
@@ -1263,7 +1262,7 @@ void RenderQueue::submit(const DrawCall& dc)
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cmdbuf.write(&dc.instance_data);
 
-	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(order_), cmd};
+	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(), cmd};
 }
 
 // Helper function to identify which part of the pass state has changed

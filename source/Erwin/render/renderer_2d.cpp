@@ -42,7 +42,6 @@ struct Renderer2DStorage
 	glm::vec2 fb_size;
 	FrustumSides frustum_sides;
 	uint64_t pass_state;
-	bool state_transparent; // TODO: maybe this should belong to batch properties
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
@@ -151,14 +150,12 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	state.depth_stencil_state.depth_test_enabled = true;
 	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
-	storage.state_transparent = (state.blend_state == BlendState::Alpha);
 	// Reset stats
 	storage.num_draw_calls = 0;
 
 	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
-	MainRenderer::get_queue("Opaque2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
-	MainRenderer::get_queue("Transparent2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
+	MainRenderer::get_queue("Sprite2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -189,7 +186,7 @@ static void flush_batch(Batch2D& batch)
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit((storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h), dc);
+		MainRenderer::submit("Sprite2D"_h, dc);
 
 		++storage.num_draw_calls;
 		batch.count = 0;
@@ -288,7 +285,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit((storage.state_transparent ? "Transparent2D"_h : "Opaque2D"_h), dc);
+		MainRenderer::submit("Sprite2D"_h, dc);
 
 		++storage.num_draw_calls;
 	}

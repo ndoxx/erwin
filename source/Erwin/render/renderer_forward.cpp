@@ -154,7 +154,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	s_storage.num_draw_calls = 0;
 
 	// TMP
-	MainRenderer::get_queue("ForwardOpaque"_h).set_clear_color(state.rasterizer_state.clear_color);
+	MainRenderer::get_queue("Forward3D"_h).set_clear_color(state.rasterizer_state.clear_color);
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -289,8 +289,8 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	}
 
 	dc.set_key_depth(depth, s_storage.layer_id);
-	// MainRenderer::submit(PassState::is_transparent(s_storage.pass_state) ? "ForwardTransparent"_h : "ForwardOpaque"_h, dc);
-	MainRenderer::submit("ForwardOpaque"_h, dc);
+	// MainRenderer::submit(PassState::is_transparent(s_storage.pass_state) ? "ForwardTransparent"_h : "Forward3D"_h, dc);
+	MainRenderer::submit("Forward3D"_h, dc);
 
 	++s_storage.num_draw_calls;
 }
