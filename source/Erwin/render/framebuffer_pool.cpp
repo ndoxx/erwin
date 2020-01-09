@@ -109,6 +109,26 @@ glm::vec2 FramebufferPool::get_texel_size(hash_t name)
 	return {1.f/it->second->get_width(s_storage.current_width_), 1.f/it->second->get_height(s_storage.current_height_)};
 }
 
+uint32_t FramebufferPool::get_screen_width()
+{
+	return s_storage.current_width_;
+}
+
+uint32_t FramebufferPool::get_screen_height()
+{
+	return s_storage.current_height_;
+}
+
+glm::vec2 FramebufferPool::get_screen_size()
+{
+	return {s_storage.current_width_, s_storage.current_height_};
+}
+
+glm::vec2 FramebufferPool::get_screen_texel_size()
+{
+	return {1.f/s_storage.current_width_, 1.f/s_storage.current_height_};
+}
+
 FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
 {
 	// Check that no framebuffer is already registered to this name

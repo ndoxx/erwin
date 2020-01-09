@@ -240,6 +240,7 @@ bool Application::init()
         // MainRenderer::create_queue("ForwardTransparent", SortKey::Order::ByDepthAscending);
         MainRenderer::create_queue("Opaque2D", SortKey::Order::ByDepthDescending);
         MainRenderer::create_queue("Transparent2D", SortKey::Order::ByDepthAscending);
+        MainRenderer::create_queue("Blur", SortKey::Order::Sequential);
 #ifdef W_DEBUG
         MainRenderer::create_queue("Debug2D", SortKey::Order::Sequential);
 #endif

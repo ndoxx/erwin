@@ -165,7 +165,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	storage.view_matrix = camera.get_view_matrix();
 	storage.projection_matrix = camera.get_projection_matrix();
 	storage.frustum_sides = camera.get_frustum_sides();
-	storage.fb_size = FramebufferPool::get_size("fb_2d_raw"_h);
+	storage.fb_size = FramebufferPool::get_screen_size();
 
 	// Reset batch instance data pointers
 	for(auto&& [key, batch]: storage.batches)

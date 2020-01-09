@@ -64,6 +64,7 @@ layout(location = 3) in vec3 v_light_dir_v; // Light direction, view space
 layout(location = 4) in mat3 v_TBN;         // TBN matrix for normal mapping
 
 layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_glow;
 
 layout(std140, binding = 2) uniform material_data
 {
@@ -72,7 +73,11 @@ layout(std140, binding = 2) uniform material_data
 	float u_f_emissive_scale;
 };
 
-const float f_parallax_height_scale = 0.05f;
+const float f_parallax_height_scale = 0.03f;
+// Relative luminance coefficients for sRGB primaries, values from Wikipedia
+const vec3 W = vec3(0.2126f, 0.7152f, 0.0722f);
+const float f_bright_threshold = 1.0f;
+const float f_bright_knee = 0.1f;
 
 void main()
 {
@@ -109,4 +114,9 @@ void main()
     }
 
     out_color = vec4(total_light,frag_alpha);
+
+    // "Bright pass"
+    float luminance = dot(out_color.rgb, W);
+    float brightness_mask = smoothstep(f_bright_threshold-f_bright_knee, f_bright_threshold, luminance);
+    out_glow = vec4(brightness_mask*out_color.rgb, brightness_mask);
 }

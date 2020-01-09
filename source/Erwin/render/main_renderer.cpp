@@ -1284,7 +1284,11 @@ static void handle_state(uint64_t state_flags)
 		if(has_mutated(state_flags, last_state, k_framebuffer_mask))
 		{
 			if(state.render_target == s_storage->default_framebuffer_)
+			{
 				Gfx::device->bind_default_framebuffer();
+				glm::vec2 vp_size = FramebufferPool::get_screen_size();
+				Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
+			}
 			else
 				s_storage->framebuffers[state.render_target.index]->bind();
 

@@ -65,7 +65,7 @@ void Layer3D::on_attach()
 	emissive_cube.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
 	emissive_cube.material_data.tint = {1.f,1.f,1.f,1.f};
 	emissive_cube.material_data.enable_emissivity();
-	emissive_cube.material_data.emissive_scale = 3.f;
+	emissive_cube.material_data.emissive_scale = 5.f;
 	scene_.push_back(emissive_cube);
 
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
@@ -153,6 +153,9 @@ void Layer3D::on_render()
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
 	}
+
+	// TMP
+	ForwardRenderer::bloom_pass();
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)

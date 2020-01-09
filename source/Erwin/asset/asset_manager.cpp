@@ -9,7 +9,7 @@
 
 #include "debug/texture_peek.h"
 
-#define DEBUG_TEXTURES
+// #define DEBUG_TEXTURES
 
 namespace erwin
 {
