@@ -52,7 +52,8 @@ enum class StencilOperator
 enum class BlendState
 {
     Opaque = 0,
-    Alpha = 1
+    Alpha = 1,
+    Light = 2
 };
 
 enum ClearFlags
@@ -83,9 +84,10 @@ struct DepthStencilState
 constexpr uint8_t  k_framebuffer_bits   = 16;
 constexpr uint64_t k_framebuffer_shift  = uint64_t(64) - k_framebuffer_bits;
 constexpr uint64_t k_framebuffer_mask   = uint64_t(0xffff) << k_framebuffer_shift;
-// Transparency bit
-constexpr uint64_t k_transp_shift       = k_framebuffer_shift - 1;
-constexpr uint64_t k_transp_mask        = uint64_t(1) << k_transp_shift;
+// Transparency
+constexpr uint8_t  k_transp_bits        = 2;
+constexpr uint64_t k_transp_shift       = k_framebuffer_shift - k_transp_bits;
+constexpr uint64_t k_transp_mask        = uint64_t(0x3) << k_transp_shift;
 // Cull mode (none / front / back)
 constexpr uint8_t  k_cull_mode_bits     = 2;
 constexpr uint64_t k_cull_mode_shift    = k_transp_shift - k_cull_mode_bits;

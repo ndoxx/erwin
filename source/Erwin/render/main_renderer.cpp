@@ -1303,10 +1303,12 @@ static void handle_state(uint64_t state_flags)
 		
 		if(has_mutated(state_flags, last_state, k_transp_mask))
 		{
-			if(state.blend_state == BlendState::Alpha)
-				Gfx::device->set_std_blending();
-			else
-				Gfx::device->disable_blending();
+			switch(state.blend_state)
+			{
+				case BlendState::Alpha: Gfx::device->set_std_blending(); break;
+				case BlendState::Light: Gfx::device->set_light_blending(); break;
+				default:                Gfx::device->disable_blending(); break;
+			}
 		}
 
 		if(has_mutated(state_flags, last_state, k_stencil_test_mask))

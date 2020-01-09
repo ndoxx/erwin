@@ -149,7 +149,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
-	state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
+	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
 	storage.state_transparent = (state.blend_state == BlendState::Alpha);
 	// Reset stats

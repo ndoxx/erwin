@@ -133,7 +133,7 @@ void Layer3D::on_render()
 	// Draw sun
 	{
 		PassOptions options;
-		options.set_transparency(false);
+		options.set_transparency(true);
 		options.set_layer_id(get_layer_id());
 		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
 
