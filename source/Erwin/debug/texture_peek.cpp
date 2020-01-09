@@ -169,8 +169,7 @@ void TexturePeek::render()
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
 
     // Submit draw call
-	static DrawCall dc(DrawCall::Indexed, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
-	dc.set_state(s_storage.pass_state_);
+	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
 	MainRenderer::submit("Debug2D"_h, dc);

@@ -1297,7 +1297,7 @@ static void handle_state(uint64_t state_flags)
 			Gfx::device->clear(clear_flags); // TMP: Ok for now, but this will not allow to blend the result of multiple passes
 		}
 
-		// if(has_mutated(state_flags, last_state, k_cull_mode_mask))
+		if(has_mutated(state_flags, last_state, k_cull_mode_mask))
 			Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
 		
 		if(has_mutated(state_flags, last_state, k_transp_mask))

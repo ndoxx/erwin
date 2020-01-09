@@ -67,7 +67,7 @@ enum ClearFlags
 struct RasterizerState
 {
     ClearFlags clear_flags = ClearFlags::CLEAR_NONE;
-    CullMode cull_mode     = CullMode::Back;
+    CullMode cull_mode     = CullMode::None;
     glm::vec4 clear_color  = glm::vec4(0.f,0.f,0.f,1.f);
 };
 

@@ -66,8 +66,7 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
 
 	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
-	static DrawCall dc(DrawCall::Indexed, storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
-	dc.set_state(state.encode());
+	static DrawCall dc(DrawCall::Indexed, state.encode(), storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
 	dc.set_key_sequence(storage.sequence--, 0);
@@ -87,8 +86,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 
 	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
-	static DrawCall dc(DrawCall::Indexed, storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
-	dc.set_state(state.encode());
+	static DrawCall dc(DrawCall::Indexed, state.encode(), storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_key_sequence(storage.sequence--, 0);
 	MainRenderer::submit("Presentation"_h, dc);

@@ -17,14 +17,17 @@ float FxaaLuma(vec3 color)
     return color.g * LUMA_COEFF + color.r;
 }
 
-vec3 FXAA(sampler2D samp, vec2 texCoords, vec2 framebuffer_size)
+vec4 FXAA(sampler2D samp, vec2 texCoords, vec2 framebuffer_size)
 {
+    vec4 samp_center = texture(samp, texCoords);
+    vec3 rgbM  = samp_center.rgb;
+    float alpha = samp_center.a;
+
     // Get diagonal neighbors
     vec3 rgbNW = texture(samp, texCoords+(vec2(-1.0f,-1.0f)/framebuffer_size)).rgb;
     vec3 rgbNE = texture(samp, texCoords+(vec2(1.0f,-1.0f)/framebuffer_size)).rgb;
     vec3 rgbSW = texture(samp, texCoords+(vec2(-1.0f,1.0f)/framebuffer_size)).rgb;
     vec3 rgbSE = texture(samp, texCoords+(vec2(1.0f,1.0f)/framebuffer_size)).rgb;
-    vec3 rgbM  = texture(samp, texCoords).rgb;
 
     // Convert to luminance
     float lumaNW = FxaaLuma(rgbNW); //dot(rgbNW, LUMA);
@@ -42,7 +45,7 @@ vec3 FXAA(sampler2D samp, vec2 texCoords, vec2 framebuffer_size)
     float range = lumaMax-lumaMin;
     if(range < max(FXAA_EDGE_THRESHOLD_MIN, lumaMax * FXAA_EDGE_THRESHOLD))
     {
-        return rgbM;
+        return vec4(rgbM, alpha);
     }
 
     // Edge detection, filtering
@@ -70,7 +73,7 @@ vec3 FXAA(sampler2D samp, vec2 texCoords, vec2 framebuffer_size)
 
     if((lumaB < lumaMin) || (lumaB > lumaMax))
     {
-        return rgbA;
+        return vec4(rgbA, alpha);
     }
-    return rgbB;
+    return vec4(rgbB, alpha);
 }

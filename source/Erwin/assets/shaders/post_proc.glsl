@@ -51,7 +51,7 @@ void main()
 
 	//  FXAA
     if(bool(u_flags & PP_EN_FXAA))
-        in_hdr = vec4(FXAA(SAMPLER_2D_0, v_uv, u_fb_size), 1.f);
+        in_hdr = FXAA(SAMPLER_2D_0, v_uv, u_fb_size);
     else
         in_hdr = texture(SAMPLER_2D_0, v_uv);
 

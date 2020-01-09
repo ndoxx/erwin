@@ -224,24 +224,19 @@ struct DrawCall
 	SortKey key;
 	DrawCallType type;
 
-	DrawCall(DrawCallType dc_type, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
+	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
-		type            = dc_type;
-		data.shader     = shader;
-		data.VAO        = VAO;
-		data.count      = count;
-		data.offset     = offset;
+		type             = dc_type;
+		data.state_flags = state;
+		data.shader      = shader;
+		data.VAO         = VAO;
+		data.count       = count;
+		data.offset      = offset;
 		instance_data.SSBO_data  = nullptr;
 		instance_data.SSBO_size  = 0;
-		key.shader = data.shader.index; // TODO: Find a way to avoid overflow when shader index can be greater than 255
-	}
 
-	// Set the full render state associated to this draw call
-	inline void set_state(uint64_t state)
-	{
-		// W_ASSERT(state.render_target.index<256, "Framebuffer index out of bounds in view ID sorting key section.");
-		// W_ASSERT(state.render_target.is_valid(), "Invalid FramebufferHandle!");
-		data.state_flags = state;
+		// Setup sorting key
+		key.shader = data.shader.index; // NOTE(ndoxx): Overflow when shader index is greater than 255
 		// Extract render target ID to use as view ID
 		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
 		key.blending = PassState::is_transparent(state);

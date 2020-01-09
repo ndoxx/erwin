@@ -196,8 +196,7 @@ void ForwardRenderer::bloom_pass()
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 		{
 			state.render_target = s_storage.bloom_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, s_storage.bloom_copy_shader, quad);
-			dc.set_state(state.encode());
+			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_copy_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.forward_fbo, 1));
 			dc.set_key_sequence(sequence++, s_storage.layer_id);
 			MainRenderer::submit("Blur"_h, dc);
@@ -218,8 +217,7 @@ void ForwardRenderer::bloom_pass()
 			blur_data.offset = {blur_offset_scale/target_size.x, 0.f}; // Offset is horizontal
 
 			state.render_target = s_storage.bloom_tmp_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, s_storage.bloom_blur_shader, quad);
-			dc.set_state(state.encode());
+			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, s_storage.layer_id);
@@ -237,8 +235,7 @@ void ForwardRenderer::bloom_pass()
 			blur_data.offset = {0.f, blur_offset_scale/target_size.y}; // Offset is vertical
 
 			state.render_target = s_storage.bloom_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, s_storage.bloom_blur_shader, quad);
-			dc.set_state(state.encode());
+			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, s_storage.layer_id);
@@ -250,8 +247,7 @@ void ForwardRenderer::bloom_pass()
 	// * Combine each stage output to a single texture
 	{
 		state.render_target = s_storage.bloom_combine_fbo;
-		DrawCall dc(DrawCall::Indexed, s_storage.bloom_comb_shader, quad);
-		dc.set_state(state.encode());
+		DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_comb_shader, quad);
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
 		dc.set_key_sequence(sequence++, s_storage.layer_id);
@@ -274,8 +270,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	
-	DrawCall dc(DrawCall::Indexed, material.shader, VAO);
-	dc.set_state(s_storage.pass_state);
+	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
 	dc.set_UBO(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
 	{
@@ -289,7 +284,6 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	}
 
 	dc.set_key_depth(depth, s_storage.layer_id);
-	// MainRenderer::submit(PassState::is_transparent(s_storage.pass_state) ? "ForwardTransparent"_h : "Forward3D"_h, dc);
 	MainRenderer::submit("Forward3D"_h, dc);
 
 	++s_storage.num_draw_calls;
