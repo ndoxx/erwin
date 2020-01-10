@@ -21,6 +21,7 @@ layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
 
 SAMPLER_2D_(0);
+SAMPLER_2D_(1); // Bloom combined texture (if bloom enabled for this pass)
 
 layout(std140, binding = 0) uniform post_proc_layout
 {
@@ -44,6 +45,7 @@ layout(std140, binding = 0) uniform post_proc_layout
 #define PP_EN_CONTRAST              16
 #define PP_EN_GAMMA                 32
 #define PP_EN_FXAA                  64
+#define PP_EN_BLOOM                 128
 
 void main()
 {
@@ -54,6 +56,10 @@ void main()
         in_hdr = FXAA(SAMPLER_2D_0, v_uv, u_fb_size);
     else
         in_hdr = texture(SAMPLER_2D_0, v_uv);
+
+    // Bloom
+    if(bool(u_flags & PP_EN_BLOOM))
+        in_hdr += texture(SAMPLER_2D_1, v_uv);
 
 	vec3 color = in_hdr.rgb;
 

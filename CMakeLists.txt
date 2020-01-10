@@ -89,6 +89,7 @@ set(SRC_FILESYSTEM
 
 set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/convolution.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )

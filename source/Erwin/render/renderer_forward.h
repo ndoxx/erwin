@@ -58,6 +58,8 @@ public:
 	// Stats
 	static uint32_t get_draw_call_count();
 
+	static void set_gaussian_kernel(uint32_t half_size, float sigma);
+
 private:
 	friend class Application;
 

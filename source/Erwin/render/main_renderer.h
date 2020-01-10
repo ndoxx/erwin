@@ -237,9 +237,6 @@ struct DrawCall
 
 		// Setup sorting key
 		key.shader = data.shader.index; // NOTE(ndoxx): Overflow when shader index is greater than 255
-		// Extract render target ID to use as view ID
-		key.view = uint8_t((state & k_framebuffer_mask) >> k_framebuffer_shift);
-		key.blending = PassState::is_transparent(state);
 	}
 
 	// Set instance data array containing all information necessary to render instance_count instances of the same geometry
@@ -286,7 +283,11 @@ struct DrawCall
 	inline void set_key_depth(float depth, uint8_t layer_id)
 	{
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
-		key.view |= (layer_id<<8);
+		
+		// Extract render target ID to use as view ID
+		key.blending = PassState::is_transparent(data.state_flags);
+		key.view = uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
+		key.view |= (uint16_t(layer_id)<<8);
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
 		key.order = PassState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
@@ -295,7 +296,8 @@ struct DrawCall
 	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
 	{
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
-		key.view |= (layer_id<<8);
+		key.blending = false;
+		key.view = (uint16_t(layer_id)<<8);
 		key.sequence = sequence;
 		key.order = SortKey::Order::Sequential;
 	}

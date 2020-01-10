@@ -345,7 +345,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     uint32_t height = 0;
 
     // * Iterate over all files and load them
-    for(auto& entry: fs::directory_iterator(input_dir))
+    for(auto&& entry: fs::directory_iterator(input_dir))
     {
         if(entry.is_regular_file())
         {
@@ -475,6 +475,8 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 	{
         const TexmapSpec& spec = s_texmap_specs.at(key);
         uint32_t size = width * height * spec.channels;
+        if(tmap->compression == TextureCompression::DXT5)
+        	size = width * height;
 		tom::TextureMapDescriptor tm_desc
 		{
 			spec.filter,

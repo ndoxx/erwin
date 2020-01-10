@@ -93,6 +93,20 @@ void Sandbox::on_imgui_render()
 	if(show_app_profiling_window)       window_profiling(&show_app_profiling_window);
 	if(show_app_render_stats_window)    window_render_stats(&show_app_render_stats_window);
 #endif
+
+/*
+    static float sigma = 1.f;
+    static int size = 1;
+    if(ImGui::Begin("DBG",nullptr))
+    {
+        if(ImGui::SliderFloat("Sigma", &sigma, 0.01f, 2.0f))
+            ForwardRenderer::set_gaussian_kernel(2*size+1,sigma);
+        if(ImGui::SliderInt("KSize", &size, 1, 7))
+            ForwardRenderer::set_gaussian_kernel(2*size+1,sigma);
+
+
+        ImGui::End();
+    }*/
 }
 
 void Sandbox::toggle_layer_3d()

@@ -3,9 +3,12 @@
 #include "render/main_renderer.h"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
+#include "math/convolution.h"
+#include "debug/texture_peek.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
-#include "debug/texture_peek.h"
+
+#include "imgui/imgui.h"
 
 namespace erwin
 {
@@ -36,6 +39,9 @@ struct InstanceData
 struct BlurUBOData
 {
 	glm::vec2 offset;
+	int kernel_half_size;
+	int padding = 0;
+	float kernel_weights[math::k_max_kernel_coefficients];
 };
 
 static struct ForwardRenderer3DStorage
@@ -56,6 +62,7 @@ static struct ForwardRenderer3DStorage
 	// Data
 	PassUBOData pass_ubo_data;
 	FrustumPlanes frustum_planes;
+	math::SeparableGaussianKernel gk; // For bloom
 
 	// State
 	uint64_t pass_state;
@@ -95,8 +102,8 @@ void ForwardRenderer::init()
 			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(pow(2.f,ii+1.f));
 			s_storage.bloom_fbos[ii]     = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
 			s_storage.bloom_tmp_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_tmp_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
-			// TexturePeek::register_framebuffer(fb_name);
-			// TexturePeek::register_framebuffer(fb_tmp_name);
+			TexturePeek::register_framebuffer(fb_name);
+			TexturePeek::register_framebuffer(fb_tmp_name);
 		}
 
 		// Bloom output framebuffer
@@ -105,6 +112,9 @@ void ForwardRenderer::init()
 		s_storage.bloom_combine_fbo = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(), layout, false);
 		TexturePeek::register_framebuffer(fb_name);
 	}
+
+	// Initialize Gaussian kernel for bloom blur passes
+	s_storage.gk.init(3,1.0f);
 
 	// Create shaders
 	s_storage.bloom_copy_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_copy.glsl", "bloom_copy");
@@ -122,8 +132,18 @@ void ForwardRenderer::init()
 
 void ForwardRenderer::shutdown()
 {
-	MainRenderer::destroy(s_storage.instance_ubo);
+	MainRenderer::destroy(s_storage.bloom_comb_shader);
+	MainRenderer::destroy(s_storage.bloom_blur_shader);
+	MainRenderer::destroy(s_storage.bloom_copy_shader);
+	MainRenderer::destroy(s_storage.blur_ubo);
 	MainRenderer::destroy(s_storage.pass_ubo);
+	MainRenderer::destroy(s_storage.instance_ubo);
+}
+
+void ForwardRenderer::set_gaussian_kernel(uint32_t half_size, float sigma)
+{
+	s_storage.gk.init(half_size,sigma);
+	DLOGW("application") << s_storage.gk << std::endl;
 }
 
 void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
@@ -189,7 +209,7 @@ void ForwardRenderer::bloom_pass()
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
+	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 	MainRenderer::get_queue("Blur"_h).set_clear_color(state.rasterizer_state.clear_color);
 	// * For each bloom stage xx, render glow buffer to bloom_xx framebuffer
 	{
@@ -205,7 +225,8 @@ void ForwardRenderer::bloom_pass()
 	}
 
 	BlurUBOData blur_data;
-	float blur_offset_scale = 2.f;
+	blur_data.kernel_half_size = s_storage.gk.half_size;
+	memcpy(blur_data.kernel_weights, s_storage.gk.weights, math::k_max_kernel_coefficients);
 	glm::vec2 screen_size = FramebufferPool::get_screen_size();
 
 	// * For each bloom stage xx, given framebuffer bloom_xx as input,
@@ -214,7 +235,7 @@ void ForwardRenderer::bloom_pass()
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 		{
 			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
-			blur_data.offset = {blur_offset_scale/target_size.x, 0.f}; // Offset is horizontal
+			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
 
 			state.render_target = s_storage.bloom_tmp_fbos[ii];
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
@@ -232,7 +253,7 @@ void ForwardRenderer::bloom_pass()
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 		{
 			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
-			blur_data.offset = {0.f, blur_offset_scale/target_size.y}; // Offset is vertical
+			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
 
 			state.render_target = s_storage.bloom_fbos[ii];
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);

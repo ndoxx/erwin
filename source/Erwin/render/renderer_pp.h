@@ -14,7 +14,8 @@ enum PPFlags: uint8_t
 	PP_EN_SATURATION = 8,
 	PP_EN_CONTRAST = 16,
 	PP_EN_GAMMA = 32,
-	PP_EN_FXAA = 64
+	PP_EN_FXAA = 64,
+	PP_EN_BLOOM = 128
 };
 
 // #pragma pack(push,1)

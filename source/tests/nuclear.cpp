@@ -15,8 +15,7 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 
-#include "asset/procedural_geometry.h"
-#include "render/buffer_layout.h"
+#include "math/convolution.h"
 
 using namespace erwin;
 
@@ -39,25 +38,9 @@ int main(int argc, char** argv)
 {
 	init_logger();
 
-	{
-		DLOGN("nuclear") << "Position/UV" << std::endl;
+	math::SeparableGaussianKernel gk(5,1.f);
 
-		BufferLayout layout({
-				    			{"a_position"_h, ShaderDataType::Vec3},
-								{"a_uv"_h,       ShaderDataType::Vec2},
-							});
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-
-		pg::make_icosahedron(layout, vdata, idata);
-
-		for(int ii=0; ii<vdata.size()/5; ++ii)
-		{
-			DLOG("nuclear",1) << "(" << vdata[5*ii+0] << "," << vdata[5*ii+1] << "," << vdata[5*ii+2] << ") "
-							  << "(" << vdata[5*ii+3] << "," << vdata[5*ii+4] << ") " << std::endl;
-		}
-	}
-
+	DLOG("nuclear",1) << gk << std::endl;
 
 	return 0;
 }

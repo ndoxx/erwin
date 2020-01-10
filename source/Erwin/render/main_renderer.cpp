@@ -53,15 +53,15 @@ constexpr uint8_t  k_draw_type_bits  = 2;
 constexpr uint8_t  k_shader_bits     = 8;
 constexpr uint8_t  k_depth_bits      = 32;
 constexpr uint8_t  k_seq_bits        = 32;
-constexpr uint64_t k_view_shift      = uint8_t(64)       - k_view_bits;
-constexpr uint64_t k_draw_type_shift = k_view_shift  - k_draw_type_bits;
+constexpr uint64_t k_view_shift      = uint8_t(64)        - k_view_bits;
+constexpr uint64_t k_draw_type_shift = k_view_shift       - k_draw_type_bits;
 constexpr uint64_t k_1_shader_shift  = k_draw_type_shift  - k_shader_bits;
-constexpr uint64_t k_1_depth_shift   = k_1_shader_shift  - k_depth_bits;
-constexpr uint64_t k_2_depth_shift   = k_draw_type_shift - k_depth_bits;
-constexpr uint64_t k_2_shader_shift  = k_2_depth_shift  - k_shader_bits;
-constexpr uint64_t k_3_seq_shift     = k_draw_type_shift - k_seq_bits;
-constexpr uint64_t k_3_shader_shift  = k_3_seq_shift  - k_shader_bits;
-constexpr uint64_t k_view_mask       = uint64_t(0x0000000f) << k_view_shift;
+constexpr uint64_t k_1_depth_shift   = k_1_shader_shift   - k_depth_bits;
+constexpr uint64_t k_2_depth_shift   = k_draw_type_shift  - k_depth_bits;
+constexpr uint64_t k_2_shader_shift  = k_2_depth_shift    - k_shader_bits;
+constexpr uint64_t k_3_seq_shift     = k_draw_type_shift  - k_seq_bits;
+constexpr uint64_t k_3_shader_shift  = k_3_seq_shift      - k_shader_bits;
+constexpr uint64_t k_view_mask       = uint64_t(0x0000ffff) << k_view_shift;
 constexpr uint64_t k_draw_type_mask  = uint64_t(0x00000003) << k_draw_type_shift;
 constexpr uint64_t k_1_shader_mask   = uint64_t(0x000000ff) << k_1_shader_shift;
 constexpr uint64_t k_1_depth_mask    = uint64_t(0xffffffff) << k_1_depth_shift;
@@ -72,34 +72,34 @@ constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
 
 uint64_t SortKey::encode() const
 {
-	uint64_t head = ((uint64_t(view)         << k_view_shift     ) & k_view_mask)
-				  | ((uint64_t(blending)	 << k_draw_type_shift) & k_draw_type_mask);
+	uint64_t head = ((uint64_t(view)      << k_view_shift     ) & k_view_mask)
+				  | ((uint64_t(blending)  << k_draw_type_shift) & k_draw_type_mask);
 
 	uint64_t body = 0;
 	switch(order)
 	{
 		case SortKey::Order::ByShader:
 		{
-			body |= ((uint64_t(shader)       << k_1_shader_shift) & k_1_shader_mask)
-				 |  ((uint64_t(depth)        << k_1_depth_shift)  & k_1_depth_mask);
+			body |= ((uint64_t(shader)    << k_1_shader_shift) & k_1_shader_mask)
+				 |  ((uint64_t(depth)     << k_1_depth_shift)  & k_1_depth_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthDescending:
 		{
-			body |= ((uint64_t(~depth)       << k_2_depth_shift)  & k_2_depth_mask)
-				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask);
+			body |= ((uint64_t(~depth)    << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthAscending:
 		{
-			body |= ((uint64_t(depth)        << k_2_depth_shift)  & k_2_depth_mask)
-				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask);
+			body |= ((uint64_t(depth)     << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::Sequential:
 		{
-			body |= ((uint64_t(sequence)     << k_3_seq_shift)    & k_3_seq_mask)
-				 |  ((uint64_t(shader)       << k_3_shader_shift) & k_3_shader_mask);
+			body |= ((uint64_t(~sequence) << k_3_seq_shift)    & k_3_seq_mask)
+				 |  ((uint64_t(shader)    << k_3_shader_shift) & k_3_shader_mask);
 			break;
 		}
 	}
@@ -1412,7 +1412,6 @@ void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
 void RenderQueue::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
-
     // Set clear color
     Gfx::device->set_clear_color(clear_color_.r, clear_color_.g, clear_color_.b, clear_color_.a);
 

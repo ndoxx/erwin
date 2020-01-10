@@ -14,7 +14,7 @@ struct PPStorage
 	ShaderHandle lighten_shader;
 	PostProcessingData pp_data;
 
-	uint32_t sequence = 0xffffffff;
+	uint32_t sequence = 0;
 };
 static PPStorage storage;
 
@@ -49,7 +49,7 @@ void PostProcessingRenderer::begin_pass(const PostProcessingData& pp_data)
 
 	// Set post processing data
 	storage.pp_data = pp_data;
-	storage.sequence = 0xffffffff;
+	storage.sequence = 0;
 }
 
 void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
@@ -68,8 +68,10 @@ void PostProcessingRenderer::blit(hash_t framebuffer, uint32_t index)
 
 	static DrawCall dc(DrawCall::Indexed, state.encode(), storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
+	if(storage.pp_data.get_flag(PP_EN_BLOOM))
+		dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
 	dc.set_UBO(storage.pp_ubo, &storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
-	dc.set_key_sequence(storage.sequence--, 0);
+	dc.set_key_sequence(storage.sequence++, 0);
 	MainRenderer::submit("Presentation"_h, dc);
 }
 
@@ -88,7 +90,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 
 	static DrawCall dc(DrawCall::Indexed, state.encode(), storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
-	dc.set_key_sequence(storage.sequence--, 0);
+	dc.set_key_sequence(storage.sequence++, 0);
 	MainRenderer::submit("Presentation"_h, dc);
 }
 
