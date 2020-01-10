@@ -46,10 +46,12 @@ struct PostProcessingData
 class PostProcessingRenderer
 {
 public:
-	static void begin_pass(const PostProcessingData& pp_data);
-	static void blit(hash_t framebuffer, uint32_t index=0);
-	static void lighten(hash_t framebuffer, uint32_t index=0);
-	static void end_pass();
+	static void bloom_pass(hash_t framebuffer, uint32_t index);
+	static void combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data);
+	static void lighten(hash_t framebuffer, uint32_t index);
+
+	// TMP
+	static void reset_sequence();
 
 private:
 	friend class Application;

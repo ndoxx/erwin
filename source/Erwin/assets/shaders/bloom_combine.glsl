@@ -25,6 +25,6 @@ void main()
 {
 	vec4 col = 1.f*texture(SAMPLER_2D_0, v_uv)
 			 + 2.f*texture(SAMPLER_2D_1, v_uv)
-			 + 3.f*texture(SAMPLER_2D_2, v_uv);
-	out_color = col/6.f;
+			 + 2.f*texture(SAMPLER_2D_2, v_uv);
+	out_color = col/5.f;
 }

@@ -153,9 +153,6 @@ void Layer3D::on_render()
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
 	}
-
-	// TMP
-	ForwardRenderer::bloom_pass();
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)
