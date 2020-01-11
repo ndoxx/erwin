@@ -8,7 +8,7 @@ namespace erwin
 namespace math
 {
 
-static constexpr uint32_t k_max_kernel_coefficients = 15;
+static constexpr uint32_t k_max_kernel_coefficients = 12;
 
 /*
 	This structure handles the initialization of arbitrary separable Gaussian convolution kernels.

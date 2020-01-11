@@ -2059,3 +2059,64 @@ On peut enregistrer une texture indépendante via TexturePeek::register_texture(
 
 ###Sources:
     [1] https://www.youtube.com/watch?v=8Orghz-ZMuw
+
+
+#[11-01-20]
+
+##Blur
+En implémentant l'effet bloom, je me suis servi de quelques bouts de code de WCore que j'ai dépoussiérés et améliorés. Dans math/convolution.h, la classe _SeparableGaussianKernel_ permet d'initialiser la liste des coefficients d'un noyau de convolution Gaussien séparable, par intégration de Simpson d'une distribution Gaussienne arbitraire. Ici, pour un noyau 11x11 (demi-taille = 5) et un sigma de 1 :
+
+```cpp
+    math::SeparableGaussianKernel gk(5,1.f);
+    DLOG("nuclear",1) << gk << std::endl;
+```
+    > [0.382932 0.24173 0.0605967 0.00597757 0.000229347]
+
+La difficulté consiste à envoyer ces données à un shader de façon efficace. Le layout std140 autorise l'ajout de tableaux de float à un uniform block, seulement, la stride est arrondie à la taille d'un vec4 : un float prend autant de place en mémoire qu'un putain de vec4.
+Voilà comment je règle le problème :
+
+```c
+#type fragment
+#version 460 core
+#include "include/common.glsl"
+#define KERNEL_MAX_PACKED_WEIGHTS 3
+
+layout(location = 0) in vec2 v_uv;
+layout(location = 0) out vec4 out_color;
+SAMPLER_2D_(0);
+
+layout(std140, binding = 0) uniform blur_data
+{
+    vec2 u_v2_offset;
+    int u_i_half_size;
+    int padding;
+    vec4 u_v4_packed_weights[KERNEL_MAX_PACKED_WEIGHTS];
+};
+
+vec4 convolve_kernel_separable_rgba_packed(vec4 weight[KERNEL_MAX_PACKED_WEIGHTS], int half_size,
+                                           sampler2D samp, vec2 v2_uv, vec2 v2_offset)
+{
+    // Fragment's central contribution
+    vec4 result = texture(samp, v2_uv) * weight[0][0];
+
+    // Add (symmetric) side contributions
+    for(int ii=1; ii<half_size; ++ii)
+    {
+        result += texture(samp,  ii*v2_offset + v2_uv) * weight[ii/4][ii%4];
+        result += texture(samp, -ii*v2_offset + v2_uv) * weight[ii/4][ii%4];
+    }
+
+    return result;
+}
+
+void main()
+{
+    out_color = convolve_kernel_separable_rgba_packed(u_v4_packed_weights, u_i_half_size, 
+                                                      SAMPLER_2D_0, v_uv, u_v2_offset);
+}
+```
+L'uniform u_v4_packed_weights est un tableau de vec4, aucune place n'est perdue. La fonction de convolution accède aux éléments avec un peu d'algèbre modulaire. Tout ceci a un coût, et on peut imaginer que la possibilité de tweaker les noyaux de convolution n'a de sens que dans un debug build. Donc j'ai laissé une fonction de convolution qui prend un tableau de float en entrée, lequel sera déclaré comme constante du shader et non passé en uniform, ce sera pertinent dans un retail build.
+
+###Sources:
+    [1] https://computergraphics.stackexchange.com/questions/4454/opengl
+        -es-3-uniform-buffer-object-with-float-array

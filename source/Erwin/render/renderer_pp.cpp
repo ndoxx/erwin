@@ -6,8 +6,15 @@
 
 namespace erwin
 {
+#define BLOOM_RETAIL
 constexpr uint32_t k_bloom_stage_count = 3;
 
+#ifdef BLOOM_RETAIL
+struct BlurUBOData
+{
+	glm::vec2 offset;
+};
+#else
 struct BlurUBOData
 {
 	glm::vec2 offset;
@@ -15,6 +22,7 @@ struct BlurUBOData
 	int padding = 0;
 	float kernel_weights[math::k_max_kernel_coefficients];
 };
+#endif
 
 struct PPStorage
 {
@@ -33,7 +41,9 @@ struct PPStorage
 	FramebufferHandle bloom_combine_fbo;
 	float bloom_stage_ratios[k_bloom_stage_count];
 
+#ifndef BLOOM_RETAIL
 	math::SeparableGaussianKernel gk; // For bloom
+#endif
 
 	uint32_t sequence = 0;
 };
@@ -70,7 +80,9 @@ void PostProcessingRenderer::init()
 	}
 
 	// Initialize Gaussian kernel for bloom blur passes
-	s_storage.gk.init(3,1.0f);
+#ifndef BLOOM_RETAIL
+	s_storage.gk.init(5,1.0f);
+#endif
 
 	// Create shaders
 	s_storage.passthrough_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
@@ -132,8 +144,10 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 	}
 
 	BlurUBOData blur_data;
+#ifndef BLOOM_RETAIL
 	blur_data.kernel_half_size = s_storage.gk.half_size;
 	memcpy(blur_data.kernel_weights, s_storage.gk.weights, math::k_max_kernel_coefficients);
+#endif
 	glm::vec2 screen_size = FramebufferPool::get_screen_size();
 
 	// * For each bloom stage xx, given framebuffer bloom_xx as input,
