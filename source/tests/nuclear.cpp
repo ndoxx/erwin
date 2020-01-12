@@ -16,6 +16,7 @@
 #include "debug/logger_sink.h"
 
 #include "math/convolution.h"
+#include "render/main_renderer.h"
 
 using namespace erwin;
 
@@ -38,9 +39,39 @@ int main(int argc, char** argv)
 {
 	init_logger();
 
-	math::SeparableGaussianKernel gk(7,1.f);
+	std::vector<std::pair<uint64_t, std::string>> commands;
 
-	DLOG("nuclear",1) << gk << std::endl;
+	for(int ii=0; ii<8; ++ii)
+	{
+		uint8_t layer_id = ii;
+
+		for(int jj=0; jj<4; ++jj)
+		{
+			SortKey key;
+			key.shader = jj;
+			key.blending = jj%2;
+			key.view = (uint16_t(layer_id)<<8);
+			key.sequence = jj;
+			key.order = SortKey::Order::Sequential;
+
+			std::string cmd = "";
+			cmd += char('A'+ii);
+			cmd += "_" + std::to_string(jj);
+
+			commands.push_back(std::make_pair(key.encode(), cmd));
+		}
+	}
+
+    std::sort(std::begin(commands), std::begin(commands) + commands.size(), 
+        [&](auto&& item1, auto&& item2)
+        {
+        	return item1.first < item2.first;
+        });
+
+	for(auto&& [key,cmd]: commands)
+	{
+		DLOG("nuclear",1) << key << " " << cmd << std::endl;
+	}
 
 	return 0;
 }

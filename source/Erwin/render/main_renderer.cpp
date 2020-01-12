@@ -86,19 +86,19 @@ uint64_t SortKey::encode() const
 		}
 		case SortKey::Order::ByDepthDescending:
 		{
-			body |= ((uint64_t(~depth)    << k_2_depth_shift)  & k_2_depth_mask)
+			body |= ((uint64_t(depth)    << k_2_depth_shift)  & k_2_depth_mask)
 				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthAscending:
 		{
-			body |= ((uint64_t(depth)     << k_2_depth_shift)  & k_2_depth_mask)
+			body |= ((uint64_t(~depth)     << k_2_depth_shift)  & k_2_depth_mask)
 				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::Sequential:
 		{
-			body |= ((uint64_t(~sequence) << k_3_seq_shift)    & k_3_seq_mask)
+			body |= ((uint64_t(sequence) << k_3_seq_shift)    & k_3_seq_mask)
 				 |  ((uint64_t(shader)    << k_3_shader_shift) & k_3_shader_mask);
 			break;
 		}
@@ -374,7 +374,7 @@ public:
 
 	inline void submit()
 	{
-		uint64_t key = ~uint64_t(cmdbuf_.count);
+		uint64_t key = uint64_t(cmdbuf_.count);
 		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
 	}
 
@@ -1238,7 +1238,7 @@ void RenderQueue::sort()
     std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
 }
 
@@ -1448,12 +1448,12 @@ static void sort_commands()
     std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
     std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
 }
 

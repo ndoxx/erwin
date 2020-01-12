@@ -28,7 +28,7 @@ struct BlurUBOData
 };
 #endif
 
-struct PPStorage
+static struct PPStorage
 {
 	PostProcessingData pp_data;
 
@@ -50,8 +50,7 @@ struct PPStorage
 #endif
 
 	uint32_t sequence = 0;
-};
-static PPStorage s_storage;
+} s_storage;
 
 void PostProcessingRenderer::init()
 {
@@ -127,7 +126,7 @@ void PostProcessingRenderer::reset_sequence()
 	s_storage.sequence = 0;
 }
 
-void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
+void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, uint8_t layer_id)
 {
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
@@ -147,7 +146,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			state.render_target = s_storage.bloom_fbos[ii];
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_copy_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			dc.set_key_sequence(sequence++, 0);
+			dc.set_key_sequence(sequence++, layer_id);
 			MainRenderer::submit("Blur"_h, dc);
 		}
 	}
@@ -171,7 +170,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, 0);
+			dc.set_key_sequence(sequence++, layer_id);
 			MainRenderer::submit("Blur"_h, dc);
 		}
 	}
@@ -188,7 +187,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, 0);
+			dc.set_key_sequence(sequence++, layer_id);
 			MainRenderer::submit("Blur"_h, dc);
 		}
 	}
@@ -199,7 +198,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 		DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_comb_shader, quad);
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
-		dc.set_key_sequence(sequence++, 0);
+		dc.set_key_sequence(sequence++, layer_id);
 		MainRenderer::submit("Blur"_h, dc);
 	}
 }
@@ -210,7 +209,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 	The effect is less subtle (hence more prone to visible flickering) and takes about 
 	the same time to render.
 */
-void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_index)
+void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_index, uint8_t layer_id)
 {
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
@@ -243,7 +242,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, 0);
+			dc.set_key_sequence(sequence++, layer_id);
 			MainRenderer::submit("Blur"_h, dc);
 		}
 	}
@@ -262,13 +261,13 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, 0);
+			dc.set_key_sequence(sequence++, layer_id);
 			MainRenderer::submit("Blur"_h, dc);
 		}
 	}
 }
 
-void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data)
+void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
 	s_storage.pp_data = pp_data;
@@ -288,11 +287,11 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
 	dc.set_UBO(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
-	dc.set_key_sequence(s_storage.sequence++, 0);
+	dc.set_key_sequence(s_storage.sequence++, layer_id);
 	MainRenderer::submit("Presentation"_h, dc);
 }
 
-void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
+void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
     
@@ -307,7 +306,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 
 	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
-	dc.set_key_sequence(s_storage.sequence++, 0);
+	dc.set_key_sequence(s_storage.sequence++, layer_id);
 	MainRenderer::submit("Presentation"_h, dc);
 }
 
