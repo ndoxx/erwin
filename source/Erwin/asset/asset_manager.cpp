@@ -2,7 +2,7 @@
 #include "asset/texture_atlas.h"
 #include "asset/material.h"
 #include "memory/arena.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
@@ -114,7 +114,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
 
 	std::string shader_name = name.empty() ? filepath.stem().string() : name;
-	ShaderHandle handle = MainRenderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
+	ShaderHandle handle = Renderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
 
 	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
 	return handle;
@@ -141,7 +141,7 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint32_t size)
 {
-	return MainRenderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
+	return Renderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
 }
 
 void AssetManager::release(TextureAtlasHandle handle)
@@ -185,7 +185,7 @@ void AssetManager::release(ShaderHandle handle)
 	W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
 
-	MainRenderer::destroy(handle);
+	Renderer::destroy(handle);
 
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 }
@@ -200,7 +200,7 @@ void AssetManager::release(MaterialLayoutHandle handle)
 
 void AssetManager::release(UniformBufferHandle handle)
 {
-	MainRenderer::destroy(handle);
+	Renderer::destroy(handle);
 }
 
 // ---------------- PRIVATE API ----------------

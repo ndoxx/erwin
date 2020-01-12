@@ -1,6 +1,6 @@
 #include "asset/material.h"
 #include "render/texture_common.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "filesystem/tom_file.h"
 
 namespace erwin
@@ -64,7 +64,7 @@ void TextureGroup::load(const fs::path& filepath, const MaterialLayout& layout)
 		for(auto&& tmap: descriptor.texture_maps)
 		{
 			ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
-			TextureHandle tex = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
+			TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
 										  					 				    	descriptor.height,
 										  					 				    	tmap.data,
 										  					 				    	format,
@@ -92,7 +92,7 @@ void TextureGroup::release()
 {
 	for(auto&& handle: textures)
 		if(handle.is_valid())
-			MainRenderer::destroy(handle);
+			Renderer::destroy(handle);
 
 	// Resources allocated by the descriptor are located inside the filesystem's resource arena
 	// This arena should be reset frequently, we don't need to care about freeing the resources here

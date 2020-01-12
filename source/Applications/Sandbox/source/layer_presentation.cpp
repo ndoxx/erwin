@@ -44,24 +44,22 @@ void PresentationLayer::on_update(GameClock& clock)
 
 void PresentationLayer::on_render()
 {
-	PostProcessingRenderer::reset_sequence();
-
 	if(enable_bloom_)
 		if(bloom_alt_)
-			PostProcessingRenderer::bloom_pass_alt("fb_forward"_h, 1);
+			PostProcessingRenderer::bloom_pass_alt("fb_forward"_h, 1, get_layer_id());
 		else
-			PostProcessingRenderer::bloom_pass("fb_forward"_h, 1);
+			PostProcessingRenderer::bloom_pass("fb_forward"_h, 1, get_layer_id());
 
 
 	if(enable_3d_forward_)
 	{
     	pp_data_.set_flag_enabled(PP_EN_BLOOM, enable_bloom_);
-		PostProcessingRenderer::combine("fb_forward"_h, 0, pp_data_);
+		PostProcessingRenderer::combine("fb_forward"_h, 0, pp_data_, get_layer_id());
 	}
     if(enable_2d_batched_)
     {
     	pp_data_.clear_flag(PP_EN_BLOOM);
-		PostProcessingRenderer::combine("fb_2d_raw"_h, 0, pp_data_);
+		PostProcessingRenderer::combine("fb_2d_raw"_h, 0, pp_data_, get_layer_id());
     }
 }
 

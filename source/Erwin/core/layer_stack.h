@@ -27,6 +27,7 @@ public:
 
 	friend std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs);
 
+	inline std::size_t size() const { return layers_.size(); }
 	inline std::vector<Layer*>::iterator begin() { return layers_.begin(); }
 	inline std::vector<Layer*>::iterator end()   { return layers_.end(); }
 

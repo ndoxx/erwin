@@ -1,5 +1,5 @@
 #include "asset/texture_atlas.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
 
@@ -49,7 +49,7 @@ void TextureAtlas::load(const fs::path& filepath)
 		// uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
 		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
-		texture = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
+		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
 									  					 			  descriptor.texture_height,
 									  					 			  descriptor.texture_blob,
 									  					 			  format,
@@ -66,7 +66,7 @@ void TextureAtlas::load(const fs::path& filepath)
 
 void TextureAtlas::release()
 {
-	MainRenderer::destroy(texture);
+	Renderer::destroy(texture);
 
 	// Resources allocated by the descriptor are located inside the filesystem's resource arena
 	// This arena should be reset frequently, we don't need to care about freeing the resources here
@@ -124,7 +124,7 @@ void FontAtlas::load(const fs::path& filepath)
 		// uint8_t filter = MAG_NEAREST | MIN_LINEAR_MIPMAP_NEAREST;
 		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
-		texture = MainRenderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
+		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
 									  					 			  descriptor.texture_height,
 									  					 			  descriptor.texture_blob,
 									  					 			  ImageFormat::RGBA8,
@@ -142,7 +142,7 @@ void FontAtlas::load(const fs::path& filepath)
 
 void FontAtlas::release()
 {
-	MainRenderer::destroy(texture);
+	Renderer::destroy(texture);
 
 	// Resources allocated by the descriptor are located inside the filesystem's resource arena
 	// This arena should be reset frequently, we don't need to care about freeing the resources here

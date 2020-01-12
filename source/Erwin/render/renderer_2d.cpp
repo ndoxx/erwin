@@ -2,7 +2,7 @@
 
 #include "render/renderer_2d.h"
 #include "render/common_geometry.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
 #include "core/config.h"
@@ -108,16 +108,16 @@ void Renderer2D::init()
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
-	// storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	storage.batch_2d_shader = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
-	storage.pass_ubo = MainRenderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	storage.instance_ssbo = MainRenderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+	// storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	storage.pass_ubo = Renderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
+	storage.instance_ssbo = Renderer::create_shader_storage_buffer("instance_data", nullptr, storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
 	
-	MainRenderer::shader_attach_uniform_buffer(storage.batch_2d_shader, storage.pass_ubo);
-	MainRenderer::shader_attach_storage_buffer(storage.batch_2d_shader, storage.instance_ssbo);
+	Renderer::shader_attach_uniform_buffer(storage.batch_2d_shader, storage.pass_ubo);
+	Renderer::shader_attach_storage_buffer(storage.batch_2d_shader, storage.instance_ssbo);
 
 	storage.white_texture_data = 0xffffffff;
-	storage.white_texture = MainRenderer::create_texture_2D(Texture2DDescriptor{1,1,
+	storage.white_texture = Renderer::create_texture_2D(Texture2DDescriptor{1,1,
 								  					 				   			&storage.white_texture_data,
 								  					 				   			ImageFormat::RGBA8,
 								  					 				   			MAG_NEAREST | MIN_NEAREST});
@@ -128,10 +128,10 @@ void Renderer2D::shutdown()
 {
     W_PROFILE_FUNCTION()
 
-	MainRenderer::destroy(storage.white_texture);
-	MainRenderer::destroy(storage.instance_ssbo);
-	MainRenderer::destroy(storage.pass_ubo);
-	MainRenderer::destroy(storage.batch_2d_shader);
+	Renderer::destroy(storage.white_texture);
+	Renderer::destroy(storage.instance_ssbo);
+	Renderer::destroy(storage.pass_ubo);
+	Renderer::destroy(storage.batch_2d_shader);
 }
 
 void Renderer2D::create_batch(TextureHandle handle)
@@ -155,7 +155,6 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 
 	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
-	MainRenderer::get_queue("Sprite2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -166,7 +165,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 
 	// Reset batch instance data pointers
 	for(auto&& [key, batch]: storage.batches)
-		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, MainRenderer::get_arena());
+		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, Renderer::get_arena());
 }
 
 void Renderer2D::end_pass()
@@ -185,12 +184,12 @@ static void flush_batch(Batch2D& batch)
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit("Sprite2D"_h, dc);
+		Renderer::submit(dc);
 
 		++storage.num_draw_calls;
 		batch.count = 0;
 		batch.max_depth = -1.f;
-		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, MainRenderer::get_arena());
+		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, storage.max_batch_count, Renderer::get_arena());
 	}
 }
 
@@ -245,7 +244,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	const FontAtlas& font = AssetManager::get(font_handle);
 
 	Batch2D batch;
-	batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), MainRenderer::get_arena());
+	batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), Renderer::get_arena());
 	batch.max_depth = 0.f;
 	batch.texture = font.texture;
 	batch.count = 0;
@@ -283,7 +282,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit("Sprite2D"_h, dc);
+		Renderer::submit(dc);
 
 		++storage.num_draw_calls;
 	}

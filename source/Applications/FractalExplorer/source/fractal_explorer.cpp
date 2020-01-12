@@ -62,13 +62,13 @@ public:
 	virtual void on_attach() override
 	{
 		shader_ = AssetManager::load_shader("shaders/mandelbrot.glsl");
-		mandel_ubo_ = MainRenderer::create_uniform_buffer("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
-		MainRenderer::shader_attach_uniform_buffer(shader_, mandel_ubo_);
+		mandel_ubo_ = Renderer::create_uniform_buffer("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
+		Renderer::shader_attach_uniform_buffer(shader_, mandel_ubo_);
 	}
 
 	virtual void on_detach() override
 	{
-		MainRenderer::destroy(mandel_ubo_);
+		Renderer::destroy(mandel_ubo_);
 		AssetManager::release(shader_);
 	}
 
@@ -92,7 +92,7 @@ protected:
 		data_.view_projection = glm::inverse(camera_ctl_.get_camera().get_view_projection_matrix());
 
 		PassState pass_state;
-		pass_state.render_target = MainRenderer::default_render_target();
+		pass_state.render_target = Renderer::default_render_target();
 		pass_state.rasterizer_state.cull_mode = CullMode::Back;
 		pass_state.blend_state = BlendState::Opaque;
 		pass_state.depth_stencil_state.depth_test_enabled = false;
@@ -100,7 +100,7 @@ protected:
 
 		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DrawCall::CopyData);
-		MainRenderer::submit("Presentation"_h, dc);
+		Renderer::submit("Presentation"_h, dc);
 	}
 
 	virtual bool on_event(const WindowResizeEvent& event) override

@@ -10,7 +10,7 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/common_geometry.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
@@ -88,7 +88,7 @@ Application::~Application()
         Renderer2D::shutdown();
         ForwardRenderer::shutdown();
         CommonGeometry::shutdown();
-        MainRenderer::shutdown();
+        Renderer::shutdown();
     }
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
@@ -232,17 +232,10 @@ bool Application::init()
         // Initialize framebuffer pool
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
-        MainRenderer::init(s_storage.render_area);
+        Renderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
 
-        MainRenderer::create_queue("Forward3D");
-        MainRenderer::create_queue("Sprite2D");
-        MainRenderer::create_queue("Blur");
-#ifdef W_DEBUG
-        MainRenderer::create_queue("Debug2D");
-#endif
-        MainRenderer::create_queue("Presentation");
 #ifdef W_DEBUG
         TexturePeek::init();
 #endif
@@ -358,10 +351,10 @@ void Application::run()
         }
 
 #ifdef W_DEBUG
-        TexturePeek::render();
+        TexturePeek::render(uint8_t(layer_stack_.size()));
 #endif
 
-        MainRenderer::flush();
+        Renderer::flush();
         
 		// TODO: move this to renderer
         {

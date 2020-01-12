@@ -1,4 +1,4 @@
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 
 #include <map>
 #include <memory>
@@ -86,19 +86,19 @@ uint64_t SortKey::encode() const
 		}
 		case SortKey::Order::ByDepthDescending:
 		{
-			body |= ((uint64_t(~depth)    << k_2_depth_shift)  & k_2_depth_mask)
+			body |= ((uint64_t(depth)    << k_2_depth_shift)  & k_2_depth_mask)
 				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthAscending:
 		{
-			body |= ((uint64_t(depth)     << k_2_depth_shift)  & k_2_depth_mask)
+			body |= ((uint64_t(~depth)     << k_2_depth_shift)  & k_2_depth_mask)
 				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
 			break;
 		}
 		case SortKey::Order::Sequential:
 		{
-			body |= ((uint64_t(~sequence) << k_3_seq_shift)    & k_3_seq_mask)
+			body |= ((uint64_t(sequence) << k_3_seq_shift)    & k_3_seq_mask)
 				 |  ((uint64_t(shader)    << k_3_shader_shift) & k_3_shader_mask);
 			break;
 		}
@@ -136,7 +136,8 @@ struct RendererStorage
 	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre"),
 	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post"),
 	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary"),
-	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles")
+	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles"),
+	queue_(renderer_memory_)
 	{
 #ifdef W_DEBUG
 		auxiliary_arena_.set_debug_name("Auxiliary");
@@ -157,6 +158,9 @@ struct RendererStorage
 		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(handle_arena_);
 		FOR_ALL_HANDLES
 		#undef DO_ACTION
+
+		// Init render queue
+		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
 	}
 
 	~RendererStorage()
@@ -190,27 +194,27 @@ struct RendererStorage
 
 	FramebufferHandle default_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-
-	std::vector<RenderQueue> queues_;
-	std::map<hash_t, uint32_t> queue_names_;
 	std::map<hash_t, ShaderHandle> shader_names_;
+	std::vector<std::function<void(void)>> end_frame_callbacks_;
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
-	MainRendererStats stats;
+	RendererStats stats;
 
 	memory::HeapArea& renderer_memory_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
-	MainRenderer::AuxArena auxiliary_arena_;
+	Renderer::AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
+
+	RenderQueue queue_;
 };
 std::unique_ptr<RendererStorage> s_storage;
 
-void MainRenderer::init(memory::HeapArea& area)
+void Renderer::init(memory::HeapArea& area)
 {
     W_PROFILE_RENDER_FUNCTION()
-	DLOGN("render") << "[MainRenderer] Allocating renderer storage." << std::endl;
+	DLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
 	s_storage = std::make_unique<RendererStorage>(area);
@@ -221,79 +225,71 @@ void MainRenderer::init(memory::HeapArea& area)
 	DLOGI << "done" << std::endl;
 }
 
-void MainRenderer::shutdown()
+void Renderer::shutdown()
 {
     W_PROFILE_RENDER_FUNCTION()
 	flush();
-	DLOGN("render") << "[MainRenderer] Releasing renderer storage." << std::endl;
+	DLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
 	s_storage->default_framebuffer_.release();
 	RendererStorage* rs = s_storage.release();
 	delete rs;
 	DLOGI << "done" << std::endl;
 }
 
-RenderQueue& MainRenderer::create_queue(const std::string& name)
+RenderQueue& Renderer::get_queue()
 {
-    DLOG("render",1) << "[MainRenderer] Creating queue: " << WCC('n') << name << std::endl;
-    DLOGI << "Priority index: " << WCC('v') << s_storage->queues_.size() << std::endl;
-	hash_t hname = H_(name.c_str());
-	uint32_t index = s_storage->queues_.size();
-	s_storage->queues_.emplace_back(s_storage->renderer_memory_);
-	s_storage->queue_names_[hname] = index;
-	return s_storage->queues_.back();
+	return s_storage->queue_;
 }
 
-RenderQueue& MainRenderer::get_queue(hash_t name)
-{
-	auto it = s_storage->queue_names_.find(name);
-	W_ASSERT(it != s_storage->queue_names_.end(), "Unknown queue name!");
-	return s_storage->queues_[it->second];
-}
-
-MainRenderer::AuxArena& MainRenderer::get_arena()
+Renderer::AuxArena& Renderer::get_arena()
 {
 	return s_storage->auxiliary_arena_;
 }
 
+void Renderer::set_end_frame_callback(std::function<void(void)> callback)
+{
+	s_storage->end_frame_callbacks_.push_back(callback);
+}
+
 #ifdef W_DEBUG
-void MainRenderer::set_profiling_enabled(bool value)
+void Renderer::set_profiling_enabled(bool value)
 {
 	s_storage->profiling_enabled = value;
 }
 
-const MainRendererStats& MainRenderer::get_stats()
+const RendererStats& Renderer::get_stats()
 {
 	return s_storage->stats;
 }
 #endif
 
-FramebufferHandle MainRenderer::default_render_target()
+FramebufferHandle Renderer::default_render_target()
 {
 	return s_storage->default_framebuffer_;
 }
 
-TextureHandle MainRenderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
+TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	W_ASSERT(index < s_storage->framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
 	return s_storage->framebuffer_textures_[handle.index].handles[index];
 }
 
-uint32_t MainRenderer::get_framebuffer_texture_count(FramebufferHandle handle)
+uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	return s_storage->framebuffer_textures_[handle.index].handles.size();
 }
 
 #ifdef W_DEBUG
-void* MainRenderer::get_native_texture_handle(TextureHandle handle)
+void* Renderer::get_native_texture_handle(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
 	return s_storage->textures[handle.index]->get_native_handle();
 }
 #endif
 
-VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
+VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
 {
 	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -303,7 +299,7 @@ VertexBufferLayoutHandle MainRenderer::create_vertex_buffer_layout(const std::ve
 	return handle;
 }
 
-const BufferLayout& MainRenderer::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
+const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
@@ -374,7 +370,7 @@ public:
 
 	inline void submit()
 	{
-		uint64_t key = ~uint64_t(cmdbuf_.count);
+		uint64_t key = uint64_t(cmdbuf_.count);
 		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
 	}
 
@@ -406,7 +402,7 @@ private:
 	void* head_;
 };
 
-IndexBufferHandle MainRenderer::create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
 {
 	IndexBufferHandle handle = IndexBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -433,7 +429,7 @@ IndexBufferHandle MainRenderer::create_index_buffer(const uint32_t* index_data, 
 	return handle;
 }
 
-VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode)
+VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode)
 {
 	W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
@@ -462,7 +458,7 @@ VertexBufferHandle MainRenderer::create_vertex_buffer(VertexBufferLayoutHandle l
 	return handle;
 }
 
-VertexArrayHandle MainRenderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
+VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
 {
 	W_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
 	W_ASSERT(ib.is_valid(), "Invalid IndexBufferHandle!");
@@ -480,7 +476,7 @@ VertexArrayHandle MainRenderer::create_vertex_array(VertexBufferHandle vb, Index
 	return handle;
 }
 
-UniformBufferHandle MainRenderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	UniformBufferHandle handle = UniformBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -507,7 +503,7 @@ UniformBufferHandle MainRenderer::create_uniform_buffer(const std::string& name,
 	return handle;
 }
 
-ShaderStorageBufferHandle MainRenderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
 {
 	ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -534,7 +530,7 @@ ShaderStorageBufferHandle MainRenderer::create_shader_storage_buffer(const std::
 	return handle;
 }
 
-ShaderHandle MainRenderer::create_shader(const fs::path& filepath, const std::string& name)
+ShaderHandle Renderer::create_shader(const fs::path& filepath, const std::string& name)
 {
 	ShaderHandle handle = ShaderHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -548,7 +544,7 @@ ShaderHandle MainRenderer::create_shader(const fs::path& filepath, const std::st
 	return handle;
 }
 
-TextureHandle MainRenderer::create_texture_2D(const Texture2DDescriptor& desc)
+TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 {
 	TextureHandle handle = TextureHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -561,7 +557,7 @@ TextureHandle MainRenderer::create_texture_2D(const Texture2DDescriptor& desc)
 	return handle;
 }
 
-FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
+FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
 {
 	FramebufferHandle handle = FramebufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -595,7 +591,7 @@ FramebufferHandle MainRenderer::create_framebuffer(uint32_t width, uint32_t heig
 	return handle;
 }
 
-void MainRenderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
+void Renderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
 {
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 	W_ASSERT(data, "No data!");
@@ -610,7 +606,7 @@ void MainRenderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data,
 	cw.submit();
 }
 
-void MainRenderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 	W_ASSERT(data, "No data!");
@@ -625,7 +621,7 @@ void MainRenderer::update_vertex_buffer(VertexBufferHandle handle, void* data, u
 	cw.submit();
 }
 
-void MainRenderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 	W_ASSERT(data, "No data!");
@@ -640,7 +636,7 @@ void MainRenderer::update_uniform_buffer(UniformBufferHandle handle, void* data,
 	cw.submit();
 }
 
-void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 	W_ASSERT(data, "No data!");
@@ -655,7 +651,7 @@ void MainRenderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 	cw.submit();
 }
 
-void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
+void Renderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
 {
 	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 	W_ASSERT(ubo.is_valid(), "Invalid UniformBufferHandle!");
@@ -666,7 +662,7 @@ void MainRenderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBuff
 	cw.submit();
 }
 
-void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
+void Renderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
 {
 	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 	W_ASSERT(ssbo.is_valid(), "Invalid ShaderStorageBufferHandle!");
@@ -677,7 +673,7 @@ void MainRenderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStora
 	cw.submit();
 }
 
-void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
+void Renderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
 {
 	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
@@ -688,13 +684,13 @@ void MainRenderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint
 	cw.submit();
 }
 
-void MainRenderer::clear_framebuffers()
+void Renderer::clear_framebuffers()
 {
 	CommandWriter cw(RenderCommand::ClearFramebuffers);
 	cw.submit();
 }
 
-void MainRenderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath)
+void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath)
 {
 	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
@@ -704,7 +700,7 @@ void MainRenderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& 
 	cw.submit();
 }
 
-void MainRenderer::destroy(IndexBufferHandle handle)
+void Renderer::destroy(IndexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 	handle.release();
@@ -714,7 +710,7 @@ void MainRenderer::destroy(IndexBufferHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(VertexBufferLayoutHandle handle)
+void Renderer::destroy(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 	handle.release();
@@ -724,7 +720,7 @@ void MainRenderer::destroy(VertexBufferLayoutHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(VertexBufferHandle handle)
+void Renderer::destroy(VertexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 	handle.release();
@@ -734,7 +730,7 @@ void MainRenderer::destroy(VertexBufferHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(VertexArrayHandle handle)
+void Renderer::destroy(VertexArrayHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
 	handle.release();
@@ -744,7 +740,7 @@ void MainRenderer::destroy(VertexArrayHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(UniformBufferHandle handle)
+void Renderer::destroy(UniformBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 	handle.release();
@@ -754,7 +750,7 @@ void MainRenderer::destroy(UniformBufferHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(ShaderStorageBufferHandle handle)
+void Renderer::destroy(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 	handle.release();
@@ -764,7 +760,7 @@ void MainRenderer::destroy(ShaderStorageBufferHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(ShaderHandle handle)
+void Renderer::destroy(ShaderHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
 	handle.release();
@@ -774,7 +770,7 @@ void MainRenderer::destroy(ShaderHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(TextureHandle handle)
+void Renderer::destroy(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
 	handle.release();
@@ -784,7 +780,7 @@ void MainRenderer::destroy(TextureHandle handle)
 	cw.submit();
 }
 
-void MainRenderer::destroy(FramebufferHandle handle)
+void Renderer::destroy(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
 	handle.release();
@@ -1238,7 +1234,7 @@ void RenderQueue::sort()
     std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
 }
 
@@ -1331,7 +1327,7 @@ static void handle_state(uint64_t state_flags)
 	}
 }
 
-void MainRenderer::render_dispatch(memory::LinearBuffer<>& buf)
+void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
@@ -1420,7 +1416,7 @@ void RenderQueue::flush()
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
 		command_buffer_.storage.seek(cmd);
-		MainRenderer::render_dispatch(command_buffer_.storage);
+		Renderer::render_dispatch(command_buffer_.storage);
 	}
 }
 
@@ -1448,16 +1444,16 @@ static void sort_commands()
     std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
     std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
-        	return item1.first > item2.first;
+        	return item1.first < item2.first;
         });
 }
 
-void MainRenderer::flush()
+void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
     
@@ -1468,19 +1464,20 @@ void MainRenderer::flush()
 	sort_commands();
 	// Dispatch pre buffer commands
 	flush_command_buffer(s_storage->pre_buffer_);
-	// Sort and flush each queue
-	for(auto& queue: s_storage->queues_)
-	{
-		queue.sort();
-		queue.flush();
-		queue.reset();
-	}
+	// Sort, flush and reset queue
+	s_storage->queue_.sort();
+	s_storage->queue_.flush();
+	s_storage->queue_.reset();
 	// Dispatch post buffer commands
 	flush_command_buffer(s_storage->post_buffer_);
 	// Reset auxiliary memory arena for next frame
 	s_storage->auxiliary_arena_.reset();
 	// Reset resource arena for next frame
 	filesystem::reset_arena();
+
+	// Execute callbacks
+	for(auto&& callback: s_storage->end_frame_callbacks_)
+		callback();
 
 	if(s_storage->profiling_enabled)
 	{
