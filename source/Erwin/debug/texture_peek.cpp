@@ -94,7 +94,6 @@ void TexturePeek::init()
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 	s_storage.pass_state_ = state.encode();
 }
 
@@ -125,7 +124,7 @@ void TexturePeek::register_framebuffer(const std::string& framebuffer_name)
 	for(uint32_t ii=0; ii<ntex; ++ii)
 	{
 		TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ii);
-		std::string tex_name = framebuffer_name + std::to_string(ii);
+		std::string tex_name = framebuffer_name + "_" + std::to_string(ii);
 		register_texture(pane_index, texture_handle, tex_name, false);
 	}
 
@@ -165,15 +164,14 @@ void TexturePeek::render(uint8_t layer_id)
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
 
     // Submit draw call
-	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
-	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
-	dc.set_texture(current_texture);
-
 	// WTF: If layer_id is set, command is dispatched at the end of frame like I would want it to,
 	// but it fails miserably and the whole GUI disappears. I observed that setting the key this way
 	// dispatches the command at the beginning of the frame, which works, despite showing the last
 	// frame textures.
-	dc.set_key_sequence(0, 0/*layer_id*/);
+	static DrawCall dc(DrawCall::Indexed, 0, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
+	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
+	dc.set_texture(current_texture);
+	dc.set_key_sequence(0);
 	Renderer::submit(dc);
 #endif
 }

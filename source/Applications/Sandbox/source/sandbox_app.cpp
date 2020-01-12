@@ -19,8 +19,8 @@ void Sandbox::on_load()
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 #ifdef W_DEBUG
-    TexturePeek::register_framebuffer("fb_forward");
-    TexturePeek::register_framebuffer("fb_2d_raw");
+    TexturePeek::register_framebuffer("LBuffer");
+    TexturePeek::register_framebuffer("SpriteBuffer");
 #endif
     
     set_layer_enabled(0, layer3d_enabled_);

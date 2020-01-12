@@ -132,11 +132,16 @@ struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;
 
-	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name):
-	count(0),
-	storage(area, size, debug_name)
+	CommandBuffer() = default;
+	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name)
 	{
+		init(area, size, debug_name);
+	}
 
+	inline void init(memory::HeapArea& area, std::size_t size, const char* debug_name)
+	{
+		count = 0;
+		storage.init(area, size, debug_name);
 	}
 
 	inline void reset()
@@ -156,8 +161,11 @@ class RenderQueue
 public:
 	friend class Renderer;
 
+	RenderQueue() = default;
 	RenderQueue(memory::HeapArea& area);
 	~RenderQueue();
+
+	void init(memory::HeapArea& area);
 
 	// * These functions change the queue state persistently
 	// Set clear color for this queue
@@ -225,7 +233,7 @@ struct DrawCall
 	SortKey key;
 	DrawCallType type;
 
-	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
+	DrawCall(DrawCallType dc_type, uint8_t layer_id, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
 		type             = dc_type;
 		data.state_flags = state;
@@ -237,6 +245,7 @@ struct DrawCall
 		instance_data.SSBO_size  = 0;
 
 		// Setup sorting key
+		key.view = (uint16_t(layer_id)<<8);
 		key.shader = data.shader.index; // NOTE(ndoxx): Overflow when shader index is greater than 255
 	}
 
@@ -281,24 +290,22 @@ struct DrawCall
 	}
 
 	// Compute the sorting key for depth ascending/descending policies
-	inline void set_key_depth(float depth, uint8_t layer_id)
+	inline void set_key_depth(float depth)
 	{
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		
 		// Extract render target ID to use as view ID
 		key.blending = PassState::is_transparent(data.state_flags);
-		key.view = uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
-		key.view |= (uint16_t(layer_id)<<8);
+		key.view |= uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
 		key.order = PassState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
 
 	// Compute the sorting key for the sequential policy
-	inline void set_key_sequence(uint32_t sequence, uint8_t layer_id)
+	inline void set_key_sequence(uint32_t sequence)
 	{
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		key.blending = false;
-		key.view = (uint16_t(layer_id)<<8);
 		key.sequence = sequence;
 		key.order = SortKey::Order::Sequential;
 	}

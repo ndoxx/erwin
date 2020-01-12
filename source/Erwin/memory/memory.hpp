@@ -330,7 +330,13 @@ template <typename ThreadPolicyT=policy::SingleThread>
 class LinearBuffer
 {
 public:
+	LinearBuffer() = default;
 	LinearBuffer(HeapArea& area, std::size_t size, const char* debug_name)
+	{
+		init(area, size, debug_name);
+	}
+
+	inline void init(HeapArea& area, std::size_t size, const char* debug_name)
 	{
     	std::pair<void*,void*> range = area.require_block(size, debug_name);
     	begin_ = static_cast<uint8_t*>(range.first);

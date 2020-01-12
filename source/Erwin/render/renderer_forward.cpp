@@ -38,7 +38,6 @@ static struct ForwardRenderer3DStorage
 	// Resources
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
-	FramebufferHandle forward_fbo;
 
 	// Data
 	PassUBOData pass_ubo_data;
@@ -56,16 +55,6 @@ static struct ForwardRenderer3DStorage
 void ForwardRenderer::init()
 {
     W_PROFILE_FUNCTION()
-
-    // Create framebuffer for forward pass
-    {
-	    FramebufferLayout layout =
-	    {
-	        {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}, // For bloom effect
-	    };
-	    s_storage.forward_fbo = FramebufferPool::create_framebuffer("fb_forward"_h, make_scope<FbRatioConstraint>(), layout, true);
-	}
 
 	// Setup UBOs and init storage
 	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
@@ -93,11 +82,10 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 
 	// Pass state
 	PassState state;
-	state.render_target = FramebufferPool::get_framebuffer("fb_forward"_h);
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = options.get_transparency() ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
-	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
 	s_storage.pass_state = state.encode();
 	s_storage.layer_id = options.get_layer_id();
@@ -144,7 +132,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	
-	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
+	DrawCall dc(DrawCall::Indexed, s_storage.layer_id, s_storage.pass_state, material.shader, VAO);
 	dc.set_UBO(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
 		dc.set_UBO(material.ubo, material.data, material.data_size, DrawCall::CopyData, 1);
@@ -154,8 +142,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
-
-	dc.set_key_depth(depth, s_storage.layer_id);
+	dc.set_key_depth(depth);
 	Renderer::submit(dc);
 
 	++s_storage.num_draw_calls;

@@ -129,20 +129,19 @@ struct FramebufferTextureVector
 	std::vector<TextureHandle> handles;
 };
 
-struct RendererStorage
+static struct RendererStorage
 {
-	RendererStorage(memory::HeapArea& area):
-	renderer_memory_(area),
-	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre"),
-	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post"),
-	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary"),
-	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles"),
-	queue_(renderer_memory_)
+	RendererStorage() = default;
+	~RendererStorage() = default;
+
+	inline void init(memory::HeapArea* area)
 	{
-#ifdef W_DEBUG
-		auxiliary_arena_.set_debug_name("Auxiliary");
-		handle_arena_.set_debug_name("RenderHandles");
-#endif
+		renderer_memory_ = area;
+		pre_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre");
+		post_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post");
+		auxiliary_arena_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary");
+		handle_arena_.init(*renderer_memory_, k_handle_alloc_size, "RenderHandles");
+		queue_.init(*renderer_memory_);
 
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
 		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
@@ -163,22 +162,27 @@ struct RendererStorage
 		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
 	}
 
-	~RendererStorage()
+	inline void release()
 	{
+		for(int ii=0; ii<k_max_render_handles; ++ii)
+		{
+			index_buffers[ii] = nullptr;
+			vertex_buffer_layouts[ii] = nullptr;
+			vertex_buffers[ii] = nullptr;
+			vertex_arrays[ii] = nullptr;
+			uniform_buffers[ii] = nullptr;
+			shader_storage_buffers[ii] = nullptr;
+			textures[ii] = nullptr;
+			shaders[ii] = nullptr;
+			framebuffers[ii] = nullptr;
+		}
+
+		default_framebuffer_.release();
+
 		// Destroy handle pools
 		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(handle_arena_);
 		FOR_ALL_HANDLES
 		#undef DO_ACTION
-
-		for(auto& ref: index_buffers) ref = nullptr;
-		for(auto& ref: vertex_buffer_layouts) ref = nullptr;
-		for(auto& ref: vertex_buffers) ref = nullptr;
-		for(auto& ref: vertex_arrays) ref = nullptr;
-		for(auto& ref: uniform_buffers) ref = nullptr;
-		for(auto& ref: shader_storage_buffers) ref = nullptr;
-		for(auto& ref: textures) ref = nullptr;
-		for(auto& ref: shaders) ref = nullptr;
-		for(auto& ref: framebuffers) ref = nullptr;
 	}
 
 	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
@@ -201,15 +205,13 @@ struct RendererStorage
 	bool profiling_enabled;
 	RendererStats stats;
 
-	memory::HeapArea& renderer_memory_;
+	memory::HeapArea* renderer_memory_;
 	CommandBuffer pre_buffer_;
 	CommandBuffer post_buffer_;
 	Renderer::AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
-
 	RenderQueue queue_;
-};
-std::unique_ptr<RendererStorage> s_storage;
+} s_storage;
 
 void Renderer::init(memory::HeapArea& area)
 {
@@ -217,10 +219,23 @@ void Renderer::init(memory::HeapArea& area)
 	DLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
-	s_storage = std::make_unique<RendererStorage>(area);
-	s_storage->query_timer = QueryTimer::create();
-	s_storage->profiling_enabled = false;
-	s_storage->default_framebuffer_ = FramebufferHandle::acquire();
+	s_storage.init(&area);
+	s_storage.query_timer = QueryTimer::create();
+	s_storage.profiling_enabled = false;
+	s_storage.default_framebuffer_ = FramebufferHandle::acquire();
+
+	DLOGI << "done" << std::endl;
+
+	DLOGN("render") << "[Renderer] Creating main render targets." << std::endl;
+	// Create main render targets
+	{
+	    FramebufferLayout layout =
+	    {
+	        {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}, // For bloom effect
+	    };
+	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
+	}
 
 	DLOGI << "done" << std::endl;
 }
@@ -230,62 +245,60 @@ void Renderer::shutdown()
     W_PROFILE_RENDER_FUNCTION()
 	flush();
 	DLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
-	s_storage->default_framebuffer_.release();
-	RendererStorage* rs = s_storage.release();
-	delete rs;
+	s_storage.release();
 	DLOGI << "done" << std::endl;
 }
 
 RenderQueue& Renderer::get_queue()
 {
-	return s_storage->queue_;
+	return s_storage.queue_;
 }
 
 Renderer::AuxArena& Renderer::get_arena()
 {
-	return s_storage->auxiliary_arena_;
+	return s_storage.auxiliary_arena_;
 }
 
 void Renderer::set_end_frame_callback(std::function<void(void)> callback)
 {
-	s_storage->end_frame_callbacks_.push_back(callback);
+	s_storage.end_frame_callbacks_.push_back(callback);
 }
 
 #ifdef W_DEBUG
 void Renderer::set_profiling_enabled(bool value)
 {
-	s_storage->profiling_enabled = value;
+	s_storage.profiling_enabled = value;
 }
 
 const RendererStats& Renderer::get_stats()
 {
-	return s_storage->stats;
+	return s_storage.stats;
 }
 #endif
 
 FramebufferHandle Renderer::default_render_target()
 {
-	return s_storage->default_framebuffer_;
+	return s_storage.default_framebuffer_;
 }
 
 TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	W_ASSERT(index < s_storage->framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
-	return s_storage->framebuffer_textures_[handle.index].handles[index];
+	W_ASSERT(index < s_storage.framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
+	return s_storage.framebuffer_textures_[handle.index].handles[index];
 }
 
 uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	return s_storage->framebuffer_textures_[handle.index].handles.size();
+	return s_storage.framebuffer_textures_[handle.index].handles.size();
 }
 
 #ifdef W_DEBUG
 void* Renderer::get_native_texture_handle(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-	return s_storage->textures[handle.index]->get_native_handle();
+	return s_storage.textures[handle.index]->get_native_handle();
 }
 #endif
 
@@ -294,7 +307,7 @@ VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector
 	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-	s_storage->vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>((BufferLayoutElement*)elements.data(), elements.size());
+	s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>((BufferLayoutElement*)elements.data(), elements.size());
 
 	return handle;
 }
@@ -303,7 +316,7 @@ const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle 
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
-	return *s_storage->vertex_buffer_layouts[handle.index];
+	return *s_storage.vertex_buffer_layouts[handle.index];
 }
 
 /*
@@ -385,8 +398,8 @@ private:
 	{
 		switch(phase)
 		{
-			case Phase::Pre:  return s_storage->pre_buffer_;
-			case Phase::Post: return s_storage->post_buffer_;
+			case Phase::Pre:  return s_storage.pre_buffer_;
+			case Phase::Post: return s_storage.post_buffer_;
 		}
 	}
 
@@ -411,7 +424,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
 	uint32_t* auxiliary = nullptr;
 	if(index_data)
 	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage->auxiliary_arena_);
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
 		memcpy(auxiliary, index_data, count * sizeof(uint32_t));
 	}
 	else
@@ -440,7 +453,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
 	float* auxiliary = nullptr;
 	if(vertex_data)
 	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(float, count, s_storage->auxiliary_arena_);
+		auxiliary = W_NEW_ARRAY_DYNAMIC(float, count, s_storage.auxiliary_arena_);
 		memcpy(auxiliary, vertex_data, count * sizeof(float));
 	}
 	else
@@ -485,7 +498,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, voi
 	uint8_t* auxiliary = nullptr;
 	if(data)
 	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 		memcpy(auxiliary, data, size);
 	}
 	else
@@ -512,7 +525,7 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
 	uint8_t* auxiliary = nullptr;
 	if(data)
 	{
-		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+		auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 		memcpy(auxiliary, data, size);
 	}
 	else
@@ -571,11 +584,11 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 		W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
 		texture_vector.handles.push_back(tex_handle);
 	}
-	s_storage->framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
+	s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
 	uint32_t count = layout.get_count();
 
 	// Allocate auxiliary data
-	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, count, s_storage->auxiliary_arena_);
+	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, count, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, layout.data(), count * sizeof(FramebufferLayoutElement));
 
 	CommandWriter cw(RenderCommand::CreateFramebuffer);
@@ -596,7 +609,7 @@ void Renderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uin
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 	W_ASSERT(data, "No data!");
 
-	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage->auxiliary_arena_);
+	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, count);
 
 	CommandWriter cw(RenderCommand::UpdateIndexBuffer);
@@ -611,7 +624,7 @@ void Renderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint3
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 	W_ASSERT(data, "No data!");
 
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
 	CommandWriter cw(RenderCommand::UpdateVertexBuffer);
@@ -626,7 +639,7 @@ void Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uin
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 	W_ASSERT(data, "No data!");
 
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
 	CommandWriter cw(RenderCommand::UpdateUniformBuffer);
@@ -641,7 +654,7 @@ void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, vo
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 	W_ASSERT(data, "No data!");
 
-	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage->auxiliary_arena_);
+	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
 	CommandWriter cw(RenderCommand::UpdateShaderStorageBuffer);
@@ -820,7 +833,7 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&mode);
 	buf.read(&auxiliary);
 
-	s_storage->index_buffers[handle.index] = IndexBuffer::create(auxiliary, count, primitive, mode);
+	s_storage.index_buffers[handle.index] = IndexBuffer::create(auxiliary, count, primitive, mode);
 }
 
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -838,8 +851,8 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&mode);
 	buf.read(&auxiliary);
 
-	const auto& layout = *s_storage->vertex_buffer_layouts[layout_hnd.index];
-	s_storage->vertex_buffers[handle.index] = VertexBuffer::create(auxiliary, count, layout, mode);
+	const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
+	s_storage.vertex_buffers[handle.index] = VertexBuffer::create(auxiliary, count, layout, mode);
 }
 
 void create_vertex_array(memory::LinearBuffer<>& buf)
@@ -853,10 +866,10 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
 	buf.read(&vb);
 	buf.read(&ib);
 
-	s_storage->vertex_arrays[handle.index] = VertexArray::create();
-	s_storage->vertex_arrays[handle.index]->set_vertex_buffer(s_storage->vertex_buffers[vb.index]);
+	s_storage.vertex_arrays[handle.index] = VertexArray::create();
+	s_storage.vertex_arrays[handle.index]->set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
 	if(ib.is_valid())
-		s_storage->vertex_arrays[handle.index]->set_index_buffer(s_storage->index_buffers[ib.index]);
+		s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
 }
 
 void create_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -874,7 +887,7 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read_str(name);
 	buf.read(&auxiliary);
 
-	s_storage->uniform_buffers[handle.index] = UniformBuffer::create(name, auxiliary, size, mode);
+	s_storage.uniform_buffers[handle.index] = UniformBuffer::create(name, auxiliary, size, mode);
 }
 
 void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -892,7 +905,7 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read_str(name);
 	buf.read(&auxiliary);
 
-	s_storage->shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, auxiliary, size, mode);
+	s_storage.shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, auxiliary, size, mode);
 }
 
 void create_shader(memory::LinearBuffer<>& buf)
@@ -907,10 +920,10 @@ void create_shader(memory::LinearBuffer<>& buf)
 	buf.read_str(name);
 
 	hash_t hname = H_(name.c_str());
-	W_ASSERT(s_storage->shader_names_.find(hname)==s_storage->shader_names_.end(), "Shader already loaded.");
+	W_ASSERT(s_storage.shader_names_.find(hname)==s_storage.shader_names_.end(), "Shader already loaded.");
 
-	s_storage->shaders[handle.index] = Shader::create(name, fs::path(filepath));
-	s_storage->shader_names_.insert(std::pair(hname, handle));
+	s_storage.shaders[handle.index] = Shader::create(name, fs::path(filepath));
+	s_storage.shader_names_.insert(std::pair(hname, handle));
 }
 
 void create_texture_2D(memory::LinearBuffer<>& buf)
@@ -922,7 +935,7 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	buf.read(&descriptor);
 
-	s_storage->textures[handle.index] = Texture2D::create(descriptor);
+	s_storage.textures[handle.index] = Texture2D::create(descriptor);
 }
 
 void create_framebuffer(memory::LinearBuffer<>& buf)
@@ -945,13 +958,13 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	buf.read(&auxiliary);
 
 	FramebufferLayout layout(auxiliary, count);
-	s_storage->framebuffers[handle.index] = Framebuffer::create(width, height, layout, depth, stencil);
+	s_storage.framebuffers[handle.index] = Framebuffer::create(width, height, layout, depth, stencil);
 
 	// Register framebuffer textures as regular textures accessible by handles
-	auto& fb = s_storage->framebuffers[handle.index];
-	const auto& texture_vector = s_storage->framebuffer_textures_[handle.index];
+	auto& fb = s_storage.framebuffers[handle.index];
+	const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
 	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage->textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
+		s_storage.textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
@@ -965,7 +978,7 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&count);
 	buf.read(&auxiliary);
 
-	s_storage->index_buffers[handle.index]->map(auxiliary, count);
+	s_storage.index_buffers[handle.index]->map(auxiliary, count);
 }
 
 void update_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -979,7 +992,7 @@ void update_vertex_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&size);
 	buf.read(&auxiliary);
 
-	s_storage->vertex_buffers[handle.index]->map(auxiliary, size);
+	s_storage.vertex_buffers[handle.index]->map(auxiliary, size);
 }
 
 void update_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -993,7 +1006,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&size);
 	buf.read(&auxiliary);
 
-	s_storage->uniform_buffers[handle.index]->map(auxiliary);
+	s_storage.uniform_buffers[handle.index]->map(auxiliary);
 }
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1007,7 +1020,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&size);
 	buf.read(&auxiliary);
 
-	s_storage->shader_storage_buffers[handle.index]->map(auxiliary, size);
+	s_storage.shader_storage_buffers[handle.index]->map(auxiliary, size);
 }
 
 void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -1019,8 +1032,8 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&shader_handle);
 	buf.read(&ubo_handle);
 
-	auto& shader = *s_storage->shaders[shader_handle.index];
-	shader.attach_uniform_buffer(s_storage->uniform_buffers[ubo_handle.index]);
+	auto& shader = *s_storage.shaders[shader_handle.index];
+	shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
 }
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1032,8 +1045,8 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&shader_handle);
 	buf.read(&ssbo_handle);
 
-	auto& shader = *s_storage->shaders[shader_handle.index];
-	shader.attach_shader_storage(s_storage->shader_storage_buffers[ssbo_handle.index]);
+	auto& shader = *s_storage.shaders[shader_handle.index];
+	shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
 }
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
@@ -1048,24 +1061,24 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	buf.read(&width);
 	buf.read(&height);
 
-	bool has_depth   = s_storage->framebuffers[fb_handle.index]->has_depth();
-	bool has_stencil = s_storage->framebuffers[fb_handle.index]->has_stencil();
-	auto layout      = s_storage->framebuffers[fb_handle.index]->get_layout();
+	bool has_depth   = s_storage.framebuffers[fb_handle.index]->has_depth();
+	bool has_stencil = s_storage.framebuffers[fb_handle.index]->has_stencil();
+	auto layout      = s_storage.framebuffers[fb_handle.index]->get_layout();
 
-	s_storage->framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
+	s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
 
 	// Update framebuffer textures
-	auto& fb = s_storage->framebuffers[fb_handle.index];
-	auto& texture_vector = s_storage->framebuffer_textures_[fb_handle.index];
+	auto& fb = s_storage.framebuffers[fb_handle.index];
+	auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
 	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage->textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
+		s_storage.textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
 void clear_framebuffers(memory::LinearBuffer<>& buf)
 {
 	FramebufferPool::traverse_framebuffers([](FramebufferHandle handle)
 	{
-		s_storage->framebuffers[handle.index]->bind();
+		s_storage.framebuffers[handle.index]->bind();
 		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG);
 	});
 }
@@ -1081,7 +1094,7 @@ void framebuffer_screenshot(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	buf.read_str(filepath);
 
-	s_storage->framebuffers[handle.index]->screenshot(filepath);
+	s_storage.framebuffers[handle.index]->screenshot(filepath);
 }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
@@ -1090,7 +1103,7 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 
 	IndexBufferHandle handle;
 	buf.read(&handle);
-	s_storage->index_buffers[handle.index] = nullptr;
+	s_storage.index_buffers[handle.index] = nullptr;
 }
 
 void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
@@ -1099,7 +1112,7 @@ void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 
 	VertexBufferLayoutHandle handle;
 	buf.read(&handle);
-	s_storage->vertex_buffer_layouts[handle.index] = nullptr;
+	s_storage.vertex_buffer_layouts[handle.index] = nullptr;
 }
 
 void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -1108,7 +1121,7 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 
 	VertexBufferHandle handle;
 	buf.read(&handle);
-	s_storage->vertex_buffers[handle.index] = nullptr;
+	s_storage.vertex_buffers[handle.index] = nullptr;
 }
 
 void destroy_vertex_array(memory::LinearBuffer<>& buf)
@@ -1117,7 +1130,7 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 
 	VertexArrayHandle handle;
 	buf.read(&handle);
-	s_storage->vertex_arrays[handle.index] = nullptr;
+	s_storage.vertex_arrays[handle.index] = nullptr;
 }
 
 void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -1126,7 +1139,7 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 
 	UniformBufferHandle handle;
 	buf.read(&handle);
-	s_storage->uniform_buffers[handle.index] = nullptr;
+	s_storage.uniform_buffers[handle.index] = nullptr;
 }
 
 void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1135,7 +1148,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 	ShaderStorageBufferHandle handle;
 	buf.read(&handle);
-	s_storage->shader_storage_buffers[handle.index] = nullptr;
+	s_storage.shader_storage_buffers[handle.index] = nullptr;
 }
 
 void destroy_shader(memory::LinearBuffer<>& buf)
@@ -1144,9 +1157,9 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 
 	ShaderHandle handle;
 	buf.read(&handle);
-	hash_t hname = H_(s_storage->shaders[handle.index]->get_name().c_str());
-	s_storage->shaders[handle.index] = nullptr;
-	s_storage->shader_names_.erase(hname);
+	hash_t hname = H_(s_storage.shaders[handle.index]->get_name().c_str());
+	s_storage.shaders[handle.index] = nullptr;
+	s_storage.shader_names_.erase(hname);
 }
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)
@@ -1155,7 +1168,7 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 
 	TextureHandle handle;
 	buf.read(&handle);
-	s_storage->textures[handle.index] = nullptr;
+	s_storage.textures[handle.index] = nullptr;
 }
 
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
@@ -1164,17 +1177,17 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 
 	FramebufferHandle handle;
 	buf.read(&handle);
-	s_storage->framebuffers[handle.index] = nullptr;
+	s_storage.framebuffers[handle.index] = nullptr;
 
 	// Delete framebuffer textures
-	auto& texture_vector = s_storage->framebuffer_textures_[handle.index];
+	auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
 	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
 	{
 		uint16_t tex_index = texture_vector.handles[ii].index;
-		s_storage->textures[tex_index] = nullptr;
+		s_storage.textures[tex_index] = nullptr;
 		texture_vector.handles[ii].release();
 	}
-	s_storage->framebuffer_textures_.erase(handle.index);
+	s_storage.framebuffer_textures_.erase(handle.index);
 }
 
 } // namespace dispatch
@@ -1213,16 +1226,20 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::destroy_framebuffer,
 };
 
-RenderQueue::RenderQueue(memory::HeapArea& area):
-clear_color_(0.f,0.f,0.f,1.f),
-command_buffer_(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue")
+RenderQueue::RenderQueue(memory::HeapArea& area)
 {
-
+	init(area);
 }
 
 RenderQueue::~RenderQueue()
 {
 
+}
+
+void RenderQueue::init(memory::HeapArea& area)
+{
+	clear_color_ = {0.f,0.f,0.f,0.f};
+	command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
 }
 
 void RenderQueue::sort()
@@ -1278,14 +1295,14 @@ static void handle_state(uint64_t state_flags)
 
 		if(has_mutated(state_flags, last_state, k_framebuffer_mask))
 		{
-			if(state.render_target == s_storage->default_framebuffer_)
+			if(state.render_target == s_storage.default_framebuffer_)
 			{
 				Gfx::device->bind_default_framebuffer();
 				glm::vec2 vp_size = FramebufferPool::get_screen_size();
 				Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
 			}
 			else
-				s_storage->framebuffers[state.render_target.index]->bind();
+				s_storage.framebuffers[state.render_target.index]->bind();
 
 			int clear_flags = ClearFlags::CLEAR_COLOR_FLAG
 							| (state.depth_stencil_state.depth_test_enabled   ? ClearFlags::CLEAR_DEPTH_FLAG : ClearFlags::CLEAR_NONE)
@@ -1341,7 +1358,7 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 	// * Detect if a new shader needs to be used, update and bind shader resources
 	static uint16_t last_shader_index = k_invalid_handle;
 	static uint16_t last_texture_index[k_max_texture_slots];
-	auto& shader = *s_storage->shaders[data.shader.index];
+	auto& shader = *s_storage.shaders[data.shader.index];
 	if(data.shader.index != last_shader_index)
 	{
 		shader.bind();
@@ -1354,7 +1371,7 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 		// Avoid texture switching if not necessary
 		if(data.textures[slot].index != last_texture_index[slot])
 		{
-			auto& texture = *s_storage->textures[data.textures[slot].index];
+			auto& texture = *s_storage.textures[data.textures[slot].index];
 			shader.attach_texture_2D(texture, slot);
 			last_texture_index[slot] = data.textures[slot].index;
 		}
@@ -1365,7 +1382,7 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 	{
 		if(data.UBOs_data[slot])
 		{
-			auto& ubo = *s_storage->uniform_buffers[data.UBOs[slot].index];
+			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
 			ubo.stream(data.UBOs_data[slot], 0, 0);
 		}
 		++slot;
@@ -1373,7 +1390,7 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 
 	// * Execute draw call
 	static uint16_t last_VAO_index = k_invalid_handle;
-	auto& va = *s_storage->vertex_arrays[data.VAO.index];
+	auto& va = *s_storage.vertex_arrays[data.VAO.index];
 	// Avoid switching vertex array when possible
 	if(data.VAO.index != last_VAO_index)
 	{
@@ -1393,7 +1410,7 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 			buf.read(&idata);
 			if(idata.SSBO_data)
 			{
-				auto& ssbo = *s_storage->shader_storage_buffers[idata.SSBO.index];
+				auto& ssbo = *s_storage.shader_storage_buffers[idata.SSBO.index];
 				ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
 			}
 			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
@@ -1441,12 +1458,12 @@ static void sort_commands()
     W_PROFILE_RENDER_FUNCTION()
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
-    std::sort(std::begin(s_storage->pre_buffer_.entries), std::begin(s_storage->pre_buffer_.entries) + s_storage->pre_buffer_.count, 
+    std::sort(std::begin(s_storage.pre_buffer_.entries), std::begin(s_storage.pre_buffer_.entries) + s_storage.pre_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
         });
-    std::sort(std::begin(s_storage->post_buffer_.entries), std::begin(s_storage->post_buffer_.entries) + s_storage->post_buffer_.count, 
+    std::sort(std::begin(s_storage.post_buffer_.entries), std::begin(s_storage.post_buffer_.entries) + s_storage.post_buffer_.count, 
         [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
@@ -1457,32 +1474,32 @@ void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
     
-	if(s_storage->profiling_enabled)
-		s_storage->query_timer->start();
+	if(s_storage.profiling_enabled)
+		s_storage.query_timer->start();
 
 	// Sort command buffers
 	sort_commands();
 	// Dispatch pre buffer commands
-	flush_command_buffer(s_storage->pre_buffer_);
+	flush_command_buffer(s_storage.pre_buffer_);
 	// Sort, flush and reset queue
-	s_storage->queue_.sort();
-	s_storage->queue_.flush();
-	s_storage->queue_.reset();
+	s_storage.queue_.sort();
+	s_storage.queue_.flush();
+	s_storage.queue_.reset();
 	// Dispatch post buffer commands
-	flush_command_buffer(s_storage->post_buffer_);
+	flush_command_buffer(s_storage.post_buffer_);
 	// Reset auxiliary memory arena for next frame
-	s_storage->auxiliary_arena_.reset();
+	s_storage.auxiliary_arena_.reset();
 	// Reset resource arena for next frame
 	filesystem::reset_arena();
 
 	// Execute callbacks
-	for(auto&& callback: s_storage->end_frame_callbacks_)
+	for(auto&& callback: s_storage.end_frame_callbacks_)
 		callback();
 
-	if(s_storage->profiling_enabled)
+	if(s_storage.profiling_enabled)
 	{
-		auto render_duration = s_storage->query_timer->stop();
-		s_storage->stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
+		auto render_duration = s_storage.query_timer->stop();
+		s_storage.stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
 	}
 }
 

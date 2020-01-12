@@ -103,7 +103,7 @@ void Renderer2D::init()
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("fb_2d_raw"_h, make_scope<FbRatioConstraint>(), layout, true);
+    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
 
 	storage.num_draw_calls = 0;
 	storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
@@ -144,11 +144,10 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
     W_PROFILE_FUNCTION()
 
 	PassState state;
-	state.render_target = FramebufferPool::get_framebuffer("fb_2d_raw"_h);
+	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
-	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
 	// Reset stats
 	storage.num_draw_calls = 0;
@@ -179,11 +178,11 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		static DrawCall dc(DrawCall::IndexedInstanced, storage.pass_state, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, storage.layer_id, storage.pass_state, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(storage.pass_ubo, &storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		dc.set_key_depth(batch.max_depth, storage.layer_id);
+		dc.set_key_depth(batch.max_depth);
 		Renderer::submit(dc);
 
 		++storage.num_draw_calls;
@@ -249,8 +248,6 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	batch.texture = font.texture;
 	batch.count = 0;
 
-    float ar = storage.fb_size.x / storage.fb_size.y;
-
 	std::string::const_iterator itc;
     for(itc = text.begin(); itc != text.end(); ++itc)
     {
@@ -277,11 +274,11 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	{
 		glm::mat4 id(1.f);
 
-		static DrawCall dc(DrawCall::IndexedInstanced, storage.pass_state, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, storage.layer_id, storage.pass_state, storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		dc.set_key_depth(batch.max_depth, storage.layer_id);
+		dc.set_key_depth(batch.max_depth);
 		Renderer::submit(dc);
 
 		++storage.num_draw_calls;

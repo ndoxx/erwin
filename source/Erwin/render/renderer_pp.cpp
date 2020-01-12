@@ -134,15 +134,14 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 	// * For each bloom stage xx, render glow buffer to bloom_xx framebuffer
 	{
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 		{
 			state.render_target = s_storage.bloom_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_copy_shader, quad);
+			DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.bloom_copy_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			dc.set_key_sequence(s_storage.sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++);
 			Renderer::submit(dc);
 		}
 	}
@@ -163,10 +162,10 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
 
 			state.render_target = s_storage.bloom_tmp_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
+			DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(s_storage.sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++);
 			Renderer::submit(dc);
 		}
 	}
@@ -180,10 +179,10 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
 
 			state.render_target = s_storage.bloom_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
+			DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(s_storage.sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++);
 			Renderer::submit(dc);
 		}
 	}
@@ -191,10 +190,10 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 	// * Combine each stage output to a single texture
 	{
 		state.render_target = s_storage.bloom_combine_fbo;
-		DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_comb_shader, quad);
+		DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.bloom_comb_shader, quad);
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
-		dc.set_key_sequence(s_storage.sequence++, layer_id);
+		dc.set_key_sequence(s_storage.sequence++);
 		Renderer::submit(dc);
 	}
 }
@@ -222,7 +221,6 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 
 	// * For each bloom stage xx, given glow buffer as input,
 	//   perform horizontal blur, output to bloom_xx
@@ -233,10 +231,10 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
 
 			state.render_target = s_storage.bloom_fbos[ii];
-			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
+			DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(s_storage.sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++);
 			Renderer::submit(dc);
 		}
 	}
@@ -252,10 +250,10 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
 			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
 
-			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
+			DrawCall dc(DrawCall::Indexed, layer_id, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(s_storage.sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++);
 			Renderer::submit(dc);
 		}
 	}
@@ -272,14 +270,13 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
-	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
+	static DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
 	dc.set_UBO(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
-	dc.set_key_sequence(s_storage.sequence++, layer_id);
+	dc.set_key_sequence(s_storage.sequence++);
 	Renderer::submit(dc);
 }
 
@@ -292,11 +289,10 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index, uint8_t
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Light;
 	state.depth_stencil_state.depth_test_enabled = false;
-	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
-	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
+	static DrawCall dc(DrawCall::Indexed, layer_id, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
-	dc.set_key_sequence(s_storage.sequence++, layer_id);
+	dc.set_key_sequence(s_storage.sequence++);
 	Renderer::submit(dc);
 }
 
