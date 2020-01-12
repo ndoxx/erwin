@@ -134,15 +134,8 @@ static struct RendererStorage
 	RendererStorage() = default;
 	~RendererStorage() = default;
 
-	inline void init(memory::HeapArea* area)
+	inline void clear_resources()
 	{
-		renderer_memory_ = area;
-		pre_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre");
-		post_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post");
-		auxiliary_arena_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary");
-		handle_arena_.init(*renderer_memory_, k_handle_alloc_size, "RenderHandles");
-		queue_.init(*renderer_memory_);
-
 		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
 		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
 		std::fill(std::begin(vertex_buffers),         std::end(vertex_buffers),         nullptr);
@@ -152,6 +145,18 @@ static struct RendererStorage
 		std::fill(std::begin(textures),               std::end(textures),               nullptr);
 		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
 		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
+	}
+
+	inline void init(memory::HeapArea* area)
+	{
+		renderer_memory_ = area;
+		pre_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre");
+		post_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post");
+		auxiliary_arena_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary");
+		handle_arena_.init(*renderer_memory_, k_handle_alloc_size, "RenderHandles");
+		queue_.init(*renderer_memory_);
+
+		clear_resources();
 
 		// Init handle pools
 		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(handle_arena_);
@@ -164,19 +169,7 @@ static struct RendererStorage
 
 	inline void release()
 	{
-		for(int ii=0; ii<k_max_render_handles; ++ii)
-		{
-			index_buffers[ii] = nullptr;
-			vertex_buffer_layouts[ii] = nullptr;
-			vertex_buffers[ii] = nullptr;
-			vertex_arrays[ii] = nullptr;
-			uniform_buffers[ii] = nullptr;
-			shader_storage_buffers[ii] = nullptr;
-			textures[ii] = nullptr;
-			shaders[ii] = nullptr;
-			framebuffers[ii] = nullptr;
-		}
-
+		clear_resources();
 		default_framebuffer_.release();
 
 		// Destroy handle pools
