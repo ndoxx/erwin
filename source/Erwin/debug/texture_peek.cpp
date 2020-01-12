@@ -97,9 +97,6 @@ void TexturePeek::init()
 	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
 
 	s_storage.pass_state_ = state.encode();
-
-	auto& q_texture_view = MainRenderer::get_queue("Debug2D"_h);
-	q_texture_view.set_clear_color(state.rasterizer_state.clear_color); // TMP
 }
 
 uint32_t TexturePeek::new_pane(const std::string& name)
@@ -151,7 +148,7 @@ void TexturePeek::set_enabled(bool value)
 	s_storage.enabled_ = value;
 }
 
-void TexturePeek::render()
+void TexturePeek::render(uint8_t layer_id)
 {
 #ifdef W_DEBUG
     if(!s_storage.enabled_ || s_storage.panes_.size() == 0)
@@ -172,7 +169,8 @@ void TexturePeek::render()
 	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
-	MainRenderer::submit("Debug2D"_h, dc);
+	dc.set_key_sequence(0, layer_id);
+	MainRenderer::submit(dc);
 #endif
 }
 

@@ -136,7 +136,8 @@ struct RendererStorage
 	pre_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre"),
 	post_buffer_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB), "CB-Post"),
 	auxiliary_arena_(renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB), "Auxiliary"),
-	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles")
+	handle_arena_(renderer_memory_, k_handle_alloc_size, "RenderHandles"),
+	queue_(renderer_memory_)
 	{
 #ifdef W_DEBUG
 		auxiliary_arena_.set_debug_name("Auxiliary");
@@ -157,6 +158,9 @@ struct RendererStorage
 		#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(handle_arena_);
 		FOR_ALL_HANDLES
 		#undef DO_ACTION
+
+		// Init render queue
+		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
 	}
 
 	~RendererStorage()
@@ -190,9 +194,6 @@ struct RendererStorage
 
 	FramebufferHandle default_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-
-	std::vector<RenderQueue> queues_;
-	std::map<hash_t, uint32_t> queue_names_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 
 	WScope<QueryTimer> query_timer;
@@ -204,6 +205,8 @@ struct RendererStorage
 	CommandBuffer post_buffer_;
 	MainRenderer::AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
+
+	RenderQueue queue_;
 };
 std::unique_ptr<RendererStorage> s_storage;
 
@@ -232,22 +235,9 @@ void MainRenderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-RenderQueue& MainRenderer::create_queue(const std::string& name)
+RenderQueue& MainRenderer::get_queue()
 {
-    DLOG("render",1) << "[MainRenderer] Creating queue: " << WCC('n') << name << std::endl;
-    DLOGI << "Priority index: " << WCC('v') << s_storage->queues_.size() << std::endl;
-	hash_t hname = H_(name.c_str());
-	uint32_t index = s_storage->queues_.size();
-	s_storage->queues_.emplace_back(s_storage->renderer_memory_);
-	s_storage->queue_names_[hname] = index;
-	return s_storage->queues_.back();
-}
-
-RenderQueue& MainRenderer::get_queue(hash_t name)
-{
-	auto it = s_storage->queue_names_.find(name);
-	W_ASSERT(it != s_storage->queue_names_.end(), "Unknown queue name!");
-	return s_storage->queues_[it->second];
+	return s_storage->queue_;
 }
 
 MainRenderer::AuxArena& MainRenderer::get_arena()
@@ -1468,13 +1458,10 @@ void MainRenderer::flush()
 	sort_commands();
 	// Dispatch pre buffer commands
 	flush_command_buffer(s_storage->pre_buffer_);
-	// Sort and flush each queue
-	for(auto& queue: s_storage->queues_)
-	{
-		queue.sort();
-		queue.flush();
-		queue.reset();
-	}
+	// Sort, flush and reset queue
+	s_storage->queue_.sort();
+	s_storage->queue_.flush();
+	s_storage->queue_.reset();
 	// Dispatch post buffer commands
 	flush_command_buffer(s_storage->post_buffer_);
 	// Reset auxiliary memory arena for next frame

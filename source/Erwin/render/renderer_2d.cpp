@@ -155,7 +155,6 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 
 	storage.pass_state = state.encode();
 	storage.layer_id = layer_id;
-	MainRenderer::get_queue("Sprite2D"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
 
 	// Set scene data
 	storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -185,7 +184,7 @@ static void flush_batch(Batch2D& batch)
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit("Sprite2D"_h, dc);
+		MainRenderer::submit(dc);
 
 		++storage.num_draw_calls;
 		batch.count = 0;
@@ -283,7 +282,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_SSBO(storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
 		dc.set_key_depth(batch.max_depth, storage.layer_id);
-		MainRenderer::submit("Sprite2D"_h, dc);
+		MainRenderer::submit(dc);
 
 		++storage.num_draw_calls;
 	}

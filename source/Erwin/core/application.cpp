@@ -236,13 +236,6 @@ bool Application::init()
         // Create common geometry
         CommonGeometry::init();
 
-        MainRenderer::create_queue("Forward3D");
-        MainRenderer::create_queue("Sprite2D");
-        MainRenderer::create_queue("Blur");
-#ifdef W_DEBUG
-        MainRenderer::create_queue("Debug2D");
-#endif
-        MainRenderer::create_queue("Presentation");
 #ifdef W_DEBUG
         TexturePeek::init();
 #endif
@@ -358,7 +351,7 @@ void Application::run()
         }
 
 #ifdef W_DEBUG
-        TexturePeek::render();
+        TexturePeek::render(uint8_t(layer_stack_.size()));
 #endif
 
         MainRenderer::flush();

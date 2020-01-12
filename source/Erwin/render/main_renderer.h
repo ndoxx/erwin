@@ -72,12 +72,10 @@ public:
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
 	// * Draw call queue management and submission
-	// Create a render queue, specifying a name whose hash is used to retrieve it later on, and a draw order policy
-	static RenderQueue& 	 create_queue(const std::string& name);
-	// Get a render queue by name
-	static RenderQueue& 	 get_queue(hash_t name);
+	// Get the render queue
+	static RenderQueue& 	 get_queue();
 	// Send a draw call to a particular queue
-	static inline void 		 submit(hash_t queue, const DrawCall& dc);
+	static inline void 		 submit(const DrawCall& dc);
 	// Force renderer to dispatch all commands in command buffers and render queues
 	static void 			 flush();
 
@@ -175,9 +173,9 @@ private:
 	CommandBuffer command_buffer_;
 };
 
-inline void MainRenderer::submit(hash_t queue, const DrawCall& dc)
+inline void MainRenderer::submit(const DrawCall& dc)
 {
-	get_queue(queue).submit(dc);
+	get_queue().submit(dc);
 }
 
 struct DrawCall

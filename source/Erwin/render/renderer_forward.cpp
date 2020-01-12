@@ -106,9 +106,6 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	// Reset stats
 	s_storage.num_draw_calls = 0;
 
-	// TMP
-	MainRenderer::get_queue("Forward3D"_h).set_clear_color(state.rasterizer_state.clear_color);
-
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
 	float near = camera.get_frustum().near;
@@ -161,7 +158,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	}
 
 	dc.set_key_depth(depth, s_storage.layer_id);
-	MainRenderer::submit("Forward3D"_h, dc);
+	MainRenderer::submit(dc);
 
 	++s_storage.num_draw_calls;
 }

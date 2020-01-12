@@ -138,7 +138,6 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
 	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
-	MainRenderer::get_queue("Blur"_h).set_clear_color(state.rasterizer_state.clear_color);
 	// * For each bloom stage xx, render glow buffer to bloom_xx framebuffer
 	{
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
@@ -147,7 +146,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_copy_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_key_sequence(sequence++, layer_id);
-			MainRenderer::submit("Blur"_h, dc);
+			MainRenderer::submit(dc);
 		}
 	}
 
@@ -171,7 +170,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, layer_id);
-			MainRenderer::submit("Blur"_h, dc);
+			MainRenderer::submit(dc);
 		}
 	}
 
@@ -188,7 +187,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, layer_id);
-			MainRenderer::submit("Blur"_h, dc);
+			MainRenderer::submit(dc);
 		}
 	}
 
@@ -199,7 +198,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
 		dc.set_key_sequence(sequence++, layer_id);
-		MainRenderer::submit("Blur"_h, dc);
+		MainRenderer::submit(dc);
 	}
 }
 
@@ -228,7 +227,6 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
 	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
-	MainRenderer::get_queue("Blur"_h).set_clear_color(state.rasterizer_state.clear_color);
 
 	// * For each bloom stage xx, given glow buffer as input,
 	//   perform horizontal blur, output to bloom_xx
@@ -243,7 +241,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, layer_id);
-			MainRenderer::submit("Blur"_h, dc);
+			MainRenderer::submit(dc);
 		}
 	}
 
@@ -262,7 +260,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
 			dc.set_key_sequence(sequence++, layer_id);
-			MainRenderer::submit("Blur"_h, dc);
+			MainRenderer::submit(dc);
 		}
 	}
 }
@@ -280,15 +278,13 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	state.depth_stencil_state.depth_test_enabled = false;
 	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
-	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
-
 	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
 	dc.set_UBO(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
 	dc.set_key_sequence(s_storage.sequence++, layer_id);
-	MainRenderer::submit("Presentation"_h, dc);
+	MainRenderer::submit(dc);
 }
 
 void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index, uint8_t layer_id)
@@ -302,12 +298,10 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index, uint8_t
 	state.depth_stencil_state.depth_test_enabled = false;
 	state.rasterizer_state.clear_color = glm::vec4(0.0f,0.0f,0.0f,0.f);
 
-	MainRenderer::get_queue("Presentation"_h).set_clear_color(state.rasterizer_state.clear_color); // TMP
-
 	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(MainRenderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	dc.set_key_sequence(s_storage.sequence++, layer_id);
-	MainRenderer::submit("Presentation"_h, dc);
+	MainRenderer::submit(dc);
 }
 
 
