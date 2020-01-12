@@ -131,7 +131,6 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-	uint32_t sequence = 0;
 
 	PassState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
@@ -145,7 +144,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			state.render_target = s_storage.bloom_fbos[ii];
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_copy_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			dc.set_key_sequence(sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++, layer_id);
 			MainRenderer::submit(dc);
 		}
 	}
@@ -169,7 +168,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++, layer_id);
 			MainRenderer::submit(dc);
 		}
 	}
@@ -186,7 +185,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++, layer_id);
 			MainRenderer::submit(dc);
 		}
 	}
@@ -197,7 +196,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 		DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_comb_shader, quad);
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
-		dc.set_key_sequence(sequence++, layer_id);
+		dc.set_key_sequence(s_storage.sequence++, layer_id);
 		MainRenderer::submit(dc);
 	}
 }
@@ -213,7 +212,6 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-	uint32_t sequence = 0;
 
 	BlurUBOData blur_data;
 #if !BLOOM_RETAIL
@@ -240,7 +238,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++, layer_id);
 			MainRenderer::submit(dc);
 		}
 	}
@@ -259,7 +257,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			dc.set_key_sequence(sequence++, layer_id);
+			dc.set_key_sequence(s_storage.sequence++, layer_id);
 			MainRenderer::submit(dc);
 		}
 	}
