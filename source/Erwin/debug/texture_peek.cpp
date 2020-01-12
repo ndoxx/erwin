@@ -168,7 +168,12 @@ void TexturePeek::render(uint8_t layer_id)
 	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
-	dc.set_key_sequence(0, layer_id);
+
+	// WTF: If layer_id is set, command is dispatched at the end of frame like I would want it to,
+	// but it fails miserably and the whole GUI disappears. I observed that setting the key this way
+	// dispatches the command at the beginning of the frame, which works, despite showing the last
+	// frame textures.
+	dc.set_key_sequence(0, 0/*layer_id*/);
 	Renderer::submit(dc);
 #endif
 }

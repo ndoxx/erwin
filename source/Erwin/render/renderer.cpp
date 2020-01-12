@@ -1415,7 +1415,6 @@ void RenderQueue::flush()
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
-
 		command_buffer_.storage.seek(cmd);
 		Renderer::render_dispatch(command_buffer_.storage);
 	}
