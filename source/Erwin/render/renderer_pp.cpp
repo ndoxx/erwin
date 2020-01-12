@@ -6,10 +6,14 @@
 
 namespace erwin
 {
-#define BLOOM_RETAIL
+// Do not actively send Gaussian kernel data in retail build, blur shader will use a fixed array of coefficients
+#define BLOOM_RETAIL true
+// Round bloom FBO dimensions to the next power of 2
+#define BLOOM_FBO_NP2 false
+
 constexpr uint32_t k_bloom_stage_count = 3;
 
-#ifdef BLOOM_RETAIL
+#if BLOOM_RETAIL
 struct BlurUBOData
 {
 	glm::vec2 offset;
@@ -41,7 +45,7 @@ struct PPStorage
 	FramebufferHandle bloom_combine_fbo;
 	float bloom_stage_ratios[k_bloom_stage_count];
 
-#ifndef BLOOM_RETAIL
+#if !BLOOM_RETAIL
 	math::SeparableGaussianKernel gk; // For bloom
 #endif
 
@@ -65,9 +69,14 @@ void PostProcessingRenderer::init()
 			std::string fb_tmp_name = "bloom_tmp_" + std::to_string(ii);
 			hash_t h_fb_name     = H_(fb_name.c_str());
 			hash_t h_fb_tmp_name = H_(fb_tmp_name.c_str());
-			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(pow(2.f,ii+1.f));
+			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(2.f+ii);//1.f/(pow(2.f,ii+1.f));
+#if BLOOM_FBO_NP2
+			s_storage.bloom_fbos[ii]     = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
+			s_storage.bloom_tmp_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_tmp_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
+#else
 			s_storage.bloom_fbos[ii]     = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
 			s_storage.bloom_tmp_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_tmp_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
+#endif
 			// TexturePeek::register_framebuffer(fb_name);
 			// TexturePeek::register_framebuffer(fb_tmp_name);
 		}
@@ -80,8 +89,8 @@ void PostProcessingRenderer::init()
 	}
 
 	// Initialize Gaussian kernel for bloom blur passes
-#ifndef BLOOM_RETAIL
-	s_storage.gk.init(5,1.0f);
+#if !BLOOM_RETAIL
+	s_storage.gk.init(9,1.0f);
 #endif
 
 	// Create shaders
@@ -144,7 +153,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 	}
 
 	BlurUBOData blur_data;
-#ifndef BLOOM_RETAIL
+#if !BLOOM_RETAIL
 	blur_data.kernel_half_size = s_storage.gk.half_size;
 	memcpy(blur_data.kernel_weights, s_storage.gk.weights, math::k_max_kernel_coefficients);
 #endif
@@ -192,6 +201,70 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
 		dc.set_key_sequence(sequence++, 0);
 		MainRenderer::submit("Blur"_h, dc);
+	}
+}
+
+/*
+	Alternative way to render bloom effect, inspired by what I did in WCore.
+	No temporary FBO is used and bloom levels are combined using blending in lighten mode.
+	The effect is less subtle (hence more prone to visible flickering) and takes about 
+	the same time to render.
+*/
+void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_index)
+{
+	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	uint32_t sequence = 0;
+
+	BlurUBOData blur_data;
+#if !BLOOM_RETAIL
+	blur_data.kernel_half_size = s_storage.gk.half_size;
+	memcpy(blur_data.kernel_weights, s_storage.gk.weights, math::k_max_kernel_coefficients);
+#endif
+	glm::vec2 screen_size = FramebufferPool::get_screen_size();
+
+	PassState state;
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
+	MainRenderer::get_queue("Blur"_h).set_clear_color(state.rasterizer_state.clear_color);
+
+	// * For each bloom stage xx, given glow buffer as input,
+	//   perform horizontal blur, output to bloom_xx
+	{
+		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
+		{
+			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
+			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
+
+			state.render_target = s_storage.bloom_fbos[ii];
+			DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.bloom_blur_shader, quad);
+			dc.set_texture(MainRenderer::get_framebuffer_texture(source_fb_handle, glow_index));
+			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
+			dc.set_key_sequence(sequence++, 0);
+			MainRenderer::submit("Blur"_h, dc);
+		}
+	}
+
+	state.blend_state = BlendState::Light;
+	state.render_target = s_storage.bloom_combine_fbo;
+	uint64_t state_flags = state.encode();
+	// * For each bloom stage xx, given framebuffer bloom_tmp_xx as input,
+	//   perform vertical blur, output to bloom_combine
+	{
+		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
+		{
+			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
+			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
+
+			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
+			dc.set_texture(MainRenderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
+			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
+			dc.set_key_sequence(sequence++, 0);
+			MainRenderer::submit("Blur"_h, dc);
+		}
 	}
 }
 

@@ -39,18 +39,18 @@ static float gaussian_distribution(float x, float mu, float sigma)
     return exp(-d*d/(2 * sigma * sigma)) * n;
 };
 
-SeparableGaussianKernel::SeparableGaussianKernel(uint32_t half_size, float sigma)
+SeparableGaussianKernel::SeparableGaussianKernel(uint32_t size, float sigma)
 {
-	init(half_size, sigma);
+	init(size, sigma);
 }
 
-void SeparableGaussianKernel::init(uint32_t _half_size, float _sigma)
+void SeparableGaussianKernel::init(uint32_t size, float _sigma)
 {
-	W_ASSERT_FMT(_half_size%2==1, "Gaussian kernel half size must be odd, got %u.", _half_size);
-	W_ASSERT_FMT(_half_size<=k_max_kernel_coefficients, "Gaussian kernel half size out of bounds, got %u.", _half_size);
+	W_ASSERT_FMT(size%2==1, "Gaussian kernel size must be odd, got %u.", size);
+	W_ASSERT_FMT((size+1)/2<=k_max_kernel_coefficients, "Gaussian kernel size out of bounds, got %u.", size);
 	W_ASSERT_FMT(_sigma>0.f, "Gaussian kernel sigma must be strictly positive, got %f.", _sigma);
 
-	half_size = _half_size;
+	half_size = (size+1)/2;
 
 	std::fill(weights, weights+k_max_kernel_coefficients, 0.f);
 

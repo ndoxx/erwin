@@ -41,6 +41,7 @@ void main()
 layout(location = 0) in vec2 v_uv; // Texture coordinates
 
 layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_glow;
 
 layout(std140, binding = 2) uniform material_data
 {
@@ -62,6 +63,10 @@ float sun(in vec2 v2_uv, in float radius, in float blur)
     return intensity*intensity;
 }
 
+// Relative luminance coefficients for sRGB primaries, values from Wikipedia
+const vec3 W = vec3(0.2126f, 0.7152f, 0.0722f);
+const float f_bright_threshold = 0.7f;
+const float f_bright_knee = 0.1f;
 
 void main()
 {
@@ -71,4 +76,7 @@ void main()
     out_color = u_v4_sun_color*sun(v_uv, 2.f, 1.f) 
               + mix(u_v4_sun_color,vec4(1.0f),0.5f)*sun(v_uv, 0.5f, 1.f) 
               + vec4(1.f)*sun(v_uv, 0.3f, 1.f);
+
+    // Sun already has a halo, no need for bloom effect on top of it
+    out_glow = vec4(0.f);
 }

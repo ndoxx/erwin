@@ -70,6 +70,7 @@ void Sandbox::on_imgui_render()
     	if(ImGui::BeginMenu("Post processing"))
         {
             ImGui::Checkbox("Bloom", &presentation_layer_->enable_bloom_);
+            ImGui::Checkbox("Bloom Alt.", &presentation_layer_->bloom_alt_);
             ImGui::Checkbox("FXAA", &presentation_layer_->enable_fxaa_);
         	ImGui::MenuItem("Tweaks", NULL, &show_app_post_processing_window);
         	ImGui::EndMenu();

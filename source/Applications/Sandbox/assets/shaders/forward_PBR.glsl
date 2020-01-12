@@ -76,7 +76,7 @@ layout(std140, binding = 2) uniform material_data
 const float f_parallax_height_scale = 0.03f;
 // Relative luminance coefficients for sRGB primaries, values from Wikipedia
 const vec3 W = vec3(0.2126f, 0.7152f, 0.0722f);
-const float f_bright_threshold = 1.0f;
+const float f_bright_threshold = 0.7f;
 const float f_bright_knee = 0.1f;
 
 void main()

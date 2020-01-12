@@ -8,8 +8,9 @@ vec4 convolve_kernel_separable_rgba(float weight[KERNEL_MAX_WEIGHTS], int half_s
     // Add (symmetric) side contributions
     for(int ii=1; ii<half_size; ++ii)
     {
-        result += texture(samp,  ii*v2_offset + v2_uv) * weight[ii];
-        result += texture(samp, -ii*v2_offset + v2_uv) * weight[ii];
+        vec4 col = texture(samp,  ii*v2_offset + v2_uv)
+                 + texture(samp, -ii*v2_offset + v2_uv);
+        result = col * weight[ii] + result;
     }
 
     return result;
@@ -25,8 +26,9 @@ vec4 convolve_kernel_separable_rgba_packed(vec4 weight[KERNEL_MAX_PACKED_WEIGHTS
     // Add (symmetric) side contributions
     for(int ii=1; ii<half_size; ++ii)
     {
-        result += texture(samp,  ii*v2_offset + v2_uv) * weight[ii/4][ii%4];
-        result += texture(samp, -ii*v2_offset + v2_uv) * weight[ii/4][ii%4];
+        vec4 col = texture(samp,  ii*v2_offset + v2_uv)
+                 + texture(samp, -ii*v2_offset + v2_uv);
+        result = col * weight[ii/4][ii%4] + result;
     }
 
     return result;

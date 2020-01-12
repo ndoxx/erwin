@@ -32,6 +32,8 @@ private:
 	bool enable_3d_forward_ = true;
 	bool enable_2d_batched_ = false;
 
+	bool bloom_alt_ = true;
+
 	bool enable_bloom_ = true;
 	bool enable_chromatic_aberration_ = true;
 	bool enable_exposure_tone_mapping_ = true;

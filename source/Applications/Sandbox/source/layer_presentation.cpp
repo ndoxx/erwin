@@ -47,7 +47,11 @@ void PresentationLayer::on_render()
 	PostProcessingRenderer::reset_sequence();
 
 	if(enable_bloom_)
-		PostProcessingRenderer::bloom_pass("fb_forward"_h, 1);
+		if(bloom_alt_)
+			PostProcessingRenderer::bloom_pass_alt("fb_forward"_h, 1);
+		else
+			PostProcessingRenderer::bloom_pass("fb_forward"_h, 1);
+
 
 	if(enable_3d_forward_)
 	{

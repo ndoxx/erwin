@@ -37,7 +37,6 @@ layout(std140, binding = 0) uniform blur_data
 };
 #endif
 
-// const float weights[] = { 0.387745f, 0.244769f, 0.0613584f, 0,0};
 const float weights[] = { 0.382932f, 0.241730f, 0.0605967f, 0.00597757f, 0.000229347f};
 
 void main()

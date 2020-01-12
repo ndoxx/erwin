@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 {
 	init_logger();
 
-	math::SeparableGaussianKernel gk(5,1.f);
+	math::SeparableGaussianKernel gk(7,1.f);
 
 	DLOG("nuclear",1) << gk << std::endl;
 
