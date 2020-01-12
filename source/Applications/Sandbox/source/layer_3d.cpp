@@ -41,7 +41,7 @@ void Layer3D::on_attach()
 	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
 	// Setup scene
-	for(float xx=-10.f; xx<10.f; xx+=2.f)
+	/*for(float xx=-10.f; xx<10.f; xx+=2.f)
 	{
 		for(float yy=-10.f; yy<10.f; yy+=2.f)
 		{
@@ -58,7 +58,7 @@ void Layer3D::on_attach()
 				scene_.push_back(cube);
 			}
 		}
-	}
+	}*/
 
 	Cube emissive_cube;
 	emissive_cube.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 2.f};

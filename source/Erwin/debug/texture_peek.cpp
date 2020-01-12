@@ -1,7 +1,7 @@
 #include "debug/texture_peek.h"
 #include "debug/logger.h"
 #include "core/core.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/common_geometry.h"
 #include "imgui.h"
 
@@ -74,10 +74,10 @@ void TexturePeek::init()
     };
     FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), layout, false);
 
-	// s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
-	s_storage.peek_shader_ = MainRenderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
-	s_storage.pass_ubo_ = MainRenderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), DrawMode::Dynamic);
-	MainRenderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
+	// s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
+	s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
+	s_storage.pass_ubo_ = Renderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), DrawMode::Dynamic);
+	Renderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
 
 	// Initialize GUI
 	s_storage.current_pane_ = 0;
@@ -95,7 +95,6 @@ void TexturePeek::init()
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
 	state.rasterizer_state.clear_color = glm::vec4(0.f,0.f,0.f,0.f);
-
 	s_storage.pass_state_ = state.encode();
 }
 
@@ -117,7 +116,7 @@ void TexturePeek::register_framebuffer(const std::string& framebuffer_name)
 	hash_t hframebuffer = H_(framebuffer_name.c_str());
 	FramebufferHandle fb = FramebufferPool::get_framebuffer(hframebuffer);
 	bool has_depth = FramebufferPool::has_depth(hframebuffer);
-	uint32_t ntex = MainRenderer::get_framebuffer_texture_count(fb);
+	uint32_t ntex = Renderer::get_framebuffer_texture_count(fb);
 	uint32_t pane_index = new_pane(framebuffer_name);
 
 	if(has_depth)
@@ -125,14 +124,14 @@ void TexturePeek::register_framebuffer(const std::string& framebuffer_name)
 
 	for(uint32_t ii=0; ii<ntex; ++ii)
 	{
-		TextureHandle texture_handle = MainRenderer::get_framebuffer_texture(fb, ii);
+		TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ii);
 		std::string tex_name = framebuffer_name + std::to_string(ii);
 		register_texture(pane_index, texture_handle, tex_name, false);
 	}
 
 	if(has_depth)
 	{
-		TextureHandle texture_handle = MainRenderer::get_framebuffer_texture(fb, ntex);
+		TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ntex);
 		std::string tex_name = framebuffer_name + "_depth";
 		register_texture(pane_index, texture_handle, tex_name, true);
 	}
@@ -170,7 +169,7 @@ void TexturePeek::render(uint8_t layer_id)
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
 	dc.set_key_sequence(0, layer_id);
-	MainRenderer::submit(dc);
+	Renderer::submit(dc);
 #endif
 }
 
@@ -228,8 +227,8 @@ void TexturePeek::on_imgui_render(bool* p_open)
 
 	// Retrieve the native framebuffer texture handle
 	FramebufferHandle fb = FramebufferPool::get_framebuffer("fb_texture_view"_h);
-	TextureHandle texture = MainRenderer::get_framebuffer_texture(fb, 0);
-	void* framebuffer_texture_native = MainRenderer::get_native_texture_handle(texture);
+	TextureHandle texture = Renderer::get_framebuffer_texture(fb, 0);
+	void* framebuffer_texture_native = Renderer::get_native_texture_handle(texture);
     ImGui::GetWindowDrawList()->AddImage(framebuffer_texture_native,
                                          ImGui::GetCursorScreenPos(),
                                          ImVec2(winx, winy),
@@ -239,7 +238,7 @@ void TexturePeek::on_imgui_render(bool* p_open)
     if(s_storage.save_image_)
     {
         std::string filename = props.name + ".png";
-        MainRenderer::framebuffer_screenshot(fb, filename);
+        Renderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
     }
 

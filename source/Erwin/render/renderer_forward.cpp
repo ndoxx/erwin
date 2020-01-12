@@ -1,6 +1,6 @@
 #include "render/renderer_forward.h"
 #include "render/common_geometry.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -68,23 +68,23 @@ void ForwardRenderer::init()
 	}
 
 	// Setup UBOs and init storage
-	s_storage.instance_ubo = MainRenderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
-	s_storage.pass_ubo     = MainRenderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
+	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
 	s_storage.num_draw_calls = 0;
 }
 
 void ForwardRenderer::shutdown()
 {
-	MainRenderer::destroy(s_storage.pass_ubo);
-	MainRenderer::destroy(s_storage.instance_ubo);
+	Renderer::destroy(s_storage.pass_ubo);
+	Renderer::destroy(s_storage.instance_ubo);
 }
 
 void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
 {
-	MainRenderer::shader_attach_uniform_buffer(shader, s_storage.pass_ubo);
-	MainRenderer::shader_attach_uniform_buffer(shader, s_storage.instance_ubo);
+	Renderer::shader_attach_uniform_buffer(shader, s_storage.pass_ubo);
+	Renderer::shader_attach_uniform_buffer(shader, s_storage.instance_ubo);
 	if(material_ubo.index != k_invalid_handle)
-		MainRenderer::shader_attach_uniform_buffer(shader, material_ubo);
+		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
 void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, PassOptions options)
@@ -122,7 +122,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	s_storage.pass_ubo_data.light_ambient_strength = dir_light.ambient_strength;
 	s_storage.frustum_planes = camera.get_frustum_planes();
 
-	MainRenderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.pass_ubo_data, sizeof(PassUBOData));
+	Renderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.pass_ubo_data, sizeof(PassUBOData));
 }
 
 void ForwardRenderer::end_pass()
@@ -158,7 +158,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	}
 
 	dc.set_key_depth(depth, s_storage.layer_id);
-	MainRenderer::submit(dc);
+	Renderer::submit(dc);
 
 	++s_storage.num_draw_calls;
 }

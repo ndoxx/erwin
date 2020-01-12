@@ -17,7 +17,7 @@
 #include "event/window_events.h"
 #include "debug/logger.h"
 
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_forward.h"
 #include "render/renderer_pp.h"

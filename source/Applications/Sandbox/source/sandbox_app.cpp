@@ -90,7 +90,7 @@ void Sandbox::on_imgui_render()
 	if(show_app_lighting_window)        window_lighting(&show_app_lighting_window);
 	if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);
 #ifdef W_PROFILE
-    MainRenderer::set_profiling_enabled(show_app_render_stats_window);
+    Renderer::set_profiling_enabled(show_app_render_stats_window);
 	if(show_app_profiling_window)       window_profiling(&show_app_profiling_window);
 	if(show_app_render_stats_window)    window_render_stats(&show_app_render_stats_window);
 #endif
@@ -259,7 +259,7 @@ void Sandbox::window_render_stats(bool* p_open)
 {
     if(ImGui::Begin("Stats", p_open))
     {
-		const auto& mr_stats = MainRenderer::get_stats();
+		const auto& mr_stats = Renderer::get_stats();
 		uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
 
     	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);

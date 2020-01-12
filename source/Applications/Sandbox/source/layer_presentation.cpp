@@ -44,8 +44,6 @@ void PresentationLayer::on_update(GameClock& clock)
 
 void PresentationLayer::on_render()
 {
-	PostProcessingRenderer::reset_sequence();
-
 	if(enable_bloom_)
 		if(bloom_alt_)
 			PostProcessingRenderer::bloom_pass_alt("fb_forward"_h, 1, get_layer_id());

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cmath>
 #include <utility>
+#include <functional>
 
 #include "filesystem/filesystem.h"
 #include "memory/arena.h"
@@ -40,14 +41,14 @@ struct SortKey
 	SortKey::Order order;
 };
 
-struct MainRendererStats
+struct RendererStats
 {
 	float render_time = 0.f;
 };
 
 class RenderQueue;
 struct DrawCall;
-class MainRenderer
+class Renderer
 {
 public:
 	typedef memory::MemoryArena<memory::LinearAllocator, 
@@ -73,11 +74,13 @@ public:
 
 	// * Draw call queue management and submission
 	// Get the render queue
-	static RenderQueue& 	 get_queue();
+	static RenderQueue& get_queue();
 	// Send a draw call to a particular queue
-	static inline void 		 submit(const DrawCall& dc);
+	static inline void  submit(const DrawCall& dc);
 	// Force renderer to dispatch all commands in command buffers and render queues
-	static void 			 flush();
+	static void 		flush();
+	// Set a callback function that will be executed after flush()
+	static void 		set_end_frame_callback(std::function<void(void)> callback);
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands
@@ -112,7 +115,7 @@ public:
 #ifdef W_DEBUG
 	static void* get_native_texture_handle(TextureHandle handle);
 	static void set_profiling_enabled(bool value=true);
-	static const MainRendererStats& get_stats();
+	static const RendererStats& get_stats();
 #endif
 
 private:
@@ -151,7 +154,7 @@ struct DrawCall;
 class RenderQueue
 {
 public:
-	friend class MainRenderer;
+	friend class Renderer;
 
 	RenderQueue(memory::HeapArea& area);
 	~RenderQueue();
@@ -173,7 +176,7 @@ private:
 	CommandBuffer command_buffer_;
 };
 
-inline void MainRenderer::submit(const DrawCall& dc)
+inline void Renderer::submit(const DrawCall& dc)
 {
 	get_queue().submit(dc);
 }
@@ -250,7 +253,7 @@ struct DrawCall
 
 		if(SSBO_data && copy)
 		{
-			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, Renderer::get_arena());
 			memcpy(instance_data.SSBO_data, SSBO_data, size);
 		}
 	}
@@ -264,7 +267,7 @@ struct DrawCall
 
 		if(UBO_data && copy)
 		{
-			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, MainRenderer::get_arena());
+			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, Renderer::get_arena());
 			memcpy(data.UBOs_data[slot], UBO_data, size);
 		}
 	}

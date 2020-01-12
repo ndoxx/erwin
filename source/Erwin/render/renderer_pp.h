@@ -55,9 +55,6 @@ public:
 	// Blend an input framebuffer texture to the default framebuffer using a "lighten" type blend function
 	static void lighten(hash_t framebuffer, uint32_t index, uint8_t layer_id);
 
-	// TMP: reset sequence number used by combine() and lighten() for the computation of command sorting keys
-	static void reset_sequence();
-
 private:
 	friend class Application;
 	
