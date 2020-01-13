@@ -89,7 +89,7 @@ void TexturePeek::init()
 	s_storage.enabled_ = false;
 
 	// State
-	PassState state;
+	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("fb_texture_view"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;

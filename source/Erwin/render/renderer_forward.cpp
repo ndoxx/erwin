@@ -81,7 +81,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
     W_PROFILE_FUNCTION()
 
 	// Pass state
-	PassState state;
+	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = options.get_transparency() ? BlendState::Alpha : BlendState::Opaque;

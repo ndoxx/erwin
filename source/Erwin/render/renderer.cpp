@@ -253,7 +253,7 @@ struct FrameDrawCallData
 
 	inline void on_dispatch(uint64_t key)
 	{
-		// Nothing to do, map ordering is the same as queue ordering once sorted
+		// Nothing to do for now, map ordering is the same as queue ordering once sorted
 	}
 
 	inline void reset()
@@ -263,42 +263,9 @@ struct FrameDrawCallData
 		submitted = 0;
 	}
 
-	void export_json()
-	{
-		DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
-		DLOGI << WCC('p') << json_path << std::endl;
+	void export_json();
 
-		std::ofstream ofs(json_path);
-
-		ofs << "{"
-			<< "\"calls\": [" << std::endl;
-
-		// We assume map ordering is the same as queue ordering, elements are thus
-		// presented in dispatch order
-		uint32_t count = 0;
-		for(auto&& [key,summary]: draw_calls)
-		{
-	    	ofs << "{"
-	    		<< "\"key\":" << key << ","
-	    		<< "\"sub\":" << summary.submission_index << ","
-	    		<< "\"typ\":" << (int)summary.type << ","
-	    		<< "\"ord\":" << (int)summary.order_type << ","
-	    		<< "\"shd\":" << (int)summary.shader_handle << ","
-	    		<< "\"sta\":" << summary.render_state
-                << ((count<submitted-1) ? "}," : "}") << std::endl;
-
-            ++count;
-	    }
-
-		ofs << "]}" << std::endl;
-
-		ofs.close();
-		reset();
-
-		DLOGI << "done" << std::endl;
-	}
-
-	std::map<uint64_t, DrawCallSummary> draw_calls;
+	std::multimap<uint64_t, DrawCallSummary> draw_calls;
 	fs::path json_path;
 	bool tracking = false;
 	uint32_t submitted = 0;
@@ -403,6 +370,47 @@ static struct RendererStorage
 	LinearArena handle_arena_;
 	RenderQueue queue_;
 } s_storage;
+
+
+#if W_RC_PROFILE_DRAW_CALLS
+void FrameDrawCallData::export_json()
+{
+	DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
+	DLOGI << WCC('p') << json_path << std::endl;
+
+	std::ofstream ofs(json_path);
+
+	ofs << "{"
+		<< "\"draw_calls\":[" << std::endl;
+
+	// We assume map ordering is the same as queue ordering, elements are thus
+	// presented in dispatch order
+	uint32_t count = 0;
+	for(auto&& [key,summary]: draw_calls)
+	{
+		RenderState render_state;
+		render_state.decode(summary.render_state);
+    	ofs << "{"
+    		<< "\"key\":" << key << ","
+    		<< "\"sub\":" << summary.submission_index << ","
+    		<< "\"typ\":" << (int)summary.type << ","
+    		<< "\"ord\":" << (int)summary.order_type << ","
+    		<< "\"shd\":\"" << s_storage.shaders[summary.shader_handle]->get_name() << "\","
+    		<< "\"sta\":\"" << render_state.to_string() << "\""
+            << ((count<submitted-1) ? "}," : "}") << std::endl;
+
+        ++count;
+    }
+
+	ofs << "]}" << std::endl;
+
+	ofs.close();
+	reset();
+
+	DLOG("render",1) << "done" << std::endl;
+}
+#endif
+
 
 void Renderer::init(memory::HeapArea& area)
 {
@@ -1456,10 +1464,10 @@ static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask
 static void handle_state(uint64_t state_flags)
 {
 	// * If pass state has changed, decode it, find which parts have changed and update device state
-	static uint64_t last_state = PassState().encode(); // Initialized as default state
+	static uint64_t last_state = RenderState().encode(); // Initialized as default state
 	if(state_flags != last_state)
 	{
-		PassState state;
+		RenderState state;
 		state.decode(state_flags);
 
 		if(has_mutated(state_flags, last_state, k_framebuffer_mask))

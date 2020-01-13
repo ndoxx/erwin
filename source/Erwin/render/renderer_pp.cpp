@@ -130,7 +130,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index, u
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
-	PassState state;
+	RenderState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
@@ -217,7 +217,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 #endif
 	glm::vec2 screen_size = FramebufferPool::get_screen_size();
 
-	PassState state;
+	RenderState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
@@ -265,7 +265,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	s_storage.pp_data = pp_data;
 	s_storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
     
-	PassState state;
+	RenderState state;
 	state.render_target = Renderer::default_render_target();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Alpha;
@@ -284,7 +284,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index, uint8_t
 {
     W_PROFILE_FUNCTION()
     
-	PassState state;
+	RenderState state;
 	state.render_target = Renderer::default_render_target();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Light;

@@ -91,7 +91,7 @@ protected:
 		data_.time = float(2*M_PI*tt_);
 		data_.view_projection = glm::inverse(camera_ctl_.get_camera().get_view_projection_matrix());
 
-		PassState pass_state;
+		RenderState pass_state;
 		pass_state.render_target = Renderer::default_render_target();
 		pass_state.rasterizer_state.cull_mode = CullMode::Back;
 		pass_state.blend_state = BlendState::Opaque;

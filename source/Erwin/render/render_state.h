@@ -68,7 +68,7 @@ struct RasterizerState
 {
     ClearFlags clear_flags = ClearFlags::CLEAR_NONE;
     CullMode cull_mode     = CullMode::None;
-    glm::vec4 clear_color  = glm::vec4(0.f,0.f,0.f,1.f);
+    glm::vec4 clear_color  = glm::vec4(0.f,0.f,0.f,0.f);
 };
 
 struct DepthStencilState
@@ -109,7 +109,7 @@ constexpr uint8_t  k_stencil_op_bits    = 3;
 constexpr uint64_t k_stencil_op_shift   = k_stencil_func_shift - k_stencil_op_bits;
 constexpr uint64_t k_stencil_op_mask    = uint64_t(0x7) << k_stencil_op_shift;
 
-struct PassState
+struct RenderState
 {
     BlendState        blend_state    = BlendState::Opaque;
     RasterizerState   rasterizer_state;
@@ -144,6 +144,8 @@ struct PassState
     {
         return bool((pass_state & k_transp_mask) >> k_transp_shift);
     }
+
+    std::string to_string();
 };
 
 } // namespace erwin

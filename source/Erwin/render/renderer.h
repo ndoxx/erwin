@@ -239,10 +239,10 @@ struct DrawCall
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
 		
 		// Extract render target ID to use as view ID
-		key.blending = PassState::is_transparent(data.state_flags);
+		key.blending = RenderState::is_transparent(data.state_flags);
 		key.view |= uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
-		key.order = PassState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
+		key.order = RenderState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
 
 	// Compute the sorting key for the sequential policy

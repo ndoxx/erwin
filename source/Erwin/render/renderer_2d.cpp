@@ -143,7 +143,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 {
     W_PROFILE_FUNCTION()
 
-	PassState state;
+	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
