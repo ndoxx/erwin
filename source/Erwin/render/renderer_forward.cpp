@@ -120,8 +120,6 @@ void ForwardRenderer::end_pass()
 
 void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
 {
-	W_ASSERT_FMT(VAO.is_valid(), "Invalid VertexArrayHandle of index %hu.", VAO.index);
-
 	// Compute matrices
 	InstanceData instance_data;
 	instance_data.m   = transform.get_model_matrix();

@@ -179,6 +179,9 @@ struct DrawCall
 
 	DrawCall(DrawCallType dc_type, uint8_t layer_id, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
+		W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
+		
 		type             = dc_type;
 		data.state_flags = state;
 		data.shader      = shader;

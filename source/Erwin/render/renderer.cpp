@@ -118,6 +118,7 @@ uint64_t SortKey::encode() const
 		 |_|  \_\___|_| |_|\__,_|\___|_|     \___\_\\__,_|\___|\__,_|\___|
 */
 
+template<std::size_t SIZE>
 struct CommandBuffer
 {
 	typedef std::pair<uint64_t,void*> Entry;
@@ -140,10 +141,18 @@ struct CommandBuffer
 		count = 0;
 	}
 
+	inline bool is_full() const
+	{
+		return count >= SIZE;
+	}
+
 	std::size_t count;
 	memory::LinearBuffer<> storage;
-	Entry entries[k_max_render_commands];
+	Entry entries[SIZE];
 };
+
+using RenderCommandBuffer = CommandBuffer<k_max_render_commands>;
+using DrawCallBuffer      = CommandBuffer<k_max_draw_calls>;
 
 class RenderQueue
 {
@@ -159,6 +168,8 @@ public:
 	// * These functions change the queue state persistently
 	// Set clear color for this queue
 	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
+	// Check if the queue is full
+	inline bool is_full() const { return command_buffer_.is_full(); }
 	// Submit a draw call
 	void submit(const DrawCall& draw_call);
 	// Sort queue by sorting key
@@ -170,7 +181,7 @@ public:
 
 private:
 	glm::vec4 clear_color_;
-	CommandBuffer command_buffer_;
+	DrawCallBuffer command_buffer_;
 };
 
 RenderQueue::RenderQueue(memory::HeapArea& area)
@@ -196,7 +207,7 @@ void RenderQueue::sort()
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
     std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        [&](const DrawCallBuffer::Entry& item1, const DrawCallBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
         });
@@ -211,8 +222,7 @@ void RenderQueue::submit(const DrawCall& dc)
 {
     W_PROFILE_RENDER_FUNCTION()
 
-	W_ASSERT(dc.data.VAO.is_valid(), "Invalid VertexArrayHandle!");
-	W_ASSERT(dc.data.shader.is_valid(), "Invalid ShaderHandle!");
+	W_ASSERT(!is_full(), "Render queue is full!");
 
 	auto& cmdbuf = command_buffer_.storage;
 	void* cmd = cmdbuf.head();
@@ -364,8 +374,8 @@ static struct RendererStorage
 #endif
 
 	memory::HeapArea* renderer_memory_;
-	CommandBuffer pre_buffer_;
-	CommandBuffer post_buffer_;
+	RenderCommandBuffer pre_buffer_;
+	RenderCommandBuffer post_buffer_;
 	Renderer::AuxArena auxiliary_arena_;
 	LinearArena handle_arena_;
 	RenderQueue queue_;
@@ -612,6 +622,7 @@ public:
 
 	inline void submit()
 	{
+		W_ASSERT_FMT(!cmdbuf_.is_full(), "Command buffer %d is full!", int(type_));
 		uint64_t key = uint64_t(cmdbuf_.count);
 		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
 	}
@@ -623,7 +634,7 @@ private:
 		Post
 	};
 
-	inline CommandBuffer& get_command_buffer(Phase phase)
+	inline RenderCommandBuffer& get_command_buffer(Phase phase)
 	{
 		switch(phase)
 		{
@@ -632,7 +643,7 @@ private:
 		}
 	}
 
-	inline CommandBuffer& get_command_buffer(RenderCommand command)
+	inline RenderCommandBuffer& get_command_buffer(RenderCommand command)
 	{
 		Phase phase = (command < RenderCommand::Post) ? Phase::Pre : Phase::Post;
 		return get_command_buffer(phase);
@@ -640,7 +651,7 @@ private:
 
 private:
 	RenderCommand type_;
-	CommandBuffer& cmdbuf_;
+	RenderCommandBuffer& cmdbuf_;
 	void* head_;
 };
 
@@ -1618,7 +1629,7 @@ void RenderQueue::flush()
 	}
 }
 
-static void flush_command_buffer(CommandBuffer& cmdbuf)
+static void flush_command_buffer(RenderCommandBuffer& cmdbuf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
@@ -1640,12 +1651,12 @@ static void sort_commands()
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
     std::sort(std::begin(s_storage.pre_buffer_.entries), std::begin(s_storage.pre_buffer_.entries) + s_storage.pre_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        [&](const RenderCommandBuffer::Entry& item1, const RenderCommandBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
         });
     std::sort(std::begin(s_storage.post_buffer_.entries), std::begin(s_storage.post_buffer_.entries) + s_storage.post_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        [&](const RenderCommandBuffer::Entry& item1, const RenderCommandBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
         });

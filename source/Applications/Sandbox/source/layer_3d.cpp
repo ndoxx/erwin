@@ -41,29 +41,32 @@ void Layer3D::on_attach()
 	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
 	// Setup scene
-	/*for(float xx=-10.f; xx<10.f; xx+=2.f)
+	int N = 10;
+	for(int ii=0; ii<N; ++ii)
 	{
-		for(float yy=-10.f; yy<10.f; yy+=2.f)
+		float xx = -N + 2.f*ii + 1.f;
+		for(int jj=0; jj<N; ++jj)
 		{
-			for(float zz=-10.f; zz<10.f; zz+=2.f)
+			float yy = -N + 2.f*jj + 1.f;
+			for(int kk=0; kk<N; ++kk)
 			{
-				float scale = 3.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
+				float zz = -N + 2.f*kk + 1.f;
+				float scale = 3.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(N*N*N);
 				Cube cube;
 				cube.transform = {{xx,yy,zz}, {0.f,0.f,0.f}, scale};
 				if(fabs(xx+1.f)>5.f || fabs(zz+1.f)>5.f)
 					cube.material = {forward_opaque_pbr_, tg_0_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
 				else
 					cube.material = {forward_opaque_pbr_, tg_1_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-				cube.material_data.tint = {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f};
+				cube.material_data.tint = {(xx+N)/(2.f*N),(yy+N)/(2.f*N),(zz+N)/(2.f*N),1.f};
 				scene_.push_back(cube);
 			}
 		}
-	}*/
-
+	}
 	Cube emissive_cube;
-	emissive_cube.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 2.f};
+	emissive_cube.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
 	emissive_cube.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-	emissive_cube.material_data.tint = {1.f,1.f,1.f,1.f};
+	emissive_cube.material_data.tint = {0.f,1.f,1.f,1.f};
 	emissive_cube.material_data.enable_emissivity();
 	emissive_cube.material_data.emissive_scale = 5.f;
 	scene_.push_back(emissive_cube);
@@ -118,7 +121,7 @@ void Layer3D::on_update(GameClock& clock)
 		float xx = cube.transform.position.x;
 		float yy = cube.transform.position.y;
 		float zz = cube.transform.position.z;
-		glm::vec3 euler = {(1.f-yy/8.f)*xx/10.f,yy/10.f,(1.f-yy/8.f)*zz/10.f};
+		glm::vec3 euler = {(1.f-yy/9.f)*xx/10.f,yy/10.f,(1.f-yy/9.f)*zz/10.f};
 		euler *= 1.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}

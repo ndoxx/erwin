@@ -79,8 +79,15 @@ const vec3 W = vec3(0.2126f, 0.7152f, 0.0722f);
 const float f_bright_threshold = 0.7f;
 const float f_bright_knee = 0.1f;
 
+const mat4 m4_stippling_threshold = mat4(vec4(1,13,4,16),vec4(9,5,12,8),vec4(3,15,2,14),vec4(11,7,10,6))/17.f;
+
 void main()
 {
+    // Stippling: selectively discard fragments when surface is too close to eye position
+    float threshold = m4_stippling_threshold[int(gl_FragCoord.x)%4][int(gl_FragCoord.y)%4];
+    if(1.2f*gl_FragCoord.z-threshold < 0.f)
+        discard;
+
 	vec2 tex_coord = v_uv;
 
 	// Parallax map
