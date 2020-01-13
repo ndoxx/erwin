@@ -6,6 +6,7 @@
 #include "core/window.h"
 #include "core/layer_stack.h"
 #include "core/game_clock.h"
+#include "filesystem/filesystem.h"
 
 namespace erwin
 {
@@ -36,6 +37,10 @@ public:
 	inline const Window& get_window() { return *window_; }
 
 	bool on_window_close_event(const WindowCloseEvent& e);
+
+	// PROFILING
+	// Gather draw call information for this frame and export to JSON file
+	void track_draw_calls(const fs::path& json_path);
 
 private:
 	static Application* pinstance_;

@@ -1,43 +1,29 @@
-const float PI = 3.14159265359;
-const float invPI = 0.318309886;
+const float PI    = 3.14159265359f;
+const float invPI = 0.318309886f;
 
-float TrowbridgeReitzGGX(vec3 N, vec3 H, float roughness)
+float TrowbridgeReitzGGX(float NdotH, float roughness)
 {
-    float a      = roughness*roughness;
-    float a2     = a*a;
-    float NdotH  = max(dot(N, H), 0.0f);
-    float NdotH2 = NdotH*NdotH;
-
-    float num   = a2;
-    float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+    float r2    = roughness*roughness;
+    float r4    = r2*r2;
+    float denom = (NdotH * NdotH * (r4 - 1.0f) + 1.0f);
     denom = PI * (denom * denom);
 
-    return max(num / denom, 0.001);
+    return r4 / denom;
 }
 
 float SchlickGGX(float NdotV, float roughness)
 {
-    float r = roughness + 1.0f;
-
-    float k = (r*r) * 0.125f;
-
-    float num   = NdotV;
+    float r     = roughness + 1.0f;
+    float k     = (r*r) * 0.125f;
     float denom = NdotV * (1.0f - k) + k;
 
-    return num / denom;
-
-    /*float k = r*r;
-    float NdotVinv = 1.0f/NdotV;
-
-    return 8.0f / (k*NdotVinv + (8.0f-k));*/
+    return NdotV / denom;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
-    float NdotV = max(dot(N, V), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
-    float ggx2  = SchlickGGX(NdotV, roughness);
-    float ggx1  = SchlickGGX(NdotL, roughness);
+    float ggx2 = SchlickGGX(NdotV, roughness);
+    float ggx1 = SchlickGGX(NdotL, roughness);
 
     return ggx1 * ggx2;
 }
@@ -56,46 +42,45 @@ vec3 FresnelGS(float VdotH, vec3 F0)
 }
 
 // BRDF
-vec3 CookTorrance(vec3 lightColor,
+vec3 CookTorrance(vec3 radiance, // Light color
                   vec3 lightDir,
                   vec3 normal,
                   vec3 viewDir,
                   vec3 albedo,
-                  float fragMetallic,
-                  float fragRoughness)
+                  float metallic,
+                  float roughness)
 {
     // Calculate reflectance at normal incidence; if dielectric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     // Actual formula for F0 is: pow(abs((1.0-ior) / (1.0+ior)), 2.0) with ior= index of refraction
-    vec3 F0 = vec3(0.04f);
-    F0 = mix(F0, albedo, fragMetallic);
+    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
 
-    // calculate light radiance
     vec3 halfwayDir = normalize(viewDir + lightDir);
-    vec3 radiance = lightColor;
+    float NdotL = max(dot(normal, lightDir),    0.0000001f); // small number to prevent division by zero.
+    float NdotV = max(dot(normal, viewDir),     0.0000001f);
+    float NdotH = max(dot(normal, halfwayDir),  0.f);
+    float VdotH = max(dot(viewDir, halfwayDir), 0.f);
 
     // Cook-Torrance BRDF
-    float D = TrowbridgeReitzGGX(normal, halfwayDir, fragRoughness);
-    vec3  F = FresnelGS(max(dot(halfwayDir, viewDir), 0.0f), F0);
-    float G = GeometrySmith(normal, viewDir, lightDir, fragRoughness);
+    float D = TrowbridgeReitzGGX(NdotH, roughness);
+    float G = GeometrySmith(NdotV, NdotL, roughness);
+    vec3  F = FresnelGS(VdotH, F0);
 
-    vec3 num = D * F * G;
-    float denom = 4.0f * (max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f)) + 0.001f; // 0.001 to prevent divide by zero.
-    vec3 specular = num / denom;
+    vec3 specular = (D * G) * F;
+    specular /= 4.0f * NdotV * NdotL;
 
     // kS is equal to Fresnel
     vec3 kS = F;
     // Energy conservation -> diffuse = 1 - specular
     vec3 kD = vec3(1.0f) - kS;
     // Metals have no diffuse component. Linear blend quasi-metals.
-    kD = -kD*fragMetallic + kD;
+    kD = -metallic*kD + kD;
     kD *= invPI;
-    // scale light by NdotL
-    float NdotL = max(dot(normal, lightDir), 0.0f);
 
     // Outgoing radiance Lo = kD*f_Lambert + kS*f_Cook-Torrance
     // Specular term already multiplied by kS==F
     vec3 Lo = (kD * albedo) + specular;
 
+    // scale light by NdotL
     return Lo * (NdotL * radiance);
 }

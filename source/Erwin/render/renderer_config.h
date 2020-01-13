@@ -14,6 +14,8 @@ namespace erwin
 	#define W_PROFILE_RENDER_FUNCTION()
 #endif
 
+#define W_RC_PROFILE_DRAW_CALLS true
+
 // Maximum amount of texture slots per draw call
 static constexpr uint32_t k_max_texture_slots = 4;
 // Maximum amount of uniform buffer slots per draw call

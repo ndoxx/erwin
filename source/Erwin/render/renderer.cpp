@@ -2,21 +2,21 @@
 
 #include <map>
 #include <memory>
-#include <iostream>
+#include <fstream>
 
-#include "render/render_device.h"
-#include "render/buffer.h"
-#include "render/framebuffer.h"
-#include "render/shader.h"
-#include "render/query_timer.h"
 #include "debug/logger.h"
+#include "core/config.h"
+#include "filesystem/filesystem.h"
 #include "memory/arena.h"
 #include "memory/memory_utils.h"
 #include "memory/handle_pool.h"
 #include "memory/linear_allocator.h"
 #include "memory/handle_pool.h"
-#include "core/config.h"
-#include "filesystem/filesystem.h"
+#include "render/render_device.h"
+#include "render/buffer.h"
+#include "render/framebuffer.h"
+#include "render/shader.h"
+#include "render/query_timer.h"
 
 namespace erwin
 {
@@ -107,11 +107,203 @@ uint64_t SortKey::encode() const
 	return head | body;
 }
 
-void SortKey::decode(uint64_t key)
+
+
+/*
+		  _____                _              ____                        
+		 |  __ \              | |            / __ \                       
+		 | |__) |___ _ __   __| | ___ _ __  | |  | |_   _  ___ _   _  ___ 
+		 |  _  // _ \ '_ \ / _` |/ _ \ '__| | |  | | | | |/ _ \ | | |/ _ \
+		 | | \ \  __/ | | | (_| |  __/ |    | |__| | |_| |  __/ |_| |  __/
+		 |_|  \_\___|_| |_|\__,_|\___|_|     \___\_\\__,_|\___|\__,_|\___|
+*/
+
+struct CommandBuffer
 {
-	// TODO (if ever needed)
+	typedef std::pair<uint64_t,void*> Entry;
+
+	CommandBuffer() = default;
+	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name)
+	{
+		init(area, size, debug_name);
+	}
+
+	inline void init(memory::HeapArea& area, std::size_t size, const char* debug_name)
+	{
+		count = 0;
+		storage.init(area, size, debug_name);
+	}
+
+	inline void reset()
+	{
+		storage.reset();
+		count = 0;
+	}
+
+	std::size_t count;
+	memory::LinearBuffer<> storage;
+	Entry entries[k_max_render_commands];
+};
+
+class RenderQueue
+{
+public:
+	friend class Renderer;
+
+	RenderQueue() = default;
+	RenderQueue(memory::HeapArea& area);
+	~RenderQueue();
+
+	void init(memory::HeapArea& area);
+
+	// * These functions change the queue state persistently
+	// Set clear color for this queue
+	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
+	// Submit a draw call
+	void submit(const DrawCall& draw_call);
+	// Sort queue by sorting key
+	void sort();
+	// Dispatch all commands
+	void flush();
+	// Clear queue
+	void reset();
+
+private:
+	glm::vec4 clear_color_;
+	CommandBuffer command_buffer_;
+};
+
+RenderQueue::RenderQueue(memory::HeapArea& area)
+{
+	init(area);
 }
 
+RenderQueue::~RenderQueue()
+{
+
+}
+
+void RenderQueue::init(memory::HeapArea& area)
+{
+	clear_color_ = {0.f,0.f,0.f,0.f};
+	command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
+}
+
+void RenderQueue::sort()
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	// Keys stored separately from commands to avoid touching data too
+	// much during sort calls
+    std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
+        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
+        {
+        	return item1.first < item2.first;
+        });
+}
+
+void RenderQueue::reset()
+{
+	command_buffer_.reset();
+}
+
+void RenderQueue::submit(const DrawCall& dc)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	W_ASSERT(dc.data.VAO.is_valid(), "Invalid VertexArrayHandle!");
+	W_ASSERT(dc.data.shader.is_valid(), "Invalid ShaderHandle!");
+
+	auto& cmdbuf = command_buffer_.storage;
+	void* cmd = cmdbuf.head();
+
+	cmdbuf.write(&dc.type);
+	cmdbuf.write(&dc.data);
+	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
+		cmdbuf.write(&dc.instance_data);
+
+	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(), cmd};
+}
+
+#if W_RC_PROFILE_DRAW_CALLS
+// Allows to track draw calls from submission to dispatch during a single frame
+struct FrameDrawCallData
+{
+	struct DrawCallSummary
+	{
+		uint64_t render_state;
+		DrawCall::DrawCallType type;
+		SortKey::Order order_type;
+		uint16_t shader_handle;
+		uint32_t submission_index;
+	};
+
+	inline void on_submit(const DrawCall& dc)
+	{
+		draw_calls.insert(std::make_pair(dc.key.encode(),
+			DrawCallSummary
+			{
+				dc.data.state_flags,
+				dc.type,
+				dc.key.order,
+				dc.data.shader.index,
+				submitted++
+			}));
+	}
+
+	inline void on_dispatch(uint64_t key)
+	{
+		// Nothing to do, map ordering is the same as queue ordering once sorted
+	}
+
+	inline void reset()
+	{
+		draw_calls.clear();
+		tracking = false;
+		submitted = 0;
+	}
+
+	void export_json()
+	{
+		DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
+		DLOGI << WCC('p') << json_path << std::endl;
+
+		std::ofstream ofs(json_path);
+
+		ofs << "{"
+			<< "\"calls\": [" << std::endl;
+
+		// We assume map ordering is the same as queue ordering, elements are thus
+		// presented in dispatch order
+		uint32_t count = 0;
+		for(auto&& [key,summary]: draw_calls)
+		{
+	    	ofs << "{"
+	    		<< "\"key\":" << key << ","
+	    		<< "\"sub\":" << summary.submission_index << ","
+	    		<< "\"typ\":" << (int)summary.type << ","
+	    		<< "\"ord\":" << (int)summary.order_type << ","
+	    		<< "\"shd\":" << (int)summary.shader_handle << ","
+	    		<< "\"sta\":" << summary.render_state
+                << ((count<submitted-1) ? "}," : "}") << std::endl;
+
+            ++count;
+	    }
+
+		ofs << "]}" << std::endl;
+
+		ofs.close();
+		reset();
+
+		DLOGI << "done" << std::endl;
+	}
+
+	std::map<uint64_t, DrawCallSummary> draw_calls;
+	fs::path json_path;
+	bool tracking = false;
+	uint32_t submitted = 0;
+};
+#endif
 
 /*
 		   _____ _                             
@@ -131,7 +323,7 @@ struct FramebufferTextureVector
 
 static struct RendererStorage
 {
-	RendererStorage() = default;
+	RendererStorage(): initialized_(false) {}
 	~RendererStorage() = default;
 
 	inline void clear_resources()
@@ -178,6 +370,8 @@ static struct RendererStorage
 		#undef DO_ACTION
 	}
 
+	bool initialized_;
+
 	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
 	WRef<IndexBuffer>         index_buffers[k_max_render_handles];
 	WRef<BufferLayout>        vertex_buffer_layouts[k_max_render_handles];
@@ -196,7 +390,11 @@ static struct RendererStorage
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
-	RendererStats stats;
+	Renderer::Statistics stats;
+
+#if W_RC_PROFILE_DRAW_CALLS
+	FrameDrawCallData draw_call_data_;
+#endif
 
 	memory::HeapArea* renderer_memory_;
 	CommandBuffer pre_buffer_;
@@ -209,6 +407,13 @@ static struct RendererStorage
 void Renderer::init(memory::HeapArea& area)
 {
     W_PROFILE_RENDER_FUNCTION()
+
+    if(s_storage.initialized_)
+    {
+    	DLOGW("render") << "[Renderer] Already initialized, skipping." << std::endl;
+    	return;
+    }
+
 	DLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
 	
 	// Create and initialize storage object
@@ -230,21 +435,36 @@ void Renderer::init(memory::HeapArea& area)
 	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
 	}
 
+	s_storage.initialized_ = true;
+
 	DLOGI << "done" << std::endl;
 }
 
 void Renderer::shutdown()
 {
     W_PROFILE_RENDER_FUNCTION()
+
+    if(!s_storage.initialized_)
+    {
+    	DLOGW("render") << "[Renderer] Not initialized, skipping shutdown." << std::endl;
+    	return;
+    }
+
 	flush();
 	DLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
 	s_storage.release();
+	s_storage.initialized_ = false;
+
 	DLOGI << "done" << std::endl;
 }
 
-RenderQueue& Renderer::get_queue()
+void Renderer::submit(const DrawCall& dc)
 {
-	return s_storage.queue_;
+#if W_RC_PROFILE_DRAW_CALLS
+	if(s_storage.draw_call_data_.tracking)
+		s_storage.draw_call_data_.on_submit(dc);
+#endif
+	s_storage.queue_.submit(dc);
 }
 
 Renderer::AuxArena& Renderer::get_arena()
@@ -263,9 +483,17 @@ void Renderer::set_profiling_enabled(bool value)
 	s_storage.profiling_enabled = value;
 }
 
-const RendererStats& Renderer::get_stats()
+const Renderer::Statistics& Renderer::get_stats()
 {
 	return s_storage.stats;
+}
+#endif
+
+#if W_RC_PROFILE_DRAW_CALLS
+void Renderer::track_draw_calls(const fs::path& json_path)
+{
+	s_storage.draw_call_data_.json_path = json_path;
+	s_storage.draw_call_data_.tracking = true;
 }
 #endif
 
@@ -1219,58 +1447,6 @@ static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Coun
 	&dispatch::destroy_framebuffer,
 };
 
-RenderQueue::RenderQueue(memory::HeapArea& area)
-{
-	init(area);
-}
-
-RenderQueue::~RenderQueue()
-{
-
-}
-
-void RenderQueue::init(memory::HeapArea& area)
-{
-	clear_color_ = {0.f,0.f,0.f,0.f};
-	command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
-}
-
-void RenderQueue::sort()
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	// Keys stored separately from commands to avoid touching data too
-	// much during sort calls
-    std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
-        [&](const CommandBuffer::Entry& item1, const CommandBuffer::Entry& item2)
-        {
-        	return item1.first < item2.first;
-        });
-}
-
-void RenderQueue::reset()
-{
-	command_buffer_.reset();
-}
-
-void RenderQueue::submit(const DrawCall& dc)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	W_ASSERT(dc.data.VAO.is_valid(), "Invalid VertexArrayHandle!");
-	W_ASSERT(dc.data.shader.is_valid(), "Invalid ShaderHandle!");
-
-	auto& cmdbuf = command_buffer_.storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&dc.type);
-	cmdbuf.write(&dc.data);
-	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
-		cmdbuf.write(&dc.instance_data);
-
-	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(), cmd};
-}
-
 // Helper function to identify which part of the pass state has changed
 static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
 {
@@ -1425,6 +1601,10 @@ void RenderQueue::flush()
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
+#if W_RC_PROFILE_DRAW_CALLS
+		if(s_storage.draw_call_data_.tracking)
+			s_storage.draw_call_data_.on_dispatch(key);
+#endif
 		command_buffer_.storage.seek(cmd);
 		Renderer::render_dispatch(command_buffer_.storage);
 	}
@@ -1484,6 +1664,11 @@ void Renderer::flush()
 	s_storage.auxiliary_arena_.reset();
 	// Reset resource arena for next frame
 	filesystem::reset_arena();
+
+#if W_RC_PROFILE_DRAW_CALLS
+	if(s_storage.draw_call_data_.tracking)
+		s_storage.draw_call_data_.export_json();
+#endif
 
 	// Execute callbacks
 	for(auto&& callback: s_storage.end_frame_callbacks_)

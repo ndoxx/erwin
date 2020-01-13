@@ -40,14 +40,18 @@ Application* Application::pinstance_ = nullptr;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
-struct ApplicationStorage
+static struct ApplicationStorage
 {
     std::vector<fs::path> configuration_files;
     memory::HeapArea client_area;
     memory::HeapArea system_area;
     memory::HeapArea render_area;
-};
-static ApplicationStorage s_storage;
+
+#if W_RC_PROFILE_DRAW_CALLS
+    bool track_draw_calls = false;
+    fs::path draw_calls_json_path;
+#endif
+} s_storage;
 
 // Helper function to automatically configure an event tracking policy
 template <typename EventT>
@@ -307,6 +311,14 @@ void Application::toggle_imgui_layer()
         IMGUI_LAYER->toggle();
 }
 
+void Application::track_draw_calls(const fs::path& json_path)
+{
+#if W_RC_PROFILE_DRAW_CALLS
+    s_storage.track_draw_calls = true;
+    s_storage.draw_calls_json_path = json_path;
+#endif
+}
+
 void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
@@ -342,6 +354,11 @@ void Application::run()
     			layer->update(game_clock_);
 		}
 
+#if W_RC_PROFILE_DRAW_CALLS
+        if(s_storage.track_draw_calls)
+            Renderer::track_draw_calls(s_storage.draw_calls_json_path);
+#endif
+
         // For each layer, render
         if(!minimized_)
         {
@@ -355,7 +372,11 @@ void Application::run()
 #endif
 
         Renderer::flush();
-        
+
+#if W_RC_PROFILE_DRAW_CALLS
+        s_storage.track_draw_calls = false;
+#endif
+
 		// TODO: move this to renderer
         {
             W_PROFILE_SCOPE("ImGui render")

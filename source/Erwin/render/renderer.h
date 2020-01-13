@@ -6,11 +6,11 @@
 #include <functional>
 
 #include "filesystem/filesystem.h"
-#include "memory/arena.h"
+#include "memory/memory.hpp"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
 #include "render/framebuffer_layout.h"
-#include "render/texture.h" // TMP: for Texture2DDescriptor
+#include "render/texture_common.h"
 #include "render/handles.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer_config.h"
@@ -18,36 +18,10 @@
 namespace erwin
 {
 
-struct SortKey
-{
-	enum class Order: uint8_t
-	{
-		ByShader,
-		ByDepthDescending,
-		ByDepthAscending,
-		Sequential
-	};
-
-	uint64_t encode() const;
-	void decode(uint64_t key);
-
-						      // -- meaning --
-	uint16_t view = 0;        // layer / viewport id
-	uint8_t shader = 0;       // could be "material ID" when I have a material system
-	uint32_t depth = 0;       // depth mantissa
-	uint32_t sequence = 0;    // for commands to be dispatched sequentially
-	bool blending = false;    // affects the draw_type bit
-
-	SortKey::Order order;
-};
-
-struct RendererStats
-{
-	float render_time = 0.f;
-};
-
-class RenderQueue;
 struct DrawCall;
+#if W_RC_PROFILE_DRAW_CALLS
+struct FrameDrawCallData;
+#endif
 class Renderer
 {
 public:
@@ -57,6 +31,11 @@ public:
 			    				memory::policy::NoMemoryTagging,
 			    				memory::policy::NoMemoryTracking> AuxArena;
 			    				
+	struct Statistics
+	{
+		float render_time = 0.f;
+	};
+
 	// * The following functions have immediate effect
 	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
 	static AuxArena& 		 get_arena();
@@ -73,14 +52,12 @@ public:
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
 	// * Draw call queue management and submission
-	// Get the render queue
-	static RenderQueue& get_queue();
 	// Send a draw call to a particular queue
-	static inline void  submit(const DrawCall& dc);
+	static void submit(const DrawCall& dc);
 	// Force renderer to dispatch all commands in command buffers and render queues
-	static void 		flush();
+	static void flush();
 	// Set a callback function that will be executed after flush()
-	static void 		set_end_frame_callback(std::function<void(void)> callback);
+	static void set_end_frame_callback(std::function<void(void)> callback);
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands
@@ -115,7 +92,11 @@ public:
 #ifdef W_DEBUG
 	static void* get_native_texture_handle(TextureHandle handle);
 	static void set_profiling_enabled(bool value=true);
-	static const RendererStats& get_stats();
+	static const Statistics& get_stats();
+#endif
+#if W_RC_PROFILE_DRAW_CALLS
+	// Track draw calls for this frame
+	static void track_draw_calls(const fs::path& json_path);
 #endif
 
 private:
@@ -128,67 +109,30 @@ private:
 	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
 
-struct CommandBuffer
+// Helper struct to simplify the generation of a sorting key associated to a draw call
+struct SortKey
 {
-	typedef std::pair<uint64_t,void*> Entry;
-
-	CommandBuffer() = default;
-	CommandBuffer(memory::HeapArea& area, std::size_t size, const char* debug_name)
+	// Policy for key sorting
+	enum class Order: uint8_t
 	{
-		init(area, size, debug_name);
-	}
+		ByShader,			// Keys are sorted by shader in priority, then by depth (for compute shaders)
+		ByDepthDescending,	// Keys are sorted by increasing clip depth first, then by shader
+		ByDepthAscending,	// Keys are sorted by decreasing clip depth first, then by shader
+		Sequential 			// Keys are sorted by a 32-bits sequence number
+	};
 
-	inline void init(memory::HeapArea& area, std::size_t size, const char* debug_name)
-	{
-		count = 0;
-		storage.init(area, size, debug_name);
-	}
+	// Encode key structure into a 64 bits number (the actual sorting key)
+	uint64_t encode() const;
 
-	inline void reset()
-	{
-		storage.reset();
-		count = 0;
-	}
-
-	std::size_t count;
-	memory::LinearBuffer<> storage;
-	Entry entries[k_max_render_commands];
+	uint16_t view = 0;     // [view id | framebuffer id] for depth order, just view id for sequential order
+	uint8_t shader = 0;    // shader id to allow grouping by shader
+	uint32_t depth = 0;    // depth mantissa
+	uint32_t sequence = 0; // for commands to be dispatched sequentially
+	bool blending = false; // affects the draw_type bit
+	SortKey::Order order;  // impacts how this key will be encoded
 };
 
-struct DrawCall;
-class RenderQueue
-{
-public:
-	friend class Renderer;
-
-	RenderQueue() = default;
-	RenderQueue(memory::HeapArea& area);
-	~RenderQueue();
-
-	void init(memory::HeapArea& area);
-
-	// * These functions change the queue state persistently
-	// Set clear color for this queue
-	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
-	// Submit a draw call
-	void submit(const DrawCall& draw_call);
-	// Sort queue by sorting key
-	void sort();
-	// Dispatch all commands
-	void flush();
-	// Clear queue
-	void reset();
-
-private:
-	glm::vec4 clear_color_;
-	CommandBuffer command_buffer_;
-};
-
-inline void Renderer::submit(const DrawCall& dc)
-{
-	get_queue().submit(dc);
-}
-
+// All the state needed by the renderer to perform a platform draw call
 struct DrawCall
 {
 	enum DrawCallType: uint8_t
@@ -241,11 +185,11 @@ struct DrawCall
 		data.VAO         = VAO;
 		data.count       = count;
 		data.offset      = offset;
-		instance_data.SSBO_data  = nullptr;
-		instance_data.SSBO_size  = 0;
+		instance_data.SSBO_data = nullptr;
+		instance_data.SSBO_size = 0;
 
 		// Setup sorting key
-		key.view = (uint16_t(layer_id)<<8);
+		key.view   = (uint16_t(layer_id)<<8);
 		key.shader = data.shader.index; // NOTE(ndoxx): Overflow when shader index is greater than 255
 	}
 
@@ -310,7 +254,6 @@ struct DrawCall
 		key.order = SortKey::Order::Sequential;
 	}
 };
-
 
 
 } // namespace erwin
