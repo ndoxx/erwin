@@ -13,7 +13,7 @@ void main()
 
 #type fragment
 #version 460 core
-#include "include/common.glsl"
+#include "engine/common.glsl"
 
 layout(location = 0) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;

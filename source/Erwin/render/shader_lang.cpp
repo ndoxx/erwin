@@ -20,13 +20,13 @@ void register_include_directory(const fs::path& dir_path)
 {
 	if(fs::exists(dir_path))
 	{
-		DLOG("core",1) << "Shader include directory registered:" << std::endl;
+		DLOG("shader",1) << "Shader include directory registered:" << std::endl;
 		DLOGI << WCC('p') << dir_path << std::endl;
 		s_storage.include_dirs.push_back(dir_path);
 	}
 	else
 	{
-		DLOGE("core") << "Shader include directory could not be found:" << std::endl;
+		DLOGE("shader") << "Shader include directory could not be found:" << std::endl;
 		DLOGI << WCC('p') << dir_path << std::endl;
 	}
 }
@@ -63,13 +63,16 @@ static std::string handle_includes(const fs::path& base_dir, const std::string& 
         std::string filename = result.substr(1, result.size()-2);
         // DLOG("shader", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
         fs::path inc_path = find_include(base_dir, filename);
-        W_ASSERT(inc_path.string().size()!=0, "Could not find include file.");
+        W_ASSERT_FMT(inc_path.string().size()!=0, "Could not find include file: %s", filename.c_str());
         return "\n" + filesystem::get_file_as_string(inc_path) + "\n";
     });
 }
 
 void pre_process_GLSL(const fs::path& filepath, std::vector<std::pair<ExecutionModel, std::string>>& sources)
 {
+	DLOG("shader",1) << "Pre-processing source: " << std::endl;
+	DLOGI << WCC('p') << filepath.filename() << std::endl;
+
     std::string full_source(filesystem::get_file_as_string(filepath));
     fs::path base_directory = filepath.parent_path();
 

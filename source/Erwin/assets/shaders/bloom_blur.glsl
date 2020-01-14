@@ -13,8 +13,8 @@ void main()
 
 #type fragment
 #version 460 core
-#include "include/common.glsl"
-#include "include/convolution.glsl"
+#include "engine/common.glsl"
+#include "engine/convolution.glsl"
 
 #define BLOOM_RETAIL
 

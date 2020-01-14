@@ -1,6 +1,7 @@
 #include "filesystem/filesystem.h"
 #include "core/core.h"
 #include "memory/heap_area.h"
+#include "render/shader_lang.h"
 
 #ifdef __linux__
     #include <unistd.h>
@@ -48,6 +49,8 @@ void init()
     W_ASSERT(fs::exists(s_conf_path), "No config directory detected in root directory.");
     s_sys_asset_path = s_root_path / "source/Erwin/assets";
     W_ASSERT(fs::exists(s_sys_asset_path), "No assets directory detected in Erwin source directory.");
+    // Register shader directory as an include directory for client shaders
+    slang::register_include_directory(s_sys_asset_path / "shaders");
     s_asset_path = fs::path();
 }
 
