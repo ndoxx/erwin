@@ -147,13 +147,6 @@ int main(int argc, char const *argv[])
     s_force_font_rebuild   = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--ffont");
     s_force_shader_rebuild = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fshader");
 
-    // Test
-    if(cmd_option_exists(argv, argv + argc, "-t"))
-    {
-        fudge::spv::test();
-        return 0;
-    }
-
     // * Locate executable path, root directory, config directory, asset and fonts directories
     DLOGN("fudge") << "Locating unpacked assets." << std::endl;
     s_self_path = get_selfpath();

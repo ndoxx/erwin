@@ -3,6 +3,7 @@
 #include "filesystem/spv_file.h"
 #include "core/core.h"
 #include "utils/string.h"
+#include "render/shader_lang.h"
 #include "debug/logger.h"
 
 #include <vector>
@@ -18,98 +19,30 @@ namespace fudge
 namespace spv
 {
 
-static erwin::spv::ExecutionModel type_from_hstring(hash_t htype)
-{
-	switch(htype)
-	{
-		case "vertex"_h: 	             return erwin::spv::ExecutionModel::Vertex;
-		case "vert"_h: 	                 return erwin::spv::ExecutionModel::Vertex;
-        case "tesselation_control"_h:    return erwin::spv::ExecutionModel::TessellationControl;
-        case "tesc"_h:                   return erwin::spv::ExecutionModel::TessellationControl;
-        case "tesselation_evaluation"_h: return erwin::spv::ExecutionModel::TessellationEvaluation;
-        case "tese"_h:                   return erwin::spv::ExecutionModel::TessellationEvaluation;
-		case "geometry"_h: 	             return erwin::spv::ExecutionModel::Geometry;
-		case "geom"_h: 	                 return erwin::spv::ExecutionModel::Geometry;
-		case "fragment"_h: 	             return erwin::spv::ExecutionModel::Fragment;
-		case "frag"_h: 	                 return erwin::spv::ExecutionModel::Fragment;
-        case "compute"_h:                return erwin::spv::ExecutionModel::GLCompute;
-        case "comp"_h:                   return erwin::spv::ExecutionModel::GLCompute;
-	}
-    return erwin::spv::ExecutionModel(0);
-}
-
-static std::string extension_from_type(erwin::spv::ExecutionModel type)
+static std::string extension_from_type(erwin::slang::ExecutionModel type)
 {
 	switch(type)
 	{
-        case erwin::spv::ExecutionModel::Vertex:                 return ".vert";
-        case erwin::spv::ExecutionModel::TessellationControl:    return ".tesc";
-		case erwin::spv::ExecutionModel::TessellationEvaluation: return ".tese";
-		case erwin::spv::ExecutionModel::Geometry:               return ".geom";
-        case erwin::spv::ExecutionModel::Fragment:               return ".frag";
-		case erwin::spv::ExecutionModel::GLCompute:              return ".comp";
+        case erwin::slang::ExecutionModel::Vertex:                 return ".vert";
+        case erwin::slang::ExecutionModel::TessellationControl:    return ".tesc";
+		case erwin::slang::ExecutionModel::TessellationEvaluation: return ".tese";
+		case erwin::slang::ExecutionModel::Geometry:               return ".geom";
+        case erwin::slang::ExecutionModel::Fragment:               return ".frag";
+		case erwin::slang::ExecutionModel::Compute:                return ".comp";
 	}
 }
 
-static std::string spv_file_from_type(erwin::spv::ExecutionModel type)
+static std::string spv_file_from_type(erwin::slang::ExecutionModel type)
 {
 	switch(type)
 	{
-		case erwin::spv::ExecutionModel::Vertex:                 return "vert.spv";
-        case erwin::spv::ExecutionModel::TessellationControl:    return "tesc.spv";
-        case erwin::spv::ExecutionModel::TessellationEvaluation: return "tese.spv";
-		case erwin::spv::ExecutionModel::Geometry:               return "geom.spv";
-		case erwin::spv::ExecutionModel::Fragment:               return "frag.spv";
-        case erwin::spv::ExecutionModel::GLCompute:              return "comp.spv";
+		case erwin::slang::ExecutionModel::Vertex:                 return "vert.spv";
+        case erwin::slang::ExecutionModel::TessellationControl:    return "tesc.spv";
+        case erwin::slang::ExecutionModel::TessellationEvaluation: return "tese.spv";
+		case erwin::slang::ExecutionModel::Geometry:               return "geom.spv";
+		case erwin::slang::ExecutionModel::Fragment:               return "frag.spv";
+        case erwin::slang::ExecutionModel::Compute:                return "comp.spv";
 	}
-}
-
-void test()
-{
-
-}
-
-static void handle_includes(std::string& source, const fs::path& source_dir)
-{
-    // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
-    std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    source = erwin::su::rx::regex_replace(source, e_inc, [&](const std::smatch& m)
-    {
-        std::string result = m[1].str();
-        std::string filename = result.substr(1, result.size()-2);
-        DLOG("fudge", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
-        return "\n" + filesystem::get_file_as_string(source_dir / filename) + "\n";
-    });
-}
-
-static std::vector<std::pair<erwin::spv::ExecutionModel, std::string>> preprocess(const std::string& full_source, const fs::path& source_dir)
-{
-	std::vector<std::pair<erwin::spv::ExecutionModel, std::string>> sources;
-
-	static const std::string type_token = "#type";
-	size_t pos = full_source.find(type_token, 0);
-	while(pos != std::string::npos)
-	{
-		size_t eol = full_source.find_first_of("\r\n", pos);
-		W_ASSERT(eol != std::string::npos, "Syntax error!");
-
-		size_t begin = pos + type_token.size() + 1;
-		std::string type = full_source.substr(begin, eol - begin);
-		hash_t htype = H_(type.c_str());
-		erwin::spv::ExecutionModel shader_type = type_from_hstring(htype);
-
-		size_t next_line_pos = full_source.find_first_not_of("\r\n", eol);
-		pos = full_source.find(type_token, next_line_pos);
-		sources.push_back(std::make_pair(shader_type,
-				                         full_source.substr(next_line_pos, pos - (next_line_pos == std::string::npos ? full_source.size() - 1 : next_line_pos))));
-	}
-
-	for(auto&& [type, source]: sources)
-	{
-        handle_includes(source, source_dir);
-	}
-
-	return sources;
 }
 
 extern bool check_toolchain()
@@ -141,12 +74,8 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     fs::path out_path = output_dir / (source_path.stem().string() + ".spv");
 	std::string shader_name = source_path.stem().string();
 
-    std::ifstream ifs(source_path);
-    // Read stream to buffer and preprocess full source
-    auto sources = preprocess(std::string((std::istreambuf_iterator<char>(ifs)),
-                                           std::istreambuf_iterator<char>()),
-    					      source_dir);
-    ifs.close();
+    std::vector<std::pair<erwin::slang::ExecutionModel, std::string>> sources;
+    erwin::slang::pre_process_GLSL(source_path, sources);
 
     // Export temporary source files for each shader
     std::vector<fs::path> spvs;

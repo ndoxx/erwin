@@ -4,6 +4,7 @@
 
 #include "core/core.h"
 #include "render/shader.h"
+#include "render/shader_lang.h"
 
 #include "glm/glm.hpp"
 
@@ -16,8 +17,6 @@ public:
 	OGLShader() = default;
 	~OGLShader() = default;
 
-	// Initialize shader from glsl source string
-	virtual bool init_glsl_string(const std::string& name, const std::string& source) override;
 	// Initialize shader from packed GLSL source
 	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) override;
 	// Initialize shader from SPIR-V file
@@ -44,12 +43,8 @@ public:
     }
 
 private:
-	// Helper function to extract the various shader sources from a single formatted source string
-	std::vector<std::pair<ShaderType, std::string>> parse(const std::string& full_source);
-	// Helper function to get the code included by a shader source
-	std::string parse_includes(const std::string& source);
 	// Build the shader program from sources
-	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
+	bool build(const std::vector<std::pair<slang::ExecutionModel, std::string>>& sources);
 	// Build the shader program from SPIR-V binary
 	bool build_spirv(const fs::path& filepath);
 	// Link the program

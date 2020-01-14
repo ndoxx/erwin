@@ -30,23 +30,6 @@ WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
     }
 }
 
-WRef<Shader> Shader::create(const std::string& name, const std::string& source_string)
-{
-	switch(Gfx::get_api())
-    {
-        case GfxAPI::None:
-            DLOGE("render") << "Shader: not implemented for GfxAPI::None." << std::endl;
-            return nullptr;
-
-        case GfxAPI::OpenGL:
-        {
-            auto ref = make_ref<OGLShader>();
-            ref->init_glsl_string(name, source_string);
-            return ref;
-        }
-    }
-}
-
 // -------------------------------------------------------------------------------------------------
 
 void ShaderBank::add(WRef<Shader> p_shader)
