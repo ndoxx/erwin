@@ -17,6 +17,7 @@
 #include "debug/logger_sink.h"
 #include "debug/logger_thread.h"
 #include "filesystem/xml_file.h"
+#include "render/shader_lang.h"
 
 using namespace erwin;
 
@@ -86,6 +87,7 @@ static void show_logo()
 static void init_logger()
 {
     WLOGGER(create_channel("fudge", 3));
+    WLOGGER(create_channel("shader", 3));
     WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
     WLOGGER(attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log")));
     WLOGGER(set_single_threaded(true));
@@ -146,13 +148,6 @@ int main(int argc, char const *argv[])
     s_force_cat_rebuild    = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fcat");
     s_force_font_rebuild   = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--ffont");
     s_force_shader_rebuild = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fshader");
-
-    // Test
-    if(cmd_option_exists(argv, argv + argc, "-t"))
-    {
-        fudge::spv::test();
-        return 0;
-    }
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
     DLOGN("fudge") << "Locating unpacked assets." << std::endl;
@@ -304,31 +299,47 @@ int main(int argc, char const *argv[])
     if(fudge::spv::check_toolchain())
     {
         rapidxml::xml_node<>* shader_node = cfg.root->first_node("shader");
-        for(rapidxml::xml_node<>* batch=shader_node->first_node("batch");
-            batch; batch=batch->next_sibling("batch"))
+        if(shader_node)
         {
-            // Configure batch
-            std::string input_path, output_path, config_file;
-            if(!xml::parse_attribute(batch, "input", input_path)) continue;
-            if(!xml::parse_attribute(batch, "output", output_path)) continue;
-
-            // Create temporary folder
-            fs::create_directory(s_root_path / output_path / "tmp");
-            DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
-            DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
-            for(auto& entry: fs::directory_iterator(s_root_path / input_path))
+            // Check include directories
+            for(rapidxml::xml_node<>* include_node=shader_node->first_node("include");
+                include_node; include_node=include_node->next_sibling("include"))
             {
-                if(entry.is_regular_file() && 
-                   !entry.path().extension().string().compare(".glsl") &&
-                   (fudge::far::need_create(entry) || s_force_shader_rebuild))
+                std::string include_dir;
+                if(xml::parse_attribute(include_node, "path", include_dir))
                 {
-                    DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
-                    fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
-                    DLOGR("fudge") << std::endl;
+                    erwin::slang::register_include_directory(s_root_path / include_dir);
+                    DLOG("fudge",1) << "Detected shader include directory:" << std::endl;
+                    DLOGI << WCC('p') << include_dir << std::endl;
                 }
             }
-            // Delete temporary folder
-            fs::remove_all(s_root_path / output_path / "tmp");
+
+            for(rapidxml::xml_node<>* batch=shader_node->first_node("batch");
+                batch; batch=batch->next_sibling("batch"))
+            {
+                // Configure batch
+                std::string input_path, output_path, config_file;
+                if(!xml::parse_attribute(batch, "input", input_path)) continue;
+                if(!xml::parse_attribute(batch, "output", output_path)) continue;
+
+                // Create temporary folder
+                fs::create_directory(s_root_path / output_path / "tmp");
+                DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
+                DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+                for(auto& entry: fs::directory_iterator(s_root_path / input_path))
+                {
+                    if(entry.is_regular_file() && 
+                       !entry.path().extension().string().compare(".glsl") &&
+                       (fudge::far::need_create(entry) || s_force_shader_rebuild))
+                    {
+                        DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
+                        fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
+                        DLOGR("fudge") << std::endl;
+                    }
+                }
+                // Delete temporary folder
+                fs::remove_all(s_root_path / output_path / "tmp");
+            }
         }
     }
 

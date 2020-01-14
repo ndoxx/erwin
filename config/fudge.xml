@@ -30,6 +30,7 @@
 	</texmap>
 
 	<shader>
+		<include path="source/Erwin/assets/shaders"/>
 		<batch input="source/Erwin/assets/shaders"
 			   output="source/Erwin/assets/shaders"/>
 		<batch input="source/Applications/FractalExplorer/assets/shaders"

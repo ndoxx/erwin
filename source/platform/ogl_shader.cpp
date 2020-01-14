@@ -19,51 +19,17 @@
 namespace erwin
 {
 
-static ShaderType type_from_hstring(hash_t htype)
+static GLenum to_gl_shader_type(slang::ExecutionModel model)
 {
-	switch(htype)
-	{
-        case "vertex"_h:                 return ShaderType::Vertex;
-        case "vert"_h:                   return ShaderType::Vertex;
-        case "tesselation_control"_h:    return ShaderType::TessellationControl;
-        case "tesc"_h:                   return ShaderType::TessellationControl;
-        case "tesselation_evaluation"_h: return ShaderType::TessellationEvaluation;
-        case "tese"_h:                   return ShaderType::TessellationEvaluation;
-        case "geometry"_h:               return ShaderType::Geometry;
-        case "geom"_h:                   return ShaderType::Geometry;
-        case "fragment"_h:               return ShaderType::Fragment;
-        case "frag"_h:                   return ShaderType::Fragment;
-        case "compute"_h:                return ShaderType::GLCompute;
-        case "comp"_h:                   return ShaderType::GLCompute;
-	}
-    W_ASSERT(false, "Unknown shader type.");
-    return ShaderType::Vertex;
-}
-
-static GLenum to_gl_shader_type(ShaderType type)
-{
-	switch(type)
-	{
-        case ShaderType::Vertex:                 return GL_VERTEX_SHADER;
-        case ShaderType::TessellationControl:    return GL_TESS_CONTROL_SHADER;
-		case ShaderType::TessellationEvaluation: return GL_TESS_EVALUATION_SHADER;
-		case ShaderType::Geometry:               return GL_GEOMETRY_SHADER;
-        case ShaderType::Fragment:               return GL_FRAGMENT_SHADER;
-		case ShaderType::GLCompute:              return GL_COMPUTE_SHADER;
-	}
-}
-
-static std::string to_string(ShaderType type)
-{
-	switch(type)
-	{
-		case ShaderType::Vertex:                 return "Vertex shader";
-        case ShaderType::TessellationControl:    return "Tesselation Control shader";
-        case ShaderType::TessellationEvaluation: return "Tesselation Evaluation shader";
-		case ShaderType::Geometry:               return "Geometry shader";
-        case ShaderType::Fragment:               return "Fragment shader";
-		case ShaderType::GLCompute:              return "Compute shader";
-	}
+    switch(model)
+    {
+        case slang::ExecutionModel::Vertex:                 return GL_VERTEX_SHADER;
+        case slang::ExecutionModel::TessellationControl:    return GL_TESS_CONTROL_SHADER;
+        case slang::ExecutionModel::TessellationEvaluation: return GL_TESS_EVALUATION_SHADER;
+        case slang::ExecutionModel::Geometry:               return GL_GEOMETRY_SHADER;
+        case slang::ExecutionModel::Fragment:               return GL_FRAGMENT_SHADER;
+        case slang::ExecutionModel::Compute:                return GL_COMPUTE_SHADER;
+    }
 }
 
 static std::string ogl_attribute_type_to_string(GLenum type)
@@ -180,7 +146,7 @@ static std::string get_shader_error_report(GLuint ShaderID)
     return ret;
 }
 
-static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std::string& source)
+static void shader_error_report(GLuint ShaderID, int line_offset, const std::string& source)
 {
     std::set<int> errlines;
 
@@ -208,7 +174,7 @@ static void shader_error_report(GLuint ShaderID, int n_previous_lines, const std
     {
         if(errlines.find(nline++)!=errlines.end())
         {
-            int actual_line = nline + n_previous_lines;
+            int actual_line = nline + line_offset;
             su::trim(line);
             DLOGR("shader") << "\033[1;38;2;255;200;10m> \033[1;38;2;255;90;90m"
                             << actual_line << "\033[1;38;2;255;200;10m : " << line << std::endl;
@@ -233,17 +199,6 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
-// Initialize shader from string
-bool OGLShader::init_glsl_string(const std::string& name, const std::string& source)
-{
-    name_ = name;
-    filepath_ = "";
-    auto sources = parse(source);
-    bool success = build(sources);
-    if(success)
-        introspect();
-    return success;
-}
 // Initialize shader from packed GLSL source
 bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 {
@@ -251,10 +206,9 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 
     name_ = name;
     filepath_ = glsl_file;
-    // Read stream to buffer and parse full source
-    std::ifstream ifs(glsl_file);
-    auto sources = parse(std::string((std::istreambuf_iterator<char>(ifs)),
-                                      std::istreambuf_iterator<char>()));
+
+    std::vector<std::pair<slang::ExecutionModel, std::string>> sources;
+    slang::pre_process_GLSL(glsl_file, sources);
     bool success = build(sources);
     if(success)
         introspect();
@@ -345,49 +299,7 @@ void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, 
         glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
 }
 
-std::vector<std::pair<ShaderType, std::string>> OGLShader::parse(const std::string& full_source)
-{
-    W_PROFILE_FUNCTION()
-
-	std::vector<std::pair<ShaderType, std::string>> sources;
-
-	static const std::string type_token = "#type";
-	size_t pos = full_source.find(type_token, 0);
-	while(pos != std::string::npos)
-	{
-		size_t eol = full_source.find_first_of("\r\n", pos);
-		W_ASSERT(eol != std::string::npos, "Syntax error!");
-
-		size_t begin = pos + type_token.size() + 1;
-		std::string type = full_source.substr(begin, eol - begin);
-		hash_t htype = H_(type.c_str());
-		ShaderType shader_type = type_from_hstring(htype);
-
-		size_t next_line_pos = full_source.find_first_not_of("\r\n", eol);
-		pos = full_source.find(type_token, next_line_pos);
-		sources.push_back(std::make_pair(shader_type,
-				                         full_source.substr(next_line_pos, pos - (next_line_pos == std::string::npos ? full_source.size() - 1 : next_line_pos))));
-	}
-
-	return sources;
-}
-
-std::string OGLShader::parse_includes(const std::string& source)
-{
-    W_ASSERT(!filepath_.empty(), "Cannot include shader files when source is a pure string.");
-
-    // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
-    std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    return su::rx::regex_replace(source, e_inc, [&](const std::smatch& m)
-    {
-        std::string result = m[1].str();
-        std::string filename = result.substr(1, result.size()-2);
-        // DLOG("shader", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
-        return "\n" + filesystem::get_file_as_string(filepath_.parent_path() / filename) + "\n";
-    });
-}
-
-bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sources)
+bool OGLShader::build(const std::vector<std::pair<slang::ExecutionModel, std::string>>& sources)
 {
     W_PROFILE_FUNCTION()
 
@@ -396,23 +308,13 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	std::vector<uint32_t> shader_ids;
 
 	// * Compile each shader
-	int n_previous_lines = 0;
-    int current = 0;
 	for(auto&& [type, source]: sources)
 	{
 		DLOGI << "Compiling " << to_string(type) << "." << std::endl;
 		
-        // Check for includes
-        std::string source_includes = parse_includes(source);
-
-        // Keep track of lines for error report
-        int n_orig_lines = std::count(source.begin(), source.end(), '\n');
-        int n_total_lines = std::count(source_includes.begin(), source_includes.end(), '\n');
-        int n_lines_included = n_total_lines-n_orig_lines;
-
 		// Compile shader from source
     	GLuint shader_id = glCreateShader(to_gl_shader_type(type));
-    	const char* char_src = source_includes.c_str();
+    	const char* char_src = source.c_str();
 		glShaderSource(shader_id, 1, &char_src, nullptr);
 		glCompileShader(shader_id);
 
@@ -423,7 +325,7 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 	    if(is_compiled == GL_FALSE)
 	    {
 	        DLOGE("shader") << "Shader \"" << name_ << "\" will not compile" << std::endl;
-            shader_error_report(shader_id, n_previous_lines-n_lines_included+current, source_includes);
+            shader_error_report(shader_id, 0, source);
 
 	        // We don't need the shader anymore.
 	        glDeleteShader(shader_id);
@@ -432,9 +334,6 @@ bool OGLShader::build(const std::vector<std::pair<ShaderType, std::string>>& sou
 
 	    // Save shader id for later linking
 	    shader_ids.push_back(shader_id);
-
-        n_previous_lines += n_total_lines;
-        ++current;
 	}
 
     // Link program
@@ -461,7 +360,7 @@ bool OGLShader::build_spirv(const fs::path& filepath)
 
     for(auto&& stage: stages)
     {
-        ShaderType type = ShaderType(stage.execution_model);
+        slang::ExecutionModel type = slang::ExecutionModel(stage.execution_model);
         
         DLOG("shader",1) << "Specializing " << to_string(type) << "." << std::endl;
         DLOGI << "Entry point: " << stage.entry_point << std::endl;

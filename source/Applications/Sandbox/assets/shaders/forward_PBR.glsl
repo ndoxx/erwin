@@ -1,7 +1,7 @@
 #type vertex
 #version 460 core
-#include "include/tangent.glsl"
-#include "include/forward_ubos.glsl"
+#include "engine/tangent.glsl"
+#include "engine/forward_ubos.glsl"
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
@@ -46,10 +46,10 @@ void main()
 
 #type fragment
 #version 460 core
-#include "include/common.glsl"
-#include "include/cook_torrance.glsl"
-#include "include/parallax.glsl"
-#include "include/forward_ubos.glsl"
+#include "engine/common.glsl"
+#include "engine/cook_torrance.glsl"
+#include "engine/parallax.glsl"
+#include "engine/forward_ubos.glsl"
 
 #define PBR_EN_EMISSIVE 1
 

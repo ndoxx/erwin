@@ -13,18 +13,7 @@
 namespace erwin
 {
 
-enum class ShaderType: uint8_t
-{
-    Vertex = 0,
-    TessellationControl = 1,
-    TessellationEvaluation = 2,
-    Geometry = 3,
-    Fragment = 4,
-    GLCompute = 5,
-};
-
 class Texture2D;
-
 class Shader
 {
 public:
@@ -32,7 +21,7 @@ public:
 	virtual ~Shader() = default;
 
 	// Initialize shader from glsl source string
-	virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
+	// virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
 	// Initialize shader from packed GLSL source
 	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) { return false; }
 	// Initialize shader from SPIR-V file
@@ -64,8 +53,6 @@ public:
 
 	// Factory method for the creation of an API-specific shader from a file path
 	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
-	// Factory method for the creation of an API-specific shader from a source string
-	static WRef<Shader> create(const std::string& name, const std::string& source_string);
 
 protected:
 	std::string name_;

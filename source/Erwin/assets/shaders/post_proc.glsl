@@ -13,9 +13,9 @@ void main()
 
 #type fragment
 #version 460 core
-#include "include/common.glsl"
-#include "include/post_proc_inc.glsl"
-#include "include/fxaa.glsl"
+#include "engine/common.glsl"
+#include "engine/post_proc_inc.glsl"
+#include "engine/fxaa.glsl"
 
 layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 out_color;
