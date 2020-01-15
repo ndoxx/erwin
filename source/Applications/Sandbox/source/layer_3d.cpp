@@ -27,6 +27,7 @@ void Layer3D::on_attach()
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	MaterialLayoutHandle layout_a_nd_mar  = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mar"_h});
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
+	deferred_pbr_       = AssetManager::load_shader("shaders/deferred_PBR.glsl");
 	forward_opaque_pbr_ = AssetManager::load_shader("shaders/forward_PBR.glsl");
 	forward_sun_        = AssetManager::load_shader("shaders/forward_sun.glsl");
 	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mar);
@@ -37,12 +38,13 @@ void Layer3D::on_attach()
 	AssetManager::release(layout_a_nd_mar);
 	AssetManager::release(layout_a_nd_mare);
 
+	DeferredRenderer::register_shader(deferred_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_opaque_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
 	// Setup scene
 	int N = 10;
-	for(int ii=0; ii<N; ++ii)
+	/*for(int ii=0; ii<N; ++ii)
 	{
 		float xx = -N + 2.f*ii + 1.f;
 		for(int jj=0; jj<N; ++jj)
@@ -62,13 +64,20 @@ void Layer3D::on_attach()
 				scene_.push_back(cube);
 			}
 		}
-	}
-	emissive_cube_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
-	emissive_cube_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-	emissive_cube_.material_data.tint = {0.f,1.f,1.f,1.f};
-	emissive_cube_.material_data.enable_emissivity();
-	emissive_cube_.material_data.emissive_scale = 5.f;
-	scene_.push_back(emissive_cube_);
+	}*/
+	emissive_cube_0_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+	emissive_cube_0_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_0_.material_data.tint = {0.f,1.f,1.f,1.f};
+	emissive_cube_0_.material_data.enable_emissivity();
+	emissive_cube_0_.material_data.emissive_scale = 5.f;
+	scene_.push_back(emissive_cube_0_);
+
+	emissive_cube_1_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+	emissive_cube_1_.material = {deferred_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_1_.material_data.tint = {0.f,1.f,1.f,1.f};
+	emissive_cube_1_.material_data.enable_emissivity();
+	emissive_cube_1_.material_data.emissive_scale = 5.f;
+	emissive_cube_1_.material.data = &emissive_cube_1_.material_data;
 
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
@@ -157,7 +166,7 @@ void Layer3D::on_render()
 	}
 	{
 		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, get_layer_id()+1); // TMP: layer id hack
-		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_1_.transform, emissive_cube_1_.material);
 		DeferredRenderer::end_pass();
 	}
 }

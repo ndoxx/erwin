@@ -470,10 +470,10 @@ void Renderer::init(memory::HeapArea& area)
 		// Debug render target
 	    FramebufferLayout layout =
 	    {
-	    	// RGBA: color
-	        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        {"target_0"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        {"target_1"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, false);
 	}
 
 	s_storage.initialized_ = true;
