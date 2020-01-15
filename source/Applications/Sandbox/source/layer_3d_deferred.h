@@ -2,24 +2,16 @@
 
 #include "erwin.h"
 #include "common.h"
-#include <vector>
 
 using namespace erwin;
 
-struct SunMaterialData
-{
-	glm::vec4 color;
-	float scale;
-	float brightness;
-};
-
-class Layer3D: public Layer
+class Layer3DDeferred: public Layer
 {
 public:
 	friend class Sandbox;
 	
-	Layer3D();
-	~Layer3D() = default;
+	Layer3DDeferred();
+	~Layer3DDeferred() = default;
 
 	virtual void on_imgui_render() override;
 	virtual void on_attach() override;
@@ -35,17 +27,9 @@ protected:
 
 private:
 	PerspectiveFreeflyController camera_ctl_;
-	TextureGroupHandle tg_0_;
-	TextureGroupHandle tg_1_;
-	TextureGroupHandle tg_2_;
+	TextureGroupHandle tg_;
 	UniformBufferHandle pbr_material_ubo_;
-	UniformBufferHandle sun_material_ubo_;
-	ShaderHandle forward_opaque_pbr_;
-	ShaderHandle forward_sun_;
+	ShaderHandle deferred_pbr_;
 	DirectionalLight dir_light_;
-
-	Material sun_material_;
-	SunMaterialData sun_material_data_;
-
-	std::vector<Cube> scene_;
+	Cube emissive_cube_;
 };

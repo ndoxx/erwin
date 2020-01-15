@@ -14,6 +14,7 @@
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "render/renderer_deferred.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
 
@@ -90,6 +91,7 @@ Application::~Application()
         FramebufferPool::shutdown();
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
+        DeferredRenderer::shutdown();
         ForwardRenderer::shutdown();
         CommonGeometry::shutdown();
         Renderer::shutdown();
@@ -245,6 +247,7 @@ bool Application::init()
 #endif
         Renderer2D::init();
         ForwardRenderer::init();
+        DeferredRenderer::init();
         PostProcessingRenderer::init();
 
         // Initialize asset manager

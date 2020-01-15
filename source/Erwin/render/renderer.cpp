@@ -447,10 +447,24 @@ void Renderer::init(memory::HeapArea& area)
 	{
 	    FramebufferLayout layout =
 	    {
-	        {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}, // For bloom effect
+	    	// RGB: Albedo, A: ?
+	        {"albedo"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        // RG: Compressed normal, BA: ?
+	        {"normal"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        // R: Metallic, G: AO, B: Roughness, A: Emissivity
+	        {"mare"_h,   ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
+	    FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	}
+	{
+	    FramebufferLayout layout =
+	    {
+	    	// RGBA: HDR color
+	        {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        // RGB: Glow color, A: Glow intensity
+	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
+	    };
+	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true); // TODO: Share depth-stencil buffer with GBuffer
 	}
 
 	s_storage.initialized_ = true;

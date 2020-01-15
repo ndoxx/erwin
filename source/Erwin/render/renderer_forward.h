@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/wtypes.h"
 #include "render/camera_3d.h"
 #include "entity/component_transform.h"
 #include "render/handles.h"

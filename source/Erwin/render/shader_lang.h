@@ -25,7 +25,7 @@ enum class ExecutionModel: uint32_t
 // Helper function to select the appropriate execution model based on a hashed string.
 // Typically; #type [str] directives are used in my .glsl files to mark the beginning 
 // of a given execution model
-static ExecutionModel hstring_to_execution_model(hash_t htype)
+[[maybe_unused]] static ExecutionModel hstring_to_execution_model(hash_t htype)
 {
 	switch(htype)
 	{
@@ -47,7 +47,7 @@ static ExecutionModel hstring_to_execution_model(hash_t htype)
 }
 
 // Helper debug function to display an execution model as a string
-static std::string to_string(ExecutionModel type)
+[[maybe_unused]] static std::string to_string(ExecutionModel type)
 {
 	switch(type)
 	{

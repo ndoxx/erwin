@@ -12,7 +12,8 @@ void Sandbox::on_load()
 {
 	EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
-	push_layer(layer_3d_ = new Layer3D());
+    push_layer(layer_3d_ = new Layer3D());
+	push_layer(layer_3d_deferred_ = new Layer3DDeferred());
 	push_layer(layer_2d_ = new Layer2D());
 	push_overlay(presentation_layer_ = new PresentationLayer());
 	push_overlay(debug_layer_        = new DebugLayer());
@@ -20,6 +21,7 @@ void Sandbox::on_load()
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 #ifdef W_DEBUG
     TexturePeek::register_framebuffer("LBuffer");
+    TexturePeek::register_framebuffer("GBuffer");
     TexturePeek::register_framebuffer("SpriteBuffer");
 #endif
     
@@ -63,6 +65,7 @@ void Sandbox::on_imgui_render()
     	if(ImGui::BeginMenu("Layers"))
     	{
             if(ImGui::Checkbox("3D Layer", &layer3d_enabled_)) toggle_layer_3d();
+            if(ImGui::Checkbox("3D Deferred Layer", &layer3d_deferred_enabled_)) toggle_layer_3d_deferred();
             if(ImGui::Checkbox("2D Layer", &layer2d_enabled_)) toggle_layer_2d();
         	ImGui::MenuItem("Configuration", NULL, &show_app_layer_config_window);
         	ImGui::EndMenu();
@@ -108,6 +111,12 @@ void Sandbox::on_imgui_render()
 
         ImGui::End();
     }*/
+}
+
+void Sandbox::toggle_layer_3d_deferred()
+{
+    layer_3d_deferred_->set_enabled(layer3d_deferred_enabled_);
+    // presentation_layer_->enable_forward_rendering(layer3d_deferred_enabled_);
 }
 
 void Sandbox::toggle_layer_3d()

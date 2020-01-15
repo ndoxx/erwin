@@ -7,6 +7,7 @@
 #include "erwin.h"
 #include "layer_2d.h"
 #include "layer_3d.h"
+#include "layer_3d_deferred.h"
 #include "layer_presentation.h"
 #include "layer_debug.h"
 
@@ -24,6 +25,7 @@ public:
 	bool on_keyboard_event(const KeyboardEvent& e);
 
 	void toggle_layer_3d();
+	void toggle_layer_3d_deferred();
 	void toggle_layer_2d();
 
 	void window_layer_config(bool* p_open);
@@ -36,6 +38,7 @@ public:
 
 private:
 	bool layer3d_enabled_ = true;
+	bool layer3d_deferred_enabled_ = false;
 	bool layer2d_enabled_ = false;
 
 #ifdef W_PROFILE
@@ -46,6 +49,7 @@ private:
 #endif
 
 	Layer3D* layer_3d_;
+	Layer3DDeferred* layer_3d_deferred_;
 	Layer2D* layer_2d_;
 	PresentationLayer* presentation_layer_;
 	DebugLayer* debug_layer_;
