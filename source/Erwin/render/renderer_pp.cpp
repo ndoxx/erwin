@@ -28,7 +28,7 @@ struct BlurUBOData
 };
 #endif
 
-static struct PPStorage
+static struct
 {
 	PostProcessingData pp_data;
 

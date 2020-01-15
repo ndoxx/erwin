@@ -12,14 +12,16 @@ void Sandbox::on_load()
 {
 	EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
-	push_layer(layer_3d_ = new Layer3D());
+    push_layer(layer_3d_ = new Layer3D());
 	push_layer(layer_2d_ = new Layer2D());
 	push_overlay(presentation_layer_ = new PresentationLayer());
 	push_overlay(debug_layer_        = new DebugLayer());
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 #ifdef W_DEBUG
+    TexturePeek::register_framebuffer("DBuffer");
     TexturePeek::register_framebuffer("LBuffer");
+    TexturePeek::register_framebuffer("GBuffer");
     TexturePeek::register_framebuffer("SpriteBuffer");
 #endif
     

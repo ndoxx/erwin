@@ -52,9 +52,9 @@ public:
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
 	// * Draw call queue management and submission
-	// Send a draw call to a particular queue
+	// Send a draw call to the queue
 	static void submit(const DrawCall& dc);
-	// Force renderer to dispatch all commands in command buffers and render queues
+	// Force renderer to dispatch all commands in command buffers and draw calls in the render queue
 	static void flush();
 	// Set a callback function that will be executed after flush()
 	static void set_end_frame_callback(std::function<void(void)> callback);
@@ -181,7 +181,7 @@ struct DrawCall
 	{
 		W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
-		
+
 		type             = dc_type;
 		data.state_flags = state;
 		data.shader      = shader;
@@ -240,8 +240,6 @@ struct DrawCall
 	inline void set_key_depth(float depth)
 	{
 		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
-		
-		// Extract render target ID to use as view ID
 		key.blending = RenderState::is_transparent(data.state_flags);
 		key.view |= uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
 		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa

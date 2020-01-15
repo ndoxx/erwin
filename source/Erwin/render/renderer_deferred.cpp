@@ -1,6 +1,7 @@
-#include "render/renderer_forward.h"
+#include "render/renderer_deferred.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/common_geometry.h"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -8,8 +9,6 @@
 
 namespace erwin
 {
-
-
 
 struct PassUBOData
 {
@@ -34,40 +33,32 @@ struct InstanceData
 
 static struct
 {
-	// Resources
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
+	ShaderHandle light_shader;
 
-	// Data
 	PassUBOData pass_ubo_data;
-	FrustumPlanes frustum_planes;
 
-	// State
 	uint64_t pass_state;
 	uint8_t layer_id;
-	bool draw_far;
-
-	// Statistics
-	uint32_t num_draw_calls;
 } s_storage;
 
-void ForwardRenderer::init()
+void DeferredRenderer::init()
 {
-    W_PROFILE_FUNCTION()
-
-	// Setup UBOs and init storage
 	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
 	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
-	s_storage.num_draw_calls = 0;
+	s_storage.light_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/light_deferred_PBR.glsl", "light_deferred_PBR");
+	Renderer::shader_attach_uniform_buffer(s_storage.light_shader, s_storage.instance_ubo);
 }
 
-void ForwardRenderer::shutdown()
+void DeferredRenderer::shutdown()
 {
 	Renderer::destroy(s_storage.pass_ubo);
 	Renderer::destroy(s_storage.instance_ubo);
+	Renderer::destroy(s_storage.light_shader);
 }
 
-void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
+void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
 {
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.pass_ubo);
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.instance_ubo);
@@ -75,23 +66,24 @@ void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle m
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, PassOptions options)
+void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
 
+    /*
+		TODO:
+			[ ] We want to be able to perform multiple passes, so we need a way to control framebuffer clear calls.
+    */
+
 	// Pass state
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("GBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
-	state.blend_state = options.get_transparency() ? BlendState::Alpha : BlendState::Opaque;
+	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
-	s_storage.layer_id = options.get_layer_id();
-	s_storage.draw_far = (options.get_depth_control() == PassOptions::DEPTH_CONTROL_FAR);
-
-	// Reset stats
-	s_storage.num_draw_calls = 0;
+	s_storage.layer_id = layer_id;
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -108,17 +100,40 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	s_storage.pass_ubo_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
 	s_storage.pass_ubo_data.proj_params = camera.get_projection_parameters();
 	s_storage.pass_ubo_data.light_ambient_strength = dir_light.ambient_strength;
-	s_storage.frustum_planes = camera.get_frustum_planes();
-
 	Renderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.pass_ubo_data, sizeof(PassUBOData));
 }
 
-void ForwardRenderer::end_pass()
+void DeferredRenderer::end_pass()
 {
+    /*
+		TODO:
+			[ ] SSAO pass
+			[ ] SSR pass
+			[ ] This layer ID system sucks balls, I need to apply these next passes
+				after the geometry pass, but I have the same layer ID... 
+    */
 
+	// Light pass (DEBUG)
+	RenderState state;
+	state.render_target = FramebufferPool::get_framebuffer("DBuffer"_h);
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = true;
+	uint64_t state_flags = state.encode();
+
+	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, s_storage.layer_id, state_flags, s_storage.light_shader, quad);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 0), 0);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 1), 1);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 2), 2);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 3), 3);
+	dc.set_key_depth(1.f); // TMP
+	Renderer::submit(dc);
 }
 
-void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
+void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
 {
 	// Compute matrices
 	InstanceData instance_data;
@@ -142,14 +157,9 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	}
 	dc.set_key_depth(depth);
 	Renderer::submit(dc);
-
-	++s_storage.num_draw_calls;
 }
 
-uint32_t ForwardRenderer::get_draw_call_count()
-{
-	return s_storage.num_draw_calls;
-}
+
 
 
 } // namespace erwin

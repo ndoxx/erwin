@@ -34,6 +34,7 @@ private:
 	friend class Renderer2D;
 	friend class Application;
 	friend class ForwardRenderer;
+	friend class DeferredRenderer;
 
 	static void init(memory::HeapArea& area);
 	static void shutdown();

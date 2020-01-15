@@ -63,13 +63,12 @@ void Layer3D::on_attach()
 			}
 		}
 	}
-	Cube emissive_cube;
-	emissive_cube.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
-	emissive_cube.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-	emissive_cube.material_data.tint = {0.f,1.f,1.f,1.f};
-	emissive_cube.material_data.enable_emissivity();
-	emissive_cube.material_data.emissive_scale = 5.f;
-	scene_.push_back(emissive_cube);
+	emissive_cube_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+	emissive_cube_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_.material_data.tint = {0.f,1.f,1.f,1.f};
+	emissive_cube_.material_data.enable_emissivity();
+	emissive_cube_.material_data.emissive_scale = 5.f;
+	scene_.push_back(emissive_cube_);
 
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
@@ -155,6 +154,11 @@ void Layer3D::on_render()
 		for(auto&& cube: scene_)
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
+	}
+	{
+		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, get_layer_id()+1); // TMP: layer id hack
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
+		DeferredRenderer::end_pass();
 	}
 }
 

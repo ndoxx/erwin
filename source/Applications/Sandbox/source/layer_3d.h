@@ -1,25 +1,10 @@
 #pragma once
 
 #include "erwin.h"
+#include "common.h"
 #include <vector>
 
 using namespace erwin;
-
-struct PBRMaterialData
-{
-	inline void enable_emissivity() { flags |= (1<<0); }
-
-	glm::vec4 tint;
-	int flags;
-	float emissive_scale;
-};
-
-struct Cube
-{
-	ComponentTransform3D transform;
-	Material material;
-	PBRMaterialData material_data;
-};
 
 struct SunMaterialData
 {
@@ -62,5 +47,6 @@ private:
 	Material sun_material_;
 	SunMaterialData sun_material_data_;
 
+	Cube emissive_cube_;
 	std::vector<Cube> scene_;
 };
