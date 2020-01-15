@@ -21,6 +21,7 @@ struct PassUBOData
 	glm::vec4 light_position;
 	glm::vec4 light_color;
 	glm::vec4 light_ambient_color;
+	glm::vec4 proj_params;
 	float light_ambient_strength;
 };
 
@@ -105,6 +106,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	s_storage.pass_ubo_data.light_position = glm::vec4(dir_light.position, 0.f);
 	s_storage.pass_ubo_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
 	s_storage.pass_ubo_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
+	s_storage.pass_ubo_data.proj_params = camera.get_projection_parameters();
 	s_storage.pass_ubo_data.light_ambient_strength = dir_light.ambient_strength;
 	s_storage.frustum_planes = camera.get_frustum_planes();
 

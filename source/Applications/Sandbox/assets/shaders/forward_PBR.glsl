@@ -47,6 +47,7 @@ void main()
 #type fragment
 #version 460 core
 #include "engine/common.glsl"
+#include "engine/glow.glsl"
 #include "engine/cook_torrance.glsl"
 #include "engine/parallax.glsl"
 #include "engine/forward_ubos.glsl"
@@ -55,7 +56,7 @@ void main()
 
 SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal - depth
-SAMPLER_2D_(2); // metallic - ambient occlusion - roughness
+SAMPLER_2D_(2); // metallic - ambient occlusion - roughness - emissivity
 
 layout(location = 0) in vec2 v_uv;          // Texture coordinates
 layout(location = 1) in vec3 v_view_dir_v;  // Vertex view direction, view space
@@ -74,8 +75,6 @@ layout(std140, binding = 2) uniform material_data
 };
 
 const float f_parallax_height_scale = 0.03f;
-// Relative luminance coefficients for sRGB primaries, values from Wikipedia
-const vec3 W = vec3(0.2126f, 0.7152f, 0.0722f);
 const float f_bright_threshold = 0.7f;
 const float f_bright_knee = 0.1f;
 
@@ -120,10 +119,8 @@ void main()
     	total_light += u_f_emissive_scale * frag_emissive * frag_albedo;
     }
 
-    out_color = vec4(total_light,frag_alpha);
+    out_color = vec4(total_light, frag_alpha);
 
     // "Bright pass"
-    float luminance = dot(out_color.rgb, W);
-    float brightness_mask = smoothstep(f_bright_threshold-f_bright_knee, f_bright_threshold, luminance);
-    out_glow = vec4(brightness_mask*out_color.rgb, brightness_mask);
+    out_glow = glow(out_color.rgb, f_bright_threshold, f_bright_knee);
 }

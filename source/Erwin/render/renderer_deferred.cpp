@@ -1,6 +1,7 @@
 #include "render/renderer_deferred.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/common_geometry.h"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -16,6 +17,11 @@ struct PassUBOData
 	glm::vec4 eye_position;
 	glm::vec4 camera_params;
 	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
+	glm::vec4 light_position;
+	glm::vec4 light_color;
+	glm::vec4 light_ambient_color;
+	glm::vec4 proj_params;
+	float light_ambient_strength;
 };
 
 struct InstanceData
@@ -29,6 +35,8 @@ static struct
 {
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
+	ShaderHandle light_shader;
+
 	PassUBOData pass_ubo_data;
 
 	uint64_t pass_state;
@@ -39,12 +47,15 @@ void DeferredRenderer::init()
 {
 	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
 	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	s_storage.light_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/light_deferred_PBR.glsl", "light_deferred_PBR");
+	Renderer::shader_attach_uniform_buffer(s_storage.light_shader, s_storage.instance_ubo);
 }
 
 void DeferredRenderer::shutdown()
 {
 	Renderer::destroy(s_storage.pass_ubo);
 	Renderer::destroy(s_storage.instance_ubo);
+	Renderer::destroy(s_storage.light_shader);
 }
 
 void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
@@ -55,9 +66,14 @@ void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle 
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void DeferredRenderer::begin_geometry_pass(const PerspectiveCamera3D& camera, uint8_t layer_id)
+void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, uint8_t layer_id)
 {
     W_PROFILE_FUNCTION()
+
+    /*
+		TODO:
+			[ ] We want to be able to perform multiple passes, so we need a way to control framebuffer clear calls.
+    */
 
 	// Pass state
 	RenderState state;
@@ -79,23 +95,42 @@ void DeferredRenderer::begin_geometry_pass(const PerspectiveCamera3D& camera, ui
 	s_storage.pass_ubo_data.eye_position = glm::vec4(camera.get_position(), 1.f);
 	s_storage.pass_ubo_data.camera_params = glm::vec4(near,far,0.f,0.f);
 	s_storage.pass_ubo_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
-
+	s_storage.pass_ubo_data.light_position = glm::vec4(dir_light.position, 0.f);
+	s_storage.pass_ubo_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
+	s_storage.pass_ubo_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
+	s_storage.pass_ubo_data.proj_params = camera.get_projection_parameters();
+	s_storage.pass_ubo_data.light_ambient_strength = dir_light.ambient_strength;
 	Renderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.pass_ubo_data, sizeof(PassUBOData));
 }
 
-void DeferredRenderer::end_geometry_pass()
+void DeferredRenderer::end_pass()
 {
+    /*
+		TODO:
+			[ ] SSAO pass
+			[ ] SSR pass
+			[ ] This layer ID system sucks balls, I need to apply these next passes
+				after the geometry pass, but I have the same layer ID... 
+    */
 
-}
+	// Light pass (DEBUG)
+	RenderState state;
+	state.render_target = FramebufferPool::get_framebuffer("DBuffer"_h);
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = true;
+	uint64_t state_flags = state.encode();
 
-void DeferredRenderer::begin_light_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light)
-{
+	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
 
-}
-
-void DeferredRenderer::end_light_pass()
-{
-
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, s_storage.layer_id, state_flags, s_storage.light_shader, quad);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 0), 0);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 1), 1);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 2), 2);
+	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 3), 3);
+	dc.set_key_depth(1.f); // TMP
+	Renderer::submit(dc);
 }
 
 void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)

@@ -466,6 +466,15 @@ void Renderer::init(memory::HeapArea& area)
 	    };
 	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true); // TODO: Share depth-stencil buffer with GBuffer
 	}
+	{
+		// Debug render target
+	    FramebufferLayout layout =
+	    {
+	    	// RGBA: color
+	        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	    };
+	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	}
 
 	s_storage.initialized_ = true;
 

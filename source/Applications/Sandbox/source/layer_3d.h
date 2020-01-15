@@ -47,5 +47,6 @@ private:
 	Material sun_material_;
 	SunMaterialData sun_material_data_;
 
+	Cube emissive_cube_;
 	std::vector<Cube> scene_;
 };

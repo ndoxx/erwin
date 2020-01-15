@@ -9,6 +9,7 @@ layout(std140, binding = 0) uniform pass_data
 	vec4 u_v4_light_position_w; // Directional light position, world space
 	vec4 u_v4_light_color;
 	vec4 u_v4_light_ambient_color;
+    vec4 u_v4_proj_params; // For position reconstruction
 	float u_f_light_ambient_strength;
 };
 layout(std140, binding = 1) uniform instance_data
