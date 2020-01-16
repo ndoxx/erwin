@@ -47,13 +47,13 @@ class PostProcessingRenderer
 {
 public:
 	// Execute bloom pass
-	static void bloom_pass(hash_t framebuffer, uint32_t index, uint8_t layer_id);
+	static void bloom_pass(hash_t framebuffer, uint32_t index);
 	// Execute alternative implementation of bloom pass
-	static void bloom_pass_alt(hash_t framebuffer, uint32_t index, uint8_t layer_id);
+	static void bloom_pass_alt(hash_t framebuffer, uint32_t index);
 	// Apply post processing to an input framebuffer texture and blend it to the default framebuffer
-	static void combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data, uint8_t layer_id);
+	static void combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data);
 	// Blend an input framebuffer texture to the default framebuffer using a "lighten" type blend function
-	static void lighten(hash_t framebuffer, uint32_t index, uint8_t layer_id);
+	static void lighten(hash_t framebuffer, uint32_t index);
 
 private:
 	friend class Application;

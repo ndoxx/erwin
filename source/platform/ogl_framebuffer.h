@@ -20,6 +20,7 @@ public:
 	virtual const Texture2D& get_named_texture(hash_t name) override;
 	virtual uint32_t get_texture_count() override;
 	virtual void screenshot(const std::string& filepath) override;
+	virtual void blit_depth(const Framebuffer& source) override;
 
 private:
 	void framebuffer_error_report();

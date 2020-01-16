@@ -31,14 +31,14 @@ void main()
     mat3 TBN_inv = transpose(v_TBN);
 
     // Light position, view space
-    vec4 light_pos_v = u_m4_v*vec4(-u_v4_light_position_w.xyz, 0.f);
+    vec4 light_pos_v = u_m4_v*vec4(u_v4_light_position_w.xyz, 0.f);
     // Vertex position, view space
     vec4 vertex_pos_v = u_m4_mv*vec4(a_position, 1.f);
     
     v_view_dir_v = normalize(-vertex_pos_v.xyz/vertex_pos_v.w);
     v_view_dir_t = normalize(TBN_inv * v_view_dir_v);
     // light direction = position for directional light
-    v_light_dir_v = normalize(-light_pos_v.xyz);
+    v_light_dir_v = normalize(light_pos_v.xyz);
 	v_uv = a_uv;
 }
 
@@ -74,7 +74,7 @@ layout(std140, binding = 2) uniform material_data
 	float u_f_emissive_scale;
 };
 
-const float f_parallax_height_scale = 0.03f;
+const float f_parallax_height_scale = 0.02f;
 const float f_bright_threshold = 0.7f;
 const float f_bright_knee = 0.1f;
 
@@ -83,9 +83,9 @@ const mat4 m4_stippling_threshold = mat4(vec4(1,13,4,16),vec4(9,5,12,8),vec4(3,1
 void main()
 {
     // Stippling: selectively discard fragments when surface is too close to eye position
-    float threshold = m4_stippling_threshold[int(gl_FragCoord.x)%4][int(gl_FragCoord.y)%4];
+    /*float threshold = m4_stippling_threshold[int(gl_FragCoord.x)%4][int(gl_FragCoord.y)%4];
     if(1.2f*gl_FragCoord.z-threshold < 0.f)
-        discard;
+        discard;*/
 
 	vec2 tex_coord = v_uv;
 

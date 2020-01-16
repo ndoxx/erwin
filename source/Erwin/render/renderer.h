@@ -37,6 +37,8 @@ public:
 	};
 
 	// * The following functions have immediate effect
+	// Require a view id for a pass
+	static uint8_t           next_view_id();
 	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
 	static AuxArena& 		 get_arena();
 	// Get a handle to the default framebuffer (screen)
@@ -54,6 +56,9 @@ public:
 	// * Draw call queue management and submission
 	// Send a draw call to the queue
 	static void submit(const DrawCall& dc);
+	// Blit depth buffer / texture from source to target
+	static void blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key);
+
 	// Force renderer to dispatch all commands in command buffers and draw calls in the render queue
 	static void flush();
 	// Set a callback function that will be executed after flush()
@@ -105,8 +110,6 @@ private:
 
 	static void init(memory::HeapArea& area);
 	static void shutdown();
-
-	static void render_dispatch(memory::LinearBuffer<>& buf);
 };
 
 // Helper struct to simplify the generation of a sorting key associated to a draw call

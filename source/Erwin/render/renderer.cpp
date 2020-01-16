@@ -152,12 +152,13 @@ struct CommandBuffer
 };
 
 using RenderCommandBuffer = CommandBuffer<k_max_render_commands>;
-using DrawCallBuffer      = CommandBuffer<k_max_draw_calls>;
+using DrawCommandBuffer   = CommandBuffer<k_max_draw_calls>;
 
 class RenderQueue
 {
 public:
 	friend class Renderer;
+	friend class DrawCommandWriter;
 
 	RenderQueue() = default;
 	RenderQueue(memory::HeapArea& area);
@@ -170,8 +171,6 @@ public:
 	inline void set_clear_color(const glm::vec4& clear_color) { clear_color_ = clear_color; }
 	// Check if the queue is full
 	inline bool is_full() const { return command_buffer_.is_full(); }
-	// Submit a draw call
-	void submit(const DrawCall& draw_call);
 	// Sort queue by sorting key
 	void sort();
 	// Dispatch all commands
@@ -180,8 +179,9 @@ public:
 	void reset();
 
 private:
+	uint8_t current_view_id_;
 	glm::vec4 clear_color_;
-	DrawCallBuffer command_buffer_;
+	DrawCommandBuffer command_buffer_;
 };
 
 RenderQueue::RenderQueue(memory::HeapArea& area)
@@ -198,6 +198,7 @@ void RenderQueue::init(memory::HeapArea& area)
 {
 	clear_color_ = {0.f,0.f,0.f,0.f};
 	command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
+	current_view_id_ = 0;
 }
 
 void RenderQueue::sort()
@@ -207,7 +208,7 @@ void RenderQueue::sort()
 	// Keys stored separately from commands to avoid touching data too
 	// much during sort calls
     std::sort(std::begin(command_buffer_.entries), std::begin(command_buffer_.entries) + command_buffer_.count, 
-        [&](const DrawCallBuffer::Entry& item1, const DrawCallBuffer::Entry& item2)
+        [&](const DrawCommandBuffer::Entry& item1, const DrawCommandBuffer::Entry& item2)
         {
         	return item1.first < item2.first;
         });
@@ -216,23 +217,7 @@ void RenderQueue::sort()
 void RenderQueue::reset()
 {
 	command_buffer_.reset();
-}
-
-void RenderQueue::submit(const DrawCall& dc)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	W_ASSERT(!is_full(), "Render queue is full!");
-
-	auto& cmdbuf = command_buffer_.storage;
-	void* cmd = cmdbuf.head();
-
-	cmdbuf.write(&dc.type);
-	cmdbuf.write(&dc.data);
-	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
-		cmdbuf.write(&dc.instance_data);
-
-	command_buffer_.entries[command_buffer_.count++] = {dc.key.encode(), cmd};
+	current_view_id_ = 0;
 }
 
 #if W_RC_PROFILE_DRAW_CALLS
@@ -334,6 +319,8 @@ static struct RendererStorage
 
 		// Init render queue
 		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
+
+		state_cache_ = RenderState().encode(); // Initialized as default state
 	}
 
 	inline void release()
@@ -364,6 +351,7 @@ static struct RendererStorage
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 	std::vector<std::function<void(void)>> end_frame_callbacks_;
+	uint64_t state_cache_;
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
@@ -470,10 +458,10 @@ void Renderer::init(memory::HeapArea& area)
 		// Debug render target
 	    FramebufferLayout layout =
 	    {
-	    	// RGBA: color
-	        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        {"target_0"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	        {"target_1"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, false);
 	}
 
 	s_storage.initialized_ = true;
@@ -499,13 +487,10 @@ void Renderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-void Renderer::submit(const DrawCall& dc)
+uint8_t Renderer::next_view_id()
 {
-#if W_RC_PROFILE_DRAW_CALLS
-	if(s_storage.draw_call_data_.tracking)
-		s_storage.draw_call_data_.on_submit(dc);
-#endif
-	s_storage.queue_.submit(dc);
+	W_ASSERT(s_storage.queue_.current_view_id_<255, "View id overflow.");
+	return s_storage.queue_.current_view_id_++;
 }
 
 Renderer::AuxArena& Renderer::get_arena()
@@ -590,6 +575,8 @@ const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle 
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
 
+// --- Render commands ---
+
 enum class RenderCommand: uint16_t
 {
 	CreateIndexBuffer,
@@ -628,10 +615,10 @@ enum class RenderCommand: uint16_t
 };
 
 // Helper class for command buffer access
-class CommandWriter
+class RenderCommandWriter
 {
 public:
-	CommandWriter(RenderCommand type):
+	RenderCommandWriter(RenderCommand type):
 	type_(type),
 	cmdbuf_(get_command_buffer(type_)),
 	head_(cmdbuf_.storage.head())
@@ -694,7 +681,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
 		W_ASSERT(mode != DrawMode::Static, "Index data can't be null in static mode.");
 
 	// Write data
-	CommandWriter cw(RenderCommand::CreateIndexBuffer);
+	RenderCommandWriter cw(RenderCommand::CreateIndexBuffer);
 	cw.write(&handle);
 	cw.write(&count);
 	cw.write(&primitive);
@@ -723,7 +710,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
 		W_ASSERT(mode != DrawMode::Static, "Vertex data can't be null in static mode.");
 
 	// Write data
-	CommandWriter cw(RenderCommand::CreateVertexBuffer);
+	RenderCommandWriter cw(RenderCommand::CreateVertexBuffer);
 	cw.write(&handle);
 	cw.write(&layout);
 	cw.write(&count);
@@ -743,7 +730,7 @@ VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBuff
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Write data
-	CommandWriter cw(RenderCommand::CreateVertexArray);
+	RenderCommandWriter cw(RenderCommand::CreateVertexArray);
 	cw.write(&handle);
 	cw.write(&vb);
 	cw.write(&ib);
@@ -768,7 +755,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, voi
 		W_ASSERT(mode != DrawMode::Static, "UBO data can't be null in static mode.");
 
 	// Write data
-	CommandWriter cw(RenderCommand::CreateUniformBuffer);
+	RenderCommandWriter cw(RenderCommand::CreateUniformBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 	cw.write(&mode);
@@ -795,7 +782,7 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
 		W_ASSERT(mode != DrawMode::Static, "SSBO data can't be null in static mode.");
 
 	// Write data
-	CommandWriter cw(RenderCommand::CreateShaderStorageBuffer);
+	RenderCommandWriter cw(RenderCommand::CreateShaderStorageBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 	cw.write(&mode);
@@ -811,7 +798,7 @@ ShaderHandle Renderer::create_shader(const fs::path& filepath, const std::string
 	ShaderHandle handle = ShaderHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-	CommandWriter cw(RenderCommand::CreateShader);
+	RenderCommandWriter cw(RenderCommand::CreateShader);
 	cw.write(&handle);
 	cw.write_str(filepath.string());
 	cw.write_str(name);
@@ -825,7 +812,7 @@ TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 	TextureHandle handle = TextureHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-	CommandWriter cw(RenderCommand::CreateTexture2D);
+	RenderCommandWriter cw(RenderCommand::CreateTexture2D);
 	cw.write(&handle);
 	cw.write(&desc);
 	cw.submit();
@@ -854,7 +841,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, count, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, layout.data(), count * sizeof(FramebufferLayoutElement));
 
-	CommandWriter cw(RenderCommand::CreateFramebuffer);
+	RenderCommandWriter cw(RenderCommand::CreateFramebuffer);
 	cw.write(&handle);
 	cw.write(&width);
 	cw.write(&height);
@@ -875,7 +862,7 @@ void Renderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uin
 	uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, count);
 
-	CommandWriter cw(RenderCommand::UpdateIndexBuffer);
+	RenderCommandWriter cw(RenderCommand::UpdateIndexBuffer);
 	cw.write(&handle);
 	cw.write(&count);
 	cw.write(&auxiliary);
@@ -890,7 +877,7 @@ void Renderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint3
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
-	CommandWriter cw(RenderCommand::UpdateVertexBuffer);
+	RenderCommandWriter cw(RenderCommand::UpdateVertexBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 	cw.write(&auxiliary);
@@ -905,7 +892,7 @@ void Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uin
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
-	CommandWriter cw(RenderCommand::UpdateUniformBuffer);
+	RenderCommandWriter cw(RenderCommand::UpdateUniformBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 	cw.write(&auxiliary);
@@ -920,7 +907,7 @@ void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, vo
 	uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
 	memcpy(auxiliary, data, size);
 
-	CommandWriter cw(RenderCommand::UpdateShaderStorageBuffer);
+	RenderCommandWriter cw(RenderCommand::UpdateShaderStorageBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 	cw.write(&auxiliary);
@@ -932,7 +919,7 @@ void Renderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHa
 	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 	W_ASSERT(ubo.is_valid(), "Invalid UniformBufferHandle!");
 
-	CommandWriter cw(RenderCommand::ShaderAttachUniformBuffer);
+	RenderCommandWriter cw(RenderCommand::ShaderAttachUniformBuffer);
 	cw.write(&shader);
 	cw.write(&ubo);
 	cw.submit();
@@ -943,7 +930,7 @@ void Renderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBu
 	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 	W_ASSERT(ssbo.is_valid(), "Invalid ShaderStorageBufferHandle!");
 
-	CommandWriter cw(RenderCommand::ShaderAttachStorageBuffer);
+	RenderCommandWriter cw(RenderCommand::ShaderAttachStorageBuffer);
 	cw.write(&shader);
 	cw.write(&ssbo);
 	cw.submit();
@@ -953,7 +940,7 @@ void Renderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t
 {
 	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
-	CommandWriter cw(RenderCommand::UpdateFramebuffer);
+	RenderCommandWriter cw(RenderCommand::UpdateFramebuffer);
 	cw.write(&fb);
 	cw.write(&width);
 	cw.write(&height);
@@ -962,7 +949,7 @@ void Renderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t
 
 void Renderer::clear_framebuffers()
 {
-	CommandWriter cw(RenderCommand::ClearFramebuffers);
+	RenderCommandWriter cw(RenderCommand::ClearFramebuffers);
 	cw.submit();
 }
 
@@ -970,7 +957,7 @@ void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& file
 {
 	W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
-	CommandWriter cw(RenderCommand::FramebufferScreenshot);
+	RenderCommandWriter cw(RenderCommand::FramebufferScreenshot);
 	cw.write(&fb);
 	cw.write_str(filepath.string());
 	cw.submit();
@@ -981,7 +968,7 @@ void Renderer::destroy(IndexBufferHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyIndexBuffer);
+	RenderCommandWriter cw(RenderCommand::DestroyIndexBuffer);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -991,7 +978,7 @@ void Renderer::destroy(VertexBufferLayoutHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
+	RenderCommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1001,7 +988,7 @@ void Renderer::destroy(VertexBufferHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyVertexBuffer);
+	RenderCommandWriter cw(RenderCommand::DestroyVertexBuffer);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1011,7 +998,7 @@ void Renderer::destroy(VertexArrayHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyVertexArray);
+	RenderCommandWriter cw(RenderCommand::DestroyVertexArray);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1021,7 +1008,7 @@ void Renderer::destroy(UniformBufferHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyUniformBuffer);
+	RenderCommandWriter cw(RenderCommand::DestroyUniformBuffer);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1031,7 +1018,7 @@ void Renderer::destroy(ShaderStorageBufferHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
+	RenderCommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1041,7 +1028,7 @@ void Renderer::destroy(ShaderHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
 	handle.release();
 	
-	CommandWriter cw(RenderCommand::DestroyShader);
+	RenderCommandWriter cw(RenderCommand::DestroyShader);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1051,7 +1038,7 @@ void Renderer::destroy(TextureHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
 	handle.release();
 	
-	CommandWriter cw(RenderCommand::DestroyTexture2D);
+	RenderCommandWriter cw(RenderCommand::DestroyTexture2D);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1061,10 +1048,77 @@ void Renderer::destroy(FramebufferHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
 	handle.release();
 
-	CommandWriter cw(RenderCommand::DestroyFramebuffer);
+	RenderCommandWriter cw(RenderCommand::DestroyFramebuffer);
 	cw.write(&handle);
 	cw.submit();
 }
+
+
+// --- Draw commands ---
+
+enum class DrawCommand: uint16_t
+{
+	Draw,
+	BlitDepth,
+
+	Count
+};
+
+// Helper class for draw command buffer access
+class DrawCommandWriter
+{
+public:
+	DrawCommandWriter(DrawCommand type):
+	type_(type),
+	cmdbuf_(s_storage.queue_.command_buffer_),
+	head_(cmdbuf_.storage.head())
+	{
+		cmdbuf_.storage.write(&type_);
+	}
+
+	template <typename T>
+	inline void write(T* source)                  { cmdbuf_.storage.write(source); }
+	inline void write_str(const std::string& str) { cmdbuf_.storage.write_str(str); }
+
+	inline void submit(uint64_t key)
+	{
+		W_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
+		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
+	}
+
+private:
+	DrawCommand type_;
+	DrawCommandBuffer& cmdbuf_;
+	void* head_;
+};
+
+void Renderer::submit(const DrawCall& dc)
+{
+#if W_RC_PROFILE_DRAW_CALLS
+	if(s_storage.draw_call_data_.tracking)
+		s_storage.draw_call_data_.on_submit(dc);
+#endif
+
+	DrawCommandWriter cw(DrawCommand::Draw);
+	cw.write(&dc.type);
+	cw.write(&dc.data);
+	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
+		cw.write(&dc.instance_data);
+
+	cw.submit(dc.key.encode());
+}
+
+void Renderer::blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key)
+{
+	W_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index);
+	W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index);
+
+	DrawCommandWriter cw(DrawCommand::BlitDepth);
+	cw.write(&source);
+	cw.write(&target);
+	cw.submit(key);
+}
+
 
 /*
 		  _____  _                 _       _     
@@ -1077,7 +1131,7 @@ void Renderer::destroy(FramebufferHandle handle)
 		              |_|                        
 */
 
-namespace dispatch
+namespace render_dispatch
 {
 
 void create_index_buffer(memory::LinearBuffer<>& buf)
@@ -1453,40 +1507,40 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 	s_storage.framebuffer_textures_.erase(handle.index);
 }
 
-} // namespace dispatch
+} // namespace render_dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
-static backend_dispatch_func_t backend_dispatch[(std::size_t)RenderCommand::Count] =
+static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderCommand::Count] =
 {
-	&dispatch::create_index_buffer,
-	&dispatch::create_vertex_buffer,
-	&dispatch::create_vertex_array,
-	&dispatch::create_uniform_buffer,
-	&dispatch::create_shader_storage_buffer,
-	&dispatch::create_shader,
-	&dispatch::create_texture_2D,
-	&dispatch::create_framebuffer,
-	&dispatch::update_index_buffer,
-	&dispatch::update_vertex_buffer,
-	&dispatch::update_uniform_buffer,
-	&dispatch::update_shader_storage_buffer,
-	&dispatch::shader_attach_uniform_buffer,
-	&dispatch::shader_attach_storage_buffer,
-	&dispatch::update_framebuffer,
-	&dispatch::clear_framebuffers,
+	&render_dispatch::create_index_buffer,
+	&render_dispatch::create_vertex_buffer,
+	&render_dispatch::create_vertex_array,
+	&render_dispatch::create_uniform_buffer,
+	&render_dispatch::create_shader_storage_buffer,
+	&render_dispatch::create_shader,
+	&render_dispatch::create_texture_2D,
+	&render_dispatch::create_framebuffer,
+	&render_dispatch::update_index_buffer,
+	&render_dispatch::update_vertex_buffer,
+	&render_dispatch::update_uniform_buffer,
+	&render_dispatch::update_shader_storage_buffer,
+	&render_dispatch::shader_attach_uniform_buffer,
+	&render_dispatch::shader_attach_storage_buffer,
+	&render_dispatch::update_framebuffer,
+	&render_dispatch::clear_framebuffers,
 
-	&dispatch::nop,
+	&render_dispatch::nop,
 
-	&dispatch::framebuffer_screenshot,
-	&dispatch::destroy_index_buffer,
-	&dispatch::destroy_vertex_buffer_layout,
-	&dispatch::destroy_vertex_buffer,
-	&dispatch::destroy_vertex_array,
-	&dispatch::destroy_uniform_buffer,
-	&dispatch::destroy_shader_storage_buffer,
-	&dispatch::destroy_shader,
-	&dispatch::destroy_texture_2D,
-	&dispatch::destroy_framebuffer,
+	&render_dispatch::framebuffer_screenshot,
+	&render_dispatch::destroy_index_buffer,
+	&render_dispatch::destroy_vertex_buffer_layout,
+	&render_dispatch::destroy_vertex_buffer,
+	&render_dispatch::destroy_vertex_array,
+	&render_dispatch::destroy_uniform_buffer,
+	&render_dispatch::destroy_shader_storage_buffer,
+	&render_dispatch::destroy_shader,
+	&render_dispatch::destroy_texture_2D,
+	&render_dispatch::destroy_framebuffer,
 };
 
 // Helper function to identify which part of the pass state has changed
@@ -1498,13 +1552,12 @@ static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask
 static void handle_state(uint64_t state_flags)
 {
 	// * If pass state has changed, decode it, find which parts have changed and update device state
-	static uint64_t last_state = RenderState().encode(); // Initialized as default state
-	if(state_flags != last_state)
+	if(state_flags != s_storage.state_cache_)
 	{
 		RenderState state;
 		state.decode(state_flags);
 
-		if(has_mutated(state_flags, last_state, k_framebuffer_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_framebuffer_mask))
 		{
 			if(state.render_target == s_storage.default_framebuffer_)
 			{
@@ -1515,16 +1568,15 @@ static void handle_state(uint64_t state_flags)
 			else
 				s_storage.framebuffers[state.render_target.index]->bind();
 
-			int clear_flags = ClearFlags::CLEAR_COLOR_FLAG
-							| (state.depth_stencil_state.depth_test_enabled   ? ClearFlags::CLEAR_DEPTH_FLAG : ClearFlags::CLEAR_NONE)
-							| (state.depth_stencil_state.stencil_test_enabled ? ClearFlags::CLEAR_STENCIL_FLAG : ClearFlags::CLEAR_NONE);
-			Gfx::device->clear(clear_flags); // TMP: Ok for now, but this will not allow to blend the result of multiple passes
+			// Only clear on render target switch, if clear flags are set
+			if(state.rasterizer_state.clear_flags != ClearFlags::CLEAR_NONE)
+				Gfx::device->clear(state.rasterizer_state.clear_flags);
 		}
 
-		if(has_mutated(state_flags, last_state, k_cull_mode_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_cull_mode_mask))
 			Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
 		
-		if(has_mutated(state_flags, last_state, k_transp_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_transp_mask))
 		{
 			switch(state.blend_state)
 			{
@@ -1534,7 +1586,7 @@ static void handle_state(uint64_t state_flags)
 			}
 		}
 
-		if(has_mutated(state_flags, last_state, k_stencil_test_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_stencil_test_mask))
 		{
 			Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
 			if(state.depth_stencil_state.stencil_test_enabled)
@@ -1544,18 +1596,21 @@ static void handle_state(uint64_t state_flags)
 			}
 		}
 
-		if(has_mutated(state_flags, last_state, k_depth_test_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_depth_test_mask))
 		{
 			Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
 			if(state.depth_stencil_state.depth_test_enabled)
 				Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
 		}
 	
-		last_state = state_flags;
+		s_storage.state_cache_ = state_flags;
 	}
 }
 
-void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
+namespace draw_dispatch
+{
+
+void draw(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
 
@@ -1633,6 +1688,27 @@ void Renderer::render_dispatch(memory::LinearBuffer<>& buf)
 	}
 }
 
+void blit_depth(memory::LinearBuffer<>& buf)
+{
+	FramebufferHandle source;
+	FramebufferHandle target;
+	buf.read(&source);
+	buf.read(&target);
+
+	s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
+}
+
+
+} // namespace draw_dispatch
+
+static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand::Count] =
+{
+	&draw_dispatch::draw,
+	&draw_dispatch::blit_depth,
+};
+
+
+
 void RenderQueue::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1648,7 +1724,11 @@ void RenderQueue::flush()
 			s_storage.draw_call_data_.on_dispatch(key);
 #endif
 		command_buffer_.storage.seek(cmd);
-		Renderer::render_dispatch(command_buffer_.storage);
+
+		uint16_t type;
+		command_buffer_.storage.read(&type);
+
+		(*draw_backend_dispatch[type])(command_buffer_.storage);
 	}
 }
 
@@ -1663,7 +1743,7 @@ static void flush_command_buffer(RenderCommandBuffer& cmdbuf)
 		cmdbuf.storage.seek(cmd);
 		uint16_t type;
 		cmdbuf.storage.read(&type);
-		(*backend_dispatch[type])(cmdbuf.storage);
+		(*render_backend_dispatch[type])(cmdbuf.storage);
 	}
 	cmdbuf.reset();
 }

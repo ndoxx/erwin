@@ -40,6 +40,7 @@ private:
 	TextureGroupHandle tg_2_;
 	UniformBufferHandle pbr_material_ubo_;
 	UniformBufferHandle sun_material_ubo_;
+	ShaderHandle deferred_pbr_;
 	ShaderHandle forward_opaque_pbr_;
 	ShaderHandle forward_sun_;
 	DirectionalLight dir_light_;

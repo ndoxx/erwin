@@ -47,20 +47,20 @@ void PresentationLayer::on_render()
 	if(enable_bloom_)
 	{
 		if(bloom_alt_)
-			PostProcessingRenderer::bloom_pass_alt("LBuffer"_h, 1, get_layer_id());
+			PostProcessingRenderer::bloom_pass_alt("LBuffer"_h, 1);
 		else
-			PostProcessingRenderer::bloom_pass("LBuffer"_h, 1, get_layer_id());
+			PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
 	}
 
 	if(enable_3d_forward_)
 	{
     	pp_data_.set_flag_enabled(PP_EN_BLOOM, enable_bloom_);
-		PostProcessingRenderer::combine("LBuffer"_h, 0, pp_data_, get_layer_id());
+		PostProcessingRenderer::combine("LBuffer"_h, 0, pp_data_);
 	}
     if(enable_2d_batched_)
     {
     	pp_data_.clear_flag(PP_EN_BLOOM);
-		PostProcessingRenderer::combine("SpriteBuffer"_h, 0, pp_data_, get_layer_id());
+		PostProcessingRenderer::combine("SpriteBuffer"_h, 0, pp_data_);
     }
 }
 

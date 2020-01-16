@@ -27,6 +27,7 @@ void Layer3D::on_attach()
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	MaterialLayoutHandle layout_a_nd_mar  = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mar"_h});
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
+	deferred_pbr_       = AssetManager::load_shader("shaders/deferred_PBR.glsl");
 	forward_opaque_pbr_ = AssetManager::load_shader("shaders/forward_PBR.glsl");
 	forward_sun_        = AssetManager::load_shader("shaders/forward_sun.glsl");
 	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mar);
@@ -37,6 +38,7 @@ void Layer3D::on_attach()
 	AssetManager::release(layout_a_nd_mar);
 	AssetManager::release(layout_a_nd_mare);
 
+	DeferredRenderer::register_shader(deferred_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_opaque_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
@@ -63,12 +65,13 @@ void Layer3D::on_attach()
 			}
 		}
 	}
+
 	emissive_cube_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
-	emissive_cube_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_.material = {deferred_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
 	emissive_cube_.material_data.tint = {0.f,1.f,1.f,1.f};
 	emissive_cube_.material_data.enable_emissivity();
 	emissive_cube_.material_data.emissive_scale = 5.f;
-	scene_.push_back(emissive_cube_);
+	emissive_cube_.material.data = &emissive_cube_.material_data;
 
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
@@ -129,36 +132,34 @@ void Layer3D::on_update(GameClock& clock)
 void Layer3D::on_render()
 {
 	VertexArrayHandle quad     = CommonGeometry::get_vertex_array("quad"_h);
-	VertexArrayHandle cube_uv  = CommonGeometry::get_vertex_array("cube_uv"_h);
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
-
-	// Draw sun
-	{
-		PassOptions options;
-		options.set_transparency(true);
-		options.set_layer_id(get_layer_id());
-		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
-
-		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
-		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
-		ForwardRenderer::end_pass();
-	}
 
 	// Draw scene geometry
 	{
+		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
+		DeferredRenderer::end_pass();
+	}
+
+	{
 		PassOptions options;
 		options.set_transparency(false);
-		options.set_layer_id(get_layer_id());
 
 		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
 		for(auto&& cube: scene_)
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
 	}
+
+	// Draw sun
 	{
-		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, get_layer_id()+1); // TMP: layer id hack
-		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
-		DeferredRenderer::end_pass();
+		PassOptions options;
+		options.set_transparency(true);
+		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
+		ForwardRenderer::end_pass();
 	}
 }
 
