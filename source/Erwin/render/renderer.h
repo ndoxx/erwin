@@ -37,6 +37,8 @@ public:
 	};
 
 	// * The following functions have immediate effect
+	// Require a view id for a pass
+	static uint8_t           next_view_id();
 	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
 	static AuxArena& 		 get_arena();
 	// Get a handle to the default framebuffer (screen)

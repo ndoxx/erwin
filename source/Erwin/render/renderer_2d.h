@@ -14,7 +14,7 @@ class Renderer2D
 {
 public:
 	// Start a new pass
-	static void begin_pass(const OrthographicCamera2D& camera, bool transparent, uint8_t layer_id);
+	static void begin_pass(const OrthographicCamera2D& camera, bool transparent);
 	// End a pass
 	static void end_pass();
 	// Draw a textured quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.

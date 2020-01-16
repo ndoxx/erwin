@@ -14,7 +14,7 @@ class DeferredRenderer
 public:
 	// Register a shader for deferred rendering
 	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
-	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, uint8_t layer_id);
+	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light);
 	static void end_pass();
 
 	// Draw a textured mesh

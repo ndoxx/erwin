@@ -180,6 +180,7 @@ public:
 	void reset();
 
 private:
+	uint8_t current_view_id_;
 	glm::vec4 clear_color_;
 	DrawCallBuffer command_buffer_;
 };
@@ -198,6 +199,7 @@ void RenderQueue::init(memory::HeapArea& area)
 {
 	clear_color_ = {0.f,0.f,0.f,0.f};
 	command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
+	current_view_id_ = 0;
 }
 
 void RenderQueue::sort()
@@ -216,6 +218,7 @@ void RenderQueue::sort()
 void RenderQueue::reset()
 {
 	command_buffer_.reset();
+	current_view_id_ = 0;
 }
 
 void RenderQueue::submit(const DrawCall& dc)
@@ -506,6 +509,12 @@ void Renderer::submit(const DrawCall& dc)
 		s_storage.draw_call_data_.on_submit(dc);
 #endif
 	s_storage.queue_.submit(dc);
+}
+
+uint8_t Renderer::next_view_id()
+{
+	W_ASSERT(s_storage.queue_.current_view_id_<255, "View id overflow.");
+	return s_storage.queue_.current_view_id_++;
 }
 
 Renderer::AuxArena& Renderer::get_arena()

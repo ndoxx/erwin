@@ -40,7 +40,7 @@ static struct
 	PassUBOData pass_ubo_data;
 
 	uint64_t pass_state;
-	uint8_t layer_id;
+	uint8_t view_id;
 } s_storage;
 
 void DeferredRenderer::init()
@@ -66,7 +66,7 @@ void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle 
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, uint8_t layer_id)
+void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light)
 {
     W_PROFILE_FUNCTION()
 
@@ -83,7 +83,7 @@ void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direc
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
-	s_storage.layer_id = layer_id+1;
+	s_storage.view_id = Renderer::next_view_id();
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -124,7 +124,7 @@ void DeferredRenderer::end_pass()
 	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-	DrawCall dc(DrawCall::Indexed, s_storage.layer_id+1, state_flags, s_storage.light_shader, quad);
+	DrawCall dc(DrawCall::Indexed, Renderer::next_view_id(), state_flags, s_storage.light_shader, quad);
 	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 0), 0);
 	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 1), 1);
 	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 2), 2);
@@ -145,7 +145,7 @@ void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	
-	DrawCall dc(DrawCall::Indexed, s_storage.layer_id, s_storage.pass_state, material.shader, VAO);
+	DrawCall dc(DrawCall::Indexed, s_storage.view_id, s_storage.pass_state, material.shader, VAO);
 	dc.set_UBO(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
 		dc.set_UBO(material.ubo, material.data, material.data_size, DrawCall::CopyData, 1);

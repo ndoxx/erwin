@@ -59,7 +59,7 @@ void Layer2D::on_update(GameClock& clock)
 void Layer2D::on_render()
 {
 	// Draw a grid of quads
-	Renderer2D::begin_pass(camera_ctl_.get_camera(), true, get_layer_id());
+	Renderer2D::begin_pass(camera_ctl_.get_camera(), true);
 	/*for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;

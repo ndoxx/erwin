@@ -141,33 +141,32 @@ void Layer3D::on_render()
 	VertexArrayHandle cube_uv  = CommonGeometry::get_vertex_array("cube_uv"_h);
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 
-	// Draw sun
+	// Draw scene geometry
 	{
-		PassOptions options;
-		options.set_transparency(true);
-		options.set_layer_id(get_layer_id());
-		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
-
-		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
-		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
-		ForwardRenderer::end_pass();
+		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_1_.transform, emissive_cube_1_.material);
+		DeferredRenderer::end_pass();
 	}
 
-	// Draw scene geometry
 	{
 		PassOptions options;
 		options.set_transparency(false);
-		options.set_layer_id(get_layer_id());
 
 		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
 		for(auto&& cube: scene_)
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
 	}
+
+	// Draw sun
 	{
-		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, get_layer_id()+1); // TMP: layer id hack
-		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_1_.transform, emissive_cube_1_.material);
-		DeferredRenderer::end_pass();
+		PassOptions options;
+		options.set_transparency(true);
+		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
+		ForwardRenderer::end_pass();
 	}
 }
 

@@ -45,7 +45,7 @@ static struct
 
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
-	uint8_t layer_id;
+	uint8_t view_id;
 	std::map<uint16_t, Batch2D> batches;
 } s_storage;
 
@@ -138,7 +138,7 @@ void Renderer2D::create_batch(TextureHandle handle)
 	::erwin::create_batch(handle.index, handle);
 }
 
-void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent, uint8_t layer_id)
+void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent)
 {
     W_PROFILE_FUNCTION()
 
@@ -152,7 +152,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	s_storage.num_draw_calls = 0;
 
 	s_storage.pass_state = state.encode();
-	s_storage.layer_id = layer_id;
+	s_storage.view_id = Renderer::next_view_id();
 
 	// Set scene data
 	s_storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -177,7 +177,7 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.layer_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
@@ -273,7 +273,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	{
 		glm::mat4 id(1.f);
 
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.layer_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(s_storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);

@@ -371,7 +371,7 @@ void Application::run()
         }
 
 #ifdef W_DEBUG
-        TexturePeek::render(uint8_t(layer_stack_.size()));
+        TexturePeek::render();
 #endif
 
         Renderer::flush();

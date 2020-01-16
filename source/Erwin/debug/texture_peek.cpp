@@ -146,7 +146,7 @@ void TexturePeek::set_enabled(bool value)
 	s_storage.enabled_ = value;
 }
 
-void TexturePeek::render(uint8_t layer_id)
+void TexturePeek::render()
 {
 #ifdef W_DEBUG
     if(!s_storage.enabled_ || s_storage.panes_.size() == 0)
