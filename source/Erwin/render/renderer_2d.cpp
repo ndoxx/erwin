@@ -145,6 +145,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 

@@ -1524,10 +1524,9 @@ static void handle_state(uint64_t state_flags)
 			else
 				s_storage.framebuffers[state.render_target.index]->bind();
 
-			int clear_flags = ClearFlags::CLEAR_COLOR_FLAG
-							| (state.depth_stencil_state.depth_test_enabled   ? ClearFlags::CLEAR_DEPTH_FLAG : ClearFlags::CLEAR_NONE)
-							| (state.depth_stencil_state.stencil_test_enabled ? ClearFlags::CLEAR_STENCIL_FLAG : ClearFlags::CLEAR_NONE);
-			Gfx::device->clear(clear_flags); // TMP: Ok for now, but this will not allow to blend the result of multiple passes
+			// Only clear on render target switch, if clear flags are set
+			if(state.rasterizer_state.clear_flags != ClearFlags::CLEAR_NONE)
+				Gfx::device->clear(state.rasterizer_state.clear_flags);
 		}
 
 		if(has_mutated(state_flags, last_state, k_cull_mode_mask))

@@ -44,7 +44,7 @@ void Layer3D::on_attach()
 
 	// Setup scene
 	int N = 10;
-	/*for(int ii=0; ii<N; ++ii)
+	for(int ii=0; ii<N; ++ii)
 	{
 		float xx = -N + 2.f*ii + 1.f;
 		for(int jj=0; jj<N; ++jj)
@@ -64,7 +64,7 @@ void Layer3D::on_attach()
 				scene_.push_back(cube);
 			}
 		}
-	}*/
+	}
 	emissive_cube_0_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
 	emissive_cube_0_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
 	emissive_cube_0_.material_data.tint = {0.f,1.f,1.f,1.f};

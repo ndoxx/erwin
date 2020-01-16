@@ -79,6 +79,7 @@ void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direc
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("GBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 
@@ -109,14 +110,13 @@ void DeferredRenderer::end_pass()
 		TODO:
 			[ ] SSAO pass
 			[ ] SSR pass
-			[ ] This layer ID system sucks balls, I need to apply these next passes
-				after the geometry pass, but I have the same layer ID... 
     */
 
 	// Light pass (DEBUG)
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("DBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 	uint64_t state_flags = state.encode();

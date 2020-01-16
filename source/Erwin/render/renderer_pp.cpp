@@ -132,6 +132,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 
 	RenderState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
 	uint8_t view_id = Renderer::next_view_id();
@@ -220,6 +221,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 
 	RenderState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
 	uint8_t view_id = Renderer::next_view_id();
@@ -270,6 +272,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	RenderState state;
 	state.render_target = Renderer::default_render_target();
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = false;
 	uint8_t view_id = Renderer::next_view_id();
@@ -290,6 +293,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	RenderState state;
 	state.render_target = Renderer::default_render_target();
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Light;
 	state.depth_stencil_state.depth_test_enabled = false;
 	uint8_t view_id = Renderer::next_view_id();
