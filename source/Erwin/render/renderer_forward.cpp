@@ -83,7 +83,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
-	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG; // TMP: remove this when we need to blend with deferred pass
 	state.blend_state = options.get_transparency() ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 

@@ -110,7 +110,14 @@ void DeferredRenderer::end_pass()
 		TODO:
 			[ ] SSAO pass
 			[ ] SSR pass
+			[ ] Blit GBuffer's depth buffer into LBuffer
     */
+
+	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
+	FramebufferHandle LBuffer = FramebufferPool::get_framebuffer("LBuffer"_h);
+	uint32_t sequence = 0;
+	// Depth blit: GBuffer -> LBuffer
+	Renderer::blit_depth(GBuffer, LBuffer, /*key.encode()*/0);
 
 	// Light pass (DEBUG)
 	RenderState state;
@@ -118,18 +125,15 @@ void DeferredRenderer::end_pass()
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
-	state.depth_stencil_state.depth_test_enabled = true;
+	state.depth_stencil_state.depth_test_enabled = false;
 	uint64_t state_flags = state.encode();
 
-	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 	DrawCall dc(DrawCall::Indexed, Renderer::next_view_id(), state_flags, s_storage.light_shader, quad);
-	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 0), 0);
-	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 1), 1);
-	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 2), 2);
-	dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, 3), 3);
-	dc.set_key_sequence(0);
+	for(int ii=0; ii<4; ++ii)
+		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
+	dc.set_key_sequence(sequence++);
 	Renderer::submit(dc);
 }
 
