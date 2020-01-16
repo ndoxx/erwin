@@ -65,19 +65,13 @@ void Layer3D::on_attach()
 			}
 		}
 	}
-	emissive_cube_0_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
-	emissive_cube_0_.material = {forward_opaque_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-	emissive_cube_0_.material_data.tint = {0.f,1.f,1.f,1.f};
-	emissive_cube_0_.material_data.enable_emissivity();
-	emissive_cube_0_.material_data.emissive_scale = 5.f;
-	scene_.push_back(emissive_cube_0_);
 
-	emissive_cube_1_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
-	emissive_cube_1_.material = {deferred_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-	emissive_cube_1_.material_data.tint = {0.f,1.f,1.f,1.f};
-	emissive_cube_1_.material_data.enable_emissivity();
-	emissive_cube_1_.material_data.emissive_scale = 5.f;
-	emissive_cube_1_.material.data = &emissive_cube_1_.material_data;
+	emissive_cube_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+	emissive_cube_.material = {deferred_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_.material_data.tint = {0.f,1.f,1.f,1.f};
+	emissive_cube_.material_data.enable_emissivity();
+	emissive_cube_.material_data.emissive_scale = 5.f;
+	emissive_cube_.material.data = &emissive_cube_.material_data;
 
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
@@ -138,13 +132,12 @@ void Layer3D::on_update(GameClock& clock)
 void Layer3D::on_render()
 {
 	VertexArrayHandle quad     = CommonGeometry::get_vertex_array("quad"_h);
-	VertexArrayHandle cube_uv  = CommonGeometry::get_vertex_array("cube_uv"_h);
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 
 	// Draw scene geometry
 	{
 		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
-		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_1_.transform, emissive_cube_1_.material);
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
 		DeferredRenderer::end_pass();
 	}
 

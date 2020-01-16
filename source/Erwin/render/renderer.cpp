@@ -319,6 +319,8 @@ static struct RendererStorage
 
 		// Init render queue
 		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
+
+		state_cache_ = RenderState().encode(); // Initialized as default state
 	}
 
 	inline void release()
@@ -349,6 +351,7 @@ static struct RendererStorage
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 	std::vector<std::function<void(void)>> end_frame_callbacks_;
+	uint64_t state_cache_;
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
@@ -1549,13 +1552,12 @@ static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask
 static void handle_state(uint64_t state_flags)
 {
 	// * If pass state has changed, decode it, find which parts have changed and update device state
-	static uint64_t last_state = RenderState().encode(); // Initialized as default state
-	if(state_flags != last_state)
+	if(state_flags != s_storage.state_cache_)
 	{
 		RenderState state;
 		state.decode(state_flags);
 
-		if(has_mutated(state_flags, last_state, k_framebuffer_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_framebuffer_mask))
 		{
 			if(state.render_target == s_storage.default_framebuffer_)
 			{
@@ -1571,10 +1573,10 @@ static void handle_state(uint64_t state_flags)
 				Gfx::device->clear(state.rasterizer_state.clear_flags);
 		}
 
-		if(has_mutated(state_flags, last_state, k_cull_mode_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_cull_mode_mask))
 			Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
 		
-		if(has_mutated(state_flags, last_state, k_transp_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_transp_mask))
 		{
 			switch(state.blend_state)
 			{
@@ -1584,7 +1586,7 @@ static void handle_state(uint64_t state_flags)
 			}
 		}
 
-		if(has_mutated(state_flags, last_state, k_stencil_test_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_stencil_test_mask))
 		{
 			Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
 			if(state.depth_stencil_state.stencil_test_enabled)
@@ -1594,14 +1596,14 @@ static void handle_state(uint64_t state_flags)
 			}
 		}
 
-		if(has_mutated(state_flags, last_state, k_depth_test_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_depth_test_mask))
 		{
 			Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
 			if(state.depth_stencil_state.depth_test_enabled)
 				Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
 		}
 	
-		last_state = state_flags;
+		s_storage.state_cache_ = state_flags;
 	}
 }
 
@@ -1693,7 +1695,7 @@ void blit_depth(memory::LinearBuffer<>& buf)
 	buf.read(&source);
 	buf.read(&target);
 
-
+	s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
 }
 
 

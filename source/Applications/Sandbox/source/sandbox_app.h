@@ -36,7 +36,6 @@ public:
 
 private:
 	bool layer3d_enabled_ = true;
-	bool layer3d_deferred_enabled_ = false;
 	bool layer2d_enabled_ = false;
 
 #ifdef W_PROFILE
