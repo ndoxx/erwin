@@ -44,7 +44,7 @@ static struct
 
 	// State
 	uint64_t pass_state;
-	uint8_t layer_id;
+	uint8_t view_id;
 	bool draw_far;
 
 	// Statistics
@@ -88,7 +88,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
-	s_storage.layer_id = Renderer::next_view_id();
+	s_storage.view_id = Renderer::next_view_id();
 	s_storage.draw_far = (options.get_depth_control() == PassOptions::DEPTH_CONTROL_FAR);
 
 	// Reset stats
@@ -130,8 +130,10 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	// Compute clip depth for the sorting key
 	glm::vec4 clip = glm::column(instance_data.mvp, 3);
 	float depth = clip.z/clip.w;
-	
-	DrawCall dc(DrawCall::Indexed, s_storage.layer_id, s_storage.pass_state, material.shader, VAO);
+	SortKey key;
+	key.set_depth(depth, s_storage.view_id, s_storage.pass_state, material.shader);
+
+	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
 	dc.set_UBO(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
 		dc.set_UBO(material.ubo, material.data, material.data_size, DrawCall::CopyData, 1);
@@ -141,8 +143,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
-	dc.set_key_depth(depth);
-	Renderer::submit(dc);
+	Renderer::submit(key.encode(), dc);
 
 	++s_storage.num_draw_calls;
 }

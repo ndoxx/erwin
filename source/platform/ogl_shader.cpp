@@ -232,18 +232,8 @@ void OGLShader::bind() const
     glUseProgram(rd_handle_);
 
     // Bind resources
-    for(auto&& [key, ubo]: uniform_buffers_)
-    {
-        hash_t hname = H_(ubo->get_name().c_str());
-        GLint binding_point = block_bindings_.at(hname);
-        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(*ubo).get_handle());
-    }
-    for(auto&& [key, ssbo]: shader_storage_buffers_)
-    {
-        hash_t hname = H_(ssbo->get_name().c_str());
-        GLint binding_point = block_bindings_.at(hname);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(*ssbo).get_handle());
-    }
+    for(auto&& [key, buffer]: bound_buffers_)
+        glBindBufferBase(buffer.target, buffer.binding_point, buffer.render_handle);
 }
 
 void OGLShader::unbind() const
@@ -268,14 +258,20 @@ void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
     send_uniform<int>(slot_to_sampler2D_name(slot), slot);
 }
 
-void OGLShader::attach_shader_storage(WRef<ShaderStorageBuffer> buffer)
+void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
 {
-    shader_storage_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+    hash_t hname = H_(buffer.get_name().c_str());
+    GLint binding_point = block_bindings_.at(hname);
+    uint32_t render_handle = static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle();
+    bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_SHADER_STORAGE_BUFFER }));
 }
 
-void OGLShader::attach_uniform_buffer(WRef<UniformBuffer> buffer)
+void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
 {
-    uniform_buffers_.insert(std::make_pair(buffer->get_unique_id(), buffer));
+    hash_t hname = H_(buffer.get_name().c_str());
+    GLint binding_point = block_bindings_.at(hname);
+    uint32_t render_handle = static_cast<const OGLUniformBuffer&>(buffer).get_handle();
+    bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_UNIFORM_BUFFER }));
 }
 
 void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const

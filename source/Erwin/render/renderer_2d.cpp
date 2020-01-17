@@ -178,12 +178,14 @@ static void flush_batch(Batch2D& batch)
 {
 	if(batch.count)
 	{
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		SortKey key;
+		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
+
+		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		dc.set_key_depth(batch.max_depth);
-		Renderer::submit(dc);
+		Renderer::submit(key.encode(), dc);
 
 		++s_storage.num_draw_calls;
 		batch.count = 0;
@@ -274,12 +276,14 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	{
 		glm::mat4 id(1.f);
 
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		SortKey key;
+		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
+
+		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
 		dc.set_UBO(s_storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		dc.set_key_depth(batch.max_depth);
-		Renderer::submit(dc);
+		Renderer::submit(key.encode(), dc);
 
 		++s_storage.num_draw_calls;
 	}

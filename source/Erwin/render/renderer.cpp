@@ -53,53 +53,64 @@ constexpr uint8_t  k_draw_type_bits  = 2;
 constexpr uint8_t  k_shader_bits     = 8;
 constexpr uint8_t  k_depth_bits      = 32;
 constexpr uint8_t  k_seq_bits        = 32;
+constexpr uint8_t  k_subseq_bits     = 6;
 constexpr uint64_t k_view_shift      = uint8_t(64)        - k_view_bits;
 constexpr uint64_t k_draw_type_shift = k_view_shift       - k_draw_type_bits;
 constexpr uint64_t k_1_shader_shift  = k_draw_type_shift  - k_shader_bits;
 constexpr uint64_t k_1_depth_shift   = k_1_shader_shift   - k_depth_bits;
+constexpr uint64_t k_1_subseq_shift  = k_1_depth_shift    - k_subseq_bits;
 constexpr uint64_t k_2_depth_shift   = k_draw_type_shift  - k_depth_bits;
 constexpr uint64_t k_2_shader_shift  = k_2_depth_shift    - k_shader_bits;
+constexpr uint64_t k_2_subseq_shift  = k_2_shader_shift   - k_subseq_bits;
 constexpr uint64_t k_3_seq_shift     = k_draw_type_shift  - k_seq_bits;
 constexpr uint64_t k_3_shader_shift  = k_3_seq_shift      - k_shader_bits;
+constexpr uint64_t k_3_subseq_shift  = k_3_shader_shift   - k_subseq_bits;
 constexpr uint64_t k_view_mask       = uint64_t(0x0000ffff) << k_view_shift;
 constexpr uint64_t k_draw_type_mask  = uint64_t(0x00000003) << k_draw_type_shift;
 constexpr uint64_t k_1_shader_mask   = uint64_t(0x000000ff) << k_1_shader_shift;
 constexpr uint64_t k_1_depth_mask    = uint64_t(0xffffffff) << k_1_depth_shift;
+constexpr uint64_t k_1_subseq_mask   = uint64_t(0x3f)       << k_1_subseq_shift;
 constexpr uint64_t k_2_depth_mask    = uint64_t(0xffffffff) << k_2_depth_shift;
 constexpr uint64_t k_2_shader_mask   = uint64_t(0x000000ff) << k_2_shader_shift;
+constexpr uint64_t k_2_subseq_mask   = uint64_t(0x3f)       << k_2_subseq_shift;
 constexpr uint64_t k_3_seq_mask      = uint64_t(0xffffffff) << k_3_seq_shift;
 constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
+constexpr uint64_t k_3_subseq_mask   = uint64_t(0x3f)       << k_3_subseq_shift;
 
 uint64_t SortKey::encode() const
 {
-	uint64_t head = ((uint64_t(view)      << k_view_shift     ) & k_view_mask)
-				  | ((uint64_t(blending)  << k_draw_type_shift) & k_draw_type_mask);
+	uint64_t head = ((uint64_t(view)     << k_view_shift     ) & k_view_mask)
+				  | ((uint64_t(blending) << k_draw_type_shift) & k_draw_type_mask);
 
 	uint64_t body = 0;
 	switch(order)
 	{
 		case SortKey::Order::ByShader:
 		{
-			body |= ((uint64_t(shader)    << k_1_shader_shift) & k_1_shader_mask)
-				 |  ((uint64_t(depth)     << k_1_depth_shift)  & k_1_depth_mask);
+			body |= ((uint64_t(shader)       << k_1_shader_shift) & k_1_shader_mask)
+				 |  ((uint64_t(depth)        << k_1_depth_shift)  & k_1_depth_mask)
+				 |  ((uint64_t(sub_sequence) << k_1_subseq_shift) & k_1_subseq_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthDescending:
 		{
-			body |= ((uint64_t(depth)    << k_2_depth_shift)  & k_2_depth_mask)
-				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
+			body |= ((uint64_t(depth)        << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask)
+				 |  ((uint64_t(sub_sequence) << k_2_subseq_shift) & k_2_subseq_mask);
 			break;
 		}
 		case SortKey::Order::ByDepthAscending:
 		{
-			body |= ((uint64_t(~depth)     << k_2_depth_shift)  & k_2_depth_mask)
-				 |  ((uint64_t(shader)    << k_2_shader_shift) & k_2_shader_mask);
+			body |= ((uint64_t(~depth)       << k_2_depth_shift)  & k_2_depth_mask)
+				 |  ((uint64_t(shader)       << k_2_shader_shift) & k_2_shader_mask)
+				 |  ((uint64_t(sub_sequence) << k_2_subseq_shift) & k_2_subseq_mask);
 			break;
 		}
 		case SortKey::Order::Sequential:
 		{
-			body |= ((uint64_t(sequence) << k_3_seq_shift)    & k_3_seq_mask)
-				 |  ((uint64_t(shader)    << k_3_shader_shift) & k_3_shader_mask);
+			body |= ((uint64_t(sequence)     << k_3_seq_shift)    & k_3_seq_mask)
+				 |  ((uint64_t(shader)       << k_3_shader_shift) & k_3_shader_mask)
+				 |  ((uint64_t(sub_sequence) << k_3_subseq_shift) & k_3_subseq_mask);
 			break;
 		}
 	}
@@ -228,19 +239,17 @@ struct FrameDrawCallData
 	{
 		uint64_t render_state;
 		DrawCall::DrawCallType type;
-		SortKey::Order order_type;
 		uint16_t shader_handle;
 		uint32_t submission_index;
 	};
 
-	inline void on_submit(const DrawCall& dc)
+	inline void on_submit(const DrawCall& dc, uint64_t key)
 	{
-		draw_calls.insert(std::make_pair(dc.key.encode(),
+		draw_calls.insert(std::make_pair(key,
 			DrawCallSummary
 			{
 				dc.data.state_flags,
 				dc.type,
-				dc.key.order,
 				dc.data.shader.index,
 				submitted++
 			}));
@@ -392,7 +401,6 @@ void FrameDrawCallData::export_json()
     		<< "\"key\":" << key << ","
     		<< "\"sub\":" << summary.submission_index << ","
     		<< "\"typ\":" << (int)summary.type << ","
-    		<< "\"ord\":" << (int)summary.order_type << ","
     		<< "\"shd\":\"" << s_storage.shaders[summary.shader_handle]->get_name() << "\","
     		<< "\"sta\":\"" << render_state.to_string() << "\""
             << ((count<submitted-1) ? "}," : "}") << std::endl;
@@ -1114,11 +1122,11 @@ private:
 	void* head_;
 };
 
-void Renderer::submit(const DrawCall& dc)
+void Renderer::submit(uint64_t key, const DrawCall& dc)
 {
 #if W_RC_PROFILE_DRAW_CALLS
 	if(s_storage.draw_call_data_.tracking)
-		s_storage.draw_call_data_.on_submit(dc);
+		s_storage.draw_call_data_.on_submit(dc, key);
 #endif
 
 	DrawCommandWriter cw(DrawCommand::Draw);
@@ -1127,10 +1135,10 @@ void Renderer::submit(const DrawCall& dc)
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_data);
 
-	cw.submit(dc.key.encode());
+	cw.submit(key);
 }
 
-void Renderer::blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key)
+void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target)
 {
 	W_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index);
 	W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index);
@@ -1397,7 +1405,7 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&ubo_handle);
 
 	auto& shader = *s_storage.shaders[shader_handle.index];
-	shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
+	shader.attach_uniform_buffer(*s_storage.uniform_buffers[ubo_handle.index]);
 }
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1410,7 +1418,7 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&ssbo_handle);
 
 	auto& shader = *s_storage.shaders[shader_handle.index];
-	shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
+	shader.attach_shader_storage(*s_storage.shader_storage_buffers[ssbo_handle.index]);
 }
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
@@ -1704,6 +1712,7 @@ void draw(memory::LinearBuffer<>& buf)
 		{
 			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
 			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
+			// shader.bind_uniform_buffer(ubo, ubo.get_size(), 0);
 		}
 		++slot;
 	}
@@ -1735,6 +1744,7 @@ void draw(memory::LinearBuffer<>& buf)
 					ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
 				// else
 					// ssbo.map_persistent(idata.SSBO_data, idata.SSBO_size, 0);
+				// shader.bind_shader_storage(ssbo, idata.SSBO_size, 0);
 			}
 			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;

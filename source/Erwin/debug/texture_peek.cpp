@@ -169,11 +169,12 @@ void TexturePeek::render()
 	// but it fails miserably and the whole GUI disappears. I observed that setting the key this way
 	// dispatches the command at the beginning of the frame, which works, despite showing the last
 	// frame textures.
-	static DrawCall dc(DrawCall::Indexed, 0, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
+	SortKey key;
+	key.set_sequence(0, 0, s_storage.pass_state_, s_storage.peek_shader_);
+	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
-	dc.set_key_sequence(0);
-	Renderer::submit(dc);
+	Renderer::submit(key.encode(), dc);
 #endif
 }
 

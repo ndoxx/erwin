@@ -38,9 +38,9 @@ public:
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const = 0;
 
 	// Attach an SSBO that will automatically be bound when this shader is bound
-	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) = 0;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) = 0;
 	// Attach an UBO that will automatically be bound when this shader is bound
-	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) = 0;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer) = 0;
 	// Bind a shader buffer storage
 	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const = 0;
 	// Bind a uniform buffer

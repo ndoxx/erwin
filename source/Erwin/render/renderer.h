@@ -53,13 +53,13 @@ public:
 	// Get a buffer layout from its handle
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
-	// * Draw call queue management and submission
+	// * Draw command queue management and submission
 	// Send a draw call to the queue
-	static void submit(const DrawCall& dc);
+	static void submit(uint64_t key, const DrawCall& dc);
 	// Blit depth buffer / texture from source to target
-	static void blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key);
+	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 
-	// Force renderer to dispatch all commands in command buffers and draw calls in the render queue
+	// Force renderer to dispatch all render/draw commands
 	static void flush();
 	// Set a callback function that will be executed after flush()
 	static void set_end_frame_callback(std::function<void(void)> callback);
@@ -113,13 +113,13 @@ private:
 	static void shutdown();
 };
 
-// Helper struct to simplify the generation of a sorting key associated to a draw call
+// Helper struct to simplify the generation of a sorting key associated to a draw command
 struct SortKey
 {
 	// Policy for key sorting
 	enum class Order: uint8_t
 	{
-		ByShader,			// Keys are sorted by shader in priority, then by depth (for compute shaders)
+		ByShader,			// Keys are sorted by shader in priority, then by depth
 		ByDepthDescending,	// Keys are sorted by increasing clip depth first, then by shader
 		ByDepthAscending,	// Keys are sorted by decreasing clip depth first, then by shader
 		Sequential 			// Keys are sorted by a 32-bits sequence number
@@ -128,12 +128,36 @@ struct SortKey
 	// Encode key structure into a 64 bits number (the actual sorting key)
 	uint64_t encode() const;
 
-	uint16_t view = 0;     // [view id | framebuffer id] for depth order, just view id for sequential order
-	uint8_t shader = 0;    // shader id to allow grouping by shader
-	uint32_t depth = 0;    // depth mantissa
-	uint32_t sequence = 0; // for commands to be dispatched sequentially
-	bool blending = false; // affects the draw_type bit
-	SortKey::Order order;  // impacts how this key will be encoded
+	inline void set_depth(float depth, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
+	{
+		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
+		view         = (uint16_t(layer_id)<<8);
+		view        |= uint8_t((state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
+		shader       = shader_handle.index;
+		sub_sequence = _sub_sequence;
+		depth        = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa?
+		blending     = RenderState::is_transparent(state_flags);
+		order        = blending ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
+	}
+
+	inline void set_sequence(uint32_t _sequence, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
+	{
+		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
+		view         = (uint16_t(layer_id)<<8);
+		shader       = shader_handle.index;
+		sub_sequence = _sub_sequence;
+		sequence     = _sequence;
+		blending     = false;
+		order        = SortKey::Order::Sequential;
+	}
+
+	uint16_t view = 0;        // [view id | framebuffer id] for depth order, just view id for sequential order
+	uint8_t shader = 0;       // shader id to allow grouping by shader
+	uint8_t sub_sequence = 0; // allows draw command chaining even in depth mode
+	uint32_t depth = 0;       // depth mantissa
+	uint32_t sequence = 0;    // for commands to be dispatched sequentially
+	bool blending = false;    // affects the draw_type bit
+	SortKey::Order order;     // impacts how this key will be encoded
 };
 
 // All the state needed by the renderer to perform a platform draw call
@@ -178,10 +202,9 @@ struct DrawCall
 	} instance_data;
 	#pragma pack(pop)
 
-	SortKey key;
 	DrawCallType type;
 
-	DrawCall(DrawCallType dc_type, uint8_t layer_id, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
+	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
 		W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
@@ -194,18 +217,11 @@ struct DrawCall
 		data.offset      = offset;
 		instance_data.SSBO_data = nullptr;
 		instance_data.SSBO_size = 0;
-
-		// Setup sorting key
-		key.view   = (uint16_t(layer_id)<<8);
-		key.shader = data.shader.index; // NOTE(ndoxx): Overflow when shader index is greater than 255
 	}
 
-	// Set instance data array containing all information necessary to render instance_count instances of the same geometry
-	// Only available for instanced draw calls
+	// Set an SSBO
 	inline void set_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
 	{
-		W_ASSERT(type == DrawCall::IndexedInstanced || type == DrawCall::ArrayInstanced, "Cannot set instance data for non-instanced draw call.");
-
 		instance_data.SSBO_data = SSBO_data;
 		instance_data.SSBO = ssbo;
 		instance_data.SSBO_size = size;
@@ -238,25 +254,6 @@ struct DrawCall
 		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
 		data.textures[slot] = tex;
-	}
-
-	// Compute the sorting key for depth ascending/descending policies
-	inline void set_key_depth(float depth)
-	{
-		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
-		key.blending = RenderState::is_transparent(data.state_flags);
-		key.view |= uint8_t((data.state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
-		key.depth = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa
-		key.order = RenderState::is_transparent(data.state_flags) ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
-	}
-
-	// Compute the sorting key for the sequential policy
-	inline void set_key_sequence(uint32_t sequence)
-	{
-		W_ASSERT(data.shader.index<256, "Shader index out of bounds in shader sorting key section.");
-		key.blending = false;
-		key.sequence = sequence;
-		key.order = SortKey::Order::Sequential;
 	}
 };
 
