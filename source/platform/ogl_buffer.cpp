@@ -50,72 +50,94 @@ static GLenum to_ogl_draw_mode(DrawMode mode)
     }
 }
 
-#ifndef W_BUFFER_ALT
+static GLenum to_ogl_base_type(ShaderDataType type)
+{
+    switch(type)
+    {
+        case erwin::ShaderDataType::Float: return GL_FLOAT;
+        case erwin::ShaderDataType::Vec2:  return GL_FLOAT;
+        case erwin::ShaderDataType::Vec3:  return GL_FLOAT;
+        case erwin::ShaderDataType::Vec4:  return GL_FLOAT;
+        case erwin::ShaderDataType::Mat3:  return GL_FLOAT;
+        case erwin::ShaderDataType::Mat4:  return GL_FLOAT;
+        case erwin::ShaderDataType::Int:   return GL_INT;
+        case erwin::ShaderDataType::IVec2: return GL_INT;
+        case erwin::ShaderDataType::IVec3: return GL_INT;
+        case erwin::ShaderDataType::IVec4: return GL_INT;
+        case erwin::ShaderDataType::Bool:  return GL_BOOL;
+    }
+
+    DLOGE("render") << "Unknown ShaderDataType!" << std::endl;
+    return 0;
+}
+
+OGLBuffer::OGLBuffer(uint32_t target): 
+target_(target),
+rd_handle_(0)
+{
+    glGenBuffers(1, &rd_handle_);
+}
+
+OGLBuffer::~OGLBuffer()
+{
+    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Buffer " << WCC(0) << " id=" << rd_handle_ << std::endl;
+    // Unbind and delete
+    glBindBuffer(target_, 0);
+    glDeleteBuffers(1, &rd_handle_);
+    DLOGI << "done" << std::endl;
+}
+
+void OGLBuffer::bind() const
+{
+    glBindBuffer(target_, rd_handle_);
+}
+
+void OGLBuffer::unbind() const
+{
+    glBindBuffer(target_, 0);
+}
+
+void OGLBuffer::stream(void* data, uint32_t size, uint32_t offset)
+{
+    glBindBuffer(target_, rd_handle_);
+    glBufferSubData(target_, offset, size, data);
+}
+
+void OGLBuffer::map(void* data, uint32_t size)
+{
+    glBindBuffer(target_, rd_handle_);
+    void* ptr = glMapBuffer(target_, GL_WRITE_ONLY);
+    memcpy(ptr, data, size);
+    glUnmapBuffer(target_);
+}
 
 OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode):
-VertexBuffer(layout, count),
-rd_handle_(0)
+OGLBuffer(GL_ARRAY_BUFFER),
+VertexBuffer(layout, count)
 {
     GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
-    glGenBuffers(1, &rd_handle_);
-    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferData(GL_ARRAY_BUFFER, count_*layout_.get_stride(), vertex_data, gl_draw_mode);
+    glBindBuffer(target_, rd_handle_);
+    glBufferData(target_, count_*layout_.get_stride(), vertex_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Vertex count: " << count_ << std::endl;
     DLOGI << "Size:         " << count_*layout_.get_stride() << "B" << std::endl;
     DLOGI << "Draw mode:    " << to_string(mode) << std::endl;
-	DLOGI << "Layout:       ";
-	for(auto&& element: layout_)
-		DLOGI << "[" << to_string(element.type) << "]";
-	DLOGI << std::endl;
+    DLOGI << "Layout:       ";
+    for(auto&& element: layout_)
+        DLOGI << "[" << to_string(element.type) << "]";
+    DLOGI << std::endl;
 }
-
-OGLVertexBuffer::~OGLVertexBuffer()
-{
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Vertex Buffer " << WCC(0) << " id=" << rd_handle_ << std::endl;
-    // Unbind and delete
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDeleteBuffers(1, &rd_handle_);
-    DLOGI << "done" << std::endl;
-}
-
-void OGLVertexBuffer::bind() const
-{
-    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-}
-
-void OGLVertexBuffer::unbind() const
-{
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void OGLVertexBuffer::stream(void* vertex_data, uint32_t size, uint32_t offset)
-{
-    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, vertex_data);
-}
-
-void OGLVertexBuffer::map(void* vertex_data, uint32_t size)
-{
-    glBindBuffer(GL_ARRAY_BUFFER, rd_handle_);
-	void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	memcpy(ptr, vertex_data, size);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-}
-
-// ----------------------------------------------------------------------------------
 
 OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode):
-IndexBuffer(count, primitive),
-rd_handle_(0)
+OGLBuffer(GL_ELEMENT_ARRAY_BUFFER),
+IndexBuffer(count, primitive)
 {
     GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
-    glGenBuffers(1, &rd_handle_);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_*sizeof(uint32_t), index_data, gl_draw_mode);
+    glBindBuffer(target_, rd_handle_);
+    glBufferData(target_, count_*sizeof(uint32_t), index_data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Index count:  " << count_ << std::endl;
@@ -123,169 +145,30 @@ rd_handle_(0)
     DLOGI << "Draw mode:    " << to_string(mode) << std::endl;
 }
 
-OGLIndexBuffer::~OGLIndexBuffer()
-{
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
-    // Unbind and delete
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glDeleteBuffers(1, &rd_handle_);
-
-    DLOGI << "done" << std::endl;
-}
-
-void OGLIndexBuffer::bind() const
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-}
-
-void OGLIndexBuffer::unbind() const
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-
-void OGLIndexBuffer::stream(void* data, uint32_t size, uint32_t offset)
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data);
-}
-
-void OGLIndexBuffer::map(void* data, uint32_t size)
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    void* ptr = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-    memcpy(ptr, data, size);
-    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-}
-
-
-// ----------------------------------------------------------------------------------
-
 OGLUniformBuffer::OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, DrawMode mode):
+OGLBuffer(GL_UNIFORM_BUFFER),
 UniformBuffer(name, struct_size)
 {
     GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
-    glGenBuffers(1, &rd_handle_);
-    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-    glBufferData(GL_UNIFORM_BUFFER, struct_size_, data, gl_draw_mode);
+    glBindBuffer(target_, rd_handle_);
+    glBufferData(target_, struct_size_, data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
 }
 
-OGLUniformBuffer::~OGLUniformBuffer()
-{
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
-    // Unbind and delete
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glDeleteBuffers(1, &rd_handle_);
-
-    DLOGI << "done" << std::endl;
-}
-
-void OGLUniformBuffer::bind() const
-{
-	glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-}
-
-void OGLUniformBuffer::unbind() const
-{
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-void OGLUniformBuffer::stream(void* data, uint32_t size, uint32_t offset)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, (size!=0 ? size : struct_size_), data);
-}
-
-void OGLUniformBuffer::map(void* data, uint32_t size)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-    void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    memcpy(ptr, data, size);
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-}
-
-
-// ----------------------------------------------------------------------------------
-
 OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, DrawMode mode):
+OGLBuffer(GL_SHADER_STORAGE_BUFFER),
 ShaderStorageBuffer(name, size)
 {
     GLenum gl_draw_mode = to_ogl_draw_mode(mode);
 
-    glGenBuffers(1, &rd_handle_);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, size_, data, gl_draw_mode);
+    glBindBuffer(target_, rd_handle_);
+    glBufferData(target_, size_, data, gl_draw_mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
     DLOGI << "Size: " << size_ << "B" << std::endl;
-}
-
-OGLShaderStorageBuffer::~OGLShaderStorageBuffer()
-{
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " id=" << rd_handle_ << std::endl;
-    // Unbind and delete
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    glDeleteBuffers(1, &rd_handle_);
-
-    DLOGI << "done" << std::endl;
-}
-
-void OGLShaderStorageBuffer::bind() const
-{
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
-}
-
-void OGLShaderStorageBuffer::unbind() const
-{
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-void OGLShaderStorageBuffer::stream(void* data, uint32_t size, uint32_t offset)
-{
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
-}
-
-void OGLShaderStorageBuffer::map(void* data, uint32_t size)
-{
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, rd_handle_);
-	void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-	memcpy(ptr, data, size_);
-	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-}
-
-// ----------------------------------------------------------------------------------
-
-#else
-
-
-
-#endif
-
-
-static GLenum to_ogl_base_type(ShaderDataType type)
-{
-	switch(type)
-	{
-		case erwin::ShaderDataType::Float: return GL_FLOAT;
-		case erwin::ShaderDataType::Vec2:  return GL_FLOAT;
-		case erwin::ShaderDataType::Vec3:  return GL_FLOAT;
-		case erwin::ShaderDataType::Vec4:  return GL_FLOAT;
-		case erwin::ShaderDataType::Mat3:  return GL_FLOAT;
-		case erwin::ShaderDataType::Mat4:  return GL_FLOAT;
-		case erwin::ShaderDataType::Int:   return GL_INT;
-		case erwin::ShaderDataType::IVec2: return GL_INT;
-		case erwin::ShaderDataType::IVec3: return GL_INT;
-		case erwin::ShaderDataType::IVec4: return GL_INT;
-		case erwin::ShaderDataType::Bool:  return GL_BOOL;
-	}
-
-	DLOGE("render") << "Unknown ShaderDataType!" << std::endl;
-	return 0;
 }
 
 OGLVertexArray::OGLVertexArray()

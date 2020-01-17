@@ -1704,7 +1704,7 @@ void draw(memory::LinearBuffer<>& buf)
 		if(data.UBOs_data[slot])
 		{
 			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
-			ubo.stream(data.UBOs_data[slot], 0, 0);
+			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
 		}
 		++slot;
 	}

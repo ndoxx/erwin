@@ -6,8 +6,6 @@
 // Export JSON instrumentation profiles compatible with chrome://tracing
 #define W_PROFILE
 
-// #define W_BUFFER_ALT // TMP
-
 #ifdef _WIN32
 	#ifdef W_BUILD_LIB
 		#define W_API __declspec(dllexport)
