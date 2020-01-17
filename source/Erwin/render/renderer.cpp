@@ -228,19 +228,17 @@ struct FrameDrawCallData
 	{
 		uint64_t render_state;
 		DrawCall::DrawCallType type;
-		SortKey::Order order_type;
 		uint16_t shader_handle;
 		uint32_t submission_index;
 	};
 
-	inline void on_submit(const DrawCall& dc)
+	inline void on_submit(const DrawCall& dc, uint64_t key)
 	{
-		draw_calls.insert(std::make_pair(dc.key.encode(),
+		draw_calls.insert(std::make_pair(key,
 			DrawCallSummary
 			{
 				dc.data.state_flags,
 				dc.type,
-				dc.key.order,
 				dc.data.shader.index,
 				submitted++
 			}));
@@ -392,7 +390,6 @@ void FrameDrawCallData::export_json()
     		<< "\"key\":" << key << ","
     		<< "\"sub\":" << summary.submission_index << ","
     		<< "\"typ\":" << (int)summary.type << ","
-    		<< "\"ord\":" << (int)summary.order_type << ","
     		<< "\"shd\":\"" << s_storage.shaders[summary.shader_handle]->get_name() << "\","
     		<< "\"sta\":\"" << render_state.to_string() << "\""
             << ((count<submitted-1) ? "}," : "}") << std::endl;
@@ -1114,11 +1111,11 @@ private:
 	void* head_;
 };
 
-void Renderer::submit(const DrawCall& dc)
+void Renderer::submit(const DrawCall& dc, uint64_t key)
 {
 #if W_RC_PROFILE_DRAW_CALLS
 	if(s_storage.draw_call_data_.tracking)
-		s_storage.draw_call_data_.on_submit(dc);
+		s_storage.draw_call_data_.on_submit(dc, key);
 #endif
 
 	DrawCommandWriter cw(DrawCommand::Draw);
@@ -1127,7 +1124,7 @@ void Renderer::submit(const DrawCall& dc)
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_data);
 
-	cw.submit(dc.key.encode());
+	cw.submit(key);
 }
 
 void Renderer::blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key)
@@ -1397,7 +1394,7 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&ubo_handle);
 
 	auto& shader = *s_storage.shaders[shader_handle.index];
-	shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
+	shader.attach_uniform_buffer(*s_storage.uniform_buffers[ubo_handle.index]);
 }
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1410,7 +1407,7 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&ssbo_handle);
 
 	auto& shader = *s_storage.shaders[shader_handle.index];
-	shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
+	shader.attach_shader_storage(*s_storage.shader_storage_buffers[ssbo_handle.index]);
 }
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
@@ -1704,6 +1701,7 @@ void draw(memory::LinearBuffer<>& buf)
 		{
 			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
 			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
+			// shader.bind_uniform_buffer(ubo, ubo.get_size(), 0);
 		}
 		++slot;
 	}
@@ -1735,6 +1733,7 @@ void draw(memory::LinearBuffer<>& buf)
 					ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
 				// else
 					// ssbo.map_persistent(idata.SSBO_data, idata.SSBO_size, 0);
+				// shader.bind_shader_storage(ssbo, idata.SSBO_size, 0);
 			}
 			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;
