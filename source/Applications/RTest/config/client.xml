@@ -2,8 +2,8 @@
 <Config>
     <display>
     	<string name="title"    value="Sandbox"/>
-        <uint name="width"      value="1920"/>
-        <uint name="height"     value="1080"/>
+        <uint name="width"      value="1024"/>
+        <uint name="height"     value="768"/>
         <uint name="target_fps" value="60"/>
         <bool name="full"       value="false"/>
         <bool name="topmost"    value="true"/>

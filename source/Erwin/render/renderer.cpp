@@ -1341,7 +1341,7 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&count);
 	buf.read(&auxiliary);
 
-	s_storage.index_buffers[handle.index]->map(auxiliary, count);
+	s_storage.index_buffers[handle.index]->map(auxiliary, count*sizeof(uint32_t));
 }
 
 void update_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -1369,7 +1369,9 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&size);
 	buf.read(&auxiliary);
 
-	s_storage.uniform_buffers[handle.index]->map(auxiliary);
+	// s_storage.uniform_buffers[handle.index]->map(auxiliary);
+	auto& UBO = *s_storage.uniform_buffers[handle.index];
+	UBO.map(auxiliary, UBO.get_size());
 }
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1702,7 +1704,7 @@ void draw(memory::LinearBuffer<>& buf)
 		if(data.UBOs_data[slot])
 		{
 			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
-			ubo.stream(data.UBOs_data[slot], 0, 0);
+			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
 		}
 		++slot;
 	}

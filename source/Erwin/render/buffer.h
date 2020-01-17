@@ -11,115 +11,98 @@
 namespace erwin
 {
 
-class VertexBuffer
+class GfxBuffer
 {
 public:
-    VertexBuffer(const BufferLayout& layout, uint32_t count): unique_id_(id::unique_id()), layout_(layout), count_(count) {}
-    virtual ~VertexBuffer() {}
-
-    virtual void bind() const = 0;
-    virtual void unbind() const = 0;
-    virtual void stream(void* vertex_data, uint32_t size, uint32_t offset) = 0;
-    virtual void map(void* vertex_data, uint32_t size) = 0;
-
-    // Return the buffer layout
-	inline const BufferLayout& get_layout() const { return layout_; }
-    // Return the vertex count of this vertex buffer
-    inline std::size_t get_count() const { return count_; }
-    // Return the size (in bytes) of this vertex buffer
-    inline std::size_t get_size() const  { return count_*sizeof(float); }
-    // Return engine unique id for this object
-    inline W_ID get_unique_id() const { return unique_id_; }
-
-    // Factory method to create the correct implementation
-    // for the current renderer API
-    static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
-
-protected:
-    W_ID unique_id_;
-    BufferLayout layout_;
-    std::size_t count_;
-};
-
-enum class DrawPrimitive;
-class IndexBuffer
-{
-public:
-    IndexBuffer(uint32_t count, DrawPrimitive primitive): unique_id_(id::unique_id()), count_(count), primitive_(primitive) {}
-    virtual ~IndexBuffer() {}
-
-    virtual void bind() const = 0;
-    virtual void unbind() const = 0;
-    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) = 0;
-    virtual void map(uint32_t* index_data, uint32_t count) = 0;
-
-    // Return the number of indices
-    inline uint32_t get_count() const { return count_; }
-    // Return the size (in bytes) of this buffer
-    inline uint32_t get_size() const  { return count_*sizeof(uint32_t); }
-    // Return the intended draw primitive
-    inline DrawPrimitive get_primitive() const { return primitive_; }
-    // Return engine unique id for this object
-    inline W_ID get_unique_id() const { return unique_id_; }
-
-    // Factory method to create the correct implementation
-    // for the current renderer API
-    static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-
-protected:
-    W_ID unique_id_;
-    uint32_t count_;
-    DrawPrimitive primitive_;
-};
-
-// UBO
-class UniformBuffer
-{
-public:
-    UniformBuffer(const std::string& name, uint32_t struct_size): unique_id_(id::unique_id()), name_(name), struct_size_(struct_size) { }
-    virtual ~UniformBuffer() = default;
-
-    virtual void bind() const = 0;
-    virtual void unbind() const = 0;
-    virtual void map(void* data) = 0;
-    virtual void stream(void* data, uint32_t size, uint32_t offset) = 0;
-
-    inline const std::string& get_name() const { return name_; }
-    inline uint32_t get_size() const           { return struct_size_; }
-    // Return engine unique id for this object
-    inline W_ID get_unique_id() const { return unique_id_; }
-
-    // Factory method to create the correct implementation
-    static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
-
-protected:
-    W_ID unique_id_;
-    std::string name_;
-    uint32_t struct_size_;
-};
-
-// SSBO / UAV
-class ShaderStorageBuffer
-{
-public:
-    ShaderStorageBuffer(const std::string& name, uint32_t size): unique_id_(id::unique_id()), name_(name), size_(size) { }
-    virtual ~ShaderStorageBuffer() = default;
+    GfxBuffer(): unique_id_(id::unique_id()) {}
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
     virtual void stream(void* data, uint32_t size, uint32_t offset) = 0;
     virtual void map(void* data, uint32_t size) = 0;
 
+    inline W_ID get_unique_id() const { return unique_id_; }
+
+protected:
+    W_ID unique_id_;
+};
+
+
+class VertexBuffer: public virtual GfxBuffer
+{
+public:
+    VertexBuffer(const BufferLayout& layout, uint32_t count): layout_(layout), count_(count) {}
+    virtual ~VertexBuffer() {}
+
+    // Return the buffer layout
+    inline const BufferLayout& get_layout() const { return layout_; }
+    // Return the vertex count of this vertex buffer
+    inline std::size_t get_count() const          { return count_; }
+    // Return the size (in bytes) of this vertex buffer
+    inline std::size_t get_size() const           { return count_*sizeof(float); }
+
+    // Factory method to create the correct implementation
+    // for the current renderer API
+    static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
+
+protected:
+    BufferLayout layout_;
+    std::size_t count_;
+};
+
+enum class DrawPrimitive;
+class IndexBuffer: public virtual GfxBuffer
+{
+public:
+    IndexBuffer(uint32_t count, DrawPrimitive primitive): primitive_(primitive), count_(count) {}
+    virtual ~IndexBuffer() {}
+
+    // Return the number of indices
+    inline uint32_t get_count() const          { return count_; }
+    // Return the size (in bytes) of this buffer
+    inline uint32_t get_size() const           { return count_*sizeof(uint32_t); }
+    // Return the intended draw primitive
+    inline DrawPrimitive get_primitive() const { return primitive_; }
+
+    // Factory method to create the correct implementation
+    // for the current renderer API
+    static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+
+protected:
+    DrawPrimitive primitive_;
+    uint32_t count_;
+};
+
+class UniformBuffer: public virtual GfxBuffer
+{
+public:
+    UniformBuffer(const std::string& name, uint32_t struct_size): name_(name), struct_size_(struct_size) { }
+    virtual ~UniformBuffer() = default;
+
+    inline const std::string& get_name() const { return name_; }
+    inline uint32_t get_size() const           { return struct_size_; }
+
+    // Factory method to create the correct implementation
+    static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+
+protected:
+    std::string name_;
+    uint32_t struct_size_;
+};
+
+class ShaderStorageBuffer: public virtual GfxBuffer
+{
+public:
+    ShaderStorageBuffer(const std::string& name, uint32_t size): name_(name), size_(size) { }
+    virtual ~ShaderStorageBuffer() = default;
+
     inline const std::string& get_name() const { return name_; }
     inline uint32_t get_size() const           { return size_; }
-    // Return engine unique id for this object
-    inline W_ID get_unique_id() const { return unique_id_; }
 
     // Factory method to create the correct implementation
     static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
 
 protected:
-    W_ID unique_id_;
     std::string name_;
     uint32_t size_;
 };
@@ -167,8 +150,7 @@ public:
 
 protected:
     W_ID unique_id_;
-	std::vector<WRef<VertexBuffer>> vertex_buffers_;
-	WRef<IndexBuffer> index_buffer_ = nullptr;
+    std::vector<WRef<VertexBuffer>> vertex_buffers_;
+    WRef<IndexBuffer> index_buffer_ = nullptr;
 };
-
 } // namespace erwin

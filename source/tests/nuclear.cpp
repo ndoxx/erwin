@@ -15,8 +15,8 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 
-#include "math/convolution.h"
-#include "render/main_renderer.h"
+// #include "math/convolution.h"
+// #include "render/main_renderer.h"
 
 using namespace erwin;
 
@@ -35,43 +35,153 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+class Buffer
+{
+public:
+    virtual void bind() const = 0;
+    virtual void unbind() const = 0;
+    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) = 0;
+    virtual void map(uint32_t* index_data, uint32_t count) = 0;
+};
+
+class OGLBuffer: virtual Buffer
+{
+public:
+    virtual void bind() const override
+    {
+    	DLOG("nuclear",1) << "OGLBuffer::bind() target: " << target_ << " handle: " << rd_handle_ << std::endl;
+    }
+    virtual void unbind() const override
+    {
+    	DLOG("nuclear",1) << "OGLBuffer::unbind() target: " << target_ << " handle: " << rd_handle_ << std::endl;
+    }
+    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) override
+    {
+    	DLOG("nuclear",1) << "OGLBuffer::stream() target: " << target_ << " handle: " << rd_handle_
+    					  << " count: " << count << " offset: " << offset << std::endl;
+    }
+    virtual void map(uint32_t* index_data, uint32_t count) override
+    {
+    	DLOG("nuclear",1) << "OGLBuffer::map() target: " << target_ << " handle: " << rd_handle_ << std::endl
+    					  << " count: " << count << std::endl;
+    }
+
+protected:
+	uint32_t target_;
+	uint32_t rd_handle_;
+};
+
+class DXBuffer: virtual Buffer
+{
+public:
+    virtual void bind() const override
+    {
+    	DLOG("nuclear",1) << "DXBuffer::bind() target: " << target_ << " handle: " << rd_handle_ << std::endl;
+    }
+    virtual void unbind() const override
+    {
+    	DLOG("nuclear",1) << "DXBuffer::unbind() target: " << target_ << " handle: " << rd_handle_ << std::endl;
+    }
+    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) override
+    {
+    	DLOG("nuclear",1) << "DXBuffer::stream() target: " << target_ << " handle: " << rd_handle_
+    					  << " count: " << count << " offset: " << offset << std::endl;
+    }
+    virtual void map(uint32_t* index_data, uint32_t count) override
+    {
+    	DLOG("nuclear",1) << "DXBuffer::map() target: " << target_ << " handle: " << rd_handle_ << std::endl
+    					  << " count: " << count << std::endl;
+    }
+
+protected:
+	uint32_t target_;
+	uint32_t rd_handle_;
+};
+
+class IndexBuffer: public virtual Buffer
+{
+public:
+	virtual ~IndexBuffer() = default;
+
+protected:
+	uint32_t count_;
+};
+
+class VertexBuffer: public virtual Buffer
+{
+public:
+	virtual ~VertexBuffer() = default;
+
+protected:
+	uint32_t count_;
+};
+
+static uint32_t s_ogl_current_id = 0;
+static uint32_t s_dx_current_id = 0;
+
+class OGLIndexBuffer: public OGLBuffer, public IndexBuffer
+{
+public:
+	OGLIndexBuffer()
+	{
+		target_ = 0;
+		rd_handle_ = s_ogl_current_id++;
+	}
+};
+
+class OGLVertexBuffer: public OGLBuffer, public VertexBuffer
+{
+public:
+	OGLVertexBuffer()
+	{
+		target_ = 1;
+		rd_handle_ = s_ogl_current_id++;
+	}
+};
+
+class DXIndexBuffer: public DXBuffer, public IndexBuffer
+{
+public:
+	DXIndexBuffer()
+	{
+		target_ = 0;
+		rd_handle_ = s_dx_current_id++;
+	}
+};
+
+class DXVertexBuffer: public DXBuffer, public VertexBuffer
+{
+public:
+	DXVertexBuffer()
+	{
+		target_ = 1;
+		rd_handle_ = s_dx_current_id++;
+	}
+};
+
 int main(int argc, char** argv)
 {
 	init_logger();
 
-	std::vector<std::pair<uint64_t, std::string>> commands;
+	IndexBuffer* ogl_ibo = new OGLIndexBuffer();
+	VertexBuffer* ogl_vbo = new OGLVertexBuffer();
+	IndexBuffer* dx_ibo = new DXIndexBuffer();
+	VertexBuffer* dx_vbo = new DXVertexBuffer();
 
-	for(int ii=0; ii<8; ++ii)
-	{
-		uint8_t layer_id = ii;
+	ogl_ibo->bind();
+	ogl_vbo->bind();
+	ogl_ibo->unbind();
+	ogl_vbo->unbind();
 
-		for(int jj=0; jj<4; ++jj)
-		{
-			SortKey key;
-			key.shader = jj;
-			key.blending = jj%2;
-			key.view = (uint16_t(layer_id)<<8);
-			key.sequence = jj;
-			key.order = SortKey::Order::Sequential;
+	dx_ibo->bind();
+	dx_vbo->bind();
+	dx_ibo->unbind();
+	dx_vbo->unbind();
 
-			std::string cmd = "";
-			cmd += char('A'+ii);
-			cmd += "_" + std::to_string(jj);
-
-			commands.push_back(std::make_pair(key.encode(), cmd));
-		}
-	}
-
-    std::sort(std::begin(commands), std::begin(commands) + commands.size(), 
-        [&](auto&& item1, auto&& item2)
-        {
-        	return item1.first < item2.first;
-        });
-
-	for(auto&& [key,cmd]: commands)
-	{
-		DLOG("nuclear",1) << key << " " << cmd << std::endl;
-	}
+	delete ogl_ibo;
+	delete ogl_vbo;
+	delete ogl_ibo;
+	delete ogl_vbo;
 
 	return 0;
 }
