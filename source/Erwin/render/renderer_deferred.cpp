@@ -35,7 +35,7 @@ static struct
 {
 	UniformBufferHandle instance_ubo;
 	UniformBufferHandle pass_ubo;
-	ShaderHandle light_shader;
+	ShaderHandle dirlight_shader;
 
 	PassUBOData pass_ubo_data;
 
@@ -45,17 +45,17 @@ static struct
 
 void DeferredRenderer::init()
 {
-	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
-	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
-	s_storage.light_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/light_deferred_PBR.glsl", "light_deferred_PBR");
-	Renderer::shader_attach_uniform_buffer(s_storage.light_shader, s_storage.instance_ubo);
+	s_storage.instance_ubo    = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
+	s_storage.pass_ubo        = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	s_storage.dirlight_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
+	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.instance_ubo);
 }
 
 void DeferredRenderer::shutdown()
 {
 	Renderer::destroy(s_storage.pass_ubo);
 	Renderer::destroy(s_storage.instance_ubo);
-	Renderer::destroy(s_storage.light_shader);
+	Renderer::destroy(s_storage.dirlight_shader);
 }
 
 void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
@@ -69,11 +69,6 @@ void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle 
 void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light)
 {
     W_PROFILE_FUNCTION()
-
-    /*
-		TODO:
-			[ ] We want to be able to perform multiple passes, so we need a way to control framebuffer clear calls.
-    */
 
 	// Pass state
 	RenderState state;
@@ -110,28 +105,29 @@ void DeferredRenderer::end_pass()
 		TODO:
 			[ ] SSAO pass
 			[ ] SSR pass
-			[ ] Blit GBuffer's depth buffer into LBuffer
     */
 
 	FramebufferHandle GBuffer = FramebufferPool::get_framebuffer("GBuffer"_h);
 	FramebufferHandle LBuffer = FramebufferPool::get_framebuffer("LBuffer"_h);
 
-	// Light pass (DEBUG)
+	// Directional light pass
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
 	uint64_t state_flags = state.encode();
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-	DrawCall dc(DrawCall::Indexed, Renderer::next_view_id(), state_flags, s_storage.light_shader, quad);
+	DrawCall dc(DrawCall::Indexed, Renderer::next_view_id(), state_flags, s_storage.dirlight_shader, quad);
 	for(int ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
 	dc.set_key_sequence(0);
 	Renderer::submit(dc);
 
+	// Blit GBuffer's depth buffer into LBuffer
 	SortKey prev_key = dc.key;
 	prev_key.sequence = 1;
 	Renderer::blit_depth(GBuffer, LBuffer, prev_key.encode());

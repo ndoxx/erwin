@@ -53,7 +53,7 @@ void main()
 	// Retrieve GBuffer data
 	vec4 GBuffer_albedo = texture(SAMPLER_2D_0, v_uv);
     vec4 GBuffer_normal = texture(SAMPLER_2D_1, v_uv);
-    vec4 GBuffer_mare   = texture(SAMPLER_2D_2, v_uv);
+    vec4 GBuffer_mar    = texture(SAMPLER_2D_2, v_uv);
     float GBuffer_depth = texture(SAMPLER_2D_3, v_uv).r;
 
     // Reconstruct position from depth buffer
@@ -63,12 +63,11 @@ void main()
     vec3 view_dir = normalize(-frag_pos);
 
 	vec3 frag_albedo     = GBuffer_albedo.rgb;
-	float frag_alpha     = GBuffer_albedo.a;
 	vec3 frag_normal     = decompress_normal_spheremap_transform(GBuffer_normal.xy);
-	float frag_metallic  = GBuffer_mare.x;
-	float frag_ao        = GBuffer_mare.y;
-	float frag_roughness = GBuffer_mare.z;
-	float frag_emissive  = GBuffer_mare.w;
+	float frag_metallic  = GBuffer_mar.x;
+	float frag_ao        = GBuffer_mar.y;
+	float frag_roughness = GBuffer_mar.z;
+    float frag_emissive  = GBuffer_albedo.a;
 
 	// Apply BRDF
     vec3 radiance = CookTorrance(u_v4_light_color.rgb,
@@ -83,7 +82,7 @@ void main()
 
     total_light += frag_emissive * frag_albedo;
 
-    out_color = vec4(total_light, frag_alpha);
+    out_color = vec4(total_light, 1.f);
 
     // "Bright pass"
     out_glow = glow(out_color.rgb, f_bright_threshold, f_bright_knee);

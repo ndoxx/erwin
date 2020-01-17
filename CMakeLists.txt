@@ -121,6 +121,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_state.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d_alt.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_forward.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_deferred.cpp

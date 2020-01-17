@@ -60,7 +60,7 @@ void Layer2D::on_render()
 {
 	// Draw a grid of quads
 	Renderer2D::begin_pass(camera_ctl_.get_camera(), true);
-	/*for(int xx=0; xx<len_grid_; ++xx)
+	for(int xx=0; xx<len_grid_; ++xx)
 	{
 		float xx_offset = trippy_mode_ ? 3.0f/len_grid_ * cos(2*2*M_PI*xx/(1.f+len_grid_))*sin(0.2f*2*M_PI*tt_) : 0.f;
 		float xx_scale = trippy_mode_ ? 1.0f/len_grid_ * (0.5f+sin(0.2f*2*M_PI*tt_)*sin(0.2f*2*M_PI*tt_)) : 1.f/float(len_grid_-1);
@@ -88,11 +88,11 @@ void Layer2D::on_render()
 			glm::vec4 color((xx+1)/6.f, (yy+1)/6.f, (xx+yy)/10.f, 1.f);
 			Renderer2D::draw_colored_quad(ComponentTransform2D({pos_x,pos_y,-0.2f},0.f,xx_scale), color);
 		}
-	}*/
-	Renderer2D::draw_text("The quick brown fox jumps over the lazy dog.", font_arial_, -0.9f, -0.9f, 1.f, {1.f,0.7f,0.f,1.f});
-	Renderer2D::draw_text("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", font_arial_, -0.9f, -0.8f, 2.f, {1.f,0.2f,0.f,1.f});
-	Renderer2D::draw_text("Pack my box with five dozen liquor jugs.", font_zeroprime_, -0.9f, -0.6f, 2.f, {0.f,0.7f,1.f,1.f});
-	Renderer2D::draw_text("PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS.", font_zeroprime_, -0.9f, -0.5f, 0.75f, {0.f,1.0f,0.5f,1.f});
+	}
+	// Renderer2D::draw_text("The quick brown fox jumps over the lazy dog.", font_arial_, -0.9f, -0.9f, 1.f, {1.f,0.7f,0.f,1.f});
+	// Renderer2D::draw_text("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", font_arial_, -0.9f, -0.8f, 2.f, {1.f,0.2f,0.f,1.f});
+	// Renderer2D::draw_text("Pack my box with five dozen liquor jugs.", font_zeroprime_, -0.9f, -0.6f, 2.f, {0.f,0.7f,1.f,1.f});
+	// Renderer2D::draw_text("PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS.", font_zeroprime_, -0.9f, -0.5f, 0.75f, {0.f,1.0f,0.5f,1.f});
 
 	Renderer2D::end_pass();
 }

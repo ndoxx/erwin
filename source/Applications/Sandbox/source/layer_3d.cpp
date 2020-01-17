@@ -127,6 +127,11 @@ void Layer3D::on_update(GameClock& clock)
 		euler *= 1.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}
+
+	float s = sin(2*M_PI*tt/10.f);
+	float s2 = s*s;
+	emissive_cube_.material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
+	emissive_cube_.material_data.tint.r = 0.3f*exp(-12.f*s2);
 }
 
 void Layer3D::on_render()

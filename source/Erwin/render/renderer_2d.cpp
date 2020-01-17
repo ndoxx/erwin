@@ -207,7 +207,7 @@ void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHa
 
 	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
 	if(transform.position.z > batch.max_depth)
-		batch.max_depth = transform.position.z; // TMP: this must be in view space
+		batch.max_depth = transform.position.z;
 
 	glm::vec4 uvs = atlas.get_uv(tile);
 	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
@@ -228,7 +228,7 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 
 	// Set batch depth as the maximal algebraic quad depth (camera looking along negative z axis)
 	if(transform.position.z > batch.max_depth)
-		batch.max_depth = transform.position.z; // TMP: this must be in view space
+		batch.max_depth = transform.position.z;
 
 	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
 	++batch.count;

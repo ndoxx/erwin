@@ -78,6 +78,8 @@ struct DepthStencilState
     StencilOperator stencil_operator = StencilOperator::LightVolume;
     bool       stencil_test_enabled  = false;
     bool       depth_test_enabled    = false;
+    bool       depth_lock            = false;
+    bool       stencil_lock          = false;
 };
 
 // Render target
@@ -96,14 +98,19 @@ constexpr uint64_t k_transp_mask        = uint64_t(0x3) << k_transp_shift;
 constexpr uint8_t  k_cull_mode_bits     = 2;
 constexpr uint64_t k_cull_mode_shift    = k_transp_shift - k_cull_mode_bits;
 constexpr uint64_t k_cull_mode_mask     = uint64_t(0x3) << k_cull_mode_shift;
-// Depth and stencil test enable bit
+// Depth and stencil test enable bits
 constexpr uint64_t k_depth_test_shift   = k_cull_mode_shift - 1;
 constexpr uint64_t k_stencil_test_shift = k_depth_test_shift - 1;
 constexpr uint64_t k_depth_test_mask    = uint64_t(1) << k_depth_test_shift;
 constexpr uint64_t k_stencil_test_mask  = uint64_t(1) << k_stencil_test_shift;
+// Depth and stencil lock bits
+constexpr uint64_t k_depth_lock_shift   = k_stencil_test_shift - 1;
+constexpr uint64_t k_stencil_lock_shift = k_depth_lock_shift - 1;
+constexpr uint64_t k_depth_lock_mask    = uint64_t(1) << k_depth_lock_shift;
+constexpr uint64_t k_stencil_lock_mask  = uint64_t(1) << k_stencil_lock_shift;
 // Depth state
 constexpr uint8_t  k_depth_func_bits    = 3;
-constexpr uint64_t k_depth_func_shift   = k_stencil_test_shift - k_depth_func_bits;
+constexpr uint64_t k_depth_func_shift   = k_stencil_lock_shift - k_depth_func_bits;
 constexpr uint64_t k_depth_func_mask    = uint64_t(0x7) << k_depth_func_shift;
 // Stencil state
 constexpr uint8_t  k_stencil_func_bits  = 3;
@@ -128,6 +135,8 @@ struct RenderState
              | (((uint64_t)rasterizer_state.cull_mode               << k_cull_mode_shift)    & k_cull_mode_mask)
              | (((uint64_t)depth_stencil_state.depth_test_enabled   << k_depth_test_shift)   & k_depth_test_mask)
              | (((uint64_t)depth_stencil_state.stencil_test_enabled << k_stencil_test_shift) & k_stencil_test_mask)
+             | (((uint64_t)depth_stencil_state.depth_lock           << k_depth_lock_shift)   & k_depth_lock_mask)
+             | (((uint64_t)depth_stencil_state.stencil_lock         << k_stencil_lock_shift) & k_stencil_lock_mask)
              | (((uint64_t)depth_stencil_state.depth_func           << k_depth_func_shift)   & k_depth_func_mask)
              | (((uint64_t)depth_stencil_state.stencil_func         << k_stencil_func_shift) & k_stencil_func_mask)
              | (((uint64_t)depth_stencil_state.stencil_operator     << k_stencil_op_shift)   & k_stencil_op_mask);
@@ -141,6 +150,8 @@ struct RenderState
         rasterizer_state.cull_mode               = CullMode(       (state & k_cull_mode_mask)    >> k_cull_mode_shift);
         depth_stencil_state.depth_test_enabled   = bool(           (state & k_depth_test_mask)   >> k_depth_test_shift);
         depth_stencil_state.stencil_test_enabled = bool(           (state & k_stencil_test_mask) >> k_stencil_test_shift);
+        depth_stencil_state.depth_lock           = bool(           (state & k_depth_lock_mask)   >> k_depth_lock_shift);
+        depth_stencil_state.stencil_lock         = bool(           (state & k_stencil_lock_mask) >> k_stencil_lock_shift);
         depth_stencil_state.depth_func           = DepthFunc(      (state & k_depth_func_mask)   >> k_depth_func_shift);
         depth_stencil_state.stencil_func         = StencilFunc(    (state & k_stencil_func_mask) >> k_stencil_func_shift);
         depth_stencil_state.stencil_operator     = StencilOperator((state & k_stencil_op_mask)   >> k_stencil_op_shift);

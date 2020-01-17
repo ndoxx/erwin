@@ -65,7 +65,7 @@ layout(location = 4) in mat3 v_TBN;         // TBN matrix for normal mapping
 
 layout(location = 0) out vec4 out_albedo;
 layout(location = 1) out vec4 out_normal;
-layout(location = 2) out vec4 out_mare;
+layout(location = 2) out vec4 out_mar;
 
 layout(std140, binding = 2) uniform material_data
 {
@@ -76,15 +76,8 @@ layout(std140, binding = 2) uniform material_data
 
 const float f_parallax_height_scale = 0.03f;
 
-// const mat4 m4_stippling_threshold = mat4(vec4(1,13,4,16),vec4(9,5,12,8),vec4(3,15,2,14),vec4(11,7,10,6))/17.f;
-
 void main()
 {
-    // Stippling: selectively discard fragments when surface is too close to eye position
-    /*float threshold = m4_stippling_threshold[int(gl_FragCoord.x)%4][int(gl_FragCoord.y)%4];
-    if(1.2f*gl_FragCoord.z-threshold < 0.f)
-        discard;*/
-
 	vec2 tex_coord = v_uv;
 
 	// Parallax map
@@ -98,7 +91,11 @@ void main()
     // Compress normal
     vec2 normal_cmp = compress_normal_spheremap_transform(frag_normal);
 
-    out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, frag_color.a);
+    if(bool(u_flags & PBR_EN_EMISSIVE))
+        out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, frag_mare.a * u_f_emissive_scale);
+    else
+        out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, 0.f);
+
     out_normal = vec4(normal_cmp, 0.f, 1.f);
-    out_mare   = frag_mare;
+    out_mar    = vec4(frag_mare.rgb, 1.f);
 }

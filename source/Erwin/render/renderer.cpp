@@ -435,12 +435,12 @@ void Renderer::init(memory::HeapArea& area)
 	{
 	    FramebufferLayout layout =
 	    {
-	    	// RGB: Albedo, A: ?
-	        {"albedo"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+	    	// RGB: Albedo, A: Scaled emissivity
+	        {"albedo"_h, ImageFormat::RGBA16F, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
 	        // RG: Compressed normal, BA: ?
 	        {"normal"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-	        // R: Metallic, G: AO, B: Roughness, A: Emissivity
-	        {"mare"_h,   ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
+	        // R: Metallic, G: AO, B: Roughness, A: ?
+	        {"mar"_h,    ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
 	    };
 	    FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
 	}
@@ -454,7 +454,7 @@ void Renderer::init(memory::HeapArea& area)
 	    };
 	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true); // TODO: Share depth-stencil buffer with GBuffer
 	}
-	{
+	/*{
 		// Debug render target
 	    FramebufferLayout layout =
 	    {
@@ -462,7 +462,7 @@ void Renderer::init(memory::HeapArea& area)
 	        {"target_1"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
 	    };
 	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, false);
-	}
+	}*/
 
 	s_storage.initialized_ = true;
 
@@ -582,6 +582,7 @@ enum class RenderCommand: uint16_t
 	CreateIndexBuffer,
 	CreateVertexBuffer,
 	CreateVertexArray,
+	CreateVertexArrayMultipleVBO,
 	CreateUniformBuffer,
 	CreateShaderStorageBuffer,
 	CreateShader,
@@ -724,7 +725,6 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
 VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
 {
 	W_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
-	W_ASSERT(ib.is_valid(), "Invalid IndexBufferHandle!");
 
 	VertexArrayHandle handle = VertexArrayHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -732,8 +732,30 @@ VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBuff
 	// Write data
 	RenderCommandWriter cw(RenderCommand::CreateVertexArray);
 	cw.write(&handle);
-	cw.write(&vb);
 	cw.write(&ib);
+	cw.write(&vb);
+	cw.submit();
+
+	return handle;
+}
+
+VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHandle>& vbs, IndexBufferHandle ib)
+{
+	VertexArrayHandle handle = VertexArrayHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
+
+	uint8_t VBO_count = uint8_t(vbs.size());
+
+	RenderCommandWriter cw(RenderCommand::CreateVertexArrayMultipleVBO);
+	cw.write(&handle);
+	cw.write(&ib);
+	cw.write(&VBO_count);
+
+	for(auto vb: vbs)
+	{
+		W_ASSERT_FMT(vb.is_valid(), "Invalid VertexBufferHandle: %hu.", vb.index);
+		cw.write(&vb);
+	}
 	cw.submit();
 
 	return handle;
@@ -1177,15 +1199,39 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
     W_PROFILE_RENDER_FUNCTION()
 
 	VertexArrayHandle handle;
-	VertexBufferHandle vb;
 	IndexBufferHandle ib;
+	VertexBufferHandle vb;
 	buf.read(&handle);
-	buf.read(&vb);
 	buf.read(&ib);
+	buf.read(&vb);
 
 	s_storage.vertex_arrays[handle.index] = VertexArray::create();
 	s_storage.vertex_arrays[handle.index]->set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
-	if(ib.is_valid())
+	if(ib.index != k_invalid_handle)
+		s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
+}
+
+void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	VertexArrayHandle handle;
+	IndexBufferHandle ib;
+	uint8_t VBO_count;
+	buf.read(&handle);
+	buf.read(&ib);
+	buf.read(&VBO_count);
+
+	s_storage.vertex_arrays[handle.index] = VertexArray::create();
+
+	for(uint8_t ii=0; ii<VBO_count; ++ii)
+	{
+		VertexBufferHandle vb;
+		buf.read(&vb);
+		s_storage.vertex_arrays[handle.index]->add_vertex_buffer(s_storage.vertex_buffers[vb.index]);
+	}
+
+	if(ib.index != k_invalid_handle)
 		s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
 }
 
@@ -1515,6 +1561,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::create_index_buffer,
 	&render_dispatch::create_vertex_buffer,
 	&render_dispatch::create_vertex_array,
+	&render_dispatch::create_vertex_array_multiple_VBO,
 	&render_dispatch::create_uniform_buffer,
 	&render_dispatch::create_shader_storage_buffer,
 	&render_dispatch::create_shader,
@@ -1602,7 +1649,13 @@ static void handle_state(uint64_t state_flags)
 			if(state.depth_stencil_state.depth_test_enabled)
 				Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
 		}
-	
+
+		if(has_mutated(state_flags, s_storage.state_cache_, k_depth_lock_mask))
+			Gfx::device->set_depth_lock(state.depth_stencil_state.depth_lock);
+
+		if(has_mutated(state_flags, s_storage.state_cache_, k_stencil_lock_mask))
+			Gfx::device->set_stencil_lock(state.depth_stencil_state.stencil_lock);
+
 		s_storage.state_cache_ = state_flags;
 	}
 }

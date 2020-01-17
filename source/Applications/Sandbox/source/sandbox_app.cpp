@@ -19,7 +19,7 @@ void Sandbox::on_load()
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 #ifdef W_DEBUG
-    TexturePeek::register_framebuffer("DBuffer");
+    // TexturePeek::register_framebuffer("DBuffer");
     TexturePeek::register_framebuffer("LBuffer");
     TexturePeek::register_framebuffer("GBuffer");
     TexturePeek::register_framebuffer("SpriteBuffer");
