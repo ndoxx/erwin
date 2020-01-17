@@ -1,6 +1,5 @@
 #include "render/shader_lang.h"
 #include "filesystem/filesystem.h"
-#include "core/wtypes.h"
 #include "utils/string.h"
 #include "debug/logger.h"
 #include <vector>

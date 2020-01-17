@@ -1,8 +1,6 @@
 #pragma once
 
-#include <sstream>
-#include <algorithm>
-#include <iterator>
+#include <functional>
 
 namespace erwin
 {
@@ -61,22 +59,6 @@ constexpr hash_t operator "" _h(const char* internstr, size_t)
 inline hash_t HCOMBINE_(hash_t first, hash_t second)
 {
     return (first ^ second) * detail::prime;
-}
-
-template <class Container>
-void split_string(const std::string& str, Container& cont, char delim = ' ')
-{
-    std::stringstream ss(str);
-    std::string token;
-    while (std::getline(ss, token, delim)) {
-        cont.push_back(token);
-    }
-}
-
-template<typename T>
-std::string to_string(const T& x)
-{
-    return std::to_string(x);
 }
 
 }

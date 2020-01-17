@@ -7,7 +7,7 @@
 #endif
 
 #include "core/application.h"
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "core/layer.h"
 #include "core/config.h"
 #include "filesystem/filesystem.h"

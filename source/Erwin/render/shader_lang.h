@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/core.h"
-#include "core/wtypes.h"
 #include <filesystem>
 
 namespace fs = std::filesystem;

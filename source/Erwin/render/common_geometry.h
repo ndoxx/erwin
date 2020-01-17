@@ -1,6 +1,6 @@
 #pragma once
 #include "render/handles.h"
-#include "core/wtypes.h"
+#include "core/core.h"
 
 namespace erwin
 {

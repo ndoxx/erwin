@@ -19,7 +19,7 @@ static CommonGeometryStorage s_storage;
 static void make_geometry(hash_t hname, VertexBufferLayoutHandle layout, const std::vector<float>& vdata, const std::vector<uint32_t>& idata)
 {
 	IndexBufferHandle IBO = Renderer::create_index_buffer(idata.data(), idata.size(), DrawPrimitive::Triangles);
-	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout, vdata.data(), vdata.size(), DrawMode::Static);
+	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout, vdata.data(), vdata.size(), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
 	s_storage.vertex_arrays_.insert(std::make_pair(hname, VAO));

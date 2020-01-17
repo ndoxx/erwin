@@ -4,27 +4,42 @@
 #include <vector>
 
 #include "core/core.h"
-#include "core/wtypes.h"
 #include "core/unique_id.h"
 #include "render/buffer_layout.h"
 
 namespace erwin
 {
 
+/*
+    Base class for all graphics buffers, allows for a single per-API implementation
+    of buffer access methods. API-dependent buffer implementations use multiple
+    inheritance, that's why all specializations below inherit virtually from GfxBuffer.
+    In theory, this scheme should be compatible with DX and Vulkan.
+*/
 class GfxBuffer
 {
 public:
-    GfxBuffer(): unique_id_(id::unique_id()) {}
+    GfxBuffer():
+    unique_id_(id::unique_id()),
+    persistent_map_(nullptr),
+    has_persistent_mapping_(false)
+    {}
 
+    virtual void init(void* data, uint32_t size, UsagePattern mode) = 0;
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
-    virtual void stream(void* data, uint32_t size, uint32_t offset) = 0;
-    virtual void map(void* data, uint32_t size) = 0;
+    virtual void stream(void* data, uint32_t size, uint32_t offset=0) = 0;
+    virtual void map(void* data, uint32_t size, uint32_t offset=0) = 0;
+    virtual void map_persistent(void* data, uint32_t size, uint32_t offset=0) = 0;
 
-    inline W_ID get_unique_id() const { return unique_id_; }
+    inline W_ID get_unique_id() const           { return unique_id_; }
+    inline bool has_persistent_mapping() const  { return has_persistent_mapping_; }
+    inline void* get_persistent_pointer() const { return persistent_map_; }
 
 protected:
     W_ID unique_id_;
+    void* persistent_map_;
+    bool has_persistent_mapping_;
 };
 
 
@@ -43,14 +58,13 @@ public:
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode = DrawMode::Static);
+    static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode = UsagePattern::Static);
 
 protected:
     BufferLayout layout_;
     std::size_t count_;
 };
 
-enum class DrawPrimitive;
 class IndexBuffer: public virtual GfxBuffer
 {
 public:
@@ -66,7 +80,7 @@ public:
 
     // Factory method to create the correct implementation
     // for the current renderer API
-    static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
+    static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode = UsagePattern::Static);
 
 protected:
     DrawPrimitive primitive_;
@@ -83,7 +97,7 @@ public:
     inline uint32_t get_size() const           { return struct_size_; }
 
     // Factory method to create the correct implementation
-    static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, DrawMode mode = DrawMode::Dynamic);
+    static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode = UsagePattern::Dynamic);
 
 protected:
     std::string name_;
@@ -100,7 +114,7 @@ public:
     inline uint32_t get_size() const           { return size_; }
 
     // Factory method to create the correct implementation
-    static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
+    static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
 
 protected:
     std::string name_;

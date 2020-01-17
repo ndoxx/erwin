@@ -8,7 +8,7 @@
 #include <vector>
 #include <filesystem>
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "render/shader_lang.h"
 
 namespace fs = std::filesystem;

@@ -66,12 +66,12 @@ public:
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands
-	static IndexBufferHandle         create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode = DrawMode::Static);
-	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode = DrawMode::Static);
+	static IndexBufferHandle         create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode = UsagePattern::Static);
+	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, UsagePattern mode = UsagePattern::Static);
 	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	static VertexArrayHandle         create_vertex_array(const std::vector<VertexBufferHandle>& vbs, IndexBufferHandle ib);
-	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
-	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode = DrawMode::Dynamic);
+	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
+	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
 	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);

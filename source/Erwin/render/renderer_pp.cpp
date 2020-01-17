@@ -100,8 +100,8 @@ void PostProcessingRenderer::init()
 	s_storage.bloom_blur_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
 	s_storage.bloom_comb_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_combine.glsl", "bloom_combine");
 	
-	s_storage.pp_ubo   = Renderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), DrawMode::Dynamic);
-	s_storage.blur_ubo = Renderer::create_uniform_buffer("blur_data", nullptr, sizeof(BlurUBOData), DrawMode::Dynamic);
+	s_storage.pp_ubo   = Renderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), UsagePattern::Dynamic);
+	s_storage.blur_ubo = Renderer::create_uniform_buffer("blur_data", nullptr, sizeof(BlurUBOData), UsagePattern::Dynamic);
 
 	Renderer::shader_attach_uniform_buffer(s_storage.pp_shader, s_storage.pp_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.bloom_blur_shader, s_storage.blur_ubo);

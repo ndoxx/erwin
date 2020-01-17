@@ -6,10 +6,17 @@
 #include <locale>
 #include <regex>
 #include <functional>
-#include "core/wtypes.h"
+#include "core/core.h"
 
 namespace erwin
 {
+
+template<typename T>
+std::string to_string(const T& x)
+{
+    return std::to_string(x);
+}
+    
 namespace su
 {
 // Trim from start (in place)
@@ -108,6 +115,16 @@ static inline void center(std::string& input, int size)
     int before = diff / 2;
     int after  = before + diff % 2;
     input = std::string(before, ' ') + input + std::string(after, ' ');
+}
+
+template <class Container>
+static inline void split_string(const std::string& str, Container& cont, char delim = ' ')
+{
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        cont.push_back(token);
+    }
 }
 
 namespace rx

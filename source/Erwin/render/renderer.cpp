@@ -666,7 +666,7 @@ private:
 	void* head_;
 };
 
-IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode)
+IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode)
 {
 	IndexBufferHandle handle = IndexBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -679,7 +679,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
 		memcpy(auxiliary, index_data, count * sizeof(uint32_t));
 	}
 	else
-		W_ASSERT(mode != DrawMode::Static, "Index data can't be null in static mode.");
+		W_ASSERT(mode != UsagePattern::Static, "Index data can't be null in static mode.");
 
 	// Write data
 	RenderCommandWriter cw(RenderCommand::CreateIndexBuffer);
@@ -693,7 +693,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
 	return handle;
 }
 
-VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, DrawMode mode)
+VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, UsagePattern mode)
 {
 	W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
@@ -708,7 +708,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
 		memcpy(auxiliary, vertex_data, count * sizeof(float));
 	}
 	else
-		W_ASSERT(mode != DrawMode::Static, "Vertex data can't be null in static mode.");
+		W_ASSERT(mode != UsagePattern::Static, "Vertex data can't be null in static mode.");
 
 	// Write data
 	RenderCommandWriter cw(RenderCommand::CreateVertexBuffer);
@@ -761,7 +761,7 @@ VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHa
 	return handle;
 }
 
-UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode)
 {
 	UniformBufferHandle handle = UniformBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -774,7 +774,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, voi
 		memcpy(auxiliary, data, size);
 	}
 	else
-		W_ASSERT(mode != DrawMode::Static, "UBO data can't be null in static mode.");
+		W_ASSERT(mode != UsagePattern::Static, "UBO data can't be null in static mode.");
 
 	// Write data
 	RenderCommandWriter cw(RenderCommand::CreateUniformBuffer);
@@ -788,7 +788,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, voi
 	return handle;
 }
 
-ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, DrawMode mode)
+ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode)
 {
 	ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -801,7 +801,7 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
 		memcpy(auxiliary, data, size);
 	}
 	else
-		W_ASSERT(mode != DrawMode::Static, "SSBO data can't be null in static mode.");
+		W_ASSERT(mode != UsagePattern::Static, "SSBO data can't be null in static mode.");
 
 	// Write data
 	RenderCommandWriter cw(RenderCommand::CreateShaderStorageBuffer);
@@ -1163,7 +1163,7 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
 	IndexBufferHandle handle;
 	uint32_t count;
 	DrawPrimitive primitive;
-	DrawMode mode;
+	UsagePattern mode;
 	uint32_t* auxiliary;
 
 	buf.read(&handle);
@@ -1182,7 +1182,7 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
 	VertexBufferHandle handle;
 	VertexBufferLayoutHandle layout_hnd;
 	uint32_t count;
-	DrawMode mode;
+	UsagePattern mode;
 	float* auxiliary;
 	buf.read(&handle);
 	buf.read(&layout_hnd);
@@ -1241,7 +1241,7 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
 
 	UniformBufferHandle handle;
 	uint32_t size;
-	DrawMode mode;
+	UsagePattern mode;
 	std::string name;
 	uint8_t* auxiliary;
 	buf.read(&handle);
@@ -1259,7 +1259,7 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
 	ShaderStorageBufferHandle handle;
 	uint32_t size;
-	DrawMode mode;
+	UsagePattern mode;
 	std::string name;
 	uint8_t* auxiliary;
 	buf.read(&handle);
@@ -1369,9 +1369,8 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&size);
 	buf.read(&auxiliary);
 
-	// s_storage.uniform_buffers[handle.index]->map(auxiliary);
 	auto& UBO = *s_storage.uniform_buffers[handle.index];
-	UBO.map(auxiliary, UBO.get_size());
+	UBO.map(auxiliary, size ? size : UBO.get_size());
 }
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1732,7 +1731,10 @@ void draw(memory::LinearBuffer<>& buf)
 			if(idata.SSBO_data)
 			{
 				auto& ssbo = *s_storage.shader_storage_buffers[idata.SSBO.index];
-				ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
+				// if(!ssbo.has_persistent_mapping())
+					ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
+				// else
+					// ssbo.map_persistent(idata.SSBO_data, idata.SSBO_size, 0);
 			}
 			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;

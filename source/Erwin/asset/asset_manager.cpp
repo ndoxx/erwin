@@ -141,7 +141,7 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint32_t size)
 {
-	return Renderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
+	return Renderer::create_uniform_buffer("material_data", nullptr, size, UsagePattern::Dynamic);
 }
 
 void AssetManager::release(TextureAtlasHandle handle)

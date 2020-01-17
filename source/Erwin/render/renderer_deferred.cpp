@@ -45,8 +45,8 @@ static struct
 
 void DeferredRenderer::init()
 {
-	s_storage.instance_ubo    = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
-	s_storage.pass_ubo        = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	s_storage.instance_ubo    = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), UsagePattern::Dynamic);
+	s_storage.pass_ubo        = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), UsagePattern::Dynamic);
 	s_storage.dirlight_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
 	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.instance_ubo);
 }

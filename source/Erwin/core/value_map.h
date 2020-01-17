@@ -5,7 +5,7 @@
 #include <filesystem>
 
 #include "glm/glm.hpp"
-#include "core/wtypes.h"
+#include "core/core.h"
 
 namespace fs = std::filesystem;
 

@@ -109,8 +109,8 @@ void Renderer2D::init()
 
 	// s_storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
 	s_storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
-	s_storage.pass_ubo = Renderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), DrawMode::Dynamic);
-	s_storage.instance_ssbo = Renderer::create_shader_storage_buffer("instance_data", nullptr, s_storage.max_batch_count*sizeof(InstanceData), DrawMode::Dynamic);
+	s_storage.pass_ubo = Renderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), UsagePattern::Dynamic);
+	s_storage.instance_ssbo = Renderer::create_shader_storage_buffer("instance_data", nullptr, s_storage.max_batch_count*sizeof(InstanceData), UsagePattern::Dynamic);
 	
 	Renderer::shader_attach_uniform_buffer(s_storage.batch_2d_shader, s_storage.pass_ubo);
 	Renderer::shader_attach_storage_buffer(s_storage.batch_2d_shader, s_storage.instance_ssbo);

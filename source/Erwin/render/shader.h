@@ -5,7 +5,7 @@
 #include <memory>
 #include <map>
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/buffer.h"

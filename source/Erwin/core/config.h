@@ -2,7 +2,7 @@
 
 #include <string>
 #include "glm/glm.hpp"
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "filesystem/filesystem.h"
 
 namespace erwin

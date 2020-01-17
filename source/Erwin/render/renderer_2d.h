@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "render/camera_2d.h"
 #include "asset/handles.h"
 #include "render/handles.h"

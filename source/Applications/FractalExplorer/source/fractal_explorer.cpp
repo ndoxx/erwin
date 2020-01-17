@@ -62,7 +62,7 @@ public:
 	virtual void on_attach() override
 	{
 		shader_ = AssetManager::load_shader("shaders/mandelbrot.glsl");
-		mandel_ubo_ = Renderer::create_uniform_buffer("mandelbrot_layout", nullptr, sizeof(MandelbrotData), DrawMode::Dynamic);
+		mandel_ubo_ = Renderer::create_uniform_buffer("mandelbrot_layout", nullptr, sizeof(MandelbrotData), UsagePattern::Dynamic);
 		Renderer::shader_attach_uniform_buffer(shader_, mandel_ubo_);
 	}
 

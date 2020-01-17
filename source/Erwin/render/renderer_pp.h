@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "glm/glm.hpp"
 
 namespace erwin

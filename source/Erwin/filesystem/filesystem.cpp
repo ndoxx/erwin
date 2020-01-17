@@ -3,6 +3,8 @@
 #include "memory/heap_area.h"
 #include "render/shader_lang.h"
 
+#include <iterator>
+
 #ifdef __linux__
     #include <unistd.h>
     #include <climits>

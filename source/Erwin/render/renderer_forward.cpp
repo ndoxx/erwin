@@ -56,8 +56,8 @@ void ForwardRenderer::init()
     W_PROFILE_FUNCTION()
 
 	// Setup UBOs and init storage
-	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), DrawMode::Dynamic);
-	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), DrawMode::Dynamic);
+	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), UsagePattern::Dynamic);
+	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), UsagePattern::Dynamic);
 	s_storage.num_draw_calls = 0;
 }
 

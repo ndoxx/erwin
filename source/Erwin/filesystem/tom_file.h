@@ -8,7 +8,7 @@
 #include <string>
 #include <filesystem>
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "render/texture_common.h"
 
 namespace fs = std::filesystem;

@@ -7,7 +7,8 @@
 #include <cstring>
 #include <vector>
 
-#include "core/wtypes.h"
+#include "core/core.h"
+#include "utils/string.h"
 #include "glm/glm.hpp"
 #include "rapidxml/rapidxml.hpp"
 

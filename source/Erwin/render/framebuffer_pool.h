@@ -3,7 +3,7 @@
 #include <map>
 #include <cmath>
 #include <functional>
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "render/framebuffer_layout.h"
 #include "render/handles.h"
 #include "event/window_events.h"
