@@ -50,6 +50,8 @@ static GLenum to_ogl_draw_mode(DrawMode mode)
     }
 }
 
+#ifndef W_BUFFER_ALT
+
 OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode):
 VertexBuffer(layout, count),
 rd_handle_(0)
@@ -141,19 +143,21 @@ void OGLIndexBuffer::unbind() const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void OGLIndexBuffer::stream(uint32_t* index_data, uint32_t count, std::size_t offset)
+
+void OGLIndexBuffer::stream(void* data, uint32_t size, uint32_t offset)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*sizeof(uint32_t), count*sizeof(uint32_t), index_data);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data);
 }
 
-void OGLIndexBuffer::map(uint32_t* index_data, uint32_t count)
+void OGLIndexBuffer::map(void* data, uint32_t size)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rd_handle_);
-	void* ptr = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-	memcpy(ptr, index_data, count*sizeof(uint32_t));
-	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    void* ptr = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+    memcpy(ptr, data, size);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 }
+
 
 // ----------------------------------------------------------------------------------
 
@@ -190,19 +194,20 @@ void OGLUniformBuffer::unbind() const
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void OGLUniformBuffer::map(void* data)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
-	void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-	memcpy(ptr, data, struct_size_);
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
-}
-
 void OGLUniformBuffer::stream(void* data, uint32_t size, uint32_t offset)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
     glBufferSubData(GL_UNIFORM_BUFFER, offset, (size!=0 ? size : struct_size_), data);
 }
+
+void OGLUniformBuffer::map(void* data, uint32_t size)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, rd_handle_);
+    void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(ptr, data, size);
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+}
+
 
 // ----------------------------------------------------------------------------------
 
@@ -254,6 +259,13 @@ void OGLShaderStorageBuffer::map(void* data, uint32_t size)
 }
 
 // ----------------------------------------------------------------------------------
+
+#else
+
+
+
+#endif
+
 
 static GLenum to_ogl_base_type(ShaderDataType type)
 {
@@ -344,5 +356,8 @@ void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
 }
 
 // ----------------------------------------------------------------------------------
+
+
+
 
 } // namespace erwin

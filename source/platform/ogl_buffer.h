@@ -5,6 +5,8 @@
 namespace erwin
 {
 
+#ifndef W_BUFFER_ALT
+
 class OGLVertexBuffer: public VertexBuffer
 {
 public:
@@ -13,9 +15,8 @@ public:
 
     virtual void bind() const override;
     virtual void unbind() const override;
-
-    virtual void stream(void* vertex_data, uint32_t size, uint32_t offset) override;
-    virtual void map(void* vertex_data, uint32_t size) override;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
+    virtual void map(void* data, uint32_t size) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
@@ -31,33 +32,13 @@ public:
 
     virtual void bind() const override;
     virtual void unbind() const override;
-
-    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) override;
-    virtual void map(uint32_t* index_data, uint32_t count) override;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
+    virtual void map(void* data, uint32_t size) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
 private:
     uint32_t rd_handle_;
-};
-
-class OGLVertexArray: public VertexArray
-{
-public:
-    OGLVertexArray();
-    virtual ~OGLVertexArray();
-
-    virtual void bind() const override;
-    virtual void unbind() const override;
-
-    virtual void add_vertex_buffer(WRef<VertexBuffer> p_vb) override;
-    virtual void set_index_buffer(WRef<IndexBuffer> p_ib) override;
-    
-    inline uint32_t get_handle() const { return rd_handle_; }
-
-private:
-    uint32_t rd_handle_;
-    uint32_t vb_index_ = 0;
 };
 
 class OGLUniformBuffer: public UniformBuffer
@@ -68,8 +49,8 @@ public:
 
     virtual void bind() const override;
     virtual void unbind() const override;
-    virtual void map(void* data) override;
     virtual void stream(void* data, uint32_t size, uint32_t offset) override;
+    virtual void map(void* data, uint32_t size) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
@@ -92,6 +73,35 @@ public:
 
 protected:
     uint32_t rd_handle_;
+};
+
+
+
+
+
+#else
+
+
+
+#endif
+
+class OGLVertexArray: public VertexArray
+{
+public:
+    OGLVertexArray();
+    virtual ~OGLVertexArray();
+
+    virtual void bind() const override;
+    virtual void unbind() const override;
+
+    virtual void add_vertex_buffer(WRef<VertexBuffer> p_vb) override;
+    virtual void set_index_buffer(WRef<IndexBuffer> p_ib) override;
+    
+    inline uint32_t get_handle() const { return rd_handle_; }
+
+private:
+    uint32_t rd_handle_;
+    uint32_t vb_index_ = 0;
 };
 
 } // namespace erwin
