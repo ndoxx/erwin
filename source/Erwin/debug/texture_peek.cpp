@@ -174,7 +174,7 @@ void TexturePeek::render()
 	static DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_UBO(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DrawCall::CopyData);
 	dc.set_texture(current_texture);
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 #endif
 }
 

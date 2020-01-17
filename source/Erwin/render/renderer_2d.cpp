@@ -185,7 +185,7 @@ static void flush_batch(Batch2D& batch)
 		dc.set_UBO(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		Renderer::submit(dc, key.encode());
+		Renderer::submit(key.encode(), dc);
 
 		++s_storage.num_draw_calls;
 		batch.count = 0;
@@ -283,7 +283,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_UBO(s_storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
 		dc.set_texture(batch.texture);
-		Renderer::submit(dc, key.encode());
+		Renderer::submit(key.encode(), dc);
 
 		++s_storage.num_draw_calls;
 	}

@@ -143,7 +143,7 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 
 	++s_storage.num_draw_calls;
 }

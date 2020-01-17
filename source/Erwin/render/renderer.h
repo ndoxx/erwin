@@ -53,13 +53,13 @@ public:
 	// Get a buffer layout from its handle
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 
-	// * Draw call queue management and submission
+	// * Draw command queue management and submission
 	// Send a draw call to the queue
-	static void submit(const DrawCall& dc, uint64_t key);
+	static void submit(uint64_t key, const DrawCall& dc);
 	// Blit depth buffer / texture from source to target
-	static void blit_depth(FramebufferHandle source, FramebufferHandle target, uint64_t key);
+	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 
-	// Force renderer to dispatch all commands in command buffers and draw calls in the render queue
+	// Force renderer to dispatch all render/draw commands
 	static void flush();
 	// Set a callback function that will be executed after flush()
 	static void set_end_frame_callback(std::function<void(void)> callback);
@@ -113,13 +113,13 @@ private:
 	static void shutdown();
 };
 
-// Helper struct to simplify the generation of a sorting key associated to a draw call
+// Helper struct to simplify the generation of a sorting key associated to a draw command
 struct SortKey
 {
 	// Policy for key sorting
 	enum class Order: uint8_t
 	{
-		ByShader,			// Keys are sorted by shader in priority, then by depth (for compute shaders)
+		ByShader,			// Keys are sorted by shader in priority, then by depth
 		ByDepthDescending,	// Keys are sorted by increasing clip depth first, then by shader
 		ByDepthAscending,	// Keys are sorted by decreasing clip depth first, then by shader
 		Sequential 			// Keys are sorted by a 32-bits sequence number

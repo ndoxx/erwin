@@ -111,8 +111,6 @@ void DeferredRenderer::end_pass()
 	FramebufferHandle LBuffer = FramebufferPool::get_framebuffer("LBuffer"_h);
 
 	// Directional light pass
-	uint8_t view_id = Renderer::next_view_id();
-	SortKey key;
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
@@ -122,17 +120,19 @@ void DeferredRenderer::end_pass()
 	state.depth_stencil_state.depth_lock = true;
 
 	uint64_t state_flags = state.encode();
+	uint8_t view_id = Renderer::next_view_id();
+	SortKey key;
 	key.set_sequence(0, view_id, state_flags, s_storage.dirlight_shader);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
 	for(int ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 
 	// Blit GBuffer's depth buffer into LBuffer
 	key.set_sequence(1, view_id, state_flags, s_storage.dirlight_shader);
-	Renderer::blit_depth(GBuffer, LBuffer, key.encode());
+	Renderer::blit_depth(key.encode(), GBuffer, LBuffer);
 }
 
 void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
@@ -159,7 +159,7 @@ void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 }
 
 

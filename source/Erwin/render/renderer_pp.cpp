@@ -148,7 +148,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_copy_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			Renderer::submit(dc, key.encode());
+			Renderer::submit(key.encode(), dc);
 		}
 	}
 
@@ -174,7 +174,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(dc, key.encode());
+			Renderer::submit(key.encode(), dc);
 		}
 	}
 
@@ -193,7 +193,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(dc, key.encode());
+			Renderer::submit(key.encode(), dc);
 		}
 	}
 
@@ -206,7 +206,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 		DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_comb_shader, quad);
 		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
-		Renderer::submit(dc, key.encode());
+		Renderer::submit(key.encode(), dc);
 	}
 }
 
@@ -252,7 +252,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(dc, key.encode());
+			Renderer::submit(key.encode(), dc);
 		}
 	}
 
@@ -272,7 +272,7 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(dc, key.encode());
+			Renderer::submit(key.encode(), dc);
 		}
 	}
 }
@@ -300,7 +300,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
 	dc.set_UBO(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 }
 
 void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
@@ -321,7 +321,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 
 	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
-	Renderer::submit(dc, key.encode());
+	Renderer::submit(key.encode(), dc);
 }
 
 
