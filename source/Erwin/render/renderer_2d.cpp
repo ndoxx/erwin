@@ -46,7 +46,6 @@ static struct
 	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
 	uint8_t view_id;
-	uint8_t sub_sequence;
 	std::map<uint16_t, Batch2D> batches;
 } s_storage;
 
@@ -155,7 +154,6 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 
 	s_storage.pass_state = state.encode();
 	s_storage.view_id = Renderer::next_view_id();
-	s_storage.sub_sequence = 0;
 
 	// Set scene data
 	s_storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -181,11 +179,9 @@ static void flush_batch(Batch2D& batch)
 	if(batch.count)
 	{
 		SortKey key;
-		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, s_storage.sub_sequence++);
-		Renderer::update_shader_storage_buffer(key.encode(), s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward);
-
-		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, s_storage.sub_sequence++);
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
 		dc.set_UBO(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DataOwnership::Copy);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.count);
 		dc.set_texture(batch.texture);
@@ -281,11 +277,9 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		glm::mat4 id(1.f);
 
 		SortKey key;
-		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, s_storage.sub_sequence++);
-		Renderer::update_shader_storage_buffer(key.encode(), s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward);
-
-		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader, s_storage.sub_sequence++);
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
 		dc.set_UBO(s_storage.pass_ubo, &id, sizeof(glm::mat4), DataOwnership::Copy);
 		dc.set_SSBO(s_storage.instance_ssbo, batch.count);
 		dc.set_texture(batch.texture);

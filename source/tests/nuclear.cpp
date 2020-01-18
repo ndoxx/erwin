@@ -35,39 +35,9 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-template <typename T> 
-inline int sgn(T val)
-{
-    return (T(0) < val) - (val < T(0));
-}
-
-inline uint32_t mantissa(float val)
-{
-	typedef union
-	{
-		float    as_float;
-		uint32_t as_uint;
-	} union_cast;
-
-	union_cast renorm = { 0.5f*(val+sgn(val)) };
-	return (0x00ffffff & renorm.as_uint);
-}
-
 int main(int argc, char** argv)
 {
 	init_logger();
-
-	std::vector<float> floats;
-	for(int ii=0; ii<11; ++ii)
-	{
-		floats.push_back(-ii/10.f);
-	}
-	floats.push_back(-0.999999f);
-
-	for(float val: floats)
-	{
-		DLOG("nuclear", 1) << std::bitset<24>(mantissa(val)) << "  :  " << val << std::endl;
-	}
 
 	return 0;
 }

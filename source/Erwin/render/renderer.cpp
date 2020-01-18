@@ -1111,10 +1111,11 @@ public:
 	inline void write(T* source)                  { cmdbuf_.storage.write(source); }
 	inline void write_str(const std::string& str) { cmdbuf_.storage.write_str(str); }
 
-	inline void submit(uint64_t key)
+	inline uint32_t submit(uint64_t key)
 	{
 		W_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
-		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
+		cmdbuf_.entries[cmdbuf_.count] = {key, head_};
+		return cmdbuf_.count++;
 	}
 
 private:
@@ -1131,6 +1132,15 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 #endif
 
 	DrawCommandWriter cw(DrawCommand::Draw);
+
+	// Handle dependencies
+	cw.write(&dc.dependency_count);
+	for(uint8_t ii=0; ii<dc.dependency_count; ++ii)
+	{
+		void* ptr = s_storage.queue_.command_buffer_.entries[dc.dependencies[ii]].second;
+		cw.write(&ptr);
+	}
+
 	cw.write(&dc.type);
 	cw.write(&dc.data);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
@@ -1147,10 +1157,11 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
 	DrawCommandWriter cw(DrawCommand::BlitDepth);
 	cw.write(&source);
 	cw.write(&target);
+
 	cw.submit(key);
 }
 
-void Renderer::update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
 {
 	W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index);
 	W_ASSERT(data, "Data is null.");
@@ -1168,7 +1179,7 @@ void Renderer::update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHan
 	else
 		cw.write(&data);
 
-	cw.submit(key);
+	return cw.submit(SortKey::k_skip);
 }
 
 
@@ -1820,6 +1831,10 @@ void RenderQueue::flush()
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
+
+		// k_skip is the max key value possible, so if we arrive here, simply break out of the loop
+		if(key == SortKey::k_skip) break;
+
 #if W_RC_PROFILE_DRAW_CALLS
 		if(s_storage.draw_call_data_.tracking)
 			s_storage.draw_call_data_.on_dispatch(key);
@@ -1828,6 +1843,26 @@ void RenderQueue::flush()
 
 		uint16_t type;
 		command_buffer_.storage.read(&type);
+
+		// If type is a draw call, unroll and dispatch dependencies first
+		if(type == (uint16_t)DrawCommand::Draw)
+		{
+		    uint8_t dependency_count;
+		    static void* deps[k_max_draw_call_dependencies];
+			command_buffer_.storage.read(&dependency_count);
+		    for(uint8_t ii=0; ii<dependency_count; ++ii)
+				command_buffer_.storage.read(&deps[ii]);
+
+			void* ret = command_buffer_.storage.head();
+		    for(uint8_t ii=0; ii<dependency_count; ++ii)
+			{
+				command_buffer_.storage.seek(deps[ii]);
+				uint16_t dep_type;
+				command_buffer_.storage.read(&dep_type);
+				(*draw_backend_dispatch[dep_type])(command_buffer_.storage);
+			}
+			command_buffer_.storage.seek(ret);
+		}
 
 		(*draw_backend_dispatch[type])(command_buffer_.storage);
 	}

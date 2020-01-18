@@ -2121,5 +2121,3 @@ L'uniform u_v4_packed_weights est un tableau de vec4, aucune place n'est perdue.
     [1] https://computergraphics.stackexchange.com/questions/4454/opengl
         -es-3-uniform-buffer-object-with-float-array
 
-
-

@@ -64,8 +64,9 @@ public:
 	static void submit(uint64_t key, const DrawCall& dc);
 	// Blit depth buffer / texture from source to target
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
+	// * Draw call dependencies
 	// Update an SSBO's data (to be used before a draw call)
-	static void update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
+	static uint32_t update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
 
 	// Force renderer to dispatch all render/draw commands
 	static void flush();
@@ -132,6 +133,8 @@ struct SortKey
 		ByDepthAscending,	// Keys are sorted by decreasing clip depth first, then by shader
 		Sequential 			// Keys are sorted by a 32-bits sequence number
 	};
+
+	static constexpr uint64_t k_skip = std::numeric_limits<uint64_t>::max();
 
 	// Encode key structure into a 64 bits number (the actual sorting key)
 	uint64_t encode() const;
@@ -203,18 +206,27 @@ struct DrawCall
 	#pragma pack(pop)
 
 	DrawCallType type;
+	uint32_t dependencies[k_max_draw_call_dependencies];
+	uint8_t dependency_count;
 
 	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
 		W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
 
+		dependency_count = 0;
 		type             = dc_type;
 		data.state_flags = state;
 		data.shader      = shader;
 		data.VAO         = VAO;
 		data.count       = count;
 		data.offset      = offset;
+	}
+
+	inline void add_dependency(uint32_t token)
+	{
+		W_ASSERT(dependency_count<k_max_draw_call_dependencies-1, "Exceeding draw call max dependency count.");
+		dependencies[dependency_count++] = token;
 	}
 
 	// Set an SSBO
