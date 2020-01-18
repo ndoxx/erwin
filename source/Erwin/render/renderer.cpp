@@ -1091,6 +1091,7 @@ enum class DrawCommand: uint16_t
 	Draw,
 	BlitDepth,
 	UpdateShaderStorageBuffer,
+	UpdateUniformBuffer,
 
 	Count
 };
@@ -1144,7 +1145,7 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	cw.write(&dc.type);
 	cw.write(&dc.data);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
-		cw.write(&dc.instance_data);
+		cw.write(&dc.instance_count);
 
 	cw.submit(key);
 }
@@ -1167,6 +1168,27 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 	W_ASSERT(data, "Data is null.");
 
 	DrawCommandWriter cw(DrawCommand::UpdateShaderStorageBuffer);
+	cw.write(&handle);
+	cw.write(&size);
+
+	if(data && bool(copy))
+	{
+		void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+		memcpy(data_copy, data, size);
+		cw.write(&data_copy);
+	}
+	else
+		cw.write(&data);
+
+	return cw.submit(SortKey::k_skip);
+}
+
+uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+{
+	W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index);
+	W_ASSERT(data, "Data is null.");
+
+	DrawCommandWriter cw(DrawCommand::UpdateUniformBuffer);
 	cw.write(&handle);
 	cw.write(&size);
 
@@ -1741,12 +1763,7 @@ void draw(memory::LinearBuffer<>& buf)
 	slot = 0;
 	while(data.UBOs[slot].index != k_invalid_handle && slot < k_max_UBO_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		if(data.UBOs_data[slot])
-		{
-			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
-			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
-			// shader.bind_uniform_buffer(ubo, ubo.get_size(), 0);
-		}
+		// shader.bind_uniform_buffer(*s_storage.uniform_buffers[data.UBOs[slot].index]);
 		++slot;
 	}
 
@@ -1768,10 +1785,10 @@ void draw(memory::LinearBuffer<>& buf)
 		case DrawCall::IndexedInstanced:
 		{
 			// Read additional data needed for instanced rendering
-    		DrawCall::InstanceData idata;
-			buf.read(&idata);
+			uint32_t instance_count;
+			buf.read(&instance_count);
 			// ASSUME SSBO is attached to shader, so it is already bound at this stage
-			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
+			Gfx::device->draw_indexed_instanced(va, instance_count, data.count, data.offset);
 			break;
 		}
 		default:
@@ -1810,6 +1827,20 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 */
 }
 
+void update_uniform_buffer(memory::LinearBuffer<>& buf)
+{
+	UniformBufferHandle ubo_handle;
+	uint32_t size;
+	void* data;
+
+	buf.read(&ubo_handle);
+	buf.read(&size);
+	buf.read(&data);
+
+	auto& ubo = *s_storage.uniform_buffers[ubo_handle.index];
+	ubo.stream(data, size ? size : ubo.get_size(), 0);
+}
+
 } // namespace draw_dispatch
 
 static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand::Count] =
@@ -1817,6 +1848,7 @@ static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand:
 	&draw_dispatch::draw,
 	&draw_dispatch::blit_depth,
 	&draw_dispatch::update_shader_storage_buffer,
+	&draw_dispatch::update_uniform_buffer,
 };
 
 
@@ -1921,7 +1953,7 @@ void Renderer::flush()
 	// Reset auxiliary memory arena for next frame
 	s_storage.auxiliary_arena_.reset();
 	// Reset resource arena for next frame
-	filesystem::reset_arena();
+	filesystem::reset_arena(); // TMP: not thread safe
 
 #if W_RC_PROFILE_DRAW_CALLS
 	if(s_storage.draw_call_data_.tracking)

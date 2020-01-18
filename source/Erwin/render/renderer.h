@@ -65,8 +65,10 @@ public:
 	// Blit depth buffer / texture from source to target
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 	// * Draw call dependencies
-	// Update an SSBO's data (to be used before a draw call)
+	// Update an SSBO's data
 	static uint32_t update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
+	// Update an UBO's data
+	static uint32_t update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
 
 	// Force renderer to dispatch all render/draw commands
 	static void flush();
@@ -193,17 +195,13 @@ struct DrawCall
 		VertexArrayHandle VAO;
 		TextureHandle textures[k_max_texture_slots];
 		UniformBufferHandle UBOs[k_max_UBO_slots];
-		void* UBOs_data[k_max_UBO_slots];
+		ShaderStorageBufferHandle SSBO;
 
 		uint32_t count;
 		uint32_t offset;
 	} data;
-	struct InstanceData
-	{
-		uint32_t instance_count;
-		ShaderStorageBufferHandle SSBO;
-	} instance_data;
 	#pragma pack(pop)
+	uint32_t instance_count;
 
 	DrawCallType type;
 	uint32_t dependencies[k_max_draw_call_dependencies];
@@ -230,24 +228,21 @@ struct DrawCall
 	}
 
 	// Set an SSBO
-	inline void set_SSBO(ShaderStorageBufferHandle ssbo, uint32_t inst_count)
+	inline void set_SSBO(ShaderStorageBufferHandle ssbo)
 	{
-		instance_data.SSBO = ssbo;
-		instance_data.instance_count = inst_count;
+		data.SSBO = ssbo;
 	}
 
-	// Setup a UBO configuration for this specific draw call
-	inline void set_UBO(UniformBufferHandle ubo, void* UBO_data, uint32_t size, DataOwnership copy, uint32_t slot=0)
+	inline void set_instance_count(uint32_t value)
+	{
+		instance_count = value;
+	}
+
+	// Setup a UBO slot for this draw call
+	inline void set_UBO(UniformBufferHandle ubo, uint32_t slot=0)
 	{
 		W_ASSERT_FMT(slot<k_max_UBO_slots, "UBO slot out of bounds: %u", slot);
-		data.UBOs_data[slot] = UBO_data;
 		data.UBOs[slot] = ubo;
-
-		if(UBO_data && bool(copy))
-		{
-			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, Renderer::get_arena());
-			memcpy(data.UBOs_data[slot], UBO_data, size);
-		}
 	}
 
 	// Set a texture at a given slot
