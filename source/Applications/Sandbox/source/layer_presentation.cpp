@@ -46,10 +46,7 @@ void PresentationLayer::on_render()
 {
 	if(enable_bloom_)
 	{
-		if(bloom_alt_)
-			PostProcessingRenderer::bloom_pass_alt("LBuffer"_h, 1);
-		else
-			PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
+		PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
 	}
 
 	if(enable_3d_forward_)

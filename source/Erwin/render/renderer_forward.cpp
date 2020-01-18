@@ -134,9 +134,13 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	key.set_depth(depth, s_storage.view_id, s_storage.pass_state, material.shader);
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
-	dc.set_UBO(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DrawCall::CopyData, 0);
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DataOwnership::Copy));
+	dc.set_UBO(s_storage.instance_ubo, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
-		dc.set_UBO(material.ubo, material.data, material.data_size, DrawCall::CopyData, 1);
+	{
+		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material.data, material.data_size, DataOwnership::Copy));
+		dc.set_UBO(material.ubo, 1);
+	}
 	if(material.texture_group.index != k_invalid_handle)
 	{
 		const TextureGroup& tg = AssetManager::get(material.texture_group);

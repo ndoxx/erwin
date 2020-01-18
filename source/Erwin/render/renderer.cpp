@@ -51,9 +51,9 @@ constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_ren
 constexpr uint8_t  k_view_bits       = 16;
 constexpr uint8_t  k_draw_type_bits  = 2;
 constexpr uint8_t  k_shader_bits     = 8;
-constexpr uint8_t  k_depth_bits      = 32;
-constexpr uint8_t  k_seq_bits        = 32;
-constexpr uint8_t  k_subseq_bits     = 6;
+constexpr uint8_t  k_depth_bits      = 24;
+constexpr uint8_t  k_seq_bits        = 24;
+constexpr uint8_t  k_subseq_bits     = 8;
 constexpr uint64_t k_view_shift      = uint8_t(64)        - k_view_bits;
 constexpr uint64_t k_draw_type_shift = k_view_shift       - k_draw_type_bits;
 constexpr uint64_t k_1_shader_shift  = k_draw_type_shift  - k_shader_bits;
@@ -68,14 +68,14 @@ constexpr uint64_t k_3_subseq_shift  = k_3_shader_shift   - k_subseq_bits;
 constexpr uint64_t k_view_mask       = uint64_t(0x0000ffff) << k_view_shift;
 constexpr uint64_t k_draw_type_mask  = uint64_t(0x00000003) << k_draw_type_shift;
 constexpr uint64_t k_1_shader_mask   = uint64_t(0x000000ff) << k_1_shader_shift;
-constexpr uint64_t k_1_depth_mask    = uint64_t(0xffffffff) << k_1_depth_shift;
-constexpr uint64_t k_1_subseq_mask   = uint64_t(0x3f)       << k_1_subseq_shift;
-constexpr uint64_t k_2_depth_mask    = uint64_t(0xffffffff) << k_2_depth_shift;
+constexpr uint64_t k_1_depth_mask    = uint64_t(0x00ffffff) << k_1_depth_shift;
+constexpr uint64_t k_1_subseq_mask   = uint64_t(0x000000ff) << k_1_subseq_shift;
+constexpr uint64_t k_2_depth_mask    = uint64_t(0x00ffffff) << k_2_depth_shift;
 constexpr uint64_t k_2_shader_mask   = uint64_t(0x000000ff) << k_2_shader_shift;
-constexpr uint64_t k_2_subseq_mask   = uint64_t(0x3f)       << k_2_subseq_shift;
-constexpr uint64_t k_3_seq_mask      = uint64_t(0xffffffff) << k_3_seq_shift;
+constexpr uint64_t k_2_subseq_mask   = uint64_t(0x000000ff) << k_2_subseq_shift;
+constexpr uint64_t k_3_seq_mask      = uint64_t(0x00ffffff) << k_3_seq_shift;
 constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
-constexpr uint64_t k_3_subseq_mask   = uint64_t(0x3f)       << k_3_subseq_shift;
+constexpr uint64_t k_3_subseq_mask   = uint64_t(0x000000ff) << k_3_subseq_shift;
 
 uint64_t SortKey::encode() const
 {
@@ -1090,6 +1090,8 @@ enum class DrawCommand: uint16_t
 {
 	Draw,
 	BlitDepth,
+	UpdateShaderStorageBuffer,
+	UpdateUniformBuffer,
 
 	Count
 };
@@ -1110,10 +1112,11 @@ public:
 	inline void write(T* source)                  { cmdbuf_.storage.write(source); }
 	inline void write_str(const std::string& str) { cmdbuf_.storage.write_str(str); }
 
-	inline void submit(uint64_t key)
+	inline uint32_t submit(uint64_t key)
 	{
 		W_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
-		cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
+		cmdbuf_.entries[cmdbuf_.count] = {key, head_};
+		return cmdbuf_.count++;
 	}
 
 private:
@@ -1130,10 +1133,19 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 #endif
 
 	DrawCommandWriter cw(DrawCommand::Draw);
+
+	// Handle dependencies
+	cw.write(&dc.dependency_count);
+	for(uint8_t ii=0; ii<dc.dependency_count; ++ii)
+	{
+		void* ptr = s_storage.queue_.command_buffer_.entries[dc.dependencies[ii]].second;
+		cw.write(&ptr);
+	}
+
 	cw.write(&dc.type);
 	cw.write(&dc.data);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
-		cw.write(&dc.instance_data);
+		cw.write(&dc.instance_count);
 
 	cw.submit(key);
 }
@@ -1146,7 +1158,50 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
 	DrawCommandWriter cw(DrawCommand::BlitDepth);
 	cw.write(&source);
 	cw.write(&target);
+
 	cw.submit(key);
+}
+
+uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+{
+	W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index);
+	W_ASSERT(data, "Data is null.");
+
+	DrawCommandWriter cw(DrawCommand::UpdateShaderStorageBuffer);
+	cw.write(&handle);
+	cw.write(&size);
+
+	if(data && bool(copy))
+	{
+		void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+		memcpy(data_copy, data, size);
+		cw.write(&data_copy);
+	}
+	else
+		cw.write(&data);
+
+	return cw.submit(SortKey::k_skip);
+}
+
+uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+{
+	W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index);
+	W_ASSERT(data, "Data is null.");
+
+	DrawCommandWriter cw(DrawCommand::UpdateUniformBuffer);
+	cw.write(&handle);
+	cw.write(&size);
+
+	if(data && bool(copy))
+	{
+		void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+		memcpy(data_copy, data, size);
+		cw.write(&data_copy);
+	}
+	else
+		cw.write(&data);
+
+	return cw.submit(SortKey::k_skip);
 }
 
 
@@ -1708,12 +1763,7 @@ void draw(memory::LinearBuffer<>& buf)
 	slot = 0;
 	while(data.UBOs[slot].index != k_invalid_handle && slot < k_max_UBO_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
 	{
-		if(data.UBOs_data[slot])
-		{
-			auto& ubo = *s_storage.uniform_buffers[data.UBOs[slot].index];
-			ubo.stream(data.UBOs_data[slot], ubo.get_size(), 0);
-			// shader.bind_uniform_buffer(ubo, ubo.get_size(), 0);
-		}
+		// shader.bind_uniform_buffer(*s_storage.uniform_buffers[data.UBOs[slot].index]);
 		++slot;
 	}
 
@@ -1735,18 +1785,10 @@ void draw(memory::LinearBuffer<>& buf)
 		case DrawCall::IndexedInstanced:
 		{
 			// Read additional data needed for instanced rendering
-    		DrawCall::InstanceData idata;
-			buf.read(&idata);
-			if(idata.SSBO_data)
-			{
-				auto& ssbo = *s_storage.shader_storage_buffers[idata.SSBO.index];
-				// if(!ssbo.has_persistent_mapping())
-					ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
-				// else
-					// ssbo.map_persistent(idata.SSBO_data, idata.SSBO_size, 0);
-				// shader.bind_shader_storage(ssbo, idata.SSBO_size, 0);
-			}
-			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
+			uint32_t instance_count;
+			buf.read(&instance_count);
+			// ASSUME SSBO is attached to shader, so it is already bound at this stage
+			Gfx::device->draw_indexed_instanced(va, instance_count, data.count, data.offset);
 			break;
 		}
 		default:
@@ -1765,6 +1807,39 @@ void blit_depth(memory::LinearBuffer<>& buf)
 	s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
 }
 
+void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
+{
+	ShaderStorageBufferHandle ssbo_handle;
+	uint32_t size;
+	void* data;
+
+	buf.read(&ssbo_handle);
+	buf.read(&size);
+	buf.read(&data);
+
+	s_storage.shader_storage_buffers[ssbo_handle.index]->stream(data, size, 0);
+/*
+	auto& ssbo = *s_storage.shader_storage_buffers[ssbo_handle.index];
+	if(!ssbo.has_persistent_mapping())
+		ssbo.stream(data, size, 0);
+	else
+		ssbo.map_persistent(data, size, 0);
+*/
+}
+
+void update_uniform_buffer(memory::LinearBuffer<>& buf)
+{
+	UniformBufferHandle ubo_handle;
+	uint32_t size;
+	void* data;
+
+	buf.read(&ubo_handle);
+	buf.read(&size);
+	buf.read(&data);
+
+	auto& ubo = *s_storage.uniform_buffers[ubo_handle.index];
+	ubo.stream(data, size ? size : ubo.get_size(), 0);
+}
 
 } // namespace draw_dispatch
 
@@ -1772,6 +1847,8 @@ static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand:
 {
 	&draw_dispatch::draw,
 	&draw_dispatch::blit_depth,
+	&draw_dispatch::update_shader_storage_buffer,
+	&draw_dispatch::update_uniform_buffer,
 };
 
 
@@ -1786,6 +1863,10 @@ void RenderQueue::flush()
 	for(int ii=0; ii<command_buffer_.count; ++ii)
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
+
+		// k_skip is the max key value possible, so if we arrive here, simply break out of the loop
+		if(key == SortKey::k_skip) break;
+
 #if W_RC_PROFILE_DRAW_CALLS
 		if(s_storage.draw_call_data_.tracking)
 			s_storage.draw_call_data_.on_dispatch(key);
@@ -1794,6 +1875,26 @@ void RenderQueue::flush()
 
 		uint16_t type;
 		command_buffer_.storage.read(&type);
+
+		// If type is a draw call, unroll and dispatch dependencies first
+		if(type == (uint16_t)DrawCommand::Draw)
+		{
+		    uint8_t dependency_count;
+		    static void* deps[k_max_draw_call_dependencies];
+			command_buffer_.storage.read(&dependency_count);
+		    for(uint8_t ii=0; ii<dependency_count; ++ii)
+				command_buffer_.storage.read(&deps[ii]);
+
+			void* ret = command_buffer_.storage.head();
+		    for(uint8_t ii=0; ii<dependency_count; ++ii)
+			{
+				command_buffer_.storage.seek(deps[ii]);
+				uint16_t dep_type;
+				command_buffer_.storage.read(&dep_type);
+				(*draw_backend_dispatch[dep_type])(command_buffer_.storage);
+			}
+			command_buffer_.storage.seek(ret);
+		}
 
 		(*draw_backend_dispatch[type])(command_buffer_.storage);
 	}
@@ -1852,7 +1953,7 @@ void Renderer::flush()
 	// Reset auxiliary memory arena for next frame
 	s_storage.auxiliary_arena_.reset();
 	// Reset resource arena for next frame
-	filesystem::reset_arena();
+	filesystem::reset_arena(); // TMP: not thread safe
 
 #if W_RC_PROFILE_DRAW_CALLS
 	if(s_storage.draw_call_data_.tracking)

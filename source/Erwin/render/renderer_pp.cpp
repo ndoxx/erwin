@@ -37,11 +37,8 @@ static struct
 	ShaderHandle passthrough_shader;
 	ShaderHandle pp_shader;
 	ShaderHandle lighten_shader;
-	ShaderHandle bloom_copy_shader;
 	ShaderHandle bloom_blur_shader;
-	ShaderHandle bloom_comb_shader;
 	FramebufferHandle bloom_fbos[k_bloom_stage_count];
-	FramebufferHandle bloom_tmp_fbos[k_bloom_stage_count];
 	FramebufferHandle bloom_combine_fbo;
 	float bloom_stage_ratios[k_bloom_stage_count];
 
@@ -65,19 +62,14 @@ void PostProcessingRenderer::init()
 	    for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
 		{
 			std::string fb_name     = "bloom_" + std::to_string(ii);
-			std::string fb_tmp_name = "bloom_tmp_" + std::to_string(ii);
 			hash_t h_fb_name     = H_(fb_name.c_str());
-			hash_t h_fb_tmp_name = H_(fb_tmp_name.c_str());
 			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(2.f+ii);//1.f/(pow(2.f,ii+1.f));
 #if BLOOM_FBO_NP2
-			s_storage.bloom_fbos[ii]     = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
-			s_storage.bloom_tmp_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_tmp_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
+			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
 #else
-			s_storage.bloom_fbos[ii]     = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
-			s_storage.bloom_tmp_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_tmp_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
+			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
 #endif
 			// TexturePeek::register_framebuffer(fb_name);
-			// TexturePeek::register_framebuffer(fb_tmp_name);
 		}
 
 		// Bloom output framebuffer
@@ -96,9 +88,7 @@ void PostProcessingRenderer::init()
 	s_storage.passthrough_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
 	s_storage.pp_shader          = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
 	s_storage.lighten_shader     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc_lighten.glsl", "post_proc_lighten");
-	s_storage.bloom_copy_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_copy.glsl", "bloom_copy");
 	s_storage.bloom_blur_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
-	s_storage.bloom_comb_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_combine.glsl", "bloom_combine");
 	
 	s_storage.pp_ubo   = Renderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), UsagePattern::Dynamic);
 	s_storage.blur_ubo = Renderer::create_uniform_buffer("blur_data", nullptr, sizeof(BlurUBOData), UsagePattern::Dynamic);
@@ -107,6 +97,7 @@ void PostProcessingRenderer::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.bloom_blur_shader, s_storage.blur_ubo);
 
 	// Reset sequence on end of frame
+	// TMP: not thread safe
 	Renderer::set_end_frame_callback([&](){ s_storage.sequence = 0; });
 }
 
@@ -116,107 +107,13 @@ void PostProcessingRenderer::shutdown()
 
 	Renderer::destroy(s_storage.blur_ubo);
 	Renderer::destroy(s_storage.pp_ubo);
-	Renderer::destroy(s_storage.bloom_comb_shader);
 	Renderer::destroy(s_storage.bloom_blur_shader);
-	Renderer::destroy(s_storage.bloom_copy_shader);
 	Renderer::destroy(s_storage.lighten_shader);
 	Renderer::destroy(s_storage.pp_shader);
 	Renderer::destroy(s_storage.passthrough_shader);
 }
 
 void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
-{
-	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
-
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-
-	uint8_t view_id = Renderer::next_view_id();
-	SortKey key;
-	RenderState state;
-	state.rasterizer_state.cull_mode = CullMode::Back;
-	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
-	state.blend_state = BlendState::Opaque;
-	state.depth_stencil_state.depth_test_enabled = false;
-
-	// * For each bloom stage xx, render glow buffer to bloom_xx framebuffer
-	{
-		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
-		{
-			state.render_target = s_storage.bloom_fbos[ii];
-			uint64_t state_flags = state.encode();
-			key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_copy_shader);
-
-			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_copy_shader, quad);
-			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			Renderer::submit(key.encode(), dc);
-		}
-	}
-
-	BlurUBOData blur_data;
-#if !BLOOM_RETAIL
-	blur_data.kernel_half_size = s_storage.gk.half_size;
-	memcpy(blur_data.kernel_weights, s_storage.gk.weights, math::k_max_kernel_coefficients);
-#endif
-	glm::vec2 screen_size = FramebufferPool::get_screen_size();
-
-	// * For each bloom stage xx, given framebuffer bloom_xx as input,
-	//   perform horizontal blur, output to bloom_tmp_xx
-	{
-		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
-		{
-			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
-			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
-
-			state.render_target = s_storage.bloom_tmp_fbos[ii];
-			uint64_t state_flags = state.encode();
-			key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_blur_shader);
-
-			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
-			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
-			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(key.encode(), dc);
-		}
-	}
-
-	// * For each bloom stage xx, given framebuffer bloom_tmp_xx as input,
-	//   perform vertical blur, output to bloom_xx
-	{
-		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
-		{
-			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
-			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
-
-			state.render_target = s_storage.bloom_fbos[ii];
-			uint64_t state_flags = state.encode();
-			key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_blur_shader);
-
-			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
-			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_tmp_fbos[ii], 0));
-			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
-			Renderer::submit(key.encode(), dc);
-		}
-	}
-
-	// * Combine each stage output to a single texture
-	{
-		state.render_target = s_storage.bloom_combine_fbo;
-		uint64_t state_flags = state.encode();
-		key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_comb_shader);
-
-		DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_comb_shader, quad);
-		for(uint32_t ii=0; ii<k_bloom_stage_count; ++ii)
-			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0), ii);
-		Renderer::submit(key.encode(), dc);
-	}
-}
-
-/*
-	Alternative way to render bloom effect, inspired by what I did in WCore.
-	No temporary FBO is used and bloom levels are combined using blending in lighten mode.
-	The effect is less subtle (hence more prone to visible flickering) and takes about 
-	the same time to render.
-*/
-void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_index)
 {
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
@@ -251,7 +148,8 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
-			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
+			dc.add_dependency(Renderer::update_uniform_buffer(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DataOwnership::Copy));
+			dc.set_UBO(s_storage.blur_ubo, 0);
 			Renderer::submit(key.encode(), dc);
 		}
 	}
@@ -271,7 +169,8 @@ void PostProcessingRenderer::bloom_pass_alt(hash_t source_fb, uint32_t glow_inde
 
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
-			dc.set_UBO(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DrawCall::CopyData, 0);
+			dc.add_dependency(Renderer::update_uniform_buffer(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DataOwnership::Copy));
+			dc.set_UBO(s_storage.blur_ubo, 0);
 			Renderer::submit(key.encode(), dc);
 		}
 	}
@@ -295,11 +194,12 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	uint64_t state_flags = state.encode();
 	key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.pp_shader);
 
-	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
+	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
-	dc.set_UBO(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DrawCall::CopyData);
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DataOwnership::Copy));
+	dc.set_UBO(s_storage.pp_ubo, 0);
 	Renderer::submit(key.encode(), dc);
 }
 
@@ -319,7 +219,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	uint64_t state_flags = state.encode();
 	key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.lighten_shader);
 
-	static DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
+	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	Renderer::submit(key.encode(), dc);
 }

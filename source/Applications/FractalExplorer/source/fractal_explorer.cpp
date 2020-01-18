@@ -99,7 +99,7 @@ protected:
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
 		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
-		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DrawCall::CopyData);
+		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy);
 		Renderer::submit("Presentation"_h, dc);
 	}
 

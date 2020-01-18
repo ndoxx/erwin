@@ -180,10 +180,12 @@ static void flush_batch(Batch2D& batch)
 	{
 		SortKey key;
 		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
-
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
-		dc.set_UBO(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DrawCall::CopyData);
-		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
+		dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DataOwnership::Copy));
+		dc.set_UBO(s_storage.pass_ubo);
+		dc.set_SSBO(s_storage.instance_ssbo);
+		dc.set_instance_count(batch.count);
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
 
@@ -278,10 +280,12 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 
 		SortKey key;
 		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
-
-		static DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
-		dc.set_UBO(s_storage.pass_ubo, &id, sizeof(glm::mat4), DrawCall::CopyData);
-		dc.set_SSBO(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), batch.count, DrawCall::ForwardData);
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
+		dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo, &id, sizeof(glm::mat4), DataOwnership::Copy));
+		dc.set_UBO(s_storage.pass_ubo);
+		dc.set_SSBO(s_storage.instance_ssbo);
+		dc.set_instance_count(batch.count);
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
 
