@@ -18,6 +18,12 @@
 namespace erwin
 {
 
+enum class DataOwnership: uint8_t
+{
+	Forward = 0, // Do not copy data, forward pointer as is
+	Copy = 1     // Copy data to renderer memory
+};
+
 struct DrawCall;
 #if W_RC_PROFILE_DRAW_CALLS
 struct FrameDrawCallData;
@@ -58,6 +64,8 @@ public:
 	static void submit(uint64_t key, const DrawCall& dc);
 	// Blit depth buffer / texture from source to target
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
+	// Update an SSBO's data (to be used before a draw call)
+	static void update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
 
 	// Force renderer to dispatch all render/draw commands
 	static void flush();
@@ -128,14 +136,14 @@ struct SortKey
 	// Encode key structure into a 64 bits number (the actual sorting key)
 	uint64_t encode() const;
 
-	inline void set_depth(float depth, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
+	inline void set_depth(float _depth, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
 	{
 		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
 		view         = (uint16_t(layer_id)<<8);
 		view        |= uint8_t((state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
 		shader       = shader_handle.index;
 		sub_sequence = _sub_sequence;
-		depth        = *((uint32_t*)(&depth)); // TODO: Normalize depth and extract 24b mantissa?
+		depth        = uint32_t(glm::clamp(std::fabs(_depth), 0.f, 1.f) * 0x00ffffff);
 		blending     = RenderState::is_transparent(state_flags);
 		order        = blending ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
@@ -151,12 +159,12 @@ struct SortKey
 		order        = SortKey::Order::Sequential;
 	}
 
-	uint16_t view = 0;        // [view id | framebuffer id] for depth order, just view id for sequential order
+	uint16_t view = 0;        // [layer id | framebuffer id] for depth order, just layer id for sequential order
 	uint8_t shader = 0;       // shader id to allow grouping by shader
 	uint8_t sub_sequence = 0; // allows draw command chaining even in depth mode
-	uint32_t depth = 0;       // depth mantissa
+	uint32_t depth = 0;       // 24 bits clamped absolute normalized depth
 	uint32_t sequence = 0;    // for commands to be dispatched sequentially
-	bool blending = false;    // affects the draw_type bit
+	bool blending = false;    // affects the draw_type bits
 	SortKey::Order order;     // impacts how this key will be encoded
 };
 
@@ -171,12 +179,6 @@ struct DrawCall
 		ArrayInstanced,
 
 		Count
-	};
-
-	enum DataOwnership: uint8_t
-	{
-		ForwardData = 0, // Do not copy data, forward pointer as is
-		CopyData = 1     // Copy data to renderer memory
 	};
 
 	#pragma pack(push,1)
@@ -195,8 +197,6 @@ struct DrawCall
 	} data;
 	struct InstanceData
 	{
-		void* SSBO_data;
-		uint32_t SSBO_size;
 		uint32_t instance_count;
 		ShaderStorageBufferHandle SSBO;
 	} instance_data;
@@ -215,23 +215,13 @@ struct DrawCall
 		data.VAO         = VAO;
 		data.count       = count;
 		data.offset      = offset;
-		instance_data.SSBO_data = nullptr;
-		instance_data.SSBO_size = 0;
 	}
 
 	// Set an SSBO
-	inline void set_SSBO(ShaderStorageBufferHandle ssbo, void* SSBO_data, uint32_t size, uint32_t inst_count, DataOwnership copy)
+	inline void set_SSBO(ShaderStorageBufferHandle ssbo, uint32_t inst_count)
 	{
-		instance_data.SSBO_data = SSBO_data;
 		instance_data.SSBO = ssbo;
-		instance_data.SSBO_size = size;
 		instance_data.instance_count = inst_count;
-
-		if(SSBO_data && copy)
-		{
-			instance_data.SSBO_data = W_NEW_ARRAY_DYNAMIC(uint8_t, size, Renderer::get_arena());
-			memcpy(instance_data.SSBO_data, SSBO_data, size);
-		}
 	}
 
 	// Setup a UBO configuration for this specific draw call
@@ -241,7 +231,7 @@ struct DrawCall
 		data.UBOs_data[slot] = UBO_data;
 		data.UBOs[slot] = ubo;
 
-		if(UBO_data && copy)
+		if(UBO_data && bool(copy))
 		{
 			data.UBOs_data[slot] = W_NEW_ARRAY_DYNAMIC(uint8_t, size, Renderer::get_arena());
 			memcpy(data.UBOs_data[slot], UBO_data, size);

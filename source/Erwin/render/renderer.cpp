@@ -51,9 +51,9 @@ constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_ren
 constexpr uint8_t  k_view_bits       = 16;
 constexpr uint8_t  k_draw_type_bits  = 2;
 constexpr uint8_t  k_shader_bits     = 8;
-constexpr uint8_t  k_depth_bits      = 32;
-constexpr uint8_t  k_seq_bits        = 32;
-constexpr uint8_t  k_subseq_bits     = 6;
+constexpr uint8_t  k_depth_bits      = 24;
+constexpr uint8_t  k_seq_bits        = 24;
+constexpr uint8_t  k_subseq_bits     = 8;
 constexpr uint64_t k_view_shift      = uint8_t(64)        - k_view_bits;
 constexpr uint64_t k_draw_type_shift = k_view_shift       - k_draw_type_bits;
 constexpr uint64_t k_1_shader_shift  = k_draw_type_shift  - k_shader_bits;
@@ -68,14 +68,14 @@ constexpr uint64_t k_3_subseq_shift  = k_3_shader_shift   - k_subseq_bits;
 constexpr uint64_t k_view_mask       = uint64_t(0x0000ffff) << k_view_shift;
 constexpr uint64_t k_draw_type_mask  = uint64_t(0x00000003) << k_draw_type_shift;
 constexpr uint64_t k_1_shader_mask   = uint64_t(0x000000ff) << k_1_shader_shift;
-constexpr uint64_t k_1_depth_mask    = uint64_t(0xffffffff) << k_1_depth_shift;
-constexpr uint64_t k_1_subseq_mask   = uint64_t(0x3f)       << k_1_subseq_shift;
-constexpr uint64_t k_2_depth_mask    = uint64_t(0xffffffff) << k_2_depth_shift;
+constexpr uint64_t k_1_depth_mask    = uint64_t(0x00ffffff) << k_1_depth_shift;
+constexpr uint64_t k_1_subseq_mask   = uint64_t(0x000000ff) << k_1_subseq_shift;
+constexpr uint64_t k_2_depth_mask    = uint64_t(0x00ffffff) << k_2_depth_shift;
 constexpr uint64_t k_2_shader_mask   = uint64_t(0x000000ff) << k_2_shader_shift;
-constexpr uint64_t k_2_subseq_mask   = uint64_t(0x3f)       << k_2_subseq_shift;
-constexpr uint64_t k_3_seq_mask      = uint64_t(0xffffffff) << k_3_seq_shift;
+constexpr uint64_t k_2_subseq_mask   = uint64_t(0x000000ff) << k_2_subseq_shift;
+constexpr uint64_t k_3_seq_mask      = uint64_t(0x00ffffff) << k_3_seq_shift;
 constexpr uint64_t k_3_shader_mask   = uint64_t(0x000000ff) << k_3_shader_shift;
-constexpr uint64_t k_3_subseq_mask   = uint64_t(0x3f)       << k_3_subseq_shift;
+constexpr uint64_t k_3_subseq_mask   = uint64_t(0x000000ff) << k_3_subseq_shift;
 
 uint64_t SortKey::encode() const
 {
@@ -1090,6 +1090,7 @@ enum class DrawCommand: uint16_t
 {
 	Draw,
 	BlitDepth,
+	UpdateShaderStorageBuffer,
 
 	Count
 };
@@ -1146,6 +1147,27 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
 	DrawCommandWriter cw(DrawCommand::BlitDepth);
 	cw.write(&source);
 	cw.write(&target);
+	cw.submit(key);
+}
+
+void Renderer::update_shader_storage_buffer(uint64_t key, ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+{
+	W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index);
+	W_ASSERT(data, "Data is null.");
+
+	DrawCommandWriter cw(DrawCommand::UpdateShaderStorageBuffer);
+	cw.write(&handle);
+	cw.write(&size);
+
+	if(data && bool(copy))
+	{
+		void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+		memcpy(data_copy, data, size);
+		cw.write(&data_copy);
+	}
+	else
+		cw.write(&data);
+
 	cw.submit(key);
 }
 
@@ -1737,15 +1759,7 @@ void draw(memory::LinearBuffer<>& buf)
 			// Read additional data needed for instanced rendering
     		DrawCall::InstanceData idata;
 			buf.read(&idata);
-			if(idata.SSBO_data)
-			{
-				auto& ssbo = *s_storage.shader_storage_buffers[idata.SSBO.index];
-				// if(!ssbo.has_persistent_mapping())
-					ssbo.stream(idata.SSBO_data, idata.SSBO_size, 0);
-				// else
-					// ssbo.map_persistent(idata.SSBO_data, idata.SSBO_size, 0);
-				// shader.bind_shader_storage(ssbo, idata.SSBO_size, 0);
-			}
+			// ASSUME SSBO is attached to shader, so it is already bound at this stage
 			Gfx::device->draw_indexed_instanced(va, idata.instance_count, data.count, data.offset);
 			break;
 		}
@@ -1765,6 +1779,25 @@ void blit_depth(memory::LinearBuffer<>& buf)
 	s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
 }
 
+void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
+{
+	ShaderStorageBufferHandle ssbo_handle;
+	uint32_t size;
+	void* data;
+
+	buf.read(&ssbo_handle);
+	buf.read(&size);
+	buf.read(&data);
+
+	s_storage.shader_storage_buffers[ssbo_handle.index]->stream(data, size, 0);
+/*
+	auto& ssbo = *s_storage.shader_storage_buffers[ssbo_handle.index];
+	if(!ssbo.has_persistent_mapping())
+		ssbo.stream(data, size, 0);
+	else
+		ssbo.map_persistent(data, size, 0);
+*/
+}
 
 } // namespace draw_dispatch
 
@@ -1772,6 +1805,7 @@ static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand:
 {
 	&draw_dispatch::draw,
 	&draw_dispatch::blit_depth,
+	&draw_dispatch::update_shader_storage_buffer,
 };
 
 
