@@ -1,6 +1,8 @@
 set(SRC_EDITOR
     source/editor_app.cpp
     source/layer_test.cpp
+    source/widget.cpp
+    source/widget_console.cpp
    )
 
 add_executable(editor ${SRC_EDITOR})

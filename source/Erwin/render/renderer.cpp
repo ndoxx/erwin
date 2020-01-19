@@ -17,6 +17,7 @@
 #include "render/framebuffer.h"
 #include "render/shader.h"
 #include "render/query_timer.h"
+#include "math/color.h"
 
 namespace erwin
 {
@@ -1089,6 +1090,7 @@ void Renderer::destroy(FramebufferHandle handle)
 enum class DrawCommand: uint16_t
 {
 	Draw,
+	Clear,
 	BlitDepth,
 	UpdateShaderStorageBuffer,
 	UpdateUniformBuffer,
@@ -1146,6 +1148,20 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	cw.write(&dc.data);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
+
+	cw.submit(key);
+}
+
+void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, const glm::vec4& clear_color)
+{
+	W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index);
+
+	uint32_t color = color::pack(clear_color);
+
+	DrawCommandWriter cw(DrawCommand::Clear);
+	cw.write(&target);
+	cw.write(&flags);
+	cw.write(&color);
 
 	cw.submit(key);
 }
@@ -1797,6 +1813,31 @@ void draw(memory::LinearBuffer<>& buf)
 	}
 }
 
+void clear(memory::LinearBuffer<>& buf)
+{
+	FramebufferHandle target;
+	uint32_t flags;
+	uint32_t clear_color;
+	buf.read(&target);
+	buf.read(&flags);
+	buf.read(&clear_color);
+
+	glm::vec4 color = color::unpack(clear_color);
+
+	if(target == s_storage.default_framebuffer_ && flags != ClearFlags::CLEAR_NONE)
+	{
+    	Gfx::device->set_clear_color(color.r, color.g, color.b, color.a);
+		Gfx::device->bind_default_framebuffer();
+		glm::vec2 vp_size = FramebufferPool::get_screen_size();
+		Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
+		Gfx::device->clear(flags);
+	}
+	else
+	{
+		W_ASSERT(false, "Non-default framebuffer clear: not implemented yet.");
+	}
+}
+
 void blit_depth(memory::LinearBuffer<>& buf)
 {
 	FramebufferHandle source;
@@ -1846,6 +1887,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand::Count] =
 {
 	&draw_dispatch::draw,
+	&draw_dispatch::clear,
 	&draw_dispatch::blit_depth,
 	&draw_dispatch::update_shader_storage_buffer,
 	&draw_dispatch::update_uniform_buffer,

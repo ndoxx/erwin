@@ -83,6 +83,10 @@ Application::~Application()
         layer_stack_.clear();
     }
     {
+        W_PROFILE_SCOPE("Application unloading")
+        on_unload();
+    }
+    {
         W_PROFILE_SCOPE("Asset Manager shutdown")
         AssetManager::shutdown();
     }
@@ -126,6 +130,8 @@ void Application::add_configuration(const std::string& filename)
 bool Application::init()
 {
     {
+        on_pre_init();
+
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config

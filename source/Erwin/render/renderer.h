@@ -62,6 +62,8 @@ public:
 	// * Draw command queue management and submission
 	// Send a draw call to the queue
 	static void submit(uint64_t key, const DrawCall& dc);
+	// Clear render target
+	static void clear(uint64_t key, FramebufferHandle target, uint32_t flags, const glm::vec4& clear_color={0.f,0.f,0.f,0.f});
 	// Blit depth buffer / texture from source to target
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 	// * Draw call dependencies
