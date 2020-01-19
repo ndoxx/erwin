@@ -57,3 +57,14 @@ enum class ImageFormat: uint8_t
     DEPTH24_STENCIL8,
     DEPTH32F_STENCIL8,
 };
+
+struct Texture2DDescriptor
+{
+    uint32_t width;
+    uint32_t height;
+    void* data = nullptr;
+    ImageFormat image_format = ImageFormat::RGBA8;
+    uint8_t filter = MIN_LINEAR | MAG_NEAREST;
+    TextureWrap wrap = TextureWrap::REPEAT;
+    bool lazy_mipmap = false;
+};

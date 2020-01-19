@@ -39,13 +39,26 @@ void PresentationLayer::on_update(GameClock& clock)
     pp_data_.set_flag_enabled(PP_EN_SATURATION, enable_saturation_);
     pp_data_.set_flag_enabled(PP_EN_CONTRAST, enable_contrast_);
     pp_data_.set_flag_enabled(PP_EN_GAMMA, enable_gamma_);
-    
-	PostProcessingRenderer::begin_pass(pp_data_);
+    pp_data_.set_flag_enabled(PP_EN_FXAA, enable_fxaa_);
+}
+
+void PresentationLayer::on_render()
+{
+	if(enable_bloom_)
+	{
+		PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
+	}
+
 	if(enable_3d_forward_)
-		PostProcessingRenderer::blit("fb_forward"_h);
+	{
+    	pp_data_.set_flag_enabled(PP_EN_BLOOM, enable_bloom_);
+		PostProcessingRenderer::combine("LBuffer"_h, 0, pp_data_);
+	}
     if(enable_2d_batched_)
-        PostProcessingRenderer::blit("fb_2d_raw"_h);
-	PostProcessingRenderer::end_pass();
+    {
+    	pp_data_.clear_flag(PP_EN_BLOOM);
+		PostProcessingRenderer::combine("SpriteBuffer"_h, 0, pp_data_);
+    }
 }
 
 bool PresentationLayer::on_event(const MouseButtonEvent& event)

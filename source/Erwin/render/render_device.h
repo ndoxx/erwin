@@ -5,6 +5,7 @@
 
 #include "core/core.h"
 #include "render/render_state.h"
+#include "render/buffer_layout.h"
 
 namespace erwin
 {

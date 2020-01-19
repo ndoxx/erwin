@@ -92,6 +92,7 @@ OGLFramebuffer::~OGLFramebuffer()
 void OGLFramebuffer::bind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
+    glViewport(0, 0, width_, height_);
 }
 
 void OGLFramebuffer::unbind()
@@ -144,6 +145,33 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     delete[] pixels;
 
     DLOGI << WCC('p') << filepath << std::endl;
+}
+
+void OGLFramebuffer::blit_depth(const Framebuffer& source)
+{
+    // Push state
+    GLint draw_fbo = 0, read_fbo = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_fbo);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
+
+    const OGLFramebuffer& ogl_source = static_cast<const OGLFramebuffer&>(source);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, ogl_source.rd_handle_);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rd_handle_);
+    glBlitFramebuffer(0,                    // src x0
+                      0,                    // src y0
+                      ogl_source.width_,    // src x1
+                      ogl_source.height_,   // src y1
+                      0,                    // dst x0
+                      0,                    // dst y0
+                      width_,               // dst x1
+                      height_,              // dst y1
+                      GL_DEPTH_BUFFER_BIT,  // mask
+                      GL_NEAREST);          // filter
+
+    // Pop state
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, read_fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw_fbo);
 }
 
 void OGLFramebuffer::framebuffer_error_report()

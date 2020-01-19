@@ -245,6 +245,39 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
     add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
     add_vertex({-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f});
 
+	// Front
+	/*
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.f, 1.f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {0.f, 1.f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
+	// Right
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {0.f, 1.f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {0.f, 0.f});
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
+	// Back
+    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {0.f, 0.f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.f, 0.f});
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
+	// Left
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {1.f, 0.f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {1.f, 1.f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
+	// Top
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.f, 0.f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.f, 1.f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {0.f, 1.f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {0.f, 0.f});
+	// Bottom
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
+	*/
+
     // Setup index data
 	add_triangle(0,  1,  2); 
 	add_triangle(0,  2,  3); 

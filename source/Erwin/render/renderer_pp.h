@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -13,7 +13,9 @@ enum PPFlags: uint8_t
 	PP_EN_VIBRANCE = 4,
 	PP_EN_SATURATION = 8,
 	PP_EN_CONTRAST = 16,
-	PP_EN_GAMMA = 32
+	PP_EN_GAMMA = 32,
+	PP_EN_FXAA = 64,
+	PP_EN_BLOOM = 128
 };
 
 // #pragma pack(push,1)
@@ -44,9 +46,14 @@ struct PostProcessingData
 class PostProcessingRenderer
 {
 public:
-	static void begin_pass(const PostProcessingData& pp_data);
-	static void blit(hash_t framebuffer, uint32_t index=0);
-	static void end_pass();
+	// Execute bloom pass
+	static void bloom_pass(hash_t framebuffer, uint32_t index);
+	// Execute alternative implementation of bloom pass
+	static void bloom_pass_alt(hash_t framebuffer, uint32_t index);
+	// Apply post processing to an input framebuffer texture and blend it to the default framebuffer
+	static void combine(hash_t framebuffer, uint32_t index, const PostProcessingData& pp_data);
+	// Blend an input framebuffer texture to the default framebuffer using a "lighten" type blend function
+	static void lighten(hash_t framebuffer, uint32_t index);
 
 private:
 	friend class Application;

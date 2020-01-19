@@ -11,7 +11,7 @@
 
 #endif
 
-#include "core/wtypes.h"
+#include "core/core.h"
 
 using namespace erwin;
 namespace fs = std::filesystem;

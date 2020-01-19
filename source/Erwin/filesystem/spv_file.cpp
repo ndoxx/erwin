@@ -52,7 +52,7 @@ std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path)
             if(execution_model < 6)
             {
                 ShaderStageDescriptor desc;
-                desc.execution_model = ExecutionModel(execution_model);
+                desc.execution_model = slang::ExecutionModel(execution_model);
                 uint32_t entry_point;
                 ifs.read(reinterpret_cast<char*>(&entry_point), sizeof(uint32_t));
                 char c;

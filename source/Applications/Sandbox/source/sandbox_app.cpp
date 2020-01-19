@@ -12,15 +12,17 @@ void Sandbox::on_load()
 {
 	EVENTBUS.subscribe(this, &Sandbox::on_keyboard_event);
 
-	push_layer(layer_3d_ = new Layer3D());
+    push_layer(layer_3d_ = new Layer3D());
 	push_layer(layer_2d_ = new Layer2D());
 	push_overlay(presentation_layer_ = new PresentationLayer());
 	push_overlay(debug_layer_        = new DebugLayer());
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
 #ifdef W_DEBUG
-    TexturePeek::register_framebuffer("fb_forward");
-    TexturePeek::register_framebuffer("fb_2d_raw");
+    // TexturePeek::register_framebuffer("DBuffer");
+    TexturePeek::register_framebuffer("LBuffer");
+    TexturePeek::register_framebuffer("GBuffer");
+    TexturePeek::register_framebuffer("SpriteBuffer");
 #endif
     
     set_layer_enabled(0, layer3d_enabled_);
@@ -69,6 +71,8 @@ void Sandbox::on_imgui_render()
         }
     	if(ImGui::BeginMenu("Post processing"))
         {
+            ImGui::Checkbox("Bloom", &presentation_layer_->enable_bloom_);
+            ImGui::Checkbox("FXAA", &presentation_layer_->enable_fxaa_);
         	ImGui::MenuItem("Tweaks", NULL, &show_app_post_processing_window);
         	ImGui::EndMenu();
         }
@@ -87,10 +91,24 @@ void Sandbox::on_imgui_render()
 	if(show_app_lighting_window)        window_lighting(&show_app_lighting_window);
 	if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);
 #ifdef W_PROFILE
-    MainRenderer::set_profiling_enabled(show_app_render_stats_window);
+    Renderer::set_profiling_enabled(show_app_render_stats_window);
 	if(show_app_profiling_window)       window_profiling(&show_app_profiling_window);
 	if(show_app_render_stats_window)    window_render_stats(&show_app_render_stats_window);
 #endif
+
+/*
+    static float sigma = 1.f;
+    static int size = 1;
+    if(ImGui::Begin("DBG",nullptr))
+    {
+        if(ImGui::SliderFloat("Sigma", &sigma, 0.01f, 2.0f))
+            ForwardRenderer::set_gaussian_kernel(2*size+1,sigma);
+        if(ImGui::SliderInt("KSize", &size, 1, 7))
+            ForwardRenderer::set_gaussian_kernel(2*size+1,sigma);
+
+
+        ImGui::End();
+    }*/
 }
 
 void Sandbox::toggle_layer_3d()
@@ -188,6 +206,12 @@ void Sandbox::window_lighting(bool* p_open)
             ImGui::SliderFloat("Brightness", &layer_3d_->dir_light_.brightness, 0.0f, 30.0f);
             ImGui::SliderFloat("Ambient str.", &layer_3d_->dir_light_.ambient_strength, 0.0f, 0.5f);
             ImGui::ColorEdit3("Color", (float*)&layer_3d_->dir_light_.color);
+            ImGui::ColorEdit3("Amb. color", (float*)&layer_3d_->dir_light_.ambient_color);
+
+            ImGui::Separator();
+            ImGui::SliderFloat("App. diameter", &layer_3d_->sun_material_data_.scale, 0.1f, 0.4f);
+
+
             ImGui::TreePop();
         }
     	ImGui::End();
@@ -220,6 +244,13 @@ void Sandbox::window_profiling(bool* p_open)
             frames_counter_ = 0;
             W_PROFILE_ENABLE_SESSION(true);
         }
+
+        ImGui::Separator();
+        if(ImGui::Button("Track draw calls"))
+        {
+            track_draw_calls("draw_calls.json");
+        }
+
     	ImGui::End();
     }
     if(frame_profiling_)
@@ -236,7 +267,7 @@ void Sandbox::window_render_stats(bool* p_open)
 {
     if(ImGui::Begin("Stats", p_open))
     {
-		const auto& mr_stats = MainRenderer::get_stats();
+		const auto& mr_stats = Renderer::get_stats();
 		uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
 
     	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);

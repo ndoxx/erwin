@@ -9,7 +9,6 @@ class OGLRenderDevice: public RenderDevice
 {
 public:
     // * Framebuffer
-    // TODO: return a handle instead
     // Get an index to default framebuffer
     virtual uint32_t get_default_framebuffer() override;
     // Set the default framebuffer

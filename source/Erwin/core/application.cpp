@@ -10,10 +10,11 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/common_geometry.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_forward.h"
+#include "render/renderer_deferred.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
 
@@ -40,14 +41,18 @@ Application* Application::pinstance_ = nullptr;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
-struct ApplicationStorage
+static struct ApplicationStorage
 {
     std::vector<fs::path> configuration_files;
     memory::HeapArea client_area;
     memory::HeapArea system_area;
     memory::HeapArea render_area;
-};
-static ApplicationStorage s_storage;
+
+#if W_RC_PROFILE_DRAW_CALLS
+    bool track_draw_calls = false;
+    fs::path draw_calls_json_path;
+#endif
+} s_storage;
 
 // Helper function to automatically configure an event tracking policy
 template <typename EventT>
@@ -86,9 +91,10 @@ Application::~Application()
         FramebufferPool::shutdown();
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
+        DeferredRenderer::shutdown();
         ForwardRenderer::shutdown();
         CommonGeometry::shutdown();
-        MainRenderer::shutdown();
+        Renderer::shutdown();
     }
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
@@ -232,23 +238,16 @@ bool Application::init()
         // Initialize framebuffer pool
         FramebufferPool::init(window_->get_width(), window_->get_height());
         // Initialize master renderer storage
-        MainRenderer::init(s_storage.render_area);
+        Renderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
 
-        MainRenderer::create_queue("ForwardOpaque", SortKey::Order::ByDepthDescending);
-        // MainRenderer::create_queue("ForwardTransparent", SortKey::Order::ByDepthAscending);
-        MainRenderer::create_queue("Opaque2D", SortKey::Order::ByDepthDescending);
-        MainRenderer::create_queue("Transparent2D", SortKey::Order::ByDepthAscending);
-#ifdef W_DEBUG
-        MainRenderer::create_queue("Debug2D", SortKey::Order::Sequential);
-#endif
-        MainRenderer::create_queue("Presentation", SortKey::Order::Sequential);
 #ifdef W_DEBUG
         TexturePeek::init();
 #endif
         Renderer2D::init();
         ForwardRenderer::init();
+        DeferredRenderer::init();
         PostProcessingRenderer::init();
 
         // Initialize asset manager
@@ -315,6 +314,14 @@ void Application::toggle_imgui_layer()
         IMGUI_LAYER->toggle();
 }
 
+void Application::track_draw_calls(const fs::path& json_path)
+{
+#if W_RC_PROFILE_DRAW_CALLS
+    s_storage.track_draw_calls = true;
+    s_storage.draw_calls_json_path = json_path;
+#endif
+}
+
 void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
@@ -344,19 +351,35 @@ void Application::run()
         EVENTBUS.dispatch();
 
 		// For each layer, update
-		if(!minimized_)
 		{
             W_PROFILE_SCOPE("Layer updates")
-			for(auto* layer: layer_stack_)
-				layer->update(game_clock_);
+    		for(auto* layer: layer_stack_)
+    			layer->update(game_clock_);
 		}
+
+#if W_RC_PROFILE_DRAW_CALLS
+        if(s_storage.track_draw_calls)
+            Renderer::track_draw_calls(s_storage.draw_calls_json_path);
+#endif
+
+        // For each layer, render
+        if(!minimized_)
+        {
+            W_PROFILE_SCOPE("Layer render")
+            for(auto* layer: layer_stack_)
+                layer->render();
+        }
 
 #ifdef W_DEBUG
         TexturePeek::render();
 #endif
 
-        MainRenderer::flush();
-        
+        Renderer::flush();
+
+#if W_RC_PROFILE_DRAW_CALLS
+        s_storage.track_draw_calls = false;
+#endif
+
 		// TODO: move this to renderer
         {
             W_PROFILE_SCOPE("ImGui render")

@@ -4,6 +4,7 @@
 
 #include "core/core.h"
 #include "render/shader.h"
+#include "render/shader_lang.h"
 
 #include "glm/glm.hpp"
 
@@ -16,8 +17,6 @@ public:
 	OGLShader() = default;
 	~OGLShader() = default;
 
-	// Initialize shader from glsl source string
-	virtual bool init_glsl_string(const std::string& name, const std::string& source) override;
 	// Initialize shader from packed GLSL source
 	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) override;
 	// Initialize shader from SPIR-V file
@@ -29,8 +28,8 @@ public:
 	virtual uint32_t get_texture_count() const override;
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const override;
 
-	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) override;
-	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) override;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) override;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer) override;
 
 	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;
 	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
@@ -44,12 +43,8 @@ public:
     }
 
 private:
-	// Helper function to extract the various shader sources from a single formatted source string
-	std::vector<std::pair<ShaderType, std::string>> parse(const std::string& full_source);
-	// Helper function to get the code included by a shader source
-	std::string parse_includes(const std::string& source);
 	// Build the shader program from sources
-	bool build(const std::vector<std::pair<ShaderType, std::string>>& sources);
+	bool build(const std::vector<std::pair<slang::ExecutionModel, std::string>>& sources);
 	// Build the shader program from SPIR-V binary
 	bool build_spirv(const fs::path& filepath);
 	// Link the program
@@ -58,13 +53,19 @@ private:
 	void introspect();
 
 private:
+	struct ResourceBinding
+	{
+		int32_t binding_point;
+		uint32_t render_handle;
+		uint32_t target;
+	};
+
     uint32_t rd_handle_ = 0;
     uint32_t current_slot_ = 0;
     std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
     std::map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
     std::map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
-    std::map<W_ID, WRef<UniformBuffer>> uniform_buffers_;
-    std::map<W_ID, WRef<ShaderStorageBuffer>> shader_storage_buffers_;
+    std::map<W_ID, ResourceBinding> bound_buffers_;
     fs::path filepath_;
 };
 

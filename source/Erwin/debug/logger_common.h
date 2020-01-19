@@ -1,8 +1,9 @@
 #pragma once
 
 #include <map>
+#include <sstream>
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "core/time_base.h"
 
 namespace erwin

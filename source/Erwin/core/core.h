@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <memory>
 
+#include "core/hashstr.h"
+
 // Export JSON instrumentation profiles compatible with chrome://tracing
 #define W_PROFILE
 
@@ -91,4 +93,5 @@ namespace erwin
 	{
 	  return std::make_unique<T>(std::forward<Args>(args)...);
 	}
+
 } // namespace erwin

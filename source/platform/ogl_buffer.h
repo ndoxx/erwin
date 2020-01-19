@@ -5,40 +5,52 @@
 namespace erwin
 {
 
-class OGLVertexBuffer: public VertexBuffer
+class OGLBuffer: virtual GfxBuffer
 {
 public:
-    OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, DrawMode mode);
-    virtual ~OGLVertexBuffer();
+    OGLBuffer(uint32_t target);
+    virtual ~OGLBuffer();
 
+    virtual void init(void* data, uint32_t size, UsagePattern mode) override;
     virtual void bind() const override;
     virtual void unbind() const override;
-
-    virtual void stream(void* vertex_data, uint32_t size, uint32_t offset) override;
-    virtual void map(void* vertex_data, uint32_t size) override;
+    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
+    virtual void map(void* data, uint32_t size, uint32_t offset) override;
+    virtual void map_persistent(void* data, uint32_t size, uint32_t offset=0) override;
 
     inline uint32_t get_handle() const { return rd_handle_; }
 
-private:
+protected:
+    uint32_t target_;
     uint32_t rd_handle_;
 };
 
-class OGLIndexBuffer: public IndexBuffer
+class OGLVertexBuffer: public OGLBuffer, public VertexBuffer
 {
 public:
-    OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, DrawMode mode);
-    virtual ~OGLIndexBuffer();
+    OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode);
+    virtual ~OGLVertexBuffer() = default;
+};
 
-    virtual void bind() const override;
-    virtual void unbind() const override;
+class OGLIndexBuffer: public OGLBuffer, public IndexBuffer
+{
+public:
+    OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode);
+    virtual ~OGLIndexBuffer() = default;
+};
 
-    virtual void stream(uint32_t* index_data, uint32_t count, std::size_t offset) override;
-    virtual void map(uint32_t* index_data, uint32_t count) override;
+class OGLUniformBuffer: public OGLBuffer, public UniformBuffer
+{
+public:
+    OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode);
+    virtual ~OGLUniformBuffer() = default;
+};
 
-    inline uint32_t get_handle() const { return rd_handle_; }
-
-private:
-    uint32_t rd_handle_;
+class OGLShaderStorageBuffer: public OGLBuffer, public ShaderStorageBuffer
+{
+public:
+    OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, UsagePattern mode);
+    virtual ~OGLShaderStorageBuffer() = default;
 };
 
 class OGLVertexArray: public VertexArray
@@ -58,40 +70,6 @@ public:
 private:
     uint32_t rd_handle_;
     uint32_t vb_index_ = 0;
-};
-
-class OGLUniformBuffer: public UniformBuffer
-{
-public:
-    OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, DrawMode mode);
-    virtual ~OGLUniformBuffer();
-
-    virtual void bind() const override;
-    virtual void unbind() const override;
-    virtual void map(void* data) override;
-    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
-
-    inline uint32_t get_handle() const { return rd_handle_; }
-
-protected:
-    uint32_t rd_handle_;
-};
-
-class OGLShaderStorageBuffer: public ShaderStorageBuffer
-{
-public:
-    OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, DrawMode mode);
-    virtual ~OGLShaderStorageBuffer();
-
-    virtual void bind() const override;
-    virtual void unbind() const override;
-    virtual void stream(void* data, uint32_t size, uint32_t offset) override;
-    virtual void map(void* data, uint32_t size) override;
-
-    inline uint32_t get_handle() const { return rd_handle_; }
-
-protected:
-    uint32_t rd_handle_;
 };
 
 } // namespace erwin

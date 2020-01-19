@@ -216,5 +216,14 @@ bool parse_node(xml_node<>* parent, const char* leaf_name, std::string& destinat
     return true;
 }
 
+hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name)
+{
+    xml_node<>* leaf_node = parent->first_node(leaf_name);
+    if(!leaf_node)
+        return 0;
+
+    return H_(leaf_node->value());
+}
+
 } // namespace xml
 } // namespace erwin

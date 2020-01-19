@@ -2,21 +2,22 @@
 #include "asset/texture_atlas.h"
 #include "asset/material.h"
 #include "memory/arena.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
 
 #include "debug/texture_peek.h"
 
-#define DEBUG_TEXTURES
+// #define DEBUG_TEXTURES
 
 namespace erwin
 {
-constexpr std::size_t k_handle_alloc_size = 3 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
+constexpr std::size_t k_handle_alloc_size = 4 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
 
 #define FOR_ALL_HANDLES                 \
 		DO_ACTION( TextureAtlasHandle ) \
+		DO_ACTION( FontAtlasHandle )    \
 		DO_ACTION( TextureGroupHandle ) \
 		DO_ACTION( MaterialLayoutHandle )
 
@@ -24,11 +25,13 @@ constexpr std::size_t k_handle_alloc_size = 3 * 2 * sizeof(HandlePoolT<k_max_ass
 static struct AssetManagerStorage
 {
 	eastl::vector<TextureAtlas*> texture_atlases_;
+	eastl::vector<FontAtlas*> font_atlases_;
 	eastl::vector<TextureGroup*> texture_groups_;
 	eastl::vector<MaterialLayout> material_layouts_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
+	PoolArena font_atlas_pool_;
 	PoolArena texture_group_pool_;
 } s_storage;
 
@@ -45,9 +48,35 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
 	atlas->load(filesystem::get_asset_dir() / filepath);
 
+#ifdef DEBUG_TEXTURES
+	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+	TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
+#endif
+
 	// Register atlas
 	Renderer2D::create_batch(atlas->texture); // TODO: this should be conditional
 	s_storage.texture_atlases_[handle.index] = atlas;
+
+	return handle;
+}
+
+FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
+{
+	FontAtlasHandle handle = FontAtlasHandle::acquire();
+	DLOGN("asset") << "[AssetManager] Creating new font atlas:" << std::endl;
+	DLOG("asset",1) << "FontAtlasHandle: " << WCC('v') << handle.index << std::endl;
+	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
+
+	FontAtlas* atlas = W_NEW(FontAtlas, s_storage.font_atlas_pool_);
+	atlas->load(filesystem::get_asset_dir() / filepath);
+
+#ifdef DEBUG_TEXTURES
+	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+	TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
+#endif
+
+	// Register atlas
+	s_storage.font_atlases_[handle.index] = atlas;
 
 	return handle;
 }
@@ -85,7 +114,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
 
 	std::string shader_name = name.empty() ? filepath.stem().string() : name;
-	ShaderHandle handle = MainRenderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
+	ShaderHandle handle = Renderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
 
 	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
 	return handle;
@@ -112,7 +141,7 @@ MaterialLayoutHandle AssetManager::create_material_layout(const std::vector<hash
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint32_t size)
 {
-	return MainRenderer::create_uniform_buffer("material_data", nullptr, size, DrawMode::Dynamic);
+	return Renderer::create_uniform_buffer("material_data", nullptr, size, UsagePattern::Dynamic);
 }
 
 void AssetManager::release(TextureAtlasHandle handle)
@@ -123,6 +152,18 @@ void AssetManager::release(TextureAtlasHandle handle)
 	atlas->release();
 	W_DELETE(atlas, s_storage.texture_atlas_pool_);
 	s_storage.texture_atlases_[handle.index] = nullptr;
+	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
+	handle.release();
+}
+
+void AssetManager::release(FontAtlasHandle handle)
+{
+	W_ASSERT_FMT(handle.is_valid(), "FontAtlasHandle of index %hu is invalid.", handle.index);
+	DLOGN("asset") << "[AssetManager] Releasing font atlas:" << std::endl;
+	FontAtlas* atlas = s_storage.font_atlases_.at(handle.index);
+	atlas->release();
+	W_DELETE(atlas, s_storage.font_atlas_pool_);
+	s_storage.font_atlases_[handle.index] = nullptr;
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	handle.release();
 }
@@ -144,7 +185,7 @@ void AssetManager::release(ShaderHandle handle)
 	W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
 
-	MainRenderer::destroy(handle);
+	Renderer::destroy(handle);
 
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 }
@@ -159,7 +200,7 @@ void AssetManager::release(MaterialLayoutHandle handle)
 
 void AssetManager::release(UniformBufferHandle handle)
 {
-	MainRenderer::destroy(handle);
+	Renderer::destroy(handle);
 }
 
 // ---------------- PRIVATE API ----------------
@@ -167,10 +208,12 @@ void AssetManager::release(UniformBufferHandle handle)
 void AssetManager::init(memory::HeapArea& area)
 {
 	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
-	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "AtlasPool");
+	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "TextureAtlasPool");
+	s_storage.font_atlas_pool_.init(area, sizeof(FontAtlas) + PoolArena::DECORATION_SIZE, k_max_font_atlases, "FontAtlasPool");
 	s_storage.texture_group_pool_.init(area, sizeof(TextureGroup) + PoolArena::DECORATION_SIZE, k_max_texture_groups, "TextureGroupPool");
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
+	s_storage.font_atlases_.resize(k_max_font_atlases, nullptr);
 	s_storage.texture_groups_.resize(k_max_texture_groups, nullptr);
 	s_storage.material_layouts_.resize(k_max_material_layouts);
 
@@ -187,6 +230,10 @@ void AssetManager::shutdown()
 		if(atlas)
 			W_DELETE(atlas, s_storage.texture_atlas_pool_);
 
+	for(FontAtlas* atlas: s_storage.font_atlases_)
+		if(atlas)
+			W_DELETE(atlas, s_storage.font_atlas_pool_);
+
 	for(TextureGroup* tg: s_storage.texture_groups_)
 		if(tg)
 			W_DELETE(tg, s_storage.texture_group_pool_);
@@ -201,6 +248,12 @@ const TextureAtlas& AssetManager::get(TextureAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
 	return *s_storage.texture_atlases_[handle.index];
+}
+
+const FontAtlas& AssetManager::get(FontAtlasHandle handle)
+{
+	W_ASSERT_FMT(handle.is_valid(), "FontAtlasHandle of index %hu is invalid.", handle.index);
+	return *s_storage.font_atlases_[handle.index];
 }
 
 const TextureGroup& AssetManager::get(TextureGroupHandle handle)

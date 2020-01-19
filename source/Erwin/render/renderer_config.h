@@ -14,14 +14,20 @@ namespace erwin
 	#define W_PROFILE_RENDER_FUNCTION()
 #endif
 
+#define W_RC_PROFILE_DRAW_CALLS true
+
 // Maximum amount of texture slots per draw call
 static constexpr uint32_t k_max_texture_slots = 4;
 // Maximum amount of uniform buffer slots per draw call
 static constexpr uint32_t k_max_UBO_slots = 2;
 // Maximum amount of render commands per frame, per command buffer
-static constexpr uint32_t k_max_render_commands = 8192;
+static constexpr uint32_t k_max_render_commands = 2048;
+// Maximum amount of draw calls per frame
+static constexpr uint32_t k_max_draw_calls = 8192;
 // Maximum amount of handles for every object managed by the main renderer
 // TODO: each object should have its own amount
 static constexpr uint32_t k_max_render_handles = 128;
+// Maximum amount of dependencies per draw call
+static constexpr uint32_t k_max_draw_call_dependencies = 8;
 
 } // namespace erwin

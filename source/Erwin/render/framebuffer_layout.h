@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "render/texture.h"
-#include "core/wtypes.h"
+#include "core/core.h"
 
 namespace erwin
 {

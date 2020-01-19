@@ -4,20 +4,21 @@
 		<texture>
 			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
 				   output="source/Applications/Sandbox/assets/textures/atlas">
-				<texture_compression>DXT5</texture_compression>
-				<blob_compression>deflate</blob_compression>
+				<export>
+					<file_type>CAT</file_type>
+					<texture_compression>DXT5</texture_compression>
+					<blob_compression>deflate</blob_compression>
+				</export>
 			</batch>
-			<!--<batch input="source/Applications/PoliPuyo/assets/textures/atlas/upack"
-				   output="source/Applications/PoliPuyo/assets/textures/atlas">
-				<texture_compression>DXT5</texture_compression>
-				<blob_compression>deflate</blob_compression>
-			</batch>-->
 		</texture>
 		<font>
 			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
-				   output="source/Applications/Sandbox/assets/textures/atlas"/>
-			<!--<batch input="source/Applications/PoliPuyo/assets/textures/atlas/upack"
-				   output="source/Applications/PoliPuyo/assets/textures/atlas"/>-->
+				   output="source/Applications/Sandbox/assets/textures/atlas">
+				<export>
+					<file_type>CAT</file_type>
+					<blob_compression>deflate</blob_compression>
+				</export>
+			</batch>
 		</font>
 	</atlas>
 
@@ -29,6 +30,7 @@
 	</texmap>
 
 	<shader>
+		<include path="source/Erwin/assets/shaders"/>
 		<batch input="source/Erwin/assets/shaders"
 			   output="source/Erwin/assets/shaders"/>
 		<batch input="source/Applications/FractalExplorer/assets/shaders"

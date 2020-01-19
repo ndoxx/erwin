@@ -17,6 +17,7 @@
 #include "debug/logger_sink.h"
 #include "debug/logger_thread.h"
 #include "filesystem/xml_file.h"
+#include "render/shader_lang.h"
 
 using namespace erwin;
 
@@ -86,6 +87,7 @@ static void show_logo()
 static void init_logger()
 {
     WLOGGER(create_channel("fudge", 3));
+    WLOGGER(create_channel("shader", 3));
     WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
     WLOGGER(attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log")));
     WLOGGER(set_single_threaded(true));
@@ -94,6 +96,45 @@ static void init_logger()
 static bool cmd_option_exists(const char** begin, const char** end, const std::string& option)
 {
     return std::find(begin, end, option) != end;
+}
+
+static bool parse_atlas_export_options(rapidxml::xml_node<>* export_node, fudge::atlas::AtlasExportOptions& options)
+{
+    if(export_node == nullptr)
+    {
+        DLOGW("fudge") << "No export node detected, setting default export options." << std::endl;
+        return false;
+    }
+
+    hash_t file_type           = xml::parse_node_h(export_node, "file_type");
+    hash_t texture_compression = xml::parse_node_h(export_node, "texture_compression");
+    hash_t blob_compression    = xml::parse_node_h(export_node, "blob_compression");
+
+    switch(file_type)
+    {
+        case "PNG"_h: options.file_type = fudge::atlas::FileType::PNG; break;
+        case "CAT"_h: options.file_type = fudge::atlas::FileType::CAT; break;
+        default:      options.file_type = fudge::atlas::FileType::PNG; break;
+    }
+
+    switch(texture_compression)
+    {
+        case "none"_h: options.texture_compression = TextureCompression::None; break;
+        case "DXT1"_h: options.texture_compression = TextureCompression::DXT1; break;
+        case "DXT5"_h: options.texture_compression = TextureCompression::DXT5; break;
+        default:       options.texture_compression = TextureCompression::None; break;
+    }
+
+    switch(blob_compression)
+    {
+        case "none"_h:    options.blob_compression = fudge::BlobCompression::None; break;
+        case "deflate"_h: options.blob_compression = fudge::BlobCompression::Deflate; break;
+        default:          options.blob_compression = fudge::BlobCompression::None; break;
+    }
+
+    // TODO: sanity check
+
+    return true;
 }
 
 int main(int argc, char const *argv[])
@@ -107,13 +148,6 @@ int main(int argc, char const *argv[])
     s_force_cat_rebuild    = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fcat");
     s_force_font_rebuild   = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--ffont");
     s_force_shader_rebuild = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fshader");
-
-    // Test
-    if(cmd_option_exists(argv, argv + argc, "-t"))
-    {
-        fudge::spv::test();
-        return 0;
-    }
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
     DLOGN("fudge") << "Locating unpacked assets." << std::endl;
@@ -151,25 +185,12 @@ int main(int argc, char const *argv[])
                 batch; batch=batch->next_sibling("batch"))
             {
                 // Configure batch
-                std::string input_path, output_path, tex_compression("none"), blob_compression("none");
+                std::string input_path, output_path;
                 if(!xml::parse_attribute(batch, "input", input_path)) continue;
                 if(!xml::parse_attribute(batch, "output", output_path)) continue;
-                xml::parse_node(batch, "texture_compression", tex_compression);
-                xml::parse_node(batch, "blob_compression", blob_compression);
 
-                fudge::Compression tex_c;
-                switch(H_(tex_compression.c_str()))
-                {
-                    case "DXT5"_h: tex_c = fudge::Compression::DXT5; break;
-                    default:       tex_c = fudge::Compression::None; break;
-                }
-                fudge::Compression blob_c;
-                switch(H_(tex_compression.c_str()))
-                {
-                    case "deflate"_h: blob_c = fudge::Compression::Deflate; break;
-                    default:          blob_c = fudge::Compression::None; break;
-                }
-                fudge::atlas::set_compression(blob_c);
+                fudge::atlas::AtlasExportOptions options;
+                parse_atlas_export_options(batch->first_node("export"), options);
 
                 // Iterate directory
                 DLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
@@ -180,7 +201,7 @@ int main(int argc, char const *argv[])
                     {
                         DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
 
-                        fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, tex_c);
+                        fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, options);
                         DLOGR("fudge") << std::endl;
                     }
                 }
@@ -208,6 +229,9 @@ int main(int argc, char const *argv[])
                 if(!xml::parse_attribute(batch, "input", input_path)) continue;
                 if(!xml::parse_attribute(batch, "output", output_path)) continue;
 
+                fudge::atlas::AtlasExportOptions options;
+                parse_atlas_export_options(batch->first_node("export"), options);
+
                 DLOGN("fudge") << "Iterating fonts directory:" << std::endl;
                 DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
@@ -217,7 +241,7 @@ int main(int argc, char const *argv[])
                        (fudge::far::need_create(entry) || s_force_font_rebuild))
                     {
                         DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
-                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, fudge::Compression::None, 32);
+                        fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, options, 32);
                         DLOGR("fudge") << std::endl;
                     }
                 }
@@ -275,31 +299,47 @@ int main(int argc, char const *argv[])
     if(fudge::spv::check_toolchain())
     {
         rapidxml::xml_node<>* shader_node = cfg.root->first_node("shader");
-        for(rapidxml::xml_node<>* batch=shader_node->first_node("batch");
-            batch; batch=batch->next_sibling("batch"))
+        if(shader_node)
         {
-            // Configure batch
-            std::string input_path, output_path, config_file;
-            if(!xml::parse_attribute(batch, "input", input_path)) continue;
-            if(!xml::parse_attribute(batch, "output", output_path)) continue;
-
-            // Create temporary folder
-            fs::create_directory(s_root_path / output_path / "tmp");
-            DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
-            DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
-            for(auto& entry: fs::directory_iterator(s_root_path / input_path))
+            // Check include directories
+            for(rapidxml::xml_node<>* include_node=shader_node->first_node("include");
+                include_node; include_node=include_node->next_sibling("include"))
             {
-                if(entry.is_regular_file() && 
-                   !entry.path().extension().string().compare(".glsl") &&
-                   (fudge::far::need_create(entry) || s_force_shader_rebuild))
+                std::string include_dir;
+                if(xml::parse_attribute(include_node, "path", include_dir))
                 {
-                    DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
-                    fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
-                    DLOGR("fudge") << std::endl;
+                    erwin::slang::register_include_directory(s_root_path / include_dir);
+                    DLOG("fudge",1) << "Detected shader include directory:" << std::endl;
+                    DLOGI << WCC('p') << include_dir << std::endl;
                 }
             }
-            // Delete temporary folder
-            fs::remove_all(s_root_path / output_path / "tmp");
+
+            for(rapidxml::xml_node<>* batch=shader_node->first_node("batch");
+                batch; batch=batch->next_sibling("batch"))
+            {
+                // Configure batch
+                std::string input_path, output_path, config_file;
+                if(!xml::parse_attribute(batch, "input", input_path)) continue;
+                if(!xml::parse_attribute(batch, "output", output_path)) continue;
+
+                // Create temporary folder
+                fs::create_directory(s_root_path / output_path / "tmp");
+                DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
+                DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+                for(auto& entry: fs::directory_iterator(s_root_path / input_path))
+                {
+                    if(entry.is_regular_file() && 
+                       !entry.path().extension().string().compare(".glsl") &&
+                       (fudge::far::need_create(entry) || s_force_shader_rebuild))
+                    {
+                        DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
+                        fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
+                        DLOGR("fudge") << std::endl;
+                    }
+                }
+                // Delete temporary folder
+                fs::remove_all(s_root_path / output_path / "tmp");
+            }
         }
     }
 

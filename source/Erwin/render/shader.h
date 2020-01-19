@@ -5,7 +5,7 @@
 #include <memory>
 #include <map>
 
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/buffer.h"
@@ -13,18 +13,7 @@
 namespace erwin
 {
 
-enum class ShaderType: uint8_t
-{
-    Vertex = 0,
-    TessellationControl = 1,
-    TessellationEvaluation = 2,
-    Geometry = 3,
-    Fragment = 4,
-    GLCompute = 5,
-};
-
 class Texture2D;
-
 class Shader
 {
 public:
@@ -32,7 +21,7 @@ public:
 	virtual ~Shader() = default;
 
 	// Initialize shader from glsl source string
-	virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
+	// virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
 	// Initialize shader from packed GLSL source
 	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) { return false; }
 	// Initialize shader from SPIR-V file
@@ -49,9 +38,9 @@ public:
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const = 0;
 
 	// Attach an SSBO that will automatically be bound when this shader is bound
-	virtual void attach_shader_storage(WRef<ShaderStorageBuffer> buffer) = 0;
+	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) = 0;
 	// Attach an UBO that will automatically be bound when this shader is bound
-	virtual void attach_uniform_buffer(WRef<UniformBuffer> buffer) = 0;
+	virtual void attach_uniform_buffer(const UniformBuffer& buffer) = 0;
 	// Bind a shader buffer storage
 	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const = 0;
 	// Bind a uniform buffer
@@ -64,8 +53,6 @@ public:
 
 	// Factory method for the creation of an API-specific shader from a file path
 	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
-	// Factory method for the creation of an API-specific shader from a source string
-	static WRef<Shader> create(const std::string& name, const std::string& source_string);
 
 protected:
 	std::string name_;

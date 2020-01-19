@@ -17,7 +17,8 @@ public:
 	virtual void on_detach() override;
 
 protected:
-	virtual void on_update(GameClock& clock) override;
+	// virtual void on_update(GameClock& clock) override;
+	// virtual void on_render() override;
 	virtual bool on_event(const MouseButtonEvent& event) override;
 	virtual bool on_event(const WindowResizeEvent& event) override;
 	virtual bool on_event(const MouseScrollEvent& event) override;

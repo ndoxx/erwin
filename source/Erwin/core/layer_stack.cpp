@@ -91,7 +91,7 @@ void LayerStack::update_layer_ids()
 {
 	uint32_t current_index = 0;
 	for(Layer* layer: layers_)
-		layer->set_layer_id(uint8_t(layers_.size()-current_index++));
+		layer->set_layer_id(uint8_t(current_index++));
 }
 
 void LayerStack::set_layer_enabled(size_t index, bool value)

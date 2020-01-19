@@ -25,48 +25,80 @@ void Layer3D::on_imgui_render()
 void Layer3D::on_attach()
 {
 	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
-	MaterialLayoutHandle layout_a_nd_mra = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mra"_h});
+	MaterialLayoutHandle layout_a_nd_mar  = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mar"_h});
+	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
+	deferred_pbr_       = AssetManager::load_shader("shaders/deferred_PBR.glsl");
 	forward_opaque_pbr_ = AssetManager::load_shader("shaders/forward_PBR.glsl");
-	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mra);
-	tg_1_               = AssetManager::load_texture_group("textures/map/beachSand.tom", layout_a_nd_mra);
+	forward_sun_        = AssetManager::load_shader("shaders/forward_sun.glsl");
+	tg_0_               = AssetManager::load_texture_group("textures/map/sandstone.tom", layout_a_nd_mar);
+	tg_1_               = AssetManager::load_texture_group("textures/map/beachSand.tom", layout_a_nd_mar);
+	tg_2_               = AssetManager::load_texture_group("textures/map/testEmissive.tom", layout_a_nd_mare);
 	pbr_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(PBRMaterialData));
-	AssetManager::release(layout_a_nd_mra);
+	sun_material_ubo_   = AssetManager::create_material_data_buffer(sizeof(SunMaterialData));
+	AssetManager::release(layout_a_nd_mar);
+	AssetManager::release(layout_a_nd_mare);
 
+	DeferredRenderer::register_shader(deferred_pbr_, pbr_material_ubo_);
 	ForwardRenderer::register_shader(forward_opaque_pbr_, pbr_material_ubo_);
+	ForwardRenderer::register_shader(forward_sun_, sun_material_ubo_);
 
 	// Setup scene
-	for(float xx=-10.f; xx<10.f; xx+=2.f)
+	int N = 10;
+	for(int ii=0; ii<N; ++ii)
 	{
-		for(float yy=-10.f; yy<10.f; yy+=2.f)
+		float xx = -N + 2.f*ii + 1.f;
+		for(int jj=0; jj<N; ++jj)
 		{
-			for(float zz=-10.f; zz<10.f; zz+=2.f)
+			float yy = -N + 2.f*jj + 1.f;
+			for(int kk=0; kk<N; ++kk)
 			{
-				float scale = 3.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(10*10*10);
+				float zz = -N + 2.f*kk + 1.f;
+				float scale = 3.f*sqrt(xx*xx+yy*yy+zz*zz)/sqrt(N*N*N);
 				Cube cube;
 				cube.transform = {{xx,yy,zz}, {0.f,0.f,0.f}, scale};
 				if(fabs(xx+1.f)>5.f || fabs(zz+1.f)>5.f)
 					cube.material = {forward_opaque_pbr_, tg_0_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
 				else
 					cube.material = {forward_opaque_pbr_, tg_1_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
-				cube.material_data.tint = {(xx+10.f)/20.f,(yy+10.f)/20.f,(zz+10.f)/20.f,1.f};
+				cube.material_data.tint = {(xx+N)/(2.f*N),(yy+N)/(2.f*N),(zz+N)/(2.f*N),1.f};
 				scene_.push_back(cube);
 			}
 		}
 	}
+
+	emissive_cube_.transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+	emissive_cube_.material = {deferred_pbr_, tg_2_, pbr_material_ubo_, nullptr, sizeof(PBRMaterialData)};
+	emissive_cube_.material_data.tint = {0.f,1.f,1.f,1.f};
+	emissive_cube_.material_data.enable_emissivity();
+	emissive_cube_.material_data.emissive_scale = 5.f;
+	emissive_cube_.material.data = &emissive_cube_.material_data;
+
 	// I must setup all data pointers when I'm sure data won't move in memory due to vector realloc
 	// TMP: this is awkward
 	for(Cube& cube: scene_)
 		cube.material.data = &cube.material_data;
 
 	dir_light_.set_position(90.f, 160.f);
-	dir_light_.color    = {0.95f,0.85f,0.5f};
+	dir_light_.color         = {0.95f,0.85f,0.5f};
+	dir_light_.ambient_color = {0.95f,0.85f,0.5f};
 	dir_light_.ambient_strength = 0.1f;
+	dir_light_.brightness = 3.7f;
+
+
+	// Setup Sun
+	sun_material_.shader = forward_sun_;
+	sun_material_.ubo = sun_material_ubo_;
+	sun_material_.data = &sun_material_data_;
+	sun_material_.data_size = sizeof(SunMaterialData);
+
+	sun_material_data_.scale = 0.2f;
 }
 
 void Layer3D::on_detach()
 {
 	AssetManager::release(tg_0_);
 	AssetManager::release(tg_1_);
+	AssetManager::release(tg_2_);
 	AssetManager::release(forward_opaque_pbr_);
 	AssetManager::release(pbr_material_ubo_);
 }
@@ -81,24 +113,59 @@ void Layer3D::on_update(GameClock& clock)
 
 	camera_ctl_.update(clock);
 
+	// Update sun
+	sun_material_data_.color = glm::vec4(dir_light_.color, 1.f);
+	sun_material_data_.brightness = dir_light_.brightness;
+
 	// Update scene
 	for(Cube& cube: scene_)
 	{
 		float xx = cube.transform.position.x;
 		float yy = cube.transform.position.y;
 		float zz = cube.transform.position.z;
-		glm::vec3 euler = {(1.f-yy/8.f)*xx/10.f,yy/10.f,(1.f-yy/8.f)*zz/10.f};
+		glm::vec3 euler = {(1.f-yy/9.f)*xx/10.f,yy/10.f,(1.f-yy/9.f)*zz/10.f};
 		euler *= 1.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}
 
-	// Draw scene
+	float s = sin(2*M_PI*tt/10.f);
+	float s2 = s*s;
+	emissive_cube_.material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
+	emissive_cube_.material_data.tint.r = 0.3f*exp(-12.f*s2);
+}
+
+void Layer3D::on_render()
+{
+	VertexArrayHandle quad     = CommonGeometry::get_vertex_array("quad"_h);
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 
-	ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, false, get_layer_id());
-	for(auto&& cube: scene_)
-		ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
-	ForwardRenderer::end_pass();
+	// Draw scene geometry
+	{
+		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
+		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
+		DeferredRenderer::end_pass();
+	}
+
+	{
+		PassOptions options;
+		options.set_transparency(false);
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		for(auto&& cube: scene_)
+			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
+		ForwardRenderer::end_pass();
+	}
+
+	// Draw sun
+	{
+		PassOptions options;
+		options.set_transparency(true);
+		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
+
+		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
+		ForwardRenderer::end_pass();
+	}
 }
 
 bool Layer3D::on_event(const MouseButtonEvent& event)

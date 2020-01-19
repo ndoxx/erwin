@@ -54,7 +54,7 @@ void main()
 
 #type fragment
 #version 460 core
-#include "include/common.glsl"
+#include "engine/common.glsl"
 
 SAMPLER_2D_(0);  // Atlas (diffuse)
 layout(location = 3) in vec2 f_uv;

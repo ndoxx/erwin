@@ -7,7 +7,7 @@
 #endif
 
 #include "core/application.h"
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "core/layer.h"
 #include "core/config.h"
 #include "filesystem/filesystem.h"
@@ -17,9 +17,10 @@
 #include "event/window_events.h"
 #include "debug/logger.h"
 
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_forward.h"
+#include "render/renderer_deferred.h"
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "asset/asset_manager.h"

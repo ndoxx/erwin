@@ -1,5 +1,5 @@
 #include "render/framebuffer_pool.h"
-#include "render/main_renderer.h"
+#include "render/renderer.h"
 #include "core/intern_string.h"
 #include "debug/logger.h"
 #include "event/event_bus.h"
@@ -37,7 +37,7 @@ static bool on_framebuffer_resize_event(const FramebufferResizeEvent& event)
 		uint32_t width  = constraint->get_width(s_storage.current_width_);
 		uint32_t height = constraint->get_width(s_storage.current_height_);
 
-		MainRenderer::update_framebuffer(s_storage.framebuffers_[name], width, height);
+		Renderer::update_framebuffer(s_storage.framebuffers_[name], width, height);
 	}
 
 	return false;
@@ -55,7 +55,7 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 void FramebufferPool::shutdown()
 {
 	for(auto&& [name, fb]: s_storage.framebuffers_)
-		MainRenderer::destroy(fb);
+		Renderer::destroy(fb);
 
 	DLOGN("render") << "Framebuffer pool released." << std::endl;
 }
@@ -109,6 +109,26 @@ glm::vec2 FramebufferPool::get_texel_size(hash_t name)
 	return {1.f/it->second->get_width(s_storage.current_width_), 1.f/it->second->get_height(s_storage.current_height_)};
 }
 
+uint32_t FramebufferPool::get_screen_width()
+{
+	return s_storage.current_width_;
+}
+
+uint32_t FramebufferPool::get_screen_height()
+{
+	return s_storage.current_height_;
+}
+
+glm::vec2 FramebufferPool::get_screen_size()
+{
+	return {s_storage.current_width_, s_storage.current_height_};
+}
+
+glm::vec2 FramebufferPool::get_screen_texel_size()
+{
+	return {1.f/s_storage.current_width_, 1.f/s_storage.current_height_};
+}
+
 FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
 {
 	// Check that no framebuffer is already registered to this name
@@ -122,7 +142,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	uint32_t width  = constraint->get_width(s_storage.current_width_);
 	uint32_t height = constraint->get_width(s_storage.current_height_);
 
-	FramebufferHandle handle = MainRenderer::create_framebuffer(width, height, depth, stencil, layout);
+	FramebufferHandle handle = Renderer::create_framebuffer(width, height, depth, stencil, layout);
 	s_storage.framebuffers_.insert(std::make_pair(name, handle));
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
 	s_storage.properties_.insert(std::make_pair(name, FramebufferProperties{depth}));

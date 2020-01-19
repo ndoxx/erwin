@@ -30,18 +30,6 @@ protected:
     W_ID unique_id_;
 };
 
-
-struct Texture2DDescriptor
-{
-	uint32_t width;
-	uint32_t height;
-	void* data = nullptr;
-	ImageFormat image_format = ImageFormat::RGBA8;
-	uint8_t filter = MIN_LINEAR | MAG_NEAREST;
-	TextureWrap wrap = TextureWrap::REPEAT;
-	bool lazy_mipmap = false;
-};
-
 class Texture2D: public Texture
 {
 public:
@@ -51,8 +39,6 @@ public:
 	static WRef<Texture2D> create(const fs::path& filepath);
 	// Create a 2D texture from descriptor
 	static WRef<Texture2D> create(const Texture2DDescriptor& descriptor);
-    // Generate a list of textures (maps) from a TOM file
-    static std::map<hash_t, WRef<Texture2D>> create_maps(const fs::path& filepath);
 };
 
 } // namespace erwin

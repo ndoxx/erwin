@@ -8,7 +8,8 @@
 #include <vector>
 #include <filesystem>
 
-#include "core/wtypes.h"
+#include "core/core.h"
+#include "render/shader_lang.h"
 
 namespace fs = std::filesystem;
 
@@ -17,19 +18,9 @@ namespace erwin
 namespace spv
 {
 
-enum class ExecutionModel: uint32_t
-{
-    Vertex = 0,
-    TessellationControl = 1,
-    TessellationEvaluation = 2,
-    Geometry = 3,
-    Fragment = 4,
-    GLCompute = 5,
-};
-
 struct ShaderStageDescriptor
 {
-	ExecutionModel execution_model;
+	slang::ExecutionModel execution_model;
 	std::string entry_point;
 };
 

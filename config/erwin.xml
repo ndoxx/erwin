@@ -2,7 +2,7 @@
 <Config>
 	<logger>
 		<Channel name="application" verbosity="3"/>
-		<Channel name="asset"       verbosity="3"/>
+		<Channel name="asset"       verbosity="1"/>
 		<Channel name="memory"      verbosity="1"/>
 		<Channel name="thread"      verbosity="1"/>
 		<Channel name="entity"      verbosity="1"/>
@@ -32,7 +32,7 @@
 	    <!-- Renderer memory -->
 	    <size name="renderer_area" value="32_MB"/>
 	    <renderer>
-	    	<size name="queue_buffer"    value="512_kB"/>
+	    	<size name="queue_buffer"    value="1_MB"/>
 	    	<size name="pre_buffer"      value="512_kB"/>
 	    	<size name="post_buffer"     value="512_kB"/>
 	    	<size name="auxiliary_arena" value="20_MB"/>

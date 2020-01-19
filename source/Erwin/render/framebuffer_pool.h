@@ -3,10 +3,11 @@
 #include <map>
 #include <cmath>
 #include <functional>
-#include "core/wtypes.h"
+#include "core/core.h"
 #include "render/framebuffer_layout.h"
 #include "render/handles.h"
 #include "event/window_events.h"
+#include "math/utils.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -51,6 +52,34 @@ private:
 	float height_mul_;
 };
 
+// Follow a ratio constraint, but round dimensions to next power of 2
+class FbRatioNP2Constraint: public FbConstraint
+{
+public:
+	FbRatioNP2Constraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
+
+	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::np2(uint32_t(std::roundf(width_mul_*viewport_width))); }
+	virtual uint32_t get_height(uint32_t viewport_height) override { return math::np2(uint32_t(std::roundf(height_mul_*viewport_height))); }
+
+private:
+	float width_mul_;
+	float height_mul_;
+};
+
+// Follow a ratio constraint, but round dimensions to previous power of 2
+class FbRatioPP2Constraint: public FbConstraint
+{
+public:
+	FbRatioPP2Constraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
+
+	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::pp2(uint32_t(std::roundf(width_mul_*viewport_width))); }
+	virtual uint32_t get_height(uint32_t viewport_height) override { return math::pp2(uint32_t(std::roundf(height_mul_*viewport_height))); }
+
+private:
+	float width_mul_;
+	float height_mul_;
+};
+
 class FramebufferPool
 {
 public:
@@ -65,6 +94,10 @@ public:
 	static uint32_t get_height(hash_t name);
 	static glm::vec2 get_size(hash_t name);
 	static glm::vec2 get_texel_size(hash_t name);
+	static uint32_t get_screen_width();
+	static uint32_t get_screen_height();
+	static glm::vec2 get_screen_size();
+	static glm::vec2 get_screen_texel_size();
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
 	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);

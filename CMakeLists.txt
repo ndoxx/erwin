@@ -89,6 +89,7 @@ set(SRC_FILESYSTEM
 
 set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/math/convolution.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )
@@ -118,12 +119,16 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_pool.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_state.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
+    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d_alt.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_forward.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/main_renderer.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_deferred.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_3d.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader_lang.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/common_geometry.cpp

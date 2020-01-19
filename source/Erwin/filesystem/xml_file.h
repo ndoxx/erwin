@@ -7,7 +7,8 @@
 #include <cstring>
 #include <vector>
 
-#include "core/wtypes.h"
+#include "core/core.h"
+#include "utils/string.h"
 #include "glm/glm.hpp"
 #include "rapidxml/rapidxml.hpp"
 
@@ -119,9 +120,10 @@ bool parse_node(rapidxml::xml_node<>* parent, const char* leaf_name, T& destinat
     return str_val(leaf_node->value(), destination);
 }
 
-hash_t parse_attribute_h(rapidxml::xml_node<>* node, const char* name);
 bool parse_attribute(rapidxml::xml_node<>* node, const char* name, std::string& destination);
+hash_t parse_attribute_h(rapidxml::xml_node<>* node, const char* name);
 bool parse_node(rapidxml::xml_node<>* parent, const char* leaf_name, std::string& destination);
+hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name);
 
 template <>
 void parse_node<const char*>(rapidxml::xml_node<>* parent, const char* name, std::function<void(const char* value)> exec);

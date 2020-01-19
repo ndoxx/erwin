@@ -9,6 +9,7 @@ struct DirectionalLight
 {
 	glm::vec3 position;
 	glm::vec3 color;
+	glm::vec3 ambient_color;
 	float ambient_strength;
 	float brightness = 1.f;
 
