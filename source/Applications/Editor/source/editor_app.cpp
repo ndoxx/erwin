@@ -28,7 +28,7 @@ void Editor::on_load()
 
     widgets_.insert(std::make_pair("console"_h, console_));
 
-    DLOGN("editor") << "Erwin Editor ready." << std::endl;
+    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
 
 void Editor::on_unload()

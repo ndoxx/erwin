@@ -6,9 +6,25 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 namespace editor
 {
+
+static std::map<char, ImVec4> s_color_table =
+{
+	{'N', ImVec4(0.59f, 0.51f, 1.f, 1.f)},
+	{'W', ImVec4(1.f, 0.69f, 0.f, 1.f)},
+	{'E', ImVec4(1.f, 0.35f, 0.35f, 1.f)},
+	{'F', ImVec4(1.f, 0.f, 0.f, 1.f)},
+	{'G', ImVec4(0.f, 1.f, 0.f, 1.f)},
+	{'B', ImVec4(1.f, 0.f, 0.f, 1.f)}
+};
+
+static inline int text_edit_forward_callback(ImGuiInputTextCallbackData* data)
+{
+    return static_cast<ConsoleWidget*>(data->UserData)->text_edit_callback(data);
+}
 
 ConsoleWidget::ConsoleWidget():
 Widget("Console", true)
@@ -16,17 +32,12 @@ Widget("Console", true)
 	memset(input_buffer_, 0, sizeof(input_buffer_));
 	auto_scroll_ = true;
 	scroll_to_bottom_ = false;
+	queue_max_len_ = 100;
 }
 
 ConsoleWidget::~ConsoleWidget()
 {
 
-}
-
-static int text_edit_forward_callback(ImGuiInputTextCallbackData* data)
-{
-    ConsoleWidget* console = (ConsoleWidget*)data->UserData;
-    return console->text_edit_callback(data);
 }
 
 int ConsoleWidget::text_edit_callback(void* _data)
@@ -53,6 +64,13 @@ int ConsoleWidget::text_edit_callback(void* _data)
 void ConsoleWidget::push(const std::string& message)
 {
 	items_.push_back(message);
+    if(items_.size() == queue_max_len_)
+       items_.pop_front();
+}
+
+void ConsoleWidget::send_command(const std::string& command)
+{
+	push("> " + command);
 }
 
 void ConsoleWidget::on_render()
@@ -64,7 +82,22 @@ void ConsoleWidget::on_render()
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4,1)); // Tighten spacing
 	for(const std::string& item: items_)
 	{
-        ImGui::TextUnformatted(item.c_str());
+		// Parse style
+		bool pop_color = false;
+		uint32_t offset = 0;
+		static std::regex style_regex("\\[!(.)\\]");
+		std::smatch match;
+		if(std::regex_search(item, match, style_regex))
+		{
+			char c = match.str(1)[0];
+			ImGui::PushStyleColor(ImGuiCol_Text, s_color_table[c]);
+			pop_color = true;
+			offset = 4;
+		}
+        ImGui::TextUnformatted(item.c_str() + offset);
+
+        if(pop_color)
+        	ImGui::PopStyleColor();
 	}
 
 	if(scroll_to_bottom_ || (auto_scroll_ && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()))
@@ -81,8 +114,8 @@ void ConsoleWidget::on_render()
 	   ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_CallbackHistory,
 	   &text_edit_forward_callback, (void*)this))
 	{
-		char* s = input_buffer_;
-		strcpy(s, "");
+		send_command(std::string(input_buffer_));
+		memset(input_buffer_, 0, sizeof(input_buffer_));
 		reclaim_focus = true;
 		scroll_to_bottom_ = true;
 	}
@@ -93,10 +126,32 @@ void ConsoleWidget::on_render()
 		ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 }
 
+
+
+
 static std::string strip_ansi(const std::string& str)
 {
 	static std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
 	return std::regex_replace(str, ansi_regex, "");
+}
+
+static std::string message_type_to_style_tag(erwin::dbg::MsgType type)
+{
+	switch(type)
+	{
+		case erwin::dbg::MsgType::RAW:     return "";
+	    case erwin::dbg::MsgType::NORMAL:  return "";
+	    case erwin::dbg::MsgType::ITEM:    return "";
+	    case erwin::dbg::MsgType::EVENT:   return "";
+	    case erwin::dbg::MsgType::TRACK:   return "";
+	    case erwin::dbg::MsgType::NOTIFY:  return "[!N]";
+	    case erwin::dbg::MsgType::WARNING: return "[!W]";
+	    case erwin::dbg::MsgType::ERROR:   return "[!E]";
+	    case erwin::dbg::MsgType::FATAL:   return "[!F]";
+	    case erwin::dbg::MsgType::BANG:    return "";
+	    case erwin::dbg::MsgType::GOOD:    return "[!G]";
+	    case erwin::dbg::MsgType::BAD:     return "[!B]";
+	}
 }
 
 ConsoleWidgetSink::ConsoleWidgetSink(ConsoleWidget* p_console):
@@ -109,7 +164,8 @@ void ConsoleWidgetSink::send(const erwin::dbg::LogStatement& stmt, const erwin::
 {
 	float ts = std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count();
 	std::stringstream ss;
-	ss << "[" << std::setprecision(6) << std::fixed << ts << "] " << strip_ansi(stmt.message);
+	ss << message_type_to_style_tag(stmt.msg_type)
+	   << "[" << std::setprecision(6) << std::fixed << ts << "] " << strip_ansi(stmt.message);
 	console_->push(ss.str());
 }
 

@@ -2,7 +2,7 @@
 
 #include "widget.h"
 #include "debug/logger_sink.h"
-#include <vector>
+#include <deque>
 
 namespace editor
 {
@@ -14,6 +14,7 @@ public:
 	virtual ~ConsoleWidget();
 
 	void push(const std::string& message);
+	void send_command(const std::string& command);
 	int text_edit_callback(void* data);
 
 protected:
@@ -21,7 +22,8 @@ protected:
 
 private:
     char input_buffer_[256];
-    std::vector<std::string> items_;
+    std::deque<std::string> items_;
+    uint32_t queue_max_len_;
 
     bool auto_scroll_;
     bool scroll_to_bottom_;
