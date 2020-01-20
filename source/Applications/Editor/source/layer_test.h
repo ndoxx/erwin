@@ -4,6 +4,22 @@
 
 using namespace erwin;
 
+struct PBRMaterialData
+{
+	inline void enable_emissivity() { flags |= (1<<0); }
+
+	glm::vec4 tint;
+	int flags;
+	float emissive_scale;
+};
+
+struct Cube
+{
+	ComponentTransform3D transform;
+	Material material;
+	PBRMaterialData material_data;
+};
+
 class LayerTest: public Layer
 {
 public:
@@ -24,4 +40,13 @@ protected:
 	virtual bool on_event(const MouseScrollEvent& event) override;
 
 private:
+	PerspectiveFreeflyController camera_ctl_;
+	TextureGroupHandle tg_;
+	UniformBufferHandle pbr_material_ubo_;
+	ShaderHandle deferred_pbr_;
+	ShaderHandle background_shader_;
+	DirectionalLight dir_light_;
+
+	Cube emissive_cube_;
+	PostProcessingData pp_data_;
 };

@@ -88,7 +88,7 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
-	s_storage.view_id = Renderer::next_view_id();
+	s_storage.view_id = Renderer::next_layer_id();
 	s_storage.draw_far = (options.get_depth_control() == PassOptions::DEPTH_CONTROL_FAR);
 
 	// Reset stats

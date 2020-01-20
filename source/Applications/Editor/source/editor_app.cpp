@@ -56,8 +56,6 @@ bool Editor::on_keyboard_event(const KeyboardEvent& e)
 
 void Editor::on_imgui_render()
 {
-	Renderer::clear(0, Renderer::default_render_target(), ClearFlags::CLEAR_COLOR_FLAG, {0.1f,0.1f,0.1f,0.f});
-
 	static bool show_dockspace = false;
 	static bool show_demo_window = false;
 	if(ImGui::BeginMainMenuBar())

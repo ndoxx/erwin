@@ -79,7 +79,7 @@ void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direc
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
-	s_storage.view_id = Renderer::next_view_id();
+	s_storage.view_id = Renderer::next_layer_id();
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -120,9 +120,9 @@ void DeferredRenderer::end_pass()
 	state.depth_stencil_state.depth_lock = true;
 
 	uint64_t state_flags = state.encode();
-	uint8_t view_id = Renderer::next_view_id();
+	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
-	key.set_sequence(0, view_id, state_flags, s_storage.dirlight_shader);
+	key.set_sequence(0, view_id, s_storage.dirlight_shader);
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
@@ -131,7 +131,7 @@ void DeferredRenderer::end_pass()
 	Renderer::submit(key.encode(), dc);
 
 	// Blit GBuffer's depth buffer into LBuffer
-	key.set_sequence(1, view_id, state_flags, s_storage.dirlight_shader);
+	key.set_sequence(1, view_id, s_storage.dirlight_shader);
 	Renderer::blit_depth(key.encode(), GBuffer, LBuffer);
 }
 

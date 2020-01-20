@@ -357,6 +357,7 @@ void Application::run()
         // Dispatch queued events
         EVENTBUS.dispatch();
 
+        Renderer::set_host_window_size(window_->get_width(), window_->get_height());
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")

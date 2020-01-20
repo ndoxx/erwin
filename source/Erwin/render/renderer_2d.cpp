@@ -153,7 +153,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	s_storage.num_draw_calls = 0;
 
 	s_storage.pass_state = state.encode();
-	s_storage.view_id = Renderer::next_view_id();
+	s_storage.view_id = Renderer::next_layer_id();
 
 	// Set scene data
 	s_storage.view_projection_matrix = camera.get_view_projection_matrix();

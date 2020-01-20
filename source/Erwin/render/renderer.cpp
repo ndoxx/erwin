@@ -363,6 +363,7 @@ static struct RendererStorage
 	std::map<hash_t, ShaderHandle> shader_names_;
 	std::vector<std::function<void(void)>> end_frame_callbacks_;
 	uint64_t state_cache_;
+	glm::vec2 host_window_size_;
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
@@ -438,6 +439,7 @@ void Renderer::init(memory::HeapArea& area)
 	s_storage.profiling_enabled = false;
 	s_storage.default_framebuffer_ = FramebufferHandle::acquire();
 	s_storage.current_framebuffer_ = s_storage.default_framebuffer_;
+	s_storage.host_window_size_ = {0, 0};
 
 	DLOGI << "done" << std::endl;
 
@@ -498,7 +500,7 @@ void Renderer::shutdown()
 	DLOGI << "done" << std::endl;
 }
 
-uint8_t Renderer::next_view_id()
+uint8_t Renderer::next_layer_id()
 {
 	W_ASSERT(s_storage.queue_.current_view_id_<255, "View id overflow.");
 	return s_storage.queue_.current_view_id_++;
@@ -608,6 +610,7 @@ enum class RenderCommand: uint16_t
 	ShaderAttachStorageBuffer,
 	UpdateFramebuffer,
 	ClearFramebuffers,
+	SetHostWindowSize,
 
 	Post,
 
@@ -983,6 +986,14 @@ void Renderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t
 void Renderer::clear_framebuffers()
 {
 	RenderCommandWriter cw(RenderCommand::ClearFramebuffers);
+	cw.submit();
+}
+
+void Renderer::set_host_window_size(uint32_t width, uint32_t height)
+{
+	RenderCommandWriter cw(RenderCommand::SetHostWindowSize);
+	cw.write(&width);
+	cw.write(&height);
 	cw.submit();
 }
 
@@ -1528,6 +1539,16 @@ void clear_framebuffers(memory::LinearBuffer<>& buf)
 	});
 }
 
+void set_host_window_size(memory::LinearBuffer<>& buf)
+{
+	uint32_t width;
+	uint32_t height;
+	buf.read(&width);
+	buf.read(&height);
+
+	s_storage.host_window_size_ = {width, height};
+}
+
 void nop(memory::LinearBuffer<>& buf) { }
 
 void framebuffer_screenshot(memory::LinearBuffer<>& buf)
@@ -1657,6 +1678,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::shader_attach_storage_buffer,
 	&render_dispatch::update_framebuffer,
 	&render_dispatch::clear_framebuffers,
+	&render_dispatch::set_host_window_size,
 
 	&render_dispatch::nop,
 
@@ -1691,8 +1713,7 @@ static void handle_state(uint64_t state_flags)
 			if(state.render_target == s_storage.default_framebuffer_)
 			{
 				Gfx::device->bind_default_framebuffer();
-				glm::vec2 vp_size = FramebufferPool::get_screen_size();
-				Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
+				Gfx::device->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
 			}
 			else
 				s_storage.framebuffers[state.render_target.index]->bind();
@@ -1832,25 +1853,33 @@ void clear(memory::LinearBuffer<>& buf)
 	if(target == s_storage.default_framebuffer_ && flags != ClearFlags::CLEAR_NONE)
 	{
 		Gfx::device->bind_default_framebuffer();
-		glm::vec2 vp_size = FramebufferPool::get_screen_size();
-		Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
+		Gfx::device->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
 		Gfx::device->clear(flags);
 	}
 	else
 	{
 		auto& fb = *s_storage.framebuffers[target.index];
-		uint32_t width = fb.get_width();
-		uint32_t height = fb.get_height();
 		fb.bind();
-		Gfx::device->viewport(0, 0, width, height);
+		Gfx::device->viewport(0, 0, fb.get_width(), fb.get_height());
 		Gfx::device->clear(flags);
+	}
 
+	if(s_storage.current_framebuffer_ != target)
+	{
 		// Rebind current framebuffer
 		if(s_storage.current_framebuffer_ == s_storage.default_framebuffer_)
+		{
 			Gfx::device->bind_default_framebuffer();
+			Gfx::device->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
+		}
 		else
-			s_storage.framebuffers[s_storage.current_framebuffer_.index]->bind();
+		{
+			auto& fb = *s_storage.framebuffers[s_storage.current_framebuffer_.index];
+			fb.bind();
+			Gfx::device->viewport(0, 0, fb.get_width(), fb.get_height());
+		}
 	}
+    Gfx::device->set_clear_color(0.f,0.f,0.f,0.f);
 }
 
 void blit_depth(memory::LinearBuffer<>& buf)
