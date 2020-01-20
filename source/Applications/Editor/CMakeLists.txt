@@ -3,6 +3,7 @@ set(SRC_EDITOR
     source/layer_test.cpp
     source/widget.cpp
     source/widget_console.cpp
+    source/widget_game_view.cpp
    )
 
 add_executable(editor ${SRC_EDITOR})

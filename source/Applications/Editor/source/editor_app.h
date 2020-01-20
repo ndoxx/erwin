@@ -32,6 +32,8 @@ public:
 	void show_dockspace_window(bool* p_open);
 
 private:
+	FramebufferHandle game_view_fb_;
+
 	LayerTest* layer_;
 
 	ConsoleWidget* console_;

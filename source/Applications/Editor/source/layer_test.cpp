@@ -35,8 +35,8 @@ void LayerTest::on_update(GameClock& clock)
 
 void LayerTest::on_render()
 {
-	// TMP
-	Renderer::clear(0, Renderer::default_render_target(), ClearFlags::CLEAR_COLOR_FLAG, {0.1f,0.1f,0.1f,0.f});
+	FramebufferHandle fb = FramebufferPool::get_framebuffer("game_view"_h);
+	Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 }
 
 bool LayerTest::on_event(const MouseButtonEvent& event)

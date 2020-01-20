@@ -358,6 +358,7 @@ static struct RendererStorage
 	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
 
 	FramebufferHandle default_framebuffer_;
+	FramebufferHandle current_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 	std::map<hash_t, ShaderHandle> shader_names_;
 	std::vector<std::function<void(void)>> end_frame_callbacks_;
@@ -436,6 +437,7 @@ void Renderer::init(memory::HeapArea& area)
 	s_storage.query_timer = QueryTimer::create();
 	s_storage.profiling_enabled = false;
 	s_storage.default_framebuffer_ = FramebufferHandle::acquire();
+	s_storage.current_framebuffer_ = s_storage.default_framebuffer_;
 
 	DLOGI << "done" << std::endl;
 
@@ -1695,6 +1697,8 @@ static void handle_state(uint64_t state_flags)
 			else
 				s_storage.framebuffers[state.render_target.index]->bind();
 
+			s_storage.current_framebuffer_ = state.render_target;
+
 			// Only clear on render target switch, if clear flags are set
 			if(state.rasterizer_state.clear_flags != ClearFlags::CLEAR_NONE)
 				Gfx::device->clear(state.rasterizer_state.clear_flags);
@@ -1824,9 +1828,9 @@ void clear(memory::LinearBuffer<>& buf)
 
 	glm::vec4 color = color::unpack(clear_color);
 
+    Gfx::device->set_clear_color(color.r, color.g, color.b, color.a);
 	if(target == s_storage.default_framebuffer_ && flags != ClearFlags::CLEAR_NONE)
 	{
-    	Gfx::device->set_clear_color(color.r, color.g, color.b, color.a);
 		Gfx::device->bind_default_framebuffer();
 		glm::vec2 vp_size = FramebufferPool::get_screen_size();
 		Gfx::device->viewport(0, 0, vp_size.x, vp_size.y);
@@ -1834,7 +1838,18 @@ void clear(memory::LinearBuffer<>& buf)
 	}
 	else
 	{
-		W_ASSERT(false, "Non-default framebuffer clear: not implemented yet.");
+		auto& fb = *s_storage.framebuffers[target.index];
+		uint32_t width = fb.get_width();
+		uint32_t height = fb.get_height();
+		fb.bind();
+		Gfx::device->viewport(0, 0, width, height);
+		Gfx::device->clear(flags);
+
+		// Rebind current framebuffer
+		if(s_storage.current_framebuffer_ == s_storage.default_framebuffer_)
+			Gfx::device->bind_default_framebuffer();
+		else
+			s_storage.framebuffers[s_storage.current_framebuffer_.index]->bind();
 	}
 }
 

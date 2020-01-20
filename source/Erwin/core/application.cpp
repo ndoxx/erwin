@@ -230,11 +230,12 @@ bool Application::init()
         WindowProps props
         {
             cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),
-            cfg::get<uint32_t>("client.display.width"_h,  1280),
-            cfg::get<uint32_t>("client.display.height"_h, 1024),
-            cfg::get<bool>("client.display.full"_h,       false),
-            cfg::get<bool>("client.display.topmost"_h,    false),
-            cfg::get<bool>("client.display.vsync"_h,      true)
+            cfg::get<uint32_t>("client.display.width"_h,    1280),
+            cfg::get<uint32_t>("client.display.height"_h,   1024),
+            cfg::get<bool>("client.display.full"_h,         false),
+            cfg::get<bool>("client.display.topmost"_h,      false),
+            cfg::get<bool>("client.display.vsync"_h,        true),
+            cfg::get<bool>("client.display.host"_h,         true)
         };
         window_ = Window::create(props);
     }

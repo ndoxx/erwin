@@ -46,6 +46,8 @@ struct PostProcessingData
 class PostProcessingRenderer
 {
 public:
+	// Change final render target, default framebuffer initially
+	static void set_final_render_target(hash_t framebuffer);
 	// Execute bloom pass
 	static void bloom_pass(hash_t framebuffer, uint32_t index);
 	// Execute alternative implementation of bloom pass

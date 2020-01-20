@@ -8,6 +8,7 @@
         <bool name="full"       value="false"/>
         <bool name="topmost"    value="true"/>
         <bool name="vsync"      value="true"/>
+        <bool name="host"       value="true"/>
     </display>
 	<memory>
     	<size name="area" value="32_MB"/>

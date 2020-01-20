@@ -17,6 +17,7 @@ struct WindowProps
 	bool full_screen    = false;
 	bool always_on_top  = false;
 	bool vsync          = true;
+	bool host           = true;
 };
 
 // Abstract class for window handling

@@ -58,6 +58,8 @@ public:
 	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
 	// Get a buffer layout from its handle
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
+	// Get native handle to a texture
+	static void* get_native_texture_handle(TextureHandle handle);
 
 	// * Draw command queue management and submission
 	// Send a draw call to the queue
@@ -109,7 +111,6 @@ public:
 	static void 					 destroy(FramebufferHandle handle);
 
 #ifdef W_DEBUG
-	static void* get_native_texture_handle(TextureHandle handle);
 	static void set_profiling_enabled(bool value=true);
 	static const Statistics& get_stats();
 #endif

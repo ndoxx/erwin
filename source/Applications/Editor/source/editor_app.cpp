@@ -1,4 +1,5 @@
 #include "editor_app.h"
+#include "widget_game_view.h"
 #include "debug/logger_thread.h"
 
 static struct
@@ -15,7 +16,7 @@ void Editor::on_pre_init()
 
 void Editor::on_client_init()
 {
-	filesystem::set_asset_dir("source/Applications/Editor/assets");
+	filesystem::set_asset_dir("source/Applications/Sandbox/assets"); // TMP: find a better way to share/centralize assets
 	filesystem::set_client_config_dir("source/Applications/Editor/config");
 	this->add_configuration("client.xml");
 }
@@ -24,9 +25,16 @@ void Editor::on_load()
 {
 	EVENTBUS.subscribe(this, &Editor::on_keyboard_event);
 
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    game_view_fb_ = FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+
     push_layer(layer_ = new LayerTest());
 
     widgets_.insert(std::make_pair("console"_h, console_));
+    widgets_.insert(std::make_pair("game"_h, new GameViewWidget()));
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
@@ -48,6 +56,8 @@ bool Editor::on_keyboard_event(const KeyboardEvent& e)
 
 void Editor::on_imgui_render()
 {
+	Renderer::clear(0, Renderer::default_render_target(), ClearFlags::CLEAR_COLOR_FLAG, {0.1f,0.1f,0.1f,0.f});
+
 	static bool show_dockspace = false;
 	static bool show_demo_window = false;
 	if(ImGui::BeginMainMenuBar())
@@ -60,6 +70,7 @@ void Editor::on_imgui_render()
     	if(ImGui::BeginMenu("Windows"))
     	{
         	ImGui::MenuItem("Console", NULL, &widgets_["console"_h]->open_);
+        	ImGui::MenuItem("Game",    NULL, &widgets_["game"_h]->open_);
         	ImGui::Separator();
         	ImGui::MenuItem("Docking", NULL, &show_dockspace);
         	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
@@ -73,7 +84,6 @@ void Editor::on_imgui_render()
 
 	for(auto&& [key,widget]: widgets_)
 		widget->render();
-
 
 	if(s_storage.exit_required)
 	{

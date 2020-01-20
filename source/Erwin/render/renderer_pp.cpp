@@ -38,6 +38,7 @@ static struct
 	ShaderHandle pp_shader;
 	ShaderHandle lighten_shader;
 	ShaderHandle bloom_blur_shader;
+	FramebufferHandle final_render_target;
 	FramebufferHandle bloom_fbos[k_bloom_stage_count];
 	FramebufferHandle bloom_combine_fbo;
 	float bloom_stage_ratios[k_bloom_stage_count];
@@ -52,6 +53,8 @@ static struct
 void PostProcessingRenderer::init()
 {
     W_PROFILE_FUNCTION()
+
+    s_storage.final_render_target = Renderer::default_render_target();
 
     // Create framebuffers for bloom pass
     {
@@ -111,6 +114,14 @@ void PostProcessingRenderer::shutdown()
 	Renderer::destroy(s_storage.lighten_shader);
 	Renderer::destroy(s_storage.pp_shader);
 	Renderer::destroy(s_storage.passthrough_shader);
+}
+
+void PostProcessingRenderer::set_final_render_target(hash_t fb_hname)
+{
+	if(fb_hname == "default"_h || fb_hname == 0)
+		s_storage.final_render_target = Renderer::default_render_target();
+	else
+		s_storage.final_render_target = FramebufferPool::get_framebuffer(fb_hname);
 }
 
 void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
@@ -185,7 +196,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	uint8_t view_id = Renderer::next_view_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = Renderer::default_render_target();
+	state.render_target = s_storage.final_render_target;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Alpha;
@@ -210,7 +221,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	uint8_t view_id = Renderer::next_view_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = Renderer::default_render_target();
+	state.render_target = s_storage.final_render_target;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Light;
