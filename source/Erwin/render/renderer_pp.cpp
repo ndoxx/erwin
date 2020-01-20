@@ -38,6 +38,7 @@ static struct
 	ShaderHandle pp_shader;
 	ShaderHandle lighten_shader;
 	ShaderHandle bloom_blur_shader;
+	FramebufferHandle final_render_target;
 	FramebufferHandle bloom_fbos[k_bloom_stage_count];
 	FramebufferHandle bloom_combine_fbo;
 	float bloom_stage_ratios[k_bloom_stage_count];
@@ -52,6 +53,8 @@ static struct
 void PostProcessingRenderer::init()
 {
     W_PROFILE_FUNCTION()
+
+    s_storage.final_render_target = Renderer::default_render_target();
 
     // Create framebuffers for bloom pass
     {
@@ -113,6 +116,14 @@ void PostProcessingRenderer::shutdown()
 	Renderer::destroy(s_storage.passthrough_shader);
 }
 
+void PostProcessingRenderer::set_final_render_target(hash_t fb_hname)
+{
+	if(fb_hname == "default"_h || fb_hname == 0)
+		s_storage.final_render_target = Renderer::default_render_target();
+	else
+		s_storage.final_render_target = FramebufferPool::get_framebuffer(fb_hname);
+}
+
 void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 {
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
@@ -126,7 +137,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 #endif
 	glm::vec2 screen_size = FramebufferPool::get_screen_size();
 
-	uint8_t view_id = Renderer::next_view_id();
+	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
 	RenderState state;
 	state.rasterizer_state.cull_mode = CullMode::Back;
@@ -144,7 +155,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 
 			state.render_target = s_storage.bloom_fbos[ii];
 			uint64_t state_flags = state.encode();
-			key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_blur_shader);
+			key.set_sequence(s_storage.sequence++, view_id, s_storage.bloom_blur_shader);
 
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
@@ -165,7 +176,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
 			blur_data.offset = {0.f, 1.f/target_size.y}; // Offset is vertical
 
-			key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.bloom_blur_shader);
+			key.set_sequence(s_storage.sequence++, view_id, s_storage.bloom_blur_shader);
 
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
@@ -182,17 +193,17 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	s_storage.pp_data = pp_data;
 	s_storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
     
-	uint8_t view_id = Renderer::next_view_id();
+	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = Renderer::default_render_target();
+	state.render_target = s_storage.final_render_target;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = false;
 
 	uint64_t state_flags = state.encode();
-	key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.pp_shader);
+	key.set_sequence(s_storage.sequence++, view_id, s_storage.pp_shader);
 
 	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
@@ -207,17 +218,17 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 {
     W_PROFILE_FUNCTION()
     
-	uint8_t view_id = Renderer::next_view_id();
+	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = Renderer::default_render_target();
+	state.render_target = s_storage.final_render_target;
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Light;
 	state.depth_stencil_state.depth_test_enabled = false;
 
 	uint64_t state_flags = state.encode();
-	key.set_sequence(s_storage.sequence++, view_id, state_flags, s_storage.lighten_shader);
+	key.set_sequence(s_storage.sequence++, view_id, s_storage.lighten_shader);
 
 	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));

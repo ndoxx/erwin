@@ -33,6 +33,27 @@ inline glm::vec3 hsl2rgb(float h, float s, float l)
     return hsl2rgb(glm::vec3(h,s,l));
 }
 
+inline uint32_t pack(const glm::vec4& rgba_color)
+{
+	return uint32_t(255*rgba_color.r) << 0
+		 | uint32_t(255*rgba_color.g) << 8
+		 | uint32_t(255*rgba_color.b) << 16
+		 | uint32_t(255*rgba_color.a) << 24;
+}
+
+inline glm::vec4 unpack(uint32_t packed_color)
+{
+	glm::vec4 ret =
+	{
+		((packed_color & 0x000000ff) >> 0),
+		((packed_color & 0x0000ff00) >> 8),
+		((packed_color & 0x00ff0000) >> 16),
+		((packed_color & 0xff000000) >> 24)
+	};
+
+	return ret/255.f;
+}
+
 } // namespace color
 } // namsepace wcore
 

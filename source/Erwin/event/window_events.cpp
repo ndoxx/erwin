@@ -5,6 +5,7 @@ namespace erwin
 
 EVENT_DEFINITION(WindowCloseEvent);
 EVENT_DEFINITION(WindowResizeEvent);
+EVENT_DEFINITION(WindowMovedEvent);
 EVENT_DEFINITION(FramebufferResizeEvent);
 EVENT_DEFINITION(KeyboardEvent);
 EVENT_DEFINITION(KeyTypedEvent);

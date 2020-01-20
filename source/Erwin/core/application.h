@@ -17,8 +17,10 @@ public:
 	Application();
 	virtual ~Application();
 
+	virtual void on_pre_init() { }
 	virtual void on_client_init() { }
 	virtual void on_load() { }
+	virtual void on_unload() { }
 	virtual void on_imgui_render() { }
 
 	size_t push_layer(Layer* layer);

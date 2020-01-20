@@ -35,6 +35,10 @@ public:
 	{
 		INSTANCE_->set_mouse_position_impl(x,y);
 	}
+	inline static void center_mouse_position()
+	{
+		INSTANCE_->center_mouse_position_impl();
+	}
 	inline static void show_cursor(bool value)
 	{
 		INSTANCE_->show_cursor_impl(value);
@@ -45,6 +49,7 @@ protected:
 	virtual bool is_mouse_button_pressed_impl(keymap::WMOUSE button) const = 0;
 	virtual std::pair<float,float> get_mouse_position_impl() const = 0;
 	virtual void set_mouse_position_impl(float x, float y) const = 0;
+	virtual void center_mouse_position_impl() const = 0;
 	virtual void show_cursor_impl(bool value) const = 0;
 
 private:

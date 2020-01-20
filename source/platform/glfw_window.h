@@ -23,7 +23,7 @@ public:
 
 private:
 	void init(const WindowProps& props);
-	void set_event_callbacks();
+	void set_event_callbacks(const WindowProps& props);
 	void cleanup();
 
 private:

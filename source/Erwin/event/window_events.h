@@ -42,6 +42,29 @@ struct WindowResizeEvent: public WEvent
     int height;
 };
 
+struct WindowMovedEvent: public WEvent
+{
+    EVENT_DECLARATION(WindowMovedEvent);
+
+    WindowMovedEvent() = default;
+    WindowMovedEvent(int xx, int yy):
+    x(xx),
+    y(yy)
+    {
+
+    }
+
+#ifdef W_DEBUG
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << "new position: (" << x << "," << y << ")";
+    }
+#endif
+
+    int x;
+    int y;
+};
+
 struct FramebufferResizeEvent: public WEvent
 {
     EVENT_DECLARATION(FramebufferResizeEvent);

@@ -41,6 +41,7 @@ protected:
 	REACT(MouseScrollEvent)
 	REACT(MouseMovedEvent)
 	REACT(WindowResizeEvent)
+	REACT(WindowMovedEvent)
 
 private:
 	std::string debug_name_;

@@ -34,8 +34,7 @@ namespace erwin
         DO_ACTION( MouseButtonEvent )       \
         DO_ACTION( MouseMovedEvent )        \
         DO_ACTION( MouseScrollEvent )
-
-
+        // DO_ACTION( WindowMovedEvent )
 
 Application* Application::pinstance_ = nullptr;
 
@@ -83,6 +82,10 @@ Application::~Application()
         layer_stack_.clear();
     }
     {
+        W_PROFILE_SCOPE("Application unloading")
+        on_unload();
+    }
+    {
         W_PROFILE_SCOPE("Asset Manager shutdown")
         AssetManager::shutdown();
     }
@@ -126,6 +129,8 @@ void Application::add_configuration(const std::string& filename)
 bool Application::init()
 {
     {
+        on_pre_init();
+
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
@@ -224,11 +229,12 @@ bool Application::init()
         WindowProps props
         {
             cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),
-            cfg::get<uint32_t>("client.display.width"_h,  1280),
-            cfg::get<uint32_t>("client.display.height"_h, 1024),
-            cfg::get<bool>("client.display.full"_h,       false),
-            cfg::get<bool>("client.display.topmost"_h,    false),
-            cfg::get<bool>("client.display.vsync"_h,      true)
+            cfg::get<uint32_t>("client.display.width"_h,    1280),
+            cfg::get<uint32_t>("client.display.height"_h,   1024),
+            cfg::get<bool>("client.display.full"_h,         false),
+            cfg::get<bool>("client.display.topmost"_h,      false),
+            cfg::get<bool>("client.display.vsync"_h,        true),
+            cfg::get<bool>("client.display.host"_h,         true)
         };
         window_ = Window::create(props);
     }
@@ -270,6 +276,7 @@ bool Application::init()
         layer_stack_.track_event<MouseScrollEvent>();
         layer_stack_.track_event<MouseMovedEvent>();
         layer_stack_.track_event<WindowResizeEvent>();
+        layer_stack_.track_event<WindowMovedEvent>();
     }
 
     // React to window close events (and shutdown application)
@@ -350,6 +357,7 @@ void Application::run()
         // Dispatch queued events
         EVENTBUS.dispatch();
 
+        Renderer::set_host_window_size(window_->get_width(), window_->get_height());
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")

@@ -19,7 +19,6 @@ backtrace_on_error_(false),
 single_threaded_(false)
 {
 	create_channel("core", 3);
-	create_channel("event", 3);
 }
 
 LoggerThread::~LoggerThread()

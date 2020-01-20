@@ -17,6 +17,7 @@ public:
 
 	inline const PerspectiveCamera3D& get_camera() const { return camera_; }
 	inline PerspectiveCamera3D& get_camera()             { return camera_; }
+	inline void set_position(const glm::vec3& value)     { camera_position_ = value; }
 
 	bool on_window_resize_event(const WindowResizeEvent& event);
 	bool on_mouse_scroll_event(const MouseScrollEvent& event);

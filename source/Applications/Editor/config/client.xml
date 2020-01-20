@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Config>
     <display>
-    	<string name="title"    value="Sandbox"/>
+    	<string name="title"    value="Erwin Editor"/>
         <uint name="width"      value="1920"/>
-        <uint name="height"     value="1080"/>
+        <uint name="height"     value="1280"/>
         <uint name="target_fps" value="60"/>
         <bool name="full"       value="false"/>
         <bool name="topmost"    value="true"/>
         <bool name="vsync"      value="true"/>
-        <bool name="host"       value="true"/>
+        <bool name="host"       value="false"/>
     </display>
 	<memory>
     	<size name="area" value="32_MB"/>

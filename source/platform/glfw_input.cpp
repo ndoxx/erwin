@@ -1,5 +1,6 @@
 #include "glfw_input.h"
 #include "glfw_keymap.h"
+#include "glfw_window.h"
 #include "core/application.h"
 #include "GLFW/glfw3.h"
 
@@ -36,6 +37,13 @@ void GLFWInput::set_mouse_position_impl(float x, float y) const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(Application::get_instance().get_window().get_native());
 	glfwSetCursorPos(window, x, y);
+}
+
+void GLFWInput::center_mouse_position_impl() const
+{
+	const Window& app_win = Application::get_instance().get_window();
+	GLFWwindow* window = static_cast<GLFWwindow*>(app_win.get_native());
+	glfwSetCursorPos(window, 0.5f*app_win.get_width(), 0.5f*app_win.get_height());
 }
 
 void GLFWInput::show_cursor_impl(bool value) const

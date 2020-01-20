@@ -170,7 +170,7 @@ void TexturePeek::render()
 	// dispatches the command at the beginning of the frame, which works, despite showing the last
 	// frame textures.
 	SortKey key;
-	key.set_sequence(0, 0, s_storage.pass_state_, s_storage.peek_shader_);
+	key.set_sequence(0, 0, s_storage.peek_shader_);
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DataOwnership::Copy));
 	dc.set_UBO(s_storage.pass_ubo_);

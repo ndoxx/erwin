@@ -178,10 +178,10 @@ void GLFWWindow::init(const WindowProps& props)
     // Send GLFW a raw pointer to our data structure so we can act on it from callbacks
     glfwSetWindowUserPointer(data_->window, &(*data_));
 
-    set_event_callbacks();
+    set_event_callbacks(props);
 }
 
-void GLFWWindow::set_event_callbacks()
+void GLFWWindow::set_event_callbacks(const WindowProps& props)
 {
 	// Error callback
 	glfwSetErrorCallback(GLFW_error_callback);
@@ -192,21 +192,25 @@ void GLFWWindow::set_event_callbacks()
 		EVENTBUS.publish(WindowCloseEvent());
 	});
 
-	// Window resize event
-	glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+	// If we render to a GUI window for example, we rather react to the GUI window resize events.
+	// So the following callbacks are not set if window is not host.
+	if(props.host)
 	{
-		auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
-		data->width = width;
-		data->height = height;
-		EVENTBUS.publish(WindowResizeEvent(width, height));
-	});
+		// Window resize event
+		glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+		{
+			auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+			data->width = width;
+			data->height = height;
+			EVENTBUS.publish(WindowResizeEvent(width, height));
+		});
 
-	// On window resize, framebuffer needs resizing and glViewport must be called with the new size
-	glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
-	{
-	    glViewport(0, 0, width, height);
-		EVENTBUS.publish(FramebufferResizeEvent(width, height));
-	});
+		// On window resize, framebuffer needs resizing and glViewport must be called with the new size
+		glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+		{
+			EVENTBUS.publish(FramebufferResizeEvent(width, height));
+		});
+	}
 
 	// Keyboard event
 	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)

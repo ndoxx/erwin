@@ -99,7 +99,8 @@ protected:
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
 		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
-		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy);
+		dc.add_dependency(Renderer::update_uniform_buffer(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy));
+		dc.set_UBO(mandel_ubo_);
 		Renderer::submit("Presentation"_h, dc);
 	}
 
@@ -145,6 +146,8 @@ public:
 	virtual void on_client_init() override
 	{
 		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
+		filesystem::set_client_config_dir("source/Applications/FractalExplorer/config");
+		this->add_configuration("client.xml");
 	}
 
 	virtual void on_load() override

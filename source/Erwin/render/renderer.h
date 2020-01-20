@@ -43,8 +43,8 @@ public:
 	};
 
 	// * The following functions have immediate effect
-	// Require a view id for a pass
-	static uint8_t           next_view_id();
+	// Require a layer id for a pass
+	static uint8_t           next_layer_id();
 	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
 	static AuxArena& 		 get_arena();
 	// Get a handle to the default framebuffer (screen)
@@ -58,10 +58,14 @@ public:
 	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
 	// Get a buffer layout from its handle
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
+	// Get native handle to a texture
+	static void* get_native_texture_handle(TextureHandle handle);
 
 	// * Draw command queue management and submission
 	// Send a draw call to the queue
 	static void submit(uint64_t key, const DrawCall& dc);
+	// Clear render target
+	static void clear(uint64_t key, FramebufferHandle target, uint32_t flags, const glm::vec4& clear_color={0.f,0.f,0.f,0.f});
 	// Blit depth buffer / texture from source to target
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 	// * Draw call dependencies
@@ -94,6 +98,7 @@ public:
 	static void 					 shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void 					 update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);
 	static void 					 clear_framebuffers();
+	static void						 set_host_window_size(uint32_t width, uint32_t height);
 	// POST-BUFFER -> executed after draw commands
 	static void 					 framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
 	static void 					 destroy(IndexBufferHandle handle);
@@ -107,7 +112,6 @@ public:
 	static void 					 destroy(FramebufferHandle handle);
 
 #ifdef W_DEBUG
-	static void* get_native_texture_handle(TextureHandle handle);
 	static void set_profiling_enabled(bool value=true);
 	static const Statistics& get_stats();
 #endif
@@ -153,7 +157,7 @@ struct SortKey
 		order        = blending ? SortKey::Order::ByDepthAscending : SortKey::Order::ByDepthDescending;
 	}
 
-	inline void set_sequence(uint32_t _sequence, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
+	inline void set_sequence(uint32_t _sequence, uint8_t layer_id, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
 	{
 		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
 		view         = (uint16_t(layer_id)<<8);
