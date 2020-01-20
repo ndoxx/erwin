@@ -24,6 +24,11 @@ void GameViewWidget::on_resize(uint32_t width, uint32_t height)
 	EVENTBUS.publish(FramebufferResizeEvent(width, height));
 }
 
+void GameViewWidget::on_move(int32_t x, int32_t y)
+{
+	EVENTBUS.publish(WindowMovedEvent(x, y));
+}
+
 void GameViewWidget::on_render()
 {
     // * Show game render in window

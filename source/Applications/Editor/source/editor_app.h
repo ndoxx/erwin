@@ -33,6 +33,7 @@ public:
 
 private:
 	FramebufferHandle game_view_fb_;
+	Scene scene_;
 
 	LayerTest* layer_;
 

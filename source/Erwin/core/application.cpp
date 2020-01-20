@@ -34,8 +34,7 @@ namespace erwin
         DO_ACTION( MouseButtonEvent )       \
         DO_ACTION( MouseMovedEvent )        \
         DO_ACTION( MouseScrollEvent )
-
-
+        // DO_ACTION( WindowMovedEvent )
 
 Application* Application::pinstance_ = nullptr;
 
@@ -277,6 +276,7 @@ bool Application::init()
         layer_stack_.track_event<MouseScrollEvent>();
         layer_stack_.track_event<MouseMovedEvent>();
         layer_stack_.track_event<WindowResizeEvent>();
+        layer_stack_.track_event<WindowMovedEvent>();
     }
 
     // React to window close events (and shutdown application)

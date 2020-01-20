@@ -2,7 +2,7 @@
 <Config>
 	<logger>
 		<Channel name="application" verbosity="3"/>
-		<Channel name="event"       verbosity="1"/>
+		<Channel name="event"       verbosity="3"/>
 		<Channel name="asset"       verbosity="1"/>
 		<Channel name="memory"      verbosity="1"/>
 		<Channel name="thread"      verbosity="1"/>
@@ -45,6 +45,7 @@
 	    <event_pool>
 			<uint name="WindowCloseEvent"       value="8"/>
 			<uint name="WindowResizeEvent"      value="8"/>
+			<uint name="WindowMovedEvent"		value="8"/>
 			<uint name="FramebufferResizeEvent" value="8"/>
 			<uint name="KeyboardEvent"          value="16"/>
 			<uint name="KeyTypedEvent"          value="16"/>
@@ -58,6 +59,7 @@
 		<track>
 			<bool name="WindowCloseEvent"       value="true"/>
 			<bool name="WindowResizeEvent"      value="true"/>
+			<uint name="WindowMovedEvent"		value="true"/>
 			<bool name="FramebufferResizeEvent" value="true"/>
 			<bool name="KeyboardEvent"          value="false"/>
 			<bool name="KeyTypedEvent"          value="false"/>

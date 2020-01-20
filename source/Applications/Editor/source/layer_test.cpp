@@ -7,8 +7,9 @@
 #include "erwin.h"
 
 using namespace erwin;
+using namespace editor;
 
-LayerTest::LayerTest(): Layer("TestLayer"), camera_ctl_(1280.f/1024.f, 60, 0.1f, 100.f)
+LayerTest::LayerTest(Scene& scene): Layer("TestLayer"), scene_(scene)
 {
 
 }
@@ -42,7 +43,7 @@ void LayerTest::on_attach()
 	dir_light_.ambient_strength = 0.1f;
 	dir_light_.brightness = 3.7f;
 
-	camera_ctl_.set_position({0.f,1.f,3.f});
+	scene_.camera_controller.set_position({0.f,1.f,3.f});
 
     pp_data_.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
     pp_data_.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
@@ -69,7 +70,7 @@ void LayerTest::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-	camera_ctl_.update(clock);
+	scene_.camera_controller.update(clock);
 
 	float s = sin(2*M_PI*tt/10.f);
 	float s2 = s*s;
@@ -87,7 +88,7 @@ void LayerTest::on_render()
 
 	// Draw scene geometry
 	{
-		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
+		DeferredRenderer::begin_pass(scene_.camera_controller.get_camera(), dir_light_);
 		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
 		DeferredRenderer::end_pass();
 	}
@@ -114,16 +115,44 @@ void LayerTest::on_render()
 
 bool LayerTest::on_event(const MouseButtonEvent& event)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse)
+		scene_.camera_controller.on_mouse_button_event(event);
 	return false;
 }
 
 bool LayerTest::on_event(const WindowResizeEvent& event)
 {
-	camera_ctl_.on_window_resize_event(event);
+	scene_.camera_controller.on_window_resize_event(event);
+	return false;
+}
+
+bool LayerTest::on_event(const WindowMovedEvent& event)
+{
+	scene_.camera_controller.on_window_moved_event(event);
 	return false;
 }
 
 bool LayerTest::on_event(const MouseScrollEvent& event)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse)
+		scene_.camera_controller.on_mouse_scroll_event(event);
+	return false;
+}
+
+bool LayerTest::on_event(const MouseMovedEvent& event)
+{
+	/*ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureMouse)*/
+		scene_.camera_controller.on_mouse_moved_event(event);
+	return false;
+}
+
+bool LayerTest::on_event(const KeyboardEvent& event)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	if(!io.WantCaptureKeyboard)
+		scene_.camera_controller.on_keyboard_event(event);
 	return false;
 }

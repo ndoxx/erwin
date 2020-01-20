@@ -4,6 +4,8 @@ set(SRC_EDITOR
     source/widget.cpp
     source/widget_console.cpp
     source/widget_game_view.cpp
+    source/freefly_camera_controller.cpp
+    source/scene.cpp
    )
 
 add_executable(editor ${SRC_EDITOR})

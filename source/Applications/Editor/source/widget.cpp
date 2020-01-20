@@ -33,6 +33,14 @@ void Widget::render()
     	height_ = window_size.y;
     }
 
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    if(window_pos.x != x_pos_ || window_pos.y != y_pos_)
+    {
+    	on_move(window_pos.x, window_pos.y);
+    	x_pos_ = window_pos.x;
+    	y_pos_ = window_pos.y;
+    }
+
     on_render();
     ImGui::End();
 }

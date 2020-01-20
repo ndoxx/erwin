@@ -1,6 +1,7 @@
 #pragma once
 
 #include "erwin.h"
+#include "scene.h"
 
 using namespace erwin;
 
@@ -25,7 +26,7 @@ class LayerTest: public Layer
 public:
 	friend class Sandbox;
 	
-	LayerTest();
+	LayerTest(editor::Scene& scene);
 	~LayerTest() = default;
 
 	virtual void on_imgui_render() override;
@@ -37,10 +38,12 @@ protected:
 	virtual void on_render() override;
 	virtual bool on_event(const MouseButtonEvent& event) override;
 	virtual bool on_event(const WindowResizeEvent& event) override;
+	virtual bool on_event(const WindowMovedEvent& event) override;
 	virtual bool on_event(const MouseScrollEvent& event) override;
+	virtual bool on_event(const MouseMovedEvent& event) override;
+	virtual bool on_event(const KeyboardEvent& event) override;
 
 private:
-	PerspectiveFreeflyController camera_ctl_;
 	TextureGroupHandle tg_;
 	UniformBufferHandle pbr_material_ubo_;
 	ShaderHandle deferred_pbr_;
@@ -49,4 +52,6 @@ private:
 
 	Cube emissive_cube_;
 	PostProcessingData pp_data_;
+
+	editor::Scene& scene_;
 };

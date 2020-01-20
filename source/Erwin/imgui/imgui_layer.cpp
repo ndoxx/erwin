@@ -37,7 +37,7 @@ void ImGuiLayer::on_attach()
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
@@ -58,8 +58,8 @@ void ImGuiLayer::on_attach()
 	}
 
     ImVec4 neutral(0.7f, 0.3f, 0.05f, 1.0f);
-    ImVec4 active(1.0f, 0.5f, 0.05f, 1.00f);
-    ImVec4 hovered(0.6f, 0.6f, 0.6f, 1.00f);
+    ImVec4 active(1.0f, 0.5f, 0.05f, 1.0f);
+    ImVec4 hovered(0.6f, 0.6f, 0.6f, 1.0f);
     ImVec4 inactive(0.7f, 0.3f, 0.05f, 0.75f);
 
     style.Colors[ImGuiCol_Border] = ImVec4(0.7f, 0.3f, 0.05f, 0.75f);

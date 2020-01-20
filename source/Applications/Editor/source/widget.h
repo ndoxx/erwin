@@ -22,11 +22,14 @@ public:
 protected:
 	virtual void on_render() = 0;
 	virtual void on_resize(uint32_t width, uint32_t height) { }
+	virtual void on_move(int32_t x_pos, int32_t y_pos) { }
 
 protected:
 	std::string name_;
 	uint32_t width_;
 	uint32_t height_;
+	int32_t x_pos_;
+	int32_t y_pos_;
 };
 
 
