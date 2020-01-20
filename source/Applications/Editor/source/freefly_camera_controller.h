@@ -25,7 +25,6 @@ public:
 	bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
 	bool on_mouse_moved_event(const erwin::MouseMovedEvent& event);
 	bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
-	bool on_keyboard_event(const erwin::KeyboardEvent& event);
 
 private:
 	erwin::PerspectiveCamera3D camera_;

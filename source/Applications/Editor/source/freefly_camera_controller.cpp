@@ -76,7 +76,7 @@ void FreeflyController::toggle_control()
 {
 	has_control_ = !has_control_;
 	Input::show_cursor(!has_control_);
-	Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
+	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
 }
 
 bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
@@ -116,7 +116,7 @@ bool FreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
 	if(!has_control_)
 		return false;
 
-	Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
+	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
 	// Input::center_mouse_position();
 	return true;
 }
@@ -127,24 +127,18 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 		return false;
 
 	// Update and constrain yaw and pitch
-	camera_yaw_   -= camera_rotation_speed_ * (event.x-0.5f*win_width_);
+	float old_x = win_x_+0.5f*win_width_;
+	float old_y = win_y_+0.5f*win_height_;
+	camera_yaw_   -= camera_rotation_speed_ * (event.x-old_x);
 	camera_yaw_    = (camera_yaw_>360.f) ? camera_yaw_-360.f : camera_yaw_;
 	camera_yaw_    = (camera_yaw_<0.f)   ? 360.f-camera_yaw_ : camera_yaw_;
-	camera_pitch_ -= camera_rotation_speed_ * (event.y-0.5f*win_height_);
+	camera_pitch_ -= camera_rotation_speed_ * (event.y-old_y);
 	camera_pitch_  = (camera_pitch_> 89.f) ?  89.f : camera_pitch_;
 	camera_pitch_  = (camera_pitch_<-89.f) ? -89.f : camera_pitch_;
 
 	// Set cursor back to the center of the screen
-	Input::set_mouse_position(0.5f*win_width_,0.5f*win_height_);
+	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
 	// Input::center_mouse_position();
-
-	return true;
-}
-
-bool FreeflyController::on_keyboard_event(const KeyboardEvent& event)
-{
-	if(event.pressed && event.key == keymap::WKEY::F1)
-		toggle_control();
 
 	return true;
 }

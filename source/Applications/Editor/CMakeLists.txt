@@ -1,6 +1,7 @@
 set(SRC_EDITOR
     source/editor_app.cpp
-    source/layer_test.cpp
+    source/layer_game.cpp
+    source/layer_editor.cpp
     source/widget.cpp
     source/widget_console.cpp
     source/widget_game_view.cpp
