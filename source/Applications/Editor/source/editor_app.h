@@ -8,7 +8,7 @@
 #include "erwin.h"
 #include "layer_game.h"
 #include "layer_editor.h"
-#include "widget_console.h"
+#include "widget.h"
 
 using namespace erwin;
 using namespace editor;
@@ -36,7 +36,7 @@ private:
 	GameLayer* game_layer_;
 	EditorLayer* editor_layer_;
 
-	ConsoleWidget* console_;
+	Widget* console_;
 };
 
 Application* erwin::create_application()

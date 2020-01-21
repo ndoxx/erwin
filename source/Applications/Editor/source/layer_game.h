@@ -3,9 +3,7 @@
 #include "erwin.h"
 #include "scene.h"
 
-using namespace erwin;
-
-class GameLayer: public Layer
+class GameLayer: public erwin::Layer
 {
 public:
 	friend class Editor;
@@ -18,16 +16,14 @@ public:
 	virtual void on_detach() override;
 
 protected:
-	virtual void on_update(GameClock& clock) override;
+	virtual void on_update(erwin::GameClock& clock) override;
 	virtual void on_render() override;
-	virtual bool on_event(const MouseButtonEvent& event) override;
-	virtual bool on_event(const WindowResizeEvent& event) override;
-	virtual bool on_event(const WindowMovedEvent& event) override;
-	virtual bool on_event(const MouseScrollEvent& event) override;
-	virtual bool on_event(const MouseMovedEvent& event) override;
+	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
+	virtual bool on_event(const erwin::WindowResizeEvent& event) override;
+	virtual bool on_event(const erwin::WindowMovedEvent& event) override;
+	virtual bool on_event(const erwin::MouseScrollEvent& event) override;
+	virtual bool on_event(const erwin::MouseMovedEvent& event) override;
 
 private:
-	ShaderHandle background_shader_;
-	PostProcessingData pp_data_;
 	editor::Scene& scene_;
 };

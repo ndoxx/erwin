@@ -20,18 +20,16 @@ void GameLayer::on_imgui_render()
 }
 
 void GameLayer::on_attach()
-{
-	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
-	
+{	
 	scene_.init();
 
-    pp_data_.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
-    pp_data_.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
-    pp_data_.set_flag_enabled(PP_EN_VIBRANCE, true);
-    pp_data_.set_flag_enabled(PP_EN_SATURATION, true);
-    pp_data_.set_flag_enabled(PP_EN_CONTRAST, true);
-    pp_data_.set_flag_enabled(PP_EN_GAMMA, true);
-    pp_data_.set_flag_enabled(PP_EN_FXAA, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_VIBRANCE, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_SATURATION, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_CONTRAST, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_GAMMA, true);
+    scene_.post_processing.set_flag_enabled(PP_EN_FXAA, true);
 
     PostProcessingRenderer::set_final_render_target("game_view"_h);
 }
@@ -52,7 +50,7 @@ void GameLayer::on_render()
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
 	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
-	VertexArrayHandle quad     = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
 	// Draw scene geometry
 	{
@@ -74,23 +72,10 @@ void GameLayer::on_render()
 
 	// Presentation
 	PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-	pp_data_.set_flag_enabled(PP_EN_BLOOM, true);
-	PostProcessingRenderer::combine("LBuffer"_h, 0, pp_data_);
-	// pp_data_.clear_flag(PP_EN_BLOOM);
-	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, pp_data_);
-
-	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
-	RenderState state;
-	state.render_target = Renderer::default_render_target();
-	state.rasterizer_state.cull_mode = CullMode::Back;
-	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
-	state.blend_state = BlendState::Opaque;
-	state.depth_stencil_state.depth_test_enabled = true;
-
-	SortKey key;
-	key.set_sequence(0, Renderer::next_layer_id(), background_shader_);
-	DrawCall dc(DrawCall::Indexed, state.encode(), background_shader_, quad);
-	Renderer::submit(key.encode(), dc);
+	scene_.post_processing.set_flag_enabled(PP_EN_BLOOM, true);
+	PostProcessingRenderer::combine("LBuffer"_h, 0, scene_.post_processing);
+	// scene_.post_processing.clear_flag(PP_EN_BLOOM);
+	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, scene_.post_processing);
 }
 
 bool GameLayer::on_event(const MouseButtonEvent& event)

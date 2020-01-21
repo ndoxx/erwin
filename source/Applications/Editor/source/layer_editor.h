@@ -4,9 +4,7 @@
 #include "scene.h"
 #include "widget.h"
 
-using namespace erwin;
-
-class EditorLayer: public Layer
+class EditorLayer: public erwin::Layer
 {
 public:
 	friend class Editor;
@@ -18,19 +16,20 @@ public:
 	virtual void on_attach() override;
 	virtual void on_detach() override;
 
-	inline void add_widget(hash_t name, editor::Widget* widget) { widgets_.insert(std::make_pair(name, widget)); }
+	void add_widget(editor::Widget* widget);
 	
 	void show_dockspace_window(bool* p_open);
 
 protected:
-	virtual void on_update(GameClock& clock) override;
+	virtual void on_update(erwin::GameClock& clock) override;
 	virtual void on_render() override;
-	virtual bool on_event(const MouseButtonEvent& event) override;
-	virtual bool on_event(const WindowResizeEvent& event) override;
-	virtual bool on_event(const MouseScrollEvent& event) override;
-	virtual bool on_event(const KeyboardEvent& event) override;
+	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
+	virtual bool on_event(const erwin::WindowResizeEvent& event) override;
+	virtual bool on_event(const erwin::MouseScrollEvent& event) override;
+	virtual bool on_event(const erwin::KeyboardEvent& event) override;
 
 private:
-	std::map<hash_t, editor::Widget*> widgets_;
+	std::map<erwin::hash_t, editor::Widget*> widgets_;
+	erwin::ShaderHandle background_shader_;
 	editor::Scene& scene_;
 };

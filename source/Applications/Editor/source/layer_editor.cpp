@@ -1,5 +1,4 @@
 #include "layer_editor.h"
-#include "widget_game_view.h"
 #include "erwin.h"
 
 using namespace erwin;
@@ -8,6 +7,7 @@ using namespace editor;
 static struct
 {
 	bool exit_required = false;
+	bool enable_docking = true;
 } s_storage;
 
 static void set_gui_style()
@@ -58,53 +58,32 @@ static void set_gui_style()
     style.Colors[ImGuiCol_PlotLines] = ImVec4(0.1f, 0.8f, 0.2f, 1.0f);
 }
 
+static void set_gui_behavior()
+{
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigWindowsMoveFromTitleBarOnly = true;
+
+	s_storage.enable_docking = true;
+}
+
 EditorLayer::EditorLayer(editor::Scene& scene): Layer("EditorLayer"), scene_(scene)
 {
 
 }
 
-void EditorLayer::on_imgui_render()
+void EditorLayer::add_widget(editor::Widget* widget)
 {
-	static bool show_dockspace = false;
-	static bool show_demo_window = false;
-	if(ImGui::BeginMainMenuBar())
-	{
-		if(ImGui::BeginMenu("File"))
-		{
-        	ImGui::MenuItem("Quit", NULL, &s_storage.exit_required);
-        	ImGui::EndMenu();
-		}
-    	if(ImGui::BeginMenu("Windows"))
-    	{
-        	ImGui::MenuItem("Console", NULL, &widgets_["console"_h]->open_);
-        	ImGui::MenuItem("Game",    NULL, &widgets_["game"_h]->open_);
-        	ImGui::Separator();
-        	ImGui::MenuItem("Docking", NULL, &show_dockspace);
-        	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
-        	ImGui::EndMenu();
-    	}
-    	ImGui::EndMainMenuBar();
-    }
-
-    // game_layer_->set_enabled(widgets_["game"_h]->open_);
-
-    if(show_dockspace)   show_dockspace_window(&show_dockspace);
-    if(show_demo_window) ImGui::ShowDemoWindow();
-
-	for(auto&& [key,widget]: widgets_)
-		widget->render();
-
-	if(s_storage.exit_required)
-	{
-		EVENTBUS.publish(WindowCloseEvent());
-	}
+	const std::string name = widget->get_name();
+	hash_t hname = H_(name.c_str());
+	widgets_.insert(std::make_pair(hname, widget));
 }
 
 void EditorLayer::on_attach()
 {
 	set_gui_style();
+	set_gui_behavior();
 
-    add_widget("game"_h, new GameViewWidget());
+	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
 }
 
 void EditorLayer::on_detach()
@@ -120,7 +99,56 @@ void EditorLayer::on_update(GameClock& clock)
 
 void EditorLayer::on_render()
 {
+	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
+	RenderState state;
+	state.render_target = Renderer::default_render_target();
+	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = true;
 
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	SortKey key;
+	key.set_sequence(0, Renderer::next_layer_id(), background_shader_);
+	DrawCall dc(DrawCall::Indexed, state.encode(), background_shader_, quad);
+	Renderer::submit(key.encode(), dc);
+}
+
+void EditorLayer::on_imgui_render()
+{
+	static bool show_demo_window = false;
+	if(ImGui::BeginMainMenuBar())
+	{
+		if(ImGui::BeginMenu("File"))
+		{
+        	ImGui::MenuItem("Quit", NULL, &s_storage.exit_required);
+        	ImGui::EndMenu();
+		}
+    	if(ImGui::BeginMenu("Windows"))
+    	{
+    		for(auto&& [key,widget]: widgets_)
+        		ImGui::MenuItem(widget->get_name().c_str(), NULL, widget->open_);
+        	
+        	ImGui::Separator();
+        	ImGui::MenuItem("Docking", NULL, &s_storage.enable_docking);
+        	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
+        	ImGui::EndMenu();
+    	}
+    	ImGui::EndMainMenuBar();
+    }
+
+    // game_layer_->set_enabled(widgets_["game"_h]->open_);
+
+    if(s_storage.enable_docking)   show_dockspace_window(&s_storage.enable_docking);
+    if(show_demo_window) ImGui::ShowDemoWindow();
+
+	for(auto&& [key,widget]: widgets_)
+		widget->render();
+
+	if(s_storage.exit_required)
+	{
+		EVENTBUS.publish(WindowCloseEvent());
+	}
 }
 
 bool EditorLayer::on_event(const MouseButtonEvent& event)

@@ -5,6 +5,8 @@ set(SRC_EDITOR
     source/widget.cpp
     source/widget_console.cpp
     source/widget_game_view.cpp
+    source/widget_scene_hierarchy.cpp
+    source/widget_inspector.cpp
     source/freefly_camera_controller.cpp
     source/scene.cpp
    )

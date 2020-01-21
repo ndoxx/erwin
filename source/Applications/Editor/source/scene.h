@@ -42,6 +42,7 @@ public:
 	erwin::DirectionalLight directional_light;
 	Cube emissive_cube;
 	erwin::Material sun_material_;
+	erwin::PostProcessingData post_processing;
 
 private:
 	erwin::TextureGroupHandle tg_;

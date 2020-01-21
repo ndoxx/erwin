@@ -1,11 +1,16 @@
 #include "editor_app.h"
+#include "widget_console.h"
+#include "widget_game_view.h"
+#include "widget_scene_hierarchy.h"
+#include "widget_inspector.h"
 #include "debug/logger_thread.h"
 
 void Editor::on_pre_init()
 {
-	console_ = new ConsoleWidget();
+	ConsoleWidget* console = new ConsoleWidget();
 	WLOGGER(create_channel("editor", 3));
-	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_), {"editor"_h}));
+	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console), {"editor"_h}));
+	console_ = console;
 }
 
 void Editor::on_client_init()
@@ -29,7 +34,11 @@ void Editor::on_load()
     push_layer(game_layer_ = new GameLayer(scene_));
     push_overlay(editor_layer_ = new EditorLayer(scene_));
 
-    editor_layer_->add_widget("console"_h, console_);
+    // Add widgets to the editor layer
+    editor_layer_->add_widget(console_);
+    editor_layer_->add_widget(new GameViewWidget());
+    editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
+    editor_layer_->add_widget(new InspectorWidget(scene_));
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
