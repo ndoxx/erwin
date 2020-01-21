@@ -247,7 +247,6 @@ bool Application::init()
         Renderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
-
 #ifdef W_DEBUG
         TexturePeek::init();
 #endif
@@ -357,7 +356,6 @@ void Application::run()
         // Dispatch queued events
         EVENTBUS.dispatch();
 
-        Renderer::set_host_window_size(window_->get_width(), window_->get_height());
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")
@@ -365,9 +363,14 @@ void Application::run()
     			layer->update(game_clock_);
 		}
 
+        // Frame config
+        Renderer::set_host_window_size(window_->get_width(), window_->get_height());
 #if W_RC_PROFILE_DRAW_CALLS
         if(s_storage.track_draw_calls)
+        {
             Renderer::track_draw_calls(s_storage.draw_calls_json_path);
+            s_storage.track_draw_calls = false;
+        }
 #endif
 
         // For each layer, render
@@ -378,15 +381,7 @@ void Application::run()
                 layer->render();
         }
 
-#ifdef W_DEBUG
-        TexturePeek::render();
-#endif
-
         Renderer::flush();
-
-#if W_RC_PROFILE_DRAW_CALLS
-        s_storage.track_draw_calls = false;
-#endif
 
 		// TODO: move this to renderer
         {

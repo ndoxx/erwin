@@ -32,6 +32,8 @@ struct Cube
 class Scene
 {
 public:
+	friend class InspectorWidget;
+
 	Scene();
 
 	void init();

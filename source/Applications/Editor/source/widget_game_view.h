@@ -5,19 +5,32 @@
 namespace editor
 {
 
+class Scene;
 class GameViewWidget: public Widget
 {
 public:
-	GameViewWidget();
+	GameViewWidget(Scene& scene);
 	virtual ~GameViewWidget();
 
 protected:
-	virtual void on_render() override;
+	virtual void on_imgui_render() override;
 	virtual void on_resize(uint32_t width, uint32_t height) override;
 	virtual void on_move(int32_t x_pos, int32_t y_pos) override;
 
-private:
+	void frame_profiler_window(bool* p_open);
 
+private:
+	Scene& scene_;
+
+	struct RenderSurface
+	{
+		float x0;
+		float y0;
+		float x1;
+		float y1;
+	} render_surface_;
+
+	bool enable_runtime_profiling_;
 };
 
 } // namespace editor

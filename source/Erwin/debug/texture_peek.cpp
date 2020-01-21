@@ -192,7 +192,7 @@ void TexturePeek::on_imgui_render(bool* p_open)
     }
 
     // * Get render properties from GUI
-    ImGui::BeginChild("##peekctl", ImVec2(0, 3*ImGui::GetItemsLineHeightWithSpacing()));
+    ImGui::BeginChild("##peekctl", ImVec2(0, 4*ImGui::GetTextLineHeightWithSpacing()));
     ImGui::Columns(2, nullptr, false);
 
     if(ImGui::SliderInt("Panel", &s_storage.current_pane_, 0, s_storage.panes_.size()-1))

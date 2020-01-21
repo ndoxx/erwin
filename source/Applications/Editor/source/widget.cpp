@@ -8,18 +8,19 @@ namespace editor
 Widget::Widget(const std::string& name, bool open):
 open_(open),
 name_(name),
+flags_(0),
 width_(0),
 height_(0)
 {
 
 }
 
-void Widget::render()
+void Widget::imgui_render()
 {
 	if(!open_)
 		return;
 
-    if(!ImGui::Begin(name_.c_str(), &open_))
+    if(!ImGui::Begin(name_.c_str(), &open_, flags_))
     {
     	ImGui::End();
     	return;
@@ -41,7 +42,7 @@ void Widget::render()
     	y_pos_ = window_pos.y;
     }
 
-    on_render();
+    on_imgui_render();
     ImGui::End();
 }
 

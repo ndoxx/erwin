@@ -15,6 +15,7 @@ public:
 	virtual void on_imgui_render() override;
 	virtual void on_attach() override;
 	virtual void on_detach() override;
+	virtual void on_render() override;
 
 protected:
 	// virtual void on_update(GameClock& clock) override;

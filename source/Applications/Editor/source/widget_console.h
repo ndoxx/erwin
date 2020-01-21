@@ -18,7 +18,7 @@ public:
 	int text_edit_callback(void* data);
 
 protected:
-	virtual void on_render() override;
+	virtual void on_imgui_render() override;
 
 private:
     char input_buffer_[256];

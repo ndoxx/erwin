@@ -13,7 +13,7 @@ public:
 	virtual ~SceneHierarchyWidget();
 
 protected:
-	virtual void on_render() override;
+	virtual void on_imgui_render() override;
 
 private:
 	Scene& scene_;

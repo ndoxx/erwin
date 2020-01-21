@@ -11,7 +11,8 @@ public:
 	Widget(const std::string& name, bool open);
 	virtual ~Widget() = default;
 
-	void render();
+	virtual void on_layer_render() { }
+	void imgui_render();
 
 	inline void show(bool value=true) { open_ = value; }
 	inline void hide(bool value=true) { open_ = !value; }
@@ -20,12 +21,13 @@ public:
 	bool open_;
 
 protected:
-	virtual void on_render() = 0;
+	virtual void on_imgui_render() = 0;
 	virtual void on_resize(uint32_t width, uint32_t height) { }
 	virtual void on_move(int32_t x_pos, int32_t y_pos) { }
 
 protected:
 	std::string name_;
+	int flags_;
 	uint32_t width_;
 	uint32_t height_;
 	int32_t x_pos_;

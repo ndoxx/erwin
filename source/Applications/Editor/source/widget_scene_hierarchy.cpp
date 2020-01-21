@@ -20,7 +20,7 @@ SceneHierarchyWidget::~SceneHierarchyWidget()
 
 }
 
-void SceneHierarchyWidget::on_render()
+void SceneHierarchyWidget::on_imgui_render()
 {
 
 }

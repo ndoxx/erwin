@@ -13,7 +13,9 @@ public:
 	virtual ~InspectorWidget();
 
 protected:
-	virtual void on_render() override;
+	virtual void on_imgui_render() override;
+	void environment_tab();
+	void postproc_tab();
 
 private:
 	Scene& scene_;

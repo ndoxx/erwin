@@ -99,6 +99,9 @@ void EditorLayer::on_update(GameClock& clock)
 
 void EditorLayer::on_render()
 {
+	for(auto&& [key,widget]: widgets_)
+		widget->on_layer_render();
+
 	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
 	RenderState state;
 	state.render_target = Renderer::default_render_target();
@@ -124,13 +127,14 @@ void EditorLayer::on_imgui_render()
         	ImGui::MenuItem("Quit", NULL, &s_storage.exit_required);
         	ImGui::EndMenu();
 		}
-    	if(ImGui::BeginMenu("Windows"))
+    	if(ImGui::BeginMenu("View"))
     	{
     		for(auto&& [key,widget]: widgets_)
         		ImGui::MenuItem(widget->get_name().c_str(), NULL, widget->open_);
         	
         	ImGui::Separator();
-        	ImGui::MenuItem("Docking", NULL, &s_storage.enable_docking);
+        	ImGui::Checkbox("Docking", &s_storage.enable_docking);
+        	ImGui::Separator();
         	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
         	ImGui::EndMenu();
     	}
@@ -143,7 +147,7 @@ void EditorLayer::on_imgui_render()
     if(show_demo_window) ImGui::ShowDemoWindow();
 
 	for(auto&& [key,widget]: widgets_)
-		widget->render();
+		widget->imgui_render();
 
 	if(s_storage.exit_required)
 	{

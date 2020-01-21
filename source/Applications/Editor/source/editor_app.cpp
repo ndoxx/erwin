@@ -36,7 +36,7 @@ void Editor::on_load()
 
     // Add widgets to the editor layer
     editor_layer_->add_widget(console_);
-    editor_layer_->add_widget(new GameViewWidget());
+    editor_layer_->add_widget(new GameViewWidget(scene_));
     editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
     editor_layer_->add_widget(new InspectorWidget(scene_));
 

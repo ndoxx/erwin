@@ -73,7 +73,7 @@ void ConsoleWidget::send_command(const std::string& command)
 	push("> " + command);
 }
 
-void ConsoleWidget::on_render()
+void ConsoleWidget::on_imgui_render()
 {
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
