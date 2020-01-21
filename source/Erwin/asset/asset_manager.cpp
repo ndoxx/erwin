@@ -7,10 +7,6 @@
 #include "debug/logger.h"
 #include "EASTL/vector.h"
 
-#include "debug/texture_peek.h"
-
-// #define DEBUG_TEXTURES
-
 namespace erwin
 {
 constexpr std::size_t k_handle_alloc_size = 4 * 2 * sizeof(HandlePoolT<k_max_asset_handles>);
@@ -48,11 +44,6 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
 	atlas->load(filesystem::get_asset_dir() / filepath);
 
-#ifdef DEBUG_TEXTURES
-	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-	TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
-#endif
-
 	// Register atlas
 	Renderer2D::create_batch(atlas->texture); // TODO: this should be conditional
 	s_storage.texture_atlases_[handle.index] = atlas;
@@ -69,11 +60,6 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 
 	FontAtlas* atlas = W_NEW(FontAtlas, s_storage.font_atlas_pool_);
 	atlas->load(filesystem::get_asset_dir() / filepath);
-
-#ifdef DEBUG_TEXTURES
-	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-	TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
-#endif
 
 	// Register atlas
 	s_storage.font_atlases_[handle.index] = atlas;
@@ -93,15 +79,6 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath, Ma
 	TextureGroup* tg = W_NEW(TextureGroup, s_storage.texture_group_pool_);
 	const MaterialLayout& ml = s_storage.material_layouts_[layout.index]; 
 	tg->load(filesystem::get_asset_dir() / filepath, ml);
-
-#ifdef DEBUG_TEXTURES
-	uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-	for(uint32_t ii=0; ii<tg->texture_count; ++ii)
-	{
-		std::string name = "Slot_" + std::to_string(ii);
-		TexturePeek::register_texture(pane, tg->textures[ii], name, false);
-	}
-#endif
 
 	// Register group
 	s_storage.texture_groups_[handle.index] = tg;

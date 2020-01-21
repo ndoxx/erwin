@@ -4,7 +4,6 @@
 #include "core/config.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
-#include "debug/texture_peek.h"
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
 #include "filesystem/filesystem.h"
@@ -247,9 +246,6 @@ bool Application::init()
         Renderer::init(s_storage.render_area);
         // Create common geometry
         CommonGeometry::init();
-#ifdef W_DEBUG
-        TexturePeek::init();
-#endif
         Renderer2D::init();
         ForwardRenderer::init();
         DeferredRenderer::init();

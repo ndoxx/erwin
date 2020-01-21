@@ -119,11 +119,6 @@ void InspectorWidget::on_imgui_render()
 			postproc_tab();
 			ImGui::EndTabItem();
 		}
-		if(ImGui::BeginTabItem("Render targets"))
-		{
-			ImGui::Text("This is the Render targets tab!\nblah blah blah blah blah");
-			ImGui::EndTabItem();
-		}
 		ImGui::EndTabBar();
 	}
 }

@@ -1,5 +1,4 @@
 #include "layer_debug.h"
-#include "debug/texture_peek.h"
 
 #include <iostream>
 #include <iomanip>
@@ -29,9 +28,7 @@ void DebugLayer::on_detach()
 
 void DebugLayer::on_render()
 {
-#ifdef W_DEBUG
-	TexturePeek::render();
-#endif
+
 }
 
 bool DebugLayer::on_event(const MouseButtonEvent& event)

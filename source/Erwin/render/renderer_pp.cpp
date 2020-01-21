@@ -2,7 +2,6 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "math/convolution.h"
-#include "debug/texture_peek.h"
 
 namespace erwin
 {
@@ -72,14 +71,12 @@ void PostProcessingRenderer::init()
 #else
 			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
 #endif
-			// TexturePeek::register_framebuffer(fb_name);
 		}
 
 		// Bloom output framebuffer
-		std::string fb_name = "bloom_combine";
+		std::string fb_name = "BloomCombine";
 		hash_t h_fb_name    = H_(fb_name.c_str());
 		s_storage.bloom_combine_fbo = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(0.5f,0.5f), layout, false);
-		TexturePeek::register_framebuffer(fb_name);
 	}
 
 	// Initialize Gaussian kernel for bloom blur passes
@@ -208,7 +205,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
-		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("bloom_combine"_h), 0), 1);
+		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("BloomCombine"_h), 0), 1);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DataOwnership::Copy));
 	dc.set_UBO(s_storage.pp_ubo, 0);
 	Renderer::submit(key.encode(), dc);

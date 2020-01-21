@@ -6,7 +6,6 @@
 
 #include "erwin.h"
 
-#include "debug/texture_peek.h"
 #include "memory/memory_utils.h"
 #include "glm/gtx/string_cast.hpp"
 
@@ -24,7 +23,6 @@ void Layer3D::on_imgui_render()
 
 void Layer3D::on_attach()
 {
-	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	MaterialLayoutHandle layout_a_nd_mar  = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mar"_h});
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
 	deferred_pbr_       = AssetManager::load_shader("shaders/deferred_PBR.glsl");
@@ -181,7 +179,6 @@ bool Layer3D::on_event(const MouseButtonEvent& event)
 bool Layer3D::on_event(const WindowResizeEvent& event)
 {
 	camera_ctl_.on_window_resize_event(event);
-	TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
 	return false;
 }
 

@@ -1,5 +1,4 @@
 #include "sandbox_app.h"
-#include "debug/texture_peek.h"
 
 void Sandbox::on_client_init()
 {
@@ -18,12 +17,6 @@ void Sandbox::on_load()
 	push_overlay(debug_layer_        = new DebugLayer());
 
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
-#ifdef W_DEBUG
-    // TexturePeek::register_framebuffer("DBuffer");
-    TexturePeek::register_framebuffer("LBuffer");
-    TexturePeek::register_framebuffer("GBuffer");
-    TexturePeek::register_framebuffer("SpriteBuffer");
-#endif
     
     set_layer_enabled(0, layer3d_enabled_);
     set_layer_enabled(1, layer2d_enabled_);
@@ -44,7 +37,6 @@ bool Sandbox::on_keyboard_event(const KeyboardEvent& e)
 
 void Sandbox::on_imgui_render()
 {
-	static bool show_app_texture_peek_window = false;
 	static bool show_app_profiling_window = false;
 	static bool show_app_layer_config_window = false;
 	static bool show_app_post_processing_window = false;
@@ -59,7 +51,6 @@ void Sandbox::on_imgui_render()
         	ImGui::MenuItem("Render stats", NULL, &show_app_render_stats_window);
         	ImGui::MenuItem("Profiling", NULL, &show_app_profiling_window);
 #endif
-        	ImGui::MenuItem("Texture peek", NULL, &show_app_texture_peek_window);
         	ImGui::EndMenu();
         }
     	if(ImGui::BeginMenu("Layers"))
@@ -84,12 +75,9 @@ void Sandbox::on_imgui_render()
     	ImGui::EndMainMenuBar();
 	}
 
-	TexturePeek::set_enabled(show_app_texture_peek_window);
-
 	if(show_app_layer_config_window)    window_layer_config(&show_app_layer_config_window);
 	if(show_app_post_processing_window) window_post_processing(&show_app_post_processing_window);
 	if(show_app_lighting_window)        window_lighting(&show_app_lighting_window);
-	if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);
 #ifdef W_PROFILE
     Renderer::set_profiling_enabled(show_app_render_stats_window);
 	if(show_app_profiling_window)       window_profiling(&show_app_profiling_window);

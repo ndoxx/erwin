@@ -2121,3 +2121,32 @@ L'uniform u_v4_packed_weights est un tableau de vec4, aucune place n'est perdue.
     [1] https://computergraphics.stackexchange.com/questions/4454/opengl
         -es-3-uniform-buffer-object-with-float-array
 
+
+
+#ifdef DEBUG_TEXTURES
+    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+    for(uint32_t ii=0; ii<tg->texture_count; ++ii)
+    {
+        std::string name = "Slot_" + std::to_string(ii);
+        TexturePeek::register_texture(pane, tg->textures[ii], name, false);
+    }
+#endif
+#ifdef DEBUG_TEXTURES
+    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+    TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
+#endif
+#ifdef DEBUG_TEXTURES
+    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
+    TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
+#endif
+
+#ifdef W_DEBUG
+    // TexturePeek::register_framebuffer("DBuffer");
+    TexturePeek::register_framebuffer("LBuffer");
+    TexturePeek::register_framebuffer("GBuffer");
+    TexturePeek::register_framebuffer("SpriteBuffer");
+#endif
+    TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
+    TexturePeek::set_enabled(show_app_texture_peek_window);
+
+    if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);

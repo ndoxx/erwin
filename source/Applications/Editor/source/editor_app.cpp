@@ -3,6 +3,7 @@
 #include "widget_game_view.h"
 #include "widget_scene_hierarchy.h"
 #include "widget_inspector.h"
+#include "widget_rt_peek.h"
 #include "debug/logger_thread.h"
 
 void Editor::on_pre_init()
@@ -35,10 +36,18 @@ void Editor::on_load()
     push_overlay(editor_layer_ = new EditorLayer(scene_));
 
     // Add widgets to the editor layer
+    RTPeekWidget* peek_widget;
     editor_layer_->add_widget(console_);
     editor_layer_->add_widget(new GameViewWidget(scene_));
     editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
     editor_layer_->add_widget(new InspectorWidget(scene_));
+    editor_layer_->add_widget(peek_widget = new RTPeekWidget(scene_));
+
+    // Register main render target in peek widget
+	peek_widget->register_framebuffer("GBuffer");
+	peek_widget->register_framebuffer("SpriteBuffer");
+	peek_widget->register_framebuffer("BloomCombine");
+	peek_widget->register_framebuffer("LBuffer");
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
