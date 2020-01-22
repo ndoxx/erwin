@@ -12,6 +12,8 @@ public:
 	GameViewWidget(Scene& scene);
 	virtual ~GameViewWidget();
 
+	virtual void on_update() override;
+
 protected:
 	virtual void on_imgui_render() override;
 	virtual void on_resize(uint32_t width, uint32_t height) override;
@@ -21,6 +23,7 @@ protected:
 
 private:
 	Scene& scene_;
+	Widget* stats_overlay_;
 
 	struct RenderSurface
 	{

@@ -46,9 +46,6 @@ static struct
 	uint64_t pass_state;
 	uint8_t view_id;
 	bool draw_far;
-
-	// Statistics
-	uint32_t num_draw_calls;
 } s_storage;
 
 void ForwardRenderer::init()
@@ -58,7 +55,6 @@ void ForwardRenderer::init()
 	// Setup UBOs and init storage
 	s_storage.instance_ubo = Renderer::create_uniform_buffer("instance_data", nullptr, sizeof(InstanceData), UsagePattern::Dynamic);
 	s_storage.pass_ubo     = Renderer::create_uniform_buffer("pass_data", nullptr, sizeof(PassUBOData), UsagePattern::Dynamic);
-	s_storage.num_draw_calls = 0;
 }
 
 void ForwardRenderer::shutdown()
@@ -90,9 +86,6 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Direct
 	s_storage.pass_state = state.encode();
 	s_storage.view_id = Renderer::next_layer_id();
 	s_storage.draw_far = (options.get_depth_control() == PassOptions::DEPTH_CONTROL_FAR);
-
-	// Reset stats
-	s_storage.num_draw_calls = 0;
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -148,13 +141,6 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 			dc.set_texture(tg.textures[ii], ii);
 	}
 	Renderer::submit(key.encode(), dc);
-
-	++s_storage.num_draw_calls;
-}
-
-uint32_t ForwardRenderer::get_draw_call_count()
-{
-	return s_storage.num_draw_calls;
 }
 
 

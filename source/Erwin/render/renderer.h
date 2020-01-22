@@ -39,7 +39,9 @@ public:
 			    				
 	struct Statistics
 	{
-		float render_time = 0.f;
+		float GPU_render_time = 0.f;
+		float CPU_flush_time = 0.f;
+		uint32_t draw_call_count = 0;
 	};
 
 	// * The following functions have immediate effect

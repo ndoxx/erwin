@@ -11,6 +11,7 @@ public:
 	Widget(const std::string& name, bool open);
 	virtual ~Widget() = default;
 
+	virtual void on_update() { }
 	virtual void on_layer_render() { }
 	void imgui_render();
 

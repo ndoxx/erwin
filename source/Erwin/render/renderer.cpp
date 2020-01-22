@@ -6,6 +6,7 @@
 
 #include "debug/logger.h"
 #include "core/config.h"
+#include "core/clock.hpp"
 #include "filesystem/filesystem.h"
 #include "memory/arena.h"
 #include "memory/memory_utils.h"
@@ -288,6 +289,9 @@ struct FrameDrawCallData
 		                            |___/      
 */
 
+static int FRONT = 0;
+static int BACK = 1;
+
 struct FramebufferTextureVector
 {
 	std::vector<TextureHandle> handles;
@@ -368,7 +372,7 @@ static struct RendererStorage
 
 	WScope<QueryTimer> query_timer;
 	bool profiling_enabled;
-	Renderer::Statistics stats;
+	Renderer::Statistics stats[2]; // Double buffered
 
 #if W_RC_PROFILE_DRAW_CALLS
 	FrameDrawCallData draw_call_data_;
@@ -525,7 +529,7 @@ void Renderer::set_profiling_enabled(bool value)
 
 const Renderer::Statistics& Renderer::get_stats()
 {
-	return s_storage.stats;
+	return s_storage.stats[BACK];
 }
 #endif
 
@@ -1169,6 +1173,9 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	cw.write(&dc.data);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
+
+	if(s_storage.profiling_enabled)
+		++s_storage.stats[FRONT].draw_call_count;
 
 	cw.submit(key);
 }
@@ -2031,8 +2038,12 @@ void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
     
+    static nanoClock flush_clock;
 	if(s_storage.profiling_enabled)
+	{
 		s_storage.query_timer->start();
+    	flush_clock.restart();
+	}
 
 	// Sort command buffers
 	sort_commands();
@@ -2060,9 +2071,14 @@ void Renderer::flush()
 
 	if(s_storage.profiling_enabled)
 	{
-		auto render_duration = s_storage.query_timer->stop();
-		s_storage.stats.render_time = std::chrono::duration_cast<std::chrono::microseconds>(render_duration).count();
+		auto GPU_render_duration = s_storage.query_timer->stop();
+        auto CPU_flush_duration  = flush_clock.get_elapsed_time();
+		s_storage.stats[FRONT].GPU_render_time = std::chrono::duration_cast<std::chrono::microseconds>(GPU_render_duration).count();
+		s_storage.stats[FRONT].CPU_flush_time  = std::chrono::duration_cast<std::chrono::microseconds>(CPU_flush_duration).count();
 	}
+
+	std::swap(FRONT, BACK);
+	s_storage.stats[FRONT].draw_call_count = 0;
 }
 
 } // namespace erwin

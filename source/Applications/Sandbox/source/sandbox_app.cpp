@@ -255,12 +255,12 @@ void Sandbox::window_render_stats(bool* p_open)
 {
     if(ImGui::Begin("Stats", p_open))
     {
-		const auto& mr_stats = Renderer::get_stats();
-		uint32_t rd2d_draw_calls = Renderer2D::get_draw_call_count();
+		const auto& r_stats = Renderer::get_stats();
 
-    	ImGui::Text("#Draw calls: %d", rd2d_draw_calls);
-    	ImGui::Separator();
-    	ImGui::PlotVar("Draw time (µs)", mr_stats.render_time, 0.0f, 7000.f);
+        ImGui::Text("#Draw calls: %d", r_stats.draw_call_count);
+        ImGui::Separator();
+        ImGui::PlotVar("GPU Draw (µs)", r_stats.GPU_render_time, 0.0f, 7000.f);
+        ImGui::PlotVar("CPU Flush (µs)", r_stats.CPU_flush_time, 0.0f, 7000.f);
         ImGui::PlotVarFlushOldEntries();
 		ImGui::End();
 	}

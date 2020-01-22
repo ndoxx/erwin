@@ -94,7 +94,8 @@ void EditorLayer::on_detach()
 
 void EditorLayer::on_update(GameClock& clock)
 {
-
+	for(auto&& [key,widget]: widgets_)
+		widget->on_update();
 }
 
 void EditorLayer::on_render()
@@ -130,7 +131,7 @@ void EditorLayer::on_imgui_render()
     	if(ImGui::BeginMenu("View"))
     	{
     		for(auto&& [key,widget]: widgets_)
-        		ImGui::MenuItem(widget->get_name().c_str(), NULL, widget->open_);
+        		ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
         	
         	ImGui::Separator();
         	ImGui::Checkbox("Docking", &s_storage.enable_docking);

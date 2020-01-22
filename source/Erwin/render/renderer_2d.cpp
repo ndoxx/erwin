@@ -43,7 +43,6 @@ static struct
 	FrustumSides frustum_sides;
 	uint64_t pass_state;
 
-	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
 	uint8_t view_id;
 	std::map<uint16_t, Batch2D> batches;
@@ -104,7 +103,6 @@ void Renderer2D::init()
     };
     FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
 
-	s_storage.num_draw_calls = 0;
 	s_storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
 	// s_storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
@@ -149,9 +147,6 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 
-	// Reset stats
-	s_storage.num_draw_calls = 0;
-
 	s_storage.pass_state = state.encode();
 	s_storage.view_id = Renderer::next_layer_id();
 
@@ -189,7 +184,6 @@ static void flush_batch(Batch2D& batch)
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
 
-		++s_storage.num_draw_calls;
 		batch.count = 0;
 		batch.max_depth = -1.f;
 		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
@@ -288,8 +282,6 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_instance_count(batch.count);
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
-
-		++s_storage.num_draw_calls;
 	}
 }
 
@@ -298,11 +290,6 @@ void Renderer2D::flush()
 {
 	for(auto&& [key, batch]: s_storage.batches)
 		flush_batch(batch);
-}
-
-uint32_t Renderer2D::get_draw_call_count()
-{
-	return s_storage.num_draw_calls;
 }
 
 } // namespace erwin

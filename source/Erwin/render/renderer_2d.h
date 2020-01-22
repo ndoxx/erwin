@@ -26,9 +26,6 @@ public:
 	// Force current batch to be pushed to render queue
 	static void flush();
 
-	// Stats
-	static uint32_t get_draw_call_count();
-
 private:
 	friend class Application;
 	friend class AssetManager;

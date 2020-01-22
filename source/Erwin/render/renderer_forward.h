@@ -47,9 +47,6 @@ public:
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
 
-	// Stats
-	static uint32_t get_draw_call_count();
-
 private:
 	friend class Application;
 

@@ -1,4 +1,5 @@
 #include "widget_game_view.h"
+#include "widget_stats.h"
 #include "erwin.h"
 #include "scene.h"
 #include "imgui.h"
@@ -8,23 +9,29 @@ using namespace erwin;
 namespace editor
 {
 
+static constexpr float k_border = 4.f;
+static constexpr float k_start_x = 4.f;
+static constexpr float k_start_y = 43.f;
+static constexpr float k_overlay_dist = 10.f;
+
 GameViewWidget::GameViewWidget(Scene& scene):
 Widget("Game", true),
 scene_(scene)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
-
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
+    stats_overlay_ = new RenderStatsWidget();
 }
 
 GameViewWidget::~GameViewWidget()
 {
-
+	delete stats_overlay_;
 }
 
-static constexpr float k_border = 4.f;
-static constexpr float k_start_x = 4.f;
-static constexpr float k_start_y = 43.f;
+void GameViewWidget::on_update()
+{
+	stats_overlay_->on_update();
+}
 
 void GameViewWidget::on_resize(uint32_t width, uint32_t height)
 {
@@ -54,12 +61,22 @@ void GameViewWidget::on_imgui_render()
 	    if(ImGui::BeginMenu("Profiling"))
 	    {
 	        ImGui::MenuItem("Frame profiler", NULL, &show_frame_profiler);
+	        ImGui::MenuItem("Render stats", NULL, &stats_overlay_->open_);
 	        ImGui::EndMenu();
 	    }
         ImGui::EndMenuBar();
 	}
 
     if(show_frame_profiler) frame_profiler_window(&show_frame_profiler);
+
+    if(stats_overlay_->open_)
+    {
+		ImVec2 overlay_pos(render_surface_.x1 - k_overlay_dist, render_surface_.y0 + k_overlay_dist);
+		ImVec2 overlay_pivot(1.f, 0.f);
+		ImGui::SetNextWindowPos(overlay_pos, ImGuiCond_Always, overlay_pivot);
+		ImGui::SetNextWindowBgAlpha(0.35f);
+	    stats_overlay_->imgui_render();
+	}
 
     // * Show game render in window
 	// Retrieve the native framebuffer texture handle
