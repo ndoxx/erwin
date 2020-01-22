@@ -27,6 +27,8 @@ struct FramebufferLayout
     inline std::vector<FramebufferLayoutElement>::const_iterator begin() const { return elements_.begin(); }
     inline std::vector<FramebufferLayoutElement>::const_iterator end() const   { return elements_.end(); }
 
+    inline const FramebufferLayoutElement& operator[](int index) const { return elements_[index]; }
+
     inline uint32_t get_count() const { return elements_.size(); }
     inline const FramebufferLayoutElement* data() const { return elements_.data(); }
 

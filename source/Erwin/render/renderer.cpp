@@ -291,6 +291,7 @@ struct FrameDrawCallData
 struct FramebufferTextureVector
 {
 	std::vector<TextureHandle> handles;
+	std::vector<hash_t> debug_names;
 };
 
 static struct RendererStorage
@@ -546,6 +547,12 @@ TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	W_ASSERT(index < s_storage.framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
 	return s_storage.framebuffer_textures_[handle.index].handles[index];
+}
+
+hash_t Renderer::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
+{
+	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+	return s_storage.framebuffer_textures_[handle.index].debug_names[index];
 }
 
 uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
@@ -869,6 +876,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 		TextureHandle tex_handle = TextureHandle::acquire();
 		W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
 		texture_vector.handles.push_back(tex_handle);
+		texture_vector.debug_names.push_back((depth && ii==tex_count-1) ? "depth"_h : layout[ii].target_name);
 	}
 	s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
 	uint32_t count = layout.get_count();

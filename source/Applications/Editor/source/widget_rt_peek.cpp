@@ -1,6 +1,7 @@
 #include "widget_rt_peek.h"
 #include "erwin.h"
 #include "scene.h"
+#include "core/intern_string.h"
 #include "imgui.h"
 
 #include <vector>
@@ -121,21 +122,12 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
     uint32_t ntex = Renderer::get_framebuffer_texture_count(fb);
     uint32_t pane_index = new_pane(framebuffer_name);
 
-    if(has_depth)
-        --ntex;
-
     for(uint32_t ii=0; ii<ntex; ++ii)
     {
         TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ii);
-        std::string tex_name = framebuffer_name + "_" + std::to_string(ii);
-        register_texture(pane_index, texture_handle, tex_name, false);
-    }
-
-    if(has_depth)
-    {
-        TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ntex);
-        std::string tex_name = framebuffer_name + "_depth";
-        register_texture(pane_index, texture_handle, tex_name, true);
+        hash_t hname = Renderer::get_framebuffer_texture_name(fb, ii);
+        std::string tex_name = istr::resolve(hname);
+        register_texture(pane_index, texture_handle, tex_name, (has_depth && ii==ntex-1));
     }
 }
 
@@ -177,36 +169,72 @@ void RTPeekWidget::on_imgui_render()
         return;
 
     // * Get render properties from GUI
+    // Select pane (render target)
     ImGui::BeginChild("##peekctl", ImVec2(0, 4*ImGui::GetTextLineHeightWithSpacing()));
     ImGui::Columns(2, nullptr, false);
 
-    if(ImGui::SliderInt("Panel", &s_storage.current_pane_, 0, s_storage.panes_.size()-1))
-    {
-        s_storage.current_tex_ = 0;
-    }
-    int ntex = s_storage.panes_[s_storage.current_pane_].properties.size();
+    static const char* cur_target_item = s_storage.panes_[s_storage.current_pane_].name.data();
+    static const char* cur_tex_item = s_storage.panes_[s_storage.current_pane_].properties[0].name.data();
 
-    ImGui::SliderInt("Texture", &s_storage.current_tex_, 0, ntex-1);
+    if(ImGui::BeginCombo("Target", cur_target_item))
+    {
+        for(int ii=0; ii<s_storage.panes_.size(); ++ii)
+        {
+            const DebugPane& pane = s_storage.panes_[ii];
+            bool is_selected = (cur_target_item == pane.name.data());
+            if(ImGui::Selectable(pane.name.data(), is_selected))
+            {
+                cur_target_item = pane.name.data();
+                s_storage.current_pane_ = ii;
+                s_storage.current_tex_ = 0;
+                cur_tex_item = pane.properties[0].name.data();
+            }
+            if(is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    int ntex = s_storage.panes_[s_storage.current_pane_].properties.size();
+    const DebugPane& pane = s_storage.panes_[s_storage.current_pane_];
+
+    // Select attachment
+    if(ImGui::BeginCombo("Texture", cur_tex_item))
+    {
+        for(int ii=0; ii<ntex; ++ii)
+        {
+            const DebugTextureProperties& props = pane.properties[ii];
+            bool is_selected = (cur_tex_item == props.name.data());
+            if(ImGui::Selectable(props.name.data(), is_selected))
+            {
+                cur_tex_item = props.name.data();
+                s_storage.current_tex_ = ii;
+            }
+            if(is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
-    ImGui::Text("name: %s", props.name.c_str());
-    ImGui::SameLine();
     if(ImGui::Button("Save to file"))
         s_storage.save_image_ = true;
     
     if(!props.is_depth)
     {
         ImGui::NextColumn();
-        ImGui::Checkbox("Tone mapping", &s_storage.tone_map_);
-        ImGui::SameLine(); ImGui::Checkbox("R##0", &s_storage.show_r_);
-        ImGui::SameLine(); ImGui::Checkbox("G##0", &s_storage.show_g_);
-        ImGui::SameLine(); ImGui::Checkbox("B##0", &s_storage.show_b_);
-        ImGui::SameLine(); ImGui::Checkbox("Invert", &s_storage.invert_color_);
+        ImGui::Checkbox("Tone map", &s_storage.tone_map_);
+        ImGui::SameLine(); ImGui::Selectable("R##fbp_chan", &s_storage.show_r_, 0, ImVec2(15,15));
+        ImGui::SameLine(); ImGui::Selectable("G##fbp_chan", &s_storage.show_g_, 0, ImVec2(15,15));
+        ImGui::SameLine(); ImGui::Selectable("B##fbp_chan", &s_storage.show_b_, 0, ImVec2(15,15));
+        ImGui::SameLine(); ImGui::Selectable("I##fbp_inve", &s_storage.invert_color_, 0, ImVec2(15,15));
 
         ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);
         if(s_storage.split_alpha_)
         {
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
             ImGui::SameLine();
-            ImGui::SliderFloat("Split pos.", &s_storage.peek_data_.split_pos, 0.f, 1.f);
+            ImGui::DragFloat("##split_pos", &s_storage.peek_data_.split_pos, 0.01f, 0.f, 1.f);
         }
     }
 
@@ -229,6 +257,8 @@ void RTPeekWidget::on_imgui_render()
     if(s_storage.save_image_)
     {
         std::string filename = props.name + ".png";
+        DLOG("editor",1) << "Saving framebuffer texture as image: " << std::endl;
+        DLOGI << WCC('p') << filename << std::endl;
         Renderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
     }

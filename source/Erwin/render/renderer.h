@@ -44,15 +44,17 @@ public:
 
 	// * The following functions have immediate effect
 	// Require a layer id for a pass
-	static uint8_t           next_layer_id();
+	static uint8_t            next_layer_id();
 	// Get the renderer memory arena, for per-frame data allocation outside of the renderer 
-	static AuxArena& 		 get_arena();
+	static AuxArena& 		  get_arena();
 	// Get a handle to the default framebuffer (screen)
-	static FramebufferHandle default_render_target();
+	static FramebufferHandle  default_render_target();
 	// Get a handle to a specified color or depth attachment of a given framebuffer
-	static TextureHandle 	 get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
+	static TextureHandle 	  get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
+	// Get the debug name of a specified color or depth attachment of a given framebuffer
+	static hash_t 			  get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index);
 	// Get the number of attachments in a given framebuffer
-	static uint32_t 		 get_framebuffer_texture_count(FramebufferHandle handle);
+	static uint32_t 		  get_framebuffer_texture_count(FramebufferHandle handle);
 	// Create a layout for a vertex buffer. Creation is immediate as it does not imply render API stuff,
 	// however, layout destruction need be deferred and is handled by a command.
 	static VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements);
