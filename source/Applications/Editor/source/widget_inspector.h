@@ -23,8 +23,8 @@ public:
 
 protected:
 	virtual void on_imgui_render() override;
-	void environment_tab();
 	void postproc_tab();
+	void entity_tab();
 
 private:
 	game::Scene& scene_;

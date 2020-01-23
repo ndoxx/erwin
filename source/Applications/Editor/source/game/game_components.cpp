@@ -14,7 +14,14 @@ bool ComponentRenderablePBRDeferred::init(void* description)
 
 	return true;
 }
+void ComponentRenderablePBRDeferred::inspector_GUI()
+{
+    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentRenderablePBRDeferred");
+    ImGui::ColorEdit3("Tint", (float*)&material_data.tint);
 
+    if(is_emissive())
+    	ImGui::SliderFloat("Emissive scale", &material_data.emissive_scale, 0.1f, 10.0f);
+}
 
 COMPONENT_DEFINITION(ComponentRenderableDirectionalLight);
 ComponentRenderableDirectionalLight::ComponentRenderableDirectionalLight()

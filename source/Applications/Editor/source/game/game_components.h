@@ -14,10 +14,17 @@ public:
 	ComponentRenderablePBRDeferred();
 
 	virtual bool init(void* description) override final;
+	virtual void inspector_GUI() override final;
+
 	inline void set_emissive(float intensity)
 	{
 		material_data.flags |= (1<<0);
 		material_data.emissive_scale = intensity;
+	}
+
+	inline bool is_emissive() const
+	{
+		return bool(material_data.flags & (1<<0));
 	}
 
 	VertexArrayHandle vertex_array;

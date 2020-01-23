@@ -22,12 +22,12 @@ InspectorWidget::~InspectorWidget()
 
 }
 
-void InspectorWidget::environment_tab()
+void InspectorWidget::entity_tab()
 {
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-    if(ImGui::TreeNode("Directional light"))
+    if(ImGui::TreeNode("Components"))
     {
-        entity_manager_.inspector_GUI(scene_.directional_light);
+        entity_manager_.inspector_GUI(scene_.entities[scene_.selected_entity_idx].id);
         ImGui::TreePop();
     }
 }
@@ -99,9 +99,9 @@ void InspectorWidget::on_imgui_render()
 
 	if(ImGui::BeginTabBar("InspectorTabs", tab_bar_flags))
 	{
-		if(ImGui::BeginTabItem("Environment"))
+		if(ImGui::BeginTabItem("Entity"))
 		{
-			environment_tab();
+			entity_tab();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Post-Processing"))

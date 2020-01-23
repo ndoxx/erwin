@@ -68,6 +68,7 @@ void GameLayer::on_attach()
 		renderable.material_data.scale = 0.2f;
 		entity_manager_.submit_entity(ent);
 		scene_.directional_light = ent;
+		scene_.add_entity(ent, "Sun");
 	}
 
 	{
@@ -82,7 +83,7 @@ void GameLayer::on_attach()
 		renderable.material.ubo = pbr_material_ubo;
 		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
 		entity_manager_.submit_entity(ent);
-		scene_.add_entity(ent);
+		scene_.add_entity(ent, "Emissive cube");
 	}
 
 	scene_.camera_controller.set_position({0.f,1.f,3.f});
@@ -115,9 +116,9 @@ void GameLayer::on_update(GameClock& clock)
 
 	scene_.camera_controller.update(clock);
 
-	// Update cube
+	// TMP: Update cube
 	{
-		Entity& cube = entity_manager_.get_entity(scene_.entities_[0]);
+		Entity& cube = entity_manager_.get_entity(scene_.entities[1].id);
 		auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
 
 		float s = sin(2*M_PI*tt/10.f);
@@ -131,8 +132,6 @@ void GameLayer::on_render()
 {
 	// FramebufferHandle fb = FramebufferPool::get_framebuffer("game_view"_h);
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
-
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
 	// Draw scene geometry
 	entity_manager_.render();

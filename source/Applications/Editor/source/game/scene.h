@@ -6,11 +6,10 @@
 namespace game
 {
 
-struct SunMaterialData
+struct EntityDescriptor
 {
-	glm::vec4 color;
-	float scale;
-	float brightness;
+	erwin::EntityID id;
+	std::string name;
 };
 
 class Scene
@@ -18,10 +17,11 @@ class Scene
 public:
 	Scene();
 
-	void add_entity(erwin::EntityID entity);
+	void add_entity(erwin::EntityID entity, const std::string& name);
 
+	uint32_t selected_entity_idx;
 	erwin::EntityID directional_light;
-	std::vector<erwin::EntityID> entities_;
+	std::vector<EntityDescriptor> entities;
 
 	FreeflyController camera_controller;
 	erwin::PostProcessingData post_processing;
