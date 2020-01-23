@@ -71,7 +71,7 @@ void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle m
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, PassOptions options)
+void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light, PassOptions options)
 {
     W_PROFILE_FUNCTION()
 

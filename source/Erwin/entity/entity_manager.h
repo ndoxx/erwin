@@ -48,6 +48,8 @@ public:
 
 	// Update all systems
 	void update(const GameClock& clock);
+	// For all systems that can render, do render
+	void render();
 	// Create a new entity and return its ID
 	EntityID create_entity();
 	// Register an entity's components into all relevant systems

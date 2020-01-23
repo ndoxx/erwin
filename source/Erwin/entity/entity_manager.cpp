@@ -26,6 +26,12 @@ void EntityManager::update(const GameClock& clock)
 		psys->update(clock);
 }
 
+void EntityManager::render()
+{
+	for(auto&& psys: systems_)
+		psys->render();
+}
+
 EntityID EntityManager::create_entity()
 {
 	EntityID id = s_next_entity_id++;

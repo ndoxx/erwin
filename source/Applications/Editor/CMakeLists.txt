@@ -11,6 +11,8 @@ set(SRC_EDITOR
     source/widget_stats.cpp
     source/game/freefly_camera_controller.cpp
     source/game/game_components.cpp
+    source/game/pbr_deferred_render_system.cpp
+    source/game/forward_sun_render_system.cpp
     source/game/scene.cpp
    )
 

@@ -28,6 +28,7 @@
 
 #include "entity/entity_manager.h"
 #include "entity/component.h"
+#include "entity/component_system.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

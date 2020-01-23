@@ -1,6 +1,8 @@
 #include "layer_game.h"
 #include "erwin.h"
 #include "game/game_components.h"
+#include "game/pbr_deferred_render_system.h"
+#include "game/forward_sun_render_system.h"
 #include "entity/component_transform.h"
 
 #include <iostream>
@@ -28,9 +30,62 @@ void GameLayer::on_attach()
 {	
 	entity_manager_.create_component_manager<ComponentTransform3D>(client_area_, 128);
 	entity_manager_.create_component_manager<ComponentRenderablePBRDeferred>(client_area_, 128);
+	entity_manager_.create_component_manager<ComponentRenderableDirectionalLight>(client_area_, 2);
+	entity_manager_.create_component_manager<ComponentDirectionalLight>(client_area_, 2);
 
+	{
+		auto* pbr_deferred_render_system = entity_manager_.create_system<PBRDeferredRenderSystem>();
+		pbr_deferred_render_system->set_scene(&scene_);
+	}
+	{
+		auto* forward_sun_render_system = entity_manager_.create_system<ForwardSunRenderSystem>();
+		forward_sun_render_system->set_scene(&scene_);
+	}
 
-	scene_.init(entity_manager_);
+	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
+	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");
+	ShaderHandle deferred_pbr             = AssetManager::load_shader("shaders/deferred_PBR.glsl");
+	TextureGroupHandle tg                 = AssetManager::load_texture_group("textures/map/testEmissive.tom", layout_a_nd_mare);
+	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBRDeferred::MaterialData));
+	UniformBufferHandle sun_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderableDirectionalLight::MaterialData));
+	AssetManager::release(layout_a_nd_mare);
+	DeferredRenderer::register_shader(deferred_pbr, pbr_material_ubo);
+	ForwardRenderer::register_shader(forward_sun, sun_material_ubo);
+
+	{
+		EntityID ent = entity_manager_.create_entity();
+		auto& directional_light = entity_manager_.create_component<ComponentDirectionalLight>(ent);
+		auto& renderable        = entity_manager_.create_component<ComponentRenderableDirectionalLight>(ent);
+
+		directional_light.set_position(90.f, 160.f);
+		directional_light.color         = {0.95f,0.85f,0.5f};
+		directional_light.ambient_color = {0.95f,0.85f,0.5f};
+		directional_light.ambient_strength = 0.1f;
+		directional_light.brightness = 3.7f;
+
+		renderable.material.shader = forward_sun;
+		renderable.material.ubo = sun_material_ubo;
+		renderable.material_data.scale = 0.2f;
+		entity_manager_.submit_entity(ent);
+		scene_.directional_light = ent;
+	}
+
+	{
+		EntityID ent     = entity_manager_.create_entity();
+		auto& transform  = entity_manager_.create_component<ComponentTransform3D>(ent);
+		auto& renderable = entity_manager_.create_component<ComponentRenderablePBRDeferred>(ent);
+		transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
+		renderable.set_emissive(5.f);
+		renderable.material.shader = deferred_pbr;
+		renderable.material.texture_group = tg;
+		renderable.material.ubo = pbr_material_ubo;
+		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
+		entity_manager_.submit_entity(ent);
+		scene_.add_entity(ent);
+	}
+
+	scene_.camera_controller.set_position({0.f,1.f,3.f});
 
     scene_.post_processing.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
     scene_.post_processing.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
@@ -45,7 +100,7 @@ void GameLayer::on_attach()
 
 void GameLayer::on_detach()
 {
-	scene_.shutdown();
+
 }
 
 void GameLayer::on_update(GameClock& clock)
@@ -56,16 +111,20 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-	scene_.update(clock);
+	entity_manager_.update(clock);
+
+	scene_.camera_controller.update(clock);
 
 	// Update cube
-	Entity& cube = entity_manager_.get_entity(scene_.cube_ent);
-	auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
+	{
+		Entity& cube = entity_manager_.get_entity(scene_.entities_[0]);
+		auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
 
-	float s = sin(2*M_PI*tt/10.f);
-	float s2 = s*s;
-	renderable->material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
-	renderable->material_data.tint.r = 0.3f*exp(-12.f*s2);
+		float s = sin(2*M_PI*tt/10.f);
+		float s2 = s*s;
+		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
+		renderable->material_data.tint.r = 0.3f*exp(-12.f*s2);
+	}
 }
 
 void GameLayer::on_render()
@@ -73,29 +132,10 @@ void GameLayer::on_render()
 	// FramebufferHandle fb = FramebufferPool::get_framebuffer("game_view"_h);
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
-	VertexArrayHandle cube_pbr = CommonGeometry::get_vertex_array("cube_pbr"_h);
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
 	// Draw scene geometry
-	{
-		DeferredRenderer::begin_pass(scene_.camera_controller.get_camera(), scene_.directional_light);
-		Entity& cube = entity_manager_.get_entity(scene_.cube_ent);
-		const auto* transform  = cube.get_component<ComponentTransform3D>();
-		const auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
-		DeferredRenderer::draw_mesh(renderable->vertex_array, *transform, renderable->material);
-		DeferredRenderer::end_pass();
-	}
-
-	// Draw sun
-	{
-		PassOptions options;
-		options.set_transparency(true);
-		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
-
-		ForwardRenderer::begin_pass(scene_.camera_controller.get_camera(), scene_.directional_light, options);
-		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), scene_.sun_material_);
-		ForwardRenderer::end_pass();
-	}
+	entity_manager_.render();
 
 	// Presentation
 	PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);

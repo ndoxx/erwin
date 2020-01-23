@@ -1,9 +1,9 @@
 #pragma once
 
 #include "render/camera_3d.h"
-#include "entity/component_transform.h"
 #include "render/handles.h"
-#include "render/light.h"
+#include "entity/component_transform.h"
+#include "entity/light.h"
 
 namespace erwin
 {
@@ -14,7 +14,7 @@ class DeferredRenderer
 public:
 	// Register a shader for deferred rendering
 	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
-	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light);
+	static void begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
 	static void end_pass();
 
 	// Draw a textured mesh

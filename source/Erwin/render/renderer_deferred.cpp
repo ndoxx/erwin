@@ -66,7 +66,7 @@ void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle 
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light)
+void DeferredRenderer::begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light)
 {
     W_PROFILE_FUNCTION()
 

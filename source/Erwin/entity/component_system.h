@@ -48,6 +48,7 @@ public:
 	virtual void on_entity_destroyed(const Entity& entity) override final;
 
 	virtual void update(const GameClock& clock) override = 0;
+	virtual void render() override { }
 	virtual bool init() = 0;
 
 protected:

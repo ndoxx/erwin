@@ -1,5 +1,6 @@
 #include "widget_inspector.h"
 #include "game/scene.h"
+#include "game/game_components.h"
 #include "erwin.h"
 #include "imgui.h"
 
@@ -8,9 +9,10 @@ using namespace erwin;
 namespace editor
 {
 
-InspectorWidget::InspectorWidget(game::Scene& scene):
+InspectorWidget::InspectorWidget(game::Scene& scene, erwin::EntityManager& emgr):
 Widget("Inspector", true),
-scene_(scene)
+scene_(scene),
+entity_manager_(emgr)
 {
 
 }
@@ -25,18 +27,22 @@ void InspectorWidget::environment_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Directional light"))
     {
+        Entity& dirlight_ent = entity_manager_.get_entity(scene_.directional_light);
+        auto& dirlight = *dirlight_ent.get_component<ComponentDirectionalLight>();
+        auto& renderable = *dirlight_ent.get_component<ComponentRenderableDirectionalLight>();
+
     	static float inclination_deg   = 90.0f;
     	static float arg_periapsis_deg = 160.0f;
         if(ImGui::SliderFloat("Inclination", &inclination_deg, 0.0f, 180.0f))
-        	scene_.directional_light.set_position(inclination_deg, arg_periapsis_deg);
+        	dirlight.set_position(inclination_deg, arg_periapsis_deg);
         if(ImGui::SliderFloat("Arg. periapsis", &arg_periapsis_deg, 0.0f, 360.0f))
-        	scene_.directional_light.set_position(inclination_deg, arg_periapsis_deg);
+        	dirlight.set_position(inclination_deg, arg_periapsis_deg);
 
-        ImGui::SliderFloat("Brightness", &scene_.directional_light.brightness, 0.0f, 30.0f);
-        ImGui::SliderFloat("Ambient str.", &scene_.directional_light.ambient_strength, 0.0f, 0.5f);
-        ImGui::ColorEdit3("Color", (float*)&scene_.directional_light.color);
-        ImGui::ColorEdit3("Amb. color", (float*)&scene_.directional_light.ambient_color);
-        ImGui::SliderFloat("App. diameter", &scene_.sun_material_data_.scale, 0.1f, 0.4f);
+        ImGui::SliderFloat("Brightness", &dirlight.brightness, 0.0f, 30.0f);
+        ImGui::SliderFloat("Ambient str.", &dirlight.ambient_strength, 0.0f, 0.5f);
+        ImGui::ColorEdit3("Color", (float*)&dirlight.color);
+        ImGui::ColorEdit3("Amb. color", (float*)&dirlight.ambient_color);
+        ImGui::SliderFloat("App. diameter", &renderable.material_data.scale, 0.1f, 0.4f);
 
         ImGui::TreePop();
     }

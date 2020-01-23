@@ -7,13 +7,18 @@ namespace game
 	class Scene;
 }
 
+namespace erwin
+{
+	class EntityManager;
+}
+
 namespace editor
 {
 
 class InspectorWidget: public Widget
 {
 public:
-	InspectorWidget(game::Scene& scene);
+	InspectorWidget(game::Scene& scene, erwin::EntityManager& emgr);
 	virtual ~InspectorWidget();
 
 protected:
@@ -23,6 +28,7 @@ protected:
 
 private:
 	game::Scene& scene_;
+	erwin::EntityManager& entity_manager_;
 };
 
 } // namespace editor

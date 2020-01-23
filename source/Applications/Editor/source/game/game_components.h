@@ -18,7 +18,6 @@ public:
 	{
 		material_data.flags |= (1<<0);
 		material_data.emissive_scale = intensity;
-		material.data_size = sizeof(MaterialData);
 	}
 
 	VertexArrayHandle vertex_array;
@@ -29,6 +28,26 @@ public:
 		glm::vec4 tint;
 		int flags;
 		float emissive_scale;
+	} material_data;
+};
+
+
+class ComponentRenderableDirectionalLight: public Component
+{
+public:
+	COMPONENT_DECLARATION(ComponentRenderableDirectionalLight);
+
+	ComponentRenderableDirectionalLight();
+
+	virtual bool init(void* description) override final;
+
+	Material material;
+
+	struct MaterialData
+	{
+		glm::vec4 color;
+		float scale;
+		float brightness;
 	} material_data;
 };
 

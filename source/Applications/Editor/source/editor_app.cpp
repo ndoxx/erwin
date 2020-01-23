@@ -40,7 +40,7 @@ void Editor::on_load()
     editor_layer_->add_widget(console_);
     editor_layer_->add_widget(new GameViewWidget(scene_));
     editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
-    editor_layer_->add_widget(new InspectorWidget(scene_));
+    editor_layer_->add_widget(new InspectorWidget(scene_, entity_manager_));
     editor_layer_->add_widget(peek_widget = new RTPeekWidget(scene_));
 
     // Register main render target in peek widget
