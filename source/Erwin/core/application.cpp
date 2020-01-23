@@ -45,11 +45,6 @@ static struct ApplicationStorage
     memory::HeapArea client_area;
     memory::HeapArea system_area;
     memory::HeapArea render_area;
-
-#if W_RC_PROFILE_DRAW_CALLS
-    bool track_draw_calls = false;
-    fs::path draw_calls_json_path;
-#endif
 } s_storage;
 
 // Helper function to automatically configure an event tracking policy
@@ -316,14 +311,6 @@ void Application::toggle_imgui_layer()
         IMGUI_LAYER->toggle();
 }
 
-void Application::track_draw_calls(const fs::path& json_path)
-{
-#if W_RC_PROFILE_DRAW_CALLS
-    s_storage.track_draw_calls = true;
-    s_storage.draw_calls_json_path = json_path;
-#endif
-}
-
 void Application::run()
 {
     DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
@@ -361,13 +348,6 @@ void Application::run()
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
-#if W_RC_PROFILE_DRAW_CALLS
-        if(s_storage.track_draw_calls)
-        {
-            Renderer::track_draw_calls(s_storage.draw_calls_json_path);
-            s_storage.track_draw_calls = false;
-        }
-#endif
 
         // For each layer, render
         if(!minimized_)

@@ -157,7 +157,6 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(source_fb_handle, glow_index));
 			dc.add_dependency(Renderer::update_uniform_buffer(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DataOwnership::Copy));
-			dc.set_UBO(s_storage.blur_ubo, 0);
 			Renderer::submit(key.encode(), dc);
 		}
 	}
@@ -178,7 +177,6 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			DrawCall dc(DrawCall::Indexed, state_flags, s_storage.bloom_blur_shader, quad);
 			dc.set_texture(Renderer::get_framebuffer_texture(s_storage.bloom_fbos[ii], 0));
 			dc.add_dependency(Renderer::update_uniform_buffer(s_storage.blur_ubo, &blur_data, sizeof(BlurUBOData), DataOwnership::Copy));
-			dc.set_UBO(s_storage.blur_ubo, 0);
 			Renderer::submit(key.encode(), dc);
 		}
 	}
@@ -199,15 +197,12 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, const P
 	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = false;
 
-	uint64_t state_flags = state.encode();
 	key.set_sequence(s_storage.sequence++, view_id, s_storage.pp_shader);
-
 	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(s_storage.pp_data.get_flag(PP_EN_BLOOM))
 		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("BloomCombine"_h), 0), 1);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pp_ubo, &s_storage.pp_data, sizeof(PostProcessingData), DataOwnership::Copy));
-	dc.set_UBO(s_storage.pp_ubo, 0);
 	Renderer::submit(key.encode(), dc);
 }
 
@@ -224,9 +219,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	state.blend_state = BlendState::Light;
 	state.depth_stencil_state.depth_test_enabled = false;
 
-	uint64_t state_flags = state.encode();
 	key.set_sequence(s_storage.sequence++, view_id, s_storage.lighten_shader);
-
 	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	Renderer::submit(key.encode(), dc);

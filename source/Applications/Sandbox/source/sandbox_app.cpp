@@ -233,12 +233,6 @@ void Sandbox::window_profiling(bool* p_open)
             W_PROFILE_ENABLE_SESSION(true);
         }
 
-        ImGui::Separator();
-        if(ImGui::Button("Track draw calls"))
-        {
-            track_draw_calls("draw_calls.json");
-        }
-
     	ImGui::End();
     }
     if(frame_profiling_)

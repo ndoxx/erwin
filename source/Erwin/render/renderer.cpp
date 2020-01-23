@@ -375,7 +375,7 @@ static struct RendererStorage
 	Renderer::Statistics stats[2]; // Double buffered
 
 #if W_RC_PROFILE_DRAW_CALLS
-	FrameDrawCallData draw_call_data_;
+	FrameDrawCallData draw_call_data;
 #endif
 
 	memory::HeapArea* renderer_memory_;
@@ -533,13 +533,13 @@ const Renderer::Statistics& Renderer::get_stats()
 }
 #endif
 
-#if W_RC_PROFILE_DRAW_CALLS
 void Renderer::track_draw_calls(const fs::path& json_path)
 {
-	s_storage.draw_call_data_.json_path = json_path;
-	s_storage.draw_call_data_.tracking = true;
-}
+#if W_RC_PROFILE_DRAW_CALLS
+	s_storage.draw_call_data.json_path = json_path;
+	s_storage.draw_call_data.tracking = true;
 #endif
+}
 
 FramebufferHandle Renderer::default_render_target()
 {
@@ -1155,8 +1155,8 @@ private:
 void Renderer::submit(uint64_t key, const DrawCall& dc)
 {
 #if W_RC_PROFILE_DRAW_CALLS
-	if(s_storage.draw_call_data_.tracking)
-		s_storage.draw_call_data_.on_submit(dc, key);
+	if(s_storage.draw_call_data.tracking)
+		s_storage.draw_call_data.on_submit(dc, key);
 #endif
 
 	DrawCommandWriter cw(DrawCommand::Draw);
@@ -1816,12 +1816,6 @@ void draw(memory::LinearBuffer<>& buf)
 		}
 		++slot;
 	}
-	slot = 0;
-	while(data.UBOs[slot].index != k_invalid_handle && slot < k_max_UBO_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
-	{
-		// shader.bind_uniform_buffer(*s_storage.uniform_buffers[data.UBOs[slot].index]);
-		++slot;
-	}
 
 	// * Execute draw call
 	static uint16_t last_VAO_index = k_invalid_handle;
@@ -1969,8 +1963,8 @@ void RenderQueue::flush()
 		if(key == SortKey::k_skip) break;
 
 #if W_RC_PROFILE_DRAW_CALLS
-		if(s_storage.draw_call_data_.tracking)
-			s_storage.draw_call_data_.on_dispatch(key);
+		if(s_storage.draw_call_data.tracking)
+			s_storage.draw_call_data.on_dispatch(key);
 #endif
 		command_buffer_.storage.seek(cmd);
 
@@ -2061,8 +2055,8 @@ void Renderer::flush()
 	filesystem::reset_arena(); // TMP: not thread safe
 
 #if W_RC_PROFILE_DRAW_CALLS
-	if(s_storage.draw_call_data_.tracking)
-		s_storage.draw_call_data_.export_json();
+	if(s_storage.draw_call_data.tracking)
+		s_storage.draw_call_data.export_json();
 #endif
 
 	// Execute callbacks

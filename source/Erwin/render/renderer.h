@@ -119,10 +119,7 @@ public:
 	static void set_profiling_enabled(bool value=true);
 	static const Statistics& get_stats();
 #endif
-#if W_RC_PROFILE_DRAW_CALLS
-	// Track draw calls for this frame
 	static void track_draw_calls(const fs::path& json_path);
-#endif
 
 private:
 	friend class Application;
@@ -198,21 +195,17 @@ struct DrawCall
 	struct Data
 	{
 		uint64_t state_flags;
+		uint32_t count;
+		uint32_t offset;
 
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
 		TextureHandle textures[k_max_texture_slots];
-		UniformBufferHandle UBOs[k_max_UBO_slots];
-		ShaderStorageBufferHandle SSBO;
-
-		uint32_t count;
-		uint32_t offset;
 	} data;
 	#pragma pack(pop)
 	uint32_t instance_count;
-
-	DrawCallType type;
 	uint32_t dependencies[k_max_draw_call_dependencies];
+	DrawCallType type;
 	uint8_t dependency_count;
 
 	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
@@ -235,22 +228,9 @@ struct DrawCall
 		dependencies[dependency_count++] = token;
 	}
 
-	// Set an SSBO
-	inline void set_SSBO(ShaderStorageBufferHandle ssbo)
-	{
-		data.SSBO = ssbo;
-	}
-
 	inline void set_instance_count(uint32_t value)
 	{
 		instance_count = value;
-	}
-
-	// Setup a UBO slot for this draw call
-	inline void set_UBO(UniformBufferHandle ubo, uint32_t slot=0)
-	{
-		W_ASSERT_FMT(slot<k_max_UBO_slots, "UBO slot out of bounds: %u", slot);
-		data.UBOs[slot] = ubo;
 	}
 
 	// Set a texture at a given slot

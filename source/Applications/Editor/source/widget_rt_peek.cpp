@@ -158,7 +158,6 @@ void RTPeekWidget::on_layer_render()
     key.set_sequence(0, 0, s_storage.peek_shader_);
     DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
     dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DataOwnership::Copy));
-    dc.set_UBO(s_storage.pass_ubo_);
     dc.set_texture(current_texture);
     Renderer::submit(key.encode(), dc);
 }
@@ -224,9 +223,14 @@ void RTPeekWidget::on_imgui_render()
     {
         ImGui::NextColumn();
         ImGui::Checkbox("Tone map", &s_storage.tone_map_);
+
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.8f,0.f,0.f,1.f));
         ImGui::SameLine(); ImGui::Selectable("R##fbp_chan", &s_storage.show_r_, 0, ImVec2(15,15));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f,0.8f,0.f,1.f));
         ImGui::SameLine(); ImGui::Selectable("G##fbp_chan", &s_storage.show_g_, 0, ImVec2(15,15));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f,0.f,0.8f,1.f));
         ImGui::SameLine(); ImGui::Selectable("B##fbp_chan", &s_storage.show_b_, 0, ImVec2(15,15));
+        ImGui::PopStyleColor(3);
         ImGui::SameLine(); ImGui::Selectable("I##fbp_inve", &s_storage.invert_color_, 0, ImVec2(15,15));
 
         ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);

@@ -20,6 +20,7 @@ scene_(scene)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
+    track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsWidget();
 }
 
@@ -31,6 +32,12 @@ GameViewWidget::~GameViewWidget()
 void GameViewWidget::on_update()
 {
 	stats_overlay_->on_update();
+
+	if(track_next_frame_draw_calls_)
+	{
+		Renderer::track_draw_calls("draw_calls.json");
+		track_next_frame_draw_calls_ = false;
+	}
 }
 
 void GameViewWidget::on_resize(uint32_t width, uint32_t height)
@@ -120,11 +127,9 @@ void GameViewWidget::frame_profiler_window(bool* p_open)
             W_PROFILE_ENABLE_SESSION(true);
         }
 
-        /*ImGui::Separator();
+        ImGui::Separator();
         if(ImGui::Button("Track draw calls"))
-        {
-            editor_.track_draw_calls("draw_calls.json");
-        }*/
+        	track_next_frame_draw_calls_ = true;
 
     	ImGui::End();
     }

@@ -34,6 +34,7 @@ private:
 	} render_surface_;
 
 	bool enable_runtime_profiling_;
+	bool track_next_frame_draw_calls_;
 };
 
 } // namespace editor

@@ -128,12 +128,8 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.instance_ubo, (void*)&instance_data, sizeof(InstanceData), DataOwnership::Copy));
-	dc.set_UBO(s_storage.instance_ubo, 0);
 	if(material.ubo.index != k_invalid_handle && material.data)
-	{
 		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material.data, material.data_size, DataOwnership::Copy));
-		dc.set_UBO(material.ubo, 1);
-	}
 	if(material.texture_group.index != k_invalid_handle)
 	{
 		const TextureGroup& tg = AssetManager::get(material.texture_group);

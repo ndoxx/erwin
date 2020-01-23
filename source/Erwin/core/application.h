@@ -40,10 +40,6 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
-	// PROFILING
-	// Gather draw call information for this frame and export to JSON file
-	void track_draw_calls(const fs::path& json_path);
-
 private:
 	static Application* pinstance_;
 	WScope<Window> window_;
