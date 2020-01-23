@@ -27,5 +27,10 @@ bool ComponentRenderableDirectionalLight::init(void* description)
 
 	return true;
 }
+void ComponentRenderableDirectionalLight::inspector_GUI()
+{
+    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentRenderableDirectionalLight");
+    ImGui::SliderFloat("App. diameter", &material_data.scale, 0.1f, 0.4f);
+}
 
 } // namespace erwin

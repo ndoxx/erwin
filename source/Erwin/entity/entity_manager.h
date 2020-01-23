@@ -56,6 +56,8 @@ public:
 	void submit_entity(EntityID entity_id);
 	// Remove an entity from existence, destroying all of its components
 	void destroy_entity(EntityID entity_id);
+	// Display all component inspector GUI widgets for a given entity
+	void inspector_GUI(EntityID entity_id);
 
 	// Create a new component for specified entity and optionally initialize it
 	template <typename ComponentT>

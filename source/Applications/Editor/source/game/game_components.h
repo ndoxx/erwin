@@ -40,6 +40,7 @@ public:
 	ComponentRenderableDirectionalLight();
 
 	virtual bool init(void* description) override final;
+	virtual void inspector_GUI() override final;
 
 	Material material;
 

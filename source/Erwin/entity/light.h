@@ -12,6 +12,7 @@ public:
 	COMPONENT_DECLARATION(ComponentDirectionalLight);
 
 	virtual bool init(void* description) override final;
+	virtual void inspector_GUI() override final;
 
 	// Set position from orbital parameters
 	inline void set_position(float inclination_deg, float arg_periapsis_deg)
