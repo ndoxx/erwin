@@ -31,7 +31,8 @@ public:
 
 private:
 	FramebufferHandle game_view_fb_;
-	Scene scene_;
+	game::Scene scene_;
+	erwin::EntityManager entity_manager_;
 
 	GameLayer* game_layer_;
 	EditorLayer* editor_layer_;

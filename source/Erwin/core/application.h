@@ -35,6 +35,8 @@ public:
 	bool init();
 	void run();
 
+	memory::HeapArea& get_client_area();
+
 	static inline Application& get_instance() { return *pinstance_; }
 	inline const Window& get_window() { return *window_; }
 

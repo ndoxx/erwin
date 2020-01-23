@@ -1,5 +1,5 @@
 #include "widget_stats.h"
-#include "scene.h"
+#include "game/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

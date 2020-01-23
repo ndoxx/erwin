@@ -13,6 +13,7 @@ public:
 	virtual ~BaseComponentSystem() = default;
 
 	virtual void update(const GameClock& clock) = 0;
+	virtual void render() = 0;
 	virtual void on_entity_submitted(const Entity& entity) = 0;
 	virtual void on_entity_destroyed(const Entity& entity) = 0;
 

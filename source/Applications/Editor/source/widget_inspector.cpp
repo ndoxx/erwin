@@ -1,5 +1,6 @@
 #include "widget_inspector.h"
-#include "scene.h"
+#include "game/scene.h"
+#include "game/game_components.h"
 #include "erwin.h"
 #include "imgui.h"
 
@@ -8,9 +9,10 @@ using namespace erwin;
 namespace editor
 {
 
-InspectorWidget::InspectorWidget(Scene& scene):
+InspectorWidget::InspectorWidget(game::Scene& scene, erwin::EntityManager& emgr):
 Widget("Inspector", true),
-scene_(scene)
+scene_(scene),
+entity_manager_(emgr)
 {
 
 }
@@ -20,24 +22,12 @@ InspectorWidget::~InspectorWidget()
 
 }
 
-void InspectorWidget::environment_tab()
+void InspectorWidget::entity_tab()
 {
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-    if(ImGui::TreeNode("Directional light"))
+    if(ImGui::TreeNode("Components"))
     {
-    	static float inclination_deg   = 90.0f;
-    	static float arg_periapsis_deg = 160.0f;
-        if(ImGui::SliderFloat("Inclination", &inclination_deg, 0.0f, 180.0f))
-        	scene_.directional_light.set_position(inclination_deg, arg_periapsis_deg);
-        if(ImGui::SliderFloat("Arg. periapsis", &arg_periapsis_deg, 0.0f, 360.0f))
-        	scene_.directional_light.set_position(inclination_deg, arg_periapsis_deg);
-
-        ImGui::SliderFloat("Brightness", &scene_.directional_light.brightness, 0.0f, 30.0f);
-        ImGui::SliderFloat("Ambient str.", &scene_.directional_light.ambient_strength, 0.0f, 0.5f);
-        ImGui::ColorEdit3("Color", (float*)&scene_.directional_light.color);
-        ImGui::ColorEdit3("Amb. color", (float*)&scene_.directional_light.ambient_color);
-        ImGui::SliderFloat("App. diameter", &scene_.sun_material_data_.scale, 0.1f, 0.4f);
-
+        entity_manager_.inspector_GUI(scene_.entities[scene_.selected_entity_idx].id);
         ImGui::TreePop();
     }
 }
@@ -109,9 +99,9 @@ void InspectorWidget::on_imgui_render()
 
 	if(ImGui::BeginTabBar("InspectorTabs", tab_bar_flags))
 	{
-		if(ImGui::BeginTabItem("Environment"))
+		if(ImGui::BeginTabItem("Entity"))
 		{
-			environment_tab();
+			entity_tab();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Post-Processing"))

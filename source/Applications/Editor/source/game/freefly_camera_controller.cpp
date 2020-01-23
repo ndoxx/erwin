@@ -1,14 +1,14 @@
-#include "freefly_camera_controller.h"
+#include "game/freefly_camera_controller.h"
 #include "input/input.h"
 #include "debug/logger.h"
 
 #include "glm/gtx/string_cast.hpp"
 
-namespace editor
-{
-
 using namespace erwin;
 using namespace keymap;
+
+namespace game
+{
 
 // Helper function to get "top" dimension from FOV and z-near
 inline float fovy_znear_to_top(float fovy, float znear)

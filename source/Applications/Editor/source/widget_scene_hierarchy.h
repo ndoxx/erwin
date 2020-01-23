@@ -2,21 +2,25 @@
 
 #include "widget.h"
 
+namespace game
+{
+	class Scene;
+}
+
 namespace editor
 {
 
-class Scene;
 class SceneHierarchyWidget: public Widget
 {
 public:
-	SceneHierarchyWidget(Scene& scene);
+	SceneHierarchyWidget(game::Scene& scene);
 	virtual ~SceneHierarchyWidget();
 
 protected:
 	virtual void on_imgui_render() override;
 
 private:
-	Scene& scene_;
+	game::Scene& scene_;
 };
 
 } // namespace editor

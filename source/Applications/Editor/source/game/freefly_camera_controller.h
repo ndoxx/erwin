@@ -4,7 +4,7 @@
 #include "core/game_clock.h"
 #include "event/window_events.h"
 
-namespace editor
+namespace game
 {
 
 class FreeflyController

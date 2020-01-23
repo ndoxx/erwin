@@ -3,6 +3,7 @@
 #include "entity/component_system.h"
 #include "debug/logger.h"
 #include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
+#include "imgui.h"
 
 namespace erwin
 {
@@ -24,6 +25,12 @@ void EntityManager::update(const GameClock& clock)
 {
 	for(auto&& psys: systems_)
 		psys->update(clock);
+}
+
+void EntityManager::render()
+{
+	for(auto&& psys: systems_)
+		psys->render();
 }
 
 EntityID EntityManager::create_entity()
@@ -77,6 +84,25 @@ void EntityManager::destroy_entity(EntityID entity_id)
 	entities_.erase(it);
 
 	DLOG("entity",0) << "Destroyed entity " << WCC('v') << entity_id << std::endl;
+}
+
+void EntityManager::inspector_GUI(EntityID entity_id)
+{
+	auto it = entities_.find(entity_id);
+	if(it == entities_.end())
+	{
+		DLOGW("entity") << "Unknown entity:" << std::endl;
+		DLOGI << "ID: " << WCC('v') << entity_id << std::endl;
+		return;
+	}
+
+	Entity& entity = it->second;
+
+	for(auto&& [cid, pcmp]: entity.get_components())
+	{
+		pcmp->inspector_GUI();
+        ImGui::Separator();
+	}
 }
 
 

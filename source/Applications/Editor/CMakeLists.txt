@@ -9,11 +9,15 @@ set(SRC_EDITOR
     source/widget_inspector.cpp
     source/widget_rt_peek.cpp
     source/widget_stats.cpp
-    source/freefly_camera_controller.cpp
-    source/scene.cpp
+    source/game/freefly_camera_controller.cpp
+    source/game/game_components.cpp
+    source/game/pbr_deferred_render_system.cpp
+    source/game/forward_sun_render_system.cpp
+    source/game/scene.cpp
    )
 
 add_executable(editor ${SRC_EDITOR})
+target_include_directories(editor PRIVATE "${CMAKE_SOURCE_DIR}/source/Applications/Editor/source")
 target_include_directories(editor PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(editor PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(editor PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")

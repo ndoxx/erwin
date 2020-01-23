@@ -120,6 +120,11 @@ void Application::add_configuration(const std::string& filename)
     }
 }
 
+memory::HeapArea& Application::get_client_area()
+{
+    return s_storage.client_area;
+}
+
 bool Application::init()
 {
     {

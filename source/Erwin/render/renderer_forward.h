@@ -1,9 +1,9 @@
 #pragma once
 
 #include "render/camera_3d.h"
-#include "entity/component_transform.h"
 #include "render/handles.h"
-#include "render/light.h"
+#include "entity/component_transform.h"
+#include "entity/light.h"
 
 namespace erwin
 {
@@ -40,7 +40,7 @@ public:
 	// Register a shader for forward rendering
 	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
 	// Start a new pass
-	static void begin_pass(const PerspectiveCamera3D& camera, const DirectionalLight& dir_light, PassOptions options);
+	static void begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light, PassOptions options);
 	// End a pass
 	static void end_pass();
 	// Draw a textured mesh

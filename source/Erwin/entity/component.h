@@ -18,6 +18,7 @@ public:
 	virtual ~Component() = default;
 
 	virtual bool init(void* description) = 0;
+	virtual void inspector_GUI() { }
 	virtual const std::string& get_debug_name() const = 0;
 
 	inline EntityID get_parent_entity() const      { return parent_; }
