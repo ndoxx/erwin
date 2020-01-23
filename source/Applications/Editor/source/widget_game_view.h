@@ -2,14 +2,18 @@
 
 #include "widget.h"
 
+namespace game
+{
+	class Scene;
+}
+
 namespace editor
 {
 
-class Scene;
 class GameViewWidget: public Widget
 {
 public:
-	GameViewWidget(Scene& scene);
+	GameViewWidget(game::Scene& scene);
 	virtual ~GameViewWidget();
 
 	virtual void on_update() override;
@@ -22,7 +26,7 @@ protected:
 	void frame_profiler_window(bool* p_open);
 
 private:
-	Scene& scene_;
+	game::Scene& scene_;
 	Widget* stats_overlay_;
 
 	struct RenderSurface

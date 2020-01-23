@@ -1,7 +1,7 @@
 #include "widget_game_view.h"
 #include "widget_stats.h"
 #include "erwin.h"
-#include "scene.h"
+#include "game/scene.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -14,7 +14,7 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget(Scene& scene):
+GameViewWidget::GameViewWidget(game::Scene& scene):
 Widget("Game", true),
 scene_(scene)
 {

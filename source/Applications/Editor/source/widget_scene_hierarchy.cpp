@@ -1,5 +1,5 @@
 #include "widget_scene_hierarchy.h"
-#include "scene.h"
+#include "game/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 
@@ -8,7 +8,7 @@ using namespace erwin;
 namespace editor
 {
 
-SceneHierarchyWidget::SceneHierarchyWidget(Scene& scene):
+SceneHierarchyWidget::SceneHierarchyWidget(game::Scene& scene):
 Widget("Hierarchy", true),
 scene_(scene)
 {

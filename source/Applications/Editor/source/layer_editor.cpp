@@ -66,7 +66,7 @@ static void set_gui_behavior()
 	s_storage.enable_docking = true;
 }
 
-EditorLayer::EditorLayer(editor::Scene& scene): Layer("EditorLayer"), scene_(scene)
+EditorLayer::EditorLayer(game::Scene& scene): Layer("EditorLayer"), scene_(scene)
 {
 
 }

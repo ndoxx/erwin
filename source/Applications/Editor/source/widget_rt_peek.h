@@ -4,14 +4,18 @@
 #include "erwin.h"
 #include "glm/glm.hpp"
 
+namespace game
+{
+	class Scene;
+}
+
 namespace editor
 {
 
-class Scene;
 class RTPeekWidget: public Widget
 {
 public:
-	RTPeekWidget(Scene& scene);
+	RTPeekWidget(game::Scene& scene);
 	virtual ~RTPeekWidget();
 
 	virtual void on_layer_render() override;
@@ -24,7 +28,7 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
-	Scene& scene_;
+	game::Scene& scene_;
 };
 
 } // namespace editor

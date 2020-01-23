@@ -1,15 +1,20 @@
 #include "layer_game.h"
+#include "erwin.h"
+#include "game/game_components.h"
+#include "entity/component_transform.h"
 
 #include <iostream>
 #include <iomanip>
 #include <bitset>
 
-#include "erwin.h"
-
 using namespace erwin;
-using namespace editor;
+using namespace game;
 
-GameLayer::GameLayer(Scene& scene): Layer("GameLayer"), scene_(scene)
+GameLayer::GameLayer(game::Scene& scene, EntityManager& emgr, memory::HeapArea& client_area):
+Layer("GameLayer"),
+scene_(scene),
+entity_manager_(emgr),
+client_area_(client_area)
 {
 
 }
@@ -21,7 +26,11 @@ void GameLayer::on_imgui_render()
 
 void GameLayer::on_attach()
 {	
-	scene_.init();
+	entity_manager_.create_component_manager<ComponentTransform3D>(client_area_, 128);
+	entity_manager_.create_component_manager<ComponentRenderablePBRDeferred>(client_area_, 128);
+
+
+	scene_.init(entity_manager_);
 
     scene_.post_processing.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
     scene_.post_processing.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
@@ -41,7 +50,22 @@ void GameLayer::on_detach()
 
 void GameLayer::on_update(GameClock& clock)
 {
+	float dt = clock.get_frame_duration();
+	static float tt = 0.f;
+	tt += dt;
+	if(tt>=10.f)
+		tt = 0.f;
+
 	scene_.update(clock);
+
+	// Update cube
+	Entity& cube = entity_manager_.get_entity(scene_.cube_ent);
+	auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
+
+	float s = sin(2*M_PI*tt/10.f);
+	float s2 = s*s;
+	renderable->material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
+	renderable->material_data.tint.r = 0.3f*exp(-12.f*s2);
 }
 
 void GameLayer::on_render()
@@ -55,7 +79,10 @@ void GameLayer::on_render()
 	// Draw scene geometry
 	{
 		DeferredRenderer::begin_pass(scene_.camera_controller.get_camera(), scene_.directional_light);
-		DeferredRenderer::draw_mesh(cube_pbr, scene_.emissive_cube.transform, scene_.emissive_cube.material);
+		Entity& cube = entity_manager_.get_entity(scene_.cube_ent);
+		const auto* transform  = cube.get_component<ComponentTransform3D>();
+		const auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
+		DeferredRenderer::draw_mesh(renderable->vertex_array, *transform, renderable->material);
 		DeferredRenderer::end_pass();
 	}
 

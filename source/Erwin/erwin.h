@@ -26,5 +26,8 @@
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 
+#include "entity/entity_manager.h"
+#include "entity/component.h"
+
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

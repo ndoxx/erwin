@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erwin.h"
-#include "scene.h"
+#include "game/scene.h"
 #include "widget.h"
 
 class EditorLayer: public erwin::Layer
@@ -9,7 +9,7 @@ class EditorLayer: public erwin::Layer
 public:
 	friend class Editor;
 	
-	EditorLayer(editor::Scene& scene);
+	EditorLayer(game::Scene& scene);
 	~EditorLayer() = default;
 
 	virtual void on_imgui_render() override;
@@ -31,5 +31,5 @@ protected:
 private:
 	std::map<erwin::hash_t, editor::Widget*> widgets_;
 	erwin::ShaderHandle background_shader_;
-	editor::Scene& scene_;
+	game::Scene& scene_;
 };

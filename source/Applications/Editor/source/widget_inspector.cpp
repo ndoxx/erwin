@@ -1,5 +1,5 @@
 #include "widget_inspector.h"
-#include "scene.h"
+#include "game/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 
@@ -8,7 +8,7 @@ using namespace erwin;
 namespace editor
 {
 
-InspectorWidget::InspectorWidget(Scene& scene):
+InspectorWidget::InspectorWidget(game::Scene& scene):
 Widget("Inspector", true),
 scene_(scene)
 {

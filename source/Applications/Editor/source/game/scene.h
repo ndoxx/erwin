@@ -1,19 +1,10 @@
 #pragma once
 
 #include "erwin.h"
-#include "freefly_camera_controller.h"
+#include "game/freefly_camera_controller.h"
 
-namespace editor
+namespace game
 {
-
-struct PBRMaterialData
-{
-	inline void enable_emissivity() { flags |= (1<<0); }
-
-	glm::vec4 tint;
-	int flags;
-	float emissive_scale;
-};
 
 struct SunMaterialData
 {
@@ -22,29 +13,23 @@ struct SunMaterialData
 	float brightness;
 };
 
-struct Cube
-{
-	erwin::ComponentTransform3D transform;
-	erwin::Material material;
-	PBRMaterialData material_data;
-};
-
 class Scene
 {
 public:
-	friend class InspectorWidget;
-
 	Scene();
 
-	void init();
+	void init(erwin::EntityManager& emgr);
 	void shutdown();
 	void update(erwin::GameClock& clock);
 
+	erwin::EntityID cube_ent;
+
 	FreeflyController camera_controller;
-	erwin::DirectionalLight directional_light;
-	Cube emissive_cube;
-	erwin::Material sun_material_;
 	erwin::PostProcessingData post_processing;
+	erwin::DirectionalLight directional_light;
+
+	erwin::Material sun_material_;
+	SunMaterialData sun_material_data_;
 
 private:
 	erwin::TextureGroupHandle tg_;
@@ -52,7 +37,6 @@ private:
 	erwin::UniformBufferHandle pbr_material_ubo_;
 	erwin::ShaderHandle forward_sun_;
 	erwin::ShaderHandle deferred_pbr_;
-	SunMaterialData sun_material_data_;
 };
 
 } // namespace editor

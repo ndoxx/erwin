@@ -2,14 +2,18 @@
 
 #include "widget.h"
 
+namespace game
+{
+	class Scene;
+}
+
 namespace editor
 {
 
-class Scene;
 class InspectorWidget: public Widget
 {
 public:
-	InspectorWidget(Scene& scene);
+	InspectorWidget(game::Scene& scene);
 	virtual ~InspectorWidget();
 
 protected:
@@ -18,7 +22,7 @@ protected:
 	void postproc_tab();
 
 private:
-	Scene& scene_;
+	game::Scene& scene_;
 };
 
 } // namespace editor
