@@ -1,7 +1,7 @@
 #include "widget_scene_hierarchy.h"
 #include "game/scene.h"
 #include "erwin.h"
-#include "font_awesome4.h"
+#include "font_awesome.h"
 #include "imgui.h"
 
 using namespace erwin;

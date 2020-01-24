@@ -1,6 +1,6 @@
 #include "layer_editor.h"
 #include "erwin.h"
-#include "font_awesome4.h"
+#include "font_awesome.h"
 
 using namespace erwin;
 using namespace editor;
@@ -87,7 +87,7 @@ void EditorLayer::on_attach()
 	// Merge icon font
 	ImGuiIO& io = ImGui::GetIO();
 	io.Fonts->AddFontDefault();
-	auto icon_font_path = filesystem::get_asset_dir() / "textures/atlas/upack/fontawesome-webfont.ttf";
+	auto icon_font_path = filesystem::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
 	static ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImFontConfig config;
 	config.MergeMode = true;

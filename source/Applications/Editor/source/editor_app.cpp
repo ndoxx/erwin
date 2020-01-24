@@ -16,13 +16,14 @@ void Editor::on_pre_init()
 
 void Editor::on_client_init()
 {
-	filesystem::set_asset_dir("source/Applications/Sandbox/assets"); // TMP: find a better way to share/centralize assets
+	filesystem::set_asset_dir("source/Applications/Editor/assets"); // TMP: find a better way to share/centralize assets
 	filesystem::set_client_config_dir("source/Applications/Editor/config");
 	this->add_configuration("client.xml");
 }
 
 void Editor::on_load()
 {
+    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
 	EVENTBUS.subscribe(this, &Editor::on_keyboard_event);
 
@@ -32,10 +33,13 @@ void Editor::on_load()
     };
     game_view_fb_ = FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
 
+    DLOG("editor",1) << "Pushing game layer." << std::endl;
     push_layer(game_layer_ = new GameLayer(scene_, entity_manager_, get_client_area()));
+    DLOG("editor",1) << "Pushing editor layer." << std::endl;
     push_overlay(editor_layer_ = new EditorLayer(scene_));
 
     // Add widgets to the editor layer
+    DLOG("editor",1) << "Creating widgets." << std::endl;
     RTPeekWidget* peek_widget;
     editor_layer_->add_widget(console_);
     editor_layer_->add_widget(new GameViewWidget(scene_));

@@ -4,7 +4,7 @@
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
 #include "entity/component_transform.h"
-#include "font_awesome4.h"
+#include "font_awesome.h"
 
 #include <iostream>
 #include <iomanip>

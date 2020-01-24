@@ -1,6 +1,7 @@
 #include "game/scene.h"
 #include "game/game_components.h"
-#include "font_awesome4.h"
+#include "font_awesome.h"
+#include "debug/logger.h"
 
 using namespace erwin;
 
@@ -20,6 +21,8 @@ void Scene::add_entity(erwin::EntityID entity, const std::string& name, const ch
 		entities.push_back(EntityDescriptor{entity, name, ICON_FA_CUBE});
 	else
 		entities.push_back(EntityDescriptor{entity, name, _icon});
+
+	DLOG("editor",1) << "[Scene] Added entity: " << name << " ID: " << entity << std::endl;
 }
 
 
