@@ -84,6 +84,11 @@ public:
 #ifdef W_DEBUG
 	void debug_show_content();
 
+	inline const std::vector<debug::AreaItem>& get_block_descriptions() const
+	{
+		return items_;
+	}
+
 	inline void debug_hex_dump(std::ostream& stream, size_t size=0)
 	{
 		if(size == 0)

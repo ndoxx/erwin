@@ -30,8 +30,9 @@ camera_yaw_(camera_.get_yaw()),
 camera_pitch_(camera_.get_pitch()),
 camera_position_(camera_.get_position())
 {
-	//std::tie(last_mouse_x_, last_mouse_y_) = Input::get_mouse_position();
 	has_control_ = false;
+	prev_mouse_x_ = 0.f;
+	prev_mouse_y_ = 0.f;
 }
 
 FreeflyController::~FreeflyController()
@@ -76,7 +77,15 @@ void FreeflyController::toggle_control()
 {
 	has_control_ = !has_control_;
 	Input::show_cursor(!has_control_);
-	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
+
+	// Save mouse position if control was acquired, restore it if control was released
+	if(has_control_)
+	{
+		std::tie(prev_mouse_x_, prev_mouse_y_) = Input::get_mouse_position();
+		Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
+	}
+	else
+		Input::set_mouse_position(prev_mouse_x_, prev_mouse_y_);
 }
 
 bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
@@ -113,12 +122,7 @@ bool FreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
 
 bool FreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
 {
-	if(!has_control_)
-		return false;
-
-	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
-	// Input::center_mouse_position();
-	return true;
+	return false;
 }
 
 bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)

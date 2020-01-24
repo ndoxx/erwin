@@ -1,5 +1,6 @@
 #include "widget_game_view.h"
-#include "widget_stats.h"
+#include "overlay_stats.h"
+#include "overlay_camera_tracker.h"
 #include "erwin.h"
 #include "game/scene.h"
 #include "imgui.h"
@@ -21,12 +22,14 @@ scene_(scene)
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
-    stats_overlay_ = new RenderStatsWidget();
+    stats_overlay_ = new RenderStatsOverlay();
+    camera_overlay_ = new CameraTrackerOverlay(scene_);
 }
 
 GameViewWidget::~GameViewWidget()
 {
-	delete stats_overlay_;
+    delete stats_overlay_;
+	delete camera_overlay_;
 }
 
 void GameViewWidget::on_update()
@@ -59,6 +62,21 @@ void GameViewWidget::on_move(int32_t x, int32_t y)
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }
 
+bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
+{
+    /*if(event.button == keymap::WMOUSE::BUTTON_0 &&
+       event.x > render_surface_.x0 &&
+       event.x < render_surface_.x1 &&
+       event.y > render_surface_.y0 &&
+       event.y < render_surface_.y1)
+    {
+        scene_.camera_controller.toggle_control();
+        return true;
+    }*/
+
+    return false;
+}
+
 void GameViewWidget::on_imgui_render()
 {
 	static bool show_frame_profiler = false;
@@ -68,9 +86,14 @@ void GameViewWidget::on_imgui_render()
 	    if(ImGui::BeginMenu("Profiling"))
 	    {
 	        ImGui::MenuItem("Frame profiler", NULL, &show_frame_profiler);
-	        ImGui::MenuItem("Render stats", NULL, &stats_overlay_->open_);
 	        ImGui::EndMenu();
 	    }
+        if(ImGui::BeginMenu("Overlays"))
+        {
+            ImGui::MenuItem("Render stats", NULL,   &stats_overlay_->open_);
+            ImGui::MenuItem("Camera tracker", NULL, &camera_overlay_->open_);
+            ImGui::EndMenu();
+        }
         ImGui::EndMenuBar();
 	}
 
@@ -84,6 +107,15 @@ void GameViewWidget::on_imgui_render()
 		ImGui::SetNextWindowBgAlpha(0.35f);
 	    stats_overlay_->imgui_render();
 	}
+
+    if(camera_overlay_->open_)
+    {
+        ImVec2 overlay_pos(render_surface_.x0 + k_overlay_dist, render_surface_.y0 + k_overlay_dist);
+        ImVec2 overlay_pivot(0.f, 0.f);
+        ImGui::SetNextWindowPos(overlay_pos, ImGuiCond_Always, overlay_pivot);
+        ImGui::SetNextWindowBgAlpha(0.35f);
+        camera_overlay_->imgui_render();
+    }
 
     // * Show game render in window
 	// Retrieve the native framebuffer texture handle

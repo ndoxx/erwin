@@ -8,7 +8,9 @@ set(SRC_EDITOR
     source/widget_scene_hierarchy.cpp
     source/widget_inspector.cpp
     source/widget_rt_peek.cpp
-    source/widget_stats.cpp
+    source/widget_hex_dump.cpp
+    source/overlay_stats.cpp
+    source/overlay_camera_tracker.cpp
     source/game/freefly_camera_controller.cpp
     source/game/game_components.cpp
     source/game/pbr_deferred_render_system.cpp

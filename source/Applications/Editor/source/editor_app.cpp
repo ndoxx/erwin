@@ -4,6 +4,7 @@
 #include "widget_scene_hierarchy.h"
 #include "widget_inspector.h"
 #include "widget_rt_peek.h"
+#include "widget_hex_dump.h"
 #include "debug/logger_thread.h"
 
 void Editor::on_pre_init()
@@ -40,18 +41,25 @@ void Editor::on_load()
 
     // Add widgets to the editor layer
     DLOG("editor",1) << "Creating widgets." << std::endl;
-    RTPeekWidget* peek_widget;
     editor_layer_->add_widget(console_);
     editor_layer_->add_widget(new GameViewWidget(scene_));
     editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
     editor_layer_->add_widget(new InspectorWidget(scene_, entity_manager_));
-    editor_layer_->add_widget(peek_widget = new RTPeekWidget(scene_));
 
     // Register main render target in peek widget
+    RTPeekWidget* peek_widget;
+    editor_layer_->add_widget(peek_widget = new RTPeekWidget(scene_));
 	peek_widget->register_framebuffer("GBuffer");
 	peek_widget->register_framebuffer("SpriteBuffer");
 	peek_widget->register_framebuffer("BloomCombine");
 	peek_widget->register_framebuffer("LBuffer");
+
+	// Register all memory area block descriptions
+    HexDumpWidget* hex_widget;
+    editor_layer_->add_widget(hex_widget = new HexDumpWidget());
+	hex_widget->register_area_description("client", get_client_area().get_block_descriptions());
+	hex_widget->register_area_description("system", get_system_area().get_block_descriptions());
+	hex_widget->register_area_description("render", get_render_area().get_block_descriptions());
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }

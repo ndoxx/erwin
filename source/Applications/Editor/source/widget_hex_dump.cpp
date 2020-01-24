@@ -1,0 +1,118 @@
+#include "widget_hex_dump.h"
+#include "erwin.h"
+#include "font_awesome.h"
+#include "imgui.h"
+
+#include <sstream>
+#include <iomanip>
+
+using namespace erwin;
+
+namespace editor
+{
+
+using BlockDescriptions = std::vector<memory::debug::AreaItem>;
+
+static struct
+{
+    std::vector<BlockDescriptions> area_descriptions_;
+    std::map<uint32_t, std::string> names_;
+    uint32_t current_area_;
+    uint32_t current_block_;
+} s_storage;
+
+HexDumpWidget::HexDumpWidget():
+Widget("Hex dump", true)
+{
+
+}
+
+HexDumpWidget::~HexDumpWidget()
+{
+
+}
+
+void HexDumpWidget::register_area_description(const std::string& name, const std::vector<memory::debug::AreaItem>& items)
+{
+    s_storage.names_.insert(std::make_pair(s_storage.area_descriptions_.size(), name));
+    s_storage.area_descriptions_.push_back(items);
+}
+
+void HexDumpWidget::on_imgui_render()
+{
+    if(s_storage.names_.empty())
+        return;
+
+    static const char* cur_area = s_storage.names_[0].data();
+    static const char* cur_block = s_storage.area_descriptions_[0][0].name.data();
+
+    if(ImGui::BeginCombo("Area", cur_area))
+    {
+        for(int ii=0; ii<s_storage.area_descriptions_.size(); ++ii)
+        {
+            bool is_selected = (cur_area == s_storage.names_[ii].data());
+
+            if(ImGui::Selectable(s_storage.names_[ii].data(), is_selected))
+            {
+                cur_area = s_storage.names_[ii].data();
+                s_storage.current_area_ = ii;
+                s_storage.current_block_ = 0;
+                cur_block = s_storage.area_descriptions_[ii][0].name.data();
+            }
+            if(is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    const BlockDescriptions& bd = s_storage.area_descriptions_[s_storage.current_area_];
+
+    if(ImGui::BeginCombo("Block", cur_block))
+    {
+        for(int ii=0; ii<bd.size(); ++ii)
+        {
+            bool is_selected = (cur_block == bd[ii].name.data());
+
+            if(ImGui::Selectable(bd[ii].name.data(), is_selected))
+            {
+                s_storage.current_block_ = ii;
+                cur_block = bd[ii].name.data();
+            }
+            if(is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    const memory::debug::AreaItem& item = bd[s_storage.current_block_];
+
+    const uint32_t* begin = static_cast<const uint32_t*>((void*)item.begin);
+    const uint32_t* end   = static_cast<const uint32_t*>((void*)item.end);
+    uint32_t* current = const_cast<uint32_t*>(begin);
+
+    static std::stringstream ss;
+    ss << std::hex;
+    uint32_t page_size = 0;
+    while(current < end && page_size < 1_kB)
+    {
+        ss << "[0x" << std::setfill('0') << std::setw(8) << std::size_t(current) << "]";
+
+        ImGui::TextColored(ImVec4(0.4f,0.6f,0.f,1.f), "%s", ss.str().c_str());
+        ss.str("");
+
+        for(int ii=0; ii<4; ++ii)
+        {
+            uint32_t value = *current;
+            ss << std::setfill('0') << std::setw(8) << value << " ";
+
+            ++current;
+            page_size += 4;
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted(ss.str().c_str());
+        ss.str("");
+    }
+}
+
+
+} // namespace editor

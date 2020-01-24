@@ -125,6 +125,16 @@ memory::HeapArea& Application::get_client_area()
     return s_storage.client_area;
 }
 
+const memory::HeapArea& Application::get_system_area() const
+{
+    return s_storage.system_area;
+}
+
+const memory::HeapArea& Application::get_render_area() const
+{
+    return s_storage.render_area;
+}
+
 bool Application::init()
 {
     {

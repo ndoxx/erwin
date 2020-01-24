@@ -42,6 +42,8 @@ void Widget::imgui_render()
     	y_pos_ = window_pos.y;
     }
 
+    has_focus_ = ImGui::IsWindowFocused();
+
     on_imgui_render();
     ImGui::End();
 }

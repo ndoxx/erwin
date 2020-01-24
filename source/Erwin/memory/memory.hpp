@@ -18,7 +18,6 @@
 #include <algorithm>
 
 #include "debug/logger.h"
-#include "memory/heap_area.h"
 
 // Useful to avoid uninitialized reads with Valgrind during hexdumps
 // Disable for retail build
@@ -28,6 +27,7 @@
 	#define AREA_MEMSET_VALUE 0x00
 	#define AREA_PADDING_MARK 0xd0
 #endif
+#include "memory/heap_area.h"
 
 namespace erwin
 {

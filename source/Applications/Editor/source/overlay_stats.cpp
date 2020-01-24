@@ -1,4 +1,4 @@
-#include "widget_stats.h"
+#include "overlay_stats.h"
 #include "game/scene.h"
 #include "erwin.h"
 #include "imgui.h"
@@ -9,7 +9,7 @@ using namespace erwin;
 namespace editor
 {
 
-RenderStatsWidget::RenderStatsWidget():
+RenderStatsOverlay::RenderStatsOverlay():
 Widget("Statistics", true)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar 
@@ -18,17 +18,17 @@ Widget("Statistics", true)
            | ImGuiWindowFlags_NoNav;
 }
 
-RenderStatsWidget::~RenderStatsWidget()
+RenderStatsOverlay::~RenderStatsOverlay()
 {
 
 }
 
-void RenderStatsWidget::on_update()
+void RenderStatsOverlay::on_update()
 {
     Renderer::set_profiling_enabled(open_);
 }
 
-void RenderStatsWidget::on_imgui_render()
+void RenderStatsOverlay::on_imgui_render()
 {
     const auto& r_stats = Renderer::get_stats();
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "event/window_events.h"
 
 namespace editor
 {
@@ -13,6 +14,8 @@ public:
 
 	virtual void on_update() { }
 	virtual void on_layer_render() { }
+	virtual bool on_event(const erwin::MouseButtonEvent& event) { return false; }
+
 	void imgui_render();
 
 	inline void show(bool value=true) { open_ = value; }
@@ -33,6 +36,7 @@ protected:
 	uint32_t height_;
 	int32_t x_pos_;
 	int32_t y_pos_;
+	bool has_focus_;
 };
 
 

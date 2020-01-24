@@ -26,6 +26,11 @@ public:
 	bool on_mouse_moved_event(const erwin::MouseMovedEvent& event);
 	bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
 
+	inline float get_aspect_ratio() const { return aspect_ratio_; }
+	inline float get_fovy() const         { return fovy_; }
+	inline float get_znear() const        { return znear_; }
+	inline float get_zfar() const         { return zfar_; }
+
 private:
 	erwin::PerspectiveCamera3D camera_;
 	float aspect_ratio_;
@@ -40,6 +45,8 @@ private:
 	float win_height_;
 	float win_x_;
 	float win_y_;
+	float prev_mouse_x_;
+	float prev_mouse_y_;
 	bool has_control_;
 	glm::vec3 camera_position_;
 };

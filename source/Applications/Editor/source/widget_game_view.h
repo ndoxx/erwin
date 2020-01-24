@@ -16,6 +16,7 @@ public:
 	GameViewWidget(game::Scene& scene);
 	virtual ~GameViewWidget();
 
+	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
 	virtual void on_update() override;
 
 protected:
@@ -28,6 +29,7 @@ protected:
 private:
 	game::Scene& scene_;
 	Widget* stats_overlay_;
+	Widget* camera_overlay_;
 
 	struct RenderSurface
 	{

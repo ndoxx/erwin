@@ -149,9 +149,6 @@ void GameLayer::on_render()
 
 bool GameLayer::on_event(const MouseButtonEvent& event)
 {
-	ImGuiIO& io = ImGui::GetIO();
-	if(!io.WantCaptureMouse)
-		scene_.camera_controller.on_mouse_button_event(event);
 	return false;
 }
 
@@ -169,16 +166,12 @@ bool GameLayer::on_event(const WindowMovedEvent& event)
 
 bool GameLayer::on_event(const MouseScrollEvent& event)
 {
-	ImGuiIO& io = ImGui::GetIO();
-	if(!io.WantCaptureMouse)
-		scene_.camera_controller.on_mouse_scroll_event(event);
+	scene_.camera_controller.on_mouse_scroll_event(event);
 	return false;
 }
 
 bool GameLayer::on_event(const MouseMovedEvent& event)
 {
-	/*ImGuiIO& io = ImGui::GetIO();
-	if(!io.WantCaptureMouse)*/
-		scene_.camera_controller.on_mouse_moved_event(event);
+	scene_.camera_controller.on_mouse_moved_event(event);
 	return false;
 }

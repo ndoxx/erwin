@@ -5,11 +5,11 @@
 namespace editor
 {
 
-class RenderStatsWidget: public Widget
+class RenderStatsOverlay: public Widget
 {
 public:
-	RenderStatsWidget();
-	virtual ~RenderStatsWidget();
+	RenderStatsOverlay();
+	virtual ~RenderStatsOverlay();
 
 	virtual void on_update() override;
 
