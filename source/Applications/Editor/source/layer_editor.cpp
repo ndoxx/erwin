@@ -1,5 +1,6 @@
 #include "layer_editor.h"
 #include "erwin.h"
+#include "font_awesome4.h"
 
 using namespace erwin;
 using namespace editor;
@@ -82,6 +83,15 @@ void EditorLayer::on_attach()
 {
 	set_gui_style();
 	set_gui_behavior();
+
+	// Merge icon font
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontDefault();
+	auto icon_font_path = filesystem::get_asset_dir() / "textures/atlas/upack/fontawesome-webfont.ttf";
+	static ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+	ImFontConfig config;
+	config.MergeMode = true;
+	io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
 
 	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
 }

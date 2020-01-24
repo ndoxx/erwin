@@ -4,6 +4,7 @@
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
 #include "entity/component_transform.h"
+#include "font_awesome4.h"
 
 #include <iostream>
 #include <iomanip>
@@ -68,7 +69,7 @@ void GameLayer::on_attach()
 		renderable.material_data.scale = 0.2f;
 		entity_manager_.submit_entity(ent);
 		scene_.directional_light = ent;
-		scene_.add_entity(ent, "Sun");
+		scene_.add_entity(ent, "Sun", ICON_FA_SUN_O);
 	}
 
 	{
@@ -85,6 +86,8 @@ void GameLayer::on_attach()
 		entity_manager_.submit_entity(ent);
 		scene_.add_entity(ent, "Emissive cube");
 	}
+
+	scene_.selected_entity_idx = 0;
 
 	scene_.camera_controller.set_position({0.f,1.f,3.f});
 

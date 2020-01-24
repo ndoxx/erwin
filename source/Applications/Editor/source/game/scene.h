@@ -10,6 +10,7 @@ struct EntityDescriptor
 {
 	erwin::EntityID id;
 	std::string name;
+	const char* icon;
 };
 
 class Scene
@@ -17,7 +18,7 @@ class Scene
 public:
 	Scene();
 
-	void add_entity(erwin::EntityID entity, const std::string& name);
+	void add_entity(erwin::EntityID entity, const std::string& name, const char* icon = nullptr);
 
 	uint32_t selected_entity_idx;
 	erwin::EntityID directional_light;

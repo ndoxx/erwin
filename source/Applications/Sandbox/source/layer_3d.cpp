@@ -122,7 +122,7 @@ void Layer3D::on_update(GameClock& clock)
 		float yy = cube.transform.position.y;
 		float zz = cube.transform.position.z;
 		glm::vec3 euler = {(1.f-yy/9.f)*xx/10.f,yy/10.f,(1.f-yy/9.f)*zz/10.f};
-		euler *= 1.0f*sin(2*M_PI*tt/10.f);
+		euler *= 180.0f*sin(2*M_PI*tt/10.f);
 		cube.transform.set_rotation(euler);
 	}
 

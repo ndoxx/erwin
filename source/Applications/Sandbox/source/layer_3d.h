@@ -43,7 +43,7 @@ private:
 	ShaderHandle deferred_pbr_;
 	ShaderHandle forward_opaque_pbr_;
 	ShaderHandle forward_sun_;
-	DirectionalLight dir_light_;
+	ComponentDirectionalLight dir_light_;
 
 	Material sun_material_;
 	SunMaterialData sun_material_data_;

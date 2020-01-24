@@ -32,6 +32,8 @@ void ComponentTransform3D::inspector_GUI()
 	ImGui::InputFloat("Y##cmp_tr3", &position.y, k_step, k_step_fast, "%.3f");
 	ImGui::InputFloat("Z##cmp_tr3", &position.z, k_step, k_step_fast, "%.3f");
 
+	ImGui::SliderFloat("Scale##cmp_tr3", &uniform_scale, 0.1f, 10.0f);
+
 	bool update_rotation = false;
     update_rotation |= ImGui::SliderFloat("Pitch##cmp_tr3", &euler.x, 0.0f, 180.0f);
     update_rotation |= ImGui::SliderFloat("Yaw##cmp_tr3",   &euler.y, 0.0f, 360.0f);

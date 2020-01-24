@@ -25,6 +25,22 @@ InspectorWidget::~InspectorWidget()
 void InspectorWidget::entity_tab()
 {
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+    if(ImGui::TreeNode("Properties"))
+    {
+        auto& desc = scene_.entities[scene_.selected_entity_idx];
+
+        ImGui::Text("EntityID: %lu", desc.id);
+
+        // TODO: Use a resize callback to wire the InputText to the string directly
+        static char name_buf[128] = "";
+        if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
+            desc.name = name_buf;
+
+        ImGui::TreePop();
+        ImGui::Separator();
+    }
+
+    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
         entity_manager_.inspector_GUI(scene_.entities[scene_.selected_entity_idx].id);

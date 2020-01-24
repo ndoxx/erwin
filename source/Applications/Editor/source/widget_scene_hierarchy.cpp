@@ -1,6 +1,7 @@
 #include "widget_scene_hierarchy.h"
 #include "game/scene.h"
 #include "erwin.h"
+#include "font_awesome4.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -34,7 +35,7 @@ void SceneHierarchyWidget::on_imgui_render()
     	if(ii == scene_.selected_entity_idx)
     		flags |= ImGuiTreeNodeFlags_Selected;
 
-		ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s (%lu)", desc.name.c_str(), desc.id);
+		ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon, desc.name.c_str());
 		if(ImGui::IsItemClicked())
 			node_clicked = ii;
     }
