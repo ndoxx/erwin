@@ -7,10 +7,8 @@
 namespace erwin
 {
 
-class PBRDeferredRenderSystem: public ComponentSystem<ComponentTransform3D, ComponentRenderablePBRDeferred>
+class PBRDeferredRenderSystem: public ComponentSystem<RequireAll<ComponentTransform3D, ComponentRenderablePBRDeferred>>
 {
-	using BaseType = ComponentSystem<ComponentTransform3D, ComponentRenderablePBRDeferred>;
-
 public:
 	PBRDeferredRenderSystem(EntityManager* manager): BaseType(manager) {}
 	virtual ~PBRDeferredRenderSystem() = default;

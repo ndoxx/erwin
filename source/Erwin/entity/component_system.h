@@ -2,14 +2,18 @@
 
 /*
 	Original design by Rez Bot: https://www.youtube.com/watch?v=39e1qpsutBU
+	Major modifications:
+		- Component filtering is put in a policy template which is a parameter of the concrete component system.
+		- virtual render() function, needed for my engine to be able to dispatch render calls
+		  when appropriate (not during the update phase).
 
 	Template class the concrete component systems inherit from. Concrete component systems
-	will only care about the components specified as template parameters.
+	will only care about the components specified as template parameters of the filter.
 
 	Usage:
-	class RenderSystem2D: public ComponentSystem<ComponentRenderable2D, ComponentTransform2D>
+	class RenderSystem2D: public ComponentSystem<RequireAll<ComponentRenderable2D, ComponentTransform2D>>
 	{
-		using BaseType = ComponentSystem<ComponentRenderable2D, ComponentTransform2D>;
+		using BaseType = ComponentSystem<RequireAll<ComponentRenderable2D, ComponentTransform2D>>;
 
 	public:
 		RenderSystem2D(EntityManager* manager): BaseType(manager) {}
@@ -36,8 +40,58 @@
 
 namespace erwin
 {
-
 template <typename... CompsT>
+struct RequireAll
+{
+	using ComponentTuple     = eastl::tuple<eastl::add_pointer_t<CompsT>...>; // Tuple of component pointers
+	using Components         = eastl::vector<ComponentTuple/*, PooledEastlAllocator*/>;
+	using EntityIdToIndexMap = eastl::hash_map<EntityID, size_t, eastl::hash<EntityID>, eastl::equal_to<EntityID>/*, PooledEastlAllocator*/>;
+
+	static void filter(const Entity& entity, Components& components, EntityIdToIndexMap& entity_id_to_index_map)
+	{
+		// Loop through all entity's components
+		ComponentTuple ctuple;
+		size_t match_count = 0;
+		for(auto&& [id, pcmp]: entity.get_components())
+		{
+			// If the entity has all the components this system requires, register the components
+			if(process_entity_component<0, CompsT...>(id, pcmp, ctuple))
+			{
+				if(++match_count == sizeof...(CompsT))
+				{
+					components.emplace_back(std::move(ctuple));
+					entity_id_to_index_map.emplace(entity.get_id(), components.size()-1);
+					break;
+				}
+			}
+		}
+	}
+
+private:
+	// Recursive component types lookup
+	template<size_t INDEX, typename CompT, typename... CompArgsT>
+	static bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
+	{
+		if(CompT::ID == id)
+		{
+			eastl::get<INDEX>(target_tuple) = static_cast<CompT*>(pcmp);
+			return true;
+		}
+		else
+			return process_entity_component<INDEX+1, CompArgsT...>(id, pcmp, target_tuple);
+	}
+
+	// Termination specialization of recursion
+	template<size_t INDEX>
+	static bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
+	{
+		return false;
+	}
+};
+
+
+
+template <typename FilterT>
 class ComponentSystem: public BaseComponentSystem
 {
 public:
@@ -51,70 +105,28 @@ public:
 	virtual void render() override { }
 	virtual bool init() = 0;
 
+	using BaseType = ComponentSystem<FilterT>;
+
 protected:
-	using ComponentTuple = eastl::tuple<eastl::add_pointer_t<CompsT>...>; // Tuple of component pointers
-	using Components     = eastl::vector<ComponentTuple/*, PooledEastlAllocator*/>;
+	using ComponentTuple = typename FilterT::ComponentTuple;
+	using Components     = typename FilterT::Components;
 
 	Components components_;
 
 private:
-	// Recursive component types lookup
-	template<size_t INDEX, typename CompT, typename... CompArgsT>
-	bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple);
-
-	// Termination specialization of recursion
-	template<size_t INDEX>
-	bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple);
-
-private:
-	using EntityIdToIndexMap = eastl::hash_map<EntityID, size_t, eastl::hash<EntityID>, eastl::equal_to<EntityID>/*, PooledEastlAllocator*/>;
+	using EntityIdToIndexMap = typename FilterT::EntityIdToIndexMap;
 
 	EntityIdToIndexMap entity_id_to_index_map_;
 };
 
-template <typename... CompsT>
-template<size_t INDEX, typename CompT, typename... CompArgsT>
-bool ComponentSystem<CompsT...>::process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
+template <typename FilterT>
+void ComponentSystem<FilterT>::on_entity_submitted(const Entity& entity)
 {
-	if(CompT::ID == id)
-	{
-		eastl::get<INDEX>(target_tuple) = static_cast<CompT*>(pcmp);
-		return true;
-	}
-	else
-		return process_entity_component<INDEX+1, CompArgsT...>(id, pcmp, target_tuple);
+	FilterT::filter(entity, components_, entity_id_to_index_map_);
 }
 
-template <typename... CompsT>
-template<size_t INDEX>
-bool ComponentSystem<CompsT...>::process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
-{
-	return false;
-}
-
-template <typename... CompsT>
-void ComponentSystem<CompsT...>::on_entity_submitted(const Entity& entity)
-{
-	// Loop through all entity's components
-	ComponentTuple ctuple;
-	size_t match_count = 0;
-	for(auto&& [id, pcmp]: entity.get_components())
-	{
-		// If the entity has all the components this system requires, register the components
-		if(process_entity_component<0, CompsT...>(id, pcmp, ctuple))
-		{
-			if(++match_count == sizeof...(CompsT))
-			{
-				components_.emplace_back(std::move(ctuple));
-				entity_id_to_index_map_.emplace(entity.get_id(), components_.size()-1);
-				break;
-			}
-		}
-	}
-}
-
-template <typename... CompsT>
-void ComponentSystem<CompsT...>::on_entity_destroyed(const Entity& entity)
+template <typename FilterT>
+void ComponentSystem<FilterT>::on_entity_destroyed(const Entity& entity)
 {
 	auto it = entity_id_to_index_map_.find(entity.get_id());
 	if(it != entity_id_to_index_map_.end())

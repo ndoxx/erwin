@@ -50,10 +50,8 @@ public:
 COMPONENT_DEFINITION(CComponent);
 
 // Systems
-class ABAdderSystem: public ComponentSystem<AComponent, BComponent>
+class ABAdderSystem: public ComponentSystem<RequireAll<AComponent, BComponent>>
 {
-	using BaseType = ComponentSystem<AComponent, BComponent>;
-
 public:
 	ABAdderSystem(EntityManager* manager): BaseType(manager) {}
 	virtual ~ABAdderSystem() = default;
@@ -76,10 +74,8 @@ public:
 	}
 };
 
-class BCAdderSystem: public ComponentSystem<BComponent, CComponent>
+class BCAdderSystem: public ComponentSystem<RequireAll<BComponent, CComponent>>
 {
-	using BaseType = ComponentSystem<BComponent, CComponent>;
-
 public:
 	BCAdderSystem(EntityManager* manager): BaseType(manager) {}
 	virtual ~BCAdderSystem() = default;

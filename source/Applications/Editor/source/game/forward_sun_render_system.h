@@ -7,10 +7,8 @@
 namespace erwin
 {
 
-class ForwardSunRenderSystem: public ComponentSystem<ComponentDirectionalLight, ComponentRenderableDirectionalLight>
+class ForwardSunRenderSystem: public ComponentSystem<RequireAll<ComponentDirectionalLight, ComponentRenderableDirectionalLight>>
 {
-	using BaseType = ComponentSystem<ComponentDirectionalLight, ComponentRenderableDirectionalLight>;
-
 public:
 	ForwardSunRenderSystem(EntityManager* manager): BaseType(manager) {}
 	virtual ~ForwardSunRenderSystem() = default;
