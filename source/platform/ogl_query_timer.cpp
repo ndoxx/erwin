@@ -1,16 +1,19 @@
 #include "platform/ogl_query_timer.h"
+#include "glad/glad.h"
 
 #include <utility>
 
 namespace erwin
 {
 
-OGLQueryTimer::OGLQueryTimer():
-query_back_buffer_(0),
-query_front_buffer_(1),
-timer_(0)
+OGLQueryTimer::OGLQueryTimer()
 {
-    fence_ = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+#ifndef USE_TIMESTAMP
+    query_back_buffer_ = 0;
+    query_front_buffer_ = 1;
+    timer_ = 0;
+#endif
+
     glGenQueries(2, &query_ID_[0]);
 
 #ifndef USE_TIMESTAMP
@@ -24,7 +27,10 @@ void OGLQueryTimer::start(bool sync)
 {
 #ifndef USE_TIMESTAMP
     if(sync)
-        glWaitSync(fence_, 0, GL_TIMEOUT_IGNORED);
+    {
+        GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+    }
     glBeginQuery(GL_TIME_ELAPSED, query_ID_[query_back_buffer_]);
 #else
     glQueryCounter(query_ID_[0], GL_TIMESTAMP);

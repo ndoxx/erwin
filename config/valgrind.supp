@@ -1,0 +1,240 @@
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5eastl9hashtableImNS_4pairIKmPNS_4listIPN5erwin16AbstractDelegateINS4_6WEventEEENS_9allocatorEEEEES9_NS_9use_firstISC_EENS_8equal_toImEENS_4hashImEENS_17mod_range_hashingENS_19default_ranged_hashENS_19prime_rehash_policyELb0ELb1ELb1EE11DoInsertKeyENS_17integral_constantIbLb1EEERS2_m
+   fun:_ZN5erwin8EventBus9subscribeINS_3dbg12LoggerThreadENS_22FramebufferResizeEventEEEvPT_MS5_FbRKT0_E
+   fun:_ZN5erwin3dbg12LoggerThread11track_eventINS_22FramebufferResizeEventEEEvv
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5eastl9hashtableImNS_4pairIKmNS_5queueIPN5erwin6WEventENS_5dequeIS6_NS_9allocatorELj32EEEEEEES8_NS_9use_firstISB_EENS_8equal_toImEENS_4hashImEENS_17mod_range_hashingENS_19default_ranged_hashENS_19prime_rehash_policyELb0ELb1ELb1EE13DoInsertValueINS_17integral_constantIbLb1EEEJRKNS_21piecewise_construct_tENS_5tupleIJmEEENSS_IJEEEELPv0EEENS1_INS_18hashtable_iteratorISB_Lb0ELb0EEEbEET_DpOT0_
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5eastl9hashtableImNS_4pairIKmPNS_4listIPN5erwin16AbstractDelegateINS4_6WEventEEENS_9allocatorEEEEES9_NS_9use_firstISC_EENS_8equal_toImEENS_4hashImEENS_17mod_range_hashingENS_19default_ranged_hashENS_19prime_rehash_policyELb0ELb1ELb1EE11DoInsertKeyENS_17integral_constantIbLb1EEERS2_m
+   fun:_ZN5erwin8EventBus9subscribeINS_10LayerStackENS_13KeyTypedEventEEEvPT_MS4_FbRKT0_E
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin13EntityManager24create_component_managerINS_30ComponentRenderablePBRDeferredES2_EEvRNS_6memory8HeapAreaEm
+   fun:_ZN9GameLayer9on_attachEv
+   fun:_ZN5erwin10LayerStack10push_layerEPNS_5LayerE
+   fun:_ZN5erwin11Application10push_layerEPNS_5LayerE
+   fun:_ZN6Editor7on_loadEv
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin13EntityManager24create_component_managerINS_35ComponentRenderableDirectionalLightES2_EEvRNS_6memory8HeapAreaEm
+   fun:_ZN9GameLayer9on_attachEv
+   fun:_ZN5erwin10LayerStack10push_layerEPNS_5LayerE
+   fun:_ZN5erwin11Application10push_layerEPNS_5LayerE
+   fun:_ZN6Editor7on_loadEv
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5eastl9hashtableImNS_4pairIKmmEENS_9allocatorENS_9use_firstIS3_EENS_8equal_toImEENS_4hashImEENS_17mod_range_hashingENS_19default_ranged_hashENS_19prime_rehash_policyELb0ELb1ELb1EE13DoInsertValueINS_17integral_constantIbLb1EEEJRS2_RmELPv0EEENS1_INS_18hashtable_iteratorIS3_Lb0ELb0EEEbEET_DpOT0_
+   fun:_ZN5erwin13EntityManager24create_component_managerINS_35ComponentRenderableDirectionalLightES2_EEvRNS_6memory8HeapAreaEm
+   fun:_ZN9GameLayer9on_attachEv
+   fun:_ZN5erwin10LayerStack10push_layerEPNS_5LayerE
+   fun:_ZN5erwin11Application10push_layerEPNS_5LayerE
+   fun:_ZN6Editor7on_loadEv
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN9GameLayer9on_attachEv
+   fun:_ZN5erwin10LayerStack10push_layerEPNS_5LayerE
+   fun:_ZN5erwin11Application10push_layerEPNS_5LayerE
+   fun:_ZN6Editor7on_loadEv
+   fun:_ZN5erwin11Application4initEv
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_20ComponentTransform3DEED2Ev
+   fun:_ZN5erwin16ComponentManagerINS_20ComponentTransform3DEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_20ComponentTransform3DEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_30ComponentRenderablePBRDeferredEED2Ev
+   fun:_ZN5erwin16ComponentManagerINS_30ComponentRenderablePBRDeferredEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_30ComponentRenderablePBRDeferredEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_35ComponentRenderableDirectionalLightEED2Ev
+   fun:_ZN5erwin16ComponentManagerINS_35ComponentRenderableDirectionalLightEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_35ComponentRenderableDirectionalLightEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_25ComponentDirectionalLightEED2Ev
+   fun:_ZN5erwin16ComponentManagerINS_25ComponentDirectionalLightEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin16ComponentManagerINS_25ComponentDirectionalLightEED0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin23PBRDeferredRenderSystemD0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin22ForwardSunRenderSystemD0Ev
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin13EntityManagerD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin8EventBusD1Ev
+   fun:_ZN5erwin8EventBus8shutdownEv
+   fun:_ZN5erwin11ApplicationD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5eastl9hashtableImNS_4pairIKmNS_5queueIPN5erwin6WEventENS_5dequeIS6_NS_9allocatorELj32EEEEEEES8_NS_9use_firstISB_EENS_8equal_toImEENS_4hashImEENS_17mod_range_hashingENS_19default_ranged_hashENS_19prime_rehash_policyELb0ELb1ELb1EE11DoFreeNodesEPPNS_9hash_nodeISB_Lb0EEEm
+   fun:_ZN5erwin8EventBusD1Ev
+   fun:_ZN5erwin8EventBus8shutdownEv
+   fun:_ZN5erwin11ApplicationD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin8EventBus8shutdownEv
+   fun:_ZN5erwin11ApplicationD1Ev
+   fun:_ZN6EditorD0Ev
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:_ZN5erwin19AssetManagerStorageD2Ev
+   fun:__cxa_finalize
+   obj:/home/ndx/dev/Erwin/lib/liberwin.so.1.0.0
+   fun:_dl_fini
+   fun:__run_exit_handlers
+   fun:exit
+   fun:(below main)
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:_ZdaPv
+   fun:__cxa_finalize
+   obj:/home/ndx/dev/Erwin/lib/liberwin.so.1.0.0
+   fun:_dl_fini
+   fun:__run_exit_handlers
+   fun:exit
+   fun:(below main)
+}

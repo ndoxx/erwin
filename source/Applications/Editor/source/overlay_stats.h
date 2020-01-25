@@ -15,9 +15,6 @@ public:
 
 protected:
 	virtual void on_imgui_render() override;
-
-private:
-
 };
 
 } // namespace editor

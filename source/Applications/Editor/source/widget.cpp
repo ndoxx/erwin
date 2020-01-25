@@ -10,7 +10,10 @@ open_(open),
 name_(name),
 flags_(0),
 width_(0),
-height_(0)
+height_(0),
+x_pos_(0),
+y_pos_(0),
+has_focus_(false)
 {
 
 }

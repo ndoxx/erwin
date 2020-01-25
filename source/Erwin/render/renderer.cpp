@@ -2031,7 +2031,6 @@ static void sort_commands()
 void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
-    
     static nanoClock flush_clock;
 	if(s_storage.profiling_enabled)
 	{

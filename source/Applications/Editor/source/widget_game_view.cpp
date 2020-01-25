@@ -24,6 +24,7 @@ scene_(scene)
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
     camera_overlay_ = new CameraTrackerOverlay(scene_);
+    render_surface_ = {0.f,0.f,0.f,0.f};
 }
 
 GameViewWidget::~GameViewWidget()
@@ -80,7 +81,6 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
 void GameViewWidget::on_imgui_render()
 {
 	static bool show_frame_profiler = false;
-
     if(ImGui::BeginMenuBar())
     {
 	    if(ImGui::BeginMenu("Profiling"))

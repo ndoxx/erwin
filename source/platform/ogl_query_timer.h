@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include "render/query_timer.h"
-#include "glad/glad.h"
 
 // #define USE_TIMESTAMP
 
@@ -28,7 +27,6 @@ private:
     uint32_t query_front_buffer_;
     uint32_t timer_;
 #endif
-    GLsync fence_;
 };
 
 
