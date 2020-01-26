@@ -126,7 +126,7 @@ static void build_tangents()
     }
 }
 
-static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+static Extent build_shape(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, bool draw_lines=false)
 {
 	// Indirection tables for data interleaving
 	constexpr uint32_t k_max_attrib = 4;
@@ -189,11 +189,14 @@ static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, s
 
 	// Export
 	vdata.resize(tl_storage.vertex_count*vertex_size);
-	idata.resize(tl_storage.triangle_count*3);
 	// Interleave vertex data
+	Extent dims;
 	// For each vertex
 	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
 	{
+		// Update dimensions in this loop for efficiency
+		dims.update(tl_storage.position[ii]);
+
 		uint32_t offset = 0;
 		// For each layout element
 		for(int jj=0; jj<elements_count; ++jj)
@@ -208,15 +211,26 @@ static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, s
 			offset += ccount;
 		}
 	}
-	// Copy index data (lines not supported for now)
-	std::copy(tl_storage.triangles, tl_storage.triangles + tl_storage.triangle_count*3, idata.data());
+
+	if(draw_lines)
+	{
+		idata.resize(tl_storage.line_count*2);
+		std::copy(tl_storage.lines, tl_storage.lines + tl_storage.line_count*2, idata.data());
+	}
+	else
+	{
+		idata.resize(tl_storage.triangle_count*3);
+		std::copy(tl_storage.triangles, tl_storage.triangles + tl_storage.triangle_count*3, idata.data());
+	}
 
 	reset_storage();
+
+	return dims;
 }
 
-void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, Parameters* params)
 {
-	// Ignore parameters for now
+	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
 
 	// Setup position and UV vertex data, all th rest can be computed from this
@@ -226,10 +240,10 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
     add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f});
     add_vertex({ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f});
     add_vertex({ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f});
-    add_vertex({ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f});
-    add_vertex({ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
     add_vertex({-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
     add_vertex({-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
     add_vertex({ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f});
     add_vertex({ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f});
     add_vertex({-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f});
@@ -245,46 +259,13 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
     add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f});
     add_vertex({-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f});
 
-	// Front
-	/*
-    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
-    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.f, 1.f});
-    add_vertex({-0.5f,  0.5f,  0.5f}, {0.f, 1.f});
-    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
-	// Right
-    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
-    add_vertex({ 0.5f,  0.5f, -0.5f}, {0.f, 1.f});
-    add_vertex({ 0.5f,  0.5f,  0.5f}, {0.f, 0.f});
-    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
-	// Back
-    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
-    add_vertex({-0.5f,  0.5f, -0.5f}, {0.f, 0.f});
-    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.f, 0.f});
-    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
-	// Left
-    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
-    add_vertex({-0.5f,  0.5f,  0.5f}, {1.f, 0.f});
-    add_vertex({-0.5f,  0.5f, -0.5f}, {1.f, 1.f});
-    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
-	// Top
-    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.f, 0.f});
-    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.f, 1.f});
-    add_vertex({-0.5f,  0.5f, -0.5f}, {0.f, 1.f});
-    add_vertex({-0.5f,  0.5f,  0.5f}, {0.f, 0.f});
-	// Bottom
-    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.f, 1.f});
-    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.f, 0.f});
-    add_vertex({-0.5f, -0.5f,  0.5f}, {0.f, 0.f});
-    add_vertex({-0.5f, -0.5f, -0.5f}, {0.f, 1.f});
-	*/
-
     // Setup index data
 	add_triangle(0,  1,  2); 
 	add_triangle(0,  2,  3); 
-	add_triangle(4,  5,  6); 
-	add_triangle(4,  6,  7); 
-	add_triangle(8,  9,  10);
-	add_triangle(8,  10, 11);
+	add_triangle(4,  5,  8); 
+	add_triangle(4,  8,  9); 
+	add_triangle(6,  7,  10);
+	add_triangle(6,  10, 11);
 	add_triangle(12, 13, 14);
 	add_triangle(12, 14, 15);
 	add_triangle(16, 17, 18);
@@ -293,10 +274,44 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
 	add_triangle(20, 22, 23);
 
 	// Build interleaved vertex data according to input specifications
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata);
 }
 
-void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Extent make_cube_lines(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, Parameters* params)
+{
+	// Ignore parameters for now, only z-plane available
+	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
+
+	// Setup position and UV vertex data, all th rest can be computed from this
+    add_vertex({ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f});
+    add_vertex({ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f});
+    add_vertex({ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f});
+    add_vertex({-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
+
+	// Setup line indices
+	add_line(0, 3);
+	add_line(0, 1);
+	add_line(0, 4);
+	add_line(6, 5);
+	add_line(6, 7);
+	add_line(6, 2);
+	add_line(3, 7);
+	add_line(3, 2);
+	add_line(4, 7);
+	add_line(4, 5);
+	add_line(1, 2);
+	add_line(1, 5);
+
+
+	// Build interleaved vertex data according to input specifications
+	return build_shape(layout, vdata, idata, true);
+}
+
+Extent make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, Parameters* params)
 {
 	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
@@ -309,10 +324,10 @@ void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vect
 	add_triangle(0, 1, 2);
 	add_triangle(2, 3, 0);
 
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata);
 }
 
-void make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, Parameters* params)
 {
 	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
@@ -367,7 +382,7 @@ void make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std
     add_triangle(8,  6,  7);
     add_triangle(9,  8,  1);
 
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata);
 }
 
 

@@ -100,7 +100,12 @@ void EntityManager::inspector_GUI(EntityID entity_id)
 
 	for(auto&& [cid, pcmp]: entity.get_components())
 	{
-		pcmp->inspector_GUI();
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode(pcmp->get_debug_name().c_str()))
+        {
+			pcmp->inspector_GUI();
+        	ImGui::TreePop();
+        }
         ImGui::Separator();
 	}
 }
