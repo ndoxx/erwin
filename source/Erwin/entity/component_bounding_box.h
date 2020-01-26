@@ -18,8 +18,9 @@ public:
     glm::vec3 half;
     glm::mat4 model_matrix;
     Extent extent_m; // Extent in model space
+    bool display;
 
-    ComponentOBB() = default;
+    ComponentOBB();
     ComponentOBB(const Extent& extent);
 
     inline void update(const glm::mat4& parent_model_matrix)

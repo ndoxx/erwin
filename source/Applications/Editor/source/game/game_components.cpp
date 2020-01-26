@@ -16,7 +16,6 @@ bool ComponentRenderablePBRDeferred::init(void* description)
 }
 void ComponentRenderablePBRDeferred::inspector_GUI()
 {
-    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentRenderablePBRDeferred");
     ImGui::ColorEdit3("Tint", (float*)&material_data.tint);
 
     if(is_emissive())
@@ -36,7 +35,6 @@ bool ComponentRenderableDirectionalLight::init(void* description)
 }
 void ComponentRenderableDirectionalLight::inspector_GUI()
 {
-    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentRenderableDirectionalLight");
     ImGui::SliderFloat("App. diameter", &material_data.scale, 0.1f, 0.4f);
 }
 

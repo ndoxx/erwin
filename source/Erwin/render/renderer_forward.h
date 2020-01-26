@@ -47,6 +47,11 @@ public:
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
 
+	// Draw a debug cube
+	static void begin_line_pass(const PerspectiveCamera3D& camera);
+	static void end_line_pass();
+	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
+
 private:
 	friend class Application;
 

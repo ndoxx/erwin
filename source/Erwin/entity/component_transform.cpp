@@ -12,7 +12,7 @@ bool ComponentTransform2D::init(void* description)
 }
 void ComponentTransform2D::inspector_GUI()
 {
-    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentTransform2D");
+
 }
 
 COMPONENT_DEFINITION(ComponentTransform3D);
@@ -23,8 +23,6 @@ bool ComponentTransform3D::init(void* description)
 }
 void ComponentTransform3D::inspector_GUI()
 {
-    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentTransform3D");
-
 	static constexpr float k_step = 0.1f;
 	static constexpr float k_step_fast = 0.5f;
 

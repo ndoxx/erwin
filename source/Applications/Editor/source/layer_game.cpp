@@ -3,6 +3,7 @@
 #include "game/game_components.h"
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
+#include "game/debug_render_system.h"
 #include "game/bounding_box_system.h"
 #include "entity/component_transform.h"
 #include "entity/component_bounding_box.h"
@@ -36,17 +37,13 @@ void GameLayer::on_attach()
 	entity_manager_.create_component_manager<ComponentRenderableDirectionalLight>(client_area_, 2);
 	entity_manager_.create_component_manager<ComponentDirectionalLight>(client_area_, 2);
 
-	{
-		auto* bounding_box_system = entity_manager_.create_system<BoundingBoxSystem>();
-	}
-	{
-		auto* pbr_deferred_render_system = entity_manager_.create_system<PBRDeferredRenderSystem>();
-		pbr_deferred_render_system->set_scene(&scene_);
-	}
-	{
-		auto* forward_sun_render_system = entity_manager_.create_system<ForwardSunRenderSystem>();
-		forward_sun_render_system->set_scene(&scene_);
-	}
+	entity_manager_.create_system<BoundingBoxSystem>();
+	auto* pbr_deferred_render_system = entity_manager_.create_system<PBRDeferredRenderSystem>();
+	pbr_deferred_render_system->set_scene(&scene_);
+	auto* forward_sun_render_system = entity_manager_.create_system<ForwardSunRenderSystem>();
+	forward_sun_render_system->set_scene(&scene_);
+	auto* debug_render_system = entity_manager_.create_system<DebugRenderSystem>();
+	debug_render_system->set_scene(&scene_);
 
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
 	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");

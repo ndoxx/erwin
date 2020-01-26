@@ -67,13 +67,13 @@ namespace bound
 static inline void to_model_space_vertices(const Extent& extent, std::array<glm::vec3, 8>& vertices)
 {
 	vertices[0] = { extent[1], extent[2], extent[5] };
-	vertices[1] = { extent[1], extent[2], extent[4] };
-	vertices[2] = { extent[0], extent[2], extent[4] };
+	vertices[1] = { extent[1], extent[3], extent[5] };
+	vertices[2] = { extent[0], extent[3], extent[5] };
 	vertices[3] = { extent[0], extent[2], extent[5] };
-	vertices[4] = { extent[1], extent[3], extent[5] };
+	vertices[4] = { extent[1], extent[2], extent[4] };
 	vertices[5] = { extent[1], extent[3], extent[4] };
 	vertices[6] = { extent[0], extent[3], extent[4] };
-	vertices[7] = { extent[0], extent[3], extent[5] };
+	vertices[7] = { extent[0], extent[2], extent[4] };
 }
 
 static inline std::pair<glm::vec3, glm::vec3> to_vectors(const Extent& extent)

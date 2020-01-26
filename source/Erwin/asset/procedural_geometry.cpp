@@ -289,22 +289,23 @@ Extent make_cube_lines(const BufferLayout& layout, std::vector<float>& vdata, st
     add_vertex({-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f});
     add_vertex({ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f});
     add_vertex({ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f});
-    add_vertex({-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
     add_vertex({-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f});
+    add_vertex({-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f});
 
 	// Setup line indices
-	add_line(8, 4);
-	add_line(8, 9);
-	add_line(8, 3);
-	add_line(1, 2);
-	add_line(1, 0);
-	add_line(1, 5);
-	add_line(2, 3);
-	add_line(2, 9);
-	add_line(4, 0);
+	add_line(0, 3);
+	add_line(0, 1);
+	add_line(0, 4);
+	add_line(6, 5);
+	add_line(6, 7);
+	add_line(6, 2);
+	add_line(3, 7);
+	add_line(3, 2);
+	add_line(4, 7);
 	add_line(4, 5);
-	add_line(3, 0);
-	add_line(9, 5);
+	add_line(1, 2);
+	add_line(1, 5);
+
 
 	// Build interleaved vertex data according to input specifications
 	return build_shape(layout, vdata, idata, true);
