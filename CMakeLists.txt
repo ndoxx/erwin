@@ -77,6 +77,7 @@ set(SRC_ASSET
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/material.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/procedural_geometry.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/mesh.cpp
   )
 
 set(SRC_FILESYSTEM

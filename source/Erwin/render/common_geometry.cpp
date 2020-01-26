@@ -13,6 +13,7 @@ namespace erwin
 struct CommonGeometryStorage
 {
 	std::map<hash_t, VertexArrayHandle> vertex_arrays_;
+	std::map<hash_t, Dimensions> dimensions_;
 };
 static CommonGeometryStorage s_storage;
 
@@ -49,8 +50,10 @@ void CommonGeometry::init()
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 		const auto& layout = Renderer::get_vertex_buffer_layout(pos_uv_VBL);
-		pg::make_plane(layout, vdata, idata);
-		make_geometry("quad"_h, pos_uv_VBL, vdata, idata);
+		Dimensions dims = pg::make_plane(layout, vdata, idata);
+		hash_t hname = "quad"_h;
+		make_geometry(hname, pos_uv_VBL, vdata, idata);
+		s_storage.dimensions_.insert(std::make_pair(hname, dims));
 	}
 
 	// Cube
@@ -58,8 +61,10 @@ void CommonGeometry::init()
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 		const auto& layout = Renderer::get_vertex_buffer_layout(pos_VBL);
-		pg::make_cube(layout, vdata, idata);
-		make_geometry("cube"_h, pos_VBL, vdata, idata);
+		Dimensions dims = pg::make_cube(layout, vdata, idata);
+		hash_t hname = "cube"_h;
+		make_geometry(hname, pos_VBL, vdata, idata);
+		s_storage.dimensions_.insert(std::make_pair(hname, dims));
 	}
 
 	// UV Cube
@@ -67,8 +72,10 @@ void CommonGeometry::init()
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 		const auto& layout = Renderer::get_vertex_buffer_layout(pos_uv_VBL);
-		pg::make_cube(layout, vdata, idata);
-		make_geometry("cube_uv"_h, pos_uv_VBL, vdata, idata);
+		Dimensions dims = pg::make_cube(layout, vdata, idata);
+		hash_t hname = "cube_uv"_h;
+		make_geometry(hname, pos_uv_VBL, vdata, idata);
+		s_storage.dimensions_.insert(std::make_pair(hname, dims));
 	}
 
 	// PBR Cube
@@ -76,8 +83,10 @@ void CommonGeometry::init()
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 		const auto& layout = Renderer::get_vertex_buffer_layout(PBR_VBL);
-		pg::make_cube(layout, vdata, idata);
-		make_geometry("cube_pbr"_h, PBR_VBL, vdata, idata);
+		Dimensions dims = pg::make_cube(layout, vdata, idata);
+		hash_t hname = "cube_pbr"_h;
+		make_geometry(hname, PBR_VBL, vdata, idata);
+		s_storage.dimensions_.insert(std::make_pair(hname, dims));
 	}
 
 	// PBR Icosahedron
@@ -85,8 +94,10 @@ void CommonGeometry::init()
 		std::vector<float> vdata;
 		std::vector<uint32_t> idata;
 		const auto& layout = Renderer::get_vertex_buffer_layout(PBR_VBL);
-		pg::make_icosahedron(layout, vdata, idata);
-		make_geometry("icosahedron_pbr"_h, PBR_VBL, vdata, idata);
+		Dimensions dims = pg::make_icosahedron(layout, vdata, idata);
+		hash_t hname = "icosahedron_pbr"_h;
+		make_geometry(hname, PBR_VBL, vdata, idata);
+		s_storage.dimensions_.insert(std::make_pair(hname, dims));
 	}
 
 	Renderer::flush();
@@ -101,6 +112,13 @@ VertexArrayHandle CommonGeometry::get_vertex_array(hash_t name)
 {
 	auto it = s_storage.vertex_arrays_.find(name);
 	W_ASSERT(it!=s_storage.vertex_arrays_.end(), "[CommonGeometry] Cannot find vertex array at that name.");
+	return it->second;
+}
+
+const Dimensions& CommonGeometry::get_dimensions(hash_t name)
+{
+	auto it = s_storage.dimensions_.find(name);
+	W_ASSERT(it!=s_storage.dimensions_.end(), "[CommonGeometry] Cannot find dimensions at that name.");
 	return it->second;
 }
 

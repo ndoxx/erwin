@@ -126,7 +126,7 @@ static void build_tangents()
     }
 }
 
-static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+static Dimensions build_shape(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
 {
 	// Indirection tables for data interleaving
 	constexpr uint32_t k_max_attrib = 4;
@@ -191,9 +191,13 @@ static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, s
 	vdata.resize(tl_storage.vertex_count*vertex_size);
 	idata.resize(tl_storage.triangle_count*3);
 	// Interleave vertex data
+	Dimensions dims;
 	// For each vertex
 	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
 	{
+		// Update dimensions in this loop for efficiency
+		dims.update(tl_storage.position[ii]);
+
 		uint32_t offset = 0;
 		// For each layout element
 		for(int jj=0; jj<elements_count; ++jj)
@@ -212,9 +216,11 @@ static void build_shape(const BufferLayout& layout, std::vector<float>& vdata, s
 	std::copy(tl_storage.triangles, tl_storage.triangles + tl_storage.triangle_count*3, idata.data());
 
 	reset_storage();
+
+	return dims;
 }
 
-void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Dimensions make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
 {
 	// Ignore parameters for now
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
@@ -293,10 +299,10 @@ void make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vecto
 	add_triangle(20, 22, 23);
 
 	// Build interleaved vertex data according to input specifications
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata, params);
 }
 
-void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Dimensions make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
 {
 	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
@@ -309,10 +315,10 @@ void make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vect
 	add_triangle(0, 1, 2);
 	add_triangle(2, 3, 0);
 
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata, params);
 }
 
-void make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
+Dimensions make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, void* params)
 {
 	// Ignore parameters for now, only z-plane available
 	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
@@ -367,7 +373,7 @@ void make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std
     add_triangle(8,  6,  7);
     add_triangle(9,  8,  1);
 
-	build_shape(layout, vdata, idata, params);
+	return build_shape(layout, vdata, idata, params);
 }
 
 
