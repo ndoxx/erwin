@@ -1,11 +1,8 @@
-#include "game/scene.h"
-#include "game/game_components.h"
+#include "scene.h"
 #include "font_awesome.h"
 #include "debug/logger.h"
 
-using namespace erwin;
-
-namespace game
+namespace erwin
 {
 
 Scene::Scene():
@@ -14,7 +11,7 @@ camera_controller(1280.f/1024.f, 60, 0.1f, 100.f)
 	selected_entity_idx = 0;
 }
 
-void Scene::add_entity(erwin::EntityID entity, const std::string& name, const char* _icon)
+void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
 	selected_entity_idx = entities.size();
 	if(_icon == nullptr)
@@ -26,4 +23,4 @@ void Scene::add_entity(erwin::EntityID entity, const std::string& name, const ch
 }
 
 
-} // namespace editor
+} // namespace erwin

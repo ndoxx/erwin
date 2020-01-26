@@ -1,7 +1,9 @@
-#include "widget_rt_peek.h"
-#include "erwin.h"
-#include "game/scene.h"
+#include "editor/widget_rt_peek.h"
+#include "editor/scene.h"
 #include "core/intern_string.h"
+#include "render/framebuffer_pool.h"
+#include "render/renderer.h"
+#include "render/common_geometry.h"
 #include "imgui.h"
 
 #include <vector>
@@ -62,7 +64,7 @@ static struct
     PeekData peek_data_;
 } s_storage;
 
-RTPeekWidget::RTPeekWidget(game::Scene& scene):
+RTPeekWidget::RTPeekWidget(erwin::Scene& scene):
 Widget("Framebuffers", true),
 scene_(scene)
 {

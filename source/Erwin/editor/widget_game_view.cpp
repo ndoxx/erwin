@@ -1,8 +1,11 @@
-#include "widget_game_view.h"
-#include "overlay_stats.h"
-#include "overlay_camera_tracker.h"
-#include "erwin.h"
-#include "game/scene.h"
+#include "editor/widget_game_view.h"
+#include "editor/overlay_stats.h"
+#include "editor/overlay_camera_tracker.h"
+#include "editor/scene.h"
+#include "core/config.h"
+#include "event/window_events.h"
+#include "event/event_bus.h"
+#include "render/renderer.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -15,7 +18,7 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget(game::Scene& scene):
+GameViewWidget::GameViewWidget(erwin::Scene& scene):
 Widget("Game", true),
 scene_(scene)
 {

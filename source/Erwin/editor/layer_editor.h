@@ -1,15 +1,18 @@
 #pragma once
 
 #include "erwin.h"
-#include "game/scene.h"
-#include "widget.h"
+#include "editor/scene.h"
+#include "editor/widget.h"
+
+namespace editor
+{
 
 class EditorLayer: public erwin::Layer
 {
 public:
 	friend class Editor;
 	
-	EditorLayer(game::Scene& scene);
+	EditorLayer(erwin::Scene& scene);
 	~EditorLayer() = default;
 
 	virtual void on_imgui_render() override;
@@ -31,5 +34,7 @@ protected:
 private:
 	std::map<erwin::hash_t, editor::Widget*> widgets_;
 	erwin::ShaderHandle background_shader_;
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 };
+
+} // namespace editor

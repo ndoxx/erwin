@@ -7,20 +7,18 @@
 #define W_ENTRY_POINT
 #include "erwin.h"
 #include "layer_game.h"
-#include "layer_editor.h"
-#include "widget.h"
 
 using namespace erwin;
 using namespace editor;
 
 /*
-	Level and asset editor for Erwin Engine
+	Test application to assess the level and asset editor for Erwin Engine
 */
-class Editor: public Application
+class EditorSandbox: public Application
 {
 public:
-	Editor() = default;
-	~Editor() = default;
+	EditorSandbox() = default;
+	~EditorSandbox() = default;
 
 	virtual void on_pre_init() override;
 	virtual void on_client_init() override;
@@ -30,17 +28,10 @@ public:
 	bool on_keyboard_event(const KeyboardEvent& e);
 
 private:
-	FramebufferHandle game_view_fb_;
-	game::Scene scene_;
-	erwin::EntityManager entity_manager_;
-
 	GameLayer* game_layer_;
-	EditorLayer* editor_layer_;
-
-	Widget* console_;
 };
 
 Application* erwin::create_application()
 {
-	return new Editor();
+	return new EditorSandbox();
 }

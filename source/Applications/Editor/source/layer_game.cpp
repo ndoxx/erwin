@@ -4,16 +4,15 @@
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
 #include "entity/component_transform.h"
-#include "font_awesome.h"
+#include "editor/font_awesome.h"
 
 #include <iostream>
 #include <iomanip>
 #include <bitset>
 
 using namespace erwin;
-using namespace game;
 
-GameLayer::GameLayer(game::Scene& scene, EntityManager& emgr, memory::HeapArea& client_area):
+GameLayer::GameLayer(erwin::Scene& scene, EntityManager& emgr, memory::HeapArea& client_area):
 Layer("GameLayer"),
 scene_(scene),
 entity_manager_(emgr),
@@ -98,8 +97,6 @@ void GameLayer::on_attach()
     scene_.post_processing.set_flag_enabled(PP_EN_CONTRAST, true);
     scene_.post_processing.set_flag_enabled(PP_EN_GAMMA, true);
     scene_.post_processing.set_flag_enabled(PP_EN_FXAA, true);
-
-    PostProcessingRenderer::set_final_render_target("game_view"_h);
 }
 
 void GameLayer::on_detach()
@@ -119,7 +116,7 @@ void GameLayer::on_update(GameClock& clock)
 
 	scene_.camera_controller.update(clock);
 
-	// TMP: Update cube
+	// TMP: Update cube -> MOVE to Lua script
 	{
 		Entity& cube = entity_manager_.get_entity(scene_.entities[1].id);
 		auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();

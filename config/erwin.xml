@@ -2,6 +2,7 @@
 <Config>
 	<logger>
 		<Channel name="application" verbosity="3"/>
+		<Channel name="editor"      verbosity="3"/>
 		<Channel name="event"       verbosity="3"/>
 		<Channel name="asset"       verbosity="1"/>
 		<Channel name="memory"      verbosity="1"/>

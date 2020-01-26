@@ -1,6 +1,6 @@
 #pragma once
 
-#include "widget.h"
+#include "editor/widget.h"
 
 namespace editor
 {

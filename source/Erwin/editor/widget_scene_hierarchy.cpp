@@ -1,7 +1,6 @@
-#include "widget_scene_hierarchy.h"
-#include "game/scene.h"
-#include "erwin.h"
-#include "font_awesome.h"
+#include "editor/widget_scene_hierarchy.h"
+#include "editor/scene.h"
+#include "editor/font_awesome.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -9,7 +8,7 @@ using namespace erwin;
 namespace editor
 {
 
-SceneHierarchyWidget::SceneHierarchyWidget(game::Scene& scene):
+SceneHierarchyWidget::SceneHierarchyWidget(erwin::Scene& scene):
 Widget("Hierarchy", true),
 scene_(scene)
 {
@@ -29,7 +28,7 @@ void SceneHierarchyWidget::on_imgui_render()
     int node_clicked = -1;
     for(int ii=0; ii<scene_.entities.size(); ++ii)
     {
-    	const game::EntityDescriptor& desc = scene_.entities[ii];
+    	const EntityDescriptor& desc = scene_.entities[ii];
 
     	ImGuiTreeNodeFlags flags = node_flags;
     	if(ii == scene_.selected_entity_idx)

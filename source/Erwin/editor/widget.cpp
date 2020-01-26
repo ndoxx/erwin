@@ -1,6 +1,6 @@
-#include "widget.h"
-#include "imgui.h"
+#include "editor/widget.h"
 #include "debug/logger.h"
+#include "imgui.h"
 
 namespace editor
 {

@@ -1,5 +1,5 @@
-#include "overlay_stats.h"
-#include "game/scene.h"
+#include "editor/overlay_stats.h"
+#include "editor/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
