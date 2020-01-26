@@ -1,4 +1,4 @@
-#include "widget.h"
+#include "editor/widget.h"
 #include "imgui.h"
 #include "debug/logger.h"
 

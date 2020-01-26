@@ -1,16 +1,16 @@
-#include "overlay_camera_tracker.h"
-#include "game/scene.h"
+#include "editor/overlay_camera_tracker.h"
+#include "editor/scene.h"
+#include "editor/font_awesome.h"
 #include "erwin.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
-#include "font_awesome.h"
 
 using namespace erwin;
 
 namespace editor
 {
 
-CameraTrackerOverlay::CameraTrackerOverlay(game::Scene& scene):
+CameraTrackerOverlay::CameraTrackerOverlay(erwin::Scene& scene):
 Widget("Camera tracker", true),
 scene_(scene)
 {

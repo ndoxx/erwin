@@ -1,10 +1,10 @@
 #include "editor_app.h"
-#include "widget_console.h"
-#include "widget_game_view.h"
-#include "widget_scene_hierarchy.h"
-#include "widget_inspector.h"
-#include "widget_rt_peek.h"
-#include "widget_hex_dump.h"
+#include "editor/widget_console.h"
+#include "editor/widget_game_view.h"
+#include "editor/widget_scene_hierarchy.h"
+#include "editor/widget_inspector.h"
+#include "editor/widget_rt_peek.h"
+#include "editor/widget_hex_dump.h"
 #include "debug/logger_thread.h"
 
 void Editor::on_pre_init()

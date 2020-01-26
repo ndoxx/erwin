@@ -4,16 +4,15 @@
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
 #include "entity/component_transform.h"
-#include "font_awesome.h"
+#include "editor/font_awesome.h"
 
 #include <iostream>
 #include <iomanip>
 #include <bitset>
 
 using namespace erwin;
-using namespace game;
 
-GameLayer::GameLayer(game::Scene& scene, EntityManager& emgr, memory::HeapArea& client_area):
+GameLayer::GameLayer(erwin::Scene& scene, EntityManager& emgr, memory::HeapArea& client_area):
 Layer("GameLayer"),
 scene_(scene),
 entity_manager_(emgr),

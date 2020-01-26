@@ -1,21 +1,9 @@
 set(SRC_EDITOR
     source/editor_app.cpp
     source/layer_game.cpp
-    source/layer_editor.cpp
-    source/widget.cpp
-    source/widget_console.cpp
-    source/widget_game_view.cpp
-    source/widget_scene_hierarchy.cpp
-    source/widget_inspector.cpp
-    source/widget_rt_peek.cpp
-    source/widget_hex_dump.cpp
-    source/overlay_stats.cpp
-    source/overlay_camera_tracker.cpp
-    source/game/freefly_camera_controller.cpp
     source/game/game_components.cpp
     source/game/pbr_deferred_render_system.cpp
     source/game/forward_sun_render_system.cpp
-    source/game/scene.cpp
    )
 
 add_executable(editor ${SRC_EDITOR})

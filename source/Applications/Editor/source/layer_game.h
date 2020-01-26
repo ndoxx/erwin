@@ -1,14 +1,14 @@
 #pragma once
 
 #include "erwin.h"
-#include "game/scene.h"
+#include "editor/scene.h"
 
 class GameLayer: public erwin::Layer
 {
 public:
 	friend class Editor;
 	
-	GameLayer(game::Scene& scene, erwin::EntityManager& emgr, erwin::memory::HeapArea& client_area);
+	GameLayer(erwin::Scene& scene, erwin::EntityManager& emgr, erwin::memory::HeapArea& client_area);
 	~GameLayer() = default;
 
 	virtual void on_imgui_render() override;
@@ -25,7 +25,7 @@ protected:
 	virtual bool on_event(const erwin::MouseMovedEvent& event) override;
 
 private:
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 	erwin::EntityManager& entity_manager_;
 	erwin::memory::HeapArea& client_area_;
 };

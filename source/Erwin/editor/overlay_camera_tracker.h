@@ -1,8 +1,8 @@
 #pragma once
 
-#include "widget.h"
+#include "editor/widget.h"
 
-namespace game
+namespace erwin
 {
 	class Scene;
 }
@@ -13,14 +13,14 @@ namespace editor
 class CameraTrackerOverlay: public Widget
 {
 public:
-	CameraTrackerOverlay(game::Scene& scene);
+	CameraTrackerOverlay(erwin::Scene& scene);
 	virtual ~CameraTrackerOverlay();
 
 protected:
 	virtual void on_imgui_render() override;
 
 private:
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 };
 
 } // namespace editor

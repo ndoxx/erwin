@@ -4,7 +4,7 @@
 #include "core/game_clock.h"
 #include "event/window_events.h"
 
-namespace game
+namespace erwin
 {
 
 class FreeflyController
@@ -52,4 +52,4 @@ private:
 };
 
 
-} // namespace editor
+} // namespace erwin

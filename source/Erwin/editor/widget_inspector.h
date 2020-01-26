@@ -1,8 +1,8 @@
 #pragma once
 
-#include "widget.h"
+#include "editor/widget.h"
 
-namespace game
+namespace erwin
 {
 	class Scene;
 }
@@ -18,7 +18,7 @@ namespace editor
 class InspectorWidget: public Widget
 {
 public:
-	InspectorWidget(game::Scene& scene, erwin::EntityManager& emgr);
+	InspectorWidget(erwin::Scene& scene, erwin::EntityManager& emgr);
 	virtual ~InspectorWidget();
 
 protected:
@@ -27,7 +27,7 @@ protected:
 	void entity_tab();
 
 private:
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 	erwin::EntityManager& entity_manager_;
 };
 

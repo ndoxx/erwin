@@ -1,6 +1,6 @@
-#include "widget_inspector.h"
-#include "game/scene.h"
-#include "game/game_components.h"
+#include "editor/widget_inspector.h"
+#include "editor/scene.h"
+#include "entity/component.h"
 #include "erwin.h"
 #include "imgui.h"
 
@@ -9,7 +9,7 @@ using namespace erwin;
 namespace editor
 {
 
-InspectorWidget::InspectorWidget(game::Scene& scene, erwin::EntityManager& emgr):
+InspectorWidget::InspectorWidget(erwin::Scene& scene, erwin::EntityManager& emgr):
 Widget("Inspector", true),
 scene_(scene),
 entity_manager_(emgr)

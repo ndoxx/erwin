@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erwin.h"
-#include "game/scene.h"
+#include "editor/scene.h"
 #include "game/game_components.h"
 
 namespace erwin
@@ -17,10 +17,10 @@ public:
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;
 
-	inline void set_scene(game::Scene* p_scene) { p_scene_ = p_scene; }
+	inline void set_scene(erwin::Scene* p_scene) { p_scene_ = p_scene; }
 
 private:
-	game::Scene* p_scene_;
+	erwin::Scene* p_scene_;
 };
 
 

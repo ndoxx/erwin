@@ -1,8 +1,8 @@
 #pragma once
 
-#include "widget.h"
+#include "editor/widget.h"
 
-namespace game
+namespace erwin
 {
 	class Scene;
 }
@@ -13,14 +13,14 @@ namespace editor
 class SceneHierarchyWidget: public Widget
 {
 public:
-	SceneHierarchyWidget(game::Scene& scene);
+	SceneHierarchyWidget(erwin::Scene& scene);
 	virtual ~SceneHierarchyWidget();
 
 protected:
 	virtual void on_imgui_render() override;
 
 private:
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 };
 
 } // namespace editor

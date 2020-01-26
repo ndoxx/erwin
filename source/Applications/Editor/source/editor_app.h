@@ -7,8 +7,8 @@
 #define W_ENTRY_POINT
 #include "erwin.h"
 #include "layer_game.h"
-#include "layer_editor.h"
-#include "widget.h"
+#include "editor/layer_editor.h"
+#include "editor/widget.h"
 
 using namespace erwin;
 using namespace editor;
@@ -31,7 +31,7 @@ public:
 
 private:
 	FramebufferHandle game_view_fb_;
-	game::Scene scene_;
+	erwin::Scene scene_;
 	erwin::EntityManager entity_manager_;
 
 	GameLayer* game_layer_;

@@ -140,6 +140,21 @@ set(SRC_RENDERER
 set(SRC_INPUT
     ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_2d_controller.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_3d_controller.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/input/freefly_camera_controller.cpp
+  )
+
+set(SRC_EDITOR
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/layer_editor.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_game_view.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_hierarchy.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_inspector.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_rt_peek.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_hex_dump.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_stats.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_camera_tracker.cpp
   )
 
 set(SRC_PLATFORM
@@ -182,6 +197,7 @@ add_library(erwin SHARED
             ${SRC_INPUT}
             ${SRC_PLATFORM}
             ${SRC_IMGUI}
+            ${SRC_EDITOR}
             ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
             ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
             )

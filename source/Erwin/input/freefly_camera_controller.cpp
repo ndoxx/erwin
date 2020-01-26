@@ -1,14 +1,12 @@
-#include "game/freefly_camera_controller.h"
+#include "input/freefly_camera_controller.h"
 #include "input/input.h"
 #include "debug/logger.h"
 
 #include "glm/gtx/string_cast.hpp"
 
-using namespace erwin;
-using namespace keymap;
-
-namespace game
+namespace erwin
 {
+using namespace keymap;
 
 // Helper function to get "top" dimension from FOV and z-near
 inline float fovy_znear_to_top(float fovy, float znear)
@@ -148,4 +146,4 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 }
 
 
-} // namespace editor
+} // namespace erwin

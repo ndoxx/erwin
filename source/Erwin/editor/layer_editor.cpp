@@ -1,6 +1,6 @@
-#include "layer_editor.h"
+#include "editor/layer_editor.h"
+#include "editor/font_awesome.h"
 #include "erwin.h"
-#include "font_awesome.h"
 
 using namespace erwin;
 using namespace editor;
@@ -67,7 +67,7 @@ static void set_gui_behavior()
 	s_storage.enable_docking = true;
 }
 
-EditorLayer::EditorLayer(game::Scene& scene): Layer("EditorLayer"), scene_(scene)
+EditorLayer::EditorLayer(erwin::Scene& scene): Layer("EditorLayer"), scene_(scene)
 {
 
 }

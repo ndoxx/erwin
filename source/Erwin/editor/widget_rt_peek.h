@@ -1,10 +1,10 @@
 #pragma once
 
-#include "widget.h"
+#include "editor/widget.h"
 #include "erwin.h"
 #include "glm/glm.hpp"
 
-namespace game
+namespace erwin
 {
 	class Scene;
 }
@@ -15,7 +15,7 @@ namespace editor
 class RTPeekWidget: public Widget
 {
 public:
-	RTPeekWidget(game::Scene& scene);
+	RTPeekWidget(erwin::Scene& scene);
 	virtual ~RTPeekWidget();
 
 	virtual void on_layer_render() override;
@@ -28,7 +28,7 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
-	game::Scene& scene_;
+	erwin::Scene& scene_;
 };
 
 } // namespace editor
