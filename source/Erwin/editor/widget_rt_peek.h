@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor/widget.h"
-#include "erwin.h"
+#include "render/handles.h"
 #include "glm/glm.hpp"
 
 namespace erwin

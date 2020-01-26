@@ -1,7 +1,8 @@
 #pragma once
 
-#include "erwin.h"
 #include "input/freefly_camera_controller.h"
+#include "entity/entity_types.h"
+#include "render/renderer_pp.h"
 
 namespace erwin
 {

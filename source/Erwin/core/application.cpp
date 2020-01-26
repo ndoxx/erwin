@@ -59,6 +59,7 @@ static inline void configure_event_tracking()
 }
 
 Application::Application():
+EDITOR_LAYER(nullptr),
 is_running_(true),
 minimized_(false)
 {
@@ -270,6 +271,16 @@ bool Application::init()
         // Generate ImGui overlay
         IMGUI_LAYER = new ImGuiLayer();
         push_overlay(IMGUI_LAYER);
+    }
+
+    {
+        W_PROFILE_SCOPE("Editor overlay creation")
+        if(cfg::get<bool>("client.editor.enabled"_h, false))
+        {
+            build_editor();
+            // If editor is enabled, PPRenderer should draw to the game_view framebuffer instead of the default one
+            PostProcessingRenderer::set_final_render_target("game_view"_h);
+        }
     }
 
     {

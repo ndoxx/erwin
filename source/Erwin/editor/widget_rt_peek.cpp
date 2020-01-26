@@ -1,7 +1,9 @@
 #include "editor/widget_rt_peek.h"
 #include "editor/scene.h"
-#include "erwin.h"
 #include "core/intern_string.h"
+#include "render/framebuffer_pool.h"
+#include "render/renderer.h"
+#include "render/common_geometry.h"
 #include "imgui.h"
 
 #include <vector>

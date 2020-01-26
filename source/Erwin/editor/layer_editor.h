@@ -4,6 +4,9 @@
 #include "editor/scene.h"
 #include "editor/widget.h"
 
+namespace editor
+{
+
 class EditorLayer: public erwin::Layer
 {
 public:
@@ -33,3 +36,5 @@ private:
 	erwin::ShaderHandle background_shader_;
 	erwin::Scene& scene_;
 };
+
+} // namespace editor

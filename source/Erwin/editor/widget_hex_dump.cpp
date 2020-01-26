@@ -1,6 +1,5 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/font_awesome.h"
-#include "erwin.h"
 #include "imgui.h"
 
 #include <sstream>

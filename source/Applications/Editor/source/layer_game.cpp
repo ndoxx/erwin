@@ -97,8 +97,6 @@ void GameLayer::on_attach()
     scene_.post_processing.set_flag_enabled(PP_EN_CONTRAST, true);
     scene_.post_processing.set_flag_enabled(PP_EN_GAMMA, true);
     scene_.post_processing.set_flag_enabled(PP_EN_FXAA, true);
-
-    PostProcessingRenderer::set_final_render_target("game_view"_h);
 }
 
 void GameLayer::on_detach()
@@ -118,7 +116,7 @@ void GameLayer::on_update(GameClock& clock)
 
 	scene_.camera_controller.update(clock);
 
-	// TMP: Update cube
+	// TMP: Update cube -> MOVE to Lua script
 	{
 		Entity& cube = entity_manager_.get_entity(scene_.entities[1].id);
 		auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();

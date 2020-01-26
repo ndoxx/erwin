@@ -1,9 +1,18 @@
 #include "editor/layer_editor.h"
 #include "editor/font_awesome.h"
-#include "erwin.h"
+#include "editor/widget_game_view.h"
+#include "editor/widget_scene_hierarchy.h"
+#include "editor/widget_inspector.h"
+#include "editor/widget_rt_peek.h"
+#include "editor/widget_hex_dump.h"
+#include "editor/widget_console.h"
+#include "core/application.h"
+#include "debug/logger_thread.h"
 
 using namespace erwin;
-using namespace editor;
+
+namespace editor
+{
 
 static struct
 {
@@ -100,6 +109,8 @@ void EditorLayer::on_detach()
 {
 	for(auto&& [key,widget]: widgets_)
 		delete widget;
+
+	Renderer::destroy(background_shader_);
 }
 
 void EditorLayer::on_update(GameClock& clock)
@@ -229,3 +240,54 @@ void EditorLayer::show_dockspace_window(bool* p_open)
 
     ImGui::End();
 }
+
+} // namespace editor
+
+
+
+namespace erwin
+{
+
+void Application::build_editor()
+{
+	editor::ConsoleWidget* console = new editor::ConsoleWidget();
+	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console), {"editor"_h, "application"_h, "entity"_h}));
+
+    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
+
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+
+    DLOG("editor",1) << "Pushing editor layer." << std::endl;
+    push_overlay(EDITOR_LAYER = new editor::EditorLayer(SCENE));
+
+    // Add widgets to the editor layer
+    DLOG("editor",1) << "Creating widgets." << std::endl;
+
+	EDITOR_LAYER->add_widget(console);
+    EDITOR_LAYER->add_widget(new editor::GameViewWidget(SCENE));
+    EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget(SCENE));
+    EDITOR_LAYER->add_widget(new editor::InspectorWidget(SCENE, ECS));
+
+    // Register main render target in peek widget
+    editor::RTPeekWidget* peek_widget;
+    EDITOR_LAYER->add_widget(peek_widget = new editor::RTPeekWidget(SCENE));
+	peek_widget->register_framebuffer("GBuffer");
+	peek_widget->register_framebuffer("SpriteBuffer");
+	peek_widget->register_framebuffer("BloomCombine");
+	peek_widget->register_framebuffer("LBuffer");
+
+	// Register all memory area block descriptions
+    editor::HexDumpWidget* hex_widget;
+    EDITOR_LAYER->add_widget(hex_widget = new editor::HexDumpWidget());
+	hex_widget->register_area_description("client", get_client_area().get_block_descriptions());
+	hex_widget->register_area_description("system", get_system_area().get_block_descriptions());
+	hex_widget->register_area_description("render", get_render_area().get_block_descriptions());
+
+    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
+}
+
+} // namespace erwin

@@ -59,9 +59,9 @@ void LoggerThread::attach(const std::string& sink_name, std::unique_ptr<Sink> si
 
 	for(hash_t channel: channels)
 	{
-		auto it = channels_.find(channel);
-		if(it != channels_.end())
-			sink_subscriptions_.insert(std::make_pair(channel, hsink));
+		// auto it = channels_.find(channel);
+		// if(it != channels_.end())
+		sink_subscriptions_.insert(std::make_pair(channel, hsink));
 	}
 }
 

@@ -2,7 +2,10 @@
 #include "editor/overlay_stats.h"
 #include "editor/overlay_camera_tracker.h"
 #include "editor/scene.h"
-#include "erwin.h"
+#include "core/config.h"
+#include "event/window_events.h"
+#include "event/event_bus.h"
+#include "render/renderer.h"
 #include "imgui.h"
 
 using namespace erwin;

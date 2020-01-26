@@ -1,7 +1,6 @@
 #include "editor/widget_inspector.h"
 #include "editor/scene.h"
-#include "entity/component.h"
-#include "erwin.h"
+#include "entity/entity_manager.h"
 #include "imgui.h"
 
 using namespace erwin;

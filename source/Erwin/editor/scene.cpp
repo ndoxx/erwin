@@ -1,5 +1,4 @@
 #include "scene.h"
-#include "entity/entity_types.h"
 #include "font_awesome.h"
 #include "debug/logger.h"
 

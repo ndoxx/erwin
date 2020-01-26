@@ -1,75 +1,31 @@
 #include "editor_app.h"
-#include "editor/widget_console.h"
-#include "editor/widget_game_view.h"
-#include "editor/widget_scene_hierarchy.h"
-#include "editor/widget_inspector.h"
-#include "editor/widget_rt_peek.h"
-#include "editor/widget_hex_dump.h"
-#include "debug/logger_thread.h"
 
-void Editor::on_pre_init()
+void EditorSandbox::on_pre_init()
 {
-	ConsoleWidget* console = new ConsoleWidget();
-	WLOGGER(create_channel("editor", 3));
-	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console), {"editor"_h}));
-	console_ = console;
+
 }
 
-void Editor::on_client_init()
+void EditorSandbox::on_client_init()
 {
-	filesystem::set_asset_dir("source/Applications/Editor/assets"); // TMP: find a better way to share/centralize assets
+	filesystem::set_asset_dir("source/Applications/Editor/assets");
 	filesystem::set_client_config_dir("source/Applications/Editor/config");
 	this->add_configuration("client.xml");
 }
 
-void Editor::on_load()
+void EditorSandbox::on_load()
 {
-    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
+	EVENTBUS.subscribe(this, &EditorSandbox::on_keyboard_event);
 
-	EVENTBUS.subscribe(this, &Editor::on_keyboard_event);
-
-    FramebufferLayout layout =
-    {
-        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-    };
-    game_view_fb_ = FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
-
-    DLOG("editor",1) << "Pushing game layer." << std::endl;
-    push_layer(game_layer_ = new GameLayer(scene_, entity_manager_, get_client_area()));
-    DLOG("editor",1) << "Pushing editor layer." << std::endl;
-    push_overlay(editor_layer_ = new EditorLayer(scene_));
-
-    // Add widgets to the editor layer
-    DLOG("editor",1) << "Creating widgets." << std::endl;
-    editor_layer_->add_widget(console_);
-    editor_layer_->add_widget(new GameViewWidget(scene_));
-    editor_layer_->add_widget(new SceneHierarchyWidget(scene_));
-    editor_layer_->add_widget(new InspectorWidget(scene_, entity_manager_));
-
-    // Register main render target in peek widget
-    RTPeekWidget* peek_widget;
-    editor_layer_->add_widget(peek_widget = new RTPeekWidget(scene_));
-	peek_widget->register_framebuffer("GBuffer");
-	peek_widget->register_framebuffer("SpriteBuffer");
-	peek_widget->register_framebuffer("BloomCombine");
-	peek_widget->register_framebuffer("LBuffer");
-
-	// Register all memory area block descriptions
-    HexDumpWidget* hex_widget;
-    editor_layer_->add_widget(hex_widget = new HexDumpWidget());
-	hex_widget->register_area_description("client", get_client_area().get_block_descriptions());
-	hex_widget->register_area_description("system", get_system_area().get_block_descriptions());
-	hex_widget->register_area_description("render", get_render_area().get_block_descriptions());
-
-    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
+    DLOG("application",1) << "Pushing game layer." << std::endl;
+    push_layer(game_layer_ = new GameLayer(SCENE, ECS, get_client_area()));
 }
 
-void Editor::on_unload()
+void EditorSandbox::on_unload()
 {
 
 }
 
-bool Editor::on_keyboard_event(const KeyboardEvent& e)
+bool EditorSandbox::on_keyboard_event(const KeyboardEvent& e)
 {
 	// Terminate on ESCAPE
 	if(e.pressed && e.key == keymap::WKEY::ESCAPE)
@@ -78,7 +34,7 @@ bool Editor::on_keyboard_event(const KeyboardEvent& e)
 	return false;
 }
 
-void Editor::on_imgui_render()
+void EditorSandbox::on_imgui_render()
 {
 
 }
