@@ -3,18 +3,18 @@
 namespace erwin
 {
 
-COMPONENT_DEFINITION(ComponentRenderablePBRDeferred);
-ComponentRenderablePBRDeferred::ComponentRenderablePBRDeferred()
+COMPONENT_DEFINITION(ComponentRenderablePBR);
+ComponentRenderablePBR::ComponentRenderablePBR()
 {
 	material.data = &material_data;
 	material.data_size = sizeof(MaterialData);
 }
-bool ComponentRenderablePBRDeferred::init(void* description)
+bool ComponentRenderablePBR::init(void* description)
 {
 
 	return true;
 }
-void ComponentRenderablePBRDeferred::inspector_GUI()
+void ComponentRenderablePBR::inspector_GUI()
 {
     ImGui::ColorEdit3("Tint", (float*)&material_data.tint);
 

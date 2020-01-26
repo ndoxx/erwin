@@ -21,6 +21,8 @@ public:
 
 	void add_entity(EntityID entity, const std::string& name, const char* icon = nullptr);
 
+	inline EntityID get_selected_entity() const { return entities[selected_entity_idx].id; }
+
 	uint32_t selected_entity_idx;
 	EntityID directional_light;
 	std::vector<EntityDescriptor> entities;

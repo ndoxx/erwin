@@ -33,7 +33,7 @@ void GameLayer::on_attach()
 {	
 	entity_manager_.create_component_manager<ComponentTransform3D>(client_area_, 128);
 	entity_manager_.create_component_manager<ComponentOBB>(client_area_, 128);
-	entity_manager_.create_component_manager<ComponentRenderablePBRDeferred>(client_area_, 128);
+	entity_manager_.create_component_manager<ComponentRenderablePBR>(client_area_, 128);
 	entity_manager_.create_component_manager<ComponentRenderableDirectionalLight>(client_area_, 2);
 	entity_manager_.create_component_manager<ComponentDirectionalLight>(client_area_, 2);
 
@@ -49,7 +49,7 @@ void GameLayer::on_attach()
 	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");
 	ShaderHandle deferred_pbr             = AssetManager::load_shader("shaders/deferred_PBR.glsl");
 	TextureGroupHandle tg                 = AssetManager::load_texture_group("textures/map/testEmissive.tom", layout_a_nd_mare);
-	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBRDeferred::MaterialData));
+	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBR::MaterialData));
 	UniformBufferHandle sun_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderableDirectionalLight::MaterialData));
 	AssetManager::release(layout_a_nd_mare);
 	DeferredRenderer::register_shader(deferred_pbr, pbr_material_ubo);
@@ -74,12 +74,20 @@ void GameLayer::on_attach()
 		scene_.add_entity(ent, "Sun", ICON_FA_SUN_O);
 	}
 
+	glm::vec3 pos[] = 
+	{
+		{-1.f,0.f,-1.f},
+		{ 1.f,0.f,-1.f},
+		{-1.f,0.f, 1.f},
+		{ 1.f,0.f, 1.f},
+	};
+	for(int ii=0; ii<4; ++ii)
 	{
 		EntityID ent     = entity_manager_.create_entity();
 		auto& transform  = entity_manager_.create_component<ComponentTransform3D>(ent);
-		auto& renderable = entity_manager_.create_component<ComponentRenderablePBRDeferred>(ent);
+		auto& renderable = entity_manager_.create_component<ComponentRenderablePBR>(ent);
 		auto& OBB        = entity_manager_.create_component<ComponentOBB>(ent);
-		transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+		transform = {pos[ii], {0.f,0.f,0.f}, 1.8f};
 		OBB.init(CommonGeometry::get_extent("cube_pbr"_h));
 		OBB.update(transform.get_model_matrix());
 		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
@@ -89,7 +97,7 @@ void GameLayer::on_attach()
 		renderable.material.ubo = pbr_material_ubo;
 		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
 		entity_manager_.submit_entity(ent);
-		scene_.add_entity(ent, "Emissive cube");
+		scene_.add_entity(ent, "Emissive cube #" + std::to_string(ii));
 	}
 
 	scene_.selected_entity_idx = 0;
@@ -123,14 +131,16 @@ void GameLayer::on_update(GameClock& clock)
 	scene_.camera_controller.update(clock);
 
 	// TMP: Update cube -> MOVE to Lua script
+	for(int ii=0; ii<4; ++ii)
 	{
-		Entity& cube = entity_manager_.get_entity(scene_.entities[1].id);
-		auto* renderable = cube.get_component<ComponentRenderablePBRDeferred>();
-
-		float s = sin(2*M_PI*tt/10.f);
+		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
 		float s2 = s*s;
-		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-8.f*s2);
-		renderable->material_data.tint.r = 0.3f*exp(-12.f*s2);
+
+		Entity& cube = entity_manager_.get_entity(scene_.entities[1+ii].id);
+		auto* renderable = cube.get_component<ComponentRenderablePBR>();
+
+		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
+		renderable->material_data.tint.r = 0.3f*exp(-6.f*(ii+1.f)*s2);
 	}
 }
 
