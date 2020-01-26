@@ -3,7 +3,9 @@
 #include "game/game_components.h"
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
+#include "game/bounding_box_system.h"
 #include "entity/component_transform.h"
+#include "entity/component_bounding_box.h"
 #include "editor/font_awesome.h"
 
 #include <iostream>
@@ -29,10 +31,14 @@ void GameLayer::on_imgui_render()
 void GameLayer::on_attach()
 {	
 	entity_manager_.create_component_manager<ComponentTransform3D>(client_area_, 128);
+	entity_manager_.create_component_manager<ComponentOBB>(client_area_, 128);
 	entity_manager_.create_component_manager<ComponentRenderablePBRDeferred>(client_area_, 128);
 	entity_manager_.create_component_manager<ComponentRenderableDirectionalLight>(client_area_, 2);
 	entity_manager_.create_component_manager<ComponentDirectionalLight>(client_area_, 2);
 
+	{
+		auto* bounding_box_system = entity_manager_.create_system<BoundingBoxSystem>();
+	}
 	{
 		auto* pbr_deferred_render_system = entity_manager_.create_system<PBRDeferredRenderSystem>();
 		pbr_deferred_render_system->set_scene(&scene_);
@@ -75,7 +81,10 @@ void GameLayer::on_attach()
 		EntityID ent     = entity_manager_.create_entity();
 		auto& transform  = entity_manager_.create_component<ComponentTransform3D>(ent);
 		auto& renderable = entity_manager_.create_component<ComponentRenderablePBRDeferred>(ent);
+		auto& OBB        = entity_manager_.create_component<ComponentOBB>(ent);
 		transform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+		OBB.init(CommonGeometry::get_extent("cube_pbr"_h));
+		OBB.update(transform.get_model_matrix());
 		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
 		renderable.set_emissive(5.f);
 		renderable.material.shader = deferred_pbr;

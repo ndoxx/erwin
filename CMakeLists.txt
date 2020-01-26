@@ -77,7 +77,7 @@ set(SRC_ASSET
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/texture_atlas.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/material.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/asset/procedural_geometry.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/mesh.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/bounding.cpp
   )
 
 set(SRC_FILESYSTEM
@@ -99,6 +99,7 @@ set(SRC_ENTITY
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/base_component_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_bounding_box.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/light.cpp
   )
 

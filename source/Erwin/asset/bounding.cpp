@@ -1,10 +1,10 @@
-#include "asset/mesh.h"
+#include "asset/bounding.h"
 
 namespace erwin
 {
 
 #ifdef W_DEBUG
-std::ostream& operator <<(std::ostream& stream, const Dimensions& dims)
+std::ostream& operator <<(std::ostream& stream, const Extent& dims)
 {
 	stream << "(" 
 		   << "x: " << dims[0] << "->" << dims[1] << ", "
