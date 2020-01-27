@@ -89,8 +89,7 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
 
         // TODO: Make a system or something...
         // Perform a ray scene query
-        const glm::vec3& cam_pos = scene_.camera_controller.get_camera().get_position();
-        int new_selection = -1;
+        int new_selection = scene_.selected_entity_idx;
         float nearest = scene_.camera_controller.get_zfar();
         for(int ii=0; ii<scene_.entities.size(); ++ii)
         {
@@ -110,8 +109,7 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
                 }
             }
         }
-        if(new_selection >= 0)
-            scene_.selected_entity_idx = new_selection;
+        scene_.selected_entity_idx = new_selection;
 
         return true;
     }

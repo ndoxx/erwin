@@ -25,6 +25,8 @@ void SceneHierarchyWidget::on_imgui_render()
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
     ImGuiTreeNodeFlags node_flags = base_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
 
+    ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
+    
     int node_clicked = -1;
     for(int ii=0; ii<scene_.entities.size(); ++ii)
     {

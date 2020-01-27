@@ -211,6 +211,14 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
     bool success = build(sources);
     if(success)
         introspect();
+    else
+    {
+        // Load default shader
+        DLOGW("shader") << "Loading default red shader as a fallback." << std::endl;
+        sources.clear();
+        slang::pre_process_GLSL(filesystem::get_system_asset_dir() / "shaders/red_shader.glsl", sources);
+        introspect();
+    }
     return success;
 }
 // Initialize shader from SPIR-V file
@@ -261,7 +269,13 @@ void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
 void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
 {
     hash_t hname = H_(buffer.get_name().c_str());
-    GLint binding_point = block_bindings_.at(hname);
+    auto it = block_bindings_.find(hname);
+    if(it == block_bindings_.end())
+    {
+        DLOGW("shader") << "Unknown binding name: " << buffer.get_name() << std::endl;
+        return;
+    }
+    GLint binding_point = it->second;
     uint32_t render_handle = static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_SHADER_STORAGE_BUFFER }));
 }
@@ -269,7 +283,13 @@ void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
 void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
 {
     hash_t hname = H_(buffer.get_name().c_str());
-    GLint binding_point = block_bindings_.at(hname);
+    auto it = block_bindings_.find(hname);
+    if(it == block_bindings_.end())
+    {
+        DLOGW("shader") << "Unknown binding name: " << buffer.get_name() << std::endl;
+        return;
+    }
+    GLint binding_point = it->second;
     uint32_t render_handle = static_cast<const OGLUniformBuffer&>(buffer).get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_UNIFORM_BUFFER }));
 }
