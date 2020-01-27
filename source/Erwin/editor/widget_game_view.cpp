@@ -80,38 +80,10 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
        event.y > render_surface_.y0 &&
        event.y < render_surface_.y1)
     {
-        auto& scene = Application::SCENE();
-        auto& ecs = Application::ECS();
-
-        // Unproject screen coordinates and get ray
         glm::vec2 coords = { (event.x - render_surface_.x0)/render_surface_.w, 
                              1.f-(event.y - render_surface_.y0)/render_surface_.h };
-        glm::mat4 VP_inv = glm::inverse(scene.camera_controller.get_camera().get_view_projection_matrix());
-        Ray ray(coords, VP_inv);
 
-        // TODO: Make a system or something...
-        // Perform a ray scene query
-        int new_selection = scene.selected_entity_idx;
-        float nearest = scene.camera_controller.get_zfar();
-        for(int ii=0; ii<scene.entities.size(); ++ii)
-        {
-            const auto& desc = scene.entities[ii];
-            const auto& ent = ecs.get_entity(desc.id);
-            auto* pOBB = ent.get_component<ComponentOBB>();
-            if(!pOBB)
-                continue;
-
-            Ray::CollisionData data;
-            if(ray.collides_OBB(pOBB->model_matrix, pOBB->extent_m, pOBB->scale, data))
-            {
-                if(data.near < nearest)
-                {
-                    nearest = data.near;
-                    new_selection = ii;
-                }
-            }
-        }
-        scene.selected_entity_idx = new_selection;
+        EVENTBUS.publish(RaySceneQueryEvent(coords));
 
         return true;
     }

@@ -2,6 +2,7 @@
 
 #include "event/event.h"
 #include "input/keys.h"
+#include "glm/glm.hpp"
 
 namespace erwin
 {
@@ -213,6 +214,27 @@ struct MouseScrollEvent: public WEvent
 
     float x_offset;
     float y_offset;
+};
+
+struct RaySceneQueryEvent: public WEvent
+{
+    EVENT_DECLARATION(RaySceneQueryEvent);
+
+    RaySceneQueryEvent() = default;
+    RaySceneQueryEvent(const glm::vec2& screen_coords):
+    coords(screen_coords)
+    {
+
+    }
+
+#ifdef W_DEBUG
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << "(" << coords.x << "," << coords.y << ")";
+    }
+#endif
+
+    glm::vec2 coords;
 };
 
 } // namespace erwin
