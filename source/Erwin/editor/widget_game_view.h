@@ -14,7 +14,7 @@ namespace editor
 class GameViewWidget: public Widget
 {
 public:
-	GameViewWidget(erwin::Scene& scene, erwin::EntityManager& ecs);
+	GameViewWidget();
 	virtual ~GameViewWidget();
 
 	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
@@ -28,8 +28,6 @@ protected:
 	void frame_profiler_window(bool* p_open);
 
 private:
-	erwin::Scene& scene_;
-	erwin::EntityManager& ECS_;
 	Widget* stats_overlay_;
 	Widget* camera_overlay_;
 

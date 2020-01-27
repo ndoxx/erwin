@@ -25,7 +25,9 @@ public:
 	NON_COPYABLE(EntityManager);
 	NON_MOVABLE(EntityManager);
 	EntityManager() = default;
-	~EntityManager();
+	~EntityManager() = default;
+
+	void shutdown();
 
 	// Create a component system, only enabled for types inheritting from BaseComponentSystem
 	template <typename SystemT, typename = typename std::enable_if<std::is_base_of<BaseComponentSystem, SystemT>::value, SystemT>::type>

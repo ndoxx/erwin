@@ -76,7 +76,7 @@ static void set_gui_behavior()
 	s_storage.enable_docking = true;
 }
 
-EditorLayer::EditorLayer(erwin::Scene& scene): Layer("EditorLayer"), scene_(scene)
+EditorLayer::EditorLayer(): Layer("EditorLayer")
 {
 
 }
@@ -195,7 +195,7 @@ bool EditorLayer::on_event(const MouseScrollEvent& event)
 bool EditorLayer::on_event(const KeyboardEvent& event)
 {
 	if(event.pressed && event.key == keymap::WKEY::F1)
-		scene_.camera_controller.toggle_control();
+		Application::SCENE().camera_controller.toggle_control();
 
 	return false;
 }
@@ -261,19 +261,19 @@ void Application::build_editor()
     FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
 
     DLOG("editor",1) << "Pushing editor layer." << std::endl;
-    push_overlay(EDITOR_LAYER = new editor::EditorLayer(SCENE));
+    push_overlay(EDITOR_LAYER = new editor::EditorLayer());
 
     // Add widgets to the editor layer
     DLOG("editor",1) << "Creating widgets." << std::endl;
 
 	EDITOR_LAYER->add_widget(console);
-    EDITOR_LAYER->add_widget(new editor::GameViewWidget(SCENE, ECS));
-    EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget(SCENE));
-    EDITOR_LAYER->add_widget(new editor::InspectorWidget(SCENE, ECS));
+    EDITOR_LAYER->add_widget(new editor::GameViewWidget());
+    EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget());
+    EDITOR_LAYER->add_widget(new editor::InspectorWidget());
 
     // Register main render target in peek widget
     editor::RTPeekWidget* peek_widget;
-    EDITOR_LAYER->add_widget(peek_widget = new editor::RTPeekWidget(SCENE));
+    EDITOR_LAYER->add_widget(peek_widget = new editor::RTPeekWidget());
 	peek_widget->register_framebuffer("GBuffer");
 	peek_widget->register_framebuffer("SpriteBuffer");
 	peek_widget->register_framebuffer("BloomCombine");

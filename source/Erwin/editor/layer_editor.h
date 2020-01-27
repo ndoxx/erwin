@@ -12,7 +12,7 @@ class EditorLayer: public erwin::Layer
 public:
 	friend class Editor;
 	
-	EditorLayer(erwin::Scene& scene);
+	EditorLayer();
 	~EditorLayer() = default;
 
 	virtual void on_imgui_render() override;
@@ -34,7 +34,6 @@ protected:
 private:
 	std::map<erwin::hash_t, editor::Widget*> widgets_;
 	erwin::ShaderHandle background_shader_;
-	erwin::Scene& scene_;
 };
 
 } // namespace editor

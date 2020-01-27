@@ -5,10 +5,15 @@
 namespace erwin
 {
 
-Scene::Scene():
-camera_controller(1280.f/1024.f, 60, 0.1f, 100.f)
+void Scene::init()
 {
+	camera_controller.init(1280.f/1024.f, 60, 0.1f, 100.f);
 	selected_entity_idx = 0;
+}
+
+void Scene::shutdown()
+{
+
 }
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)

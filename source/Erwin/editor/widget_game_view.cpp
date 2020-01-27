@@ -3,6 +3,7 @@
 #include "editor/overlay_camera_tracker.h"
 #include "editor/scene.h"
 #include "core/config.h"
+#include "core/application.h"
 #include "event/window_events.h"
 #include "event/event_bus.h"
 #include "render/renderer.h"
@@ -21,16 +22,14 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget(erwin::Scene& scene, erwin::EntityManager& ecs):
-Widget("Game", true),
-scene_(scene),
-ECS_(ecs)
+GameViewWidget::GameViewWidget():
+Widget("Game", true)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
-    camera_overlay_ = new CameraTrackerOverlay(scene_);
+    camera_overlay_ = new CameraTrackerOverlay();
     render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
 }
 
@@ -81,20 +80,23 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
        event.y > render_surface_.y0 &&
        event.y < render_surface_.y1)
     {
+        auto& scene = Application::SCENE();
+        auto& ecs = Application::ECS();
+
         // Unproject screen coordinates and get ray
         glm::vec2 coords = { (event.x - render_surface_.x0)/render_surface_.w, 
                              1.f-(event.y - render_surface_.y0)/render_surface_.h };
-        glm::mat4 VP_inv = glm::inverse(scene_.camera_controller.get_camera().get_view_projection_matrix());
+        glm::mat4 VP_inv = glm::inverse(scene.camera_controller.get_camera().get_view_projection_matrix());
         Ray ray(coords, VP_inv);
 
         // TODO: Make a system or something...
         // Perform a ray scene query
-        int new_selection = scene_.selected_entity_idx;
-        float nearest = scene_.camera_controller.get_zfar();
-        for(int ii=0; ii<scene_.entities.size(); ++ii)
+        int new_selection = scene.selected_entity_idx;
+        float nearest = scene.camera_controller.get_zfar();
+        for(int ii=0; ii<scene.entities.size(); ++ii)
         {
-            const auto& desc = scene_.entities[ii];
-            const auto& ent = ECS_.get_entity(desc.id);
+            const auto& desc = scene.entities[ii];
+            const auto& ent = ecs.get_entity(desc.id);
             auto* pOBB = ent.get_component<ComponentOBB>();
             if(!pOBB)
                 continue;
@@ -109,7 +111,7 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
                 }
             }
         }
-        scene_.selected_entity_idx = new_selection;
+        scene.selected_entity_idx = new_selection;
 
         return true;
     }

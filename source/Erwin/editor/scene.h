@@ -17,7 +17,10 @@ struct EntityDescriptor
 class Scene
 {
 public:
-	Scene();
+	Scene() = default;
+
+	void init();
+	void shutdown();
 
 	void add_entity(EntityID entity, const std::string& name, const char* icon = nullptr);
 

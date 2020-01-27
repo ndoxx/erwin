@@ -13,14 +13,11 @@ namespace editor
 class CameraTrackerOverlay: public Widget
 {
 public:
-	CameraTrackerOverlay(erwin::Scene& scene);
+	CameraTrackerOverlay();
 	virtual ~CameraTrackerOverlay();
 
 protected:
 	virtual void on_imgui_render() override;
-
-private:
-	erwin::Scene& scene_;
 };
 
 } // namespace editor

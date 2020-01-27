@@ -32,18 +32,23 @@ FrustumPlanes::FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world
 	plane[5] = glm::normalize(glm::cross(rbf-lbf, ltf-lbf)); // far
 }
 
-PerspectiveCamera3D::PerspectiveCamera3D(const Frustum3D& frustum):
-yaw_(0.f),
-pitch_(0.f),
-roll_(0.f),
-position_(0.f)
+PerspectiveCamera3D::PerspectiveCamera3D(const Frustum3D& frustum)
 {
-	set_projection(frustum);
+	init(frustum);
 }
 
 PerspectiveCamera3D::~PerspectiveCamera3D()
 {
 	
+}
+
+void PerspectiveCamera3D::init(const Frustum3D& frustum)
+{
+	yaw_      = 0.f;
+	pitch_    = 0.f;
+	roll_     = 0.f;
+	position_ = glm::vec3(0.f);
+	set_projection(frustum);
 }
 
 void PerspectiveCamera3D::set_projection(const Frustum3D& frustum)

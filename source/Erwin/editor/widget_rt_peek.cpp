@@ -1,6 +1,7 @@
 #include "editor/widget_rt_peek.h"
 #include "editor/scene.h"
 #include "core/intern_string.h"
+#include "core/application.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"
 #include "render/common_geometry.h"
@@ -64,9 +65,8 @@ static struct
     PeekData peek_data_;
 } s_storage;
 
-RTPeekWidget::RTPeekWidget(erwin::Scene& scene):
-Widget("Framebuffers", true),
-scene_(scene)
+RTPeekWidget::RTPeekWidget():
+Widget("Framebuffers", true)
 {
     // Create resources
     FramebufferLayout layout =
@@ -138,7 +138,7 @@ void RTPeekWidget::on_layer_render()
     if(!open_ || s_storage.panes_.size() == 0)
         return;
 
-    s_storage.peek_data_.projection_parameters = scene_.camera_controller.get_camera().get_projection_parameters();
+    s_storage.peek_data_.projection_parameters = Application::SCENE().camera_controller.get_camera().get_projection_parameters();
 
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
     TextureHandle current_texture = props.texture;

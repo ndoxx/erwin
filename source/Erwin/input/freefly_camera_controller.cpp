@@ -14,28 +14,38 @@ inline float fovy_znear_to_top(float fovy, float znear)
 	return znear * tan(0.5f * fovy * (M_PI / 180.f));
 }
 
-FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar):
-camera_({-aspect_ratio*fovy_znear_to_top(fovy,znear), aspect_ratio*fovy_znear_to_top(fovy,znear),
-         -fovy_znear_to_top(fovy,znear), fovy_znear_to_top(fovy,znear),
-         znear, zfar}),
-aspect_ratio_(aspect_ratio),
-fovy_(fovy),
-znear_(znear),
-zfar_(zfar),
-camera_translation_speed_(2.f),
-camera_rotation_speed_(2.5f * M_PI / 180.f),
-camera_yaw_(camera_.get_yaw()),
-camera_pitch_(camera_.get_pitch()),
-camera_position_(camera_.get_position())
+FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar)
 {
-	has_control_ = false;
-	prev_mouse_x_ = 0.f;
-	prev_mouse_y_ = 0.f;
+	init(aspect_ratio, fovy, znear, zfar);
 }
 
 FreeflyController::~FreeflyController()
 {
 	
+}
+
+void FreeflyController::init(float aspect_ratio, float fovy, float znear, float zfar)
+{
+	camera_.init({-aspect_ratio*fovy_znear_to_top(fovy,znear), 
+				   aspect_ratio*fovy_znear_to_top(fovy,znear),
+	              -fovy_znear_to_top(fovy,znear), 
+	               fovy_znear_to_top(fovy,znear),
+	               znear, 
+	               zfar});
+
+	aspect_ratio_ = aspect_ratio;
+	fovy_         = fovy;
+	znear_        = znear;
+	zfar_         = zfar;
+	camera_translation_speed_ = 2.f;
+	camera_rotation_speed_    = 2.5f * M_PI / 180.f;
+	camera_yaw_               = camera_.get_yaw();
+	camera_pitch_             = camera_.get_pitch();
+	camera_position_          = camera_.get_position();
+
+	has_control_ = false;
+	prev_mouse_x_ = 0.f;
+	prev_mouse_y_ = 0.f;
 }
 
 void FreeflyController::update(GameClock& clock)

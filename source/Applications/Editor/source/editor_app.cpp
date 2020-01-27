@@ -17,7 +17,7 @@ void EditorSandbox::on_load()
 	EVENTBUS.subscribe(this, &EditorSandbox::on_keyboard_event);
 
     DLOG("application",1) << "Pushing game layer." << std::endl;
-    push_layer(game_layer_ = new GameLayer(SCENE, ECS, get_client_area()));
+    push_layer(game_layer_ = new GameLayer(get_client_area()));
 }
 
 void EditorSandbox::on_unload()
