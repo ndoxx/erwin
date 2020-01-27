@@ -61,6 +61,22 @@ struct Extent
 	float value[6];
 };
 
+struct Ray
+{
+    Ray(const glm::vec3& origin, const glm::vec3& end);
+    Ray(const glm::vec2& screen_coords, const glm::mat4& VP_inverse);
+
+    Ray to_model_space(const glm::mat4& model_matrix) const;
+
+#ifdef W_DEBUG
+	friend std::ostream& operator <<(std::ostream& stream, const Ray& ray);
+#endif
+
+    glm::vec3 origin;
+    glm::vec3 end;
+    glm::vec3 direction;
+};
+
 namespace bound
 {
 

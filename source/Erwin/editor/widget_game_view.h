@@ -37,6 +37,8 @@ private:
 		float y0;
 		float x1;
 		float y1;
+		float w;
+		float h;
 	} render_surface_;
 
 	bool enable_runtime_profiling_;

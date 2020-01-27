@@ -6,6 +6,7 @@
 #include "event/window_events.h"
 #include "event/event_bus.h"
 #include "render/renderer.h"
+#include "asset/bounding.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -27,7 +28,7 @@ scene_(scene)
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
     camera_overlay_ = new CameraTrackerOverlay(scene_);
-    render_surface_ = {0.f,0.f,0.f,0.f};
+    render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
 }
 
 GameViewWidget::~GameViewWidget()
@@ -53,6 +54,8 @@ void GameViewWidget::on_resize(uint32_t width, uint32_t height)
 	float rh = std::max(height - (k_border + k_start_y), 0.f);
 	render_surface_.x1 = render_surface_.x0 + rw;
 	render_surface_.y1 = render_surface_.y0 + rh;
+    render_surface_.w = rw;
+    render_surface_.h = rh;
 
 	EVENTBUS.publish(WindowResizeEvent(width, height));
 	EVENTBUS.publish(FramebufferResizeEvent(rw, rh));
@@ -68,15 +71,24 @@ void GameViewWidget::on_move(int32_t x, int32_t y)
 
 bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
 {
-    /*if(event.button == keymap::WMOUSE::BUTTON_0 &&
+    if(event.button == keymap::WMOUSE::BUTTON_0 &&
+       event.pressed &&
        event.x > render_surface_.x0 &&
        event.x < render_surface_.x1 &&
        event.y > render_surface_.y0 &&
        event.y < render_surface_.y1)
     {
-        scene_.camera_controller.toggle_control();
+        // Unproject screen coordinates and get ray
+        glm::vec2 coords = { (event.x - render_surface_.x0)/render_surface_.w, 
+                             1.f-(event.y - render_surface_.y0)/render_surface_.h };
+        glm::mat4 VP_inv = glm::inverse(scene_.camera_controller.get_camera().get_view_projection_matrix());
+        Ray ray(coords, VP_inv);
+
+        // TODO: Perform a ray scene query
+        DLOG("editor",1) << ray << std::endl;
+
         return true;
-    }*/
+    }
 
     return false;
 }
