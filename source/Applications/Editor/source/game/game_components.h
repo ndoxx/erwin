@@ -6,12 +6,12 @@
 namespace erwin
 {
 
-class ComponentRenderablePBRDeferred: public Component
+class ComponentRenderablePBR: public Component
 {
 public:
-	COMPONENT_DECLARATION(ComponentRenderablePBRDeferred);
+	COMPONENT_DECLARATION(ComponentRenderablePBR);
 
-	ComponentRenderablePBRDeferred();
+	ComponentRenderablePBR();
 
 	virtual bool init(void* description) override final;
 	virtual void inspector_GUI() override final;

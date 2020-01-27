@@ -10,7 +10,7 @@ namespace erwin
 
 EntityID EntityManager::s_next_entity_id = 0;
 
-EntityManager::~EntityManager()
+void EntityManager::shutdown()
 {
 	// Delete all component managers (and the components they hold)
 	for(auto&& pmgr: components_)

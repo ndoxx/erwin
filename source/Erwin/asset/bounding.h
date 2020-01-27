@@ -61,6 +61,42 @@ struct Extent
 	float value[6];
 };
 
+struct Ray
+{
+	struct CollisionData
+	{
+	    float near = 0.0f;
+	    float far  = 0.0f;
+	};
+
+    Ray(const glm::vec3& origin, const glm::vec3& end);
+    Ray(const glm::vec2& screen_coords, const glm::mat4& VP_inverse);
+
+    Ray to_model_space(const glm::mat4& model_matrix) const;
+	bool collides_extent(const Extent& extent, CollisionData& data);
+
+	inline bool collides_OBB(const glm::mat4& model_matrix, const Extent& extent, float scale, CollisionData& data)
+	{
+	    // Transform ray to model space
+	    bool ret = to_model_space(model_matrix).collides_extent(extent, data);
+	    // Rescale hit data
+	    if(ret)
+	    {
+	        data.near *= scale;
+	        data.far  *= scale;
+	    }
+	    return ret;
+	}
+
+#ifdef W_DEBUG
+	friend std::ostream& operator <<(std::ostream& stream, const Ray& ray);
+#endif
+
+    glm::vec3 origin;
+    glm::vec3 end;
+    glm::vec3 direction;
+};
+
 namespace bound
 {
 

@@ -55,10 +55,13 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
+	static inline EntityManager& ECS() { return s_ECS; }
+	static inline Scene& SCENE() { return s_SCENE; }
+
 protected:
 	editor::EditorLayer* EDITOR_LAYER;
-	EntityManager ECS;
-	Scene SCENE;
+	static EntityManager s_ECS;
+	static Scene s_SCENE;
 
 private:
 	static Application* pinstance_;

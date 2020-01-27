@@ -36,6 +36,8 @@ namespace erwin
         // DO_ACTION( WindowMovedEvent )
 
 Application* Application::pinstance_ = nullptr;
+EntityManager Application::s_ECS;
+Scene Application::s_SCENE;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
@@ -83,6 +85,11 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Asset Manager shutdown")
         AssetManager::shutdown();
+    }
+    {
+        W_PROFILE_SCOPE("Entity Manager shutdown")
+        s_ECS.shutdown();
+        s_SCENE.shutdown();
     }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
@@ -264,6 +271,8 @@ bool Application::init()
 
         // Initialize asset manager
         AssetManager::init(s_storage.client_area);
+
+        s_SCENE.init();
     }
 
     {

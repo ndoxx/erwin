@@ -15,7 +15,7 @@ namespace editor
 class RTPeekWidget: public Widget
 {
 public:
-	RTPeekWidget(erwin::Scene& scene);
+	RTPeekWidget();
 	virtual ~RTPeekWidget();
 
 	virtual void on_layer_render() override;
@@ -26,9 +26,6 @@ public:
 
 protected:
 	virtual void on_imgui_render() override;
-
-private:
-	erwin::Scene& scene_;
 };
 
 } // namespace editor

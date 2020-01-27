@@ -22,11 +22,12 @@ void ForwardSunRenderSystem::render()
 	options.set_transparency(true);
 	options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
 
+	auto& scene = Application::SCENE();
 	for(auto&& cmp_tuple: components_)
 	{
 		ComponentDirectionalLight* dirlight = eastl::get<ComponentDirectionalLight*>(cmp_tuple);
 		ComponentRenderableDirectionalLight* renderable = eastl::get<ComponentRenderableDirectionalLight*>(cmp_tuple);
-		ForwardRenderer::begin_pass(p_scene_->camera_controller.get_camera(), *dirlight, options);
+		ForwardRenderer::begin_pass(scene.camera_controller.get_camera(), *dirlight, options);
 		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), renderable->material);
 		ForwardRenderer::end_pass();
 	}

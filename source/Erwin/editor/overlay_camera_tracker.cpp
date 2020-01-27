@@ -10,9 +10,8 @@ using namespace erwin;
 namespace editor
 {
 
-CameraTrackerOverlay::CameraTrackerOverlay(erwin::Scene& scene):
-Widget("Camera tracker", true),
-scene_(scene)
+CameraTrackerOverlay::CameraTrackerOverlay():
+Widget("Camera tracker", true)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar 
            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize 
@@ -27,8 +26,9 @@ CameraTrackerOverlay::~CameraTrackerOverlay()
 
 void CameraTrackerOverlay::on_imgui_render()
 {
-    const glm::vec3& cam_pos = scene_.camera_controller.get_camera().get_position();
-    const glm::vec3& cam_ang = scene_.camera_controller.get_camera().get_angles();
+    auto& scene = Application::SCENE();
+    const glm::vec3& cam_pos = scene.camera_controller.get_camera().get_position();
+    const glm::vec3& cam_ang = scene.camera_controller.get_camera().get_angles();
 
     ImGui::Text("%s Camera", ICON_FA_VIDEO_CAMERA);
 
@@ -40,10 +40,10 @@ void CameraTrackerOverlay::on_imgui_render()
     ImGui::Text("pitch  %.3f", cam_ang.y);
     ImGui::Text("roll   %.3f", cam_ang.z);
     ImGui::Separator();
-    ImGui::Text("aspect %.3f", scene_.camera_controller.get_aspect_ratio());
-    ImGui::Text("fovy   %.3f", scene_.camera_controller.get_fovy());
-    ImGui::Text("znear  %.3f", scene_.camera_controller.get_znear());
-    ImGui::Text("zfar   %.3f", scene_.camera_controller.get_zfar());
+    ImGui::Text("aspect %.3f", scene.camera_controller.get_aspect_ratio());
+    ImGui::Text("fovy   %.3f", scene.camera_controller.get_fovy());
+    ImGui::Text("znear  %.3f", scene.camera_controller.get_znear());
+    ImGui::Text("zfar   %.3f", scene.camera_controller.get_zfar());
 }
 
 

@@ -3,9 +3,13 @@
 #include "editor/overlay_camera_tracker.h"
 #include "editor/scene.h"
 #include "core/config.h"
+#include "core/application.h"
 #include "event/window_events.h"
 #include "event/event_bus.h"
 #include "render/renderer.h"
+#include "entity/entity_manager.h"
+#include "entity/component_bounding_box.h"
+#include "asset/bounding.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -18,16 +22,15 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget(erwin::Scene& scene):
-Widget("Game", true),
-scene_(scene)
+GameViewWidget::GameViewWidget():
+Widget("Game", true)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
-    camera_overlay_ = new CameraTrackerOverlay(scene_);
-    render_surface_ = {0.f,0.f,0.f,0.f};
+    camera_overlay_ = new CameraTrackerOverlay();
+    render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
 }
 
 GameViewWidget::~GameViewWidget()
@@ -53,6 +56,8 @@ void GameViewWidget::on_resize(uint32_t width, uint32_t height)
 	float rh = std::max(height - (k_border + k_start_y), 0.f);
 	render_surface_.x1 = render_surface_.x0 + rw;
 	render_surface_.y1 = render_surface_.y0 + rh;
+    render_surface_.w = rw;
+    render_surface_.h = rh;
 
 	EVENTBUS.publish(WindowResizeEvent(width, height));
 	EVENTBUS.publish(FramebufferResizeEvent(rw, rh));
@@ -68,15 +73,20 @@ void GameViewWidget::on_move(int32_t x, int32_t y)
 
 bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
 {
-    /*if(event.button == keymap::WMOUSE::BUTTON_0 &&
+    if(event.button == keymap::WMOUSE::BUTTON_0 &&
+       event.pressed &&
        event.x > render_surface_.x0 &&
        event.x < render_surface_.x1 &&
        event.y > render_surface_.y0 &&
        event.y < render_surface_.y1)
     {
-        scene_.camera_controller.toggle_control();
+        glm::vec2 coords = { (event.x - render_surface_.x0)/render_surface_.w, 
+                             1.f-(event.y - render_surface_.y0)/render_surface_.h };
+
+        EVENTBUS.publish(RaySceneQueryEvent(coords));
+
         return true;
-    }*/
+    }
 
     return false;
 }

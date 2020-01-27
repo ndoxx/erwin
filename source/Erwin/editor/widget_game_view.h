@@ -5,6 +5,7 @@
 namespace erwin
 {
 	class Scene;
+	class EntityManager;
 }
 
 namespace editor
@@ -13,7 +14,7 @@ namespace editor
 class GameViewWidget: public Widget
 {
 public:
-	GameViewWidget(erwin::Scene& scene);
+	GameViewWidget();
 	virtual ~GameViewWidget();
 
 	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
@@ -27,7 +28,6 @@ protected:
 	void frame_profiler_window(bool* p_open);
 
 private:
-	erwin::Scene& scene_;
 	Widget* stats_overlay_;
 	Widget* camera_overlay_;
 
@@ -37,6 +37,8 @@ private:
 		float y0;
 		float x1;
 		float y1;
+		float w;
+		float h;
 	} render_surface_;
 
 	bool enable_runtime_profiling_;

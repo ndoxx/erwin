@@ -13,14 +13,11 @@ namespace editor
 class SceneHierarchyWidget: public Widget
 {
 public:
-	SceneHierarchyWidget(erwin::Scene& scene);
+	SceneHierarchyWidget();
 	virtual ~SceneHierarchyWidget();
 
 protected:
 	virtual void on_imgui_render() override;
-
-private:
-	erwin::Scene& scene_;
 };
 
 } // namespace editor

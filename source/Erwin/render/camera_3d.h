@@ -27,8 +27,11 @@ struct FrustumPlanes
 class PerspectiveCamera3D
 {
 public:
+	PerspectiveCamera3D() = default;
 	PerspectiveCamera3D(const Frustum3D& frustum);
 	~PerspectiveCamera3D();
+
+	void init(const Frustum3D& frustum);
 
 	inline const glm::vec3& get_position() const { return position_; }
 	inline float get_yaw() const   { return yaw_; }

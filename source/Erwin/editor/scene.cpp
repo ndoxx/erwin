@@ -5,10 +5,15 @@
 namespace erwin
 {
 
-Scene::Scene():
-camera_controller(1280.f/1024.f, 60, 0.1f, 100.f)
+void Scene::init()
 {
+	camera_controller.init(1280.f/1024.f, 60, 0.1f, 100.f);
 	selected_entity_idx = 0;
+}
+
+void Scene::shutdown()
+{
+
 }
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
@@ -19,8 +24,16 @@ void Scene::add_entity(EntityID entity, const std::string& name, const char* _ic
 	else
 		entities.push_back(EntityDescriptor{entity, name, _icon});
 
+	entity_index_lookup.insert(std::make_pair(entity, selected_entity_idx));
+
 	DLOG("editor",1) << "[Scene] Added entity: " << name << " ID: " << entity << std::endl;
 }
 
+void Scene::select(EntityID entity)
+{
+	auto it = entity_index_lookup.find(entity);
+	if(it != entity_index_lookup.end())
+		selected_entity_idx = it->second;
+}
 
 } // namespace erwin

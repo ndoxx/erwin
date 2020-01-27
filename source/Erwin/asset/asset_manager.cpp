@@ -198,7 +198,6 @@ void AssetManager::init(memory::HeapArea& area)
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);
 	FOR_ALL_HANDLES
 	#undef DO_ACTION
-
 }
 
 void AssetManager::shutdown()

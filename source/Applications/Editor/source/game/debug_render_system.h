@@ -17,11 +17,6 @@ public:
 
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;
-
-	inline void set_scene(erwin::Scene* p_scene) { p_scene_ = p_scene; }
-
-private:
-	erwin::Scene* p_scene_;
 };
 
 
