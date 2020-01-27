@@ -5,6 +5,7 @@
 namespace erwin
 {
 	class Scene;
+	class EntityManager;
 }
 
 namespace editor
@@ -13,7 +14,7 @@ namespace editor
 class GameViewWidget: public Widget
 {
 public:
-	GameViewWidget(erwin::Scene& scene);
+	GameViewWidget(erwin::Scene& scene, erwin::EntityManager& ecs);
 	virtual ~GameViewWidget();
 
 	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
@@ -28,6 +29,7 @@ protected:
 
 private:
 	erwin::Scene& scene_;
+	erwin::EntityManager& ECS_;
 	Widget* stats_overlay_;
 	Widget* camera_overlay_;
 

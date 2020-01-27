@@ -18,14 +18,16 @@ public:
     glm::vec3 half;
     glm::mat4 model_matrix;
     Extent extent_m; // Extent in model space
+    float scale;
     bool display;
 
     ComponentOBB();
     ComponentOBB(const Extent& extent);
 
-    inline void update(const glm::mat4& parent_model_matrix)
+    inline void update(const glm::mat4& parent_model_matrix, float _scale)
     {
     	model_matrix = glm::translate(parent_model_matrix, offset);
+        scale = _scale;
 
     	bound::to_model_space_vertices(extent_m, vertices_w);
     	for(int ii=0; ii<8; ++ii)

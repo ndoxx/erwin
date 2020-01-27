@@ -61,6 +61,53 @@ Ray Ray::to_model_space(const glm::mat4& model_matrix) const
     return Ray(origin_m, end_m);
 }
 
+static constexpr float k_epsilon = 0.0001f;
+
+// Scott Owen's algo for ray/AABB intersection
+// adapted from pseudo-code in: https://www.siggraph.org//education/materials/HyperGraph/raytrace/rtinter3.htm
+bool Ray::collides_extent(const Extent& extent, CollisionData& data)
+{
+    float Tnear = -std::numeric_limits<float>::max();
+    float Tfar  = std::numeric_limits<float>::max();
+
+    // For each X/Y/Z slab
+    for(uint32_t ii=0; ii<3; ++ii)
+    {
+        float xxl = extent[2*ii];
+        float xxh = extent[2*ii+1];
+        float xxo = origin[ii];
+        float xxd = direction[ii];
+
+        // If ray parallel to planes
+        if(fabs(xxd)<k_epsilon)
+        {
+            // If ray origin not between slab, no intersection for this slab
+            if(xxo < xxl || xxo > xxh)
+                return false;
+        }
+        else
+        {
+            // Compute the intersection distance of the planes
+            float T1 = (xxl - xxo) / xxd;
+            float T2 = (xxh - xxo) / xxd;
+
+            if(T1 > T2)
+                std::swap(T1, T2); // Make sure T1 is the intersection with the near plane
+            if(T1 > Tnear)
+                Tnear = T1; // Tnear will converge to the largest T1
+            if(T2 < Tfar)
+                Tfar = T2;  // Tfar will converge to the smallest T2
+        }
+    }
+
+    // Box miss / box behind ray
+    if(Tfar<Tnear || Tfar<0)
+        return false;
+
+    data.near = Tnear;
+    data.far  = Tfar;
+    return true;
+}
 
 
 #ifdef W_DEBUG

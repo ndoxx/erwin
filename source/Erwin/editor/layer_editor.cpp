@@ -267,7 +267,7 @@ void Application::build_editor()
     DLOG("editor",1) << "Creating widgets." << std::endl;
 
 	EDITOR_LAYER->add_widget(console);
-    EDITOR_LAYER->add_widget(new editor::GameViewWidget(SCENE));
+    EDITOR_LAYER->add_widget(new editor::GameViewWidget(SCENE, ECS));
     EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget(SCENE));
     EDITOR_LAYER->add_widget(new editor::InspectorWidget(SCENE, ECS));
 

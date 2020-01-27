@@ -89,7 +89,7 @@ void GameLayer::on_attach()
 		auto& OBB        = entity_manager_.create_component<ComponentOBB>(ent);
 		transform = {pos[ii], {0.f,0.f,0.f}, 1.8f};
 		OBB.init(CommonGeometry::get_extent("cube_pbr"_h));
-		OBB.update(transform.get_model_matrix());
+		OBB.update(transform.get_model_matrix(), transform.uniform_scale);
 		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
 		renderable.set_emissive(5.f);
 		renderable.material.shader = deferred_pbr;

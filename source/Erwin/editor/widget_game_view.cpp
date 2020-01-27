@@ -6,6 +6,8 @@
 #include "event/window_events.h"
 #include "event/event_bus.h"
 #include "render/renderer.h"
+#include "entity/entity_manager.h"
+#include "entity/component_bounding_box.h"
 #include "asset/bounding.h"
 #include "imgui.h"
 
@@ -19,9 +21,10 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget(erwin::Scene& scene):
+GameViewWidget::GameViewWidget(erwin::Scene& scene, erwin::EntityManager& ecs):
 Widget("Game", true),
-scene_(scene)
+scene_(scene),
+ECS_(ecs)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
@@ -84,8 +87,31 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
         glm::mat4 VP_inv = glm::inverse(scene_.camera_controller.get_camera().get_view_projection_matrix());
         Ray ray(coords, VP_inv);
 
-        // TODO: Perform a ray scene query
-        DLOG("editor",1) << ray << std::endl;
+        // TODO: Make a system or something...
+        // Perform a ray scene query
+        const glm::vec3& cam_pos = scene_.camera_controller.get_camera().get_position();
+        int new_selection = -1;
+        float nearest = scene_.camera_controller.get_zfar();
+        for(int ii=0; ii<scene_.entities.size(); ++ii)
+        {
+            const auto& desc = scene_.entities[ii];
+            const auto& ent = ECS_.get_entity(desc.id);
+            auto* pOBB = ent.get_component<ComponentOBB>();
+            if(!pOBB)
+                continue;
+
+            Ray::CollisionData data;
+            if(ray.collides_OBB(pOBB->model_matrix, pOBB->extent_m, pOBB->scale, data))
+            {
+                if(data.near < nearest)
+                {
+                    nearest = data.near;
+                    new_selection = ii;
+                }
+            }
+        }
+        if(new_selection >= 0)
+            scene_.selected_entity_idx = new_selection;
 
         return true;
     }
