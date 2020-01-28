@@ -39,4 +39,9 @@ void print_backtrace()
     std::cout << get_backtrace();
 }
 
+void printf_backtrace()
+{
+    printf("%s", get_backtrace().c_str());
+}
+
 } // namespace erwin

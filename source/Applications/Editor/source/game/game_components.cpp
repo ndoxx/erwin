@@ -19,7 +19,7 @@ void ComponentRenderablePBR::inspector_GUI()
     ImGui::ColorEdit3("Tint", (float*)&material_data.tint);
 
     if(is_emissive())
-    	ImGui::SliderFloat("Emissive scale", &material_data.emissive_scale, 0.1f, 10.0f);
+    	ImGui::SliderFloat("Emissivity", &material_data.emissive_scale, 0.1f, 10.0f);
 }
 
 COMPONENT_DEFINITION(ComponentRenderableDirectionalLight);

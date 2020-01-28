@@ -169,24 +169,20 @@ bool GameLayer::on_event(const MouseButtonEvent& event)
 
 bool GameLayer::on_event(const WindowResizeEvent& event)
 {
-	Application::SCENE().camera_controller.on_window_resize_event(event);
 	return false;
 }
 
 bool GameLayer::on_event(const WindowMovedEvent& event)
 {
-	Application::SCENE().camera_controller.on_window_moved_event(event);
 	return false;
 }
 
 bool GameLayer::on_event(const MouseScrollEvent& event)
 {
-	Application::SCENE().camera_controller.on_mouse_scroll_event(event);
 	return false;
 }
 
 bool GameLayer::on_event(const MouseMovedEvent& event)
 {
-	Application::SCENE().camera_controller.on_mouse_moved_event(event);
 	return false;
 }

@@ -56,6 +56,10 @@
 
 Sortie vide -> pas compilée avec -fPIC.
 
+###GUI pour GDB sous Chrome
+> pipx run gdbgui
+    voir: https://www.gdbgui.com/installation/
+
 ##[GIT]
 ###SSH
 Créer une paire de clés RSA pour permettre une connexion SSH avec Github :

@@ -1,5 +1,6 @@
 #include "input/freefly_camera_controller.h"
 #include "input/input.h"
+#include "event/event_bus.h"
 #include "debug/logger.h"
 
 #include "glm/gtx/string_cast.hpp"
@@ -26,6 +27,12 @@ FreeflyController::~FreeflyController()
 
 void FreeflyController::init(float aspect_ratio, float fovy, float znear, float zfar)
 {
+	EVENTBUS.subscribe(this, &FreeflyController::on_window_resize_event);
+	EVENTBUS.subscribe(this, &FreeflyController::on_keyboard_event);
+	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_scroll_event);
+	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_moved_event);
+	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_button_event);
+
 	camera_.init({-aspect_ratio*fovy_znear_to_top(fovy,znear), 
 				   aspect_ratio*fovy_znear_to_top(fovy,znear),
 	              -fovy_znear_to_top(fovy,znear), 
@@ -43,14 +50,14 @@ void FreeflyController::init(float aspect_ratio, float fovy, float znear, float 
 	camera_pitch_             = camera_.get_pitch();
 	camera_position_          = camera_.get_position();
 
-	has_control_ = false;
+	inputs_enabled_ = false;
 	prev_mouse_x_ = 0.f;
 	prev_mouse_y_ = 0.f;
 }
 
 void FreeflyController::update(GameClock& clock)
 {
-	if(!has_control_)
+	if(!inputs_enabled_)
 		return;
 
 	// Translational magnitude
@@ -81,13 +88,13 @@ void FreeflyController::update(GameClock& clock)
 	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
 }
 
-void FreeflyController::toggle_control()
+void FreeflyController::enable_inputs(bool value)
 {
-	has_control_ = !has_control_;
-	Input::show_cursor(!has_control_);
+	inputs_enabled_ = !inputs_enabled_;
+	Input::show_cursor(!inputs_enabled_);
 
 	// Save mouse position if control was acquired, restore it if control was released
-	if(has_control_)
+	if(inputs_enabled_)
 	{
 		std::tie(prev_mouse_x_, prev_mouse_y_) = Input::get_mouse_position();
 		Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);
@@ -115,7 +122,7 @@ bool FreeflyController::on_window_moved_event(const erwin::WindowMovedEvent& eve
 
 bool FreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
 {
-	if(!has_control_)
+	if(!inputs_enabled_)
 		return false;
 
 	// Update and constrain FOV
@@ -135,7 +142,7 @@ bool FreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
 
 bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
-	if(!has_control_)
+	if(!inputs_enabled_)
 		return false;
 
 	// Update and constrain yaw and pitch
@@ -153,6 +160,17 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 	// Input::center_mouse_position();
 
 	return true;
+}
+
+bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
+{
+	if(event.pressed && event.key == keymap::WKEY::F1)
+	{
+		toggle_inputs();
+		return true;
+	}
+
+	return false;
 }
 
 

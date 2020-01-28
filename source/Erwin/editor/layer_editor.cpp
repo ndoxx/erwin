@@ -194,9 +194,6 @@ bool EditorLayer::on_event(const MouseScrollEvent& event)
 
 bool EditorLayer::on_event(const KeyboardEvent& event)
 {
-	if(event.pressed && event.key == keymap::WKEY::F1)
-		Application::SCENE().camera_controller.toggle_control();
-
 	return false;
 }
 

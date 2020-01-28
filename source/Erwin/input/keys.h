@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include "EASTL/hash_map.h"
 
 namespace erwin
 {
@@ -156,7 +156,7 @@ enum WKEYMOD: uint8_t
 	ALT     = 4
 };
 
-static const std::unordered_map<WKEY, std::string> KEY_NAMES =
+static const eastl::hash_map<WKEY, std::string> KEY_NAMES =
 {
 	{WKEY::NONE, 			"<NONE>"},
 	{WKEY::SPACE, 			"SPACE"},
@@ -282,7 +282,7 @@ static const std::unordered_map<WKEY, std::string> KEY_NAMES =
 	{WKEY::LAST, 			"LAST"},
 };
 
-static const std::unordered_map<WMOUSE, std::string> MB_NAMES =
+static const eastl::hash_map<WMOUSE, std::string> MB_NAMES =
 {
 	{WMOUSE::NONE, 	   "<NONE>"},
 	{WMOUSE::BUTTON_0, "LMB"},

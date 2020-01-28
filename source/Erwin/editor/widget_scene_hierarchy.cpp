@@ -42,7 +42,6 @@ void SceneHierarchyWidget::on_imgui_render()
 		if(ImGui::IsItemClicked())
 			node_clicked = ii;
     }
-    ImGui::TreePop();
 
     if(node_clicked != -1)
     {
