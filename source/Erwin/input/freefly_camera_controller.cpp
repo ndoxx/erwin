@@ -71,17 +71,17 @@ void FreeflyController::update(GameClock& clock)
 	front = glm::normalize(front);
 
 	// Handle keyboard inputs
-	if(Input::is_key_pressed(WKEY::W)) // FORWARD
+	if(Input::is_action_key_pressed("ff.move_forward"_h))
 		camera_position_ += translation*front;
-	if(Input::is_key_pressed(WKEY::S)) // BACKWARD
+	if(Input::is_action_key_pressed("ff.move_backward"_h))
 		camera_position_ -= translation*front;
-	if(Input::is_key_pressed(WKEY::A)) // LEFT
+	if(Input::is_action_key_pressed("ff.strafe_left"_h))
 		camera_position_ -= translation*camera_.get_right();
-	if(Input::is_key_pressed(WKEY::D)) // RIGHT
+	if(Input::is_action_key_pressed("ff.strafe_right"_h))
 		camera_position_ += translation*camera_.get_right();
-	if(Input::is_key_pressed(WKEY::SPACE)) // UP
+	if(Input::is_action_key_pressed("ff.ascend"_h))
 		camera_position_ += translation*glm::vec3(0.f,1.f,0.f);
-	if(Input::is_key_pressed(WKEY::LEFT_CONTROL)) // DOWN
+	if(Input::is_action_key_pressed("ff.descend"_h))
 		camera_position_ -= translation*glm::vec3(0.f,1.f,0.f);
 
 	// Update camera parameters
@@ -164,7 +164,7 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 
 bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
-	if(event.pressed && event.key == keymap::WKEY::F1)
+	if(event.pressed && !event.repeat && event.key == Input::get_action_key("ff.toggle"_h))
 	{
 		toggle_inputs();
 		return true;

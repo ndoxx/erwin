@@ -23,7 +23,9 @@ public:
 	static bool load_config();
 	static bool save_config();
 	static void register_action(const std::string& action, keymap::WKEY key, bool pressed);
-
+	static void trigger_action_event(hash_t action);
+	static bool is_action_key_pressed(hash_t action);
+	static keymap::WKEY get_action_key(hash_t action);
 
 	// --- Device interaction / polling --
 
@@ -61,6 +63,7 @@ protected:
 	virtual void show_cursor_impl(bool value) const = 0;
 
 private:
+	static void init();
 	static void shutdown() { delete INSTANCE_; INSTANCE_ = nullptr; }
 	static bool parse_keybindings(void* node);
 

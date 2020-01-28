@@ -176,6 +176,7 @@ bool Application::init()
 
         // Parse intern strings
         istr::init("intern_strings.txt");
+        Input::init();
     }
 
     // Initialize system memory
