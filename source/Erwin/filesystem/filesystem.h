@@ -28,6 +28,8 @@ namespace filesystem
 // Locate executable, and deduce paths
 extern void init();
 
+// Get user directory
+const fs::path& get_user_dir();
 // Get executable directory
 const fs::path& get_self_dir();
 // Get root directory

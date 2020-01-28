@@ -103,7 +103,7 @@ Application::~Application()
     }
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
-        Input::kill();
+        Input::shutdown();
         WLOGGER(kill());
 
         // Shutdown all event pools

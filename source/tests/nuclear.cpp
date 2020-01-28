@@ -18,6 +18,10 @@
 // #include "math/convolution.h"
 // #include "render/main_renderer.h"
 
+#include "input/input.h"
+#include "filesystem/filesystem.h"
+
+
 using namespace erwin;
 
 void init_logger()
@@ -26,6 +30,7 @@ void init_logger()
     WLOGGER(create_channel("thread", 3));
 	WLOGGER(create_channel("nuclear", 3));
 	WLOGGER(create_channel("entity", 3));
+	WLOGGER(create_channel("config", 3));
 	WLOGGER(attach_all("console_sink", std::make_unique<dbg::ConsoleSink>()));
     WLOGGER(set_single_threaded(true));
     WLOGGER(set_backtrace_on_error(false));
@@ -38,10 +43,11 @@ void init_logger()
 int main(int argc, char** argv)
 {
 	init_logger();
+	filesystem::init();
 
-	W_ASSERT(1==2, "Ouch!");
-	W_ASSERT(3==4, "AIAIAIA!");
-	W_ASSERT(3==4, "WOLOLO!");
+	Input::load_config();
+
+	Input::save_config();
 
 	return 0;
 }

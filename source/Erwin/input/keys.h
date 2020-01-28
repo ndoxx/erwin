@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EASTL/hash_map.h"
+#include "EASTL/map.h"
 
 namespace erwin
 {
@@ -156,7 +156,7 @@ enum WKEYMOD: uint8_t
 	ALT     = 4
 };
 
-static const eastl::hash_map<WKEY, std::string> KEY_NAMES =
+static const eastl::map<WKEY, std::string> KEY_NAMES =
 {
 	{WKEY::NONE, 			"<NONE>"},
 	{WKEY::SPACE, 			"SPACE"},
@@ -282,7 +282,140 @@ static const eastl::hash_map<WKEY, std::string> KEY_NAMES =
 	{WKEY::LAST, 			"LAST"},
 };
 
-static const eastl::hash_map<WMOUSE, std::string> MB_NAMES =
+
+[[maybe_unused]] static WKEY key_name_to_key(hash_t key_name)
+{
+	switch(key_name)
+	{
+		default:		  			return WKEY::NONE;
+		case "<NONE>"_h:  			return WKEY::NONE;
+		case "SPACE"_h:  			return WKEY::SPACE;
+		case "APOSTROPHE"_h:  		return WKEY::APOSTROPHE;
+		case "COMMA"_h:  			return WKEY::COMMA;
+		case "MINUS"_h:  			return WKEY::MINUS;
+		case "PERIOD"_h:  			return WKEY::PERIOD;
+		case "SLASH"_h:  			return WKEY::SLASH;
+		case "0"_h: 				return WKEY::UB_0;
+		case "1"_h: 				return WKEY::UB_1;
+		case "2"_h: 				return WKEY::UB_2;
+		case "3"_h: 				return WKEY::UB_3;
+		case "4"_h: 				return WKEY::UB_4;
+		case "5"_h: 				return WKEY::UB_5;
+		case "6"_h: 				return WKEY::UB_6;
+		case "7"_h: 				return WKEY::UB_7;
+		case "8"_h: 				return WKEY::UB_8;
+		case "9"_h: 				return WKEY::UB_9;
+		case "SEMICOLON"_h:  		return WKEY::SEMICOLON;
+		case "EQUAL"_h:  			return WKEY::EQUAL;
+		case "A"_h:  				return WKEY::A;
+		case "B"_h:  				return WKEY::B;
+		case "C"_h:  				return WKEY::C;
+		case "D"_h:  				return WKEY::D;
+		case "E"_h:  				return WKEY::E;
+		case "F"_h:  				return WKEY::F;
+		case "G"_h:  				return WKEY::G;
+		case "H"_h:  				return WKEY::H;
+		case "I"_h:  				return WKEY::I;
+		case "J"_h:  				return WKEY::J;
+		case "K"_h:  				return WKEY::K;
+		case "L"_h:  				return WKEY::L;
+		case "M"_h:  				return WKEY::M;
+		case "N"_h:  				return WKEY::N;
+		case "O"_h:  				return WKEY::O;
+		case "P"_h:  				return WKEY::P;
+		case "Q"_h:  				return WKEY::Q;
+		case "R"_h:  				return WKEY::R;
+		case "S"_h:  				return WKEY::S;
+		case "T"_h:  				return WKEY::T;
+		case "U"_h:  				return WKEY::U;
+		case "V"_h:  				return WKEY::V;
+		case "W"_h:  				return WKEY::W;
+		case "X"_h:  				return WKEY::X;
+		case "Y"_h:  				return WKEY::Y;
+		case "Z"_h:  				return WKEY::Z;
+		case "LEFT_BRACKET"_h:  	return WKEY::LEFT_BRACKET;
+		case "BACKSLASH"_h:  		return WKEY::BACKSLASH;
+		case "RIGHT_BRACKET"_h:  	return WKEY::RIGHT_BRACKET;
+		case "GRAVE_ACCENT"_h:  	return WKEY::GRAVE_ACCENT;
+		case "WORLD_1"_h:  			return WKEY::WORLD_1;
+		case "WORLD_2"_h:  			return WKEY::WORLD_2;
+		case "ESCAPE"_h:  			return WKEY::ESCAPE;
+		case "ENTER"_h:  			return WKEY::ENTER;
+		case "TAB"_h:  				return WKEY::TAB;
+		case "BACKSPACE"_h:  		return WKEY::BACKSPACE;
+		case "INSERT"_h:  			return WKEY::INSERT;
+		case "DELETE"_h:  			return WKEY::DELETE;
+		case "RIGHT"_h:  			return WKEY::RIGHT;
+		case "LEFT"_h:  			return WKEY::LEFT;
+		case "DOWN"_h:  			return WKEY::DOWN;
+		case "UP"_h:  				return WKEY::UP;
+		case "PAGE_UP"_h:  			return WKEY::PAGE_UP;
+		case "PAGE_DOWN"_h:  		return WKEY::PAGE_DOWN;
+		case "HOME"_h:  			return WKEY::HOME;
+		case "END"_h:  				return WKEY::END;
+		case "CAPS_LOCK"_h:  		return WKEY::CAPS_LOCK;
+		case "SCROLL_LOCK"_h:  		return WKEY::SCROLL_LOCK;
+		case "NUM_LOCK"_h:  		return WKEY::NUM_LOCK;
+		case "PRINT_SCREEN"_h:  	return WKEY::PRINT_SCREEN;
+		case "PAUSE"_h:  			return WKEY::PAUSE;
+		case "F1"_h:  				return WKEY::F1;
+		case "F2"_h:  				return WKEY::F2;
+		case "F3"_h:  				return WKEY::F3;
+		case "F4"_h:  				return WKEY::F4;
+		case "F5"_h:  				return WKEY::F5;
+		case "F6"_h:  				return WKEY::F6;
+		case "F7"_h:  				return WKEY::F7;
+		case "F8"_h:  				return WKEY::F8;
+		case "F9"_h:  				return WKEY::F9;
+		case "F10"_h:  				return WKEY::F10;
+		case "F11"_h:  				return WKEY::F11;
+		case "F12"_h:  				return WKEY::F12;
+		case "F13"_h:  				return WKEY::F13;
+		case "F14"_h:  				return WKEY::F14;
+		case "F15"_h:  				return WKEY::F15;
+		case "F16"_h:  				return WKEY::F16;
+		case "F17"_h:  				return WKEY::F17;
+		case "F18"_h:  				return WKEY::F18;
+		case "F19"_h:  				return WKEY::F19;
+		case "F20"_h:  				return WKEY::F20;
+		case "F21"_h:  				return WKEY::F21;
+		case "F22"_h:  				return WKEY::F22;
+		case "F23"_h:  				return WKEY::F23;
+		case "F24"_h:  				return WKEY::F24;
+		case "F25"_h:  				return WKEY::F25;
+		case "KP_0"_h:  			return WKEY::KP_0;
+		case "KP_1"_h:  			return WKEY::KP_1;
+		case "KP_2"_h:  			return WKEY::KP_2;
+		case "KP_3"_h:  			return WKEY::KP_3;
+		case "KP_4"_h:  			return WKEY::KP_4;
+		case "KP_5"_h:  			return WKEY::KP_5;
+		case "KP_6"_h:  			return WKEY::KP_6;
+		case "KP_7"_h:  			return WKEY::KP_7;
+		case "KP_8"_h:  			return WKEY::KP_8;
+		case "KP_9"_h:  			return WKEY::KP_9;
+		case "KP_DECIMAL"_h:  		return WKEY::KP_DECIMAL;
+		case "KP_DIVIDE"_h:  		return WKEY::KP_DIVIDE;
+		case "KP_MULTIPLY"_h:  		return WKEY::KP_MULTIPLY;
+		case "KP_SUBTRACT"_h:  		return WKEY::KP_SUBTRACT;
+		case "KP_ADD"_h:  			return WKEY::KP_ADD;
+		case "KP_ENTER"_h:  		return WKEY::KP_ENTER;
+		case "KP_EQUAL"_h:  		return WKEY::KP_EQUAL;
+		case "LEFT_SHIFT"_h:  		return WKEY::LEFT_SHIFT;
+		case "LEFT_CONTROL"_h:  	return WKEY::LEFT_CONTROL;
+		case "LEFT_ALT"_h:  		return WKEY::LEFT_ALT;
+		case "LEFT_SUPER"_h:  		return WKEY::LEFT_SUPER;
+		case "RIGHT_SHIFT"_h:  		return WKEY::RIGHT_SHIFT;
+		case "RIGHT_CONTROL"_h:  	return WKEY::RIGHT_CONTROL;
+		case "RIGHT_ALT"_h:  		return WKEY::RIGHT_ALT;
+		case "RIGHT_SUPER"_h:  		return WKEY::RIGHT_SUPER;
+		case "MENU"_h:  			return WKEY::MENU;
+		case "LAST"_h:  			return WKEY::LAST;
+	}
+
+	return WKEY::NONE;
+}
+
+static const eastl::map<WMOUSE, std::string> MB_NAMES =
 {
 	{WMOUSE::NONE, 	   "<NONE>"},
 	{WMOUSE::BUTTON_0, "LMB"},

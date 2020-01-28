@@ -14,10 +14,18 @@ protected:
 	virtual ~Input() = default;
 
 public:
-	Input(const Input&) = delete;
-	Input& operator=(const Input&) = delete;
+	friend class Application;
 
-	static void kill() { delete INSTANCE_; INSTANCE_ = nullptr; }
+	NON_COPYABLE(Input);
+	NON_MOVABLE(Input);
+
+	// --- Action API ---
+	static bool load_config();
+	static bool save_config();
+	static void register_action(const std::string& action, keymap::WKEY key, bool pressed);
+
+
+	// --- Device interaction / polling --
 
 	inline static bool is_key_pressed(keymap::WKEY keycode)
 	{
@@ -51,6 +59,10 @@ protected:
 	virtual void set_mouse_position_impl(float x, float y) const = 0;
 	virtual void center_mouse_position_impl() const = 0;
 	virtual void show_cursor_impl(bool value) const = 0;
+
+private:
+	static void shutdown() { delete INSTANCE_; INSTANCE_ = nullptr; }
+	static bool parse_keybindings(void* node);
 
 private:
 	static Input* INSTANCE_;
