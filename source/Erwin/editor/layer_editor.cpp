@@ -282,9 +282,7 @@ void Application::build_editor()
 	// Register all memory area block descriptions
     editor::HexDumpWidget* hex_widget;
     EDITOR_LAYER->add_widget(hex_widget = new editor::HexDumpWidget());
-	hex_widget->register_area_description("client", get_client_area().get_block_descriptions());
-	hex_widget->register_area_description("system", get_system_area().get_block_descriptions());
-	hex_widget->register_area_description("render", get_render_area().get_block_descriptions());
+    hex_widget->refresh();
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }

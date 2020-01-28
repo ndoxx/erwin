@@ -39,6 +39,10 @@ int main(int argc, char** argv)
 {
 	init_logger();
 
+	W_ASSERT(1==2, "Ouch!");
+	W_ASSERT(3==4, "AIAIAIA!");
+	W_ASSERT(3==4, "WOLOLO!");
+
 	return 0;
 }
 

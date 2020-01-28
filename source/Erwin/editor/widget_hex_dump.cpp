@@ -1,5 +1,6 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/font_awesome.h"
+#include "core/application.h"
 #include "imgui.h"
 
 #include <sstream>
@@ -29,6 +30,17 @@ Widget("Hex dump", true)
 HexDumpWidget::~HexDumpWidget()
 {
 
+}
+
+void HexDumpWidget::refresh()
+{
+    s_storage.names_.clear();
+    s_storage.area_descriptions_.clear();
+    s_storage.current_area_ = 0;
+    s_storage.current_block_ = 0;
+    register_area_description("client", Application::get_client_area().get_block_descriptions());
+    register_area_description("system", Application::get_system_area().get_block_descriptions());
+    register_area_description("render", Application::get_render_area().get_block_descriptions());
 }
 
 void HexDumpWidget::register_area_description(const std::string& name, const std::vector<memory::debug::AreaItem>& items)
@@ -62,6 +74,14 @@ void HexDumpWidget::on_imgui_render()
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
+    }
+
+    ImGui::SameLine();
+    if(ImGui::Button("Refresh"))
+    {
+        refresh();
+        cur_area = s_storage.names_[s_storage.current_area_].data();
+        cur_block = s_storage.area_descriptions_[s_storage.current_area_][0].name.data();
     }
 
     const BlockDescriptions& bd = s_storage.area_descriptions_[s_storage.current_area_];

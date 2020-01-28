@@ -46,9 +46,9 @@ public:
 	bool init();
 	void run();
 
-	memory::HeapArea& get_client_area();
-	const memory::HeapArea& get_system_area() const;
-	const memory::HeapArea& get_render_area() const;
+	static memory::HeapArea& get_client_area();
+	static const memory::HeapArea& get_system_area();
+	static const memory::HeapArea& get_render_area();
 
 	static inline Application& get_instance() { return *pinstance_; }
 	inline const Window& get_window() { return *window_; }

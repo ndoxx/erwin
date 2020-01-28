@@ -16,9 +16,8 @@
 
 using namespace erwin;
 
-GameLayer::GameLayer(memory::HeapArea& client_area):
-Layer("GameLayer"),
-client_area_(client_area)
+GameLayer::GameLayer():
+Layer("GameLayer")
 {
 
 }
@@ -32,12 +31,13 @@ void GameLayer::on_attach()
 {	
 	auto& ecs = Application::ECS();
 	auto& scene = Application::SCENE();
+	auto& client_area = Application::get_client_area();
 
-	ecs.create_component_manager<ComponentTransform3D>(client_area_, 128);
-	ecs.create_component_manager<ComponentOBB>(client_area_, 128);
-	ecs.create_component_manager<ComponentRenderablePBR>(client_area_, 128);
-	ecs.create_component_manager<ComponentRenderableDirectionalLight>(client_area_, 2);
-	ecs.create_component_manager<ComponentDirectionalLight>(client_area_, 2);
+	ecs.create_component_manager<ComponentTransform3D>(client_area, 128);
+	ecs.create_component_manager<ComponentOBB>(client_area, 128);
+	ecs.create_component_manager<ComponentRenderablePBR>(client_area, 128);
+	ecs.create_component_manager<ComponentRenderableDirectionalLight>(client_area, 2);
+	ecs.create_component_manager<ComponentDirectionalLight>(client_area, 2);
 
 	ecs.create_system<BoundingBoxSystem>();
 	ecs.create_system<PBRDeferredRenderSystem>();

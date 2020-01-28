@@ -44,6 +44,7 @@ set(CMAKE_BUILD_TYPE Release)
 subdirs(source)
 
 set(SRC_CORE
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/core.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/unique_id.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp

@@ -33,11 +33,15 @@
 
 #ifdef W_ENABLE_ASSERT
 	#include <cstdio>
+	namespace detail
+	{
+		extern void assert_redirect();
+	}
 	#define ASSERT_FMT_BUFFER_SIZE__ 128
 	static char ASSERT_FMT_BUFFER__[ASSERT_FMT_BUFFER_SIZE__];
 	#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
-	#define W_ASSERT_FMT(CND, FORMAT_STR, ...) { if(!( CND )) { snprintf(ASSERT_FMT_BUFFER__, ASSERT_FMT_BUFFER_SIZE__, FORMAT_STR, __VA_ARGS__); printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , ASSERT_FMT_BUFFER__ , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
-	#define W_ASSERT(CND, STR) { if(!( CND )) { printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , STR , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
+	#define W_ASSERT_FMT(CND, FORMAT_STR, ...) { if(!( CND )) { snprintf(ASSERT_FMT_BUFFER__, ASSERT_FMT_BUFFER_SIZE__, FORMAT_STR, __VA_ARGS__); printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , ASSERT_FMT_BUFFER__ , __FILE__ , __func__ , __LINE__ ); ::detail::assert_redirect(); }}
+	#define W_ASSERT(CND, STR) { if(!( CND )) { printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , STR , __FILE__ , __func__ , __LINE__ ); ::detail::assert_redirect(); }}
 #else
 	#define W_STATIC_ERROR(FSTR, ...)
 	#define W_ASSERT_FMT(CND, FORMAT_STR, ...)

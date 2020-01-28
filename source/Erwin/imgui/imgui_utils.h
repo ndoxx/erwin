@@ -17,4 +17,6 @@ void PlotVarFlushOldEntries();
 
 void WCombo(const char* combo_name, const char* text, int& current_index, int nitems, const char** items);
 
+bool SliderFloatDefault(const char* label, float* v, float v_min, float v_max, float v_default, const char* display_format = "%.3f");
+
 }

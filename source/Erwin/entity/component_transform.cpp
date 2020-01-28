@@ -1,5 +1,6 @@
 #include "entity/component_transform.h"
 #include "imgui.h"
+#include "imgui/imgui_utils.h"
 
 namespace erwin
 {
@@ -30,12 +31,12 @@ void ComponentTransform3D::inspector_GUI()
 	ImGui::InputFloat("Y##cmp_tr3", &position.y, k_step, k_step_fast, "%.3f");
 	ImGui::InputFloat("Z##cmp_tr3", &position.z, k_step, k_step_fast, "%.3f");
 
-	ImGui::SliderFloat("Scale##cmp_tr3", &uniform_scale, 0.1f, 10.0f);
+	ImGui::SliderFloatDefault("Scale##cmp_tr3", &uniform_scale, 0.1f, 10.0f, 1.f);
 
 	bool update_rotation = false;
-    update_rotation |= ImGui::SliderFloat("Pitch##cmp_tr3", &euler.x, 0.0f, 180.0f);
-    update_rotation |= ImGui::SliderFloat("Yaw##cmp_tr3",   &euler.y, 0.0f, 360.0f);
-    update_rotation |= ImGui::SliderFloat("Roll##cmp_tr3",  &euler.z, 0.0f, 360.0f);
+    update_rotation |= ImGui::SliderFloatDefault("Pitch##cmp_tr3", &euler.x, -90.f, 90.f, 0.f);
+    update_rotation |= ImGui::SliderFloatDefault("Yaw##cmp_tr3",   &euler.y, -180.f, 180.f, 0.f);
+    update_rotation |= ImGui::SliderFloatDefault("Roll##cmp_tr3",  &euler.z, -180.f, 180.f, 0.f);
     
     if(update_rotation)
     	set_rotation(euler);
