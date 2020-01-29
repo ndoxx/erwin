@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keymap>
-	<action name="ff.toggle"        desc="Toggle freefly control" key="F1" trigger="press"/>
-	<action name="ff.move_forward"  desc="Move forward" 		  key="W"/>
-	<action name="ff.move_backward" desc="Move backward" 		  key="S"/>
-	<action name="ff.strafe_left"   desc="Strafe left" 			  key="A"/>
-	<action name="ff.strafe_right"  desc="Strafe right" 		  key="D"/>
-	<action name="ff.ascend"        desc="Ascend" 				  key="SPACE"/>
-	<action name="ff.descend"       desc="Descend" 				  key="LEFT_CONTROL"/>
-	<action name="ff.go_fast"       desc="Move faster" 			  key="LEFT_SHIFT"/>
+	<action name="ACTION_FREEFLY_TOGGLE"        desc="Toggle freefly control" key="F1" trigger="press"/>
+	<action name="ACTION_FREEFLY_MOVE_FORWARD"  desc="Move forward" 		  key="W"/>
+	<action name="ACTION_FREEFLY_MOVE_BACKWARD" desc="Move backward" 		  key="S"/>
+	<action name="ACTION_FREEFLY_STRAFE_LEFT"   desc="Strafe left" 			  key="A"/>
+	<action name="ACTION_FREEFLY_STRAFE_RIGHT"  desc="Strafe right" 		  key="D"/>
+	<action name="ACTION_FREEFLY_ASCEND"        desc="Ascend" 				  key="SPACE"/>
+	<action name="ACTION_FREEFLY_DESCEND"       desc="Descend" 				  key="LEFT_CONTROL"/>
+	<action name="ACTION_FREEFLY_GO_FAST"       desc="Move faster" 			  key="LEFT_SHIFT"/>
 </Keymap>

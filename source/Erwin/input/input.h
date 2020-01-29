@@ -2,7 +2,7 @@
 
 #include "core/core.h"
 #include "input/keys.h"
-#include "EASTL/map.h"
+#include "input/action.h"
 #include "EASTL/vector.h"
 
 namespace erwin
@@ -20,28 +20,6 @@ public:
 
 	NON_COPYABLE(Input);
 	NON_MOVABLE(Input);
-
-	// --- Action API ---
-
-	struct ActionDescriptor
-	{
-		keymap::WKEY key;
-		bool pressed;
-		bool repeat;
-		std::string name;
-		std::string description;
-	};
-
-	static bool load_config();
-	static bool save_config();
-	static void register_action(const std::string& action, const std::string& description, keymap::WKEY key, bool pressed);
-	static void modify_action(hash_t action, keymap::WKEY key);
-	static void trigger_action_event(hash_t action);
-	static bool is_action_key_pressed(hash_t action);
-	static keymap::WKEY get_action_key(hash_t action);
-
-	static uint32_t get_action_count();
-	static std::pair<hash_t, const Input::ActionDescriptor&> get_action(uint32_t index);
 
 	// --- Device interaction / polling --
 	static inline bool is_key_pressed(keymap::WKEY keycode)
@@ -69,6 +47,45 @@ public:
 		INSTANCE_->show_cursor_impl(value);
 	}
 
+	// --- Action API ---
+
+	struct ActionDescriptor
+	{
+		keymap::WKEY key;
+		bool pressed;
+		bool repeat;
+		std::string name;
+		std::string description;
+	};
+
+	static bool load_config();
+	static bool save_config();
+
+	static inline void modify_action(uint32_t action, keymap::WKEY key)
+	{
+		actions[action].key = key;
+	}
+
+	static inline bool is_action_key_pressed(uint32_t action)
+	{
+		return is_key_pressed(actions[action].key);
+	}
+
+	static inline keymap::WKEY get_action_key(uint32_t action)
+	{
+		return actions[action].key;
+	}
+
+	static inline uint32_t get_action_count()
+	{
+		return actions.size();
+	}
+
+	static inline const ActionDescriptor& get_action(uint32_t action)
+	{
+		return actions[action];
+	}
+
 protected:
 	virtual bool is_key_pressed_impl(keymap::WKEY keycode) const = 0;
 	virtual bool is_mouse_button_pressed_impl(keymap::WMOUSE button) const = 0;
@@ -84,6 +101,7 @@ private:
 
 private:
 	static Input* INSTANCE_;
+	static eastl::vector<ActionDescriptor> actions;
 };
 
 

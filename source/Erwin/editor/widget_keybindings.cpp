@@ -43,11 +43,11 @@ void KeybindingsWidget::on_imgui_render()
     uint32_t action_count = Input::get_action_count();
 
     ImGui::Columns(2, "Keys");  // 3-ways, no border
-    for(uint32_t ii=0; ii<action_count; ++ii)
+    for(uint32_t ii=1; ii<action_count; ++ii)
     {
-        auto&& [hname, action] = Input::get_action(ii);
+        const auto& action = Input::get_action(ii);
 
-        bool is_selected = (selection_ == hname);
+        bool is_selected = (selection_ == ii);
 
         ImGui::TextUnformatted(action.description.c_str());
         ImGui::NextColumn();
@@ -55,7 +55,7 @@ void KeybindingsWidget::on_imgui_render()
         {
             if(ImGui::IsMouseDoubleClicked(0))
             {
-                selection_ = hname;
+                selection_ = ii;
             }
         }
         if(is_selected)

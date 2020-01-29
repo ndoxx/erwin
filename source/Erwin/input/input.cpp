@@ -8,36 +8,15 @@
 namespace erwin
 {
 
-static struct
-{
-	eastl::map<hash_t, Input::ActionDescriptor> actions;
-	eastl::vector<eastl::vector<hash_t>> triggers;
-	eastl::vector<hash_t> order;
-} s_storage;
+eastl::vector<Input::ActionDescriptor> Input::actions;
 
-[[maybe_unused]] static bool on_keyboard_event(const KeyboardEvent& event)
-{	
-	const auto& triggers = s_storage.triggers[(int)event.key];
-	if(triggers.empty())
-		return false;
-
-	for(hash_t trigger: triggers)
-	{
-		const auto& desc = s_storage.actions.at(trigger);
-		if(event.pressed == desc.pressed && event.repeat == desc.repeat)
-			EVENTBUS.publish(ActionTriggeredEvent(trigger));
-	}
-	return true;
-}
 
 void Input::init()
 {
-	s_storage.triggers.resize(keymap::KEY_NAMES.size());
+	// Push null action
+	actions.push_back({keymap::WKEY::NONE, false, false, "", ""});
 
 	load_config();
-
-	// Disconnected for now
-	// EVENTBUS.subscribe(&on_keyboard_event);
 }
 
 bool Input::parse_keybindings(void* node)
@@ -62,59 +41,11 @@ bool Input::parse_keybindings(void* node)
         hash_t htrigger = xml::parse_attribute_h(cur_node, "trigger");
         bool trigger = (htrigger == "press"_h || htrigger == 0);
 
-		register_action(action_name, description, key, trigger);
+		// The XML file we're parsing better be in the correct enum order!
+		actions.push_back({key, trigger, false, action_name, description});
     }
 
     return true;
-}
-
-void Input::register_action(const std::string& action, const std::string& description, keymap::WKEY key, bool pressed)
-{
-	// TODO: detect possible conflicts
-	hash_t hname = H_(action.c_str());
-	s_storage.actions.emplace(hname, ActionDescriptor{key, pressed, false, action, description});
-	s_storage.order.push_back(hname);
-}
-
-void Input::modify_action(hash_t action, keymap::WKEY key)
-{
-	auto it = s_storage.actions.find(action);
-	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
-	it->second.key = key;
-	// TODO: also modify triggers
-}
-
-void Input::trigger_action_event(hash_t action)
-{
-	W_ASSERT(false, "Feature disabled.");
-	auto it = s_storage.actions.find(action);
-	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
-	s_storage.triggers[(int)it->second.key].push_back(action);
-}
-
-bool Input::is_action_key_pressed(hash_t action)
-{
-	auto it = s_storage.actions.find(action);
-	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
-	return is_key_pressed(it->second.key);
-}
-
-keymap::WKEY Input::get_action_key(hash_t action)
-{
-	auto it = s_storage.actions.find(action);
-	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
-	return it->second.key;
-}
-
-uint32_t Input::get_action_count()
-{
-	return s_storage.order.size();
-}
-
-std::pair<hash_t, const Input::ActionDescriptor&> Input::get_action(uint32_t index)
-{
-	hash_t action = s_storage.order[index];
-	return {action, s_storage.actions.at(action)};
 }
 
 bool Input::load_config()
@@ -174,10 +105,9 @@ bool Input::save_config()
 	ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
 	ofs << "<Keymap>" << std::endl;
 
-	for(uint32_t ii=0; ii<s_storage.order.size(); ++ii)
+	for(uint32_t ii=1; ii<actions.size(); ++ii)
 	{
-		auto&& [hname, action] = get_action(ii);
-
+		const auto& action = actions[ii];
 		ofs << "\t<action name=\"" << action.name
 			<< "\" desc=\"" << action.description
 			<< "\" key=\"" << keymap::KEY_NAMES.at(action.key)

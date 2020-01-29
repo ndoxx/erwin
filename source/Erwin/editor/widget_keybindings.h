@@ -17,7 +17,7 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
-	erwin::hash_t selection_;
+	uint32_t selection_;
 };
 
 } // namespace editor

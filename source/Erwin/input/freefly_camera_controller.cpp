@@ -62,7 +62,7 @@ void FreeflyController::update(GameClock& clock)
 
 	// Translational magnitude
 	float dt = clock.get_frame_duration();
-	float speed_modifier = Input::is_action_key_pressed("ff.go_fast"_h) ? 5.f : 1.f;
+	float speed_modifier = Input::is_action_key_pressed(ACTION_FREEFLY_GO_FAST) ? 5.f : 1.f;
 	float translation = dt * speed_modifier * camera_translation_speed_;
 
 	// Front direction is the normalized projection of the camera forward axis on the horizontal plane
@@ -71,17 +71,17 @@ void FreeflyController::update(GameClock& clock)
 	front = glm::normalize(front);
 
 	// Handle keyboard inputs
-	if(Input::is_action_key_pressed("ff.move_forward"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_FORWARD))
 		camera_position_ += translation*front;
-	if(Input::is_action_key_pressed("ff.move_backward"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_BACKWARD))
 		camera_position_ -= translation*front;
-	if(Input::is_action_key_pressed("ff.strafe_left"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_STRAFE_LEFT))
 		camera_position_ -= translation*camera_.get_right();
-	if(Input::is_action_key_pressed("ff.strafe_right"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_STRAFE_RIGHT))
 		camera_position_ += translation*camera_.get_right();
-	if(Input::is_action_key_pressed("ff.ascend"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_ASCEND))
 		camera_position_ += translation*glm::vec3(0.f,1.f,0.f);
-	if(Input::is_action_key_pressed("ff.descend"_h))
+	if(Input::is_action_key_pressed(ACTION_FREEFLY_DESCEND))
 		camera_position_ -= translation*glm::vec3(0.f,1.f,0.f);
 
 	// Update camera parameters
@@ -164,7 +164,7 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 
 bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
-	if(event.pressed && !event.repeat && event.key == Input::get_action_key("ff.toggle"_h))
+	if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_FREEFLY_TOGGLE))
 	{
 		toggle_inputs();
 		return true;
