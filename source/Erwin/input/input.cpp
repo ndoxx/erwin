@@ -58,7 +58,7 @@ bool Input::load_config()
 
 	fs::path user_filepath    = filesystem::get_user_dir() / "config/keybindings.xml";
 	bool has_user             = fs::exists(user_filepath);
-	fs::path default_filepath = filesystem::get_config_dir() / "default_keybindings.xml";
+	fs::path default_filepath = filesystem::get_root_dir() / s_default_keybindings_path;
 	bool has_default          = fs::exists(default_filepath);
 
 	if(!has_default && !has_user)
