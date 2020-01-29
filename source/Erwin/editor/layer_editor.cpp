@@ -268,7 +268,6 @@ void Application::build_editor()
     EDITOR_LAYER->add_widget(new editor::GameViewWidget());
     EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget());
     EDITOR_LAYER->add_widget(new editor::InspectorWidget());
-    EDITOR_LAYER->add_widget(new editor::KeybindingsWidget());
 
     // Register main render target in peek widget
     editor::RTPeekWidget* peek_widget;
@@ -282,6 +281,9 @@ void Application::build_editor()
     editor::HexDumpWidget* hex_widget;
     EDITOR_LAYER->add_widget(hex_widget = new editor::HexDumpWidget());
     hex_widget->refresh();
+
+    // TODO: move to a settings menu
+    EDITOR_LAYER->add_widget(new editor::KeybindingsWidget());
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }

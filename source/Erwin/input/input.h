@@ -29,18 +29,19 @@ public:
 		bool pressed;
 		bool repeat;
 		std::string name;
+		std::string description;
 	};
-
-	using ActionDescriptors = eastl::map<hash_t, ActionDescriptor>;
 
 	static bool load_config();
 	static bool save_config();
-	static void register_action(const std::string& action, keymap::WKEY key, bool pressed);
+	static void register_action(const std::string& action, const std::string& description, keymap::WKEY key, bool pressed);
 	static void modify_action(hash_t action, keymap::WKEY key);
 	static void trigger_action_event(hash_t action);
 	static bool is_action_key_pressed(hash_t action);
 	static keymap::WKEY get_action_key(hash_t action);
-	static const ActionDescriptors& get_actions();
+
+	static uint32_t get_action_count();
+	static std::pair<hash_t, const Input::ActionDescriptor&> get_action(uint32_t index);
 
 	// --- Device interaction / polling --
 	static inline bool is_key_pressed(keymap::WKEY keycode)

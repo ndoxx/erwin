@@ -12,6 +12,7 @@ static struct
 {
 	eastl::map<hash_t, Input::ActionDescriptor> actions;
 	eastl::vector<eastl::vector<hash_t>> triggers;
+	eastl::vector<hash_t> order;
 } s_storage;
 
 [[maybe_unused]] static bool on_keyboard_event(const KeyboardEvent& event)
@@ -48,8 +49,11 @@ bool Input::parse_keybindings(void* node)
         cur_node;
         cur_node=cur_node->next_sibling("action"))
     {
-        std::string action_name;
+        std::string action_name, description;
         if(!xml::parse_attribute(cur_node, "name", action_name)) return false;
+        if(!xml::parse_attribute(cur_node, "desc", description))
+        	description = action_name;
+
         hash_t hkey_name = xml::parse_attribute_h(cur_node, "key");
 		if(hkey_name == 0) return false;
 		keymap::WKEY key = keymap::key_name_to_key(hkey_name);
@@ -58,16 +62,18 @@ bool Input::parse_keybindings(void* node)
         hash_t htrigger = xml::parse_attribute_h(cur_node, "trigger");
         bool trigger = (htrigger == "press"_h || htrigger == 0);
 
-		register_action(action_name, key, trigger);
+		register_action(action_name, description, key, trigger);
     }
 
     return true;
 }
 
-void Input::register_action(const std::string& action, keymap::WKEY key, bool pressed)
+void Input::register_action(const std::string& action, const std::string& description, keymap::WKEY key, bool pressed)
 {
+	// TODO: detect possible conflicts
 	hash_t hname = H_(action.c_str());
-	s_storage.actions.emplace(hname, ActionDescriptor{key, pressed, false, action});
+	s_storage.actions.emplace(hname, ActionDescriptor{key, pressed, false, action, description});
+	s_storage.order.push_back(hname);
 }
 
 void Input::modify_action(hash_t action, keymap::WKEY key)
@@ -100,9 +106,15 @@ keymap::WKEY Input::get_action_key(hash_t action)
 	return it->second.key;
 }
 
-const Input::ActionDescriptors& Input::get_actions()
+uint32_t Input::get_action_count()
 {
-	return s_storage.actions;
+	return s_storage.order.size();
+}
+
+std::pair<hash_t, const Input::ActionDescriptor&> Input::get_action(uint32_t index)
+{
+	hash_t action = s_storage.order[index];
+	return {action, s_storage.actions.at(action)};
 }
 
 bool Input::load_config()
@@ -162,9 +174,12 @@ bool Input::save_config()
 	ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
 	ofs << "<Keymap>" << std::endl;
 
-	for(auto&& [hname, action]: s_storage.actions)
+	for(uint32_t ii=0; ii<s_storage.order.size(); ++ii)
 	{
+		auto&& [hname, action] = get_action(ii);
+
 		ofs << "\t<action name=\"" << action.name
+			<< "\" desc=\"" << action.description
 			<< "\" key=\"" << keymap::KEY_NAMES.at(action.key)
 			<< "\" trigger=\"" << (action.pressed ? "press" : "release")
 			<< "\"/>" << std::endl;

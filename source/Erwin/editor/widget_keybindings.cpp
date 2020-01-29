@@ -28,7 +28,9 @@ bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
         return false;
 
     keymap::WKEY new_key = event.key;
-    Input::modify_action(selection_, new_key);
+    if(new_key != keymap::WKEY::ESCAPE)
+        Input::modify_action(selection_, new_key);
+
     selection_ = 0;
 
     return true;
@@ -38,14 +40,16 @@ void KeybindingsWidget::on_imgui_render()
 {
     static const char* s_hint = "<press a key>";
 
-    auto& actions = Input::get_actions();
+    uint32_t action_count = Input::get_action_count();
 
     ImGui::Columns(2, "Keys");  // 3-ways, no border
-    for(auto&& [hname, action]: actions)
+    for(uint32_t ii=0; ii<action_count; ++ii)
     {
+        auto&& [hname, action] = Input::get_action(ii);
+
         bool is_selected = (selection_ == hname);
 
-        ImGui::TextUnformatted(action.name.c_str());
+        ImGui::TextUnformatted(action.description.c_str());
         ImGui::NextColumn();
         if(ImGui::Selectable(is_selected ? s_hint : keymap::KEY_NAMES.at(action.key).c_str(), is_selected, ImGuiSelectableFlags_AllowDoubleClick))
         {
