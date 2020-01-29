@@ -237,4 +237,25 @@ struct RaySceneQueryEvent: public WEvent
     glm::vec2 coords;
 };
 
+struct ActionTriggeredEvent: public WEvent
+{
+    EVENT_DECLARATION(ActionTriggeredEvent);
+
+    ActionTriggeredEvent() = default;
+    ActionTriggeredEvent(hash_t action_name):
+    action(action_name)
+    {
+
+    }
+
+#ifdef W_DEBUG
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << action;
+    }
+#endif
+
+    hash_t action;
+};
+
 } // namespace erwin

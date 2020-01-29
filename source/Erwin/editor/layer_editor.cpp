@@ -5,6 +5,7 @@
 #include "editor/widget_inspector.h"
 #include "editor/widget_rt_peek.h"
 #include "editor/widget_hex_dump.h"
+#include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
 #include "core/application.h"
 #include "debug/logger_thread.h"
@@ -280,6 +281,9 @@ void Application::build_editor()
     editor::HexDumpWidget* hex_widget;
     EDITOR_LAYER->add_widget(hex_widget = new editor::HexDumpWidget());
     hex_widget->refresh();
+
+    // TODO: move to a settings menu
+    EDITOR_LAYER->add_widget(new editor::KeybindingsWidget());
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }

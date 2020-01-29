@@ -13,6 +13,7 @@ EVENT_DEFINITION(MouseButtonEvent);
 EVENT_DEFINITION(MouseMovedEvent);
 EVENT_DEFINITION(MouseScrollEvent);
 EVENT_DEFINITION(RaySceneQueryEvent);
+EVENT_DEFINITION(ActionTriggeredEvent);
 
 
 } // namespace erwin

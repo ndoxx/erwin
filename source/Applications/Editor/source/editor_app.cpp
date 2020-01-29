@@ -27,8 +27,8 @@ void EditorSandbox::on_unload()
 
 bool EditorSandbox::on_keyboard_event(const KeyboardEvent& e)
 {
-	// Terminate on ESCAPE
-	if(e.pressed && e.key == keymap::WKEY::ESCAPE)
+	// Terminate on Ctrl+ESCAPE
+	if(e.pressed && e.key == keymap::WKEY::ESCAPE && (e.mods & keymap::WKEYMOD::CONTROL))
 		EVENTBUS.publish(WindowCloseEvent());
 
 	return false;

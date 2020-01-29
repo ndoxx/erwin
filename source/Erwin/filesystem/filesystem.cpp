@@ -8,6 +8,8 @@
 #ifdef __linux__
     #include <unistd.h>
     #include <climits>
+    #include <sys/types.h>
+    #include <pwd.h>
 #elif _WIN32
 
 #endif
@@ -16,6 +18,17 @@ namespace erwin
 {
 namespace filesystem
 {
+
+static fs::path s_user_dir;
+static fs::path s_self_path;
+static fs::path s_conf_path;
+static fs::path s_root_path;
+static fs::path s_asset_path;
+static fs::path s_client_config_path;
+static fs::path s_sys_asset_path;
+
+static ResourceArena s_arena;
+
 
 // Get path to executable
 static fs::path get_selfpath()
@@ -27,21 +40,59 @@ static fs::path get_selfpath()
 
     buff[len] = '\0';
     return fs::path(buff);
-#elif _WIN32
-    W_ASSERT(false, "get_selfpath() not yet implemented for Windows.");
+#else
+    W_ASSERT(false, "get_selfpath() not yet implemented for this platform.");
 #endif
+
     return fs::path();
 }
 
 
-static fs::path s_self_path;
-static fs::path s_conf_path;
-static fs::path s_root_path;
-static fs::path s_asset_path;
-static fs::path s_client_config_path;
-static fs::path s_sys_asset_path;
+static fs::path get_home_directory()
+{
+#ifdef __linux__
+    const char* homedir;
 
-static ResourceArena s_arena;
+    if((homedir = getenv("HOME")) == NULL)
+        homedir = getpwuid(getuid())->pw_dir;
+
+    return fs::path(homedir);
+#else
+    W_ASSERT(false, "get_home_directory() not yet implemented for this platform.");
+#endif
+
+    return "";
+}
+
+static void build_user_dir()
+{
+    if(!fs::create_directory(s_user_dir))
+    {
+        DLOGE("config") << "Failed to create user directory." << std::endl;
+        return;
+    }
+    if(!fs::create_directory(s_user_dir / "config"))
+    {
+        DLOGE("config") << "Failed to create config directory in user directory." << std::endl;
+        return;
+    }
+
+    DLOGN("config") << "User directory created:" << std::endl;
+    DLOGI << WCC('p') << s_user_dir << std::endl;
+}
+
+static void check_user_dir()
+{
+#ifdef __linux__
+    s_user_dir = get_home_directory() / ".erwin";
+#else
+    W_ASSERT(false, "check_user_dir() not yet implemented for this platform.");
+#endif
+
+    // * Check existence (TODO: and integrity) of user directory
+    if(!fs::exists(s_user_dir))
+        build_user_dir();
+}
 
 void init()
 {
@@ -54,6 +105,13 @@ void init()
     // Register shader directory as an include directory for client shaders
     slang::register_include_directory(s_sys_asset_path / "shaders");
     s_asset_path = fs::path();
+
+    check_user_dir();
+}
+
+const fs::path& get_user_dir()
+{
+    return s_user_dir;
 }
 
 const fs::path& get_self_dir()
