@@ -62,7 +62,7 @@ void FreeflyController::update(GameClock& clock)
 
 	// Translational magnitude
 	float dt = clock.get_frame_duration();
-	float speed_modifier = Input::is_key_pressed(WKEY::LEFT_SHIFT) ? 5.f : 1.f;
+	float speed_modifier = Input::is_action_key_pressed("ff.go_fast"_h) ? 5.f : 1.f;
 	float translation = dt * speed_modifier * camera_translation_speed_;
 
 	// Front direction is the normalized projection of the camera forward axis on the horizontal plane

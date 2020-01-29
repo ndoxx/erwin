@@ -7,4 +7,5 @@
 	<action name="ff.strafe_right"  key="D"/>
 	<action name="ff.ascend"        key="SPACE"/>
 	<action name="ff.descend"       key="LEFT_CONTROL"/>
+	<action name="ff.go_fast"       key="LEFT_SHIFT"/>
 </Keymap>

@@ -157,6 +157,7 @@ set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_inspector.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_rt_peek.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_hex_dump.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_keybindings.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_stats.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_camera_tracker.cpp
   )

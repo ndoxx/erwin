@@ -4,23 +4,13 @@
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 #include "debug/logger.h"
-#include "EASTL/map.h"
-#include "EASTL/vector.h"
 
 namespace erwin
 {
 
-struct ActionDescriptor
-{
-	keymap::WKEY key;
-	bool pressed;
-	bool repeat;
-	std::string name;
-};
-
 static struct
 {
-	eastl::map<hash_t, ActionDescriptor> actions;
+	eastl::map<hash_t, Input::ActionDescriptor> actions;
 	eastl::vector<eastl::vector<hash_t>> triggers;
 } s_storage;
 
@@ -80,6 +70,14 @@ void Input::register_action(const std::string& action, keymap::WKEY key, bool pr
 	s_storage.actions.emplace(hname, ActionDescriptor{key, pressed, false, action});
 }
 
+void Input::modify_action(hash_t action, keymap::WKEY key)
+{
+	auto it = s_storage.actions.find(action);
+	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
+	it->second.key = key;
+	// TODO: also modify triggers
+}
+
 void Input::trigger_action_event(hash_t action)
 {
 	W_ASSERT(false, "Feature disabled.");
@@ -100,6 +98,11 @@ keymap::WKEY Input::get_action_key(hash_t action)
 	auto it = s_storage.actions.find(action);
 	W_ASSERT(it!=s_storage.actions.end(), "Unknown action");
 	return it->second.key;
+}
+
+const Input::ActionDescriptors& Input::get_actions()
+{
+	return s_storage.actions;
 }
 
 bool Input::load_config()

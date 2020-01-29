@@ -2,6 +2,8 @@
 
 #include "core/core.h"
 #include "input/keys.h"
+#include "EASTL/map.h"
+#include "EASTL/vector.h"
 
 namespace erwin
 {
@@ -20,36 +22,48 @@ public:
 	NON_MOVABLE(Input);
 
 	// --- Action API ---
+
+	struct ActionDescriptor
+	{
+		keymap::WKEY key;
+		bool pressed;
+		bool repeat;
+		std::string name;
+	};
+
+	using ActionDescriptors = eastl::map<hash_t, ActionDescriptor>;
+
 	static bool load_config();
 	static bool save_config();
 	static void register_action(const std::string& action, keymap::WKEY key, bool pressed);
+	static void modify_action(hash_t action, keymap::WKEY key);
 	static void trigger_action_event(hash_t action);
 	static bool is_action_key_pressed(hash_t action);
 	static keymap::WKEY get_action_key(hash_t action);
+	static const ActionDescriptors& get_actions();
 
 	// --- Device interaction / polling --
-
-	inline static bool is_key_pressed(keymap::WKEY keycode)
+	static inline bool is_key_pressed(keymap::WKEY keycode)
 	{
 		return INSTANCE_->is_key_pressed_impl(keycode);
 	}
-	inline static bool is_mouse_button_pressed(keymap::WMOUSE button)
+	static inline bool is_mouse_button_pressed(keymap::WMOUSE button)
 	{
 		return INSTANCE_->is_mouse_button_pressed_impl(button);
 	}
-	inline static std::pair<float,float> get_mouse_position()
+	static inline std::pair<float,float> get_mouse_position()
 	{
 		return INSTANCE_->get_mouse_position_impl();
 	}
-	inline static void set_mouse_position(float x, float y)
+	static inline void set_mouse_position(float x, float y)
 	{
 		INSTANCE_->set_mouse_position_impl(x,y);
 	}
-	inline static void center_mouse_position()
+	static inline void center_mouse_position()
 	{
 		INSTANCE_->center_mouse_position_impl();
 	}
-	inline static void show_cursor(bool value)
+	static inline void show_cursor(bool value)
 	{
 		INSTANCE_->show_cursor_impl(value);
 	}
