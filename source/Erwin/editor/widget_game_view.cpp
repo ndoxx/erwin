@@ -31,6 +31,8 @@ Widget("Game", true)
     stats_overlay_ = new RenderStatsOverlay();
     camera_overlay_ = new CameraTrackerOverlay();
     render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
+
+    EVENTBUS.subscribe(this, &GameViewWidget::on_mouse_event);
 }
 
 GameViewWidget::~GameViewWidget()
@@ -71,7 +73,7 @@ void GameViewWidget::on_move(int32_t x, int32_t y)
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }
 
-bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
+bool GameViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
 {
     if(event.button == keymap::WMOUSE::BUTTON_0 &&
        event.pressed &&
@@ -80,7 +82,7 @@ bool GameViewWidget::on_event(const erwin::MouseButtonEvent& event)
        event.y > render_surface_.y0 &&
        event.y < render_surface_.y1)
     {
-        glm::vec2 coords = { (event.x - render_surface_.x0)/render_surface_.w, 
+        glm::vec2 coords = {     (event.x - render_surface_.x0)/render_surface_.w, 
                              1.f-(event.y - render_surface_.y0)/render_surface_.h };
 
         EVENTBUS.publish(RaySceneQueryEvent(coords));

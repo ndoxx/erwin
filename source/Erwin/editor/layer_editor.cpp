@@ -19,6 +19,9 @@ static struct
 {
 	bool exit_required = false;
 	bool enable_docking = true;
+
+	uint32_t settings_menu;
+	uint32_t view_menu;
 } s_storage;
 
 static void set_gui_style()
@@ -82,11 +85,16 @@ EditorLayer::EditorLayer(): Layer("EditorLayer")
 
 }
 
-void EditorLayer::add_widget(editor::Widget* widget)
+uint32_t EditorLayer::add_menu(const std::string& menu_name)
 {
-	const std::string name = widget->get_name();
-	hash_t hname = H_(name.c_str());
-	widgets_.insert(std::make_pair(hname, widget));
+	uint32_t index = menus_.size();
+	menus_.push_back({menu_name, {}});
+	return index;
+}
+
+void EditorLayer::add_widget(uint32_t menu, Widget* widget)
+{
+	menus_[menu].widgets.push_back(widget);
 }
 
 void EditorLayer::on_attach()
@@ -103,27 +111,69 @@ void EditorLayer::on_attach()
 	config.MergeMode = true;
 	io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
 
+
+	// Load resources
 	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
+
+    FramebufferLayout layout =
+    {
+        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
+    };
+    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+
+	// Build UI
+	ConsoleWidget* console = new editor::ConsoleWidget();
+	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console), {"editor"_h, "application"_h, "entity"_h}));
+
+    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
+    DLOG("editor",1) << "Creating widgets." << std::endl;
+
+    s_storage.settings_menu = add_menu("Settings");
+    add_widget(s_storage.settings_menu, new editor::KeybindingsWidget());
+
+    s_storage.view_menu = add_menu("View");
+	add_widget(s_storage.view_menu, console);
+
+    editor::HexDumpWidget* hex_widget;
+    add_widget(s_storage.view_menu, hex_widget = new editor::HexDumpWidget());
+    hex_widget->refresh();
+
+    add_widget(s_storage.view_menu, new editor::GameViewWidget());
+    add_widget(s_storage.view_menu, new editor::SceneHierarchyWidget());
+    add_widget(s_storage.view_menu, new editor::InspectorWidget());
+
+    // Register main render target in peek widget
+    editor::RTPeekWidget* peek_widget;
+    add_widget(s_storage.view_menu, peek_widget = new editor::RTPeekWidget());
+	peek_widget->register_framebuffer("GBuffer");
+	peek_widget->register_framebuffer("SpriteBuffer");
+	peek_widget->register_framebuffer("BloomCombine");
+	peek_widget->register_framebuffer("LBuffer");
+
+    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
 
 void EditorLayer::on_detach()
 {
-	for(auto&& [key,widget]: widgets_)
-		delete widget;
+	for(auto& desc: menus_)
+		for(Widget* widget: desc.widgets)
+			delete widget;
 
 	Renderer::destroy(background_shader_);
 }
 
 void EditorLayer::on_update(GameClock& clock)
 {
-	for(auto&& [key,widget]: widgets_)
-		widget->on_update();
+	for(auto& desc: menus_)
+		for(Widget* widget: desc.widgets)
+			widget->on_update();
 }
 
 void EditorLayer::on_render()
 {
-	for(auto&& [key,widget]: widgets_)
-		widget->on_layer_render();
+	for(auto& desc: menus_)
+		for(Widget* widget: desc.widgets)
+			widget->on_layer_render();
 
 	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
 	RenderState state;
@@ -150,27 +200,37 @@ void EditorLayer::on_imgui_render()
         	ImGui::MenuItem("Quit", NULL, &s_storage.exit_required);
         	ImGui::EndMenu();
 		}
-    	if(ImGui::BeginMenu("View"))
+
+    	if(ImGui::BeginMenu("Settings"))
     	{
-    		for(auto&& [key,widget]: widgets_)
+			for(Widget* widget: menus_[s_storage.settings_menu].widgets)
         		ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
         	
-        	ImGui::Separator();
-        	ImGui::Checkbox("Docking", &s_storage.enable_docking);
-        	ImGui::Separator();
-        	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
+	    	ImGui::Separator();
+	    	ImGui::Checkbox("Docking", &s_storage.enable_docking);
+	    	ImGui::Separator();
+	    	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
+
         	ImGui::EndMenu();
     	}
+
+    	if(ImGui::BeginMenu("View"))
+    	{
+			for(Widget* widget: menus_[s_storage.view_menu].widgets)
+        		ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
+        
+        	ImGui::EndMenu();
+    	}
+
     	ImGui::EndMainMenuBar();
     }
 
-    // game_layer_->set_enabled(widgets_["game"_h]->open_);
-
-    if(s_storage.enable_docking)   show_dockspace_window(&s_storage.enable_docking);
+    if(s_storage.enable_docking) show_dockspace_window(&s_storage.enable_docking);
     if(show_demo_window) ImGui::ShowDemoWindow();
 
-	for(auto&& [key,widget]: widgets_)
-		widget->imgui_render();
+	for(auto& desc: menus_)
+		for(Widget* widget: desc.widgets)
+			widget->imgui_render();
 
 	if(s_storage.exit_required)
 	{
@@ -180,7 +240,7 @@ void EditorLayer::on_imgui_render()
 
 bool EditorLayer::on_event(const MouseButtonEvent& event)
 {
-	return widgets_["Game"_h]->on_event(event);
+	return false;
 }
 
 bool EditorLayer::on_event(const WindowResizeEvent& event)
@@ -247,45 +307,8 @@ namespace erwin
 
 void Application::build_editor()
 {
-	editor::ConsoleWidget* console = new editor::ConsoleWidget();
-	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console), {"editor"_h, "application"_h, "entity"_h}));
-
-    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
-
-    FramebufferLayout layout =
-    {
-        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-    };
-    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
-
     DLOG("editor",1) << "Pushing editor layer." << std::endl;
     push_overlay(EDITOR_LAYER = new editor::EditorLayer());
-
-    // Add widgets to the editor layer
-    DLOG("editor",1) << "Creating widgets." << std::endl;
-
-	EDITOR_LAYER->add_widget(console);
-    EDITOR_LAYER->add_widget(new editor::GameViewWidget());
-    EDITOR_LAYER->add_widget(new editor::SceneHierarchyWidget());
-    EDITOR_LAYER->add_widget(new editor::InspectorWidget());
-
-    // Register main render target in peek widget
-    editor::RTPeekWidget* peek_widget;
-    EDITOR_LAYER->add_widget(peek_widget = new editor::RTPeekWidget());
-	peek_widget->register_framebuffer("GBuffer");
-	peek_widget->register_framebuffer("SpriteBuffer");
-	peek_widget->register_framebuffer("BloomCombine");
-	peek_widget->register_framebuffer("LBuffer");
-
-	// Register all memory area block descriptions
-    editor::HexDumpWidget* hex_widget;
-    EDITOR_LAYER->add_widget(hex_widget = new editor::HexDumpWidget());
-    hex_widget->refresh();
-
-    // TODO: move to a settings menu
-    EDITOR_LAYER->add_widget(new editor::KeybindingsWidget());
-
-    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 }
 
 } // namespace erwin

@@ -14,7 +14,6 @@ public:
 
 	virtual void on_update() { }
 	virtual void on_layer_render() { }
-	virtual bool on_event(const erwin::MouseButtonEvent& event) { return false; }
 
 	void imgui_render();
 

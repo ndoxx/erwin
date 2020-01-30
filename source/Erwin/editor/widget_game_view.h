@@ -17,8 +17,9 @@ public:
 	GameViewWidget();
 	virtual ~GameViewWidget();
 
-	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
 	virtual void on_update() override;
+	
+	bool on_mouse_event(const erwin::MouseButtonEvent& event);
 
 protected:
 	virtual void on_imgui_render() override;

@@ -103,15 +103,18 @@ void HexDumpWidget::on_imgui_render()
         ImGui::EndCombo();
     }
 
+    ImGui::Separator();
+
     const memory::debug::AreaItem& item = bd[s_storage.current_block_];
 
-    const uint32_t* begin = static_cast<const uint32_t*>((void*)item.begin);
-    const uint32_t* end   = static_cast<const uint32_t*>((void*)item.end);
-    uint32_t* current = const_cast<uint32_t*>(begin);
+    const uint8_t* begin = static_cast<const uint8_t*>((void*)item.begin);
+    const uint8_t* end   = static_cast<const uint8_t*>((void*)item.end);
+    uint8_t* current = const_cast<uint8_t*>(begin);
 
     static std::stringstream ss;
     ss << std::hex;
     uint32_t page_size = 0;
+    ImGui::Columns(2, "##hex-ascii");
     while(current < end && page_size < 1_kB)
     {
         ss << "[0x" << std::setfill('0') << std::setw(8) << std::size_t(current) << "]";
@@ -119,18 +122,38 @@ void HexDumpWidget::on_imgui_render()
         ImGui::TextColored(ImVec4(0.4f,0.6f,0.f,1.f), "%s", ss.str().c_str());
         ss.str("");
 
-        for(int ii=0; ii<4; ++ii)
+        for(int ii=0; ii<8; ++ii)
         {
-            uint32_t value = *current;
-            ss << std::setfill('0') << std::setw(8) << value << " ";
+            uint8_t value = *current;
+            ss << std::setfill('0') << std::setw(2) << (int)value << (ii==3 ? "  " : " ");
 
             ++current;
-            page_size += 4;
+            ++page_size;
         }
         ImGui::SameLine();
         ImGui::TextUnformatted(ss.str().c_str());
         ss.str("");
     }
+
+    ImGui::NextColumn();
+    current = const_cast<uint8_t*>(begin);
+    page_size = 0;
+    while(current < end && page_size < 1_kB)
+    {
+        for(int ii=0; ii<8; ++ii)
+        {
+            char value = (char)*current;
+            value = (value < 33 || value > 126) ? '.' : value;
+            ss << value << " ";
+
+            ++current;
+            ++page_size;
+        }
+        ImGui::TextUnformatted(ss.str().c_str());
+        ss.str("");
+    }
+
+    ImGui::Columns(1);
 }
 
 

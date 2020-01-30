@@ -29,20 +29,20 @@ void Widget::imgui_render()
     	return;
     }
 
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    if(window_pos.x != x_pos_ || window_pos.y != y_pos_)
+    {
+        on_move(window_pos.x, window_pos.y);
+        x_pos_ = window_pos.x;
+        y_pos_ = window_pos.y;
+    }
+
     ImVec2 window_size = ImGui::GetWindowSize();
     if(window_size.x != width_ || window_size.y != height_)
     {
     	on_resize(window_size.x, window_size.y);
     	width_ = window_size.x;
     	height_ = window_size.y;
-    }
-
-    ImVec2 window_pos = ImGui::GetWindowPos();
-    if(window_pos.x != x_pos_ || window_pos.y != y_pos_)
-    {
-    	on_move(window_pos.x, window_pos.y);
-    	x_pos_ = window_pos.x;
-    	y_pos_ = window_pos.y;
     }
 
     has_focus_ = ImGui::IsWindowFocused();

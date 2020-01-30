@@ -39,6 +39,7 @@
         [ ] Event queues & event pools
         [ ] Dispatching
     [ ] Text rendering
+    [ ] Editor
 
 ##[Command Galore]
 ###Callgrind profiling
@@ -2126,31 +2127,86 @@ L'uniform u_v4_packed_weights est un tableau de vec4, aucune place n'est perdue.
         -es-3-uniform-buffer-object-with-float-array
 
 
+#[29-01-20]
+##User directory
+Erwin, en initialisant le filesystem, vérifie la présence d'un dossier utilisateur ("/home/user/.erwin" sous linux). Si le dossier n'existe pas, il est créé et initialisé. Ce dossier sert à stocker des données utilisateur (comme les raccourcis clavier, on le verra ensuite), pour l'instant celà concerne surtout l'éditeur.
 
-#ifdef DEBUG_TEXTURES
-    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-    for(uint32_t ii=0; ii<tg->texture_count; ++ii)
+##Actions
+J'ai découplé les sous-modules répondant aux événements clavier des touches clavier elles-mêmes. Les *actions* sont un niveau d'indirection supplémentaire qui permet à chaque sous-module de ne se soucier que d'une information sémantique ("bouge vers la droite", "active le contrôleur freefly"...). Les actions sont associées à des événements clavier via des *keybindings*.
+Un fichier de keybindings par défaut est situé à config/default_keybindings.xml. Mais _Input_ tente en priorité de charger une config utilisateur, et va donc chercher le fichier /home/user/.erwin/config/keybindings.xml. Si ce fichier existe ET est plus récent que le fichier config/default_keybindings.xml, alors il est chargé et parsé. En revanche, si le fichier user n'existe pas ou bien que le fichier de keybindings par défaut est plus récent, alors le fichier par défaut sera *copié* vers le dossier utilisateur, puis chargé et parsé.
+
+Voici un extrait de default_keybindings.xml :
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Keymap>
+    <action name="ACTION_FREEFLY_TOGGLE"        desc="Toggle freefly control" key="F1"/>
+    <action name="ACTION_FREEFLY_MOVE_FORWARD"  desc="Move forward"           key="W"/>
+    <action name="ACTION_FREEFLY_MOVE_BACKWARD" desc="Move backward"          key="S"/>
+    <!-- ... -->
+</Keymap>
+```
+
+En interne, dans _Input_, chaque action est associé à une valeur *énumérée* dans input/action.h :
+```cpp
+enum Action: uint32_t
+{
+    ACTION_NONE = 0,
+    ACTION_FREEFLY_TOGGLE,
+    ACTION_FREEFLY_MOVE_FORWARD,
+    ACTION_FREEFLY_MOVE_BACKWARD,
+    // ...
+    ACTION_COUNT,
+};
+
+[[maybe_unused]] static Action name_to_action(hash_t name)
+{
+    switch(name)
     {
-        std::string name = "Slot_" + std::to_string(ii);
-        TexturePeek::register_texture(pane, tg->textures[ii], name, false);
+        default: return ACTION_NONE;
+        case "ACTION_FREEFLY_TOGGLE"_h: return ACTION_FREEFLY_TOGGLE;
+        case "ACTION_FREEFLY_MOVE_FORWARD"_h: return ACTION_FREEFLY_MOVE_FORWARD;
+        case "ACTION_FREEFLY_MOVE_BACKWARD"_h: return ACTION_FREEFLY_MOVE_BACKWARD;
+        // ...
     }
-#endif
-#ifdef DEBUG_TEXTURES
-    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-    TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
-#endif
-#ifdef DEBUG_TEXTURES
-    uint32_t pane = TexturePeek::new_pane(filepath.stem().string());
-    TexturePeek::register_texture(pane, atlas->texture, "diffuse", false);
-#endif
+}
+```
 
-#ifdef W_DEBUG
-    // TexturePeek::register_framebuffer("DBuffer");
-    TexturePeek::register_framebuffer("LBuffer");
-    TexturePeek::register_framebuffer("GBuffer");
-    TexturePeek::register_framebuffer("SpriteBuffer");
-#endif
-    TexturePeek::set_projection_parameters(camera_ctl_.get_camera().get_projection_parameters());
-    TexturePeek::set_enabled(show_app_texture_peek_window);
+J'utilise un type énuméré plutôt que des intern strings pour éviter d'avoir à faire une recherche dans une hash_map à chaque foutu événement clavier. Ici, chaque touche clavier associée à une action est accessible par simple indexation, en utilisant les valeurs énumérées comme indice. Côté client, il est possible de définir de nouvelles actions en créant une autre énumération dont le premier membre est initialisé à Action::ACTION_COUNT. Bien entendu, il faudra aussi que j'expose une fonction de parsing pour rendre le système réellement extensible côté client, mais j'y ai pensé à l'avance.
 
-    if(show_app_texture_peek_window)    TexturePeek::on_imgui_render(&show_app_texture_peek_window);
+Voici comment _FreeflyCameraController_ utilise l'API :
+```cpp
+void FreeflyController::update(GameClock& clock)
+{
+    // ...
+    if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_FORWARD))
+        camera_position_ += translation*front;
+    if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_BACKWARD))
+        camera_position_ -= translation*front;
+    // ...
+}
+
+bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
+{
+    if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_FREEFLY_TOGGLE))
+    {
+        // ...
+    }
+}
+```
+
+Un désavantage majeur est la nécessité de maintenir le header action.h en conformité avec le fichier XML, vis-a-vis de l'ordre et du nom des actions. C'est pourquoi j'ai codé le script scripts/gen_actions.py qui va lire le default_keybindings.xml et *générer* le header actions.h à notre place ! Le contenu du header est donc complètement inféodé aux déclarations XML, aucune couille possible. Quand on veut rajouter une action, c'est facile : on modifie le fichier XML puis,
+> cd ../scripts
+> ./gen_actions.py
+
+    Reading:  #document
+    Root:  Keymap
+    ACTION_FREEFLY_TOGGLE
+    ACTION_FREEFLY_MOVE_FORWARD
+    ACTION_FREEFLY_MOVE_BACKWARD
+    [...]
+    Generating header.
+
+
+J'ai aussi codé un widget ImGui pour l'éditeur qui permet de changer les keybindings.
+
+![Widget ImGui Key bindings.\label{figTexturePeek}](../../Erwin_rel/screens_erwin/erwin_15a_keybindings.png)
