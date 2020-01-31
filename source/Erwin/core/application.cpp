@@ -9,6 +9,7 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/common_geometry.h"
+#include "render/global_ubos.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_pp.h"
@@ -99,6 +100,7 @@ Application::~Application()
         DeferredRenderer::shutdown();
         ForwardRenderer::shutdown();
         CommonGeometry::shutdown();
+        gu::shutdown();
         Renderer::shutdown();
     }
     {
@@ -259,11 +261,9 @@ bool Application::init()
 
     {
         W_PROFILE_SCOPE("Renderer startup")
-        // Initialize framebuffer pool
         FramebufferPool::init(window_->get_width(), window_->get_height());
-        // Initialize master renderer storage
         Renderer::init(s_storage.render_area);
-        // Create common geometry
+        gu::init();
         CommonGeometry::init();
         Renderer2D::init();
         ForwardRenderer::init();
@@ -384,6 +384,10 @@ void Application::run()
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
+        // TMP: SCENE must have a directional light entity or this fails
+        Entity& dirlight_ent = s_ECS.get_entity(s_SCENE.directional_light);
+        auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
+        gu::update_frame_data(s_SCENE.camera_controller.get_camera(), *dirlight);
 
         // For each layer, render
         if(!minimized_)

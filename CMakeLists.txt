@@ -125,6 +125,7 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_state.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d_alt.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/global_ubos.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_forward.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_deferred.cpp
@@ -152,7 +153,7 @@ set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_game_view.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_hierarchy.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_inspector.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_rt_peek.cpp

@@ -385,6 +385,22 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
 	return build_shape(layout, vdata, idata);
 }
 
+Extent make_origin(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, Parameters* params)
+{
+	// Ignore parameters for now
+	W_ASSERT(params==nullptr, "Parameters unsupported for now.");
+
+    add_vertex({ 0.f,  0.f,  0.f });
+    add_vertex({ 1.f,  0.f,  0.f });
+    add_vertex({ 0.f,  1.f,  0.f });
+    add_vertex({ 0.f,  0.f,  1.f });
+
+	add_line(0, 1);
+	add_line(0, 2);
+	add_line(0, 3);
+
+	return build_shape(layout, vdata, idata, true);
+}
 
 } // namespace pg
 } // namespace erwin

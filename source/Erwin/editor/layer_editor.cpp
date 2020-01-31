@@ -1,6 +1,6 @@
 #include "editor/layer_editor.h"
 #include "editor/font_awesome.h"
-#include "editor/widget_game_view.h"
+#include "editor/widget_scene_view.h"
 #include "editor/widget_scene_hierarchy.h"
 #include "editor/widget_inspector.h"
 #include "editor/widget_rt_peek.h"
@@ -138,7 +138,7 @@ void EditorLayer::on_attach()
     add_widget(s_storage.view_menu, hex_widget = new editor::HexDumpWidget());
     hex_widget->refresh();
 
-    add_widget(s_storage.view_menu, new editor::GameViewWidget());
+    add_widget(s_storage.view_menu, new editor::SceneViewWidget());
     add_widget(s_storage.view_menu, new editor::SceneHierarchyWidget());
     add_widget(s_storage.view_menu, new editor::InspectorWidget());
 

@@ -1,12 +1,15 @@
 set(SRC_SANDBOX
-    source/sandbox_app.cpp
-    source/layer_2d.cpp
-    source/layer_3d.cpp
-    source/layer_presentation.cpp
-    source/layer_debug.cpp
+    source/editor_app.cpp
+    source/layer_game.cpp
+    source/game/game_components.cpp
+    source/game/pbr_deferred_render_system.cpp
+    source/game/forward_sun_render_system.cpp
+    source/game/debug_render_system.cpp
+    source/game/bounding_box_system.cpp
    )
 
 add_executable(sandbox ${SRC_SANDBOX})
+target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/Applications/Sandbox/source")
 target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(sandbox PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
