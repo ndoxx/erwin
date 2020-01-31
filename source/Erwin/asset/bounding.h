@@ -16,6 +16,16 @@ namespace erwin
 
 struct Extent
 {
+	Extent(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
+	{
+		value[0] = xmin;
+		value[1] = xmax;
+		value[2] = ymin;
+		value[3] = ymax;
+		value[4] = zmin;
+		value[5] = zmax;
+	}
+
 	Extent()
 	{
 		value[0] = std::numeric_limits<float>::max();

@@ -12,8 +12,8 @@ struct Material;
 class DeferredRenderer
 {
 public:
-	// Register a shader for deferred rendering
-	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
+	// Register a material for deferred rendering
+	static void register_material(const Material& material);
 	static void begin_pass();
 	static void end_pass();
 

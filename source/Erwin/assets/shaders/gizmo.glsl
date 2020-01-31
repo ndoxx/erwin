@@ -9,8 +9,6 @@ void main()
 	gl_Position = vec4(a_position, 1.f);
 }
 
-
-
 #type geometry
 #version 460 core
 #include "engine/transform_ubo.glsl"
@@ -20,6 +18,11 @@ layout(lines) in;
 layout(triangle_strip, max_vertices = 90) out;
 
 layout(location = 0) out vec3 v_color;
+
+layout(std140, binding = 3) uniform gizmo_data
+{
+	int i_selected;
+};
 
 const vec3 basis[3] = { vec3(1.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 1.f) };
 const vec2 offsets[] =
@@ -45,6 +48,8 @@ void main()
 	vec3 s = basis[(gl_PrimitiveIDIn+2)%3];
 
 	v_color = t.xyz;
+	if(i_selected == 0 || i_selected-1 == gl_PrimitiveIDIn)
+		v_color = mix(v_color, vec3(1.f,1.f,1.f), 0.5f);
 
 	for(int ii=0; ii<NFACES; ++ii)
 	{

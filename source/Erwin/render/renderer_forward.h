@@ -12,8 +12,8 @@ struct Material;
 class ForwardRenderer
 {
 public:
-	// Register a shader for forward rendering
-	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
+	// Register a material for forward rendering
+	static void register_material(const Material& material);
 	// Start a new pass
 	static void begin_pass();
 	// End a pass

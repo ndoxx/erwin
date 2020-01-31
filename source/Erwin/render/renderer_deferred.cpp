@@ -30,12 +30,12 @@ void DeferredRenderer::shutdown()
 	Renderer::destroy(s_storage.dirlight_shader);
 }
 
-void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
+void DeferredRenderer::register_material(const Material& material)
 {
-	Renderer::shader_attach_uniform_buffer(shader, gu::get_frame_ubo());
-	Renderer::shader_attach_uniform_buffer(shader, gu::get_transform_ubo());
-	if(material_ubo.index != k_invalid_handle)
-		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
+	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_frame_ubo());
+	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_transform_ubo());
+	if(material.ubo.index != k_invalid_handle)
+		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
 }
 
 void DeferredRenderer::begin_pass()
