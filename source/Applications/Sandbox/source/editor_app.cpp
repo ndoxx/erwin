@@ -7,8 +7,8 @@ void EditorSandbox::on_pre_init()
 
 void EditorSandbox::on_client_init()
 {
-	filesystem::set_asset_dir("source/Applications/Editor/assets");
-	filesystem::set_client_config_dir("source/Applications/Editor/config");
+	filesystem::set_asset_dir("source/Applications/Sandbox/assets");
+	filesystem::set_client_config_dir("source/Applications/Sandbox/config");
 	this->add_configuration("client.xml");
 }
 

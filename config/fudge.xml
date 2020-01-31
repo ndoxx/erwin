@@ -2,8 +2,8 @@
 <Config>
 	<atlas>
 		<texture>
-			<batch input="source/Applications/Editor/assets/textures/atlas/upack"
-				   output="source/Applications/Editor/assets/textures/atlas">
+			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
+				   output="source/Applications/Sandbox/assets/textures/atlas">
 				<export>
 					<file_type>CAT</file_type>
 					<texture_compression>DXT5</texture_compression>
@@ -12,8 +12,8 @@
 			</batch>
 		</texture>
 		<font>
-			<batch input="source/Applications/Editor/assets/textures/atlas/upack"
-				   output="source/Applications/Editor/assets/textures/atlas">
+			<batch input="source/Applications/Sandbox/assets/textures/atlas/upack"
+				   output="source/Applications/Sandbox/assets/textures/atlas">
 			<!--
 				<export>
 					<file_type>PNG</file_type>
@@ -28,9 +28,9 @@
 	</atlas>
 
 	<texmap>
-		<batch input="source/Applications/Editor/assets/textures/map/upack"
-			   output="source/Applications/Editor/assets/textures/map">
-			<config>source/Applications/Editor/assets/textures/map/upack/texture_maps.xml</config>
+		<batch input="source/Applications/Sandbox/assets/textures/map/upack"
+			   output="source/Applications/Sandbox/assets/textures/map">
+			<config>source/Applications/Sandbox/assets/textures/map/upack/texture_maps.xml</config>
 		</batch>
 	</texmap>
 
@@ -40,7 +40,7 @@
 			   output="source/Erwin/assets/shaders"/>
 		<batch input="source/Applications/FractalExplorer/assets/shaders"
 			   output="source/Applications/FractalExplorer/assets/shaders"/>
-		<batch input="source/Applications/Editor/assets/shaders"
-			   output="source/Applications/Editor/assets/shaders"/>
+		<batch input="source/Applications/Sandbox/assets/shaders"
+			   output="source/Applications/Sandbox/assets/shaders"/>
 	</shader>
 </Config>
