@@ -10,11 +10,7 @@ void PBRDeferredRenderSystem::update(const GameClock& clock)
 
 void PBRDeferredRenderSystem::render()
 {
-	auto& scene = Application::SCENE();
-	Entity& dirlight_ent = manager_->get_entity(scene.directional_light);
-	auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
-
-	DeferredRenderer::begin_pass(scene.camera_controller.get_camera(), *dirlight);
+	DeferredRenderer::begin_pass();
 	for(auto&& cmp_tuple: components_)
 	{
 		ComponentTransform3D* transform = eastl::get<ComponentTransform3D*>(cmp_tuple);

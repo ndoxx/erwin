@@ -16,7 +16,7 @@ public:
 	// Register a shader for forward rendering
 	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
 	// Start a new pass
-	static void begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
+	static void begin_pass();
 	// End a pass
 	static void end_pass();
 	// Draw a textured mesh
@@ -24,7 +24,7 @@ public:
 	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
 
 	// Draw a debug cube
-	static void begin_line_pass(const PerspectiveCamera3D& camera);
+	static void begin_line_pass();
 	static void end_line_pass();
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
 	static void draw_debug_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);

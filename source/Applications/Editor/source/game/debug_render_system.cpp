@@ -12,7 +12,7 @@ void DebugRenderSystem::render()
 {
 	auto& scene = Application::SCENE();
 
-	ForwardRenderer::begin_line_pass(scene.camera_controller.get_camera());
+	ForwardRenderer::begin_line_pass();
 	for(auto&& cmp_tuple: components_)
 	{
 		ComponentOBB* OBB = eastl::get<ComponentOBB*>(cmp_tuple);

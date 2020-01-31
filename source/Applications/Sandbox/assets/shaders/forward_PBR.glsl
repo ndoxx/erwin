@@ -1,7 +1,8 @@
 #type vertex
 #version 460 core
 #include "engine/tangent.glsl"
-#include "engine/forward_ubos.glsl"
+#include "engine/frame_ubo.glsl"
+#include "engine/transform_ubo.glsl"
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
@@ -50,7 +51,8 @@ void main()
 #include "engine/glow.glsl"
 #include "engine/cook_torrance.glsl"
 #include "engine/parallax.glsl"
-#include "engine/forward_ubos.glsl"
+#include "engine/frame_ubo.glsl"
+#include "engine/transform_ubo.glsl"
 
 #define PBR_EN_EMISSIVE 1
 

@@ -18,12 +18,10 @@ void ForwardSunRenderSystem::render()
 {
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
-	auto& scene = Application::SCENE();
 	for(auto&& cmp_tuple: components_)
 	{
-		ComponentDirectionalLight* dirlight = eastl::get<ComponentDirectionalLight*>(cmp_tuple);
 		ComponentRenderableDirectionalLight* renderable = eastl::get<ComponentRenderableDirectionalLight*>(cmp_tuple);
-		ForwardRenderer::begin_pass(scene.camera_controller.get_camera(), *dirlight);
+		ForwardRenderer::begin_pass();
 		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), renderable->material);
 		ForwardRenderer::end_pass();
 	}

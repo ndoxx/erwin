@@ -139,16 +139,13 @@ void Layer3D::on_render()
 
 	// Draw scene geometry
 	{
-		DeferredRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_);
+		DeferredRenderer::begin_pass();
 		DeferredRenderer::draw_mesh(cube_pbr, emissive_cube_.transform, emissive_cube_.material);
 		DeferredRenderer::end_pass();
 	}
 
 	{
-		PassOptions options;
-		options.set_transparency(false);
-
-		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::begin_pass();
 		for(auto&& cube: scene_)
 			ForwardRenderer::draw_mesh(cube_pbr, cube.transform, cube.material);
 		ForwardRenderer::end_pass();
@@ -156,11 +153,7 @@ void Layer3D::on_render()
 
 	// Draw sun
 	{
-		PassOptions options;
-		options.set_transparency(true);
-		options.set_depth_control(PassOptions::DEPTH_CONTROL_FAR);
-
-		ForwardRenderer::begin_pass(camera_ctl_.get_camera(), dir_light_, options);
+		ForwardRenderer::begin_pass();
 		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), sun_material_);
 		ForwardRenderer::end_pass();
 	}

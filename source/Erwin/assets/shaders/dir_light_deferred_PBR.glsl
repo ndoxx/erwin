@@ -1,6 +1,7 @@
 #type vertex
 #version 460 core
-#include "engine/forward_ubos.glsl" // TODO: Change name
+#include "engine/frame_ubo.glsl"
+#include "engine/transform_ubo.glsl"
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec2 a_uv;
@@ -27,7 +28,8 @@ void main()
 #type fragment
 #version 460 core
 #include "engine/common.glsl"
-#include "engine/forward_ubos.glsl" // TODO: Change name
+#include "engine/frame_ubo.glsl"
+#include "engine/transform_ubo.glsl"
 #include "engine/position.glsl"
 #include "engine/glow.glsl"
 #include "engine/normal_compression.glsl"

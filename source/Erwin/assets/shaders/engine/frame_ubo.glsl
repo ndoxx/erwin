@@ -1,4 +1,4 @@
-layout(std140, binding = 0) uniform pass_data
+layout(std140, binding = 0) uniform frame_data
 {
 	mat4 u_m4_v;     // view
 	mat4 u_m4_vp;    // view-projection
@@ -11,11 +11,4 @@ layout(std140, binding = 0) uniform pass_data
 	vec4 u_v4_light_color;
 	vec4 u_v4_light_ambient_color;
 	float u_f_light_ambient_strength;
-};
-
-layout(std140, binding = 1) uniform instance_data
-{
-	mat4 u_m4_m;    // model
-	mat4 u_m4_mv;   // model-view
-	mat4 u_m4_mvp;  // model-view-projection
 };

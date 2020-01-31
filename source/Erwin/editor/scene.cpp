@@ -9,6 +9,7 @@ void Scene::init()
 {
 	camera_controller.init(1280.f/1024.f, 60, 0.1f, 100.f);
 	selected_entity_idx = 0;
+	directional_light = k_invalid_entity_id;
 }
 
 void Scene::shutdown()
