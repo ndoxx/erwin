@@ -11,11 +11,11 @@ namespace erwin
 namespace editor
 {
 
-class GameViewWidget: public Widget
+class SceneViewWidget: public Widget
 {
 public:
-	GameViewWidget();
-	virtual ~GameViewWidget();
+	SceneViewWidget();
+	virtual ~SceneViewWidget();
 
 	virtual void on_update() override;
 	

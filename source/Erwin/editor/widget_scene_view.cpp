@@ -1,4 +1,4 @@
-#include "editor/widget_game_view.h"
+#include "editor/widget_scene_view.h"
 #include "editor/overlay_stats.h"
 #include "editor/overlay_camera_tracker.h"
 #include "editor/scene.h"
@@ -22,8 +22,8 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-GameViewWidget::GameViewWidget():
-Widget("Game", true)
+SceneViewWidget::SceneViewWidget():
+Widget("Scene", true)
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
@@ -32,16 +32,16 @@ Widget("Game", true)
     camera_overlay_ = new CameraTrackerOverlay();
     render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
 
-    EVENTBUS.subscribe(this, &GameViewWidget::on_mouse_event);
+    EVENTBUS.subscribe(this, &SceneViewWidget::on_mouse_event);
 }
 
-GameViewWidget::~GameViewWidget()
+SceneViewWidget::~SceneViewWidget()
 {
     delete stats_overlay_;
 	delete camera_overlay_;
 }
 
-void GameViewWidget::on_update()
+void SceneViewWidget::on_update()
 {
 	stats_overlay_->on_update();
 
@@ -52,7 +52,7 @@ void GameViewWidget::on_update()
 	}
 }
 
-void GameViewWidget::on_resize(uint32_t width, uint32_t height)
+void SceneViewWidget::on_resize(uint32_t width, uint32_t height)
 {
 	float rw = std::max(width  - (k_border + k_start_x), 0.f);
 	float rh = std::max(height - (k_border + k_start_y), 0.f);
@@ -65,7 +65,7 @@ void GameViewWidget::on_resize(uint32_t width, uint32_t height)
 	EVENTBUS.publish(FramebufferResizeEvent(rw, rh));
 }
 
-void GameViewWidget::on_move(int32_t x, int32_t y)
+void SceneViewWidget::on_move(int32_t x, int32_t y)
 {
 	render_surface_.x0 = x + k_start_x;
 	render_surface_.y0 = y + k_start_y;
@@ -73,7 +73,7 @@ void GameViewWidget::on_move(int32_t x, int32_t y)
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }
 
-bool GameViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
+bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
 {
     if(event.button == keymap::WMOUSE::BUTTON_0 &&
        event.pressed &&
@@ -93,7 +93,7 @@ bool GameViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
     return false;
 }
 
-void GameViewWidget::on_imgui_render()
+void SceneViewWidget::on_imgui_render()
 {
 	static bool show_frame_profiler = false;
     if(ImGui::BeginMenuBar())
@@ -144,7 +144,7 @@ void GameViewWidget::on_imgui_render()
                                          ImVec2(0, 1), ImVec2(1, 0));
 }
 
-void GameViewWidget::frame_profiler_window(bool* p_open)
+void SceneViewWidget::frame_profiler_window(bool* p_open)
 {
 	static int profile_num_frames = 60;
 	static int frames_counter = 0;

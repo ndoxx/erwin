@@ -17,10 +17,10 @@ struct PassUBOData
 	glm::vec4 eye_position;
 	glm::vec4 camera_params;
 	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
+	glm::vec4 proj_params;
 	glm::vec4 light_position;
 	glm::vec4 light_color;
 	glm::vec4 light_ambient_color;
-	glm::vec4 proj_params;
 	float light_ambient_strength;
 };
 

@@ -152,7 +152,7 @@ set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_game_view.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_hierarchy.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_inspector.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_rt_peek.cpp

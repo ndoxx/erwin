@@ -18,10 +18,10 @@ struct PassUBOData
 	glm::vec4 eye_position;
 	glm::vec4 camera_params;
 	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
+	glm::vec4 proj_params;
 	glm::vec4 light_position;
 	glm::vec4 light_color;
 	glm::vec4 light_ambient_color;
-	glm::vec4 proj_params;
 	float light_ambient_strength;
 };
 
@@ -54,7 +54,6 @@ static struct
 	// State
 	uint64_t pass_state;
 	uint8_t view_id;
-	bool draw_far;
 } s_storage;
 
 void ForwardRenderer::init()
@@ -87,7 +86,7 @@ void ForwardRenderer::register_shader(ShaderHandle shader, UniformBufferHandle m
 		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
 }
 
-void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light, PassOptions options)
+void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light)
 {
     W_PROFILE_FUNCTION()
 
@@ -96,12 +95,11 @@ void ForwardRenderer::begin_pass(const PerspectiveCamera3D& camera, const Compon
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
-	state.blend_state = options.get_transparency() ? BlendState::Alpha : BlendState::Opaque;
+	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
 	s_storage.view_id = Renderer::next_layer_id();
-	s_storage.draw_far = (options.get_depth_control() == PassOptions::DEPTH_CONTROL_FAR);
 
 	// Set scene data
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
@@ -194,6 +192,11 @@ void ForwardRenderer::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.line_shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, (void*)&instance_data, sizeof(LineInstanceData), DataOwnership::Copy));
 	Renderer::submit(key.encode(), dc);
+}
+
+void ForwardRenderer::draw_debug_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
+{
+
 }
 
 

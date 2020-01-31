@@ -78,6 +78,17 @@ void CommonGeometry::init()
 		s_storage.extents_.insert(std::make_pair(hname, dims));
 	}
 
+	// Origin lines
+	{
+		std::vector<float> vdata;
+		std::vector<uint32_t> idata;
+		const auto& layout = Renderer::get_vertex_buffer_layout(pos_VBL);
+		Extent dims = pg::make_origin(layout, vdata, idata);
+		hash_t hname = "origin_lines"_h;
+		make_geometry(hname, pos_VBL, vdata, idata, DrawPrimitive::Lines);
+		s_storage.extents_.insert(std::make_pair(hname, dims));
+	}
+
 	// UV Cube
 	{
 		std::vector<float> vdata;
