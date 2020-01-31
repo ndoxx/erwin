@@ -2,7 +2,6 @@
 
 #include "render/camera_3d.h"
 #include "render/handles.h"
-#include "entity/component_transform.h"
 #include "entity/light.h"
 
 namespace erwin
@@ -21,13 +20,12 @@ public:
 	static void end_pass();
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
-	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
 
 	// Draw a debug cube
-	static void begin_line_pass();
+	static void begin_line_pass(bool enable_depth_test = true);
 	static void end_line_pass();
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
-	static void draw_debug_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
 
 private:
 	friend class Application;

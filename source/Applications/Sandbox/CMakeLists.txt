@@ -4,7 +4,7 @@ set(SRC_SANDBOX
     source/game/game_components.cpp
     source/game/pbr_deferred_render_system.cpp
     source/game/forward_sun_render_system.cpp
-    source/game/debug_render_system.cpp
+    source/game/gizmo_system.cpp
     source/game/bounding_box_system.cpp
    )
 

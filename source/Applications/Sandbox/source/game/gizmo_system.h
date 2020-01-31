@@ -8,15 +8,18 @@
 namespace erwin
 {
 
-class DebugRenderSystem: public ComponentSystem<RequireAll<ComponentOBB>>
+class GizmoSystem: public ComponentSystem<RequireAll<ComponentOBB>>
 {
 public:
-	DebugRenderSystem(EntityManager* manager): BaseType(manager) {}
-	virtual ~DebugRenderSystem() = default;
+	GizmoSystem(EntityManager* manager);
+	virtual ~GizmoSystem();
 	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;
+
+private:
+    erwin::ShaderHandle gizmo_shader_;
 };
 
 

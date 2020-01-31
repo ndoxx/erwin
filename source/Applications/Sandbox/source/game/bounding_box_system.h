@@ -17,6 +17,7 @@ public:
 	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final;
+	virtual void render() override final;
 
 	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
 };

@@ -15,7 +15,7 @@ void PBRDeferredRenderSystem::render()
 	{
 		ComponentTransform3D* transform = eastl::get<ComponentTransform3D*>(cmp_tuple);
 		ComponentRenderablePBR* renderable = eastl::get<ComponentRenderablePBR*>(cmp_tuple);
-		DeferredRenderer::draw_mesh(renderable->vertex_array, *transform, renderable->material);
+		DeferredRenderer::draw_mesh(renderable->vertex_array, transform->get_model_matrix(), renderable->material);
 	}
 	DeferredRenderer::end_pass();
 }

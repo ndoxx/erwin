@@ -34,7 +34,7 @@ void ForwardRenderer::init()
 	s_storage.line_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
 
 	// Setup UBOs and init storage
-	s_storage.line_ubo      = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
+	s_storage.line_ubo = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
 
 	Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
 }
@@ -74,11 +74,11 @@ void ForwardRenderer::end_pass()
 
 }
 
-void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
+void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
 {
 	// Compute matrices
 	gu::TransformData transform_data;
-	transform_data.m   = transform.get_model_matrix();
+	transform_data.m   = model_matrix;
 	transform_data.mv  = gu::get_frame_data().view_matrix * transform_data.m;
 	transform_data.mvp = gu::get_frame_data().view_projection_matrix * transform_data.m;
 
@@ -101,14 +101,14 @@ void ForwardRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3
 	Renderer::submit(key.encode(), dc);
 }
 
-void ForwardRenderer::begin_line_pass()
+void ForwardRenderer::begin_line_pass(bool enable_depth_test)
 {
 	// State
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Alpha;
-	state.depth_stencil_state.depth_test_enabled = true;
+	state.depth_stencil_state.depth_test_enabled = enable_depth_test;
 
 	s_storage.pass_state = state.encode();
 	s_storage.view_id = Renderer::next_layer_id();
@@ -137,11 +137,6 @@ void ForwardRenderer::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.line_shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, (void*)&instance_data, sizeof(LineInstanceData), DataOwnership::Copy));
 	Renderer::submit(key.encode(), dc);
-}
-
-void ForwardRenderer::draw_debug_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
-{
-
 }
 
 

@@ -55,6 +55,12 @@ public:
 		     * glm::scale(glm::mat4(1.f), glm::vec3(uniform_scale));
 	}
 
+	inline glm::mat4 get_unscaled_model_matrix() const
+	{
+		return glm::translate(glm::mat4(1.f), position) 
+			 * glm::toMat4(rotation);
+	}
+
 	virtual bool init(void* description) override final;
 	virtual void inspector_GUI() override final;
 };

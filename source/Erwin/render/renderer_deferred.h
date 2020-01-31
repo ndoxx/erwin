@@ -19,7 +19,7 @@ public:
 
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
-	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
 
 private:
 	friend class Application;

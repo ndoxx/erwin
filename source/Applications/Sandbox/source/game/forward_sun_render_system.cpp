@@ -22,7 +22,7 @@ void ForwardSunRenderSystem::render()
 	{
 		ComponentRenderableDirectionalLight* renderable = eastl::get<ComponentRenderableDirectionalLight*>(cmp_tuple);
 		ForwardRenderer::begin_pass();
-		ForwardRenderer::draw_mesh(quad, ComponentTransform3D(), renderable->material);
+		ForwardRenderer::draw_mesh(quad, glm::mat4(1.f), renderable->material);
 		ForwardRenderer::end_pass();
 	}
 }
