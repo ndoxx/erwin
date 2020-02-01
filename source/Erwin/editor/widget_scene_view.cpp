@@ -6,9 +6,13 @@
 #include "core/application.h"
 #include "event/window_events.h"
 #include "event/event_bus.h"
+#include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/renderer_forward.h"
 #include "entity/entity_manager.h"
 #include "entity/component_bounding_box.h"
+#include "entity/component_transform.h"
+#include "asset/material.h"
 #include "asset/bounding.h"
 #include "imgui.h"
 
@@ -54,8 +58,8 @@ void SceneViewWidget::on_update()
 
 void SceneViewWidget::on_resize(uint32_t width, uint32_t height)
 {
-	float rw = std::max(width  - (k_border + k_start_x), 0.f);
-	float rh = std::max(height - (k_border + k_start_y), 0.f);
+	float rw = std::max(width  - (k_border + k_start_x), 1.f);
+	float rh = std::max(height - (k_border + k_start_y), 1.f);
 	render_surface_.x1 = render_surface_.x0 + rw;
 	render_surface_.y1 = render_surface_.y0 + rh;
     render_surface_.w = rw;

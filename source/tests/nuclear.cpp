@@ -43,11 +43,13 @@ void init_logger()
 int main(int argc, char** argv)
 {
 	init_logger();
-	filesystem::init();
 
-	Input::load_config();
-
-	Input::save_config();
+	int N = 6;
+	for(int ii=0; ii<N; ++ii)
+	{
+		float alpha = 2*M_PI*(ii/float(N));
+		DLOGR("nuclear") << "vec2(" << cos(alpha) << "," << sin(alpha) << ")," << std::endl;
+	}
 
 	return 0;
 }

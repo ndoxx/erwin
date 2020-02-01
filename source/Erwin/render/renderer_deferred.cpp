@@ -30,12 +30,12 @@ void DeferredRenderer::shutdown()
 	Renderer::destroy(s_storage.dirlight_shader);
 }
 
-void DeferredRenderer::register_shader(ShaderHandle shader, UniformBufferHandle material_ubo)
+void DeferredRenderer::register_material(const Material& material)
 {
-	Renderer::shader_attach_uniform_buffer(shader, gu::get_frame_ubo());
-	Renderer::shader_attach_uniform_buffer(shader, gu::get_transform_ubo());
-	if(material_ubo.index != k_invalid_handle)
-		Renderer::shader_attach_uniform_buffer(shader, material_ubo);
+	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_frame_ubo());
+	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_transform_ubo());
+	if(material.ubo.index != k_invalid_handle)
+		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
 }
 
 void DeferredRenderer::begin_pass()
@@ -90,11 +90,11 @@ void DeferredRenderer::end_pass()
 	Renderer::blit_depth(key.encode(), GBuffer, LBuffer);
 }
 
-void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material)
+void DeferredRenderer::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
 {
 	// Compute matrices
 	gu::TransformData transform_data;
-	transform_data.m   = transform.get_model_matrix();
+	transform_data.m   = model_matrix;
 	transform_data.mv  = gu::get_frame_data().view_matrix * transform_data.m;
 	transform_data.mvp = gu::get_frame_data().view_projection_matrix * transform_data.m;
 

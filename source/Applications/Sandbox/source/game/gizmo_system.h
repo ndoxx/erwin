@@ -9,17 +9,28 @@
 namespace erwin
 {
 
-class BoundingBoxSystem: public ComponentSystem<RequireAll<ComponentTransform3D, ComponentOBB>>
+class GizmoSystem: public ComponentSystem<RequireAll<ComponentOBB>>
 {
 public:
-	BoundingBoxSystem(EntityManager* manager);
-	virtual ~BoundingBoxSystem() = default;
+	GizmoSystem(EntityManager* manager);
+	virtual ~GizmoSystem();
 	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;
 
 	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
+
+private:
+    erwin::ShaderHandle gizmo_shader_;
+    erwin::UniformBufferHandle gizmo_ubo_;
+    erwin::Material gizmo_material_;
+    int selected_part_;
+
+    struct GizmoData
+    {
+    	int selected;
+    } gizmo_data_;
 };
 
 

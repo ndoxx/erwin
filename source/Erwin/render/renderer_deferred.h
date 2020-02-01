@@ -12,14 +12,14 @@ struct Material;
 class DeferredRenderer
 {
 public:
-	// Register a shader for deferred rendering
-	static void register_shader(ShaderHandle shader, UniformBufferHandle material_ubo = UniformBufferHandle());
+	// Register a material for deferred rendering
+	static void register_material(const Material& material);
 	static void begin_pass();
 	static void end_pass();
 
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
-	static void draw_mesh(VertexArrayHandle VAO, const ComponentTransform3D& transform, const Material& material);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
 
 private:
 	friend class Application;

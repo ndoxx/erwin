@@ -3,7 +3,7 @@
 #include "game/game_components.h"
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
-#include "game/debug_render_system.h"
+#include "game/gizmo_system.h"
 #include "game/bounding_box_system.h"
 #include "entity/component_transform.h"
 #include "entity/component_bounding_box.h"
@@ -39,10 +39,11 @@ void GameLayer::on_attach()
 	ecs.create_component_manager<ComponentRenderableDirectionalLight>(client_area, 2);
 	ecs.create_component_manager<ComponentDirectionalLight>(client_area, 2);
 
-	ecs.create_system<BoundingBoxSystem>();
+	// TODO: Pass a process graph to ECS
 	ecs.create_system<PBRDeferredRenderSystem>();
 	ecs.create_system<ForwardSunRenderSystem>();
-	ecs.create_system<DebugRenderSystem>();
+	ecs.create_system<GizmoSystem>(); // TODO: This should be an "engine system" (heavily related to the editor)
+	ecs.create_system<BoundingBoxSystem>();
 
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
 	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");
@@ -51,8 +52,8 @@ void GameLayer::on_attach()
 	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBR::MaterialData));
 	UniformBufferHandle sun_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderableDirectionalLight::MaterialData));
 	AssetManager::release(layout_a_nd_mare);
-	DeferredRenderer::register_shader(deferred_pbr, pbr_material_ubo);
-	ForwardRenderer::register_shader(forward_sun, sun_material_ubo);
+	DeferredRenderer::register_material({deferred_pbr, {}, pbr_material_ubo});
+	ForwardRenderer::register_material({forward_sun, {}, sun_material_ubo});
 
 	{
 		EntityID ent = ecs.create_entity();
