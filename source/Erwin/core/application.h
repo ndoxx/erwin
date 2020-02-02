@@ -7,7 +7,6 @@
 #include "core/layer_stack.h"
 #include "core/game_clock.h"
 #include "filesystem/filesystem.h"
-#include "entity/entity_manager.h"
 #include "editor/scene.h" // MOVE
 
 namespace editor
@@ -55,12 +54,10 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
-	static inline EntityManager& ECS() { return s_ECS; }
 	static inline Scene& SCENE() { return s_SCENE; }
 
 protected:
 	editor::EditorLayer* EDITOR_LAYER;
-	static EntityManager s_ECS;
 	static Scene s_SCENE;
 
 private:

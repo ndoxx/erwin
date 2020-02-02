@@ -12,7 +12,7 @@ namespace erwin
 class GizmoSystem: public ComponentSystem<RequireAll<ComponentOBB>>
 {
 public:
-	GizmoSystem(EntityManager* manager);
+	GizmoSystem();
 	virtual ~GizmoSystem();
 	virtual bool init() override final { return true; }
 

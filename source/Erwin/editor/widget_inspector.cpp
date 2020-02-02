@@ -1,7 +1,7 @@
 #include "editor/widget_inspector.h"
 #include "editor/scene.h"
-#include "entity/entity_manager.h"
 #include "core/application.h"
+#include "entity/entity_manager.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -43,7 +43,7 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        Application::ECS().inspector_GUI(scene.entities[scene.selected_entity_idx].id);
+        ECS::inspector_GUI(scene.entities[scene.selected_entity_idx].id);
         ImGui::TreePop();
     }
 }

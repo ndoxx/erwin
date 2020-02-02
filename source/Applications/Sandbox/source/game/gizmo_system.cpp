@@ -4,8 +4,7 @@
 namespace erwin
 {
 
-GizmoSystem::GizmoSystem(EntityManager* manager):
-BaseType(manager)
+GizmoSystem::GizmoSystem()
 {
     gizmo_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     gizmo_ubo_    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
@@ -25,11 +24,10 @@ GizmoSystem::~GizmoSystem()
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
     auto& scene = Application::SCENE();
-    auto& ecs   = Application::ECS();
 
     // Get selected entity's transform if any
     EntityID selected = scene.get_selected_entity();
-    auto& selected_entity = ecs.get_entity(selected);
+    auto& selected_entity = ECS::get_entity(selected);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
     	return false;
@@ -89,10 +87,9 @@ void GizmoSystem::update(const GameClock& clock)
 void GizmoSystem::render()
 {
     auto& scene = Application::SCENE();
-    auto& ecs   = Application::ECS();
 
     // TODO: handle the "nothing selected" case...
-    auto& selected_entity = ecs.get_entity(scene.get_selected_entity());
+    auto& selected_entity = ECS::get_entity(scene.get_selected_entity());
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
         return;

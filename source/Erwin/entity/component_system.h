@@ -16,7 +16,7 @@
 		using BaseType = ComponentSystem<RequireAll<ComponentRenderable2D, ComponentTransform2D>>;
 
 	public:
-		RenderSystem2D(EntityManager* manager): BaseType(manager) {}
+		RenderSystem2D(): {}
 		virtual bool init() override final;
 
 		virtual void update(const GameClock& clock) override final
@@ -95,7 +95,7 @@ template <typename FilterT>
 class ComponentSystem: public BaseComponentSystem
 {
 public:
-	explicit ComponentSystem(EntityManager* manager): BaseComponentSystem(manager) {}
+	explicit ComponentSystem(): BaseComponentSystem() {}
 	virtual ~ComponentSystem() = default;
 
 	virtual void on_entity_submitted(const Entity& entity) override final;

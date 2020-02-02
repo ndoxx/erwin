@@ -29,21 +29,20 @@ void GameLayer::on_imgui_render()
 
 void GameLayer::on_attach()
 {	
-	auto& ecs = Application::ECS();
 	auto& scene = Application::SCENE();
 	auto& client_area = Application::get_client_area();
 
-	ecs.create_component_manager<ComponentTransform3D>(client_area, 128);
-	ecs.create_component_manager<ComponentOBB>(client_area, 128);
-	ecs.create_component_manager<ComponentRenderablePBR>(client_area, 128);
-	ecs.create_component_manager<ComponentRenderableDirectionalLight>(client_area, 2);
-	ecs.create_component_manager<ComponentDirectionalLight>(client_area, 2);
+	ECS::create_component_manager<ComponentTransform3D>(client_area, 128);
+	ECS::create_component_manager<ComponentOBB>(client_area, 128);
+	ECS::create_component_manager<ComponentRenderablePBR>(client_area, 128);
+	ECS::create_component_manager<ComponentRenderableDirectionalLight>(client_area, 2);
+	ECS::create_component_manager<ComponentDirectionalLight>(client_area, 2);
 
 	// TODO: Pass a process graph to ECS
-	ecs.create_system<PBRDeferredRenderSystem>();
-	ecs.create_system<ForwardSunRenderSystem>();
-	ecs.create_system<GizmoSystem>(); // TODO: This should be an "engine system" (heavily related to the editor)
-	ecs.create_system<BoundingBoxSystem>();
+	ECS::create_system<PBRDeferredRenderSystem>();
+	ECS::create_system<ForwardSunRenderSystem>();
+	ECS::create_system<GizmoSystem>(); // TODO: This should be an "engine system" (heavily related to the editor)
+	ECS::create_system<BoundingBoxSystem>();
 
 	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
 	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");
@@ -56,9 +55,9 @@ void GameLayer::on_attach()
 	Renderer3D::register_material({forward_sun, {}, sun_material_ubo});
 
 	{
-		EntityID ent = ecs.create_entity();
-		auto& directional_light = ecs.create_component<ComponentDirectionalLight>(ent);
-		auto& renderable        = ecs.create_component<ComponentRenderableDirectionalLight>(ent);
+		EntityID ent = ECS::create_entity();
+		auto& directional_light = ECS::create_component<ComponentDirectionalLight>(ent);
+		auto& renderable        = ECS::create_component<ComponentRenderableDirectionalLight>(ent);
 
 		directional_light.set_position(90.f, 160.f);
 		directional_light.color         = {0.95f,0.85f,0.5f};
@@ -69,7 +68,7 @@ void GameLayer::on_attach()
 		renderable.material.shader = forward_sun;
 		renderable.material.ubo = sun_material_ubo;
 		renderable.material_data.scale = 0.2f;
-		ecs.submit_entity(ent);
+		ECS::submit_entity(ent);
 		scene.directional_light = ent;
 		scene.add_entity(ent, "Sun", ICON_FA_SUN_O);
 	}
@@ -83,10 +82,10 @@ void GameLayer::on_attach()
 	};
 	for(int ii=0; ii<4; ++ii)
 	{
-		EntityID ent     = ecs.create_entity();
-		auto& transform  = ecs.create_component<ComponentTransform3D>(ent);
-		auto& renderable = ecs.create_component<ComponentRenderablePBR>(ent);
-		auto& OBB        = ecs.create_component<ComponentOBB>(ent);
+		EntityID ent     = ECS::create_entity();
+		auto& transform  = ECS::create_component<ComponentTransform3D>(ent);
+		auto& renderable = ECS::create_component<ComponentRenderablePBR>(ent);
+		auto& OBB        = ECS::create_component<ComponentOBB>(ent);
 		transform = {pos[ii], {0.f,0.f,0.f}, 1.8f};
 		OBB.init(CommonGeometry::get_extent("cube_pbr"_h));
 		OBB.update(transform.get_model_matrix(), transform.uniform_scale);
@@ -96,7 +95,7 @@ void GameLayer::on_attach()
 		renderable.material.texture_group = tg;
 		renderable.material.ubo = pbr_material_ubo;
 		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
-		ecs.submit_entity(ent);
+		ECS::submit_entity(ent);
 		scene.add_entity(ent, "Emissive cube #" + std::to_string(ii));
 	}
 
@@ -126,9 +125,8 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-	auto& ecs = Application::ECS();
 	auto& scene = Application::SCENE();
-	ecs.update(clock);
+	ECS::update(clock);
 
 	scene.camera_controller.update(clock);
 
@@ -138,7 +136,7 @@ void GameLayer::on_update(GameClock& clock)
 		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
 		float s2 = s*s;
 
-		Entity& cube = ecs.get_entity(scene.entities[1+ii].id);
+		Entity& cube = ECS::get_entity(scene.entities[1+ii].id);
 		auto* renderable = cube.get_component<ComponentRenderablePBR>();
 
 		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
@@ -152,7 +150,7 @@ void GameLayer::on_render()
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
 	// Draw scene geometry
-	Application::ECS().render();
+	ECS::render();
 
 	auto& scene = Application::SCENE();
 	// Presentation

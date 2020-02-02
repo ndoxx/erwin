@@ -4,7 +4,7 @@
 namespace erwin
 {
 
-BoundingBoxSystem::BoundingBoxSystem(EntityManager* manager): BaseType(manager)
+BoundingBoxSystem::BoundingBoxSystem()
 {
     EVENTBUS.subscribe(this, &BoundingBoxSystem::on_ray_scene_query_event);
 }

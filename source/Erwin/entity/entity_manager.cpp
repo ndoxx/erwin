@@ -9,6 +9,10 @@ namespace erwin
 {
 
 EntityID EntityManager::s_next_entity_id = 0;
+EntityManager::Entities EntityManager::entities_;
+EntityManager::Systems EntityManager::systems_;
+EntityManager::Components EntityManager::components_;
+EntityManager::Lookup EntityManager::components_lookup_;
 
 void EntityManager::shutdown()
 {

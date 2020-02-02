@@ -10,7 +10,7 @@ namespace erwin
 class PBRDeferredRenderSystem: public ComponentSystem<RequireAll<ComponentTransform3D, ComponentRenderablePBR>>
 {
 public:
-	PBRDeferredRenderSystem(EntityManager* manager): BaseType(manager) {}
+	PBRDeferredRenderSystem() = default;
 	virtual ~PBRDeferredRenderSystem() = default;
 	virtual bool init() override final { return true; }
 
