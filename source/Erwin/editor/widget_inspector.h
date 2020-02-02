@@ -23,7 +23,6 @@ public:
 
 protected:
 	virtual void on_imgui_render() override;
-	void postproc_tab();
 	void entity_tab();
 };
 

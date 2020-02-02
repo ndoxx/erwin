@@ -102,14 +102,6 @@ void GameLayer::on_attach()
 	scene.selected_entity_idx = 0;
 
 	scene.camera_controller.set_position({0.f,1.f,3.f});
-
-    scene.post_processing.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
-    scene.post_processing.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);
-    scene.post_processing.set_flag_enabled(PP_EN_VIBRANCE, true);
-    scene.post_processing.set_flag_enabled(PP_EN_SATURATION, true);
-    scene.post_processing.set_flag_enabled(PP_EN_CONTRAST, true);
-    scene.post_processing.set_flag_enabled(PP_EN_GAMMA, true);
-    scene.post_processing.set_flag_enabled(PP_EN_FXAA, true);
 }
 
 void GameLayer::on_detach()
@@ -152,11 +144,9 @@ void GameLayer::on_render()
 	// Draw scene geometry
 	ECS::render();
 
-	auto& scene = Application::SCENE();
 	// Presentation
 	PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-	scene.post_processing.set_flag_enabled(PP_EN_BLOOM, true);
-	PostProcessingRenderer::combine("LBuffer"_h, 0, scene.post_processing);
+	PostProcessingRenderer::combine("LBuffer"_h, 0, true);
 	// scene.post_processing.clear_flag(PP_EN_BLOOM);
 	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, scene.post_processing);
 }

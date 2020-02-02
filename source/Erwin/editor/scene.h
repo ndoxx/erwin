@@ -2,7 +2,6 @@
 
 #include "input/freefly_camera_controller.h"
 #include "entity/entity_types.h"
-#include "render/renderer_pp.h"
 
 namespace erwin
 {
@@ -33,7 +32,6 @@ public:
 	std::map<EntityID, uint32_t> entity_index_lookup;
 
 	FreeflyController camera_controller;
-	PostProcessingData post_processing;
 };
 
 } // namespace erwin
