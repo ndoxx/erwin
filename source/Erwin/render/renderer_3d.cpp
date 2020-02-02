@@ -1,7 +1,7 @@
 #include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
-#include "render/global_ubos.h"
+#include "render/camera_3d.h"
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -16,12 +16,38 @@ struct LineInstanceData
 	glm::vec4 color;
 };
 
+struct FrameData
+{
+	glm::mat4 view_matrix;
+	glm::mat4 view_projection_matrix;
+	glm::vec4 eye_position;
+	glm::vec4 camera_params;
+	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
+	glm::vec4 proj_params;
+	
+	glm::vec4 light_position;
+	glm::vec4 light_color;
+	glm::vec4 light_ambient_color;
+	float light_ambient_strength;
+};
+
+struct TransformData
+{
+	glm::mat4 m;
+	glm::mat4 mv;
+	glm::mat4 mvp;
+};
+
 static struct
 {
 	// Resources
 	UniformBufferHandle line_ubo;
 	ShaderHandle line_shader;
 	ShaderHandle dirlight_shader;
+	UniformBufferHandle frame_ubo;
+	UniformBufferHandle transform_ubo;
+
+	FrameData frame_data;
 
 	// State
 	uint64_t pass_state;
@@ -36,22 +62,47 @@ void Renderer3D::init()
 	s_storage.line_shader     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
 	s_storage.dirlight_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
 	s_storage.line_ubo        = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
-	
-	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, gu::get_transform_ubo());
+	s_storage.frame_ubo       = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
+	s_storage.transform_ubo   = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
+
+	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.transform_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
 }
 
 void Renderer3D::shutdown()
 {
+	Renderer::destroy(s_storage.transform_ubo);
+	Renderer::destroy(s_storage.frame_ubo);
 	Renderer::destroy(s_storage.line_ubo);
 	Renderer::destroy(s_storage.dirlight_shader);
 	Renderer::destroy(s_storage.line_shader);
 }
 
+void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light)
+{
+	glm::vec2 fb_size = FramebufferPool::get_screen_size();
+	float near = camera.get_frustum().near;
+	float far  = camera.get_frustum().far;
+
+	s_storage.frame_data.view_matrix = camera.get_view_matrix();
+	s_storage.frame_data.view_projection_matrix = camera.get_view_projection_matrix();
+	s_storage.frame_data.eye_position = glm::vec4(camera.get_position(), 1.f);
+	s_storage.frame_data.camera_params = glm::vec4(near,far,0.f,0.f);
+	s_storage.frame_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
+	s_storage.frame_data.proj_params = camera.get_projection_parameters();
+
+	s_storage.frame_data.light_position = glm::vec4(dir_light.position, 0.f);
+	s_storage.frame_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
+	s_storage.frame_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
+	s_storage.frame_data.light_ambient_strength = dir_light.ambient_strength;
+
+	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
+}
+
 void Renderer3D::register_material(const Material& material)
 {
-	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_frame_ubo());
-	Renderer::shader_attach_uniform_buffer(material.shader, gu::get_transform_ubo());
+	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.frame_ubo);
+	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.transform_ubo);
 	if(material.ubo.index != k_invalid_handle)
 		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
 }
@@ -150,10 +201,10 @@ void Renderer3D::end_line_pass()
 void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
 {
 	// Compute matrices
-	gu::TransformData transform_data;
+	TransformData transform_data;
 	transform_data.m   = model_matrix;
-	transform_data.mv  = gu::get_frame_data().view_matrix * transform_data.m;
-	transform_data.mvp = gu::get_frame_data().view_projection_matrix * transform_data.m;
+	transform_data.mv  = s_storage.frame_data.view_matrix * transform_data.m;
+	transform_data.mvp = s_storage.frame_data.view_projection_matrix * transform_data.m;
 
 	// Compute clip depth for the sorting key
 	glm::vec4 clip = glm::column(transform_data.mvp, 3);
@@ -162,7 +213,7 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, material.shader);
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
-	dc.add_dependency(Renderer::update_uniform_buffer(gu::get_transform_ubo(), (void*)&transform_data, sizeof(gu::TransformData), DataOwnership::Copy));
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, (void*)&transform_data, sizeof(TransformData), DataOwnership::Copy));
 	if(material.ubo.index != k_invalid_handle && material.data)
 		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material.data, material.data_size, DataOwnership::Copy));
 	if(material.texture_group.index != k_invalid_handle)
@@ -180,7 +231,7 @@ void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 
 	// Compute matrices
 	LineInstanceData instance_data;
-	instance_data.mvp = gu::get_frame_data().view_projection_matrix * model_matrix;
+	instance_data.mvp = s_storage.frame_data.view_projection_matrix * model_matrix;
 	instance_data.color = glm::vec4(color, 1.f);
 
 	// Compute clip depth for the sorting key

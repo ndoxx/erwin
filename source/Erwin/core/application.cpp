@@ -9,7 +9,6 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/common_geometry.h"
-#include "render/global_ubos.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
 #include "render/renderer_3d.h"
@@ -98,7 +97,6 @@ Application::~Application()
         Renderer2D::shutdown();
         Renderer3D::shutdown();
         CommonGeometry::shutdown();
-        gu::shutdown();
         Renderer::shutdown();
     }
     {
@@ -261,7 +259,6 @@ bool Application::init()
         W_PROFILE_SCOPE("Renderer startup")
         FramebufferPool::init(window_->get_width(), window_->get_height());
         Renderer::init(s_storage.render_area);
-        gu::init();
         CommonGeometry::init();
         Renderer2D::init();
         Renderer3D::init();
@@ -384,7 +381,7 @@ void Application::run()
         // TMP: SCENE must have a directional light entity or this fails
         Entity& dirlight_ent = s_ECS.get_entity(s_SCENE.directional_light);
         auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
-        gu::update_frame_data(s_SCENE.camera_controller.get_camera(), *dirlight);
+        Renderer3D::update_frame_data(s_SCENE.camera_controller.get_camera(), *dirlight);
 
         // For each layer, render
         if(!minimized_)

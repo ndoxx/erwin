@@ -1,23 +1,27 @@
 #pragma once
 
-#include "render/camera_3d.h"
 #include "render/handles.h"
 #include "entity/light.h"
+#include "glm/glm.hpp"
 
 namespace erwin
 {
 
+class PerspectiveCamera3D;
 struct Material;
 // 3D renderer front-end, handles forward and deferred rendering
 class Renderer3D
 {
 public:
+	// Setup frame data
+	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
+	// Register a material for use with this system
+	static void register_material(const Material& material);
+
 	// Start a new deferred rendering pass
 	static void begin_deferred_pass();
 	// End a deferred rendering pass
 	static void end_deferred_pass();
-	// Register a material for use with this system
-	static void register_material(const Material& material);
 	// Start a new forward rendering pass
 	static void begin_forward_pass();
 	// End a forward rendering pass
