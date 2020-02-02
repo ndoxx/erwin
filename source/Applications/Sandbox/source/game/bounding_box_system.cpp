@@ -52,16 +52,16 @@ void BoundingBoxSystem::render()
 {
     auto& scene = Application::SCENE();
 
-    ForwardRenderer::begin_line_pass();
+    Renderer3D::begin_line_pass();
     for(auto&& cmp_tuple: components_)
     {
         ComponentOBB* OBB = eastl::get<ComponentOBB*>(cmp_tuple);
         if(OBB->get_parent_entity() == scene.get_selected_entity())
-            ForwardRenderer::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
+            Renderer3D::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
         else if(OBB->display) // TODO: || editor_show_OBBs
-            ForwardRenderer::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});
+            Renderer3D::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});
     }
-    ForwardRenderer::end_line_pass();
+    Renderer3D::end_line_pass();
 }
 
 } // namespace erwin

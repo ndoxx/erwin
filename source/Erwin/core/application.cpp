@@ -12,9 +12,8 @@
 #include "render/global_ubos.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
-#include "render/renderer_forward.h"
-#include "render/renderer_deferred.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
 
@@ -97,8 +96,7 @@ Application::~Application()
         FramebufferPool::shutdown();
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
-        DeferredRenderer::shutdown();
-        ForwardRenderer::shutdown();
+        Renderer3D::shutdown();
         CommonGeometry::shutdown();
         gu::shutdown();
         Renderer::shutdown();
@@ -266,8 +264,7 @@ bool Application::init()
         gu::init();
         CommonGeometry::init();
         Renderer2D::init();
-        ForwardRenderer::init();
-        DeferredRenderer::init();
+        Renderer3D::init();
         PostProcessingRenderer::init();
 
         // Initialize asset manager

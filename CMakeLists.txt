@@ -127,8 +127,7 @@ set(SRC_RENDERER
     # ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d_alt.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/global_ubos.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_forward.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_deferred.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_3d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_3d.cpp

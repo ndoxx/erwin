@@ -19,8 +19,7 @@
 
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
-#include "render/renderer_forward.h"
-#include "render/renderer_deferred.h"
+#include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "asset/asset_manager.h"

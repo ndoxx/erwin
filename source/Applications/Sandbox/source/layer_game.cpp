@@ -52,8 +52,8 @@ void GameLayer::on_attach()
 	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBR::MaterialData));
 	UniformBufferHandle sun_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderableDirectionalLight::MaterialData));
 	AssetManager::release(layout_a_nd_mare);
-	DeferredRenderer::register_material({deferred_pbr, {}, pbr_material_ubo});
-	ForwardRenderer::register_material({forward_sun, {}, sun_material_ubo});
+	Renderer3D::register_material({deferred_pbr, {}, pbr_material_ubo});
+	Renderer3D::register_material({forward_sun, {}, sun_material_ubo});
 
 	{
 		EntityID ent = ecs.create_entity();

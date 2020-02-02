@@ -32,6 +32,7 @@ public:
 
 private:
 	friend class Renderer2D;
+	friend class Renderer3D;
 	friend class Application;
 	friend class ForwardRenderer;
 	friend class DeferredRenderer;

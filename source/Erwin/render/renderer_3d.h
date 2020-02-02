@@ -8,23 +8,29 @@ namespace erwin
 {
 
 struct Material;
-// 3D forward renderer front-end
-class ForwardRenderer
+// 3D renderer front-end, handles forward and deferred rendering
+class Renderer3D
 {
 public:
-	// Register a material for forward rendering
+	// Start a new deferred rendering pass
+	static void begin_deferred_pass();
+	// End a deferred rendering pass
+	static void end_deferred_pass();
+	// Register a material for use with this system
 	static void register_material(const Material& material);
-	// Start a new pass
-	static void begin_pass();
-	// End a pass
-	static void end_pass();
+	// Start a new forward rendering pass
+	static void begin_forward_pass();
+	// End a forward rendering pass
+	static void end_forward_pass();
+	// Start a line-mode forward pass
+	static void begin_line_pass(bool enable_depth_test = true);
+	// End forward line-pass
+	static void end_line_pass();
+
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
-
 	// Draw a debug cube
-	static void begin_line_pass(bool enable_depth_test = true);
-	static void end_line_pass();
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
 
 private:

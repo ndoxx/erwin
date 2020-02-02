@@ -8,7 +8,6 @@
 #include "event/event_bus.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
-#include "render/renderer_forward.h"
 #include "entity/entity_manager.h"
 #include "entity/component_bounding_box.h"
 #include "entity/component_transform.h"

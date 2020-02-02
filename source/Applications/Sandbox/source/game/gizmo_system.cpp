@@ -10,7 +10,7 @@ BaseType(manager)
     gizmo_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     gizmo_ubo_    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
 	gizmo_material_ = {gizmo_shader_, {}, gizmo_ubo_, &gizmo_data_, sizeof(GizmoData)};
-    ForwardRenderer::register_material(gizmo_material_);
+    Renderer3D::register_material(gizmo_material_);
 
     EVENTBUS.subscribe(this, &GizmoSystem::on_ray_scene_query_event);
     selected_part_ = -1;
@@ -100,11 +100,11 @@ void GizmoSystem::render()
     // Draw gizmo
     gizmo_data_.selected = selected_part_;
 
-    ForwardRenderer::begin_line_pass(false);
-    ForwardRenderer::draw_mesh(CommonGeometry::get_vertex_array("origin_lines"_h), 
+    Renderer3D::begin_line_pass(false);
+    Renderer3D::draw_mesh(CommonGeometry::get_vertex_array("origin_lines"_h), 
     						   transform->get_unscaled_model_matrix(), 
     						   gizmo_material_);
-    ForwardRenderer::end_line_pass();
+    Renderer3D::end_line_pass();
 }
 
 } // namespace erwin

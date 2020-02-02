@@ -21,9 +21,9 @@ void ForwardSunRenderSystem::render()
 	for(auto&& cmp_tuple: components_)
 	{
 		ComponentRenderableDirectionalLight* renderable = eastl::get<ComponentRenderableDirectionalLight*>(cmp_tuple);
-		ForwardRenderer::begin_pass();
-		ForwardRenderer::draw_mesh(quad, glm::mat4(1.f), renderable->material);
-		ForwardRenderer::end_pass();
+		Renderer3D::begin_forward_pass();
+		Renderer3D::draw_mesh(quad, glm::mat4(1.f), renderable->material);
+		Renderer3D::end_forward_pass();
 	}
 }
 
