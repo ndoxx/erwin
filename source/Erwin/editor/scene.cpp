@@ -2,8 +2,16 @@
 #include "font_awesome.h"
 #include "debug/logger.h"
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
+
+uint32_t Scene::selected_entity_idx;
+EntityID Scene::directional_light;
+std::vector<EntityDescriptor> Scene::entities;
+std::map<EntityID, uint32_t> Scene::entity_index_lookup;
+FreeflyController Scene::camera_controller;
 
 void Scene::init()
 {
@@ -37,4 +45,4 @@ void Scene::select(EntityID entity)
 		selected_entity_idx = it->second;
 }
 
-} // namespace erwin
+} // namespace editor

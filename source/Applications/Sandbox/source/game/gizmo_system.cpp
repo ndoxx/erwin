@@ -1,5 +1,6 @@
 #include "game/gizmo_system.h"
 #include "asset/bounding.h"
+#include "editor/scene.h"
 
 namespace erwin
 {
@@ -23,10 +24,8 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = Application::SCENE();
-
     // Get selected entity's transform if any
-    EntityID selected = scene.get_selected_entity();
+    EntityID selected = editor::Scene::get_selected_entity();
     auto& selected_entity = ECS::get_entity(selected);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
@@ -34,7 +33,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 
     glm::mat4 parent_model = transform->get_unscaled_model_matrix();
 
-    glm::mat4 VP_inv = glm::inverse(scene.camera_controller.get_camera().get_view_projection_matrix());
+    glm::mat4 VP_inv = glm::inverse(editor::Scene::camera_controller.get_camera().get_view_projection_matrix());
     Ray ray(event.coords, VP_inv);
 
 	constexpr float k_cyl_diameter = 0.01f;
@@ -57,7 +56,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
     	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter
     );
 
-    float nearest = scene.camera_controller.get_zfar();
+    float nearest = editor::Scene::camera_controller.get_zfar();
     Ray::CollisionData data;
 
     selected_part_ = -1;
@@ -86,10 +85,8 @@ void GizmoSystem::update(const GameClock& clock)
 
 void GizmoSystem::render()
 {
-    auto& scene = Application::SCENE();
-
     // TODO: handle the "nothing selected" case...
-    auto& selected_entity = ECS::get_entity(scene.get_selected_entity());
+    auto& selected_entity = ECS::get_entity(editor::Scene::get_selected_entity());
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
         return;

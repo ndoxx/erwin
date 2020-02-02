@@ -7,7 +7,6 @@
 #include "core/layer_stack.h"
 #include "core/game_clock.h"
 #include "filesystem/filesystem.h"
-#include "editor/scene.h" // MOVE
 
 namespace editor
 {
@@ -17,7 +16,6 @@ namespace editor
 namespace erwin
 {
 
-class Scene;
 class W_API Application
 {
 public:
@@ -54,11 +52,8 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
-	static inline Scene& SCENE() { return s_SCENE; }
-
 protected:
 	editor::EditorLayer* EDITOR_LAYER;
-	static Scene s_SCENE;
 
 private:
 	static Application* pinstance_;

@@ -16,6 +16,7 @@
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
 #include "entity/entity_manager.h"
+#include "editor/scene.h"
 
 #include <iostream>
 
@@ -36,7 +37,6 @@ namespace erwin
         // DO_ACTION( WindowMovedEvent )
 
 Application* Application::pinstance_ = nullptr;
-Scene Application::s_SCENE;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
@@ -88,7 +88,6 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Entity Manager shutdown")
         ECS::shutdown();
-        s_SCENE.shutdown();
     }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
@@ -266,8 +265,6 @@ bool Application::init()
 
         // Initialize asset manager
         AssetManager::init(s_storage.client_area);
-
-        s_SCENE.init();
     }
 
     {
@@ -378,10 +375,10 @@ void Application::run()
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
-        // TMP: SCENE must have a directional light entity or this fails
-        Entity& dirlight_ent = ECS::get_entity(s_SCENE.directional_light);
+        // TMP: editor coupling + SCENE must have a directional light entity or this fails
+        Entity& dirlight_ent = ECS::get_entity(editor::Scene::directional_light);
         auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
-        Renderer3D::update_frame_data(s_SCENE.camera_controller.get_camera(), *dirlight);
+        Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), *dirlight);
 
         // For each layer, render
         if(!minimized_)

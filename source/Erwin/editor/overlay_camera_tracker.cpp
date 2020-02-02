@@ -1,6 +1,6 @@
 #include "editor/overlay_camera_tracker.h"
-#include "editor/scene.h"
 #include "editor/font_awesome.h"
+#include "editor/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
@@ -26,9 +26,8 @@ CameraTrackerOverlay::~CameraTrackerOverlay()
 
 void CameraTrackerOverlay::on_imgui_render()
 {
-    auto& scene = Application::SCENE();
-    const glm::vec3& cam_pos = scene.camera_controller.get_camera().get_position();
-    const glm::vec3& cam_ang = scene.camera_controller.get_camera().get_angles();
+    const glm::vec3& cam_pos = Scene::camera_controller.get_camera().get_position();
+    const glm::vec3& cam_ang = Scene::camera_controller.get_camera().get_angles();
 
     ImGui::Text("%s Camera", ICON_FA_VIDEO_CAMERA);
 
@@ -40,10 +39,10 @@ void CameraTrackerOverlay::on_imgui_render()
     ImGui::Text("pitch  %.3f", cam_ang.y);
     ImGui::Text("roll   %.3f", cam_ang.z);
     ImGui::Separator();
-    ImGui::Text("aspect %.3f", scene.camera_controller.get_aspect_ratio());
-    ImGui::Text("fovy   %.3f", scene.camera_controller.get_fovy());
-    ImGui::Text("znear  %.3f", scene.camera_controller.get_znear());
-    ImGui::Text("zfar   %.3f", scene.camera_controller.get_zfar());
+    ImGui::Text("aspect %.3f", Scene::camera_controller.get_aspect_ratio());
+    ImGui::Text("fovy   %.3f", Scene::camera_controller.get_fovy());
+    ImGui::Text("znear  %.3f", Scene::camera_controller.get_znear());
+    ImGui::Text("zfar   %.3f", Scene::camera_controller.get_zfar());
 }
 
 

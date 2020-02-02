@@ -29,7 +29,6 @@ void GameLayer::on_imgui_render()
 
 void GameLayer::on_attach()
 {	
-	auto& scene = Application::SCENE();
 	auto& client_area = Application::get_client_area();
 
 	ECS::create_component_manager<ComponentTransform3D>(client_area, 128);
@@ -69,8 +68,8 @@ void GameLayer::on_attach()
 		renderable.material.ubo = sun_material_ubo;
 		renderable.material_data.scale = 0.2f;
 		ECS::submit_entity(ent);
-		scene.directional_light = ent;
-		scene.add_entity(ent, "Sun", ICON_FA_SUN_O);
+		editor::Scene::directional_light = ent;
+		editor::Scene::add_entity(ent, "Sun", ICON_FA_SUN_O);
 	}
 
 	glm::vec3 pos[] = 
@@ -96,12 +95,12 @@ void GameLayer::on_attach()
 		renderable.material.ubo = pbr_material_ubo;
 		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
 		ECS::submit_entity(ent);
-		scene.add_entity(ent, "Emissive cube #" + std::to_string(ii));
+		editor::Scene::add_entity(ent, "Emissive cube #" + std::to_string(ii));
 	}
 
-	scene.selected_entity_idx = 0;
+	editor::Scene::selected_entity_idx = 0;
 
-	scene.camera_controller.set_position({0.f,1.f,3.f});
+	editor::Scene::camera_controller.set_position({0.f,1.f,3.f});
 }
 
 void GameLayer::on_detach()
@@ -117,10 +116,9 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-	auto& scene = Application::SCENE();
 	ECS::update(clock);
 
-	scene.camera_controller.update(clock);
+	editor::Scene::camera_controller.update(clock);
 
 	// TMP: Update cube -> MOVE to Lua script
 	for(int ii=0; ii<4; ++ii)
@@ -128,7 +126,7 @@ void GameLayer::on_update(GameClock& clock)
 		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
 		float s2 = s*s;
 
-		Entity& cube = ECS::get_entity(scene.entities[1+ii].id);
+		Entity& cube = ECS::get_entity(editor::Scene::entities[1+ii].id);
 		auto* renderable = cube.get_component<ComponentRenderablePBR>();
 
 		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
@@ -147,8 +145,7 @@ void GameLayer::on_render()
 	// Presentation
 	PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
 	PostProcessingRenderer::combine("LBuffer"_h, 0, true);
-	// scene.post_processing.clear_flag(PP_EN_BLOOM);
-	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, scene.post_processing);
+	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
 }
 
 bool GameLayer::on_event(const MouseButtonEvent& event)

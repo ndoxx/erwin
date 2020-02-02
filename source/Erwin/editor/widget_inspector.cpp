@@ -1,6 +1,5 @@
 #include "editor/widget_inspector.h"
 #include "editor/scene.h"
-#include "core/application.h"
 #include "entity/entity_manager.h"
 #include "render/renderer_pp.h"
 #include "imgui.h"
@@ -23,12 +22,10 @@ InspectorWidget::~InspectorWidget()
 
 void InspectorWidget::entity_tab()
 {
-    auto& scene = Application::SCENE();
-
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Properties"))
     {
-        auto& desc = scene.entities[scene.selected_entity_idx];
+        auto& desc = Scene::entities[Scene::selected_entity_idx];
 
         ImGui::Text("EntityID: %lu", desc.id);
 
@@ -44,7 +41,7 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        ECS::inspector_GUI(scene.entities[scene.selected_entity_idx].id);
+        ECS::inspector_GUI(Scene::entities[Scene::selected_entity_idx].id);
         ImGui::TreePop();
     }
 }

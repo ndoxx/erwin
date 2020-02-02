@@ -231,6 +231,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, bool us
 {
     W_PROFILE_FUNCTION()
 	s_storage.pp_data.fb_size = FramebufferPool::get_size(framebuffer);
+	s_storage.pp_data.set_flag_enabled(PP_EN_BLOOM, use_bloom);
     
 	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;

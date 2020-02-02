@@ -7,7 +7,7 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
-#include "core/application.h"
+#include "editor/scene.h"
 #include "debug/logger_thread.h"
 
 using namespace erwin;
@@ -113,6 +113,8 @@ void EditorLayer::on_attach()
 
 
 	// Load resources
+    Scene::init();
+
 	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
 
     FramebufferLayout layout =
@@ -160,6 +162,7 @@ void EditorLayer::on_detach()
 			delete widget;
 
 	Renderer::destroy(background_shader_);
+    Scene::shutdown();    
 }
 
 void EditorLayer::on_update(GameClock& clock)
