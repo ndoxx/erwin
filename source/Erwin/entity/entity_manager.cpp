@@ -1,6 +1,5 @@
 #include "entity/entity_manager.h"
 #include "entity/component.h"
-#include "entity/component_system.h"
 #include "debug/logger.h"
 #include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
 #include "imgui.h"
@@ -23,6 +22,12 @@ void EntityManager::shutdown()
 	// Free all systems
 	for(auto&& psys: systems_)
 		delete psys;
+
+	entities_.clear();
+	systems_.clear();
+	components_.clear();
+	components_lookup_.clear();
+	s_next_entity_id = 0;
 }
 
 void EntityManager::update(const GameClock& clock)

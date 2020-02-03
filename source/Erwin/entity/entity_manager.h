@@ -12,6 +12,7 @@
 #include "EASTL/vector.h"
 #include "entity/entity.h"
 #include "entity/component_manager.h"
+#include "entity/base_component_system.h"
 
 namespace erwin
 {
@@ -80,10 +81,21 @@ public:
 		return it->second;
 	}
 
-private:
-	friend class Application;
+	// Add a component dynamically, use this instead of create_component() when entity is already submitted
+	template <typename ComponentT>
+	static inline ComponentT& add_component(EntityID entity_id, void* p_component_description=nullptr)
+	{
+		auto& ent = get_entity(entity_id);
+		auto& cmp = create_component<ComponentT>(entity_id, p_component_description);
+		for(auto&& psys: systems_)
+			psys->on_entity_updated(ent);
+		return cmp;
+	}
 
 	static void shutdown();
+
+private:
+	friend class Application;
 
 	// * Helpers
 	// Retrieve component manager index from component type

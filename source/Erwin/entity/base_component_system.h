@@ -16,6 +16,7 @@ public:
 	virtual void render() = 0;
 	virtual void on_entity_submitted(const Entity& entity) = 0;
 	virtual void on_entity_destroyed(const Entity& entity) = 0;
+	virtual void on_entity_updated(const Entity& entity) = 0;
 };
 
 

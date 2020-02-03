@@ -10,6 +10,7 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 #include "memory/memory_utils.h"
+#include "entity/entity_manager.h"
 
 using namespace erwin;
 
