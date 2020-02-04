@@ -361,17 +361,22 @@ void Application::run()
 	    if(game_clock_.is_paused())
 	        continue;
 
+        // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
         // Dispatch queued events
         EVENTBUS.dispatch();
 
+        // --- UPDATE PHASE ---
+        // TMP: editor coupling
+        editor::Scene::camera_controller.update(game_clock_);
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")
     		for(auto* layer: layer_stack_)
     			layer->update(game_clock_);
 		}
+        ECS::update(game_clock_);
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
@@ -380,6 +385,7 @@ void Application::run()
         auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
         Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), *dirlight);
 
+        // --- RENDER PHASE ---
         // For each layer, render
         if(!minimized_)
         {

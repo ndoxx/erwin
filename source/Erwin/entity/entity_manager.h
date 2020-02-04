@@ -87,9 +87,25 @@ public:
 	{
 		auto& ent = get_entity(entity_id);
 		auto& cmp = create_component<ComponentT>(entity_id, p_component_description);
+		// TODO: optimize
 		for(auto&& psys: systems_)
 			psys->on_entity_updated(ent);
 		return cmp;
+	}
+
+	// Remove a component dynamically
+	template <typename ComponentT>
+	static inline bool remove_component(EntityID entity_id)
+	{
+		auto& ent = get_entity(entity_id);
+		if(ent.remove_component<ComponentT>())
+		{
+			// TODO: optimize
+			for(auto&& psys: systems_)
+				psys->on_entity_updated(ent);
+			return true;
+		}
+		return false;
 	}
 
 	static void shutdown();

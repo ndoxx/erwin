@@ -148,6 +148,7 @@ set(SRC_INPUT
 set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/layer_editor.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/editor_components.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp

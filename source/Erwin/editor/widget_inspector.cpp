@@ -22,17 +22,19 @@ InspectorWidget::~InspectorWidget()
 
 void InspectorWidget::entity_tab()
 {
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return;
+    
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Properties"))
     {
-        auto& desc = Scene::entities[Scene::selected_entity_idx];
-
-        ImGui::Text("EntityID: %lu", desc.id);
+        ImGui::Text("EntityID: %lu", Scene::selected_entity);
 
         // TODO: Use a resize callback to wire the InputText to the string directly
+        auto& ent = ECS::get_entity(Scene::selected_entity);
         static char name_buf[128] = "";
         if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
-            desc.name = name_buf;
+            ent.set_name(name_buf);
 
         ImGui::TreePop();
         ImGui::Separator();
@@ -41,7 +43,7 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        ECS::inspector_GUI(Scene::entities[Scene::selected_entity_idx].id);
+        ECS::inspector_GUI(Scene::selected_entity);
         ImGui::TreePop();
     }
 }

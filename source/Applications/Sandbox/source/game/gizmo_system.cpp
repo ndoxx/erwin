@@ -24,9 +24,11 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return false;
+
     // Get selected entity's transform if any
-    EntityID selected = editor::Scene::get_selected_entity();
-    auto& selected_entity = ECS::get_entity(selected);
+    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
     	return false;
@@ -85,8 +87,10 @@ void GizmoSystem::update(const GameClock& clock)
 
 void GizmoSystem::render()
 {
-    // TODO: handle the "nothing selected" case...
-    auto& selected_entity = ECS::get_entity(editor::Scene::get_selected_entity());
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return;
+
+    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
         return;

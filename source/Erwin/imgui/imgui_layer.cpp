@@ -130,8 +130,7 @@ void ImGuiLayer::end()
 
 void ImGuiLayer::on_imgui_render()
 {
-	/*static bool show = true;
-	ImGui::ShowDemoWindow(&show);*/
+
 }
 
 bool ImGuiLayer::on_event(const KeyboardEvent& event)

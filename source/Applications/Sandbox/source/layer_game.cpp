@@ -98,8 +98,6 @@ void GameLayer::on_attach()
 		editor::Scene::add_entity(ent, "Emissive cube #" + std::to_string(ii));
 	}
 
-	editor::Scene::selected_entity_idx = 0;
-
 	editor::Scene::camera_controller.set_position({0.f,1.f,3.f});
 }
 
@@ -116,17 +114,13 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-	ECS::update(clock);
-
-	editor::Scene::camera_controller.update(clock);
-
 	// TMP: Update cube -> MOVE to Lua script
 	for(int ii=0; ii<4; ++ii)
 	{
 		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
 		float s2 = s*s;
 
-		Entity& cube = ECS::get_entity(editor::Scene::entities[1+ii].id);
+		Entity& cube = ECS::get_entity(editor::Scene::entities[1+ii]);
 		auto* renderable = cube.get_component<ComponentRenderablePBR>();
 
 		renderable->material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);

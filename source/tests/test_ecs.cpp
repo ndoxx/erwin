@@ -144,7 +144,7 @@ TEST_CASE_METHOD(ECSFixture, "Component filtering test: check processed entities
 {
 	GameClock game_clock;
 	ECS::update(game_clock);
-	area.debug_hex_dump(std::cout);
+	// area.debug_hex_dump(std::cout);
 
 	for(int ii=0; ii<4; ++ii)
 	{
@@ -175,7 +175,7 @@ TEST_CASE_METHOD(ECSFixture, "Component filtering test: check ignored entities",
 
 	GameClock game_clock;
 	ECS::update(game_clock);
-	area.debug_hex_dump(std::cout);
+	// area.debug_hex_dump(std::cout);
 
 	for(EntityID id: ids)
 	{
@@ -201,5 +201,26 @@ TEST_CASE_METHOD(ECSFixture, "Adding a component dynamically", "[ecs]")
 	ECS::update(game_clock);
 	REQUIRE(b.b1 == 12);
 	REQUIRE(b.b2 == 8);
+	REQUIRE(c.c == 10);
+}
+
+TEST_CASE_METHOD(ECSFixture, "Removing a component dynamically", "[ecs]")
+{
+	EntityID ent = ECS::create_entity();
+	auto& a = ECS::create_component<AComponent>(ent);
+	auto& b = ECS::create_component<BComponent>(ent);
+	auto& c = ECS::create_component<CComponent>(ent);
+	ECS::submit_entity(ent);
+
+	GameClock game_clock;
+	ECS::update(game_clock);
+	REQUIRE(b.b1 == 11);
+	REQUIRE(b.b2 == 9);
+	REQUIRE(c.c == 10);
+
+	bool success = ECS::remove_component<CComponent>(ent);
+	REQUIRE(success);
+
+	ECS::update(game_clock);
 	REQUIRE(c.c == 10);
 }
