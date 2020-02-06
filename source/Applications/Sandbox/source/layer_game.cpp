@@ -114,6 +114,8 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
+    editor::Scene::camera_controller.update(clock);
+
 	// TMP: Update cube -> MOVE to Lua script
 	for(int ii=0; ii<4; ++ii)
 	{

@@ -368,8 +368,6 @@ void Application::run()
         EVENTBUS.dispatch();
 
         // --- UPDATE PHASE ---
-        // TMP: editor coupling
-        editor::Scene::camera_controller.update(game_clock_);
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")
