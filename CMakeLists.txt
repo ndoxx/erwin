@@ -101,6 +101,8 @@ set(SRC_ENTITY
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_bounding_box.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/light.cpp
+
+    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/wip/ecs.cpp
   )
 
 set(SRC_DEBUG

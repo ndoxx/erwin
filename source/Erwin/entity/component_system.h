@@ -102,9 +102,9 @@ public:
 	virtual void on_entity_destroyed(const Entity& entity) override final;
 	virtual void on_entity_updated(const Entity& entity) override final;
 
-	virtual void update(const GameClock& clock) override = 0;
+	virtual void update(const GameClock& clock) override { }
 	virtual void render() override { }
-	virtual bool init() = 0;
+	virtual bool init() { return true; }
 
 	using BaseType = ComponentSystem<FilterT>;
 

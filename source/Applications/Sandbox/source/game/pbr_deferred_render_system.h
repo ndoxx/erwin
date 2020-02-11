@@ -12,7 +12,6 @@ class PBRDeferredRenderSystem: public ComponentSystem<RequireAll<ComponentTransf
 public:
 	PBRDeferredRenderSystem() = default;
 	virtual ~PBRDeferredRenderSystem() = default;
-	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;

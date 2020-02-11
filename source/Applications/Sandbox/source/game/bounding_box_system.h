@@ -14,7 +14,6 @@ class BoundingBoxSystem: public ComponentSystem<RequireAll<ComponentTransform3D,
 public:
 	BoundingBoxSystem();
 	virtual ~BoundingBoxSystem() = default;
-	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final;
 	virtual void render() override final;

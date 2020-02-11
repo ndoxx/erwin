@@ -12,7 +12,6 @@ class ForwardSunRenderSystem: public ComponentSystem<RequireAll<ComponentDirecti
 public:
 	ForwardSunRenderSystem() = default;
 	virtual ~ForwardSunRenderSystem() = default;
-	virtual bool init() override final { return true; }
 
 	virtual void update(const GameClock& clock) override final { }
 	virtual void render() override final;
