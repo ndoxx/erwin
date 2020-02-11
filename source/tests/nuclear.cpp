@@ -11,7 +11,6 @@
 
 #include "glm/glm.hpp"
 #include "memory/memory.hpp"
-#include "core/handle.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
@@ -37,55 +36,75 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-ROBUST_HANDLE_DECLARATION(EntityHandle);
-ROBUST_HANDLE_DEFINITION(EntityHandle, 128);
-
 #define SHOW( ENT_HND ) DLOG("nuclear",1) << "(" << ENT_HND.index << "," << ENT_HND.counter << ")" << std::endl
+
+using namespace wip;
+
+class AComponent: public Component
+{
+public:
+	COMPONENT_DECLARATION(AComponent);
+
+	int a;
+};
+COMPONENT_DEFINITION(AComponent);
 
 int main(int argc, char** argv)
 {
 	init_logger();
 
-	memory::HeapArea area(800_kB);
-	LinearArena arena(area, 512_kB, "LinArena");
-	EntityHandle::init_pool(arena);
+	memory::HeapArea area(1_MB);
 
-	EntityHandle aa = EntityHandle::acquire();
-	EntityHandle bb = EntityHandle::acquire();
-	EntityHandle cc = EntityHandle::acquire();
-	EntityHandle dd = EntityHandle::acquire();
+	ECS::init(area);
+	ECS::create_component_storage<AComponent>(area, 128);
+
+
+	EntityHandle aa = ECS::create_entity();
+	EntityHandle bb = ECS::create_entity();
+	EntityHandle cc = ECS::create_entity();
+	EntityHandle dd = ECS::create_entity();
 
 	SHOW(aa);
 	SHOW(bb);
 	SHOW(cc);
 	SHOW(dd) << std::endl;
 
-	aa.release();
-	bb.release();
-	EntityHandle ee = EntityHandle::acquire();
-	EntityHandle ff = EntityHandle::acquire();
+	DLOG("nuclear",1) << aa.is_valid() << std::endl;
+
+	ECS::destroy_entity(aa);
+	DLOG("nuclear",1) << aa.is_valid() << std::endl;
+
+	ECS::destroy_entity(bb);
+	EntityHandle ee = ECS::create_entity();
+	EntityHandle ff = ECS::create_entity();
 	SHOW(ee);
 	SHOW(ff);
 
-	ee.release();
-	EntityHandle g = EntityHandle::acquire();
+	ECS::destroy_entity(ee);
+	EntityHandle g = ECS::create_entity();
 	SHOW(g) << std::endl;
 
-	dd.release();
-	EntityHandle y = EntityHandle::acquire();
+	ECS::destroy_entity(dd);
+	EntityHandle y = ECS::create_entity();
 	SHOW(y);
-	y.release();
-	EntityHandle x = EntityHandle::acquire();
+	ECS::destroy_entity(y);
+	EntityHandle x = ECS::create_entity();
 	SHOW(x);
-	x.release();
-	EntityHandle w = EntityHandle::acquire();
+	ECS::destroy_entity(x);
+	EntityHandle w = ECS::create_entity();
 	SHOW(w) << std::endl;
 
-	ff.release();
-	EntityHandle v = EntityHandle::acquire();
+	DLOG("nuclear",1) << ff.is_valid() << std::endl;
+	ECS::destroy_entity(ff);
+	EntityHandle v = ECS::create_entity();
 	SHOW(v);
 
-	EntityHandle::destroy_pool(arena);
+	DLOG("nuclear",1) << aa.is_valid() << std::endl;
+	DLOG("nuclear",1) << ff.is_valid() << std::endl;
+	DLOG("nuclear",1) << v.is_valid() << std::endl;
+
+
+	ECS::shutdown();
 
 	return 0;
 }

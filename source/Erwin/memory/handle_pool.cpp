@@ -78,7 +78,6 @@ RobustHandlePool::HandleInternal RobustHandlePool::acquire()
 		HandleInternal  handle = dense[index];
 		HandleInternal* sparse = get_sparse_ptr();
 		sparse[handle.index] = {index, 0};
-		++dense[handle.index].counter;
 		return handle;
 	}
 
@@ -92,6 +91,7 @@ void RobustHandlePool::release(HandleInternal handle)
 	HandleInternal  internal = sparse[handle.index];
 	--count_;
 	++handle.counter;
+	++dense[handle.index].counter;
 	HandleInternal temp = dense[count_];
 	dense[count_] = handle;
 	sparse[temp.index] = internal;
