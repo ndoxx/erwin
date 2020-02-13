@@ -103,7 +103,7 @@ public:
 	inline uint64_t get_max_handles() const                    { return max_handles_; }
 
 	HandleInternal acquire();
-	void release(uint64_t handle);
+	void release(HandleInternal handle);
 	bool is_valid(HandleInternal handle) const;
 	void reset();
 

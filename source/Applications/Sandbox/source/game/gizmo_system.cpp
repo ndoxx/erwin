@@ -1,16 +1,16 @@
 #include "game/gizmo_system.h"
 #include "asset/bounding.h"
+#include "editor/scene.h"
 
 namespace erwin
 {
 
-GizmoSystem::GizmoSystem(EntityManager* manager):
-BaseType(manager)
+GizmoSystem::GizmoSystem()
 {
     gizmo_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     gizmo_ubo_    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
 	gizmo_material_ = {gizmo_shader_, {}, gizmo_ubo_, &gizmo_data_, sizeof(GizmoData)};
-    ForwardRenderer::register_material(gizmo_material_);
+    Renderer3D::register_material(gizmo_material_);
 
     EVENTBUS.subscribe(this, &GizmoSystem::on_ray_scene_query_event);
     selected_part_ = -1;
@@ -24,19 +24,18 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = Application::SCENE();
-    auto& ecs   = Application::ECS();
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return false;
 
     // Get selected entity's transform if any
-    EntityID selected = scene.get_selected_entity();
-    auto& selected_entity = ecs.get_entity(selected);
+    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
     	return false;
 
     glm::mat4 parent_model = transform->get_unscaled_model_matrix();
 
-    glm::mat4 VP_inv = glm::inverse(scene.camera_controller.get_camera().get_view_projection_matrix());
+    glm::mat4 VP_inv = glm::inverse(editor::Scene::camera_controller.get_camera().get_view_projection_matrix());
     Ray ray(event.coords, VP_inv);
 
 	constexpr float k_cyl_diameter = 0.01f;
@@ -59,7 +58,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
     	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter
     );
 
-    float nearest = scene.camera_controller.get_zfar();
+    float nearest = editor::Scene::camera_controller.get_zfar();
     Ray::CollisionData data;
 
     selected_part_ = -1;
@@ -88,11 +87,10 @@ void GizmoSystem::update(const GameClock& clock)
 
 void GizmoSystem::render()
 {
-    auto& scene = Application::SCENE();
-    auto& ecs   = Application::ECS();
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return;
 
-    // TODO: handle the "nothing selected" case...
-    auto& selected_entity = ecs.get_entity(scene.get_selected_entity());
+    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
     auto* transform = selected_entity.get_component<ComponentTransform3D>();
     if(transform == nullptr)
         return;
@@ -100,11 +98,11 @@ void GizmoSystem::render()
     // Draw gizmo
     gizmo_data_.selected = selected_part_;
 
-    ForwardRenderer::begin_line_pass(false);
-    ForwardRenderer::draw_mesh(CommonGeometry::get_vertex_array("origin_lines"_h), 
+    Renderer3D::begin_line_pass(false);
+    Renderer3D::draw_mesh(CommonGeometry::get_vertex_array("origin_lines"_h), 
     						   transform->get_unscaled_model_matrix(), 
     						   gizmo_material_);
-    ForwardRenderer::end_line_pass();
+    Renderer3D::end_line_pass();
 }
 
 } // namespace erwin

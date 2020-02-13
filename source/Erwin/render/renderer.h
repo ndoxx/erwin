@@ -200,13 +200,14 @@ struct DrawCall
 
 		ShaderHandle shader;
 		VertexArrayHandle VAO;
-		TextureHandle textures[k_max_texture_slots];
 	} data;
 	#pragma pack(pop)
 	uint32_t instance_count;
 	uint32_t dependencies[k_max_draw_call_dependencies];
+	TextureHandle textures[k_max_texture_slots];
 	DrawCallType type;
 	uint8_t dependency_count;
+	uint8_t texture_count;
 
 	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
@@ -214,6 +215,7 @@ struct DrawCall
 		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
 
 		dependency_count = 0;
+		texture_count    = 0;
 		type             = dc_type;
 		data.state_flags = state;
 		data.shader      = shader;
@@ -233,12 +235,21 @@ struct DrawCall
 		instance_count = value;
 	}
 
+	// Set a texture at next slot
+	inline void add_texture(TextureHandle tex)
+	{
+		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
+		W_ASSERT_FMT(texture_count<k_max_texture_slots-1, "Texture slot out of bounds: %u", texture_count);
+		textures[texture_count++] = tex;
+	}
+
 	// Set a texture at a given slot
 	inline void set_texture(TextureHandle tex, uint32_t slot=0)
 	{
 		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
-		data.textures[slot] = tex;
+		textures[slot] = tex;
+		++texture_count;
 	}
 };
 

@@ -54,7 +54,7 @@ static constexpr uint64_t k_invalid_robust_handle = 0xffffffffffffffff;
 		static void init_pool(LinearArena& arena); \
 		static void destroy_pool(LinearArena& arena); \
 		static HANDLE_NAME acquire(); \
-		inline void release()  { s_ppool_->release(index); } \
+		inline void release()  { s_ppool_->release({index,counter}); } \
 		inline bool is_valid() const { return s_ppool_->is_valid({index,counter}); } \
 		inline bool operator ==(const HANDLE_NAME& o) const { return index==o.index && counter==o.counter; } \
 		inline bool operator !=(const HANDLE_NAME& o) const { return index!=o.index || counter!=o.counter; } \

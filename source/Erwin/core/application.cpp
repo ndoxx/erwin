@@ -9,14 +9,14 @@
 #include "filesystem/filesystem.h"
 #include "render/render_device.h"
 #include "render/common_geometry.h"
-#include "render/global_ubos.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
-#include "render/renderer_forward.h"
-#include "render/renderer_deferred.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
+#include "entity/entity_manager.h"
+#include "editor/scene.h"
 
 #include <iostream>
 
@@ -37,8 +37,6 @@ namespace erwin
         // DO_ACTION( WindowMovedEvent )
 
 Application* Application::pinstance_ = nullptr;
-EntityManager Application::s_ECS;
-Scene Application::s_SCENE;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
 
@@ -89,18 +87,15 @@ Application::~Application()
     }
     {
         W_PROFILE_SCOPE("Entity Manager shutdown")
-        s_ECS.shutdown();
-        s_SCENE.shutdown();
+        ECS::shutdown();
     }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
         FramebufferPool::shutdown();
         PostProcessingRenderer::shutdown();
         Renderer2D::shutdown();
-        DeferredRenderer::shutdown();
-        ForwardRenderer::shutdown();
+        Renderer3D::shutdown();
         CommonGeometry::shutdown();
-        gu::shutdown();
         Renderer::shutdown();
     }
     {
@@ -263,17 +258,13 @@ bool Application::init()
         W_PROFILE_SCOPE("Renderer startup")
         FramebufferPool::init(window_->get_width(), window_->get_height());
         Renderer::init(s_storage.render_area);
-        gu::init();
         CommonGeometry::init();
         Renderer2D::init();
-        ForwardRenderer::init();
-        DeferredRenderer::init();
+        Renderer3D::init();
         PostProcessingRenderer::init();
 
         // Initialize asset manager
         AssetManager::init(s_storage.client_area);
-
-        s_SCENE.init();
     }
 
     {
@@ -370,25 +361,29 @@ void Application::run()
 	    if(game_clock_.is_paused())
 	        continue;
 
+        // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
         // Dispatch queued events
         EVENTBUS.dispatch();
 
+        // --- UPDATE PHASE ---
 		// For each layer, update
 		{
             W_PROFILE_SCOPE("Layer updates")
     		for(auto* layer: layer_stack_)
     			layer->update(game_clock_);
 		}
+        ECS::update(game_clock_);
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
-        // TMP: SCENE must have a directional light entity or this fails
-        Entity& dirlight_ent = s_ECS.get_entity(s_SCENE.directional_light);
+        // TMP: editor coupling + SCENE must have a directional light entity or this fails
+        Entity& dirlight_ent = ECS::get_entity(editor::Scene::directional_light);
         auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
-        gu::update_frame_data(s_SCENE.camera_controller.get_camera(), *dirlight);
+        Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), *dirlight);
 
+        // --- RENDER PHASE ---
         // For each layer, render
         if(!minimized_)
         {

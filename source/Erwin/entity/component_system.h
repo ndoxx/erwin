@@ -16,7 +16,7 @@
 		using BaseType = ComponentSystem<RequireAll<ComponentRenderable2D, ComponentTransform2D>>;
 
 	public:
-		RenderSystem2D(EntityManager* manager): BaseType(manager) {}
+		RenderSystem2D(): {}
 		virtual bool init() override final;
 
 		virtual void update(const GameClock& clock) override final
@@ -47,7 +47,7 @@ struct RequireAll
 	using Components         = eastl::vector<ComponentTuple/*, PooledEastlAllocator*/>;
 	using EntityIdToIndexMap = eastl::hash_map<EntityID, size_t, eastl::hash<EntityID>, eastl::equal_to<EntityID>/*, PooledEastlAllocator*/>;
 
-	static void filter(const Entity& entity, Components& components, EntityIdToIndexMap& entity_id_to_index_map)
+	static inline void filter(const Entity& entity, Components& components, EntityIdToIndexMap& entity_id_to_index_map)
 	{
 		// Loop through all entity's components
 		ComponentTuple ctuple;
@@ -70,7 +70,7 @@ struct RequireAll
 private:
 	// Recursive component types lookup
 	template<size_t INDEX, typename CompT, typename... CompArgsT>
-	static bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
+	static inline bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
 	{
 		if(CompT::ID == id)
 		{
@@ -83,7 +83,7 @@ private:
 
 	// Termination specialization of recursion
 	template<size_t INDEX>
-	static bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
+	static inline bool process_entity_component(ComponentID id, Component* pcmp, ComponentTuple& target_tuple)
 	{
 		return false;
 	}
@@ -95,15 +95,16 @@ template <typename FilterT>
 class ComponentSystem: public BaseComponentSystem
 {
 public:
-	explicit ComponentSystem(EntityManager* manager): BaseComponentSystem(manager) {}
+	explicit ComponentSystem(): BaseComponentSystem() {}
 	virtual ~ComponentSystem() = default;
 
 	virtual void on_entity_submitted(const Entity& entity) override final;
 	virtual void on_entity_destroyed(const Entity& entity) override final;
+	virtual void on_entity_updated(const Entity& entity) override final;
 
-	virtual void update(const GameClock& clock) override = 0;
+	virtual void update(const GameClock& clock) override { }
 	virtual void render() override { }
-	virtual bool init() = 0;
+	virtual bool init() { return true; }
 
 	using BaseType = ComponentSystem<FilterT>;
 
@@ -146,5 +147,12 @@ void ComponentSystem<FilterT>::on_entity_destroyed(const Entity& entity)
 	}
 }
 
+template <typename FilterT>
+void ComponentSystem<FilterT>::on_entity_updated(const Entity& entity)
+{
+	// TMP: For now, just clear and rebuild.
+	on_entity_destroyed(entity);
+	FilterT::filter(entity, components_, entity_id_to_index_map_);
+}
 
 } // namespace erwin

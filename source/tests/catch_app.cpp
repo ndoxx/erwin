@@ -10,16 +10,17 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 #include "memory/memory_utils.h"
+#include "entity/entity_manager.h"
 
 using namespace erwin;
 
 int main(int argc, char* argv[])
 {
-    WLOGGER(create_channel("thread", 3));
-    WLOGGER(create_channel("event", 3));
-	WLOGGER(create_channel("rng", 3));
-    WLOGGER(create_channel("memory", 3));
-	WLOGGER(create_channel("entity", 3));
+    WLOGGER(create_channel("thread", 0));
+    WLOGGER(create_channel("event", 0));
+	WLOGGER(create_channel("rng", 0));
+    WLOGGER(create_channel("memory", 0));
+	WLOGGER(create_channel("entity", 0));
     WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
     WLOGGER(set_single_threaded(true));
 

@@ -84,14 +84,16 @@ RobustHandlePool::HandleInternal RobustHandlePool::acquire()
 	return {INVALID_HANDLE, INVALID_HANDLE};
 }
 
-void RobustHandlePool::release(uint64_t handle)
+void RobustHandlePool::release(HandleInternal handle)
 {
 	HandleInternal* dense    = get_dense_ptr();
 	HandleInternal* sparse   = get_sparse_ptr();
-	HandleInternal  internal = sparse[handle];
+	HandleInternal  internal = sparse[handle.index];
 	--count_;
+	++handle.counter;
+	++dense[handle.index].counter;
 	HandleInternal temp = dense[count_];
-	dense[count_] = {handle, temp.counter++};
+	dense[count_] = handle;
 	sparse[temp.index] = internal;
 	dense[internal.index] = temp;
 }

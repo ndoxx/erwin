@@ -1,5 +1,6 @@
 #include "editor/layer_editor.h"
 #include "editor/font_awesome.h"
+#include "editor/editor_components.h"
 #include "editor/widget_scene_view.h"
 #include "editor/widget_scene_hierarchy.h"
 #include "editor/widget_inspector.h"
@@ -7,7 +8,7 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
-#include "core/application.h"
+#include "editor/scene.h"
 #include "debug/logger_thread.h"
 
 using namespace erwin;
@@ -111,8 +112,13 @@ void EditorLayer::on_attach()
 	config.MergeMode = true;
 	io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
 
+    // Create ECS component managers
+    auto& client_area = Application::get_client_area();
+    ECS::create_component_manager<ComponentEditorSelection>(client_area, 2);
 
 	// Load resources
+    Scene::init();
+
 	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
 
     FramebufferLayout layout =
@@ -160,6 +166,7 @@ void EditorLayer::on_detach()
 			delete widget;
 
 	Renderer::destroy(background_shader_);
+    Scene::shutdown();    
 }
 
 void EditorLayer::on_update(GameClock& clock)

@@ -1171,6 +1171,9 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 
 	cw.write(&dc.type);
 	cw.write(&dc.data);
+	cw.write(&dc.texture_count);
+	for(uint8_t ii=0; ii<dc.texture_count; ++ii)
+		cw.write(&dc.textures[ii]);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
 
@@ -1790,7 +1793,7 @@ void draw(memory::LinearBuffer<>& buf)
     DrawCall::DrawCallType type;
     DrawCall::Data data;
 	buf.read(&type);
-	buf.read(&data); // Read all in one go
+	buf.read(&data);
 
 	handle_state(data.state_flags);
 
@@ -1804,17 +1807,21 @@ void draw(memory::LinearBuffer<>& buf)
 		last_shader_index = data.shader.index;
 		std::fill(last_texture_index, last_texture_index+k_max_texture_slots, k_invalid_handle);
 	}
-	uint32_t slot = 0;
-	while(data.textures[slot].index != k_invalid_handle && slot < k_max_texture_slots) // Don't use is_valid() here, we only want to discriminate default initialized data
+
+	uint8_t texture_count;
+	buf.read(&texture_count);
+	for(uint8_t ii=0; ii<texture_count; ++ii)
 	{
+		TextureHandle hnd;
+		buf.read(&hnd);
+
 		// Avoid texture switching if not necessary
-		if(data.textures[slot].index != last_texture_index[slot])
+		if(hnd.index != last_texture_index[ii])
 		{
-			auto& texture = *s_storage.textures[data.textures[slot].index];
-			shader.attach_texture_2D(texture, slot);
-			last_texture_index[slot] = data.textures[slot].index;
+			auto& texture = *s_storage.textures[hnd.index];
+			shader.attach_texture_2D(texture, ii);
+			last_texture_index[ii] = hnd.index;
 		}
-		++slot;
 	}
 
 	// * Execute draw call

@@ -1,24 +1,23 @@
 #include "game/bounding_box_system.h"
 #include "asset/bounding.h"
+#include "editor/scene.h"
 
 namespace erwin
 {
 
-BoundingBoxSystem::BoundingBoxSystem(EntityManager* manager): BaseType(manager)
+BoundingBoxSystem::BoundingBoxSystem()
 {
     EVENTBUS.subscribe(this, &BoundingBoxSystem::on_ray_scene_query_event);
 }
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = Application::SCENE();
-
-    glm::mat4 VP_inv = glm::inverse(scene.camera_controller.get_camera().get_view_projection_matrix());
+    glm::mat4 VP_inv = glm::inverse(editor::Scene::camera_controller.get_camera().get_view_projection_matrix());
     Ray ray(event.coords, VP_inv);
 
     // Perform a ray scene query
-    EntityID selected = scene.entities[scene.selected_entity_idx].id;
-    float nearest = scene.camera_controller.get_zfar();
+    EntityID selected = editor::Scene::selected_entity;
+    float nearest = editor::Scene::camera_controller.get_zfar();
     
     Ray::CollisionData data;
 	for(auto&& cmp_tuple: components_)
@@ -33,7 +32,8 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
             }
         }
 	}
-	scene.select(selected);
+    if(selected != k_invalid_entity_id)
+	   editor::Scene::select(selected);
 
 	return true;
 }
@@ -50,18 +50,19 @@ void BoundingBoxSystem::update(const GameClock& clock)
 
 void BoundingBoxSystem::render()
 {
-    auto& scene = Application::SCENE();
+    if(editor::Scene::selected_entity == k_invalid_entity_id)
+        return;
 
-    ForwardRenderer::begin_line_pass();
+    Renderer3D::begin_line_pass();
     for(auto&& cmp_tuple: components_)
     {
         ComponentOBB* OBB = eastl::get<ComponentOBB*>(cmp_tuple);
-        if(OBB->get_parent_entity() == scene.get_selected_entity())
-            ForwardRenderer::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
+        if(OBB->get_parent_entity() == editor::Scene::selected_entity)
+            Renderer3D::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
         else if(OBB->display) // TODO: || editor_show_OBBs
-            ForwardRenderer::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});
+            Renderer3D::draw_cube(glm::scale(OBB->model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});
     }
-    ForwardRenderer::end_line_pass();
+    Renderer3D::end_line_pass();
 }
 
 } // namespace erwin
