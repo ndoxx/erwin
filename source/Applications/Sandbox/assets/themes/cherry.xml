@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Theme>
+    <vec4 name="ImGuiCol_Text"                  value="(0.860,0.930,0.890,0.78)"/>
+    <vec4 name="ImGuiCol_TextDisabled"          value="(0.860,0.930,0.890,0.28)"/>
+    <vec4 name="ImGuiCol_WindowBg"              value="(0.13,0.14,0.17,1.00)"/>
+    <vec4 name="ImGuiCol_ChildWindowBg"         value="(0.200,0.220,0.270,0.58)"/>
+    <vec4 name="ImGuiCol_PopupBg"               value="(0.200,0.220,0.270,0.9)"/>
+    <vec4 name="ImGuiCol_Border"                value="(0.31,0.31,1.00,0.00)"/>
+    <vec4 name="ImGuiCol_BorderShadow"          value="(0.00,0.00,0.00,0.00)"/>
+    <vec4 name="ImGuiCol_FrameBg"               value="(0.200,0.220,0.270,1.00)"/>
+    <vec4 name="ImGuiCol_FrameBgHovered"        value="(0.455,0.198,0.301,0.78)"/>
+    <vec4 name="ImGuiCol_FrameBgActive"         value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_TitleBg"               value="(0.232,0.201,0.271,1.00)"/>
+    <vec4 name="ImGuiCol_TitleBgActive"         value="(0.502,0.075,0.256,1.00)"/>
+    <vec4 name="ImGuiCol_TitleBgCollapsed"      value="(0.200,0.220,0.270,0.75)"/>
+    <vec4 name="ImGuiCol_MenuBarBg"             value="(0.200,0.220,0.270,0.47)"/>
+    <vec4 name="ImGuiCol_ScrollbarBg"           value="(0.200,0.220,0.270,1.00)"/>
+    <vec4 name="ImGuiCol_ScrollbarGrab"         value="(0.09,0.15,0.16,1.00)"/>
+    <vec4 name="ImGuiCol_ScrollbarGrabHovered"  value="(0.455,0.198,0.301,0.78)"/>
+    <vec4 name="ImGuiCol_ScrollbarGrabActive"   value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_CheckMark"             value="(0.71,0.22,0.27,1.00)"/>
+    <vec4 name="ImGuiCol_SliderGrab"            value="(0.47,0.77,0.83,0.14)"/>
+    <vec4 name="ImGuiCol_SliderGrabActive"      value="(0.71,0.22,0.27,1.00)"/>
+    <vec4 name="ImGuiCol_Button"                value="(0.47,0.77,0.83,0.14)"/>
+    <vec4 name="ImGuiCol_ButtonHovered"         value="(0.455,0.198,0.301,0.86)"/>
+    <vec4 name="ImGuiCol_ButtonActive"          value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_Header"                value="(0.455,0.198,0.301,0.76)"/>
+    <vec4 name="ImGuiCol_HeaderHovered"         value="(0.455,0.198,0.301,0.86)"/>
+    <vec4 name="ImGuiCol_HeaderActive"          value="(0.502,0.075,0.256,1.00)"/>
+    <vec4 name="ImGuiCol_Column"                value="(0.14,0.16,0.19,1.00)"/>
+    <vec4 name="ImGuiCol_ColumnHovered"         value="(0.455,0.198,0.301,0.78)"/>
+    <vec4 name="ImGuiCol_ColumnActive"          value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_ResizeGrip"            value="(0.47,0.77,0.83,0.04)"/>
+    <vec4 name="ImGuiCol_ResizeGripHovered"     value="(0.455,0.198,0.301,0.78)"/>
+    <vec4 name="ImGuiCol_ResizeGripActive"      value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_PlotLines"             value="(0.860,0.930,0.890,0.63)"/>
+    <vec4 name="ImGuiCol_PlotLinesHovered"      value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_PlotHistogram"         value="(0.860,0.930,0.890,0.63)"/>
+    <vec4 name="ImGuiCol_PlotHistogramHovered"  value="(0.455,0.198,0.301,1.00)"/>
+    <vec4 name="ImGuiCol_TextSelectedBg"        value="(0.455,0.198,0.301,0.43)"/>
+    <vec4 name="ImGuiCol_ModalWindowDarkening"  value="(0.200,0.220,0.270,0.73)"/>
+
+    <!--
+	    style.WindowPadding            = ImVec2(6, 4);
+	    style.WindowRounding           = 0.0f;
+	    style.FramePadding             = ImVec2(5, 2);
+	    style.FrameRounding            = 3.0f;
+	    style.ItemSpacing              = ImVec2(7, 1);
+	    style.ItemInnerSpacing         = ImVec2(1, 1);
+	    style.TouchExtraPadding        = ImVec2(0, 0);
+	    style.IndentSpacing            = 6.0f;
+	    style.ScrollbarSize            = 12.0f;
+	    style.ScrollbarRounding        = 16.0f;
+	    style.GrabMinSize              = 20.0f;
+	    style.GrabRounding             = 2.0f;
+	    style.WindowTitleAlign.x = 0.50f;
+	    style.Colors[ImGuiCol_Border] = ImVec4(0.539f, 0.479f, 0.255f, 0.162f);
+	    style.FrameBorderSize = 0.0f;
+	    style.WindowBorderSize = 1.0f;
+    -->
+</Theme>

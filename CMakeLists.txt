@@ -181,7 +181,9 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_draw.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_utils.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp)
+    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/theme.cpp
+  )
 
 add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)

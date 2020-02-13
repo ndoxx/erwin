@@ -9,6 +9,7 @@
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
 #include "editor/scene.h"
+#include "imgui/theme.h"
 #include "debug/logger_thread.h"
 
 using namespace erwin;
@@ -24,54 +25,6 @@ static struct
 	uint32_t settings_menu;
 	uint32_t view_menu;
 } s_storage;
-
-static void set_gui_style()
-{
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
-
-	// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-	ImGuiStyle& style = ImGui::GetStyle();
-	ImGuiIO& io = ImGui::GetIO();
-	if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		style.WindowRounding = 0.0f;
-		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-	}
-	else
-	{
-    	style.WindowRounding = 5.0f;
-	}
-
-    ImVec4 neutral(0.05f, 0.3f, 0.7f, 1.0f);
-    ImVec4 active(1.f, 0.5f, 0.05f, 1.0f);
-    ImVec4 hovered(0.6f, 0.6f, 0.6f, 1.0f);
-    ImVec4 inactive(0.05f, 0.7f, 0.3f, 0.75f);
-
-    style.Colors[ImGuiCol_Border] = ImVec4(0.3f, 0.3f, 0.3f, 1.f);
-    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-
-    style.Colors[ImGuiCol_TitleBg] = neutral;
-    style.Colors[ImGuiCol_TitleBgCollapsed] = inactive;
-    style.Colors[ImGuiCol_TitleBgActive] = active;
-
-    style.Colors[ImGuiCol_Header] = neutral;
-    style.Colors[ImGuiCol_HeaderHovered] = hovered;
-    style.Colors[ImGuiCol_HeaderActive] = active;
-
-    style.Colors[ImGuiCol_ResizeGrip] = neutral;
-    style.Colors[ImGuiCol_ResizeGripHovered] = hovered;
-    style.Colors[ImGuiCol_ResizeGripActive] = active;
-
-    style.Colors[ImGuiCol_Button] = neutral;
-    style.Colors[ImGuiCol_ButtonHovered] = hovered;
-    style.Colors[ImGuiCol_ButtonActive] = active;
-
-    style.Colors[ImGuiCol_SliderGrab] = hovered;
-    style.Colors[ImGuiCol_SliderGrabActive] = active;
-
-    style.Colors[ImGuiCol_PlotLines] = ImVec4(0.1f, 0.8f, 0.2f, 1.0f);
-}
 
 static void set_gui_behavior()
 {
@@ -100,7 +53,8 @@ void EditorLayer::add_widget(uint32_t menu, Widget* widget)
 
 void EditorLayer::on_attach()
 {
-	set_gui_style();
+    editor::load_theme(filesystem::get_asset_dir() / "themes/erwin_default.xml");
+    // editor::load_theme(filesystem::get_asset_dir() / "themes/cherry.xml");
 	set_gui_behavior();
 
 	// Merge icon font
