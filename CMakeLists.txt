@@ -216,6 +216,7 @@ target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/task
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
+target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/entt/src")
 set_target_properties(erwin PROPERTIES PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/source/erwin.h")
 set_target_properties(erwin PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(erwin PROPERTIES SOVERSION 1)
