@@ -44,19 +44,18 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        erwin::visit_entity(Scene::registry, Scene::selected_entity, W_METAFUNC_INSPECTOR_GUI);
-
-        /*ECS::inspector_GUI(Scene::selected_entity);
-        for(auto&& [cid, pcmp]: entity.get_components())
+        // erwin::visit_entity(Scene::registry, Scene::selected_entity, W_METAFUNC_INSPECTOR_GUI);
+        erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint64_t reflected_type, void* data)
         {
+            const char* component_name = entt::resolve(reflected_type).prop("name"_hs).value().cast<const char*>();
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-            if(ImGui::TreeNode(pcmp->get_debug_name().c_str()))
+            if(ImGui::TreeNode(component_name))
             {
-                pcmp->inspector_GUI();
+                entt::resolve(reflected_type).func(W_METAFUNC_INSPECTOR_GUI).invoke(entt::meta_handle(), data);
                 ImGui::TreePop();
             }
             ImGui::Separator();
-        }*/
+        });
 
         ImGui::TreePop();
     }

@@ -6,15 +6,20 @@
 namespace erwin
 {
 
-class ComponentRenderablePBR: public Component
+struct ComponentRenderablePBR
 {
-public:
-	COMPONENT_DECLARATION(ComponentRenderablePBR);
+	VertexArrayHandle vertex_array;
+	Material material;
+
+	struct MaterialData
+	{
+		glm::vec4 tint;
+		int flags;
+		float emissive_scale;
+	} material_data;
+
 
 	ComponentRenderablePBR();
-
-	virtual bool init(void* description) override final;
-	virtual void inspector_GUI() override final;
 
 	inline void set_emissive(float intensity)
 	{
@@ -26,29 +31,13 @@ public:
 	{
 		return bool(material_data.flags & (1<<0));
 	}
-
-	VertexArrayHandle vertex_array;
-	Material material;
-
-	struct MaterialData
-	{
-		glm::vec4 tint;
-		int flags;
-		float emissive_scale;
-	} material_data;
 };
 
+template <> [[maybe_unused]] void inspector_GUI<ComponentRenderablePBR>(void* data);
 
-class ComponentRenderableDirectionalLight: public Component
+
+struct ComponentRenderableDirectionalLight
 {
-public:
-	COMPONENT_DECLARATION(ComponentRenderableDirectionalLight);
-
-	ComponentRenderableDirectionalLight();
-
-	virtual bool init(void* description) override final;
-	virtual void inspector_GUI() override final;
-
 	Material material;
 
 	struct MaterialData
@@ -57,6 +46,11 @@ public:
 		float scale;
 		float brightness;
 	} material_data;
+
+
+	ComponentRenderableDirectionalLight();
 };
+
+template <> [[maybe_unused]] void inspector_GUI<ComponentRenderableDirectionalLight>(void* data);
 
 } // namespace erwin

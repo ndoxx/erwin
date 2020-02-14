@@ -28,8 +28,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
         return false;
 
     // Get selected entity's transform if any
-    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
-    auto* transform = selected_entity.get_component<ComponentTransform3D>();
+    auto* transform = editor::Scene::registry.try_get<ComponentTransform3D>(editor::Scene::selected_entity);
     if(transform == nullptr)
     	return false;
 
@@ -80,18 +79,12 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 	return (selected_part_ != -1);
 }
 
-void GizmoSystem::update(const GameClock& clock)
-{
-
-}
-
 void GizmoSystem::render()
 {
     if(editor::Scene::selected_entity == k_invalid_entity_id)
         return;
 
-    auto& selected_entity = ECS::get_entity(editor::Scene::selected_entity);
-    auto* transform = selected_entity.get_component<ComponentTransform3D>();
+    auto* transform = editor::Scene::registry.try_get<ComponentTransform3D>(editor::Scene::selected_entity);
     if(transform == nullptr)
         return;
 

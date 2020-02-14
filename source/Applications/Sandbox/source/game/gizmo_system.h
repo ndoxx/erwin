@@ -2,22 +2,18 @@
 
 #include "erwin.h"
 #include "editor/scene.h"
-#include "entity/component_transform.h"
-#include "entity/component_bounding_box.h"
 #include "event/window_events.h"
 
 namespace erwin
 {
 
-class GizmoSystem: public ComponentSystem<RequireAll<ComponentOBB>>
+class GizmoSystem
 {
 public:
 	GizmoSystem();
-	virtual ~GizmoSystem();
+	~GizmoSystem();
 
-	virtual void update(const GameClock& clock) override final;
-	virtual void render() override final;
-
+	void render();
 	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
 
 private:

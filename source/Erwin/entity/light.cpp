@@ -12,8 +12,6 @@ void inspector_GUI<ComponentDirectionalLight>(void* data)
     static float inclination_deg   = 90.0f;
     static float arg_periapsis_deg = 160.0f;
 
-    ImGui::TextColored({0.f,0.75f,1.f,1.f}, "ComponentDirectionalLight");
-
     if(ImGui::SliderFloat("Inclination", &inclination_deg, 0.0f, 180.0f))
         cmp->set_position(inclination_deg, arg_periapsis_deg);
     if(ImGui::SliderFloat("Arg. periapsis", &arg_periapsis_deg, 0.0f, 360.0f))

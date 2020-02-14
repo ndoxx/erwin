@@ -1,27 +1,22 @@
 #pragma once
 
 #include <type_traits>
-#include <map>
 #include "../../../git/entt/src/entt/entt.hpp" // TMP
+#include "debug/logger.h"
 
 namespace erwin
 {
-namespace detail
-{
-	// Associate a component type ID to a reflection hash string
-	static std::map<uint64_t, uint64_t> s_reflection_map;
-} // namespace detail
 namespace traits
 {
 	template <typename FuncType>
 	using EnableIfIsInvocable = typename std::enable_if<std::is_invocable<FuncType>::type>;
 } // namespace traits
 
+// Associate a component type ID to a reflection hash string
+extern void add_reflection(uint64_t type_id, uint64_t reflected_type);
+
 // Obtain reflection hash string from type ID
-static inline uint64_t reflect(uint64_t type_id)
-{
-	return detail::s_reflection_map.at(type_id);
-}
+extern uint64_t reflect(uint64_t type_id);
 
 // To get a component from its associated meta-object
 template <typename ComponentType>
@@ -34,16 +29,18 @@ static ComponentType& get_component(entt::registry& reg, entt::entity e)
 // The opaque pointer is expected to be a component instance pointer, specialization is 
 // responsible for the casting operation.
 template <typename ComponentType>
-static void inspector_GUI(void*) {}
+extern void inspector_GUI(void*) {}
 
 // For each component in an entity, invoke a function or any callable type taking
 // the component type ID and an opaque void* pointer to the component's instance as parameters
-template <typename FuncType, typename = traits::EnableIfIsInvocable<FuncType>>
+template <typename FuncType/*, typename = traits::EnableIfIsInvocable<FuncType>*/>
 static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& func)
 {
 	reg.visit(e, [&reg,&func,e](uint64_t type_id)
 	{
 		uint64_t reflected_type = reflect(type_id);
+		if(reflected_type==0)
+			return;
 		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke(entt::meta_handle(), std::ref(reg), e);
 		if(any)
 			func(reflected_type, any.data());
@@ -58,6 +55,8 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, uint64_t me
 	reg.visit(e, [&reg,meta_func,e](uint64_t type_id)
 	{
 		uint64_t reflected_type = reflect(type_id);
+		if(reflected_type==0)
+			return;
 		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke(entt::meta_handle(), std::ref(reg), e);
 		if(any)
 			entt::resolve(reflected_type).func(meta_func).invoke(entt::meta_handle(), any.data());
@@ -79,4 +78,4 @@ constexpr EntityID k_invalid_entity_id = entt::null;
 		.prop("name"_hs, #_type ) \
 		.func<&erwin::get_component< _type >, entt::as_alias_t>(W_METAFUNC_GET_COMPONENT) \
 		.func<&erwin::inspector_GUI< _type >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
-	erwin::detail::s_reflection_map.insert({entt::type_info< _type >::id(),  #_type ##_hs})
+	erwin::add_reflection(entt::type_info< _type >::id(), #_type ##_hs)

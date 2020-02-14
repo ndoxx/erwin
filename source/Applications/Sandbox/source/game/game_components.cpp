@@ -3,39 +3,35 @@
 namespace erwin
 {
 
-COMPONENT_DEFINITION(ComponentRenderablePBR);
 ComponentRenderablePBR::ComponentRenderablePBR()
 {
 	material.data = &material_data;
 	material.data_size = sizeof(MaterialData);
 }
-bool ComponentRenderablePBR::init(void* description)
+
+template <>
+void inspector_GUI<ComponentRenderablePBR>(void* data)
 {
+    ComponentRenderablePBR* cmp = static_cast<ComponentRenderablePBR*>(data);
 
-	return true;
-}
-void ComponentRenderablePBR::inspector_GUI()
-{
-    ImGui::ColorEdit3("Tint", (float*)&material_data.tint);
+    ImGui::ColorEdit3("Tint", (float*)&cmp->material_data.tint);
 
-    if(is_emissive())
-    	ImGui::SliderFloat("Emissivity", &material_data.emissive_scale, 0.1f, 10.0f);
+    if(cmp->is_emissive())
+    	ImGui::SliderFloat("Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.0f);
 }
 
-COMPONENT_DEFINITION(ComponentRenderableDirectionalLight);
 ComponentRenderableDirectionalLight::ComponentRenderableDirectionalLight()
 {
 	material.data = &material_data;
 	material.data_size = sizeof(MaterialData);
 }
-bool ComponentRenderableDirectionalLight::init(void* description)
-{
 
-	return true;
-}
-void ComponentRenderableDirectionalLight::inspector_GUI()
+template <>
+void inspector_GUI<ComponentRenderableDirectionalLight>(void* data)
 {
-    ImGui::SliderFloat("App. diameter", &material_data.scale, 0.1f, 0.4f);
+    ComponentRenderableDirectionalLight* cmp = static_cast<ComponentRenderableDirectionalLight*>(data);
+
+    ImGui::SliderFloat("App. diameter", &cmp->material_data.scale, 0.1f, 0.4f);
 }
 
 } // namespace erwin
