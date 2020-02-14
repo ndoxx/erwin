@@ -25,9 +25,10 @@
 #include "asset/asset_manager.h"
 #include "asset/material.h"
 
-#include "entity/entity_manager.h"
-#include "entity/component.h"
-#include "entity/component_system.h"
+#include "entity/reflection.h"
+#include "entity/light.h"
+#include "entity/component_transform.h"
+#include "entity/component_bounding_box.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

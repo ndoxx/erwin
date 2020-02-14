@@ -1,7 +1,8 @@
 #include "editor/widget_scene_hierarchy.h"
 #include "editor/font_awesome.h"
 #include "editor/scene.h"
-#include "entity/entity_manager.h"
+#include "editor/editor_components.h"
+#include "entity/reflection.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -28,18 +29,21 @@ void SceneHierarchyWidget::on_imgui_render()
     ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
     
     EntityID new_selection = k_invalid_entity_id;
-    for(int ii=0; ii<editor::Scene::entities.size(); ++ii)
+
+    auto view = Scene::registry.view<ComponentEditorDescription>();
+    int ii = 0;
+    for(const entt::entity e: view)
     {
-    	EntityID current_entity = editor::Scene::entities[ii];
-        auto& ent = ECS::get_entity(current_entity);
+        const ComponentEditorDescription& desc = view.get<ComponentEditorDescription>(e);
 
-    	ImGuiTreeNodeFlags flags = node_flags;
-    	if(current_entity == editor::Scene::selected_entity)
-    		flags |= ImGuiTreeNodeFlags_Selected;
+        ImGuiTreeNodeFlags flags = node_flags;
+        if(e == editor::Scene::selected_entity)
+            flags |= ImGuiTreeNodeFlags_Selected;
 
-		ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", ent.get_icon(), ent.get_name().c_str());
-		if(ImGui::IsItemClicked())
-			new_selection = current_entity;
+        ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+        if(ImGui::IsItemClicked())
+            new_selection = e;
+        ++ii;
     }
 
     if(new_selection != k_invalid_entity_id)

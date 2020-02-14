@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entity/component.h"
+#include "entity/reflection.h"
 #include "asset/bounding.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -8,21 +8,23 @@
 namespace erwin
 {
 
-class ComponentOBB: public Component
+struct ComponentOBB
 {
-public:
-	COMPONENT_DECLARATION(ComponentOBB);
-
     std::array<glm::vec3, 8> vertices_w; // Vertices in world space
-    glm::vec3 offset;
-    glm::vec3 half;
-    glm::mat4 model_matrix;
+    glm::vec3 offset       = {0.f,0.f,0.f};
+    glm::vec3 half         = {0.f,0.f,0.f};
+    glm::mat4 model_matrix = glm::mat4(1.f);
     Extent extent_m; // Extent in model space
-    float scale;
-    bool display;
+    float scale            = 1.f;
+    bool display           = false;
 
-    ComponentOBB();
     ComponentOBB(const Extent& extent);
+
+    inline void init(const Extent& extent)
+    {
+        extent_m = extent;
+        std::tie(offset, half) = bound::to_vectors(extent_m);
+    }
 
     inline void update(const glm::mat4& parent_model_matrix, float _scale)
     {
@@ -33,15 +35,8 @@ public:
     	for(int ii=0; ii<8; ++ii)
     		vertices_w[ii] = model_matrix * glm::vec4(vertices_w[ii], 1.f);
     }
-
-    inline void init(const Extent& extent)
-    {
-    	extent_m = extent;
-		std::tie(offset, half) = bound::to_vectors(extent_m);
-    }
-
-	virtual bool init(void* description) override final;
-	virtual void inspector_GUI() override final;
 };
+
+template <> [[maybe_unused]] void inspector_GUI<ComponentOBB>(void* data);
 
 } // namespace erwin

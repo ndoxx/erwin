@@ -1,7 +1,7 @@
-#include "scene.h"
-#include "font_awesome.h"
+#include "editor/scene.h"
+#include "editor/font_awesome.h"
+#include "editor/editor_components.h"
 #include "debug/logger.h"
-#include "entity/entity_manager.h"
 
 using namespace erwin;
 
@@ -12,6 +12,7 @@ EntityID Scene::selected_entity;
 EntityID Scene::directional_light;
 std::vector<EntityID> Scene::entities;
 FreeflyController Scene::camera_controller;
+entt::registry Scene::registry;
 
 void Scene::init()
 {
@@ -27,16 +28,12 @@ void Scene::shutdown()
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
-	auto& ent = ECS::get_entity(entity);
-	ent.set_name(name);
-	if(_icon != nullptr)
-		ent.set_icon(_icon);
-	else
-		ent.set_icon(ICON_FA_CUBE);
+	ComponentEditorDescription desc = {name, (_icon) ? _icon : ICON_FA_CUBE, ""};
+	registry.assign<ComponentEditorDescription>(entity, desc);
 
 	entities.push_back(entity);
 
-	DLOG("editor",1) << "[Scene] Added entity: " << name << " ID: " << entity << std::endl;
+	DLOG("editor",1) << "[Scene] Added entity: " << name << std::endl;
 }
 
 void Scene::select(EntityID entity)

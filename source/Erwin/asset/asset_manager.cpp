@@ -6,6 +6,7 @@
 #include "render/renderer_2d.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
+#include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
 
 namespace erwin
 {

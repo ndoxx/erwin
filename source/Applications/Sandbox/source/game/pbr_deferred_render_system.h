@@ -7,15 +7,22 @@
 namespace erwin
 {
 
-class PBRDeferredRenderSystem: public ComponentSystem<RequireAll<ComponentTransform3D, ComponentRenderablePBR>>
+class PBRDeferredRenderSystem
 {
 public:
-	PBRDeferredRenderSystem() = default;
-	virtual ~PBRDeferredRenderSystem() = default;
-
-	virtual void update(const GameClock& clock) override final;
-	virtual void render() override final;
+	void render()
+	{
+		Renderer3D::begin_deferred_pass();
+	    auto view = editor::Scene::registry.view<ComponentTransform3D,ComponentRenderablePBR>();
+	    for(const entt::entity e: view)
+	    {
+	        const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
+	        ComponentRenderablePBR& renderable = view.get<ComponentRenderablePBR>(e);
+			renderable.material.data = &renderable.material_data; // Dirty shit
+			Renderer3D::draw_mesh(renderable.vertex_array, transform.get_model_matrix(), renderable.material);
+		}
+		Renderer3D::end_deferred_pass();
+	}
 };
-
 
 } // namespace erwin

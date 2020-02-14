@@ -4,19 +4,6 @@
 namespace erwin
 {
 
-COMPONENT_DEFINITION(ComponentOBB);
-bool ComponentOBB::init(void* description)
-{
-
-	return true;
-}
-
-ComponentOBB::ComponentOBB():
-display(false)
-{
-
-}
-
 ComponentOBB::ComponentOBB(const Extent& extent):
 extent_m(extent),
 display(false)
@@ -30,12 +17,14 @@ static const char* s_vertex_name[8] =
 	"RBB", "RTB", "LTB", "LBB"
 };
 
-void ComponentOBB::inspector_GUI()
+template <> 
+void inspector_GUI<ComponentOBB>(void* data)
 {
-    ImGui::Checkbox("Display", &display);
+    ComponentOBB* cmp = static_cast<ComponentOBB*>(data);
+    ImGui::Checkbox("Display", &cmp->display);
 
     for(int ii=0; ii<8; ++ii)
-    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], vertices_w[ii].x, vertices_w[ii].y, vertices_w[ii].z);
+    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], cmp->vertices_w[ii].x, cmp->vertices_w[ii].y, cmp->vertices_w[ii].z);
 }
 
 

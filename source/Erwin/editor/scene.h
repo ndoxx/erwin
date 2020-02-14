@@ -1,7 +1,7 @@
 #pragma once
 
 #include "input/freefly_camera_controller.h"
-#include "entity/entity_types.h"
+#include "entity/reflection.h"
 
 namespace editor
 {
@@ -19,6 +19,8 @@ public:
 	static erwin::EntityID directional_light;
 	static std::vector<erwin::EntityID> entities;
 	static erwin::FreeflyController camera_controller;
+
+	static entt::registry registry;
 };
 
 } // namespace editor

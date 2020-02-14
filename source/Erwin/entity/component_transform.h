@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entity/component.h"
+#include "entity/reflection.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtx/quaternion.hpp"
@@ -8,32 +8,22 @@
 namespace erwin
 {
 
-class ComponentTransform2D: public Component
+struct ComponentTransform2D
 {
-public:
-	COMPONENT_DECLARATION(ComponentTransform2D);
-
-	glm::vec3 position;
-	float angle;
-	float uniform_scale;
-
-	ComponentTransform2D(): position(0.f), angle(0.f), uniform_scale(1.f) {}
-	ComponentTransform2D(const glm::vec3& position, float angle, float uniform_scale): position(position), angle(angle), uniform_scale(uniform_scale) {}
-	virtual bool init(void* description) override final;
-	virtual void inspector_GUI() override final;
+	glm::vec3 position  = {0.f,0.f,0.f};
+	float angle         = 0.f;
+	float uniform_scale = 1.f;
 };
 
-class ComponentTransform3D: public Component
+// template <> void inspector_GUI<ComponentTransform2D>(void* data);
+
+struct ComponentTransform3D
 {
-public:
-	COMPONENT_DECLARATION(ComponentTransform3D);
-
-	glm::vec3 position;
-	glm::vec3 euler;
+	glm::vec3 position  = {0.f,0.f,0.f};
+	glm::vec3 euler     = {0.f,0.f,0.f};
 	glm::quat rotation;
-	float uniform_scale;
+	float uniform_scale = 1.f;
 
-	ComponentTransform3D(): position(0.f), rotation({0.f,0.f,0.f}), uniform_scale(1.f) {}
 	// Euler angles are in the order: pitch, yaw, roll
 	ComponentTransform3D(const glm::vec3& position, const glm::vec3& euler_angles, float uniform_scale):
 	position(position),
@@ -41,6 +31,14 @@ public:
 	rotation(glm::radians(euler)),
 	uniform_scale(uniform_scale)
 	{}
+
+	inline void init(const glm::vec3& _position, const glm::vec3& _euler_angles, float _uniform_scale)
+	{
+		position      = _position;
+		euler         = _euler_angles;
+		rotation      = glm::quat(glm::radians(euler));
+		uniform_scale = _uniform_scale;
+	}
 
 	inline void set_rotation(const glm::vec3& euler_angles)
 	{
@@ -60,9 +58,9 @@ public:
 		return glm::translate(glm::mat4(1.f), position) 
 			 * glm::toMat4(rotation);
 	}
-
-	virtual bool init(void* description) override final;
-	virtual void inspector_GUI() override final;
 };
+
+template <> [[maybe_unused]] void inspector_GUI<ComponentTransform3D>(void* data);
+
 
 } // namespace erwin
