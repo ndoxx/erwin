@@ -97,12 +97,9 @@ set(SRC_MATH
   )
 
 set(SRC_ENTITY
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/entity_manager.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_bounding_box.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/entity/light.cpp
-
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/wip/ecs.cpp
   )
 
 set(SRC_DEBUG
@@ -150,7 +147,6 @@ set(SRC_INPUT
 set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/layer_editor.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/editor_components.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp

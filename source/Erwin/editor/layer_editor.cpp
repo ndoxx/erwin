@@ -66,9 +66,8 @@ void EditorLayer::on_attach()
 	config.MergeMode = true;
 	io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
 
-    // Create ECS component managers
-    auto& client_area = Application::get_client_area();
-    ECS::create_component_manager<ComponentEditorSelection>(client_area, 2);
+    // Reflect editor components
+    REFLECT_COMPONENT(ComponentEditorDescription);
 
 	// Load resources
     Scene::init();

@@ -1,21 +1,16 @@
 #pragma once
 
-#include "erwin.h"
-#include "glm/glm.hpp"
+#include <string>
+#include "entity/reflection.h"
 
 namespace erwin
 {
 
-class ComponentEditorSelection: public Component
+struct ComponentEditorDescription
 {
-public:
-	COMPONENT_DECLARATION(ComponentEditorSelection);
-
-	ComponentEditorSelection();
-
-	virtual bool init(void* description) override final { return true; }
-	virtual void inspector_GUI() override final { }
-
+    std::string name;
+    std::string icon;
+    std::string description;
 };
 
 } // namespace erwin

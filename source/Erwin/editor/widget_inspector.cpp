@@ -1,6 +1,7 @@
 #include "editor/widget_inspector.h"
 #include "editor/scene.h"
-#include "entity/entity_manager.h"
+#include "editor/editor_components.h"
+#include "entity/reflection.h"
 #include "render/renderer_pp.h"
 #include "imgui.h"
 
@@ -28,13 +29,13 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Properties"))
     {
-        ImGui::Text("EntityID: %lu", Scene::selected_entity);
+        ImGui::Text("EntityID: %u", Scene::selected_entity);
 
         // TODO: Use a resize callback to wire the InputText to the string directly
-        auto& ent = ECS::get_entity(Scene::selected_entity);
+        auto& desc = Scene::registry.get<ComponentEditorDescription>(Scene::selected_entity);
         static char name_buf[128] = "";
         if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
-            ent.set_name(name_buf);
+            desc.name = name_buf;
 
         ImGui::TreePop();
         ImGui::Separator();
@@ -43,7 +44,20 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        ECS::inspector_GUI(Scene::selected_entity);
+        erwin::visit_entity(Scene::registry, Scene::selected_entity, W_METAFUNC_INSPECTOR_GUI);
+
+        /*ECS::inspector_GUI(Scene::selected_entity);
+        for(auto&& [cid, pcmp]: entity.get_components())
+        {
+            ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+            if(ImGui::TreeNode(pcmp->get_debug_name().c_str()))
+            {
+                pcmp->inspector_GUI();
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
+        }*/
+
         ImGui::TreePop();
     }
 }

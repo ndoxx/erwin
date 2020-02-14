@@ -15,7 +15,6 @@
 #include "render/renderer_pp.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
-#include "entity/entity_manager.h"
 #include "editor/scene.h"
 
 #include <iostream>
@@ -84,10 +83,6 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Asset Manager shutdown")
         AssetManager::shutdown();
-    }
-    {
-        W_PROFILE_SCOPE("Entity Manager shutdown")
-        ECS::shutdown();
     }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
@@ -374,14 +369,12 @@ void Application::run()
     		for(auto* layer: layer_stack_)
     			layer->update(game_clock_);
 		}
-        ECS::update(game_clock_);
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
         // TMP: editor coupling + SCENE must have a directional light entity or this fails
-        Entity& dirlight_ent = ECS::get_entity(editor::Scene::directional_light);
-        auto* dirlight = dirlight_ent.get_component<ComponentDirectionalLight>();
-        Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), *dirlight);
+        const auto& dirlight = editor::Scene::registry.get<ComponentDirectionalLight>(editor::Scene::directional_light);
+        Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), dirlight);
 
         // --- RENDER PHASE ---
         // For each layer, render
