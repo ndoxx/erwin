@@ -29,7 +29,7 @@ protected:
 
 private:
 	erwin::PBRDeferredRenderSystem PBR_deferred_render_system_;
-	erwin::ForwardSunRenderSystem forward_render_system_;
+	erwin::ForwardSunRenderSystem forward_sun_render_system_;
 	erwin::GizmoSystem gizmo_system_; // TODO: This should be an "engine system" (heavily related to the editor)
 	erwin::BoundingBoxSystem bounding_box_system_;
 };

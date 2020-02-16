@@ -53,8 +53,10 @@ void EditorLayer::add_widget(uint32_t menu, Widget* widget)
 
 void EditorLayer::on_attach()
 {
-    editor::load_theme(filesystem::get_asset_dir() / "themes/erwin_default.xml");
-    // editor::load_theme(filesystem::get_asset_dir() / "themes/cherry.xml");
+    editor::theme::list();
+    editor::theme::load_by_name("Default"_h);
+    // editor::load_theme(filesystem::get_asset_dir() / "themes/erwin_default.xml");
+    // editor::theme::load(filesystem::get_asset_dir() / "themes/cherry.xml");
 	set_gui_behavior();
 
 	// Merge icon font
@@ -166,6 +168,18 @@ void EditorLayer::on_imgui_render()
 			for(Widget* widget: menus_[s_storage.settings_menu].widgets)
         		ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
         	
+            ImGui::Separator();
+            const auto& themes = editor::theme::get_list();
+            if(ImGui::BeginMenu("Theme"))
+            {
+                for(const auto& entry: themes)
+                {
+                    if(ImGui::MenuItem(entry.name.c_str()))
+                        editor::theme::load(entry);
+                }
+                ImGui::EndMenu();
+            }
+
 	    	ImGui::Separator();
 	    	ImGui::Checkbox("Docking", &s_storage.enable_docking);
 	    	ImGui::Separator();

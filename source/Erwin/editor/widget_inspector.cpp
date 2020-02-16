@@ -44,7 +44,6 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        // erwin::visit_entity(Scene::registry, Scene::selected_entity, W_METAFUNC_INSPECTOR_GUI);
         erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint64_t reflected_type, void* data)
         {
             const char* component_name = entt::resolve(reflected_type).prop("name"_hs).value().cast<const char*>();

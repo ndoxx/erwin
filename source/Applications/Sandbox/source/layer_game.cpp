@@ -135,7 +135,7 @@ void GameLayer::on_render()
 
 	// Draw scene geometry
 	PBR_deferred_render_system_.render();
-	forward_render_system_.render();
+	forward_sun_render_system_.render();
 	gizmo_system_.render();
 	bounding_box_system_.render();
 
