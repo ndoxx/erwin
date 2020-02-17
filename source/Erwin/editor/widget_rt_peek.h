@@ -16,7 +16,7 @@ class RTPeekWidget: public Widget
 {
 public:
 	RTPeekWidget();
-	virtual ~RTPeekWidget();
+	virtual ~RTPeekWidget() = default;
 
 	virtual void on_layer_render() override;
 

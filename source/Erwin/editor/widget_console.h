@@ -11,7 +11,7 @@ class ConsoleWidget: public Widget
 {
 public:
 	ConsoleWidget();
-	virtual ~ConsoleWidget();
+	virtual ~ConsoleWidget() = default;
 
 	void push(const std::string& message);
 	void send_command(const std::string& command);
@@ -33,7 +33,7 @@ private:
 class ConsoleWidgetSink: public erwin::dbg::Sink
 {
 public:
-	ConsoleWidgetSink(ConsoleWidget* p_console);
+	explicit ConsoleWidgetSink(ConsoleWidget* p_console);
 
 	virtual ~ConsoleWidgetSink() = default;
 	virtual void send(const erwin::dbg::LogStatement& stmt, const erwin::dbg::LogChannel& chan) override;

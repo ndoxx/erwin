@@ -27,11 +27,6 @@ Widget("Hex dump", true)
 
 }
 
-HexDumpWidget::~HexDumpWidget()
-{
-
-}
-
 void HexDumpWidget::refresh()
 {
     s_storage.names_.clear();

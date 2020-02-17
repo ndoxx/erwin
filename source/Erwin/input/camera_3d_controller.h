@@ -11,7 +11,6 @@ class PerspectiveFreeflyController
 {
 public:
 	PerspectiveFreeflyController(float aspect_ratio, float fovy, float znear, float zfar);
-	~PerspectiveFreeflyController();
 
 	void update(GameClock& clock);
 

@@ -19,11 +19,6 @@ camera_position_(camera_.get_position())
 
 }
 
-OrthographicCamera2DController::~OrthographicCamera2DController()
-{
-	
-}
-
 void OrthographicCamera2DController::update(GameClock& clock)
 {
 	// * Handle inputs

@@ -18,7 +18,6 @@ struct LogChannel;
 class Sink
 {
 public:
-	Sink();
 	virtual ~Sink() = default;
 
 	// Submit a log statement to this sink, specifying the channel it emanates from
@@ -32,7 +31,7 @@ public:
 	inline bool is_enabled() const      { return enabled_; }
 
 protected:
-	bool enabled_;
+	bool enabled_ = true;
 };
 
 // This sink writes to the terminal with ANSI color support
@@ -48,7 +47,7 @@ public:
 class LogFileSink: public Sink
 {
 public:
-	LogFileSink(const std::string& filename);
+	explicit LogFileSink(const std::string& filename);
 	virtual ~LogFileSink() = default;
 	virtual void send(const LogStatement& stmt, const LogChannel& chan) override;
 	virtual void send_raw(const std::string& message) override;

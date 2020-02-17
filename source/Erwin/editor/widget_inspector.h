@@ -19,7 +19,7 @@ class InspectorWidget: public Widget
 {
 public:
 	InspectorWidget();
-	virtual ~InspectorWidget();
+	virtual ~InspectorWidget() = default;
 
 protected:
 	virtual void on_imgui_render() override;

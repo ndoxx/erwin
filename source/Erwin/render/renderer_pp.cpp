@@ -94,7 +94,7 @@ void PostProcessingRenderer::init()
 
     // Create framebuffers for bloom pass
     {
-	    FramebufferLayout layout =
+	    FramebufferLayout layout
 	    {
 	        {"color"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
 	    };

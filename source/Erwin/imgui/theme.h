@@ -17,10 +17,11 @@ struct ThemeEntry
 	fs::path path;
 };
 
-extern void list();
+extern void init();
 extern const std::vector<ThemeEntry>& get_list();
 extern bool load(const ThemeEntry& entry);
-extern bool load_by_name(erwin::hash_t name);
+extern bool load_default();
+extern void reset();
 
 } // namespace theme
 } // namespace editor

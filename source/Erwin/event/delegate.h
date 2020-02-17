@@ -51,7 +51,7 @@ public:
     virtual ~FreeDelegate() = default;
     typedef bool (*FreeFunction)(const EventT&);
 
-    FreeDelegate(FreeFunction freeFunction): freeFunction{ freeFunction } {};
+    explicit FreeDelegate(FreeFunction freeFunction): freeFunction{ freeFunction } {};
 
     // Cast event to the correct type and call member function
     virtual bool call(const BaseEventT& event) override

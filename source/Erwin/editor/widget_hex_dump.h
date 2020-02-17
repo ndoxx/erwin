@@ -14,7 +14,7 @@ class HexDumpWidget: public Widget
 {
 public:
 	HexDumpWidget();
-	virtual ~HexDumpWidget();
+	virtual ~HexDumpWidget() = default;
 
 	void refresh();
 

@@ -20,11 +20,6 @@ FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear
 	init(aspect_ratio, fovy, znear, zfar);
 }
 
-FreeflyController::~FreeflyController()
-{
-	
-}
-
 void FreeflyController::init(float aspect_ratio, float fovy, float znear, float zfar)
 {
 	EVENTBUS.subscribe(this, &FreeflyController::on_window_resize_event);

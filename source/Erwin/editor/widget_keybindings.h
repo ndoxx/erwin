@@ -9,7 +9,7 @@ class KeybindingsWidget: public Widget
 {
 public:
 	KeybindingsWidget();
-	virtual ~KeybindingsWidget();
+	virtual ~KeybindingsWidget() = default;
 
 	virtual bool on_keyboard_event(const erwin::KeyboardEvent& event);
 

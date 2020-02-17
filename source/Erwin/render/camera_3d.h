@@ -18,7 +18,7 @@ struct Frustum3D
 
 struct FrustumPlanes
 {
-	FrustumPlanes();
+	FrustumPlanes() = default;
 	FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world_space);
 
 	glm::vec3 plane[6]; // left, right, bottom, top, near, far
@@ -28,8 +28,7 @@ class PerspectiveCamera3D
 {
 public:
 	PerspectiveCamera3D() = default;
-	PerspectiveCamera3D(const Frustum3D& frustum);
-	~PerspectiveCamera3D();
+	explicit PerspectiveCamera3D(const Frustum3D& frustum);
 
 	void init(const Frustum3D& frustum);
 

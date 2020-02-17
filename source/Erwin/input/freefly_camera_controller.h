@@ -12,7 +12,6 @@ class FreeflyController
 public:
 	FreeflyController() = default;
 	FreeflyController(float aspect_ratio, float fovy, float znear, float zfar);
-	~FreeflyController();
 
 	void init(float aspect_ratio, float fovy, float znear, float zfar);
 

@@ -16,11 +16,6 @@ Widget("Inspector", true)
 
 }
 
-InspectorWidget::~InspectorWidget()
-{
-
-}
-
 void InspectorWidget::entity_tab()
 {
     if(editor::Scene::selected_entity == k_invalid_entity_id)
@@ -46,11 +41,14 @@ void InspectorWidget::entity_tab()
     {
         erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint64_t reflected_type, void* data)
         {
+            if(reflected_type == "ComponentEditorDescription"_hs)
+                return;
+            
             const char* component_name = entt::resolve(reflected_type).prop("name"_hs).value().cast<const char*>();
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
             if(ImGui::TreeNode(component_name))
             {
-                entt::resolve(reflected_type).func(W_METAFUNC_INSPECTOR_GUI).invoke(entt::meta_handle(), data);
+                entt::resolve(reflected_type).func(W_METAFUNC_INSPECTOR_GUI).invoke({}, data);
                 ImGui::TreePop();
             }
             ImGui::Separator();

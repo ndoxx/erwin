@@ -4,13 +4,6 @@
 namespace erwin
 {
 
-
-LayerStack::LayerStack():
-overlay_pos_(0)
-{
-	
-}
-
 LayerStack::~LayerStack()
 {
 	clear();

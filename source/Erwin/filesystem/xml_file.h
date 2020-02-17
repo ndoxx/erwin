@@ -64,7 +64,7 @@ struct XMLFile
     std::string buffer;
 
     XMLFile() = default;
-    XMLFile(const fs::path& filepath): filepath(filepath) { }
+    explicit XMLFile(const fs::path& filepath): filepath(filepath) { }
     ~XMLFile() { release(); }
 
     // Read and parse an XML file. Only the filepath member need be initialized.

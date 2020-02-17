@@ -14,7 +14,7 @@ class SceneHierarchyWidget: public Widget
 {
 public:
 	SceneHierarchyWidget();
-	virtual ~SceneHierarchyWidget();
+	virtual ~SceneHierarchyWidget() = default;
 
 protected:
 	virtual void on_imgui_render() override;

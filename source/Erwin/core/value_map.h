@@ -15,15 +15,12 @@ namespace erwin
 class ValueMap
 {
 public:
-	ValueMap() = default;
-	~ValueMap() = default;
+	void init(void* xml_root_node, const std::string& rootname);
 
-void init(void* xml_root_node, const std::string& rootname);
-
-template <typename T>
-T get(hash_t hname, T def);
-fs::path get(hash_t hname);
-bool is(hash_t name);
+	template <typename T>
+	T get(hash_t hname, T def);
+	fs::path get(hash_t hname);
+	bool is(hash_t name);
 
 protected:
 	hash_t parse_xml_property(void* node, const std::string& name_chain);

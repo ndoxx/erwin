@@ -97,7 +97,7 @@ void Renderer2D::init()
 {
     W_PROFILE_FUNCTION()
 
-    FramebufferLayout layout =
+    FramebufferLayout layout
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };

@@ -16,11 +16,6 @@ Widget("Hierarchy", true)
 
 }
 
-SceneHierarchyWidget::~SceneHierarchyWidget()
-{
-
-}
-
 void SceneHierarchyWidget::on_imgui_render()
 {
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;

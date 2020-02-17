@@ -8,9 +8,6 @@ namespace erwin
 class GameClock
 {
 public:
-    GameClock();
-    ~GameClock() = default;
-
     inline bool is_next_frame_required() const { return next_frame_required_; }
     inline bool is_paused() const { return pause_; }
     inline float get_frame_speed() const { return next_frame_required_?1.0f:frame_speed_; }
@@ -38,13 +35,13 @@ public:
     inline float get_frame_duration() const { return dt_; }
 
 private:
-    float frame_speed_;
-    float dt_;
-    bool next_frame_required_;
-    bool pause_;
+    float frame_speed_ = 1.f;
+    float dt_ = 0.f;
+    bool next_frame_required_ = false;
+    bool pause_ = false;
 
-    static float MAX_FRAME_SPEED_;
-    static float SPEED_INCREMENT_;
+    static constexpr float MAX_FRAME_SPEED_ = 5.f;
+    static constexpr float SPEED_INCREMENT_ = 0.1f;
 };
 
 } // namespace erwin

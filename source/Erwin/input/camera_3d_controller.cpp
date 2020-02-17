@@ -32,11 +32,6 @@ camera_position_(camera_.get_position())
 	//std::tie(last_mouse_x_, last_mouse_y_) = Input::get_mouse_position();
 }
 
-PerspectiveFreeflyController::~PerspectiveFreeflyController()
-{
-	
-}
-
 void PerspectiveFreeflyController::update(GameClock& clock)
 {
 	// Translational magnitude

@@ -12,7 +12,6 @@ namespace erwin
 class LayerStack
 {
 public:
-	LayerStack();
 	~LayerStack();
 
 	size_t push_layer(Layer* layer);
@@ -60,7 +59,7 @@ private:
 
 private:
 	std::vector<Layer*> layers_;
-	size_t overlay_pos_;
+	size_t overlay_pos_ = 0;
 };
 
 // Specialization to force propagation of window resize events even

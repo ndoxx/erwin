@@ -451,7 +451,7 @@ void Renderer::init(memory::HeapArea& area)
 	DLOGN("render") << "[Renderer] Creating main render targets." << std::endl;
 	// Create main render targets
 	{
-	    FramebufferLayout layout =
+	    FramebufferLayout layout
 	    {
 	    	// RGB: Albedo, A: Scaled emissivity
 	        {"albedo"_h, ImageFormat::RGBA16F, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
@@ -463,7 +463,7 @@ void Renderer::init(memory::HeapArea& area)
 	    FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
 	}
 	{
-	    FramebufferLayout layout =
+	    FramebufferLayout layout
 	    {
 	    	// RGBA: HDR color
 	        {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},

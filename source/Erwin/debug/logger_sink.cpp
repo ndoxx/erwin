@@ -11,12 +11,6 @@ namespace erwin
 namespace dbg
 {
 
-Sink::Sink():
-enabled_(true)
-{
-
-}
-
 void ConsoleSink::send(const LogStatement& stmt, const LogChannel& chan)
 {
 	if(stmt.msg_type != MsgType::RAW)

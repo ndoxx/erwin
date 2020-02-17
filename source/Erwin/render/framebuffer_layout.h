@@ -18,7 +18,7 @@ struct FramebufferLayoutElement
 
 struct FramebufferLayout
 {
-	FramebufferLayout(const std::initializer_list<FramebufferLayoutElement>& elements): elements_(elements) { }
+	explicit FramebufferLayout(const std::initializer_list<FramebufferLayoutElement>& elements): elements_(elements) { }
     FramebufferLayout(FramebufferLayoutElement* elements, uint32_t count);
 
     // Iterators for use in range-based for loops

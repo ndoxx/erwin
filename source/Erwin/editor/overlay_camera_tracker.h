@@ -14,7 +14,7 @@ class CameraTrackerOverlay: public Widget
 {
 public:
 	CameraTrackerOverlay();
-	virtual ~CameraTrackerOverlay();
+	virtual ~CameraTrackerOverlay() = default;
 
 protected:
 	virtual void on_imgui_render() override;

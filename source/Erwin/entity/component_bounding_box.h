@@ -18,7 +18,7 @@ struct ComponentOBB
     float scale            = 1.f;
     bool display           = false;
 
-    ComponentOBB(const Extent& extent);
+    explicit ComponentOBB(const Extent& extent);
 
     inline void init(const Extent& extent)
     {

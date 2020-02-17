@@ -29,7 +29,7 @@
     <color name="ResizeGrip"            value="(0.47,0.77,0.83,0.04)"/>
     <color name="ResizeGripHovered"     value="(0.455,0.198,0.301,0.78)"/>
     <color name="ResizeGripActive"      value="(0.455,0.198,0.301,1.00)"/>
-    <color name="PlotLines"             value="(0.860,0.930,0.890,0.63)"/>
+    <color name="PlotLines"             value="(0.882,0.216,0.494,1.00)"/> <!-- (0.860,0.930,0.890,0.63) -->
     <color name="PlotLinesHovered"      value="(0.455,0.198,0.301,1.00)"/>
     <color name="PlotHistogram"         value="(0.860,0.930,0.890,0.63)"/>
     <color name="PlotHistogramHovered"  value="(0.455,0.198,0.301,1.00)"/>

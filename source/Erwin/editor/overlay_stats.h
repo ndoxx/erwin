@@ -9,7 +9,7 @@ class RenderStatsOverlay: public Widget
 {
 public:
 	RenderStatsOverlay();
-	virtual ~RenderStatsOverlay();
+	virtual ~RenderStatsOverlay() = default;
 
 	virtual void on_update() override;
 

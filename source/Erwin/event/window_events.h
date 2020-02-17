@@ -130,7 +130,7 @@ struct KeyTypedEvent: public WEvent
     EVENT_DECLARATION(KeyTypedEvent);
 
     KeyTypedEvent() = default;
-    KeyTypedEvent(unsigned int codepoint):
+    explicit KeyTypedEvent(unsigned int codepoint):
     codepoint(codepoint)
     {
 
@@ -221,7 +221,7 @@ struct RaySceneQueryEvent: public WEvent
     EVENT_DECLARATION(RaySceneQueryEvent);
 
     RaySceneQueryEvent() = default;
-    RaySceneQueryEvent(const glm::vec2& screen_coords):
+    explicit RaySceneQueryEvent(const glm::vec2& screen_coords):
     coords(screen_coords)
     {
 
@@ -242,7 +242,7 @@ struct ActionTriggeredEvent: public WEvent
     EVENT_DECLARATION(ActionTriggeredEvent);
 
     ActionTriggeredEvent() = default;
-    ActionTriggeredEvent(hash_t action_name):
+    explicit ActionTriggeredEvent(hash_t action_name):
     action(action_name)
     {
 

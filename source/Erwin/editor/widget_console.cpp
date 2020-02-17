@@ -35,11 +35,6 @@ Widget("Console", true)
 	queue_max_len_ = 100;
 }
 
-ConsoleWidget::~ConsoleWidget()
-{
-
-}
-
 int ConsoleWidget::text_edit_callback(void* _data)
 {
 	ImGuiInputTextCallbackData* data = static_cast<ImGuiInputTextCallbackData*>(_data);

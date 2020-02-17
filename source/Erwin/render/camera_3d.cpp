@@ -7,8 +7,6 @@
 namespace erwin
 {
 
-FrustumPlanes::FrustumPlanes() {  }
-
 FrustumPlanes::FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world_space)
 {
 	W_PROFILE_FUNCTION()
@@ -35,11 +33,6 @@ FrustumPlanes::FrustumPlanes(const Frustum3D& frustum, const glm::mat4& to_world
 PerspectiveCamera3D::PerspectiveCamera3D(const Frustum3D& frustum)
 {
 	init(frustum);
-}
-
-PerspectiveCamera3D::~PerspectiveCamera3D()
-{
-	
 }
 
 void PerspectiveCamera3D::init(const Frustum3D& frustum)

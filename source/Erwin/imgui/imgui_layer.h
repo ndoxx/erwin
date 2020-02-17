@@ -9,7 +9,7 @@ class ImGuiLayer: public Layer
 {
 public:
 	ImGuiLayer();
-	~ImGuiLayer();
+	~ImGuiLayer() = default;
 
 	virtual void on_attach() override;
 	virtual void on_detach() override;

@@ -19,7 +19,6 @@ public:
 	};
 
 	EditorLayer();
-	~EditorLayer() = default;
 
 	virtual void on_imgui_render() override;
 	virtual void on_attach() override;

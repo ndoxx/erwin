@@ -11,7 +11,6 @@ class OrthographicCamera2DController
 {
 public:
 	OrthographicCamera2DController(float aspect_ratio, float zoom_level=1.f);
-	~OrthographicCamera2DController();
 
 	void update(GameClock& clock);
 

@@ -21,11 +21,6 @@ Layer("ImGuiLayer")
 	
 }
 
-ImGuiLayer::~ImGuiLayer()
-{
-	
-}
-
 void ImGuiLayer::on_attach()
 {
 	// Setup Dear ImGui context

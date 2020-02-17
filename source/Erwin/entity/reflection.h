@@ -41,7 +41,7 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& 
 		uint64_t reflected_type = reflect(type_id);
 		if(reflected_type==0)
 			return;
-		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke(entt::meta_handle(), std::ref(reg), e);
+		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke({}, std::ref(reg), e);
 		if(any)
 			func(reflected_type, any.data());
 	});
@@ -57,9 +57,9 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, uint64_t me
 		uint64_t reflected_type = reflect(type_id);
 		if(reflected_type==0)
 			return;
-		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke(entt::meta_handle(), std::ref(reg), e);
+		auto any = entt::resolve(reflected_type).func("get_component"_hs).invoke({}, std::ref(reg), e);
 		if(any)
-			entt::resolve(reflected_type).func(meta_func).invoke(entt::meta_handle(), any.data());
+			entt::resolve(reflected_type).func(meta_func).invoke({}, any.data());
 	});
 }
 

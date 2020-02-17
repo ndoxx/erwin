@@ -6,8 +6,6 @@
 namespace erwin
 {
 
-FrustumSides::FrustumSides() {  }
-
 FrustumSides::FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_space)
 {
 	W_PROFILE_FUNCTION()
@@ -31,11 +29,6 @@ angle_(0.f),
 position_(0.f)
 {
 	set_projection(frustum);
-}
-
-OrthographicCamera2D::~OrthographicCamera2D()
-{
-	
 }
 
 void OrthographicCamera2D::set_projection(const Frustum2D& frustum)

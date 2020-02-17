@@ -19,11 +19,6 @@ Widget("Camera tracker", true)
            | ImGuiWindowFlags_NoNav;
 }
 
-CameraTrackerOverlay::~CameraTrackerOverlay()
-{
-
-}
-
 void CameraTrackerOverlay::on_imgui_render()
 {
     const glm::vec3& cam_pos = Scene::camera_controller.get_camera().get_position();

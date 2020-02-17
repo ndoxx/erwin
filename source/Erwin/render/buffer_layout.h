@@ -46,7 +46,7 @@ struct BufferLayoutElement
 class BufferLayout
 {
 public:
-    BufferLayout(const std::initializer_list<BufferLayoutElement>& elements);
+    explicit BufferLayout(const std::initializer_list<BufferLayoutElement>& elements);
     BufferLayout(BufferLayoutElement* elements, uint32_t count);
 
     // Iterators for use in range-based for loops

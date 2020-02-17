@@ -51,11 +51,8 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/game_clock.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/job_system.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
@@ -92,8 +89,6 @@ set(SRC_FILESYSTEM
 set(SRC_MATH
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/math/convolution.cpp
-    # ${CMAKE_SOURCE_DIR}/source/Erwin/math/math3d.cpp
-    # ${CMAKE_SOURCE_DIR}/source/Erwin/math/quaternion.cpp
   )
 
 set(SRC_ENTITY
@@ -123,7 +118,6 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_state.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
-    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d_alt.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_3d.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer.cpp
@@ -134,8 +128,6 @@ set(SRC_RENDERER
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/common_geometry.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/render/handles.cpp
-    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/mesh.cpp
-    # ${CMAKE_SOURCE_DIR}/source/Erwin/render/wmesh.cpp
   )
 
 set(SRC_INPUT

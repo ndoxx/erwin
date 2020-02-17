@@ -4,6 +4,8 @@
 #include "imgui.h"
 #include "debug/logger.h"
 
+#include <algorithm>
+
 using namespace erwin;
 
 namespace editor
@@ -66,7 +68,7 @@ static std::map<hash_t, ImGuiCol_> s_imgui_col_map =
 };
 
 static std::vector<ThemeEntry> s_themes;
-static std::map<hash_t, uint32_t> s_theme_map;
+static ImGuiStyle s_default_style;
 
 static void parse_property(rapidxml::xml_node<>* prop_node, void* destination)
 {
@@ -91,28 +93,14 @@ static void parse_property(rapidxml::xml_node<>* prop_node, void* destination)
                 memcpy(destination, &value[0], 2*sizeof(float));
             break;
         }
-        case "vec3"_h:
-        {
-            glm::vec3 value;
-            if(xml::parse_attribute(prop_node, "value", value))
-                memcpy(destination, &value[0], 3*sizeof(float));
-            break;
-        }
-        case "vec4"_h:
-        {
-            glm::vec4 value;
-            if(xml::parse_attribute(prop_node, "value", value))
-                memcpy(destination, &value[0], 4*sizeof(float));
-            break;
-        }
         default: return;
     }
 }
 
-void list()
+void init()
 {
+    // Iterate themes directory
     fs::path theme_dir = filesystem::get_system_asset_dir() / "themes";
-
     for(auto& entry: fs::directory_iterator(theme_dir))
     {
         if(!entry.is_regular_file())
@@ -131,9 +119,25 @@ void list()
         if(!xml::parse_attribute(root, "name", theme_name))
             continue;
 
+        hash_t hname = H_(theme_name.c_str());
+        uint32_t index = s_themes.size();
         s_themes.push_back({theme_name, entry.path()});
-        s_theme_map.insert({H_(theme_name.c_str()), s_themes.size()-1});
+        if(hname=="Default"_h)
+        {
+            // Force default theme at index 0
+            std::swap(s_themes[0], s_themes[index]);
+            index = 0;
+        }
     }
+
+    // Sort themes alphabetically (default theme stays at index 0)
+    std::sort(s_themes.begin()+1, s_themes.end(), [](const ThemeEntry& a, const ThemeEntry& b)
+    {
+        return a.name < b.name;
+    });
+
+    // Also, save default style
+    s_default_style = ImGui::GetStyle();
 }
 
 const std::vector<ThemeEntry>& get_list()
@@ -155,6 +159,9 @@ bool load(const ThemeEntry& entry)
 	if(!root)
 		return false;
 
+    // Restore defaults
+    reset();
+
     // Parse base coloring scheme if any
     hash_t hbase = xml::parse_attribute_h(root, "base");
     switch(hbase)
@@ -162,7 +169,6 @@ bool load(const ThemeEntry& entry)
         case "dark"_h:    ImGui::StyleColorsDark(); break;
         case "classic"_h: ImGui::StyleColorsClassic(); break;
         case "light"_h:   ImGui::StyleColorsLight(); break;
-        default:          ImGui::StyleColorsClassic(); break;
     }
 
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -240,12 +246,15 @@ bool load(const ThemeEntry& entry)
     return true;
 }
 
-bool load_by_name(hash_t name)
+bool load_default()
 {
-    auto it = s_theme_map.find(name);
-    if(it == s_theme_map.end())
-        return false;
-    return load(s_themes[it->second]);
+    W_ASSERT(s_themes.size()!=0, "Themes list is empty, call theme::init().");
+    return load(s_themes[0]);
+}
+
+void reset()
+{
+    ImGui::GetStyle() = s_default_style;
 }
 
 } // namespace theme

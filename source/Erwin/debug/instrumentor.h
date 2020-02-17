@@ -37,7 +37,7 @@ public:
 class InstrumentationTimer
 {
 public:
-    InstrumentationTimer(const char* name);
+    explicit InstrumentationTimer(const char* name);
     ~InstrumentationTimer();
 
     void stop();

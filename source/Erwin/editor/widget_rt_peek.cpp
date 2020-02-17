@@ -68,7 +68,7 @@ RTPeekWidget::RTPeekWidget():
 Widget("Framebuffers", true)
 {
     // Create resources
-    FramebufferLayout layout =
+    FramebufferLayout layout
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
@@ -95,11 +95,6 @@ Widget("Framebuffers", true)
     state.blend_state = BlendState::Opaque;
     state.depth_stencil_state.depth_test_enabled = false;
     s_storage.pass_state_ = state.encode();
-}
-
-RTPeekWidget::~RTPeekWidget()
-{
-
 }
 
 uint32_t RTPeekWidget::new_pane(const std::string& name)

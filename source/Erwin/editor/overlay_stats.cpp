@@ -18,11 +18,6 @@ Widget("Statistics", true)
            | ImGuiWindowFlags_NoNav;
 }
 
-RenderStatsOverlay::~RenderStatsOverlay()
-{
-
-}
-
 void RenderStatsOverlay::on_update()
 {
     Renderer::set_profiling_enabled(open_);

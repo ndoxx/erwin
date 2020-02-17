@@ -53,10 +53,8 @@ void EditorLayer::add_widget(uint32_t menu, Widget* widget)
 
 void EditorLayer::on_attach()
 {
-    editor::theme::list();
-    editor::theme::load_by_name("Default"_h);
-    // editor::load_theme(filesystem::get_asset_dir() / "themes/erwin_default.xml");
-    // editor::theme::load(filesystem::get_asset_dir() / "themes/cherry.xml");
+    editor::theme::init();
+    editor::theme::load_default();
 	set_gui_behavior();
 
 	// Merge icon font
@@ -76,7 +74,7 @@ void EditorLayer::on_attach()
 
 	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
 
-    FramebufferLayout layout =
+    FramebufferLayout layout
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
@@ -177,6 +175,23 @@ void EditorLayer::on_imgui_render()
                     if(ImGui::MenuItem(entry.name.c_str()))
                         editor::theme::load(entry);
                 }
+                ImGui::Separator();
+                if(ImGui::MenuItem("ImGui::Classic"))
+                {
+                    editor::theme::reset();
+                    ImGui::StyleColorsClassic();
+                }
+                if(ImGui::MenuItem("ImGui::Light"))
+                {
+                    editor::theme::reset();
+                    ImGui::StyleColorsLight();
+                }
+                if(ImGui::MenuItem("ImGui::Dark"))
+                {
+                    editor::theme::reset();
+                    ImGui::StyleColorsDark();
+                }
+
                 ImGui::EndMenu();
             }
 

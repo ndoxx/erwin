@@ -25,7 +25,7 @@ class HandlePool
 public:
 	static constexpr uint16_t INVALID_HANDLE = 0xffff;
 
-	HandlePool(uint16_t max_handles);
+	explicit HandlePool(uint16_t max_handles);
 	~HandlePool() = default;
 
 	inline const uint16_t* get_handles() const     	     { return get_dense_ptr(); }

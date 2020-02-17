@@ -37,7 +37,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
     glm::mat4 VP_inv = glm::inverse(editor::Scene::camera_controller.get_camera().get_view_projection_matrix());
     Ray ray(event.coords, VP_inv);
 
-	constexpr float k_cyl_diameter = 0.01f;
+	// constexpr float k_cyl_diameter = 0.01f;
 	constexpr float k_cyl_length = 2.f;
 	constexpr float k_arrow_diameter = 0.1f;
 	constexpr float k_arrow_length = 0.3f;

@@ -17,11 +17,6 @@ Widget("Key bindings", false)
     EVENTBUS.subscribe(this, &KeybindingsWidget::on_keyboard_event);
 }
 
-KeybindingsWidget::~KeybindingsWidget()
-{
-
-}
-
 bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
     if(selection_ == 0)

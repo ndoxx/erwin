@@ -14,7 +14,7 @@ class HeapArea
 {
 public:
 	HeapArea() = default;
-	HeapArea(size_t size)
+	explicit HeapArea(size_t size)
 	{
 		init(size);
 	}

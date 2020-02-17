@@ -15,7 +15,7 @@ private:
 	class StringBuffer: public std::stringbuf
 	{
 	public:
-	    StringBuffer(LoggerStream& parent);
+	    explicit StringBuffer(LoggerStream& parent);
 	    ~StringBuffer();
 
 	    // This override allows to monitor std::endl

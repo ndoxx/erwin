@@ -47,7 +47,7 @@ class VertexBuffer: public virtual GfxBuffer
 {
 public:
     VertexBuffer(const BufferLayout& layout, uint32_t count): layout_(layout), count_(count) {}
-    virtual ~VertexBuffer() {}
+    virtual ~VertexBuffer() = default;
 
     // Return the buffer layout
     inline const BufferLayout& get_layout() const { return layout_; }
@@ -69,7 +69,7 @@ class IndexBuffer: public virtual GfxBuffer
 {
 public:
     IndexBuffer(uint32_t count, DrawPrimitive primitive): primitive_(primitive), count_(count) {}
-    virtual ~IndexBuffer() {}
+    virtual ~IndexBuffer() = default;
 
     // Return the number of indices
     inline uint32_t get_count() const          { return count_; }
@@ -125,7 +125,7 @@ class VertexArray
 {
 public:
     VertexArray(): unique_id_(id::unique_id()) {}
-    virtual ~VertexArray() {}
+    virtual ~VertexArray() = default;
 
     virtual void bind() const = 0;
     virtual void unbind() const = 0;
