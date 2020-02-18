@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erwin.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "event/window_events.h"
 
 namespace erwin

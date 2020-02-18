@@ -15,7 +15,7 @@
 #include "render/renderer_pp.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 
 #include <iostream>
 
@@ -359,6 +359,8 @@ void Application::run()
         // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
+        EVENTBUS.publish(BeginFrameEvent());
+
         // Dispatch queued events
         EVENTBUS.dispatch();
 
@@ -372,9 +374,6 @@ void Application::run()
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
-        // TMP: editor coupling + SCENE must have a directional light entity or this fails
-        const auto& dirlight = editor::Scene::registry.get<ComponentDirectionalLight>(editor::Scene::directional_light);
-        Renderer3D::update_frame_data(editor::Scene::camera_controller.get_camera(), dirlight);
 
         // --- RENDER PHASE ---
         // For each layer, render

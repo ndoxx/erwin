@@ -11,9 +11,6 @@
 namespace erwin
 {
 
-// TMP: For now, only contains generic structures dealing with meshes, no real mesh data structure
-
-
 struct Extent
 {
 	Extent(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)

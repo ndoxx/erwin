@@ -2,6 +2,8 @@
 #include "core/core.h"
 #include "memory/heap_area.h"
 #include "render/shader_lang.h"
+#include "event/event_bus.h"
+#include "event/window_events.h"
 
 #include <iterator>
 
@@ -210,6 +212,12 @@ void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
 void init_arena(memory::HeapArea& area, std::size_t size)
 {
     s_arena.init(area, size, "ResourceArena");
+
+    EVENTBUS.subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
+    {
+        s_arena.reset();
+        return false;
+    });
 }
 
 ResourceArena& get_arena()
@@ -221,11 +229,6 @@ ResourceArena& get_arena()
 bool is_arena_initialized()
 {
     return s_arena.is_initialized();
-}
-
-void reset_arena()
-{
-    s_arena.reset();
 }
 
 

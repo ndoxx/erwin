@@ -19,8 +19,9 @@ EventBus::~EventBus()
 {
     for(auto&& [key, delegates]: subscribers_)
     {
-        for(auto&& handler: *delegates)
-            delete handler;
+    	if(delegates)
+        	for(auto&& handler: *delegates)
+            	delete handler;
         delete delegates;
     }
 }

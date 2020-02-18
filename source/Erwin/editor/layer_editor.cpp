@@ -8,7 +8,7 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "imgui/theme.h"
 #include "debug/logger_thread.h"
 

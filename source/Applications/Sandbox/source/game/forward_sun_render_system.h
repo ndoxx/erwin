@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erwin.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "game/game_components.h"
 
 namespace erwin
@@ -15,7 +15,7 @@ public:
 		VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
 		Renderer3D::begin_forward_pass();
-	    auto view = editor::Scene::registry.view<ComponentDirectionalLight,ComponentRenderableDirectionalLight>();
+	    auto view = Scene::registry.view<ComponentDirectionalLight,ComponentRenderableDirectionalLight>();
 	    for(const entt::entity e: view)
 	    {
 	        const ComponentDirectionalLight& dirlight = view.get<ComponentDirectionalLight>(e);

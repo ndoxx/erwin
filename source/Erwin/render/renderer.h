@@ -80,8 +80,6 @@ public:
 
 	// Force renderer to dispatch all render/draw commands
 	static void flush();
-	// Set a callback function that will be executed after flush()
-	static void set_end_frame_callback(std::function<void(void)> callback);
 
 	// * The following functions will initialize a render command and push it to the appropriate buffer 
 	// PRE-BUFFER -> executed before draw commands

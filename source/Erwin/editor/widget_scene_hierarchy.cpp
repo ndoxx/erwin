@@ -1,6 +1,6 @@
 #include "editor/widget_scene_hierarchy.h"
 #include "editor/font_awesome.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "imgui.h"
@@ -32,7 +32,7 @@ void SceneHierarchyWidget::on_imgui_render()
         const ComponentEditorDescription& desc = view.get<ComponentEditorDescription>(e);
 
         ImGuiTreeNodeFlags flags = node_flags;
-        if(e == editor::Scene::selected_entity)
+        if(e == Scene::selected_entity)
             flags |= ImGuiTreeNodeFlags_Selected;
 
         ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
@@ -46,7 +46,7 @@ void SceneHierarchyWidget::on_imgui_render()
     	// Update selection state
 
     	// Update scene selected entity index
-    	editor::Scene::select(new_selection);
+    	Scene::select(new_selection);
     }
 }
 

@@ -29,11 +29,11 @@ public:
 	virtual void update() = 0;
 	virtual uint32_t get_width() const = 0; 
 	virtual uint32_t get_height() const = 0;
-
 	virtual void set_vsync(bool value) = 0;
 	virtual bool is_vsync() = 0;
-
 	virtual void* get_native() const = 0;
+
+	inline const GFXContext& get_context() const { return *context_; }
 
 	static WScope<Window> create(const WindowProps& props = WindowProps());
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erwin.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "game/game_components.h"
 
 namespace erwin
@@ -13,7 +13,7 @@ public:
 	void render()
 	{
 		Renderer3D::begin_deferred_pass();
-	    auto view = editor::Scene::registry.view<ComponentTransform3D,ComponentRenderablePBR>();
+	    auto view = Scene::registry.view<ComponentTransform3D,ComponentRenderablePBR>();
 	    for(const entt::entity e: view)
 	    {
 	        const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);

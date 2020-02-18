@@ -1,6 +1,7 @@
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "event/event_bus.h"
 #include "math/convolution.h"
 #include "imgui.h"
 
@@ -133,9 +134,12 @@ void PostProcessingRenderer::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.pp_shader, s_storage.pp_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.bloom_blur_shader, s_storage.blur_ubo);
 
-	// Reset sequence on end of frame
-	// TMP: not thread safe
-	Renderer::set_end_frame_callback([&](){ s_storage.sequence = 0; });
+	// Reset sequence on new frame
+	EVENTBUS.subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
+	{
+		s_storage.sequence = 0;
+		return false;
+	});
 
     s_storage.pp_data.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, true);
     s_storage.pp_data.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, true);

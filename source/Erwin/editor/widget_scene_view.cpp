@@ -1,7 +1,7 @@
 #include "editor/widget_scene_view.h"
 #include "editor/overlay_stats.h"
 #include "editor/overlay_camera_tracker.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "core/config.h"
 #include "core/application.h"
 #include "event/window_events.h"

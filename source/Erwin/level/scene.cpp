@@ -1,11 +1,9 @@
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "editor/font_awesome.h"
 #include "editor/editor_components.h"
 #include "debug/logger.h"
 
-using namespace erwin;
-
-namespace editor
+namespace erwin
 {
 
 EntityID Scene::selected_entity;
@@ -41,4 +39,4 @@ void Scene::select(EntityID entity)
 	selected_entity = entity;
 }
 
-} // namespace editor
+} // namespace erwin

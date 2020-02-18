@@ -31,7 +31,6 @@ private:
 	uint32_t width_;
 	uint32_t height_;
 	uint32_t rd_handle_;
-	fs::path filepath_; // TMP: For reload, before we have a proper asset management system
 };
 
 

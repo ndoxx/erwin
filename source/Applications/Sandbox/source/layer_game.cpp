@@ -42,7 +42,7 @@ void GameLayer::on_attach()
 	Renderer3D::register_material({forward_sun, {}, sun_material_ubo});
 
 	{
-		EntityID ent = editor::Scene::registry.create();
+		EntityID ent = Scene::registry.create();
 
 		ComponentDirectionalLight directional_light;
 		directional_light.set_position(90.f, 160.f);
@@ -56,11 +56,11 @@ void GameLayer::on_attach()
 		renderable.material.ubo = sun_material_ubo;
 		renderable.material_data.scale = 0.2f;
 
-		editor::Scene::registry.assign<ComponentDirectionalLight>(ent, directional_light);
-		editor::Scene::registry.assign<ComponentRenderableDirectionalLight>(ent, renderable);
+		Scene::registry.assign<ComponentDirectionalLight>(ent, directional_light);
+		Scene::registry.assign<ComponentRenderableDirectionalLight>(ent, renderable);
 
-		editor::Scene::directional_light = ent;
-		editor::Scene::add_entity(ent, "Sun", ICON_FA_SUN_O);
+		Scene::directional_light = ent;
+		Scene::add_entity(ent, "Sun", ICON_FA_SUN_O);
 	}
 
 	glm::vec3 pos[] = 
@@ -72,7 +72,7 @@ void GameLayer::on_attach()
 	};
 	for(int ii=0; ii<4; ++ii)
 	{
-		EntityID ent = editor::Scene::registry.create();
+		EntityID ent = Scene::registry.create();
 
 		ComponentTransform3D transform = {pos[ii], {0.f,0.f,0.f}, 1.8f};
 
@@ -87,15 +87,15 @@ void GameLayer::on_attach()
 		renderable.material.ubo = pbr_material_ubo;
 		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
 
-		editor::Scene::registry.assign<ComponentTransform3D>(ent, transform);
-		editor::Scene::registry.assign<ComponentOBB>(ent, OBB);
-		editor::Scene::registry.assign<ComponentRenderablePBR>(ent, renderable);
+		Scene::registry.assign<ComponentTransform3D>(ent, transform);
+		Scene::registry.assign<ComponentOBB>(ent, OBB);
+		Scene::registry.assign<ComponentRenderablePBR>(ent, renderable);
 
 
-		editor::Scene::add_entity(ent, "Emissive cube #" + std::to_string(ii));
+		Scene::add_entity(ent, "Emissive cube #" + std::to_string(ii));
 	}
 
-	editor::Scene::camera_controller.set_position({0.f,1.f,3.f});
+	Scene::camera_controller.set_position({0.f,1.f,3.f});
 }
 
 void GameLayer::on_detach()
@@ -111,21 +111,24 @@ void GameLayer::on_update(GameClock& clock)
 	if(tt>=10.f)
 		tt = 0.f;
 
-    editor::Scene::camera_controller.update(clock);
-
+    Scene::camera_controller.update(clock);
 	bounding_box_system_.update(clock);
 
-	// TMP: Update cube -> MOVE to Lua script
+	// TMP: Update cube -> MOVE to script or animation system
 	for(int ii=0; ii<4; ++ii)
 	{
 		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
 		float s2 = s*s;
 
-		auto& renderable = editor::Scene::registry.get<ComponentRenderablePBR>(editor::Scene::entities[1+ii]);
+		auto& renderable = Scene::registry.get<ComponentRenderablePBR>(Scene::entities[1+ii]);
 
 		renderable.material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
 		renderable.material_data.tint.r = 0.3f*exp(-6.f*(ii+1.f)*s2);
 	}
+
+    // TMP: SCENE must have a directional light entity or this fails
+    const auto& dirlight = Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light);
+    Renderer3D::update_frame_data(Scene::camera_controller.get_camera(), dirlight);
 }
 
 void GameLayer::on_render()

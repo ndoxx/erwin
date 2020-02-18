@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include "../../../git/entt/src/entt/entt.hpp" // TMP
+#include "entt/entt.hpp"
 #include "debug/logger.h"
 
 namespace erwin

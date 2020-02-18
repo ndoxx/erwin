@@ -72,8 +72,7 @@ static std::string format_to_string(GLenum value)
 	}
 }
 
-OGLTexture2D::OGLTexture2D(const fs::path filepath):
-filepath_(filepath)
+OGLTexture2D::OGLTexture2D(const fs::path filepath)
 {
 	DLOGN("texture") << "Loading texture from file: " << std::endl;
 	DLOGI << "path:   " << WCC('p') << fs::relative(filepath, filesystem::get_asset_dir()) << WCC(0) << std::endl;

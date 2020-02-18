@@ -14,11 +14,6 @@ window_handle_(window_handle)
 	init();
 }
 
-OGLContext::~OGLContext()
-{
-
-}
-
 void OGLContext::init()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(window_handle_);
@@ -82,10 +77,18 @@ void OGLContext::init()
 	glGetError();
 }
 
-void OGLContext::swap_buffers()
+void OGLContext::swap_buffers() const
 {
 	glfwSwapBuffers(static_cast<GLFWwindow*>(window_handle_));
 }
 
+void OGLContext::make_current() const
+{
+	GLFWwindow* current_context = glfwGetCurrentContext();
+	GLFWwindow* window_context = static_cast<GLFWwindow*>(window_handle_);
+
+	if(current_context != window_context)
+		glfwMakeContextCurrent(window_context);
+}
 
 } // namespace erwin

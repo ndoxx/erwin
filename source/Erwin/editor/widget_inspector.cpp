@@ -1,5 +1,5 @@
 #include "editor/widget_inspector.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "render/renderer_pp.h"
@@ -18,7 +18,7 @@ Widget("Inspector", true)
 
 void InspectorWidget::entity_tab()
 {
-    if(editor::Scene::selected_entity == k_invalid_entity_id)
+    if(Scene::selected_entity == k_invalid_entity_id)
         return;
     
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);

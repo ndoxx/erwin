@@ -7,7 +7,6 @@
 #include "debug/logger.h"
 #include "core/config.h"
 #include "core/clock.hpp"
-#include "filesystem/filesystem.h"
 #include "memory/arena.h"
 #include "memory/memory_utils.h"
 #include "memory/handle_pool.h"
@@ -366,7 +365,6 @@ static struct RendererStorage
 	FramebufferHandle current_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
 	std::map<hash_t, ShaderHandle> shader_names_;
-	std::vector<std::function<void(void)>> end_frame_callbacks_;
 	uint64_t state_cache_;
 	glm::vec2 host_window_size_;
 
@@ -470,7 +468,7 @@ void Renderer::init(memory::HeapArea& area)
 	        // RGB: Glow color, A: Glow intensity
 	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true); // TODO: Share depth-stencil buffer with GBuffer
+	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
 	}
 	/*{
 		// Debug render target
@@ -514,11 +512,6 @@ uint8_t Renderer::next_layer_id()
 Renderer::AuxArena& Renderer::get_arena()
 {
 	return s_storage.auxiliary_arena_;
-}
-
-void Renderer::set_end_frame_callback(std::function<void(void)> callback)
-{
-	s_storage.end_frame_callbacks_.push_back(callback);
 }
 
 #ifdef W_DEBUG
@@ -2057,17 +2050,11 @@ void Renderer::flush()
 	flush_command_buffer(s_storage.post_buffer_);
 	// Reset auxiliary memory arena for next frame
 	s_storage.auxiliary_arena_.reset();
-	// Reset resource arena for next frame
-	filesystem::reset_arena(); // TMP: not thread safe
 
 #if W_RC_PROFILE_DRAW_CALLS
 	if(s_storage.draw_call_data.tracking)
 		s_storage.draw_call_data.export_json();
 #endif
-
-	// Execute callbacks
-	for(auto&& callback: s_storage.end_frame_callbacks_)
-		callback();
 
 	if(s_storage.profiling_enabled)
 	{

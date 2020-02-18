@@ -104,7 +104,6 @@ protected:
     void dispatch(const LogStatement& stmt);
 
     // Helper func to queue event data
-    // TODO: MOVE to proper tracker system
 	template <typename EventT>
 	bool log_event(const EventT& event)
 	{

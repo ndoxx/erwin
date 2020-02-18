@@ -1,6 +1,6 @@
 #include "game/bounding_box_system.h"
 #include "asset/bounding.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -12,15 +12,15 @@ BoundingBoxSystem::BoundingBoxSystem()
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    glm::mat4 VP_inv = glm::inverse(editor::Scene::camera_controller.get_camera().get_view_projection_matrix());
+    glm::mat4 VP_inv = glm::inverse(Scene::camera_controller.get_camera().get_view_projection_matrix());
     Ray ray(event.coords, VP_inv);
 
     // Perform a ray scene query
-    EntityID selected = editor::Scene::selected_entity;
-    float nearest = editor::Scene::camera_controller.get_zfar();
+    EntityID selected = Scene::selected_entity;
+    float nearest = Scene::camera_controller.get_zfar();
     
     Ray::CollisionData data;
-    auto view = editor::Scene::registry.view<ComponentOBB>();
+    auto view = Scene::registry.view<ComponentOBB>();
     for(const entt::entity e: view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
@@ -35,14 +35,14 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     }
 
     if(selected != k_invalid_entity_id)
-	   editor::Scene::select(selected);
+	   Scene::select(selected);
 
 	return true;
 }
 
 void BoundingBoxSystem::update(const GameClock& clock)
 {
-    auto view = editor::Scene::registry.view<ComponentOBB,ComponentTransform3D>();
+    auto view = Scene::registry.view<ComponentOBB,ComponentTransform3D>();
     for(const entt::entity e: view)
     {
         const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
@@ -53,16 +53,16 @@ void BoundingBoxSystem::update(const GameClock& clock)
 
 void BoundingBoxSystem::render()
 {
-    if(editor::Scene::selected_entity == k_invalid_entity_id)
+    if(Scene::selected_entity == k_invalid_entity_id)
         return;
 
     Renderer3D::begin_line_pass();
-    auto view = editor::Scene::registry.view<ComponentOBB>();
+    auto view = Scene::registry.view<ComponentOBB>();
     for(const entt::entity e: view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
 
-        if(e == editor::Scene::selected_entity)
+        if(e == Scene::selected_entity)
             Renderer3D::draw_cube(glm::scale(OBB.model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
         else if(OBB.display) // TODO: || editor_show_OBBs
             Renderer3D::draw_cube(glm::scale(OBB.model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});

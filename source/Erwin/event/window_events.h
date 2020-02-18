@@ -89,6 +89,19 @@ struct FramebufferResizeEvent: public WEvent
     int height;
 };
 
+struct BeginFrameEvent: public WEvent
+{
+    EVENT_DECLARATION(BeginFrameEvent);
+    BeginFrameEvent() = default;
+    
+#ifdef W_DEBUG
+    virtual void print(std::ostream& stream) const override
+    {
+        stream << "(void)";
+    }
+#endif
+};
+
 struct KeyboardEvent: public WEvent
 {
 	EVENT_DECLARATION(KeyboardEvent);

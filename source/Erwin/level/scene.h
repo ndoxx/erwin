@@ -3,7 +3,7 @@
 #include "input/freefly_camera_controller.h"
 #include "entity/reflection.h"
 
-namespace editor
+namespace erwin
 {
 
 class Scene
@@ -23,4 +23,4 @@ public:
 	static entt::registry registry;
 };
 
-} // namespace editor
+} // namespace erwin

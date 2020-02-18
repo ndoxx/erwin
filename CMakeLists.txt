@@ -137,9 +137,12 @@ set(SRC_INPUT
     ${CMAKE_SOURCE_DIR}/source/Erwin/input/freefly_camera_controller.cpp
   )
 
+set(SRC_LEVEL
+    ${CMAKE_SOURCE_DIR}/source/Erwin/level/scene.cpp
+  )
+
 set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/layer_editor.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/scene.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp
@@ -189,6 +192,7 @@ add_library(erwin SHARED
             ${SRC_FILESYSTEM}
             ${SRC_MATH}
             ${SRC_ENTITY}
+            ${SRC_LEVEL}
             ${SRC_DEBUG}
             ${SRC_RENDERER}
             ${SRC_INPUT}

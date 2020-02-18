@@ -65,8 +65,6 @@ void init_arena(memory::HeapArea& area, std::size_t size);
 ResourceArena& get_arena();
 // Check that the resource arena is initialized
 bool is_arena_initialized();
-// Reset the resource arena
-void reset_arena();
 
 } // namespace filesystem
 } // namespace erwin

@@ -1,6 +1,6 @@
 #include "editor/overlay_camera_tracker.h"
 #include "editor/font_awesome.h"
-#include "editor/scene.h"
+#include "level/scene.h"
 #include "erwin.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
