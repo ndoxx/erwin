@@ -113,6 +113,7 @@ bool save(const fs::path& filepath)
 		return false;
 
 	registry.serialize(cfg_f);
+	cfg_f.write();
 
 	return true;
 }

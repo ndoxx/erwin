@@ -15,6 +15,9 @@
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
 
+#include "core/config.h"
+#include "filesystem/filesystem.h"
+
 using namespace erwin;
 
 void init_logger()
@@ -33,31 +36,24 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-static inline std::string size_to_string(size_t size)
-{
-	static std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
-
-	int ii = 0;
-	while(size%1024 == 0 && ii < 4)
-	{
-	    size /= 1024;
-	    ++ii;
-	}
-
-	return std::to_string(size) + sizes[ii];
-}
-
 int main(int argc, char** argv)
 {
 	init_logger();
+	filesystem::init();
+    cfg::load(filesystem::get_root_dir() / "bin/test/test_config.xml");
 
-	std::cout << size_to_string(1) << std::endl;
-	std::cout << size_to_string(128) << std::endl;
-	std::cout << size_to_string(1024) << std::endl;
-	std::cout << size_to_string(1024*2) << std::endl;
-	std::cout << size_to_string(1024*2+1) << std::endl;
-	std::cout << size_to_string(1024*1024*458) << std::endl;
-	std::cout << size_to_string(1024*1024*458+5) << std::endl;
+    DLOG("nuclear",1) << "an_int: " << cfg::get<int>("test_config.foo.an_int"_h, 0) << std::endl;
+    DLOG("nuclear",1) << "a_bool: " << cfg::get<bool>("test_config.baz.a_bool"_h, false) << std::endl;
+    DLOG("nuclear",1) << "a_size: " << cfg::get<size_t>("test_config.foo.a_size"_h, 0) << std::endl;
+
+    cfg::set<int>("test_config.foo.an_int"_h, 12);
+    cfg::set<bool>("test_config.baz.a_bool"_h, true);
+    cfg::set<size_t>("test_config.foo.a_size"_h, 22_MB);
+    DLOG("nuclear",1) << "an_int: " << cfg::get<int>("test_config.foo.an_int"_h, 0) << std::endl;
+    DLOG("nuclear",1) << "a_bool: " << cfg::get<bool>("test_config.baz.a_bool"_h, false) << std::endl;
+
+    cfg::save(filesystem::get_root_dir() / "bin/test/test_config.xml");
+
 
 	return 0;
 }

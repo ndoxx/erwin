@@ -219,7 +219,7 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         {
             auto it = bools_.find(full_name_hash);
             if(it!=bools_.end())
-                xml::set_attribute(doc, xnode, "value", it->second);
+                xml::set_attribute(doc, xnode, "value", std::string(it->second ? "true" : "false"));
             break;
         }
         case "string"_h:
