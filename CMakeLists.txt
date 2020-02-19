@@ -48,7 +48,7 @@ set(SRC_CORE
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/unique_id.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/value_map.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/core/registry.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
