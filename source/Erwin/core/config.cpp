@@ -1,7 +1,7 @@
 #include "core/config.h"
 #include "core/core.h"
 #include "utils/string.h"
-#include "core/value_map.h"
+#include "core/registry.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
@@ -16,7 +16,7 @@ namespace erwin
 namespace cfg
 {
 
-static ValueMap vmap;
+static Registry registry;
 
 static void init_logger(rapidxml::xml_node<>* node)
 {
@@ -90,83 +90,134 @@ static void init_logger(rapidxml::xml_node<>* node)
     }
 }
 
-bool init(const fs::path& filepath)
+bool load(const fs::path& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())
-	{
 		return false;
-	}
 
-	vmap.init(cfg_f.root, "erwin");
-	init_logger(cfg_f.root->first_node("logger"));
+	registry.deserialize(cfg_f);
+
+	// Special treatment for logger configuration node if any
+	auto* logger_node = cfg_f.root->first_node("logger");
+	if(logger_node)
+		init_logger(logger_node);
 
 	return true;
 }
 
-bool init_client(const fs::path& filepath)
+bool save(const fs::path& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())
-	{
 		return false;
-	}
 
-	// Use file name as root
-	vmap.init(cfg_f.root, filepath.stem().string());
+	registry.serialize(cfg_f);
 
 	return true;
 }
 
-template <> size_t get(hash_t hname, size_t def)
+template <> const size_t& get(hash_t hname, const size_t& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> uint32_t get(hash_t hname, uint32_t def)
+template <> const uint32_t& get(hash_t hname, const uint32_t& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> int32_t get(hash_t hname, int32_t def)
+template <> const int32_t& get(hash_t hname, const int32_t& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> float get(hash_t hname, float def)
+template <> const float& get(hash_t hname, const float& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> bool get(hash_t hname, bool def)
+template <> const bool& get(hash_t hname, const bool& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> std::string get(hash_t hname, std::string def)
+template <> const std::string& get(hash_t hname, const std::string& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> glm::vec2 get(hash_t hname, glm::vec2 def)
+template <> const glm::vec2& get(hash_t hname, const glm::vec2& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> glm::vec3 get(hash_t hname, glm::vec3 def)
+template <> const glm::vec3& get(hash_t hname, const glm::vec3& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-template <> glm::vec4 get(hash_t hname, glm::vec4 def)
+template <> const glm::vec4& get(hash_t hname, const glm::vec4& def)
 {
-	return vmap.get(hname, def);
+	return registry.get(hname, def);
 }
 
-fs::path get(hash_t hname)
+const fs::path& get(hash_t hname)
 {
-	return vmap.get(hname);
+	return registry.get(hname);
 }
+
+
+template <> bool set(hash_t hname, const size_t& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const uint32_t& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const int32_t& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const float& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const bool& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const std::string& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const fs::path& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const glm::vec2& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const glm::vec3& val)
+{
+	return registry.set(hname, val);
+}
+
+template <> bool set(hash_t hname, const glm::vec4& val)
+{
+	return registry.set(hname, val);
+}
+
 
 } // namespace cfg
 } // namespace erwin

@@ -111,6 +111,18 @@ bool parse_attribute(rapidxml::xml_node<>* node, const char* name, T& destinatio
 }
 
 template <typename T>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const T& source)
+{
+    rapidxml::xml_attribute<>* pAttr = node->first_attribute(name);
+    if(!pAttr)
+        return false;
+
+    char* attr_value = doc.allocate_string(to_string<T>(source).c_str());
+    pAttr->value(attr_value);
+    return true;
+}
+
+template <typename T>
 bool parse_node(rapidxml::xml_node<>* parent, const char* leaf_name, T& destination)
 {
     rapidxml::xml_node<>* leaf_node = parent->first_node(leaf_name);
@@ -128,6 +140,8 @@ hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name);
 template <>
 void parse_node<const char*>(rapidxml::xml_node<>* parent, const char* name, std::function<void(const char* value)> exec);
 
+template <>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const std::string& source);
 
 // Unused
 template <typename T>

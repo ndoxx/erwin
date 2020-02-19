@@ -143,7 +143,7 @@ bool Application::init()
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
-        cfg::init(filesystem::get_config_dir() / "erwin.xml");
+        cfg::load(filesystem::get_config_dir() / "erwin.xml");
 
         // Initialize event bus
         EventBus::init();
@@ -215,7 +215,7 @@ bool Application::init()
         DLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file: s_storage.configuration_files)
-            cfg::init_client(cfg_file);
+            cfg::load(cfg_file);
     }
 
     // Initialize client memory

@@ -47,6 +47,9 @@ void set_asset_dir(const fs::path& path);
 // Set application configuration directory
 void set_client_config_dir(const fs::path& path);
 
+// Make sure a user config file exists, copy default config to user dir if necessary
+bool ensure_user_config(const fs::path& user_path, const fs::path& default_path);
+
 // Get a stream to an asset in asset directory
 std::ifstream get_asset_stream(const fs::path& path);
 // Get a text file in asset directory as a string

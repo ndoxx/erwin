@@ -85,11 +85,7 @@ static void build_user_dir()
 
 static void check_user_dir()
 {
-#ifdef __linux__
     s_user_dir = get_home_directory() / ".erwin";
-#else
-    W_ASSERT(false, "check_user_dir() not yet implemented for this platform.");
-#endif
 
     // * Check existence (TODO: and integrity) of user directory
     if(!fs::exists(s_user_dir))
@@ -154,6 +150,41 @@ void set_asset_dir(const fs::path& path)
 void set_client_config_dir(const fs::path& path)
 {
     s_client_config_path = s_root_path / path;
+}
+
+bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
+{
+    bool has_user    = fs::exists(user_path);
+    bool has_default = fs::exists(default_path);
+
+    if(!has_default && !has_user)
+    {
+        DLOGE("config") << "Failed to open user and default files:" << std::endl;
+        DLOGI << "User:    " << WCC('p') << user_path << std::endl;
+        DLOGI << "Default: " << WCC('p') << default_path << std::endl;
+        return false;
+    }
+
+    bool copy_default = (has_default && !has_user);
+    if(has_default && has_user)
+    {
+        // Copy default if more recent
+        auto ftime_u         = fs::last_write_time(user_path);
+        std::time_t cftime_u = decltype(ftime_u)::clock::to_time_t(ftime_u);
+        auto ftime_d         = fs::last_write_time(default_path);
+        std::time_t cftime_d = decltype(ftime_d)::clock::to_time_t(ftime_d);
+        copy_default = (cftime_d > cftime_u);
+    }
+
+    if(copy_default)
+    {
+        DLOG("config",1) << "Copying default config:" << std::endl;
+        DLOGI << "User:    " << WCC('p') << user_path << std::endl;
+        DLOGI << "Default: " << WCC('p') << default_path << std::endl;
+        fs::copy_file(default_path, user_path, fs::copy_options::overwrite_existing);
+    }
+
+    return true;
 }
 
 std::ifstream get_asset_stream(const fs::path& path)

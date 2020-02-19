@@ -1,0 +1,423 @@
+#include "core/registry.h"
+#include "utils/string.h"
+#include "filesystem/filesystem.h"
+#include "filesystem/xml_file.h"
+
+namespace erwin
+{
+
+void Registry::deserialize(const xml::XMLFile& xml)
+{
+    // Use file name as root name
+    std::string rootname = xml.filepath.stem().string();
+
+	if(xml.root)
+		parse_properties(xml.root, rootname);
+}
+
+// Recursive parser
+void Registry::parse_properties(void* node, const std::string& name_chain)
+{
+    rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
+
+    // For each siblings at this recursion level
+    for(rapidxml::xml_node<>* cur_node=xnode->first_node();
+        cur_node;
+        cur_node=cur_node->next_sibling())
+    {
+        // Look for children node if any
+        rapidxml::xml_node<>* child_node = cur_node->first_node();
+        if(child_node)
+        {
+            // Get current node name and append to chain
+            const char* node_name = cur_node->name();
+            std::string chain(name_chain + "." + node_name);
+            // Get configuration for next level
+            parse_properties(cur_node, chain);
+        }
+        else
+        {
+            // If no child, then try to extract property
+            hash_t name_hash = parse_xml_property(cur_node, name_chain);
+            if(!name_hash)
+            {
+                // Node is invalid
+            }
+        }
+    }
+}
+
+// Property parser
+hash_t Registry::parse_xml_property(void* node, const std::string& name_chain)
+{
+	rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
+
+    std::string str_var_name;
+    if(!xml::parse_attribute(xnode, "name", str_var_name))
+        return 0;
+
+    std::string str_full_name(name_chain + "." + str_var_name);
+    hash_t full_name_hash = H_(str_full_name.c_str());
+
+    // Get hash from node name
+    hash_t type_h = H_(xnode->name());
+
+    switch(type_h)
+    {
+        case "uint"_h:
+        {
+            uint32_t value = 0;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            uints_[full_name_hash] = value;
+            break;
+        }
+        case "int"_h:
+        {
+            int32_t value = 0;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            ints_[full_name_hash] = value;
+            break;
+        }
+        case "float"_h:
+        {
+            float value = 0.0f;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            floats_[full_name_hash] = value;
+            break;
+        }
+        case "bool"_h:
+        {
+            bool value = false;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            bools_[full_name_hash] = value;
+            break;
+        }
+        case "string"_h:
+        {
+            std::string value;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            strings_[full_name_hash] = value;
+            break;
+        }
+        case "vec2"_h:
+        {
+            glm::vec2 value(0.0f);
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            vec2s_[full_name_hash] = value;
+            break;
+        }
+        case "vec3"_h:
+        {
+            glm::vec3 value(0.0f);
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            vec3s_[full_name_hash] = value;
+            break;
+        }
+        case "vec4"_h:
+        {
+            glm::vec4 value(0.0f);
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            vec4s_[full_name_hash] = value;
+            break;
+        }
+        case "path"_h:
+        {
+            std::string value;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            fs::path the_path(filesystem::get_root_dir() / value);
+            if(!fs::exists(the_path)) return 0;
+            paths_[full_name_hash] = the_path;
+            break;
+        }
+        case "size"_h:
+        {
+            std::string value;
+            if(!xml::parse_attribute(xnode, "value", value)) return 0;
+            sizes_[full_name_hash] = su::parse_size(value, '_');
+            break;
+        }
+    }
+
+    return full_name_hash;
+}
+
+void Registry::serialize(xml::XMLFile& xml)
+{
+    // Use file name as root name
+    std::string rootname = xml.filepath.stem().string();
+
+    if(xml.root)
+        serialize_properties(&xml.doc, xml.root, rootname);
+}
+
+void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain)
+{
+    rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
+
+    // For each siblings at this recursion level
+    for(rapidxml::xml_node<>* cur_node=xnode->first_node();
+        cur_node;
+        cur_node=cur_node->next_sibling())
+    {
+        // Look for children node if any
+        rapidxml::xml_node<>* child_node = cur_node->first_node();
+        if(child_node)
+        {
+            // Get current node name and append to chain
+            const char* node_name = cur_node->name();
+            std::string chain(name_chain + "." + node_name);
+            // Get configuration for next level
+            serialize_properties(pdoc, cur_node, chain);
+        }
+        else
+        {
+            // If no child, then try to write property
+            write_xml_property(pdoc, cur_node, name_chain);
+        }
+    }
+}
+
+void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain)
+{
+    rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
+
+    std::string str_var_name;
+    if(!xml::parse_attribute(xnode, "name", str_var_name))
+        return;
+
+    std::string str_full_name(name_chain + "." + str_var_name);
+    hash_t full_name_hash = H_(str_full_name.c_str());
+
+    // Get hash from node name
+    hash_t type_h = H_(xnode->name());
+
+    auto& doc = *static_cast<rapidxml::xml_document<>*>(pdoc);
+    switch(type_h)
+    {
+        case "uint"_h:
+        {
+            auto it = uints_.find(full_name_hash);
+            if(it!=uints_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "int"_h:
+        {
+            auto it = ints_.find(full_name_hash);
+            if(it!=ints_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "float"_h:
+        {
+            auto it = floats_.find(full_name_hash);
+            if(it!=floats_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "bool"_h:
+        {
+            auto it = bools_.find(full_name_hash);
+            if(it!=bools_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "string"_h:
+        {
+            auto it = strings_.find(full_name_hash);
+            if(it!=strings_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "vec2"_h:
+        {
+            auto it = vec2s_.find(full_name_hash);
+            if(it!=vec2s_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "vec3"_h:
+        {
+            auto it = vec3s_.find(full_name_hash);
+            if(it!=vec3s_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "vec4"_h:
+        {
+            auto it = vec4s_.find(full_name_hash);
+            if(it!=vec4s_.end())
+                xml::set_attribute(doc, xnode, "value", it->second);
+            break;
+        }
+        case "path"_h:
+        {
+            auto it = paths_.find(full_name_hash);
+            if(it!=paths_.end())
+            {
+                if(!fs::exists(it->second)) return;
+                fs::path rel = fs::relative(it->second, filesystem::get_root_dir());
+                xml::set_attribute(doc, xnode, "value", rel.string());
+            }
+            break;
+        }
+        case "size"_h:
+        {
+            auto it = sizes_.find(full_name_hash);
+            if(it!=sizes_.end())
+                xml::set_attribute(doc, xnode, "value", su::size_to_string(it->second));
+            break;
+        }
+    }
+}
+
+template <> const size_t& Registry::get(hash_t hname, const size_t& def)
+{
+    auto it = sizes_.find(hname);
+    return (it != sizes_.end()) ? it->second : def;
+}
+
+template <> const uint32_t& Registry::get(hash_t hname, const uint32_t& def)
+{
+	auto it = uints_.find(hname);
+	return (it != uints_.end()) ? it->second : def;
+}
+
+template <> const int32_t& Registry::get(hash_t hname, const int32_t& def)
+{
+	auto it = ints_.find(hname);
+	return (it != ints_.end()) ? it->second : def;
+}
+
+template <> const float& Registry::get(hash_t hname, const float& def)
+{
+	auto it = floats_.find(hname);
+	return (it != floats_.end()) ? it->second : def;
+}
+
+template <> const bool& Registry::get(hash_t hname, const bool& def)
+{
+	auto it = bools_.find(hname);
+	return (it != bools_.end()) ? it->second : def;
+}
+
+template <> const std::string& Registry::get(hash_t hname, const std::string& def)
+{
+	auto it = strings_.find(hname);
+	return (it != strings_.end()) ? it->second : def;
+}
+
+template <> const glm::vec2& Registry::get(hash_t hname, const glm::vec2& def)
+{
+	auto it = vec2s_.find(hname);
+	return (it != vec2s_.end()) ? it->second : def;
+}
+
+template <> const glm::vec3& Registry::get(hash_t hname, const glm::vec3& def)
+{
+	auto it = vec3s_.find(hname);
+	return (it != vec3s_.end()) ? it->second : def;
+}
+
+template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def)
+{
+	auto it = vec4s_.find(hname);
+	return (it != vec4s_.end()) ? it->second : def;
+}
+
+static fs::path empty_path;
+const fs::path& Registry::get(hash_t hname)
+{
+	auto it = paths_.find(hname);
+	return (it != paths_.end()) ? it->second : empty_path;
+}
+
+bool Registry::is(hash_t name)
+{
+    auto it = bools_.find(name);
+	return (it != bools_.end()) ? it->second : false;
+}
+
+
+template <> bool Registry::set(hash_t hname, const size_t& val)
+{
+    auto it = sizes_.find(hname);
+    if(it == sizes_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const uint32_t& val)
+{
+    auto it = uints_.find(hname);
+    if(it == uints_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const int32_t& val)
+{
+    auto it = ints_.find(hname);
+    if(it == ints_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const float& val)
+{
+    auto it = floats_.find(hname);
+    if(it == floats_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const bool& val)
+{
+    auto it = bools_.find(hname);
+    if(it == bools_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const std::string& val)
+{
+    auto it = strings_.find(hname);
+    if(it == strings_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const fs::path& val)
+{
+    auto it = paths_.find(hname);
+    if(it == paths_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const glm::vec2& val)
+{
+    auto it = vec2s_.find(hname);
+    if(it == vec2s_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const glm::vec3& val)
+{
+    auto it = vec3s_.find(hname);
+    if(it == vec3s_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+template <> bool Registry::set(hash_t hname, const glm::vec4& val)
+{
+    auto it = vec4s_.find(hname);
+    if(it == vec4s_.end()) return false;
+    it->second = val;
+    return true;
+}
+
+
+} // namespace erwin

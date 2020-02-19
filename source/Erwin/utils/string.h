@@ -106,6 +106,20 @@ static inline size_t parse_size(const std::string& input, char delimiter='_')
     return size;
 }
 
+static inline std::string size_to_string(size_t size)
+{
+    static std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
+
+    int ii = 0;
+    while(size%1024 == 0 && ii < 4)
+    {
+        size /= 1024;
+        ++ii;
+    }
+
+    return std::to_string(size) + sizes[ii];
+}
+
 static inline void center(std::string& input, int size)
 {
     int diff = size - input.size();

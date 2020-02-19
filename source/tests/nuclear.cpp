@@ -33,9 +33,31 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+static inline std::string size_to_string(size_t size)
+{
+	static std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
+
+	int ii = 0;
+	while(size%1024 == 0 && ii < 4)
+	{
+	    size /= 1024;
+	    ++ii;
+	}
+
+	return std::to_string(size) + sizes[ii];
+}
+
 int main(int argc, char** argv)
 {
 	init_logger();
+
+	std::cout << size_to_string(1) << std::endl;
+	std::cout << size_to_string(128) << std::endl;
+	std::cout << size_to_string(1024) << std::endl;
+	std::cout << size_to_string(1024*2) << std::endl;
+	std::cout << size_to_string(1024*2+1) << std::endl;
+	std::cout << size_to_string(1024*1024*458) << std::endl;
+	std::cout << size_to_string(1024*1024*458+5) << std::endl;
 
 	return 0;
 }

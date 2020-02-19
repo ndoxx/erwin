@@ -225,5 +225,17 @@ hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name)
     return H_(leaf_node->value());
 }
 
+template <>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const std::string& source)
+{
+    rapidxml::xml_attribute<>* pAttr = node->first_attribute(name);
+    if(!pAttr)
+        return false;
+
+    char* attr_value = doc.allocate_string(source.c_str());
+    pAttr->value(attr_value);
+    return true;
+}
+
 } // namespace xml
 } // namespace erwin

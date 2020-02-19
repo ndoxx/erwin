@@ -51,48 +51,18 @@ bool Input::parse_keybindings(void* node)
 bool Input::load_config()
 {
 	DLOGN("config") << "Loading keybindings." << std::endl;
-	// * Check if a keybindings file exists in user directory
-	// * Check if a default keybindings file exists in config directory
-	// * If both default and user keybindings exist, load the most recent
-	// * Else copy default to user and load user
 
 	fs::path user_filepath    = filesystem::get_user_dir() / "config/keybindings.xml";
-	bool has_user             = fs::exists(user_filepath);
 	fs::path default_filepath = filesystem::get_root_dir() / s_default_keybindings_path;
-	bool has_default          = fs::exists(default_filepath);
-
-	if(!has_default && !has_user)
-	{
-		DLOGE("config") << "Failed to open user and default keybindings files." << std::endl;
+	if(!filesystem::ensure_user_config(user_filepath, default_filepath))
 		return false;
-	}
-
-	bool copy_default = (has_default && !has_user);
-	if(has_default && has_user)
-	{
-		// Copy default if more recent
-		auto ftime_u         = fs::last_write_time(user_filepath);
-		std::time_t cftime_u = decltype(ftime_u)::clock::to_time_t(ftime_u);
-		auto ftime_d         = fs::last_write_time(default_filepath);
-		std::time_t cftime_d = decltype(ftime_d)::clock::to_time_t(ftime_d);
-		copy_default = (cftime_d > cftime_u);
-	}
-
-	if(copy_default)
-	{
-		DLOGI << "Copying default." << std::endl;
-		if(fs::exists(default_filepath))
-			fs::copy_file(default_filepath, user_filepath, fs::copy_options::overwrite_existing);
-	}
 
 	// Read file and parse
 	xml::XMLFile kbd_f(user_filepath);
 	if(!kbd_f.read())
 		return false;
 
-	bool success = parse_keybindings(kbd_f.root);
-
-	return success;
+	return parse_keybindings(kbd_f.root);
 }
 
 bool Input::save_config()
