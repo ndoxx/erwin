@@ -39,4 +39,10 @@ void Scene::select(EntityID entity)
 	selected_entity = entity;
 }
 
+void Scene::drop_selection()
+{
+	selected_entity = k_invalid_entity_id;
+}
+
+
 } // namespace erwin

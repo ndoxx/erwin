@@ -8,6 +8,7 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
+#include "input/input.h"
 #include "level/scene.h"
 #include "imgui/theme.h"
 #include "debug/logger_thread.h"
@@ -244,7 +245,13 @@ bool EditorLayer::on_event(const MouseScrollEvent& event)
 
 bool EditorLayer::on_event(const KeyboardEvent& event)
 {
-	return false;
+    if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_DROP_SELECTION))
+    {
+        Scene::drop_selection();
+        return true;
+    }
+
+    return false;
 }
 
 

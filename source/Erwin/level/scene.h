@@ -14,6 +14,7 @@ public:
 
 	static void add_entity(erwin::EntityID entity, const std::string& name, const char* icon = nullptr);
 	static void select(erwin::EntityID entity);
+	static void drop_selection();
 
 	static erwin::EntityID selected_entity;
 	static erwin::EntityID directional_light;

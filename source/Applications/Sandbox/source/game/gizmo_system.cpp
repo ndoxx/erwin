@@ -71,7 +71,6 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
             {
                 nearest = data.near;
                 selected_part_ = ii;
-                DLOGW("editor") << "Selected: " << ii << std::endl;
             }
         }
 	}
