@@ -1,5 +1,6 @@
 #include "editor/widget_inspector.h"
 #include "level/scene.h"
+#include "editor/font_awesome.h"
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "render/renderer_pp.h"
@@ -41,6 +42,8 @@ void InspectorWidget::entity_tab()
     {
         erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint64_t reflected_type, void* data)
         {
+            // Don't let special editor components be editable this way
+            // TODO: automate this via a component meta data flag
             if(reflected_type == "ComponentEditorDescription"_hs)
                 return;
             
@@ -48,7 +51,16 @@ void InspectorWidget::entity_tab()
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
             if(ImGui::TreeNode(component_name))
             {
-                entt::resolve(reflected_type).func(W_METAFUNC_INSPECTOR_GUI).invoke({}, data);
+                // Basic controls over this component
+                ImGui::SameLine(ImGui::GetWindowWidth()-30);
+                if(ImGui::Button(ICON_FA_WINDOW_CLOSE))
+                {
+                    invoke(W_METAFUNC_REMOVE_COMPONENT, reflected_type, Scene::registry, Scene::selected_entity);
+                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << (unsigned long)Scene::selected_entity << std::endl;
+                }
+
+                // Invoke GUI for this component
+                invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data);
                 ImGui::TreePop();
             }
             ImGui::Separator();

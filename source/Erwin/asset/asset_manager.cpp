@@ -35,6 +35,7 @@ static struct AssetManagerStorage
 
 // ---------------- PUBLIC API ----------------
 
+// TODO: Cache lookup before creating any resource
 TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 {
 	TextureAtlasHandle handle = TextureAtlasHandle::acquire();

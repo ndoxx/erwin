@@ -85,7 +85,7 @@ void GameLayer::on_attach()
 		renderable.material.shader = deferred_pbr;
 		renderable.material.texture_group = tg;
 		renderable.material.ubo = pbr_material_ubo;
-		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
+		renderable.material_data.tint = {1.f,1.f,1.f,1.f};
 
 		Scene::registry.assign<ComponentTransform3D>(ent, transform);
 		Scene::registry.assign<ComponentOBB>(ent, OBB);
@@ -115,16 +115,16 @@ void GameLayer::on_update(GameClock& clock)
 	bounding_box_system_.update(clock);
 
 	// TMP: Update cube -> MOVE to script or animation system
-	for(int ii=0; ii<4; ++ii)
-	{
-		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
-		float s2 = s*s;
+	// for(int ii=0; ii<4; ++ii)
+	// {
+	// 	float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
+	// 	float s2 = s*s;
 
-		auto& renderable = Scene::registry.get<ComponentRenderablePBR>(Scene::entities[1+ii]);
+	// 	auto& renderable = Scene::registry.get<ComponentRenderablePBR>(Scene::entities[1+ii]);
 
-		renderable.material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
-		renderable.material_data.tint.r = 0.3f*exp(-6.f*(ii+1.f)*s2);
-	}
+	// 	renderable.material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
+	// 	renderable.material_data.tint.r = 0.3f*exp(-6.f*(ii+1.f)*s2);
+	// }
 
     // TMP: SCENE must have a directional light entity or this fails
     const auto& dirlight = Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light);

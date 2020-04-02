@@ -9,15 +9,31 @@
     * GL_KHR_texture_compression_astc_ldr
 
 ##TODO:
+    --[EDITOR]--
+    [ ] Ajouter / détruire des composants pour chaque entité
+    [ ] Créer / détruire des entités
+    [ ] (Dé)sérialization de la scène
+
+    --[ASSET PIPELINE]--
+    [ ] Importation de modèles
+        [ ] Définir / implémenter un format custom
+            [ ] Non-rigged / rigged
+        [ ] Coder un exporteur Python pour blender, vers ce format
+        [ ] Coder un exporteur Python pour les matériaux (?)
+        [ ] Coder un loader Erwin-side raccordé à l'AssetManager
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
     https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
         [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
         stocker dans les CAT files.
+
+    --[ENGINE FEATURES]--
+    [ ] Resource caching
     [/] Ecrire un renderer 2D multi-threaded
-        [ ] Ecrire des classes de GUI basiques tirant parti du renderer 2D
-    [ ] Ecrire un renderer 3D multi-threaded
+        [ ] Ecrire des classes ingame GUI basiques tirant parti du renderer 2D
+    [/] Ecrire un renderer 3D multi-threaded
     [ ] Gérer le callback d'erreurs OpenGL
     https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml
+
 
 ##TODOC:
     [ ] Renderer
