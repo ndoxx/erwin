@@ -16,6 +16,11 @@ public:
 	static void select(erwin::EntityID entity);
 	static void drop_selection();
 
+	static void mark_for_removal(erwin::EntityID entity, uint64_t reflected_component);
+	static void mark_for_removal(erwin::EntityID entity);
+
+	static void cleanup();
+
 	static erwin::EntityID selected_entity;
 	static erwin::EntityID directional_light;
 	static std::vector<erwin::EntityID> entities;

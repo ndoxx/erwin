@@ -55,8 +55,9 @@ void InspectorWidget::entity_tab()
                 ImGui::SameLine(ImGui::GetWindowWidth()-30);
                 if(ImGui::Button(ICON_FA_WINDOW_CLOSE))
                 {
-                    invoke(W_METAFUNC_REMOVE_COMPONENT, reflected_type, Scene::registry, Scene::selected_entity);
+                    Scene::mark_for_removal(Scene::selected_entity, reflected_type);
                     DLOG("editor",1) << "Removed component " << component_name << " from entity " << (unsigned long)Scene::selected_entity << std::endl;
+                    return;
                 }
 
                 // Invoke GUI for this component

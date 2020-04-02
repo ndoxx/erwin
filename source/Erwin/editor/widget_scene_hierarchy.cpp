@@ -38,6 +38,20 @@ void SceneHierarchyWidget::on_imgui_render()
         ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
         if(ImGui::IsItemClicked())
             new_selection = e;
+
+        // Context menu for entities
+        ImGui::PushID(ImGui::GetID((void*)(intptr_t)ii));
+        if(ImGui::BeginPopupContextItem("Entity context menu"))
+        {
+            if(ImGui::Selectable("Remove"))
+            {
+                Scene::mark_for_removal(e);
+                DLOG("editor",1) << "Removed entity " << (unsigned long)e << std::endl;
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::PopID();
+
         ++ii;
     }
 

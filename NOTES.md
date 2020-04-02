@@ -10,8 +10,11 @@
 
 ##TODO:
     --[EDITOR]--
-    [ ] Ajouter / détruire des composants pour chaque entité
-    [ ] Créer / détruire des entités
+    [ ] Undo / Redo system
+    [/] Ajouter / détruire des composants pour chaque entité
+        [ ] Undo / Redo
+    [/] Créer / détruire des entités
+        [ ] Undo / Redo
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
@@ -2231,3 +2234,4 @@ Un désavantage majeur est la nécessité de maintenir le header action.h en con
 J'ai aussi codé un widget ImGui pour l'éditeur qui permet de changer les keybindings.
 
 ![Widget ImGui Key bindings.\label{figTexturePeek}](../../Erwin_rel/screens_erwin/erwin_15a_keybindings.png)
+
