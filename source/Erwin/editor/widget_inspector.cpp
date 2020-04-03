@@ -4,6 +4,7 @@
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "render/renderer_pp.h"
+#include "imgui/imgui_utils.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -66,6 +67,35 @@ void InspectorWidget::entity_tab()
             }
             ImGui::Separator();
         });
+
+        // Interface to add a new component
+        const auto& component_names = get_component_names();
+        static uint64_t current_component = component_names.begin()->first;
+        const char* name = component_names.at(current_component).c_str();
+        ImGui::TextUnformatted("Add a new component");
+        if(ImGui::BeginCombo("##combo_add_component", name, ImGuiComboFlags_NoArrowButton))
+        {
+            for(auto&& [reflected, name]: component_names)
+            {
+                // If entity already has component, do not show in combo
+                if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, Scene::registry, Scene::selected_entity).cast<bool>())
+                    continue;
+
+                bool is_selected = (current_component == reflected);
+                if(ImGui::Selectable(name.c_str(), is_selected))
+                    current_component = reflected;
+                if(is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Add"))
+        {
+            invoke(W_METAFUNC_CREATE_COMPONENT, current_component, Scene::registry, Scene::selected_entity);
+            DLOG("editor",1) << "Added " << component_names.at(current_component) << " to entity " << (unsigned long)Scene::selected_entity << std::endl;
+        }
 
         ImGui::TreePop();
     }

@@ -18,6 +18,17 @@ Widget("Hierarchy", true)
 
 void SceneHierarchyWidget::on_imgui_render()
 {
+    // Basic controls
+    if(ImGui::Button("New entity"))
+    {
+        // For the moment, create an entity with editor description only
+        EntityID ent = Scene::registry.create();
+        Scene::add_entity(ent, "Entity #" + std::to_string((unsigned long)ent));
+    }
+
+    ImGui::Separator();
+
+    // Display hierarchy
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
     ImGuiTreeNodeFlags node_flags = base_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
 

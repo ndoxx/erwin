@@ -21,8 +21,10 @@ struct ComponentTransform3D
 {
 	glm::vec3 position  = {0.f,0.f,0.f};
 	glm::vec3 euler     = {0.f,0.f,0.f};
-	glm::quat rotation;
+	glm::quat rotation  = glm::quat({0.f,0.f,0.f});
 	float uniform_scale = 1.f;
+
+	ComponentTransform3D() = default;
 
 	// Euler angles are in the order: pitch, yaw, roll
 	ComponentTransform3D(const glm::vec3& position, const glm::vec3& euler_angles, float uniform_scale):

@@ -1,10 +1,13 @@
 #pragma once
 
 #include <type_traits>
+#include <map>
 #include "entt/entt.hpp"
 #include "debug/logger.h"
 
 #define W_METAFUNC_GET_COMPONENT "get_component"_hs
+#define W_METAFUNC_HAS_COMPONENT "has_component"_hs
+#define W_METAFUNC_CREATE_COMPONENT "create_component"_hs
 #define W_METAFUNC_REMOVE_COMPONENT "remove_component"_hs
 #define W_METAFUNC_TRY_REMOVE_COMPONENT "try_remove_component"_hs
 #define W_METAFUNC_INSPECTOR_GUI "inspector_GUI"_hs
@@ -23,6 +26,9 @@ extern void add_reflection(uint64_t type_id, uint64_t reflected_type);
 // Obtain reflection hash string from type ID
 extern uint64_t reflect(uint64_t type_id);
 
+// Obtain map of reflection hash string to component name
+extern const std::map<uint64_t, std::string>& get_component_names();
+
 // Get a component from its associated meta-object
 template <typename ComponentType>
 static inline ComponentType& get_component(entt::registry& reg, entt::entity e)
@@ -30,16 +36,30 @@ static inline ComponentType& get_component(entt::registry& reg, entt::entity e)
     return reg.get<ComponentType>(e);
 }
 
+// Check if an entity has a specific component
+template <typename ComponentType>
+static inline bool has_component(entt::registry& reg, entt::entity e)
+{
+    return reg.has<ComponentType>(e);
+}
+
+// Create a component
+template <typename ComponentType>
+static inline void create_component(entt::registry& reg, entt::entity e)
+{
+    reg.assign<ComponentType>(e);
+}
+
 // Remove a component given its associated meta-object
 template <typename ComponentType>
-static void remove_component(entt::registry& reg, entt::entity e)
+static inline void remove_component(entt::registry& reg, entt::entity e)
 {
     reg.remove<ComponentType>(e);
 }
 
 // Remove a component given its associated meta-object only if it exists
 template <typename ComponentType>
-static void try_remove_component(entt::registry& reg, entt::entity e)
+static inline void try_remove_component(entt::registry& reg, entt::entity e)
 {
     reg.remove_if_exists<ComponentType>(e);
 }
@@ -53,7 +73,6 @@ static void try_remove_component(entt::registry& reg, entt::entity e)
 {
 	return entt::resolve(reflected_type).func(func_name).invoke({}, data);
 }
-
 
 // Any component that needs to be editable in an inspector should specialize this function.
 // The opaque pointer is expected to be a component instance pointer, specialization is 
@@ -104,7 +123,9 @@ constexpr EntityID k_invalid_entity_id = entt::null;
 		.type( #_type ##_hs) \
 		.prop("name"_hs, #_type ) \
 		.func<&erwin::get_component< _type >, entt::as_alias_t>(W_METAFUNC_GET_COMPONENT) \
-		.func<&erwin::remove_component< _type >, entt::as_alias_t>(W_METAFUNC_REMOVE_COMPONENT) \
-		.func<&erwin::try_remove_component< _type >, entt::as_alias_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
+		.func<&erwin::has_component< _type >>(W_METAFUNC_HAS_COMPONENT) \
+		.func<&erwin::create_component< _type >, entt::as_void_t>(W_METAFUNC_CREATE_COMPONENT) \
+		.func<&erwin::remove_component< _type >, entt::as_void_t>(W_METAFUNC_REMOVE_COMPONENT) \
+		.func<&erwin::try_remove_component< _type >, entt::as_void_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
 		.func<&erwin::inspector_GUI< _type >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
 	erwin::add_reflection(entt::type_info< _type >::id(), #_type ##_hs)

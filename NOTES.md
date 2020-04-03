@@ -13,6 +13,8 @@
     [ ] Undo / Redo system
     [/] Ajouter / détruire des composants pour chaque entité
         [ ] Undo / Redo
+        Note : Au lieu de simplement détruire une entité / un composant, la/le faire passer
+        dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [/] Créer / détruire des entités
         [ ] Undo / Redo
     [ ] (Dé)sérialization de la scène
