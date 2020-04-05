@@ -101,8 +101,8 @@ void EditorLayer::on_attach()
 
     add_widget(s_storage.view_menu, new editor::SceneViewWidget());
     add_widget(s_storage.view_menu, new editor::SceneHierarchyWidget());
-    add_widget(s_storage.view_menu, new editor::InspectorWidget());
     add_widget(s_storage.view_menu, new editor::MaterialsWidget());
+    add_widget(s_storage.view_menu, new editor::InspectorWidget());
 
     // Register main render target in peek widget
     editor::RTPeekWidget* peek_widget;

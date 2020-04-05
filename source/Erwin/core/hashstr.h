@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 namespace erwin
 {
@@ -59,6 +60,14 @@ constexpr hash_t operator "" _h(const char* internstr, size_t)
 inline hash_t HCOMBINE_(hash_t first, hash_t second)
 {
     return (first ^ second) * detail::prime;
+}
+
+inline hash_t HCOMBINE_(const std::vector<hash_t>& hashes)
+{
+    hash_t ret = hashes[0];
+    for(int ii=1; ii<hashes.size(); ++ii)
+        ret = HCOMBINE_(ret, hashes[ii]);
+    return ret;
 }
 
 }

@@ -7,6 +7,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 
+#include <set>
+
 namespace erwin
 {
 
@@ -48,6 +50,8 @@ static struct
 	UniformBufferHandle transform_ubo;
 
 	FrameData frame_data;
+
+	std::set<uint32_t> registered_shaders;
 
 	// State
 	uint64_t pass_state;
@@ -101,10 +105,16 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 
 void Renderer3D::register_material(const Material& material)
 {
+	// Check if already registered
+	if(s_storage.registered_shaders.find(material.shader.index) != s_storage.registered_shaders.end())
+		return;
+
 	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.frame_ubo);
 	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.transform_ubo);
 	if(material.ubo.index != k_invalid_handle)
 		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
+
+	s_storage.registered_shaders.insert(material.shader.index);
 }
 
 void Renderer3D::begin_deferred_pass()

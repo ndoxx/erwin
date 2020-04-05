@@ -32,7 +32,7 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
 	}
 	else
 	{
-		DLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << channels << std::endl;
+		DLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << int(channels) << std::endl;
 		DLOGI << "Defaulting to RGBA8." << std::endl;
 		return ImageFormat::RGBA8;
 	}
