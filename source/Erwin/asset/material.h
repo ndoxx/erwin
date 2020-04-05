@@ -33,8 +33,7 @@ struct Material
 	ShaderHandle shader;
 	TextureGroupHandle texture_group;
 	UniformBufferHandle ubo;
-	void* data;
-	uint32_t data_size;
+	uint32_t data_size = 0;
 };
 
 } // namespace erwin

@@ -9,7 +9,7 @@ GizmoSystem::GizmoSystem()
 {
     gizmo_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     gizmo_ubo_    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
-	gizmo_material_ = {gizmo_shader_, {}, gizmo_ubo_, &gizmo_data_, sizeof(GizmoData)};
+	gizmo_material_ = {gizmo_shader_, {}, gizmo_ubo_, sizeof(GizmoData)};
     Renderer3D::register_material(gizmo_material_);
 
     EVENTBUS.subscribe(this, &GizmoSystem::on_ray_scene_query_event);
@@ -93,7 +93,8 @@ void GizmoSystem::render()
     Renderer3D::begin_line_pass(false);
     Renderer3D::draw_mesh(CommonGeometry::get_vertex_array("origin_lines"_h), 
     						   transform->get_unscaled_model_matrix(), 
-    						   gizmo_material_);
+    						   gizmo_material_,
+                               &gizmo_data_);
     Renderer3D::end_line_pass();
 }
 

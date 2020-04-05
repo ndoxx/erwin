@@ -52,8 +52,7 @@ void GameLayer::on_attach()
 		directional_light.brightness = 3.7f;
 
 		ComponentRenderableDirectionalLight renderable;
-		renderable.material.shader = forward_sun;
-		renderable.material.ubo = sun_material_ubo;
+		renderable.set_material({forward_sun, {}, sun_material_ubo});
 		renderable.material_data.scale = 0.2f;
 
 		Scene::registry.assign<ComponentDirectionalLight>(ent, directional_light);
@@ -82,9 +81,7 @@ void GameLayer::on_attach()
 		ComponentRenderablePBR renderable;
 		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
 		renderable.set_emissive(5.f);
-		renderable.material.shader = deferred_pbr;
-		renderable.material.texture_group = tg;
-		renderable.material.ubo = pbr_material_ubo;
+		renderable.set_material({deferred_pbr, tg, pbr_material_ubo});
 		renderable.material_data.tint = {1.f,1.f,1.f,1.f};
 
 		Scene::registry.assign<ComponentTransform3D>(ent, transform);

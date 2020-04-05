@@ -8,6 +8,7 @@
 #include "editor/widget_hex_dump.h"
 #include "editor/widget_keybindings.h"
 #include "editor/widget_console.h"
+#include "editor/widget_materials.h"
 #include "input/input.h"
 #include "level/scene.h"
 #include "imgui/theme.h"
@@ -101,6 +102,7 @@ void EditorLayer::on_attach()
     add_widget(s_storage.view_menu, new editor::SceneViewWidget());
     add_widget(s_storage.view_menu, new editor::SceneHierarchyWidget());
     add_widget(s_storage.view_menu, new editor::InspectorWidget());
+    add_widget(s_storage.view_menu, new editor::MaterialsWidget());
 
     // Register main render target in peek widget
     editor::RTPeekWidget* peek_widget;

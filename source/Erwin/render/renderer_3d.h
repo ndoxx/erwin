@@ -33,7 +33,7 @@ public:
 
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
-	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data=nullptr);
 	// Draw a debug cube
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
 

@@ -4,7 +4,6 @@
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "render/renderer_pp.h"
-#include "imgui/imgui_utils.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -22,7 +21,7 @@ void InspectorWidget::entity_tab()
 {
     if(Scene::selected_entity == k_invalid_entity_id)
         return;
-    
+
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Properties"))
     {
@@ -69,11 +68,12 @@ void InspectorWidget::entity_tab()
         });
 
         // Interface to add a new component
+        // TODO: invalidate current_component on selection change
         const auto& component_names = get_component_names();
         static uint64_t current_component = component_names.begin()->first;
-        const char* name = component_names.at(current_component).c_str();
+        const std::string& label = component_names.at(current_component);
         ImGui::TextUnformatted("Add a new component");
-        if(ImGui::BeginCombo("##combo_add_component", name, ImGuiComboFlags_NoArrowButton))
+        if(ImGui::BeginCombo("##combo_add_component", label.c_str(), ImGuiComboFlags_NoArrowButton))
         {
             for(auto&& [reflected, name]: component_names)
             {

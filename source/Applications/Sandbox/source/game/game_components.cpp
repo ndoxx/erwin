@@ -3,12 +3,6 @@
 namespace erwin
 {
 
-ComponentRenderablePBR::ComponentRenderablePBR()
-{
-	material.data = &material_data;
-	material.data_size = sizeof(MaterialData);
-}
-
 template <>
 void inspector_GUI<ComponentRenderablePBR>(void* data)
 {
@@ -18,12 +12,6 @@ void inspector_GUI<ComponentRenderablePBR>(void* data)
 
     if(cmp->is_emissive())
     	ImGui::SliderFloat("Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.0f);
-}
-
-ComponentRenderableDirectionalLight::ComponentRenderableDirectionalLight()
-{
-	material.data = &material_data;
-	material.data_size = sizeof(MaterialData);
 }
 
 template <>
