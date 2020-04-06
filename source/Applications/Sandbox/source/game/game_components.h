@@ -38,6 +38,12 @@ struct ComponentRenderablePBR
 		material_data.emissive_scale = intensity;
 	}
 
+	inline void disable_emissivity()
+	{
+		material_data.flags &= ~(1<<0);
+		material_data.emissive_scale = 0.f;
+	}
+
 	inline bool is_emissive() const { return bool(material_data.flags & (1<<0)); }
 	inline bool is_ready() const    { return bool(flags & Flags::READY); }
 };

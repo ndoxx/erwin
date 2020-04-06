@@ -52,7 +52,7 @@ void InspectorWidget::entity_tab()
             if(ImGui::TreeNode(component_name))
             {
                 // Basic controls over this component
-                ImGui::SameLine(ImGui::GetWindowWidth()-30);
+                ImGui::SameLine(ImGui::GetWindowWidth()-50);
                 if(ImGui::Button(ICON_FA_WINDOW_CLOSE))
                 {
                     Scene::mark_for_removal(Scene::selected_entity, reflected_type);

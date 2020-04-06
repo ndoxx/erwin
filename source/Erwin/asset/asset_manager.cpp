@@ -23,7 +23,7 @@ constexpr std::size_t k_handle_alloc_size = 2*(sizeof(HandlePoolT<k_max_atlases>
 		DO_ACTION( MaterialHandle )
 
 
-struct MaterialWrapper
+struct MaterialDescriptor
 {
 	MaterialHandle material;
 	std::string name;
@@ -43,7 +43,7 @@ static struct
 	eastl::map<hash_t, ShaderHandle> shader_cache_;
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	eastl::map<hash_t, MaterialWrapper> material_names_;
+	eastl::vector<MaterialDescriptor> material_descriptors_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -117,7 +117,7 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
 	TextureGroup* tg = W_NEW(TextureGroup, s_storage.texture_group_pool_);
-	tg->load(filesystem::get_asset_dir() / filepath, nullptr);
+	tg->load(filesystem::get_asset_dir() / filepath, nullptr); // TODO: get a layout and check shader compatibility
 
 	// Register group
 	s_storage.texture_groups_[handle.index] = tg;
@@ -162,16 +162,21 @@ MaterialHandle AssetManager::create_material(const std::string& name,
 {
 	MaterialHandle handle = MaterialHandle::acquire();
 	s_storage.materials_[handle.index] = W_NEW(Material, s_storage.material_pool_) {shader, tg, ubo, data_size};
-	s_storage.material_names_.insert({H_(name.c_str()), {handle, name, ""}});
+	s_storage.material_descriptors_[handle.index] = {handle, name, ""};
 	Renderer3D::register_material(handle);
 	return handle;
 }
 
 void AssetManager::visit_materials(MaterialVisitor visit)
 {
-	for(auto&& [key, wrapper]: s_storage.material_names_)
-		if(visit(wrapper.material, wrapper.name, wrapper.description))
+	for(int ii=0; ii<k_max_materials; ++ii)
+	{
+		if(s_storage.materials_[ii] == nullptr)
+			continue;
+		const auto& desc = s_storage.material_descriptors_[ii];
+		if(visit(desc.material, desc.name, desc.description))
 			break;
+	}
 }
 
 template <typename KeyT, typename HandleT>
@@ -233,6 +238,7 @@ void AssetManager::release(MaterialHandle handle)
 	Material* mat = s_storage.materials_.at(handle.index);
 	W_DELETE(mat, s_storage.material_pool_);
 	s_storage.materials_[handle.index] = nullptr;
+	s_storage.material_descriptors_[handle.index] = {{},"",""};
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	
 	handle.release();
@@ -269,6 +275,7 @@ void AssetManager::init(memory::HeapArea& area)
 	s_storage.font_atlases_.resize(k_max_font_atlases, nullptr);
 	s_storage.texture_groups_.resize(k_max_texture_groups, nullptr);
 	s_storage.materials_.resize(k_max_materials, nullptr);
+	s_storage.material_descriptors_.resize(k_max_materials, {{},"",""});
 
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);
