@@ -34,7 +34,6 @@ void GameLayer::on_attach()
 	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Paved floor",
-		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/pavedFloor.tom"
 	);
@@ -42,7 +41,6 @@ void GameLayer::on_attach()
 	MaterialHandle mat_rock = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Rock tiling",
-		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/rockTiling.tom"
 	);
@@ -50,7 +48,6 @@ void GameLayer::on_attach()
 	MaterialHandle mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Dirt",
-		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/dirt.tom"
 	);
@@ -58,7 +55,6 @@ void GameLayer::on_attach()
 	MaterialHandle mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Magma",
-		{"albedo"_h, "normal_depth"_h, "mare"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/testEmissive.tom"
 	);
