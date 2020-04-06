@@ -14,7 +14,7 @@ struct ComponentRenderablePBR
 	};
 
 	VertexArrayHandle vertex_array;
-	Material material;
+	MaterialHandle material;
 
 	struct MaterialData
 	{
@@ -25,11 +25,10 @@ struct ComponentRenderablePBR
 
 	uint8_t flags = 0;
 
-	inline void set_material(const Material& _material)
+	inline void set_material(MaterialHandle _material)
 	{
 		material = _material;
-		material.data_size = sizeof(MaterialData);
-		if(material.shader.is_valid() && material.texture_group.is_valid() && material.ubo.is_valid())
+		if(material.is_valid())
 			flags |= Flags::READY;
 	}
 
@@ -53,7 +52,7 @@ struct ComponentRenderableDirectionalLight
 		READY = 1<<0,
 	};
 
-	Material material;
+	MaterialHandle material;
 
 	struct MaterialData
 	{
@@ -64,11 +63,10 @@ struct ComponentRenderableDirectionalLight
 
 	uint8_t flags = 0;
 
-	inline void set_material(const Material& _material)
+	inline void set_material(MaterialHandle _material)
 	{
 		material = _material;
-		material.data_size = sizeof(MaterialData);
-		if(material.shader.is_valid() && material.ubo.is_valid())
+		if(material.is_valid())
 			flags |= Flags::READY;
 	}
 

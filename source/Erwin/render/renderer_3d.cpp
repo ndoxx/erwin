@@ -103,8 +103,10 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::register_material(const Material& material)
+void Renderer3D::register_material(MaterialHandle handle)
 {
+	const Material& material = AssetManager::get(handle);
+
 	// Check if already registered
 	if(s_storage.registered_shaders.find(material.shader.index) != s_storage.registered_shaders.end())
 		return;
@@ -208,8 +210,10 @@ void Renderer3D::end_line_pass()
 
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data)
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material_handle, void* material_data)
 {
+	const Material& material = AssetManager::get(material_handle);
+
 	// Compute matrices
 	TransformData transform_data;
 	transform_data.m   = model_matrix;

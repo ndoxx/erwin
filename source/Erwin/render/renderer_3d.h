@@ -1,6 +1,7 @@
 #pragma once
 
 #include "render/handles.h"
+#include "asset/handles.h"
 #include "entity/light.h"
 #include "glm/glm.hpp"
 
@@ -8,7 +9,6 @@ namespace erwin
 {
 
 class PerspectiveCamera3D;
-struct Material;
 // 3D renderer front-end, handles forward and deferred rendering
 class Renderer3D
 {
@@ -16,7 +16,7 @@ public:
 	// Setup frame data
 	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
 	// Register a material for use with this system
-	static void register_material(const Material& material);
+	static void register_material(MaterialHandle material);
 
 	// Start a new deferred rendering pass
 	static void begin_deferred_pass();
@@ -33,7 +33,7 @@ public:
 
 	// Draw a textured mesh
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
-	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data=nullptr);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material, void* material_data=nullptr);
 	// Draw a debug cube
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
 

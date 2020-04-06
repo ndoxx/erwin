@@ -31,36 +31,41 @@ void GameLayer::on_attach()
 	REFLECT_COMPONENT(ComponentRenderableDirectionalLight);
 	REFLECT_COMPONENT(ComponentDirectionalLight);
 
-	Material mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
+	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
+		"Paved floor",
 		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/pavedFloor.tom"
 	);
 
-	Material mat_rock = AssetManager::create_material<ComponentRenderablePBR>
+	MaterialHandle mat_rock = AssetManager::create_material<ComponentRenderablePBR>
 	(
+		"Rock tiling",
 		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/rockTiling.tom"
 	);
 
-	Material mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
+	MaterialHandle mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
 	(
+		"Dirt",
 		{"albedo"_h, "normal_depth"_h, "mar"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/dirt.tom"
 	);
 
-	Material mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
+	MaterialHandle mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
 	(
+		"Magma",
 		{"albedo"_h, "normal_depth"_h, "mare"_h},
 		"shaders/deferred_PBR.glsl",
 		"textures/map/testEmissive.tom"
 	);
 
-	Material mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
+	MaterialHandle mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
 	(
+		"Sun",
 		"shaders/forward_sun.glsl"
 	);
 
@@ -87,17 +92,17 @@ void GameLayer::on_attach()
 
 	glm::vec3 pos[] = 
 	{
-		{-4.f,0.f,-1.f},
-		{-2.f,0.f,-1.f},
-		{ 0.f,0.f,-1.f},
-		{ 2.f,0.f,-1.f},
+		{-3.f,0.f,-1.f},
+		{-1.f,0.f,-1.f},
+		{ 1.f,0.f,-1.f},
+		{ 3.f,0.f,-1.f},
 	};
-	const Material* mats[] =
+	MaterialHandle mats[] =
 	{
-		&mat_paved_floor,
-		&mat_rock,
-		&mat_dirt,
-		&mat_test_emissive,
+		mat_paved_floor,
+		mat_rock,
+		mat_dirt,
+		mat_test_emissive,
 	};
 	for(int ii=0; ii<4; ++ii)
 	{
@@ -110,7 +115,7 @@ void GameLayer::on_attach()
 
 		ComponentRenderablePBR renderable;
 		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
-		renderable.set_material(*(mats[ii]));
+		renderable.set_material(mats[ii]);
 		if(ii==3)
 			renderable.set_emissive(5.f);
 
