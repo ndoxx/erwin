@@ -110,7 +110,7 @@ void GameLayer::on_attach()
 		OBB.update(transform.get_model_matrix(), transform.uniform_scale);
 
 		ComponentRenderablePBR renderable;
-		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
+		renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
 		renderable.set_material(mats[ii]);
 		if(ii==3)
 			renderable.set_emissive(5.f);

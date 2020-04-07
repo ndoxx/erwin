@@ -77,7 +77,9 @@ void CommonGeometry::init()
 
 void CommonGeometry::shutdown()
 {
-
+	for(auto&& [hname, mesh]: s_storage.meshes_)
+		Renderer::destroy(mesh.VAO);
+	s_storage.meshes_.clear();
 }
 
 VertexArrayHandle CommonGeometry::get_vertex_array(hash_t name)
