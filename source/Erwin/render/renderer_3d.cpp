@@ -119,6 +119,12 @@ void Renderer3D::register_material(MaterialHandle handle)
 	s_storage.registered_shaders.insert(material.shader.index);
 }
 
+bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material)
+{
+	auto shader = AssetManager::get(material).shader;
+	return Renderer::is_compatible(layout, shader);
+}
+
 void Renderer3D::begin_deferred_pass()
 {
     W_PROFILE_FUNCTION()

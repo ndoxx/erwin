@@ -297,6 +297,24 @@ struct FramebufferTextureVector
 	std::vector<hash_t> debug_names;
 };
 
+struct ShaderCompatibility
+{
+	bool ready = false;
+	BufferLayout layout;
+
+	inline void set_layout(const BufferLayout& _layout)
+	{
+		layout = _layout;
+		ready = true;
+	}
+
+	inline void clear()
+	{
+		layout.clear();
+		ready = false;
+	}
+};
+
 static struct RendererStorage
 {
 	RendererStorage(): initialized_(false) {}
@@ -361,10 +379,11 @@ static struct RendererStorage
 	WRef<Shader>			  shaders[k_max_render_handles];
 	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
 
+	ShaderCompatibility shader_compat[k_max_render_handles];
+
 	FramebufferHandle default_framebuffer_;
 	FramebufferHandle current_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-	std::map<hash_t, ShaderHandle> shader_names_;
 	uint64_t state_cache_;
 	glm::vec2 host_window_size_;
 
@@ -582,6 +601,18 @@ const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle 
 
 	return *s_storage.vertex_buffer_layouts[handle.index];
 }
+
+bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shader)
+{
+	W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
+	W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+
+	if(!s_storage.shader_compat[shader.index].ready)
+		return false;
+
+	return (*s_storage.vertex_buffer_layouts[layout.index]) == s_storage.shader_compat[shader.index].layout;
+}
+
 
 /*
 		   _____                                          _     
@@ -1385,11 +1416,8 @@ void create_shader(memory::LinearBuffer<>& buf)
 	buf.read_str(filepath);
 	buf.read_str(name);
 
-	hash_t hname = H_(name.c_str());
-	W_ASSERT(s_storage.shader_names_.find(hname)==s_storage.shader_names_.end(), "Shader already loaded.");
-
 	s_storage.shaders[handle.index] = Shader::create(name, fs::path(filepath));
-	s_storage.shader_names_.insert(std::pair(hname, handle));
+	s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
 }
 
 void create_texture_2D(memory::LinearBuffer<>& buf)
@@ -1634,9 +1662,8 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 
 	ShaderHandle handle;
 	buf.read(&handle);
-	hash_t hname = H_(s_storage.shaders[handle.index]->get_name().c_str());
 	s_storage.shaders[handle.index] = nullptr;
-	s_storage.shader_names_.erase(hname);
+	s_storage.shader_compat[handle.index].clear();
 }
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)

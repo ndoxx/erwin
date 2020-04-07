@@ -34,6 +34,8 @@ public:
 	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;
 	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
 
+    virtual const BufferLayout& get_attribute_layout() const override;
+
     // Uniform management
     template <typename T>
     bool send_uniform(hash_t u_name, const T& value) const
@@ -62,6 +64,7 @@ private:
 
     uint32_t rd_handle_ = 0;
     uint32_t current_slot_ = 0;
+    BufferLayout attribute_layout_;
     std::map<hash_t, int32_t> uniform_locations_; // [uniform hname, location]
     std::map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
     std::map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]

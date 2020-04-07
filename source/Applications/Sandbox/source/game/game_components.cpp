@@ -2,6 +2,7 @@
 #include "asset/asset_manager.h"
 #include "editor/font_awesome.h"
 #include "render/common_geometry.h"
+#include "render/renderer.h"
 
 namespace erwin
 {
@@ -45,12 +46,15 @@ void inspector_GUI<ComponentRenderablePBR>(void* data)
     {
         CommonGeometry::visit_meshes([&cmp](const MeshStub& mesh)
         {
-            // TODO: Skip mesh if not compatible with shader
-            if(ImGui::Selectable(mesh.name))
+            // Skip mesh if not compatible with shader, allow any mesh if material is not set
+            if(!cmp->material.is_valid() || Renderer3D::is_compatible(mesh.layout, cmp->material))
             {
-                cmp->set_vertex_array(mesh.VAO);
-                // TODO: Update OBB if any (send event?)
-                return true;
+                if(ImGui::Selectable(mesh.name))
+                {
+                    cmp->set_vertex_array(mesh.VAO);
+                    // TODO: Update OBB if any (send event?)
+                    return true;
+                }
             }
             return false;
         });
