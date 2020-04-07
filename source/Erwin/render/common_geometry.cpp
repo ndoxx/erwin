@@ -6,24 +6,36 @@
 
 #include <vector>
 #include <map>
+#include <cstdio>
 
 namespace erwin
 {
 
 struct CommonGeometryStorage
 {
-	std::map<hash_t, VertexArrayHandle> vertex_arrays_;
-	std::map<hash_t, Extent> extents_;
+	std::map<hash_t, MeshStub> meshes_;
 };
 static CommonGeometryStorage s_storage;
 
-static void make_geometry(hash_t hname, VertexBufferLayoutHandle layout, const std::vector<float>& vdata, const std::vector<uint32_t>& idata, DrawPrimitive primitive=DrawPrimitive::Triangles)
+using geom_func_ptr_t = Extent (*)(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata, pg::Parameters* params);
+static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayoutHandle layout_handle, geom_func_ptr_t geom, DrawPrimitive primitive=DrawPrimitive::Triangles)
 {
+	std::vector<float> vdata;
+	std::vector<uint32_t> idata;
+
+	hash_t hname = H_(name.c_str());
+	const auto& layout = Renderer::get_vertex_buffer_layout(layout_handle);
+	Extent dims = (*geom)(layout, vdata, idata, nullptr);
+
 	IndexBufferHandle IBO = Renderer::create_index_buffer(idata.data(), idata.size(), primitive);
-	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout, vdata.data(), vdata.size(), UsagePattern::Static);
+	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), vdata.size(), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-	s_storage.vertex_arrays_.insert(std::make_pair(hname, VAO));
+	MeshStub mesh {VAO, layout_handle, dims};
+	snprintf(mesh.name, 32, "%s", name.c_str());
+
+	s_storage.meshes_.insert({hname, mesh});
+	return VAO;
 }
 
 void CommonGeometry::init()
@@ -46,83 +58,21 @@ void CommonGeometry::init()
 										  });
 
 	// Screen-space textured quad
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(pos_uv_VBL);
-		Extent dims = pg::make_plane(layout, vdata, idata);
-		hash_t hname = "quad"_h;
-		make_geometry(hname, pos_uv_VBL, vdata, idata);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("quad", pos_uv_VBL, &pg::make_plane);
 	// Cube
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(pos_VBL);
-		Extent dims = pg::make_cube(layout, vdata, idata);
-		hash_t hname = "cube"_h;
-		make_geometry(hname, pos_VBL, vdata, idata);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("cube", pos_VBL, &pg::make_cube);
 	// Cube lines
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(pos_VBL);
-		Extent dims = pg::make_cube_lines(layout, vdata, idata);
-		hash_t hname = "cube_lines"_h;
-		make_geometry(hname, pos_VBL, vdata, idata, DrawPrimitive::Lines);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("cube_lines", pos_VBL, &pg::make_cube_lines, DrawPrimitive::Lines);
 	// Origin lines
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(pos_VBL);
-		Extent dims = pg::make_origin(layout, vdata, idata);
-		hash_t hname = "origin_lines"_h;
-		make_geometry(hname, pos_VBL, vdata, idata, DrawPrimitive::Lines);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("origin_lines", pos_VBL, &pg::make_origin, DrawPrimitive::Lines);
 	// UV Cube
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(pos_uv_VBL);
-		Extent dims = pg::make_cube(layout, vdata, idata);
-		hash_t hname = "cube_uv"_h;
-		make_geometry(hname, pos_uv_VBL, vdata, idata);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("cube_uv", pos_uv_VBL, &pg::make_cube);
 	// PBR Cube
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(PBR_VBL);
-		Extent dims = pg::make_cube(layout, vdata, idata);
-		hash_t hname = "cube_pbr"_h;
-		make_geometry(hname, PBR_VBL, vdata, idata);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
-
+	make_geometry("cube_pbr", PBR_VBL, &pg::make_cube);
 	// PBR Icosahedron
-	{
-		std::vector<float> vdata;
-		std::vector<uint32_t> idata;
-		const auto& layout = Renderer::get_vertex_buffer_layout(PBR_VBL);
-		Extent dims = pg::make_icosahedron(layout, vdata, idata);
-		hash_t hname = "icosahedron_pbr"_h;
-		make_geometry(hname, PBR_VBL, vdata, idata);
-		s_storage.extents_.insert(std::make_pair(hname, dims));
-	}
+	make_geometry("icosahedron_pbr", PBR_VBL, &pg::make_icosahedron);
 
-	Renderer::flush();
+	// Renderer::flush();
 }
 
 void CommonGeometry::shutdown()
@@ -132,16 +82,26 @@ void CommonGeometry::shutdown()
 
 VertexArrayHandle CommonGeometry::get_vertex_array(hash_t name)
 {
-	auto it = s_storage.vertex_arrays_.find(name);
-	W_ASSERT(it!=s_storage.vertex_arrays_.end(), "[CommonGeometry] Cannot find vertex array at that name.");
-	return it->second;
+	auto it = s_storage.meshes_.find(name);
+	W_ASSERT(it!=s_storage.meshes_.end(), "[CommonGeometry] Cannot find mesh at that name.");
+	return it->second.VAO;
 }
 
 const Extent& CommonGeometry::get_extent(hash_t name)
 {
-	auto it = s_storage.extents_.find(name);
-	W_ASSERT(it!=s_storage.extents_.end(), "[CommonGeometry] Cannot find dimensions at that name.");
-	return it->second;
+	auto it = s_storage.meshes_.find(name);
+	W_ASSERT(it!=s_storage.meshes_.end(), "[CommonGeometry] Cannot find mesh at that name.");
+	return it->second.extent;
 }
+
+void CommonGeometry::visit_meshes(MeshVisitor visit)
+{
+	for(auto&& [hname, mesh]: s_storage.meshes_)
+	{
+		if(visit(mesh))
+			break;
+	}
+}
+
 
 } // namespace erwin

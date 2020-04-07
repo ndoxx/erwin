@@ -1,5 +1,6 @@
 #include "game/game_components.h"
 #include "asset/asset_manager.h"
+#include "editor/font_awesome.h"
 
 namespace erwin
 {
@@ -9,20 +10,27 @@ void inspector_GUI<ComponentRenderablePBR>(void* data)
 {
     ComponentRenderablePBR* cmp = static_cast<ComponentRenderablePBR*>(data);
 
-    if(ImGui::BeginCombo("##combo_material", "Change material", ImGuiComboFlags_NoArrowButton))
+    if(ImGui::Button("Material"))
+        ImGui::OpenPopup("popup_select_material");
+    
+    ImGui::SameLine();
+    if(cmp->material.is_valid())
+        ImGui::TextUnformatted(AssetManager::get_name(cmp->material).c_str());
+    else
+        ImGui::TextUnformatted("None");
+
+    if(ImGui::BeginPopup("popup_select_material"))
     {
-        // TODO: filter out incompatible materials
         AssetManager::visit_materials([&cmp](MaterialHandle handle, const std::string& name, const std::string& description)
         {
-            if(ImGui::Selectable(name.c_str(), false))
+            if(ImGui::Selectable(name.c_str()))
             {
                 cmp->material = handle;
                 return true;
             }
-
             return false;
         });
-        ImGui::EndCombo();
+        ImGui::EndPopup();
     }
 
     ImGui::ColorEdit3("Tint", (float*)&cmp->material_data.tint);

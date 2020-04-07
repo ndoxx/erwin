@@ -68,33 +68,27 @@ void InspectorWidget::entity_tab()
         });
 
         // Interface to add a new component
-        // TODO: invalidate current_component on selection change
-        const auto& component_names = get_component_names();
-        static uint64_t current_component = component_names.begin()->first;
-        const std::string& label = component_names.at(current_component);
-        ImGui::TextUnformatted("Add a new component");
-        if(ImGui::BeginCombo("##combo_add_component", label.c_str(), ImGuiComboFlags_NoArrowButton))
+        if(ImGui::Button("Add component"))
+            ImGui::OpenPopup("popup_select_component");
+
+        if(ImGui::BeginPopup("popup_select_component"))
         {
+            const auto& component_names = get_component_names();
             for(auto&& [reflected, name]: component_names)
             {
                 // If entity already has component, do not show in combo
                 if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, Scene::registry, Scene::selected_entity).cast<bool>())
                     continue;
 
-                bool is_selected = (current_component == reflected);
-                if(ImGui::Selectable(name.c_str(), is_selected))
-                    current_component = reflected;
-                if(is_selected)
-                    ImGui::SetItemDefaultFocus();
+                if(ImGui::Selectable(name.c_str()))
+                {
+                    invoke(W_METAFUNC_CREATE_COMPONENT, reflected, Scene::registry, Scene::selected_entity);
+                    DLOG("editor",1) << "Added " << component_names.at(reflected) 
+                                     << " to entity " << (unsigned long)Scene::selected_entity << std::endl;
+                    break;
+                }
             }
-            ImGui::EndCombo();
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Add"))
-        {
-            invoke(W_METAFUNC_CREATE_COMPONENT, current_component, Scene::registry, Scene::selected_entity);
-            DLOG("editor",1) << "Added " << component_names.at(current_component) << " to entity " << (unsigned long)Scene::selected_entity << std::endl;
+            ImGui::EndPopup();
         }
 
         ImGui::TreePop();

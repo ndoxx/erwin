@@ -26,6 +26,7 @@ constexpr std::size_t k_handle_alloc_size = 2*(sizeof(HandlePoolT<k_max_atlases>
 struct MaterialDescriptor
 {
 	MaterialHandle material;
+	bool is_public;
 	std::string name;
 	std::string description;
 };
@@ -158,13 +159,20 @@ MaterialHandle AssetManager::create_material(const std::string& name,
 									  		 ShaderHandle shader,
 									  		 TextureGroupHandle tg,
 									  		 UniformBufferHandle ubo,
-									  		 uint32_t data_size)
+									  		 uint32_t data_size,
+									  		 bool is_public)
 {
 	MaterialHandle handle = MaterialHandle::acquire();
 	s_storage.materials_[handle.index] = W_NEW(Material, s_storage.material_pool_) {shader, tg, ubo, data_size};
-	s_storage.material_descriptors_[handle.index] = {handle, name, ""};
+	s_storage.material_descriptors_[handle.index] = {handle, is_public, name, ""};
 	Renderer3D::register_material(handle);
 	return handle;
+}
+
+const std::string& AssetManager::get_name(MaterialHandle handle)
+{
+	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
+	return s_storage.material_descriptors_[handle.index].name;
 }
 
 void AssetManager::visit_materials(MaterialVisitor visit)
@@ -174,6 +182,8 @@ void AssetManager::visit_materials(MaterialVisitor visit)
 		if(s_storage.materials_[ii] == nullptr)
 			continue;
 		const auto& desc = s_storage.material_descriptors_[ii];
+		if(!desc.is_public)
+			continue;
 		if(visit(desc.material, desc.name, desc.description))
 			break;
 	}
@@ -238,7 +248,7 @@ void AssetManager::release(MaterialHandle handle)
 	Material* mat = s_storage.materials_.at(handle.index);
 	W_DELETE(mat, s_storage.material_pool_);
 	s_storage.materials_[handle.index] = nullptr;
-	s_storage.material_descriptors_[handle.index] = {{},"",""};
+	s_storage.material_descriptors_[handle.index] = {{},false,"",""};
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
 	
 	handle.release();
@@ -275,7 +285,7 @@ void AssetManager::init(memory::HeapArea& area)
 	s_storage.font_atlases_.resize(k_max_font_atlases, nullptr);
 	s_storage.texture_groups_.resize(k_max_texture_groups, nullptr);
 	s_storage.materials_.resize(k_max_materials, nullptr);
-	s_storage.material_descriptors_.resize(k_max_materials, {{},"",""});
+	s_storage.material_descriptors_.resize(k_max_materials, {{},false,"",""});
 
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);

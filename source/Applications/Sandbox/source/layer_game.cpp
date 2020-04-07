@@ -125,7 +125,7 @@ void GameLayer::on_attach()
 		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
 	}
 
-	Scene::camera_controller.set_position({0.f,1.f,3.f});
+	Scene::camera_controller.set_position({0.f,1.5f,4.5f});
 }
 
 void GameLayer::on_detach()

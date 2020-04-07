@@ -33,7 +33,8 @@ public:
 										  ShaderHandle shader,
 										  TextureGroupHandle tg,
 										  UniformBufferHandle ubo,
-										  uint32_t data_size);
+										  uint32_t data_size,
+										  bool is_public=true);
 
 	// Create a complete material from file paths to its component assets
 	template <typename ComponentT>
@@ -50,6 +51,8 @@ public:
 
 		return create_material(name, shader, tg, ubo, sizeof(MaterialData));
 	}
+
+	static const std::string& get_name(MaterialHandle handle);
 
 	static void visit_materials(MaterialVisitor visit);
 
