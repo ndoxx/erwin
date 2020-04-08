@@ -8,10 +8,8 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentRenderablePBR>(void* data)
+void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
 {
-    ComponentRenderablePBR* cmp = static_cast<ComponentRenderablePBR*>(data);
-
     // Select material
     if(ImGui::Button("Material"))
         ImGui::OpenPopup("popup_select_material");
@@ -79,10 +77,8 @@ void inspector_GUI<ComponentRenderablePBR>(void* data)
 }
 
 template <>
-void inspector_GUI<ComponentRenderableDirectionalLight>(void* data)
+void inspector_GUI<ComponentRenderableDirectionalLight>(ComponentRenderableDirectionalLight* cmp)
 {
-    ComponentRenderableDirectionalLight* cmp = static_cast<ComponentRenderableDirectionalLight*>(data);
-
     ImGui::SliderFloat("App. diameter", &cmp->material_data.scale, 0.1f, 0.4f);
 }
 

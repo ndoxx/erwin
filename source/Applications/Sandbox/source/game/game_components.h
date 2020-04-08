@@ -56,7 +56,7 @@ struct ComponentRenderablePBR
 	inline bool is_ready() const    { return bool(flags & Flags::MATERIAL_READY) && bool(flags & Flags::MESH_READY); }
 };
 
-template <> [[maybe_unused]] void inspector_GUI<ComponentRenderablePBR>(void* data);
+template <> [[maybe_unused]] void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR*);
 
 
 struct ComponentRenderableDirectionalLight
@@ -87,6 +87,6 @@ struct ComponentRenderableDirectionalLight
 	inline bool is_ready() const { return bool(flags & Flags::READY); }
 };
 
-template <> [[maybe_unused]] void inspector_GUI<ComponentRenderableDirectionalLight>(void* data);
+template <> [[maybe_unused]] void inspector_GUI<ComponentRenderableDirectionalLight>(ComponentRenderableDirectionalLight*);
 
 } // namespace erwin

@@ -5,10 +5,8 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentDirectionalLight>(void* data)
+void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight* cmp)
 {
-    ComponentDirectionalLight* cmp = static_cast<ComponentDirectionalLight*>(data);
-
     static float inclination_deg   = 90.0f;
     static float arg_periapsis_deg = 160.0f;
 

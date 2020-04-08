@@ -4,6 +4,13 @@
 namespace erwin
 {
 
+ComponentOBB::ComponentOBB():
+extent_m(-1.f,1.f,-1.f,1.f,-1.f,1.f),
+display(false)
+{
+	std::tie(offset, half) = bound::to_vectors(extent_m);
+}
+
 ComponentOBB::ComponentOBB(const Extent& extent):
 extent_m(extent),
 display(false)
@@ -18,9 +25,8 @@ static const char* s_vertex_name[8] =
 };
 
 template <> 
-void inspector_GUI<ComponentOBB>(void* data)
+void inspector_GUI<ComponentOBB>(ComponentOBB* cmp)
 {
-    ComponentOBB* cmp = static_cast<ComponentOBB*>(data);
     ImGui::Checkbox("Display", &cmp->display);
 
     for(int ii=0; ii<8; ++ii)

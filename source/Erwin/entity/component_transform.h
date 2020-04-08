@@ -62,7 +62,7 @@ struct ComponentTransform3D
 	}
 };
 
-template <> [[maybe_unused]] void inspector_GUI<ComponentTransform3D>(void* data);
+template <> [[maybe_unused]] void inspector_GUI<ComponentTransform3D>(ComponentTransform3D*);
 
 
 } // namespace erwin
