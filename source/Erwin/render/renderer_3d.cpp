@@ -7,6 +7,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 
+#include <set>
+
 namespace erwin
 {
 
@@ -48,6 +50,8 @@ static struct
 	UniformBufferHandle transform_ubo;
 
 	FrameData frame_data;
+
+	std::set<uint32_t> registered_shaders;
 
 	// State
 	uint64_t pass_state;
@@ -99,12 +103,26 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::register_material(const Material& material)
+void Renderer3D::register_material(MaterialHandle handle)
 {
+	const Material& material = AssetManager::get(handle);
+
+	// Check if already registered
+	if(s_storage.registered_shaders.find(material.shader.index) != s_storage.registered_shaders.end())
+		return;
+
 	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.frame_ubo);
 	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.transform_ubo);
 	if(material.ubo.index != k_invalid_handle)
 		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
+
+	s_storage.registered_shaders.insert(material.shader.index);
+}
+
+bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material)
+{
+	auto shader = AssetManager::get(material).shader;
+	return Renderer::is_compatible(layout, shader);
 }
 
 void Renderer3D::begin_deferred_pass()
@@ -198,8 +216,10 @@ void Renderer3D::end_line_pass()
 
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material)
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material_handle, void* material_data)
 {
+	const Material& material = AssetManager::get(material_handle);
+
 	// Compute matrices
 	TransformData transform_data;
 	transform_data.m   = model_matrix;
@@ -214,8 +234,8 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, (void*)&transform_data, sizeof(TransformData), DataOwnership::Copy));
-	if(material.ubo.index != k_invalid_handle && material.data)
-		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material.data, material.data_size, DataOwnership::Copy));
+	if(material.ubo.index != k_invalid_handle && material_data)
+		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
 	if(material.texture_group.index != k_invalid_handle)
 	{
 		const TextureGroup& tg = AssetManager::get(material.texture_group);

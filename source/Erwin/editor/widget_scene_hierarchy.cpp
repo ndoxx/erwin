@@ -18,6 +18,17 @@ Widget("Hierarchy", true)
 
 void SceneHierarchyWidget::on_imgui_render()
 {
+    // Basic controls
+    if(ImGui::Button("New entity"))
+    {
+        // For the moment, create an entity with editor description only
+        EntityID ent = Scene::registry.create();
+        Scene::add_entity(ent, "Entity #" + std::to_string((unsigned long)ent));
+    }
+
+    ImGui::Separator();
+
+    // Display hierarchy
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
     ImGuiTreeNodeFlags node_flags = base_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
 
@@ -38,6 +49,20 @@ void SceneHierarchyWidget::on_imgui_render()
         ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
         if(ImGui::IsItemClicked())
             new_selection = e;
+
+        // Context menu for entities
+        ImGui::PushID(ImGui::GetID((void*)(intptr_t)ii));
+        if(ImGui::BeginPopupContextItem("Entity context menu"))
+        {
+            if(ImGui::Selectable("Remove"))
+            {
+                Scene::mark_for_removal(e);
+                DLOG("editor",1) << "Removed entity " << (unsigned long)e << std::endl;
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::PopID();
+
         ++ii;
     }
 

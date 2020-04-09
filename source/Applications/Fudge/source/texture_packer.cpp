@@ -473,10 +473,10 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 	// Construct and push texture map descriptors
 	for(auto&& [key, tmap]: ordered_tmap)
 	{
-        const TexmapSpec& spec = s_texmap_specs.at(key);
-        uint32_t size = width * height * spec.channels;
-        if(tmap->compression == TextureCompression::DXT5)
-        	size = width * height;
+		const TexmapSpec& spec = s_texmap_specs.at(key);
+		uint32_t size = width * height * spec.channels;
+		if(tmap->compression == TextureCompression::DXT5)
+			size = width * height;
 		tom::TextureMapDescriptor tm_desc
 		{
 			spec.filter,

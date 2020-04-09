@@ -6,10 +6,8 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentTransform3D>(void* data)
+void inspector_GUI<ComponentTransform3D>(ComponentTransform3D* cmp)
 {
-    ComponentTransform3D* cmp = static_cast<ComponentTransform3D*>(data);
-
 	static constexpr float k_step = 0.1f;
 	static constexpr float k_step_fast = 0.5f;
 

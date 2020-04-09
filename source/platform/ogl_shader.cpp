@@ -73,6 +73,25 @@ static std::string ogl_attribute_type_to_string(GLenum type)
 	}
 }
 
+static ShaderDataType ogl_attribute_type_to_shader_data_type(GLenum type)
+{
+    // Float = 0, Vec2, Vec3, Vec4, Mat3, Mat4, Int, IVec2, IVec3, IVec4, Bool
+    switch(type)
+    {
+        case GL_FLOAT:              return ShaderDataType::Float;
+        case GL_FLOAT_VEC2:         return ShaderDataType::Vec2;
+        case GL_FLOAT_VEC3:         return ShaderDataType::Vec3;
+        case GL_FLOAT_VEC4:         return ShaderDataType::Vec4;
+        case GL_FLOAT_MAT3:         return ShaderDataType::Mat3;
+        case GL_FLOAT_MAT4:         return ShaderDataType::Mat4;
+        case GL_INT:                return ShaderDataType::Int;
+        case GL_INT_VEC2:           return ShaderDataType::IVec2;
+        case GL_INT_VEC3:           return ShaderDataType::IVec3;
+        case GL_INT_VEC4:           return ShaderDataType::IVec4;
+        default:                    return ShaderDataType::Float;
+    }
+}
+
 static std::string ogl_uniform_type_to_string(GLenum type)
 {
     switch(type)
@@ -314,6 +333,11 @@ void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, 
         glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
 }
 
+const BufferLayout& OGLShader::get_attribute_layout() const
+{
+    return attribute_layout_;
+}
+
 bool OGLShader::build(const std::vector<std::pair<slang::ExecutionModel, std::string>>& sources)
 {
     W_PROFILE_FUNCTION()
@@ -483,6 +507,10 @@ void OGLShader::introspect()
     std::string resource_name;
     [[maybe_unused]] std::string uniform_name;
 
+    // For attribute layout detection
+    std::vector<BufferLayoutElement> attribute_layout;
+    uint32_t attribute_count = 0;
+
     for(int ii=0; ii<interfaces.size(); ++ii)
     {
         // Get active objects count
@@ -502,6 +530,9 @@ void OGLShader::introspect()
         const auto& properties = properties_map.at(iface);
         prop_values.resize(properties.size());
         
+        if(iface == GL_PROGRAM_INPUT)
+            attribute_layout.resize(num_active);
+
         for(int jj=0; jj<num_active; ++jj)
         {
             glGetProgramResourceiv(rd_handle_, iface, jj, properties.size(),
@@ -517,6 +548,12 @@ void OGLShader::introspect()
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
                 DLOGI << "[Loc: " << prop_values[2] << "] " << ogl_attribute_type_to_string(prop_values[1]) 
                       << " " << WCC('u') << resource_name << WCC(0) << std::endl;
+                // For attribute layout detection
+                if(prop_values[2] != -1)
+                {
+                    attribute_layout[prop_values[2]] = BufferLayoutElement(H_(resource_name.c_str()), ogl_attribute_type_to_shader_data_type(prop_values[1]));
+                    ++attribute_count;
+                }
             }
             else if(iface == GL_UNIFORM)
             {
@@ -586,6 +623,9 @@ void OGLShader::introspect()
             }*/
         }
     }
+
+    attribute_layout_.init(attribute_layout.data(), attribute_count);
+
     DLOG("shader",1) << "--------" << std::endl;
 }
 

@@ -18,8 +18,8 @@ public:
 	    {
 	        const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
 	        ComponentRenderablePBR& renderable = view.get<ComponentRenderablePBR>(e);
-			renderable.material.data = &renderable.material_data; // Dirty shit
-			Renderer3D::draw_mesh(renderable.vertex_array, transform.get_model_matrix(), renderable.material);
+	        if(renderable.is_ready())
+				Renderer3D::draw_mesh(renderable.vertex_array, transform.get_model_matrix(), renderable.material, &renderable.material_data);
 		}
 		Renderer3D::end_deferred_pass();
 	}

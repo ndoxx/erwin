@@ -11,7 +11,7 @@ namespace erwin
 
 // Enforces a strict texture slot order inside a material's texture array
 // TODO: will also be used to check shader compatibility
-struct MaterialLayout
+struct TextureLayout
 {
 	std::array<hash_t, k_max_texture_slots> texture_slots;
 	uint32_t texture_count;
@@ -20,7 +20,7 @@ struct MaterialLayout
 // Set of texture maps used by one or multiple materials
 struct TextureGroup
 {
-	void load(const fs::path& filepath, const MaterialLayout& layout);
+	void load(const fs::path& filepath, TextureLayout* layout=nullptr);
 	void release();
 
 	std::array<TextureHandle, k_max_texture_slots> textures;
@@ -33,8 +33,7 @@ struct Material
 	ShaderHandle shader;
 	TextureGroupHandle texture_group;
 	UniformBufferHandle ubo;
-	void* data;
-	uint32_t data_size;
+	uint32_t data_size = 0;
 };
 
 } // namespace erwin

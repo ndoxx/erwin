@@ -46,6 +46,9 @@ public:
 	// Bind a uniform buffer
 	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const = 0;
 
+    // Return attribute layout as a buffer layout object
+    virtual const BufferLayout& get_attribute_layout() const = 0;
+
 	// Return program debug name
 	inline const std::string& get_name() const { return name_; }
     // Return engine unique id for this object

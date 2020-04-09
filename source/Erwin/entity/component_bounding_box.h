@@ -18,6 +18,7 @@ struct ComponentOBB
     float scale            = 1.f;
     bool display           = false;
 
+    ComponentOBB();
     explicit ComponentOBB(const Extent& extent);
 
     inline void init(const Extent& extent)
@@ -37,6 +38,6 @@ struct ComponentOBB
     }
 };
 
-template <> [[maybe_unused]] void inspector_GUI<ComponentOBB>(void* data);
+template <> [[maybe_unused]] void inspector_GUI<ComponentOBB>(ComponentOBB*);
 
 } // namespace erwin

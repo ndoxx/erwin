@@ -31,15 +31,39 @@ void GameLayer::on_attach()
 	REFLECT_COMPONENT(ComponentRenderableDirectionalLight);
 	REFLECT_COMPONENT(ComponentDirectionalLight);
 
-	MaterialLayoutHandle layout_a_nd_mare = AssetManager::create_material_layout({"albedo"_h, "normal_depth"_h, "mare"_h});
-	ShaderHandle forward_sun              = AssetManager::load_shader("shaders/forward_sun.glsl");
-	ShaderHandle deferred_pbr             = AssetManager::load_shader("shaders/deferred_PBR.glsl");
-	TextureGroupHandle tg                 = AssetManager::load_texture_group("textures/map/testEmissive.tom", layout_a_nd_mare);
-	UniformBufferHandle pbr_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderablePBR::MaterialData));
-	UniformBufferHandle sun_material_ubo  = AssetManager::create_material_data_buffer(sizeof(ComponentRenderableDirectionalLight::MaterialData));
-	AssetManager::release(layout_a_nd_mare);
-	Renderer3D::register_material({deferred_pbr, {}, pbr_material_ubo});
-	Renderer3D::register_material({forward_sun, {}, sun_material_ubo});
+	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
+	(
+		"Paved floor",
+		"shaders/deferred_PBR.glsl",
+		"textures/map/pavedFloor.tom"
+	);
+
+	MaterialHandle mat_rock = AssetManager::create_material<ComponentRenderablePBR>
+	(
+		"Rock tiling",
+		"shaders/deferred_PBR.glsl",
+		"textures/map/rockTiling.tom"
+	);
+
+	MaterialHandle mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
+	(
+		"Dirt",
+		"shaders/deferred_PBR.glsl",
+		"textures/map/dirt.tom"
+	);
+
+	MaterialHandle mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
+	(
+		"Magma",
+		"shaders/deferred_PBR.glsl",
+		"textures/map/testEmissive.tom"
+	);
+
+	MaterialHandle mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
+	(
+		"Sun",
+		"shaders/forward_sun.glsl"
+	);
 
 	{
 		EntityID ent = Scene::registry.create();
@@ -52,8 +76,7 @@ void GameLayer::on_attach()
 		directional_light.brightness = 3.7f;
 
 		ComponentRenderableDirectionalLight renderable;
-		renderable.material.shader = forward_sun;
-		renderable.material.ubo = sun_material_ubo;
+		renderable.set_material(mat_sun);
 		renderable.material_data.scale = 0.2f;
 
 		Scene::registry.assign<ComponentDirectionalLight>(ent, directional_light);
@@ -65,10 +88,17 @@ void GameLayer::on_attach()
 
 	glm::vec3 pos[] = 
 	{
+		{-3.f,0.f,-1.f},
 		{-1.f,0.f,-1.f},
 		{ 1.f,0.f,-1.f},
-		{-1.f,0.f, 1.f},
-		{ 1.f,0.f, 1.f},
+		{ 3.f,0.f,-1.f},
+	};
+	MaterialHandle mats[] =
+	{
+		mat_paved_floor,
+		mat_rock,
+		mat_dirt,
+		mat_test_emissive,
 	};
 	for(int ii=0; ii<4; ++ii)
 	{
@@ -80,22 +110,22 @@ void GameLayer::on_attach()
 		OBB.update(transform.get_model_matrix(), transform.uniform_scale);
 
 		ComponentRenderablePBR renderable;
-		renderable.vertex_array = CommonGeometry::get_vertex_array("cube_pbr"_h);
-		renderable.set_emissive(5.f);
-		renderable.material.shader = deferred_pbr;
-		renderable.material.texture_group = tg;
-		renderable.material.ubo = pbr_material_ubo;
-		renderable.material_data.tint = {0.f,1.f,1.f,1.f};
+		renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+		renderable.set_material(mats[ii]);
+		if(ii==3)
+			renderable.set_emissive(5.f);
+
+		renderable.material_data.tint = {1.f,1.f,1.f,1.f};
 
 		Scene::registry.assign<ComponentTransform3D>(ent, transform);
 		Scene::registry.assign<ComponentOBB>(ent, OBB);
 		Scene::registry.assign<ComponentRenderablePBR>(ent, renderable);
 
 
-		Scene::add_entity(ent, "Emissive cube #" + std::to_string(ii));
+		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
 	}
 
-	Scene::camera_controller.set_position({0.f,1.f,3.f});
+	Scene::camera_controller.set_position({0.f,1.5f,4.5f});
 }
 
 void GameLayer::on_detach()
@@ -113,18 +143,6 @@ void GameLayer::on_update(GameClock& clock)
 
     Scene::camera_controller.update(clock);
 	bounding_box_system_.update(clock);
-
-	// TMP: Update cube -> MOVE to script or animation system
-	for(int ii=0; ii<4; ++ii)
-	{
-		float s = sin(2*M_PI*tt/10.f + M_PI*0.25f*ii);
-		float s2 = s*s;
-
-		auto& renderable = Scene::registry.get<ComponentRenderablePBR>(Scene::entities[1+ii]);
-
-		renderable.material_data.emissive_scale = 1.f + 5.f * exp(-4.f*(ii+1.f)*s2);
-		renderable.material_data.tint.r = 0.3f*exp(-6.f*(ii+1.f)*s2);
-	}
 
     // TMP: SCENE must have a directional light entity or this fails
     const auto& dirlight = Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light);

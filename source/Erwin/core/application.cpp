@@ -407,6 +407,9 @@ void Application::run()
             std::this_thread::sleep_for(idle_duration);
         }
 
+        // --- CLEANUP PHASE ---
+        Scene::cleanup();
+
     	// To allow frame by frame update
     	game_clock_.release_flags();
 
