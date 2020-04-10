@@ -22,6 +22,7 @@ struct ComponentRenderablePBR
 		glm::vec4 tint = {1.f,1.f,1.f,1.f};
 		int flags = 0;
 		float emissive_scale = 1.f;
+		float tiling_factor = 1.f;
 	} material_data;
 
 	uint8_t flags = 0;

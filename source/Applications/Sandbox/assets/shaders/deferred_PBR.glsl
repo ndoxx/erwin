@@ -17,9 +17,10 @@ layout(location = 4) out mat3 v_TBN;         // TBN matrix for normal mapping
 
 layout(std140, binding = 2) uniform material_data
 {
-	vec4 u_v4_tint; // tint
+	vec4 u_v4_tint;
 	int u_flags;
 	float u_f_emissive_scale;
+    float u_f_tiling_factor;
 };
 
 void main()
@@ -71,16 +72,17 @@ layout(location = 2) out vec4 out_mar;
 
 layout(std140, binding = 2) uniform material_data
 {
-	vec4 u_v4_tint; // tint
+	vec4 u_v4_tint;
 	int u_flags;
 	float u_f_emissive_scale;
+    float u_f_tiling_factor;
 };
 
 const float f_parallax_height_scale = 0.03f;
 
 void main()
 {
-	vec2 tex_coord = v_uv;
+	vec2 tex_coord = u_f_tiling_factor*v_uv;
 
 	// Parallax map
 	// vec2 tex_coord = parallax_map(v_uv, v_view_dir_t, f_parallax_height_scale, SAMPLER_2D_1);

@@ -3,6 +3,7 @@
 #include "editor/font_awesome.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "imgui/imgui_utils.h"
 
 namespace erwin
 {
@@ -62,6 +63,7 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
 
     // PBR parameters
     ImGui::ColorEdit3("Tint", (float*)&cmp->material_data.tint);
+    ImGui::SliderFloatDefault("Tiling", &cmp->material_data.tiling_factor, 0.1f, 10.f, 1.f);
 
     bool enable_emissivity = cmp->is_emissive();
     if(ImGui::Checkbox("Emissive", &enable_emissivity))
@@ -73,7 +75,7 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
     }
 
     if(cmp->is_emissive())
-    	ImGui::SliderFloat("Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.0f);
+        ImGui::SliderFloatDefault("Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.f, 1.f);
 }
 
 template <>
