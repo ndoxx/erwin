@@ -67,15 +67,21 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
 
     bool enable_emissivity = cmp->is_emissive();
     if(ImGui::Checkbox("Emissive", &enable_emissivity))
+        cmp->enable_emissivity(enable_emissivity);
+    if(cmp->is_emissive())
     {
-        if(enable_emissivity)
-            cmp->set_emissive(1.f);
-        else
-            cmp->disable_emissivity();
+        ImGui::SameLine();
+        ImGui::SliderFloatDefault("##Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.f, 1.f);
     }
 
-    if(cmp->is_emissive())
-        ImGui::SliderFloatDefault("Emissivity", &cmp->material_data.emissive_scale, 0.1f, 10.f, 1.f);
+    bool enable_parallax = cmp->has_parallax();
+    if(ImGui::Checkbox("Parallax", &enable_parallax))
+        cmp->enable_parallax(enable_parallax);
+    if(cmp->has_parallax())
+    {
+        ImGui::SameLine();
+        ImGui::SliderFloatDefault("##Parallax", &cmp->material_data.parallax_height_scale, 0.005f, 0.05f, 0.03f);
+    }
 }
 
 template <>

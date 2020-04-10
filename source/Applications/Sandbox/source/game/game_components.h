@@ -11,7 +11,7 @@ struct ComponentRenderablePBR
 	enum Flags: uint8_t
 	{
 		MATERIAL_READY = 1<<0,
-		MESH_READY = 1<<1,
+		MESH_READY     = 1<<1,
 	};
 
 	VertexArrayHandle vertex_array;
@@ -19,10 +19,17 @@ struct ComponentRenderablePBR
 
 	struct MaterialData
 	{
+		enum Flags
+		{
+			ENABLE_EMISSIVE  = 1<<0,
+			ENABLE_PARALLAX  = 1<<1,
+		};
+
 		glm::vec4 tint = {1.f,1.f,1.f,1.f};
 		int flags = 0;
 		float emissive_scale = 1.f;
 		float tiling_factor = 1.f;
+		float parallax_height_scale = 0.03f;
 	} material_data;
 
 	uint8_t flags = 0;
@@ -41,20 +48,25 @@ struct ComponentRenderablePBR
 			flags |= Flags::MESH_READY;
 	}
 
-	inline void set_emissive(float intensity)
+	inline void enable_emissivity(bool enabled = true)
 	{
-		material_data.flags |= (1<<0);
-		material_data.emissive_scale = intensity;
+		if(enabled)
+			material_data.flags |= MaterialData::Flags::ENABLE_EMISSIVE;
+		else
+			material_data.flags &= ~MaterialData::Flags::ENABLE_EMISSIVE;
 	}
 
-	inline void disable_emissivity()
+	inline void enable_parallax(bool enabled = true)
 	{
-		material_data.flags &= ~(1<<0);
-		material_data.emissive_scale = 0.f;
+		if(enabled)
+			material_data.flags |= MaterialData::Flags::ENABLE_PARALLAX;
+		else
+			material_data.flags &= ~MaterialData::Flags::ENABLE_PARALLAX;
 	}
 
-	inline bool is_emissive() const { return bool(material_data.flags & (1<<0)); }
-	inline bool is_ready() const    { return bool(flags & Flags::MATERIAL_READY) && bool(flags & Flags::MESH_READY); }
+	inline bool is_emissive() const  { return bool(material_data.flags & MaterialData::Flags::ENABLE_EMISSIVE); }
+	inline bool has_parallax() const { return bool(material_data.flags & MaterialData::Flags::ENABLE_PARALLAX); }
+	inline bool is_ready() const     { return bool(flags & Flags::MATERIAL_READY) && bool(flags & Flags::MESH_READY); }
 };
 
 template <> [[maybe_unused]] void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR*);

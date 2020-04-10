@@ -21,6 +21,7 @@ layout(std140, binding = 2) uniform material_data
 	int u_flags;
 	float u_f_emissive_scale;
     float u_f_tiling_factor;
+    float u_f_parallax_height_scale;
 };
 
 void main()
@@ -54,7 +55,8 @@ void main()
 #include "engine/frame_ubo.glsl"
 #include "engine/transform_ubo.glsl"
 
-#define PBR_EN_EMISSIVE 1
+#define PBR_EN_EMISSIVE      1<<0
+#define PBR_EN_PARALLAX      1<<1
 
 SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal - depth
@@ -76,16 +78,16 @@ layout(std140, binding = 2) uniform material_data
 	int u_flags;
 	float u_f_emissive_scale;
     float u_f_tiling_factor;
+    float u_f_parallax_height_scale;
 };
-
-const float f_parallax_height_scale = 0.03f;
 
 void main()
 {
 	vec2 tex_coord = u_f_tiling_factor*v_uv;
 
 	// Parallax map
-	// vec2 tex_coord = parallax_map(v_uv, v_view_dir_t, f_parallax_height_scale, SAMPLER_2D_1);
+    if(bool(u_flags & PBR_EN_PARALLAX))
+	   tex_coord = parallax_map(tex_coord, v_view_dir_t, u_f_parallax_height_scale, SAMPLER_2D_1);
 
 	// Retrieve texture data
 	vec4 frag_color  = texture(SAMPLER_2D_0, tex_coord);
@@ -95,11 +97,9 @@ void main()
     // Compress normal
     vec2 normal_cmp = compress_normal_spheremap_transform(frag_normal);
 
-    if(bool(u_flags & PBR_EN_EMISSIVE))
-        out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, frag_mare.a * u_f_emissive_scale);
-    else
-        out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, 0.f);
+    float alpha = bool(u_flags & PBR_EN_EMISSIVE) ? frag_mare.a * u_f_emissive_scale : 0.f;
 
+    out_albedo = vec4(frag_color.rgb * u_v4_tint.rgb, alpha);
     out_normal = vec4(normal_cmp, 0.f, 1.f);
     out_mar    = vec4(frag_mare.rgb, 1.f);
 }

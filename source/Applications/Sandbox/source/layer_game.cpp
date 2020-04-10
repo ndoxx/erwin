@@ -113,7 +113,10 @@ void GameLayer::on_attach()
 		renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
 		renderable.set_material(mats[ii]);
 		if(ii==3)
-			renderable.set_emissive(5.f);
+		{
+			renderable.enable_emissivity();
+			renderable.material_data.emissive_scale = 5.f;
+		}
 
 		renderable.material_data.tint = {1.f,1.f,1.f,1.f};
 

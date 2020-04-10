@@ -32,7 +32,7 @@
         stocker dans les CAT files.
 
     --[ENGINE FEATURES]--
-    [ ] Resource caching
+    [X] Resource caching
     [/] Ecrire un renderer 2D multi-threaded
         [ ] Ecrire des classes ingame GUI basiques tirant parti du renderer 2D
     [/] Ecrire un renderer 3D multi-threaded
