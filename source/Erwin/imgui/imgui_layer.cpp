@@ -82,31 +82,4 @@ void ImGuiLayer::on_imgui_render()
 
 }
 
-bool ImGuiLayer::on_event(const KeyboardEvent& event)
-{
-	// Don't propagate event if ImGui wants to handle it
-	ImGuiIO& io = ImGui::GetIO();
-	return io.WantCaptureKeyboard;
-}
-
-bool ImGuiLayer::on_event(const KeyTypedEvent& event)
-{
-	// Don't propagate event if ImGui wants to handle it
-	ImGuiIO& io = ImGui::GetIO();
-	return io.WantTextInput;
-}
-
-bool ImGuiLayer::on_event(const MouseButtonEvent& event)
-{
-	// Don't propagate event if ImGui wants to handle it
-	ImGuiIO& io = ImGui::GetIO();
-	return io.WantCaptureMouse;
-}
-
-bool ImGuiLayer::on_event(const MouseScrollEvent& event)
-{
-	return false;
-}
-
-
 } // namespace erwin

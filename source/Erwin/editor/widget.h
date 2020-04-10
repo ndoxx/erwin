@@ -21,6 +21,8 @@ public:
 	inline void hide(bool value=true) { open_ = !value; }
 	inline const std::string& get_name() const { return name_; }
 
+	inline bool is_hovered() const { return is_hovered_; }
+
 	bool open_;
 
 protected:
@@ -36,6 +38,7 @@ protected:
 	int32_t x_pos_;
 	int32_t y_pos_;
 	bool has_focus_;
+	bool is_hovered_;
 };
 
 

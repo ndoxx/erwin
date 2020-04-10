@@ -168,12 +168,12 @@ void GameLayer::on_render()
 
 bool GameLayer::on_event(const MouseButtonEvent& event)
 {
-	return false;
+	return Scene::camera_controller.on_mouse_button_event(event);
 }
 
 bool GameLayer::on_event(const WindowResizeEvent& event)
 {
-	return false;
+	return Scene::camera_controller.on_window_resize_event(event);
 }
 
 bool GameLayer::on_event(const WindowMovedEvent& event)
@@ -183,10 +183,16 @@ bool GameLayer::on_event(const WindowMovedEvent& event)
 
 bool GameLayer::on_event(const MouseScrollEvent& event)
 {
-	return false;
+	return Scene::camera_controller.on_mouse_scroll_event(event);
 }
 
 bool GameLayer::on_event(const MouseMovedEvent& event)
 {
-	return false;
+	return Scene::camera_controller.on_mouse_moved_event(event);
 }
+
+bool GameLayer::on_event(const erwin::KeyboardEvent& event)
+{	
+	return Scene::camera_controller.on_keyboard_event(event);
+}
+

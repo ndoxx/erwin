@@ -26,6 +26,8 @@ static struct
 
 	uint32_t settings_menu;
 	uint32_t view_menu;
+
+    editor::SceneViewWidget* scene_view_widget_ = nullptr;
 } s_storage;
 
 static void set_gui_behavior()
@@ -36,7 +38,8 @@ static void set_gui_behavior()
 	s_storage.enable_docking = true;
 }
 
-EditorLayer::EditorLayer(): Layer("EditorLayer")
+EditorLayer::EditorLayer():
+Layer("EditorLayer")
 {
 
 }
@@ -99,7 +102,8 @@ void EditorLayer::on_attach()
     add_widget(s_storage.view_menu, hex_widget = new editor::HexDumpWidget());
     hex_widget->refresh();
 
-    add_widget(s_storage.view_menu, new editor::SceneViewWidget());
+    s_storage.scene_view_widget_ = new editor::SceneViewWidget();
+    add_widget(s_storage.view_menu, s_storage.scene_view_widget_);
     add_widget(s_storage.view_menu, new editor::SceneHierarchyWidget());
     add_widget(s_storage.view_menu, new editor::MaterialsWidget());
     add_widget(s_storage.view_menu, new editor::InspectorWidget());
@@ -230,33 +234,6 @@ void EditorLayer::on_imgui_render()
 	}
 }
 
-bool EditorLayer::on_event(const MouseButtonEvent& event)
-{
-	return false;
-}
-
-bool EditorLayer::on_event(const WindowResizeEvent& event)
-{
-	return false;
-}
-
-bool EditorLayer::on_event(const MouseScrollEvent& event)
-{
-	return false;
-}
-
-bool EditorLayer::on_event(const KeyboardEvent& event)
-{
-    if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_DROP_SELECTION))
-    {
-        Scene::drop_selection();
-        return true;
-    }
-
-    return false;
-}
-
-
 void EditorLayer::show_dockspace_window(bool* p_open)
 {
     static bool opt_fullscreen_persistant = true;
@@ -294,6 +271,56 @@ void EditorLayer::show_dockspace_window(bool* p_open)
     }
 
     ImGui::End();
+}
+
+bool EditorLayer::on_event(const MouseButtonEvent& event)
+{
+    // If scene view is not hovered, let ImGui consume input events
+    if(!s_storage.scene_view_widget_->is_hovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if(io.WantCaptureMouse)
+            return true;
+    }
+
+    return s_storage.scene_view_widget_->on_mouse_event(event);
+}
+
+bool EditorLayer::on_event(const WindowResizeEvent& event)
+{
+	return false;
+}
+
+bool EditorLayer::on_event(const MouseScrollEvent& event)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureMouse;
+}
+
+bool EditorLayer::on_event(const KeyboardEvent& event)
+{
+    // If scene view is not hovered, let ImGui consume input events
+    if(!s_storage.scene_view_widget_->is_hovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if(io.WantCaptureKeyboard)
+            return true;
+    }
+
+    if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_DROP_SELECTION))
+    {
+        Scene::drop_selection();
+        return true;
+    }
+
+    return false;
+}
+
+bool EditorLayer::on_event(const KeyTypedEvent& event)
+{
+    // Don't propagate event if ImGui wants to handle it
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantTextInput;
 }
 
 } // namespace editor

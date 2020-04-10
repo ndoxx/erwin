@@ -26,6 +26,7 @@ protected:
 	virtual bool on_event(const erwin::WindowMovedEvent& event) override;
 	virtual bool on_event(const erwin::MouseScrollEvent& event) override;
 	virtual bool on_event(const erwin::MouseMovedEvent& event) override;
+	virtual bool on_event(const erwin::KeyboardEvent& event) override;
 
 private:
 	erwin::PBRDeferredRenderSystem PBR_deferred_render_system_;

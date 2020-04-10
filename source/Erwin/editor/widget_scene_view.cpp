@@ -34,8 +34,6 @@ Widget("Scene", true)
     stats_overlay_ = new RenderStatsOverlay();
     camera_overlay_ = new CameraTrackerOverlay();
     render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
-
-    EVENTBUS.subscribe(this, &SceneViewWidget::on_mouse_event);
 }
 
 SceneViewWidget::~SceneViewWidget()

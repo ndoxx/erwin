@@ -1,6 +1,5 @@
 #include "input/freefly_camera_controller.h"
 #include "input/input.h"
-#include "event/event_bus.h"
 #include "debug/logger.h"
 
 #include "glm/gtx/string_cast.hpp"
@@ -22,12 +21,6 @@ FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear
 
 void FreeflyController::init(float aspect_ratio, float fovy, float znear, float zfar)
 {
-	EVENTBUS.subscribe(this, &FreeflyController::on_window_resize_event);
-	EVENTBUS.subscribe(this, &FreeflyController::on_keyboard_event);
-	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_scroll_event);
-	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_moved_event);
-	EVENTBUS.subscribe(this, &FreeflyController::on_mouse_button_event);
-
 	camera_.init({-aspect_ratio*fovy_znear_to_top(fovy,znear), 
 				   aspect_ratio*fovy_znear_to_top(fovy,znear),
 	              -fovy_znear_to_top(fovy,znear), 

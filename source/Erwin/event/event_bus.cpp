@@ -32,7 +32,16 @@ void EventBus::dispatch()
 	for(auto&& [eid, q]: event_queues_)
 	{
         DelegateList* delegates = subscribers_[eid];
-        if(delegates == nullptr) continue;
+        // If no delegate, drop events in this queue
+        if(delegates == nullptr)
+        {
+        	while(!q.empty())
+        	{
+		        delete q.front();
+		        q.pop();
+        	}
+        	continue;
+        }
 
         // TODO: Implement a timeout to distribute load across several frames
         while(!q.empty())

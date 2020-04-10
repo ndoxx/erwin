@@ -36,6 +36,7 @@ protected:
 	virtual bool on_event(const erwin::WindowResizeEvent& event) override;
 	virtual bool on_event(const erwin::MouseScrollEvent& event) override;
 	virtual bool on_event(const erwin::KeyboardEvent& event) override;
+	virtual bool on_event(const erwin::KeyTypedEvent& event) override;
 
 private:
 	std::vector<MenuDescriptor> menus_;

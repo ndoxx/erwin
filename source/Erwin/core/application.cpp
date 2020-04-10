@@ -75,6 +75,7 @@ Application::~Application()
     {
         W_PROFILE_SCOPE("Layer stack shutdown")
         layer_stack_.clear();
+        IMGUI_LAYER->on_detach();
     }
     {
         W_PROFILE_SCOPE("Application unloading")
@@ -266,7 +267,7 @@ bool Application::init()
         W_PROFILE_SCOPE("ImGui overlay creation")
         // Generate ImGui overlay
         IMGUI_LAYER = new ImGuiLayer();
-        push_overlay(IMGUI_LAYER);
+        IMGUI_LAYER->on_attach();
     }
 
     {
