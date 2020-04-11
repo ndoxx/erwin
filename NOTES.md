@@ -10,6 +10,7 @@
 
 ##TODO:
     --[EDITOR]--
+<<<<<<< Updated upstream
     [ ] Undo / Redo system
     [X] Ajouter / détruire des composants pour chaque entité
         [ ] Undo / Redo
@@ -17,6 +18,10 @@
         dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [X] Créer / détruire des entités
         [ ] Undo / Redo
+=======
+    [ ] Ajouter / détruire des composants pour chaque entité
+    [ ] Créer / détruire des entités
+>>>>>>> Stashed changes
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
@@ -32,7 +37,11 @@
         stocker dans les CAT files.
 
     --[ENGINE FEATURES]--
+<<<<<<< Updated upstream
     [X] Resource caching
+=======
+    [ ] Resource caching
+>>>>>>> Stashed changes
     [/] Ecrire un renderer 2D multi-threaded
         [ ] Ecrire des classes ingame GUI basiques tirant parti du renderer 2D
     [/] Ecrire un renderer 3D multi-threaded

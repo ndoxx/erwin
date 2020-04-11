@@ -72,6 +72,75 @@ static std::string format_to_string(GLenum value)
 	}
 }
 
+static bool handle_filter(uint32_t rd_handle, uint8_t filter)
+{
+    bool has_mipmap = (filter & TextureFilter::MIN_NEAREST_MIPMAP_NEAREST)
+                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_NEAREST)
+                   || (filter & TextureFilter::MIN_NEAREST_MIPMAP_LINEAR)
+                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_LINEAR);
+
+    // Magnification filter
+    glTextureParameteri(rd_handle, GL_TEXTURE_MAG_FILTER, bool(filter & MAG_LINEAR) ? GL_LINEAR : GL_NEAREST);
+
+    // Minification filter
+    uint16_t minfilter = filter & ~(1 << 0); // Clear mag filter bit
+
+    switch(minfilter)
+    {
+        case MIN_NEAREST:                glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST); break;
+        case MIN_LINEAR:                 glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR); break;
+        case MIN_NEAREST_MIPMAP_NEAREST: glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); break;
+        case MIN_LINEAR_MIPMAP_NEAREST:  glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); break;
+        case MIN_NEAREST_MIPMAP_LINEAR:  glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); break;
+        case MIN_LINEAR_MIPMAP_LINEAR:   glTextureParameteri(rd_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); break;
+    }
+
+    return has_mipmap;
+}
+
+static void handle_address_UV_2D(uint32_t rd_handle, TextureWrap wrap)
+{
+    GLint param;
+    switch(wrap)
+    {
+        case TextureWrap::REPEAT:          param = GL_REPEAT; break;
+        case TextureWrap::MIRRORED_REPEAT: param = GL_MIRRORED_REPEAT; break;
+        case TextureWrap::CLAMP_TO_EDGE:   param = GL_CLAMP_TO_EDGE; break;
+    }
+    glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_S, param);
+    glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_T, param);
+}
+
+static void handle_address_UV_3D(uint32_t rd_handle, TextureWrap wrap)
+{
+    GLint param;
+    switch(wrap)
+    {
+        case TextureWrap::REPEAT:          param = GL_REPEAT; break;
+        case TextureWrap::MIRRORED_REPEAT: param = GL_MIRRORED_REPEAT; break;
+        case TextureWrap::CLAMP_TO_EDGE:   param = GL_CLAMP_TO_EDGE; break;
+    }
+    glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_S, param);
+    glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_T, param);
+    glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_R, param);
+}
+
+static void generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_t max_level)
+{
+    W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
+
+    DLOG("texture",1) << "Generating mipmaps: " << base_level << " - " << max_level << std::endl;
+
+    glTextureParameteri(rd_handle, GL_TEXTURE_BASE_LEVEL, base_level);
+    glTextureParameteri(rd_handle, GL_TEXTURE_MAX_LEVEL, max_level);
+    glGenerateTextureMipmap(rd_handle);
+
+    GLfloat max_anisotropy;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
+    glTextureParameterf(rd_handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, glm::clamp(max_anisotropy, 0.0f, 8.0f));
+}
+
+
 OGLTexture2D::OGLTexture2D(const fs::path filepath)
 {
 	DLOGN("texture") << "Loading texture from file: " << std::endl;
@@ -146,13 +215,13 @@ height_(descriptor.height)
 			glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, fd.data_type, descriptor.data);
 	}
 
-	bool has_mipmap = handle_filter(descriptor.filter);
+	bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
 	DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
-	handle_address_UV(descriptor.wrap);
+	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
     if(has_mipmap && !descriptor.lazy_mipmap)
-        generate_mipmaps(0, 3);
+        generate_mipmaps(rd_handle_, 0, 3);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -164,72 +233,6 @@ OGLTexture2D::~OGLTexture2D()
 {
 	glDeleteTextures(1, &rd_handle_);
 	DLOG("texture",1) << "Destroyed texture [" << rd_handle_ << "]" << std::endl;
-}
-
-bool OGLTexture2D::handle_filter(uint8_t filter)
-{
-    bool has_mipmap = (filter & TextureFilter::MIN_NEAREST_MIPMAP_NEAREST)
-                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_NEAREST)
-                   || (filter & TextureFilter::MIN_NEAREST_MIPMAP_LINEAR)
-                   || (filter & TextureFilter::MIN_LINEAR_MIPMAP_LINEAR);
-
-    // Magnification filter
-    glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, bool(filter & MAG_LINEAR) ? GL_LINEAR : GL_NEAREST);
-
-    // Minification filter
-    uint16_t minfilter = filter & ~(1 << 0); // Clear mag filter bit
-
-    switch(minfilter)
-    {
-        case MIN_NEAREST:                glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST); break;
-        case MIN_LINEAR:                 glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR); break;
-        case MIN_NEAREST_MIPMAP_NEAREST: glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); break;
-        case MIN_LINEAR_MIPMAP_NEAREST:  glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); break;
-        case MIN_NEAREST_MIPMAP_LINEAR:  glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); break;
-        case MIN_LINEAR_MIPMAP_LINEAR:   glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); break;
-    }
-
-    return has_mipmap;
-}
-
-void OGLTexture2D::handle_address_UV(TextureWrap wrap)
-{
-    switch(wrap)
-    {
-        case TextureWrap::REPEAT:
-        {
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            break;
-        }
-        case TextureWrap::MIRRORED_REPEAT:
-        {
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-            break;
-        }
-        case TextureWrap::CLAMP_TO_EDGE:
-        {
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTextureParameteri(rd_handle_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            break;
-        }
-    }
-}
-
-void OGLTexture2D::generate_mipmaps(uint32_t base_level, uint32_t max_level)
-{
-	W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
-
-    DLOG("texture",1) << "Generating mipmaps: " << base_level << " - " << max_level << std::endl;
-
-    glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, base_level);
-    glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, max_level);
-    glGenerateTextureMipmap(rd_handle_);
-
-    GLfloat max_anisotropy;
-    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
-    glTextureParameterf(rd_handle_, GL_TEXTURE_MAX_ANISOTROPY_EXT, glm::clamp(max_anisotropy, 0.0f, 8.0f));
 }
 
 uint32_t OGLTexture2D::get_width() const
@@ -257,5 +260,87 @@ void* OGLTexture2D::get_native_handle()
     // Cast to void* directly for compatibility with ImGUI
     return (void*)(uint64_t)(rd_handle_);
 }
+
+
+
+
+
+OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor):
+width_(descriptor.width),
+height_(descriptor.height)
+{
+    DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
+
+    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &rd_handle_);
+    DLOGI << "handle: " << rd_handle_ << std::endl;
+    DLOGI << "width:  " << width_ << std::endl;
+    DLOGI << "height: " << height_ << std::endl;
+
+    const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
+    glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+
+    bool has_data = true;
+    for(int face=0; face<6; ++face)
+        has_data &= (descriptor.face_data[face] != nullptr);
+
+    if(has_data)
+    {
+        for(int face=0; face<6; ++face)
+        {
+            if(fd.is_compressed)
+                glCompressedTextureSubImage3D(rd_handle_, 0, 0, 0, face, width_, height_, 1, fd.format, width_*height_, descriptor.face_data[face]);
+            else
+                glTextureSubImage3D(rd_handle_, 0, 0, 0, face, width_, height_, 1, fd.format, fd.data_type, descriptor.face_data[face]);
+        }
+    }
+
+    bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
+    DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+    handle_address_UV_3D(rd_handle_, descriptor.wrap);
+
+    // Handle mipmap if specified
+    if(has_mipmap && !descriptor.lazy_mipmap)
+        generate_mipmaps(rd_handle_, 0, 3);
+    else
+    {
+        glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
+        glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
+    }
+}
+
+OGLCubemap::~OGLCubemap()
+{
+    glDeleteTextures(1, &rd_handle_);
+    DLOG("texture",1) << "Destroyed cubemap [" << rd_handle_ << "]" << std::endl;
+}
+
+uint32_t OGLCubemap::get_width() const
+{
+    return width_;
+}
+
+uint32_t OGLCubemap::get_height() const
+{
+    return height_;
+}
+
+void OGLCubemap::bind(uint32_t slot) const
+{
+    glBindTextureUnit(slot, rd_handle_);
+}
+
+void OGLCubemap::unbind() const
+{
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
+void* OGLCubemap::get_native_handle()
+{
+    // Cast to void* directly for compatibility with ImGUI
+    return (void*)(uint64_t)(rd_handle_);
+}
+
+
+
 
 } // namespace erwin

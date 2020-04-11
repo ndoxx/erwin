@@ -32,10 +32,11 @@ namespace erwin
 		DO_ACTION( UniformBufferHandle )       \
 		DO_ACTION( ShaderStorageBufferHandle ) \
 		DO_ACTION( TextureHandle )             \
+		DO_ACTION( CubemapHandle )             \
 		DO_ACTION( ShaderHandle )              \
 		DO_ACTION( FramebufferHandle )
 
-constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
+constexpr std::size_t k_handle_alloc_size = 10 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
 
 /*
 		  _  __              
@@ -329,6 +330,7 @@ static struct RendererStorage
 		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
 		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
 		std::fill(std::begin(textures),               std::end(textures),               nullptr);
+		std::fill(std::begin(cubemaps),               std::end(cubemaps),               nullptr);
 		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
 		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
 	}
@@ -376,6 +378,7 @@ static struct RendererStorage
 	WRef<UniformBuffer>       uniform_buffers[k_max_render_handles];
 	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
 	WRef<Texture2D>			  textures[k_max_render_handles];
+	WRef<Cubemap>			  cubemaps[k_max_render_handles];
 	WRef<Shader>			  shaders[k_max_render_handles];
 	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
 
@@ -635,6 +638,7 @@ enum class RenderCommand: uint16_t
 	CreateShaderStorageBuffer,
 	CreateShader,
 	CreateTexture2D,
+	CreateCubemap,
 	CreateFramebuffer,
 
 	UpdateIndexBuffer,
@@ -659,6 +663,7 @@ enum class RenderCommand: uint16_t
 	DestroyShaderStorageBuffer,
 	DestroyShader,
 	DestroyTexture2D,
+	DestroyCubemap,
 	DestroyFramebuffer,
 
 	Count
@@ -884,6 +889,19 @@ TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	RenderCommandWriter cw(RenderCommand::CreateTexture2D);
+	cw.write(&handle);
+	cw.write(&desc);
+	cw.submit();
+
+	return handle;
+}
+
+CubemapHandle Renderer::create_cubemap(const CubemapDescriptor& desc)
+{
+	CubemapHandle handle = CubemapHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
+
+	RenderCommandWriter cw(RenderCommand::CreateCubemap);
 	cw.write(&handle);
 	cw.write(&desc);
 	cw.submit();
@@ -1119,6 +1137,16 @@ void Renderer::destroy(TextureHandle handle)
 	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyTexture2D);
+	cw.write(&handle);
+	cw.submit();
+}
+
+void Renderer::destroy(CubemapHandle handle)
+{
+	W_ASSERT(handle.is_valid(), "Invalid CubemapHandle!");
+	handle.release();
+	
+	RenderCommandWriter cw(RenderCommand::DestroyCubemap);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1432,6 +1460,18 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	s_storage.textures[handle.index] = Texture2D::create(descriptor);
 }
 
+void create_cubemap(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	CubemapHandle handle;
+	CubemapDescriptor descriptor;
+	buf.read(&handle);
+	buf.read(&descriptor);
+
+	s_storage.cubemaps[handle.index] = Cubemap::create(descriptor);
+}
+
 void create_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1675,6 +1715,15 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 	s_storage.textures[handle.index] = nullptr;
 }
 
+void destroy_cubemap(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	CubemapHandle handle;
+	buf.read(&handle);
+	s_storage.cubemaps[handle.index] = nullptr;
+}
+
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1707,6 +1756,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::create_shader_storage_buffer,
 	&render_dispatch::create_shader,
 	&render_dispatch::create_texture_2D,
+	&render_dispatch::create_cubemap,
 	&render_dispatch::create_framebuffer,
 	&render_dispatch::update_index_buffer,
 	&render_dispatch::update_vertex_buffer,
@@ -1729,6 +1779,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::destroy_shader_storage_buffer,
 	&render_dispatch::destroy_shader,
 	&render_dispatch::destroy_texture_2D,
+	&render_dispatch::destroy_cubemap,
 	&render_dispatch::destroy_framebuffer,
 };
 

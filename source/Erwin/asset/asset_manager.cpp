@@ -56,6 +56,7 @@ static struct
 
 // ---------------- PUBLIC API ----------------
 
+// TODO: Cache lookup before creating any resource
 TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 {
 	hash_t hname = H_(filepath.string().c_str());

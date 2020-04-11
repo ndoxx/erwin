@@ -7,6 +7,7 @@ target_include_directories(fractal PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
 target_include_directories(fractal PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
 target_include_directories(fractal PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
 target_include_directories(fractal PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(fractal PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/entt/src")
 
 
 set_target_properties(fractal

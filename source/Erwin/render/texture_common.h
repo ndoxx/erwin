@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 enum class TextureCompression: uint16_t
 {
 	None = 0,
@@ -66,5 +68,16 @@ struct Texture2DDescriptor
     ImageFormat image_format = ImageFormat::RGBA8;
     uint8_t filter = MIN_LINEAR | MAG_NEAREST;
     TextureWrap wrap = TextureWrap::REPEAT;
+    bool lazy_mipmap = false;
+};
+
+struct CubemapDescriptor
+{
+    uint32_t width;
+    uint32_t height;
+    std::array<void*,6> face_data = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+    ImageFormat image_format = ImageFormat::RGB16F;
+    uint8_t filter = MIN_LINEAR | MAG_LINEAR;
+    TextureWrap wrap = TextureWrap::CLAMP_TO_EDGE;
     bool lazy_mipmap = false;
 };

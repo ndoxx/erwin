@@ -41,4 +41,13 @@ public:
 	static WRef<Texture2D> create(const Texture2DDescriptor& descriptor);
 };
 
+class Cubemap: public Texture
+{
+public:
+	virtual ~Cubemap() = default;
+
+	// Create a cubemap texture from descriptor
+	static WRef<Cubemap> create(const CubemapDescriptor& descriptor);
+};
+
 } // namespace erwin

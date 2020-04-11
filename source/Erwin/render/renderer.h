@@ -93,6 +93,7 @@ public:
 	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
+	static CubemapHandle 			 create_cubemap(const CubemapDescriptor& desc);
 	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
 	static void 					 update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	static void 					 update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
@@ -113,6 +114,7 @@ public:
 	static void 					 destroy(ShaderStorageBufferHandle handle);
 	static void 					 destroy(ShaderHandle handle);
 	static void 					 destroy(TextureHandle handle);
+	static void 					 destroy(CubemapHandle handle);
 	static void 					 destroy(FramebufferHandle handle);
 
 #ifdef W_DEBUG
