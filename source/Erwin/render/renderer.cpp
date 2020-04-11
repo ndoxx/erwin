@@ -1064,7 +1064,6 @@ void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& file
 void Renderer::destroy(IndexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyIndexBuffer);
 	cw.write(&handle);
@@ -1074,7 +1073,6 @@ void Renderer::destroy(IndexBufferHandle handle)
 void Renderer::destroy(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
 	cw.write(&handle);
@@ -1084,7 +1082,6 @@ void Renderer::destroy(VertexBufferLayoutHandle handle)
 void Renderer::destroy(VertexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexBuffer);
 	cw.write(&handle);
@@ -1094,7 +1091,6 @@ void Renderer::destroy(VertexBufferHandle handle)
 void Renderer::destroy(VertexArrayHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexArray);
 	cw.write(&handle);
@@ -1104,7 +1100,6 @@ void Renderer::destroy(VertexArrayHandle handle)
 void Renderer::destroy(UniformBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyUniformBuffer);
 	cw.write(&handle);
@@ -1114,7 +1109,6 @@ void Renderer::destroy(UniformBufferHandle handle)
 void Renderer::destroy(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
 	cw.write(&handle);
@@ -1124,7 +1118,6 @@ void Renderer::destroy(ShaderStorageBufferHandle handle)
 void Renderer::destroy(ShaderHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
-	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyShader);
 	cw.write(&handle);
@@ -1134,7 +1127,6 @@ void Renderer::destroy(ShaderHandle handle)
 void Renderer::destroy(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
-	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyTexture2D);
 	cw.write(&handle);
@@ -1144,7 +1136,6 @@ void Renderer::destroy(TextureHandle handle)
 void Renderer::destroy(CubemapHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid CubemapHandle!");
-	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyCubemap);
 	cw.write(&handle);
@@ -1154,7 +1145,6 @@ void Renderer::destroy(CubemapHandle handle)
 void Renderer::destroy(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyFramebuffer);
 	cw.write(&handle);
@@ -1649,6 +1639,7 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 	IndexBufferHandle handle;
 	buf.read(&handle);
 	s_storage.index_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
@@ -1658,6 +1649,7 @@ void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 	VertexBufferLayoutHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_buffer_layouts[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -1667,6 +1659,7 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 	VertexBufferHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_array(memory::LinearBuffer<>& buf)
@@ -1676,6 +1669,7 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 	VertexArrayHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_arrays[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -1685,6 +1679,7 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 	UniformBufferHandle handle;
 	buf.read(&handle);
 	s_storage.uniform_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1694,6 +1689,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	ShaderStorageBufferHandle handle;
 	buf.read(&handle);
 	s_storage.shader_storage_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_shader(memory::LinearBuffer<>& buf)
@@ -1704,6 +1700,7 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	s_storage.shaders[handle.index] = nullptr;
 	s_storage.shader_compat[handle.index].clear();
+	handle.release();
 }
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)
@@ -1713,6 +1710,7 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 	TextureHandle handle;
 	buf.read(&handle);
 	s_storage.textures[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_cubemap(memory::LinearBuffer<>& buf)
@@ -1722,6 +1720,7 @@ void destroy_cubemap(memory::LinearBuffer<>& buf)
 	CubemapHandle handle;
 	buf.read(&handle);
 	s_storage.cubemaps[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
@@ -1741,6 +1740,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 		texture_vector.handles[ii].release();
 	}
 	s_storage.framebuffer_textures_.erase(handle.index);
+	handle.release();
 }
 
 } // namespace render_dispatch
