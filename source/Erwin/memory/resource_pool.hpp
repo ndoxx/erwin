@@ -3,6 +3,7 @@
 #include "memory/arena.h"
 #include "memory/handle_pool.h"
 #include "core/handle.h"
+#include "debug/logger.h"
 #include <array>
 
 namespace erwin

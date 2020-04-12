@@ -72,8 +72,8 @@ class SimpleBoundsChecking
 public:
 	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front)."); }
-	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back)."); }
+	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT_FMT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
+	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT_FMT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
 
 	static constexpr size_t SIZE_FRONT = 4;
 	static constexpr size_t SIZE_BACK = 4;
@@ -222,6 +222,7 @@ public:
         memory_tagger_.tag_deallocation(begin, decorated_size);
 
 		allocator_.deallocate(begin);
+
 		thread_guard_.leave();
 	}
 
@@ -276,14 +277,25 @@ T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int lin
 template <typename T, class ArenaT>
 void Delete(T* object, ArenaT& arena)
 {
-	if constexpr(std::is_pod<T>::value)
+	if constexpr(std::is_pod_v<T>)
 	{
     	arena.deallocate(object);
     }
     else
     {
 	    object->~T();
-	    arena.deallocate(object);
+	    // HACK:
+	    // We don't expect the pointer returned by placement new to be the same as the user pointer
+	    // calculated by the allocation. The address may be adjusted. This at least is true with 
+	    // clang 11 when the allocated type uses multiple inheritance. My compiler, like most, appears
+	    // not to adjust the pointer in the case of single inheritance, so a potential pointer mismatch
+	    // bug went undetected.
+	    // My fix is to dynamic cast the pointer to void* if the type is polymorphic.
+	    // See: https://stackoverflow.com/questions/41246633/placement-new-crashing-when-used-with-virtual-inheritance-hierarchy-in-visual-c
+	    if constexpr(std::is_polymorphic_v<T>)
+	    	arena.deallocate(dynamic_cast<void*>(object));
+	    else
+	    	arena.deallocate(object);
 	}
 }
 
@@ -311,6 +323,8 @@ void DeleteArray(T* object, ArenaT& arena)
 			as_T[ii-1].~T();
 
 		// Arena's deallocate() expects a pointer 4 bytes before actual user pointer
+		// NOTE(ndx): EXPECT deallocation bug when T is polymorphic, see HACK comment in Delete()
+		// TODO: Test and fix this
 		arena.deallocate(as_uint-1);
 	}
 }

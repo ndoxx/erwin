@@ -6,6 +6,7 @@
 #include "core/core.h"
 #include "core/unique_id.h"
 #include "render/buffer_layout.h"
+#include "memory/arena.h"
 
 namespace erwin
 {
@@ -24,6 +25,7 @@ public:
     persistent_map_(nullptr),
     has_persistent_mapping_(false)
     {}
+    virtual ~GfxBuffer() = default;
 
     virtual void init(void* data, uint32_t size, UsagePattern mode) = 0;
     virtual void bind() const = 0;
@@ -42,7 +44,6 @@ protected:
     bool has_persistent_mapping_;
 };
 
-
 class VertexBuffer: public virtual GfxBuffer
 {
 public:
@@ -59,7 +60,8 @@ public:
     // Factory method to create the correct implementation
     // for the current renderer API
     static WRef<VertexBuffer> create(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode = UsagePattern::Static);
-
+    static VertexBuffer* create(PoolArena& pool, float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode = UsagePattern::Static);
+    static size_t node_size();
 protected:
     BufferLayout layout_;
     std::size_t count_;
@@ -81,6 +83,8 @@ public:
     // Factory method to create the correct implementation
     // for the current renderer API
     static WRef<IndexBuffer> create(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode = UsagePattern::Static);
+    static IndexBuffer* create(PoolArena& pool, uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode = UsagePattern::Static);
+    static size_t node_size();
 
 protected:
     DrawPrimitive primitive_;
@@ -98,6 +102,8 @@ public:
 
     // Factory method to create the correct implementation
     static WRef<UniformBuffer> create(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode = UsagePattern::Dynamic);
+    static UniformBuffer* create(PoolArena& pool, const std::string& name, void* data, uint32_t struct_size, UsagePattern mode = UsagePattern::Dynamic);
+    static size_t node_size();
 
 protected:
     std::string name_;
@@ -115,6 +121,8 @@ public:
 
     // Factory method to create the correct implementation
     static WRef<ShaderStorageBuffer> create(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
+    static ShaderStorageBuffer* create(PoolArena& pool, const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
+    static size_t node_size();
 
 protected:
     std::string name_;
@@ -161,6 +169,8 @@ public:
     // Factory method to create the correct implementation
     // for the current renderer API
     static WRef<VertexArray> create();
+    static VertexArray* create(PoolArena& pool);
+    static size_t node_size();
 
 protected:
     W_ID unique_id_;
