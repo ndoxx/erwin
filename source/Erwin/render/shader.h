@@ -56,7 +56,9 @@ public:
 
 	// Factory method for the creation of an API-specific shader from a file path
 	static WRef<Shader> create(const std::string& name, const fs::path& filepath);
-
+    static Shader* create(PoolArena& pool, const std::string& name, const fs::path& filepath);
+    static size_t node_size();
+    
 protected:
 	std::string name_;
     W_ID unique_id_;

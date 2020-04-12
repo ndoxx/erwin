@@ -200,6 +200,11 @@ public:
 		bounds_checker_.put_sentinel_back(current + size);
         memory_tracker_.on_allocation(begin, decorated_size, alignment);
 
+    	// DLOGW("memory") << "Allocation" << std::endl;
+    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)current) << std::endl;
+
 		// Unlock resource and return user pointer
 		thread_guard_.leave();
 		return current;
@@ -222,6 +227,11 @@ public:
         memory_tagger_.tag_deallocation(begin, decorated_size);
 
 		allocator_.deallocate(begin);
+
+    	// DLOGW("memory") << "Deallocation" << std::endl;
+    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)ptr) << std::endl;
 
 		thread_guard_.leave();
 	}
@@ -277,26 +287,23 @@ T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int lin
 template <typename T, class ArenaT>
 void Delete(T* object, ArenaT& arena)
 {
-	if constexpr(std::is_pod_v<T>)
-	{
-    	arena.deallocate(object);
-    }
-    else
-    {
+	if constexpr(!std::is_pod_v<T>)
 	    object->~T();
-	    // HACK:
-	    // We don't expect the pointer returned by placement new to be the same as the user pointer
-	    // calculated by the allocation. The address may be adjusted. This at least is true with 
-	    // clang 11 when the allocated type uses multiple inheritance. My compiler, like most, appears
-	    // not to adjust the pointer in the case of single inheritance, so a potential pointer mismatch
-	    // bug went undetected.
-	    // My fix is to dynamic cast the pointer to void* if the type is polymorphic.
-	    // See: https://stackoverflow.com/questions/41246633/placement-new-crashing-when-used-with-virtual-inheritance-hierarchy-in-visual-c
-	    if constexpr(std::is_polymorphic_v<T>)
-	    	arena.deallocate(dynamic_cast<void*>(object));
-	    else
-	    	arena.deallocate(object);
-	}
+
+    // BUG/HACK:
+	// Sometimes, the address returned by W_NEW is not the same as the one passed to the underlying
+	// placement new (the "user" address computed by the allocator). I suspect pointer type casting
+	// is responsible (as placement new is required to forward the input pointer), but I can't seem 
+	// to pinpoint how it plays. I observe pointer mismatch when the constructed type uses multiple
+	// inheritance.
+    // My fix is to dynamic cast the pointer to void* if the type is polymorphic.
+    // Spoiler: it doesn't always work...
+    // When the base type holds a std::vector as a member for example, it still fails, for reasons...
+    // See: https://stackoverflow.com/questions/41246633/placement-new-crashing-when-used-with-virtual-inheritance-hierarchy-in-visual-c
+    if constexpr(std::is_polymorphic_v<T>)
+    	arena.deallocate(dynamic_cast<void*>(object));
+    else
+    	arena.deallocate(object);
 }
 
 template <typename T, class ArenaT>

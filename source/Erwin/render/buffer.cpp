@@ -186,7 +186,7 @@ size_t VertexArray::node_size()
     switch(Gfx::get_api())
     {
         case GfxAPI::None:   return 0;
-        case GfxAPI::OpenGL: return sizeof(OGLVertexArray);
+        case GfxAPI::OpenGL: return sizeof(OGLShaderStorageBuffer);
     }
 }
 

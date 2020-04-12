@@ -2246,3 +2246,29 @@ J'ai aussi codé un widget ImGui pour l'éditeur qui permet de changer les keybi
 
 ![Widget ImGui Key bindings.\label{figTexturePeek}](../../Erwin_rel/screens_erwin/erwin_15a_keybindings.png)
 
+
+#[12-04-20]
+##Placement new GOTCHA
+En travaillant sur le pooling des objets render, je me suis rendu compte que ma _PoolArena_ déconnait sévère lors de la désallocation de types en héritage multiple (oui, c'est assez spécifique !). En clair, le pointeur retourné par le placement new de la macro W_NEW était décallé d'un octet par rapport au user pointer calculé par l'allocation, et lors de la désallocation, bien entendu, memory::Delete() récupérait un pointeur décallé et faisait n'imp.
+Il se trouve que le standard ne contraint pas new à retourner le user pointer pur et simple, parfois l'adresse est ajustée (voir [1]). L'opérateur delete ajuste le pointeur dans l'autre sens automatiquement. La plupart des compilos n'ajustent pas le pointeur en cas d'héritage simple, ce qui explique que le bug est resté non détecté jusqu'alors, mais tous vont le faire en cas d'héritage multiple. 
+Mon fix est une conversion dynamique en void* pour les types polymorphiques uniquement dans memory::Delete() :
+
+```cpp
+template <typename T, class ArenaT>
+void Delete(T* object, ArenaT& arena)
+{
+    if constexpr(!std::is_pod_v<T>)
+        object->~T();
+
+    if constexpr(std::is_polymorphic_v<T>)
+        arena.deallocate(dynamic_cast<void*>(object));
+    else
+        arena.deallocate(object);
+}
+```
+
+S'attendre à un bug similaire avec W_DELETE_ARRAY que je n'ai pas encore fixé.
+
+###Sources:
+    [1] https://stackoverflow.com/questions/41246633/placement-new-crashing
+        -when-used-with-virtual-inheritance-hierarchy-in-visual-c

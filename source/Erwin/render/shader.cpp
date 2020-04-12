@@ -30,6 +30,39 @@ WRef<Shader> Shader::create(const std::string& name, const fs::path& filepath)
     }
 }
 
+Shader* Shader::create(PoolArena& pool, const std::string& name, const fs::path& filepath)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("render") << "Shader: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+        {
+            OGLShader* shader = W_NEW(OGLShader, pool)();
+
+            std::string extension(filepath.extension().string());
+            if(!extension.compare(".glsl"))
+                shader->init_glsl(name, filepath);
+            else if(!extension.compare(".spv"))
+                shader->init_spirv(name, filepath);
+
+            return shader;
+        }
+    }
+}
+
+size_t Shader::node_size()
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:   return 0;
+        case GfxAPI::OpenGL: return sizeof(OGLShader);
+    }
+}
+
+
 // -------------------------------------------------------------------------------------------------
 
 void ShaderBank::add(WRef<Shader> p_shader)

@@ -49,6 +49,7 @@ class ABase: public virtual BufBase
 protected:
     int a_;
     float b_;
+    std::vector<float> vec_;
 
 public:
     ABase(int a, float b):
@@ -110,7 +111,12 @@ static int s_impl = 1;
 ABase* ABase::create(PoolArena& arena, int a, float b)
 {
     if(s_impl == 1)
-        return W_NEW(ADerived1, arena)(a,b);
+    {
+        void* ptr = W_NEW(ADerived1, arena)(a,b);
+        DLOGW("memory") << "As void:  " << std::hex << uint64_t(ptr) << std::endl;
+        DLOGW("memory") << "As ABase: " << std::hex << uint64_t((ABase*)ptr) << std::endl;
+        return (ABase*)ptr;
+    }
     else
         return W_NEW(ADerived2, arena)(a,b);
 }
@@ -168,7 +174,7 @@ int main(int argc, char** argv)
 
     memory::HeapArea renderer_memory(1_MB);
 
-#if 1
+#if 0
     ResourcePool<ABase, AHandle, 10> a_pool(renderer_memory, sizeof(ADerived1), "As");
 
     AHandle ah = a_pool.acquire();
@@ -177,6 +183,8 @@ int main(int argc, char** argv)
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
     a_pool.destroy(ah);
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
+
+    // test_pool(a_pool);
 
     a_pool.shutdown();
     return 0;
@@ -195,17 +203,20 @@ int main(int argc, char** argv)
     };
     auto window = Window::create(props);
 
-    ResourcePool<IndexBuffer, IndexBufferHandle, 10> index_buffers(renderer_memory, IndexBuffer::node_size(), "IndexBuffers");
+    ResourcePool<VertexBuffer, VertexBufferHandle, 10> vbos(renderer_memory, VertexBuffer::node_size(), "VertexBuffers");
 
     uint32_t data[12] = {0,1,2,2,1,3,3,4,5,6,7,8};
-    IndexBufferHandle ibo = index_buffers.acquire();
+    float fdata[12]   = {0.f,1.f,2.f,2.f,1.f,3.f,3.f,4.f,5.f,6.f,7.f,8.f};
+    BufferLayout layout{{"a_position"_h, ShaderDataType::Vec3}};
+    VertexBufferHandle vbo = vbos.acquire();
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
-    index_buffers.factory_create(ibo, data, 12, DrawPrimitive::Triangles);
+    VertexBuffer* p_vbo = vbos.factory_create(vbo, fdata, 12, layout);
+    DLOGW("memory") << "Factory returned: " << std::hex << uint64_t((void*)p_vbo) << std::endl;
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
-    index_buffers.destroy(ibo);
+    vbos.destroy(vbo);
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
 
-    index_buffers.shutdown();
+    vbos.shutdown();
 
     return 0;
 #endif
