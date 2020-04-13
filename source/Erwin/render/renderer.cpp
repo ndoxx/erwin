@@ -32,10 +32,11 @@ namespace erwin
 		DO_ACTION( UniformBufferHandle )       \
 		DO_ACTION( ShaderStorageBufferHandle ) \
 		DO_ACTION( TextureHandle )             \
+		DO_ACTION( CubemapHandle )             \
 		DO_ACTION( ShaderHandle )              \
 		DO_ACTION( FramebufferHandle )
 
-constexpr std::size_t k_handle_alloc_size = 9 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
+constexpr std::size_t k_handle_alloc_size = 10 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
 
 /*
 		  _  __              
@@ -329,6 +330,7 @@ static struct RendererStorage
 		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
 		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
 		std::fill(std::begin(textures),               std::end(textures),               nullptr);
+		std::fill(std::begin(cubemaps),               std::end(cubemaps),               nullptr);
 		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
 		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
 	}
@@ -376,6 +378,7 @@ static struct RendererStorage
 	WRef<UniformBuffer>       uniform_buffers[k_max_render_handles];
 	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
 	WRef<Texture2D>			  textures[k_max_render_handles];
+	WRef<Cubemap>			  cubemaps[k_max_render_handles];
 	WRef<Shader>			  shaders[k_max_render_handles];
 	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
 
@@ -635,6 +638,7 @@ enum class RenderCommand: uint16_t
 	CreateShaderStorageBuffer,
 	CreateShader,
 	CreateTexture2D,
+	CreateCubemap,
 	CreateFramebuffer,
 
 	UpdateIndexBuffer,
@@ -659,6 +663,7 @@ enum class RenderCommand: uint16_t
 	DestroyShaderStorageBuffer,
 	DestroyShader,
 	DestroyTexture2D,
+	DestroyCubemap,
 	DestroyFramebuffer,
 
 	Count
@@ -891,6 +896,19 @@ TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 	return handle;
 }
 
+CubemapHandle Renderer::create_cubemap(const CubemapDescriptor& desc)
+{
+	CubemapHandle handle = CubemapHandle::acquire();
+	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
+
+	RenderCommandWriter cw(RenderCommand::CreateCubemap);
+	cw.write(&handle);
+	cw.write(&desc);
+	cw.submit();
+
+	return handle;
+}
+
 FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
 {
 	FramebufferHandle handle = FramebufferHandle::acquire();
@@ -1046,7 +1064,6 @@ void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& file
 void Renderer::destroy(IndexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyIndexBuffer);
 	cw.write(&handle);
@@ -1056,7 +1073,6 @@ void Renderer::destroy(IndexBufferHandle handle)
 void Renderer::destroy(VertexBufferLayoutHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
 	cw.write(&handle);
@@ -1066,7 +1082,6 @@ void Renderer::destroy(VertexBufferLayoutHandle handle)
 void Renderer::destroy(VertexBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexBuffer);
 	cw.write(&handle);
@@ -1076,7 +1091,6 @@ void Renderer::destroy(VertexBufferHandle handle)
 void Renderer::destroy(VertexArrayHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyVertexArray);
 	cw.write(&handle);
@@ -1086,7 +1100,6 @@ void Renderer::destroy(VertexArrayHandle handle)
 void Renderer::destroy(UniformBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyUniformBuffer);
 	cw.write(&handle);
@@ -1096,7 +1109,6 @@ void Renderer::destroy(UniformBufferHandle handle)
 void Renderer::destroy(ShaderStorageBufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
 	cw.write(&handle);
@@ -1106,7 +1118,6 @@ void Renderer::destroy(ShaderStorageBufferHandle handle)
 void Renderer::destroy(ShaderHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
-	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyShader);
 	cw.write(&handle);
@@ -1116,9 +1127,17 @@ void Renderer::destroy(ShaderHandle handle)
 void Renderer::destroy(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
-	handle.release();
 	
 	RenderCommandWriter cw(RenderCommand::DestroyTexture2D);
+	cw.write(&handle);
+	cw.submit();
+}
+
+void Renderer::destroy(CubemapHandle handle)
+{
+	W_ASSERT(handle.is_valid(), "Invalid CubemapHandle!");
+	
+	RenderCommandWriter cw(RenderCommand::DestroyCubemap);
 	cw.write(&handle);
 	cw.submit();
 }
@@ -1126,7 +1145,6 @@ void Renderer::destroy(TextureHandle handle)
 void Renderer::destroy(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
-	handle.release();
 
 	RenderCommandWriter cw(RenderCommand::DestroyFramebuffer);
 	cw.write(&handle);
@@ -1198,6 +1216,9 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	cw.write(&dc.texture_count);
 	for(uint8_t ii=0; ii<dc.texture_count; ++ii)
 		cw.write(&dc.textures[ii]);
+	cw.write(&dc.cubemap_count);
+	for(uint8_t ii=0; ii<dc.cubemap_count; ++ii)
+		cw.write(&dc.cubemaps[ii]);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
 
@@ -1432,6 +1453,18 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	s_storage.textures[handle.index] = Texture2D::create(descriptor);
 }
 
+void create_cubemap(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	CubemapHandle handle;
+	CubemapDescriptor descriptor;
+	buf.read(&handle);
+	buf.read(&descriptor);
+
+	s_storage.cubemaps[handle.index] = Cubemap::create(descriptor);
+}
+
 void create_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1609,6 +1642,7 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 	IndexBufferHandle handle;
 	buf.read(&handle);
 	s_storage.index_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
@@ -1618,6 +1652,7 @@ void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 	VertexBufferLayoutHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_buffer_layouts[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -1627,6 +1662,7 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 	VertexBufferHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_vertex_array(memory::LinearBuffer<>& buf)
@@ -1636,6 +1672,7 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 	VertexArrayHandle handle;
 	buf.read(&handle);
 	s_storage.vertex_arrays[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -1645,6 +1682,7 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 	UniformBufferHandle handle;
 	buf.read(&handle);
 	s_storage.uniform_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1654,6 +1692,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	ShaderStorageBufferHandle handle;
 	buf.read(&handle);
 	s_storage.shader_storage_buffers[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_shader(memory::LinearBuffer<>& buf)
@@ -1664,6 +1703,7 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	s_storage.shaders[handle.index] = nullptr;
 	s_storage.shader_compat[handle.index].clear();
+	handle.release();
 }
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)
@@ -1673,6 +1713,17 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 	TextureHandle handle;
 	buf.read(&handle);
 	s_storage.textures[handle.index] = nullptr;
+	handle.release();
+}
+
+void destroy_cubemap(memory::LinearBuffer<>& buf)
+{
+    W_PROFILE_RENDER_FUNCTION()
+
+	CubemapHandle handle;
+	buf.read(&handle);
+	s_storage.cubemaps[handle.index] = nullptr;
+	handle.release();
 }
 
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
@@ -1692,6 +1743,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 		texture_vector.handles[ii].release();
 	}
 	s_storage.framebuffer_textures_.erase(handle.index);
+	handle.release();
 }
 
 } // namespace render_dispatch
@@ -1707,6 +1759,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::create_shader_storage_buffer,
 	&render_dispatch::create_shader,
 	&render_dispatch::create_texture_2D,
+	&render_dispatch::create_cubemap,
 	&render_dispatch::create_framebuffer,
 	&render_dispatch::update_index_buffer,
 	&render_dispatch::update_vertex_buffer,
@@ -1729,6 +1782,7 @@ static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderComman
 	&render_dispatch::destroy_shader_storage_buffer,
 	&render_dispatch::destroy_shader,
 	&render_dispatch::destroy_texture_2D,
+	&render_dispatch::destroy_cubemap,
 	&render_dispatch::destroy_framebuffer,
 };
 
@@ -1820,12 +1874,14 @@ void draw(memory::LinearBuffer<>& buf)
 	// * Detect if a new shader needs to be used, update and bind shader resources
 	static uint16_t last_shader_index = k_invalid_handle;
 	static uint16_t last_texture_index[k_max_texture_slots];
+	static uint16_t last_cubemap_index[k_max_cubemap_slots];
 	auto& shader = *s_storage.shaders[data.shader.index];
 	if(data.shader.index != last_shader_index)
 	{
 		shader.bind();
 		last_shader_index = data.shader.index;
 		std::fill(last_texture_index, last_texture_index+k_max_texture_slots, k_invalid_handle);
+		std::fill(last_cubemap_index, last_cubemap_index+k_max_cubemap_slots, k_invalid_handle);
 	}
 
 	uint8_t texture_count;
@@ -1841,6 +1897,22 @@ void draw(memory::LinearBuffer<>& buf)
 			auto& texture = *s_storage.textures[hnd.index];
 			shader.attach_texture_2D(texture, ii);
 			last_texture_index[ii] = hnd.index;
+		}
+	}
+
+	uint8_t cubemap_count;
+	buf.read(&cubemap_count);
+	for(uint8_t ii=0; ii<cubemap_count; ++ii)
+	{
+		CubemapHandle hnd;
+		buf.read(&hnd);
+
+		// Avoid texture switching if not necessary
+		if(hnd.index != last_cubemap_index[ii])
+		{
+			auto& cubemap = *s_storage.cubemaps[hnd.index];
+			shader.attach_cubemap(cubemap, ii);
+			last_cubemap_index[ii] = hnd.index;
 		}
 	}
 

@@ -72,8 +72,8 @@ class SimpleBoundsChecking
 public:
 	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front)."); }
-	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back)."); }
+	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT_FMT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
+	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT_FMT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
 
 	static constexpr size_t SIZE_FRONT = 4;
 	static constexpr size_t SIZE_BACK = 4;
@@ -200,6 +200,11 @@ public:
 		bounds_checker_.put_sentinel_back(current + size);
         memory_tracker_.on_allocation(begin, decorated_size, alignment);
 
+    	// DLOGW("memory") << "Allocation" << std::endl;
+    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)current) << std::endl;
+
 		// Unlock resource and return user pointer
 		thread_guard_.leave();
 		return current;
@@ -222,6 +227,12 @@ public:
         memory_tagger_.tag_deallocation(begin, decorated_size);
 
 		allocator_.deallocate(begin);
+
+    	// DLOGW("memory") << "Deallocation" << std::endl;
+    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)ptr) << std::endl;
+
 		thread_guard_.leave();
 	}
 
@@ -276,15 +287,23 @@ T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int lin
 template <typename T, class ArenaT>
 void Delete(T* object, ArenaT& arena)
 {
-	if constexpr(std::is_pod<T>::value)
-	{
-    	arena.deallocate(object);
-    }
-    else
-    {
+	if constexpr(!std::is_pod_v<T>)
 	    object->~T();
-	    arena.deallocate(object);
-	}
+
+    // BUG/HACK:
+	// Sometimes, the address returned by W_NEW is not the same as the one passed to the underlying
+	// placement new (the "user" address computed by the allocator). I suspect pointer type casting
+	// is responsible (as placement new is required to forward the input pointer), but I can't seem 
+	// to pinpoint how it plays. I observe pointer mismatch when the constructed type uses multiple
+	// inheritance.
+    // My fix is to dynamic cast the pointer to void* if the type is polymorphic.
+    // Spoiler: it doesn't always work...
+    // When the base type holds a std::vector as a member for example, it still fails, for reasons...
+    // See: https://stackoverflow.com/questions/41246633/placement-new-crashing-when-used-with-virtual-inheritance-hierarchy-in-visual-c
+    if constexpr(std::is_polymorphic_v<T>)
+    	arena.deallocate(dynamic_cast<void*>(object));
+    else
+    	arena.deallocate(object);
 }
 
 template <typename T, class ArenaT>
@@ -311,6 +330,8 @@ void DeleteArray(T* object, ArenaT& arena)
 			as_T[ii-1].~T();
 
 		// Arena's deallocate() expects a pointer 4 bytes before actual user pointer
+		// NOTE(ndx): EXPECT deallocation bug when T is polymorphic, see HACK comment in Delete()
+		// TODO: Test and fix this
 		arena.deallocate(as_uint-1);
 	}
 }

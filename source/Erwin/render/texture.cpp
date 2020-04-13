@@ -37,4 +37,18 @@ WRef<Texture2D> Texture2D::create(const Texture2DDescriptor& descriptor)
     }
 }
 
+
+WRef<Cubemap> Cubemap::create(const CubemapDescriptor& descriptor)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("texture") << "Cubemap: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+            return make_ref<OGLCubemap>(descriptor);
+    }
+}
+
 } // namespace erwin

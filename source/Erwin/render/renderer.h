@@ -93,6 +93,7 @@ public:
 	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
+	static CubemapHandle 			 create_cubemap(const CubemapDescriptor& desc);
 	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
 	static void 					 update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	static void 					 update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
@@ -113,6 +114,7 @@ public:
 	static void 					 destroy(ShaderStorageBufferHandle handle);
 	static void 					 destroy(ShaderHandle handle);
 	static void 					 destroy(TextureHandle handle);
+	static void 					 destroy(CubemapHandle handle);
 	static void 					 destroy(FramebufferHandle handle);
 
 #ifdef W_DEBUG
@@ -205,9 +207,11 @@ struct DrawCall
 	uint32_t instance_count;
 	uint32_t dependencies[k_max_draw_call_dependencies];
 	TextureHandle textures[k_max_texture_slots];
+	CubemapHandle cubemaps[k_max_cubemap_slots];
 	DrawCallType type;
 	uint8_t dependency_count;
 	uint8_t texture_count;
+	uint8_t cubemap_count;
 
 	DrawCall(DrawCallType dc_type, uint64_t state, ShaderHandle shader, VertexArrayHandle VAO, uint32_t count=0, uint32_t offset=0)
 	{
@@ -216,6 +220,7 @@ struct DrawCall
 
 		dependency_count = 0;
 		texture_count    = 0;
+		cubemap_count    = 0;
 		type             = dc_type;
 		data.state_flags = state;
 		data.shader      = shader;
@@ -250,6 +255,23 @@ struct DrawCall
 		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
 		textures[slot] = tex;
 		++texture_count;
+	}
+
+	// Set a cubemap at next slot
+	inline void add_cubemap(CubemapHandle cm)
+	{
+		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index);
+		W_ASSERT_FMT(cubemap_count<k_max_cubemap_slots-1, "Cubemap slot out of bounds: %u", cubemap_count);
+		cubemaps[cubemap_count++] = cm;
+	}
+
+	// Set a cubemap at a given slot
+	inline void set_cubemap(CubemapHandle cm, uint32_t slot=0)
+	{
+		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index);
+		W_ASSERT_FMT(slot<k_max_cubemap_slots, "Texture slot out of bounds: %u", slot);
+		cubemaps[slot] = cm;
+		++cubemap_count;
 	}
 };
 

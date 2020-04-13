@@ -100,7 +100,6 @@ protected:
 
 		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
 		dc.add_dependency(Renderer::update_uniform_buffer(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy));
-		dc.set_UBO(mandel_ubo_);
 		Renderer::submit("Presentation"_h, dc);
 	}
 

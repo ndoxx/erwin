@@ -14,7 +14,7 @@ public:
 	{
 		VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
-		Renderer3D::begin_forward_pass();
+		Renderer3D::begin_forward_pass(BlendState::Light);
 		auto view = Scene::registry.view<ComponentDirectionalLight,ComponentRenderableDirectionalLight>();
 		for(const entt::entity e: view)
 		{

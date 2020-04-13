@@ -27,6 +27,7 @@ public:
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 	virtual uint32_t get_texture_count() const override;
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const override;
+	virtual void attach_cubemap(const Cubemap& cubemap, int32_t slot) const override;
 
 	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) override;
 	virtual void attach_uniform_buffer(const UniformBuffer& buffer) override;

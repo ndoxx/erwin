@@ -1,4 +1,4 @@
-#include "game/gizmo_system.h"
+#include "editor/gizmo_system.h"
 #include "asset/bounding.h"
 #include "level/scene.h"
 #include "asset/asset_manager.h"

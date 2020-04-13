@@ -84,6 +84,8 @@ InstrumentationTimer::~InstrumentationTimer()
 
 void InstrumentationTimer::stop()
 {
+    if(storage.current_session == nullptr)
+        return;
     if(!storage.current_session->enabled)
         return;
 

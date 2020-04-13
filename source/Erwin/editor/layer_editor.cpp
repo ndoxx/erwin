@@ -131,6 +131,8 @@ void EditorLayer::on_detach()
 
 void EditorLayer::on_update(GameClock& clock)
 {
+    bounding_box_system_.update(clock);
+    
 	for(auto& desc: menus_)
 		for(Widget* widget: desc.widgets)
 			widget->on_update();
@@ -138,6 +140,12 @@ void EditorLayer::on_update(GameClock& clock)
 
 void EditorLayer::on_render()
 {
+    bounding_box_system_.render();
+    gizmo_system_.render();
+
+    PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
+    PostProcessingRenderer::combine("LBuffer"_h, 0, true);
+
 	for(auto& desc: menus_)
 		for(Widget* widget: desc.widgets)
 			widget->on_layer_render();
