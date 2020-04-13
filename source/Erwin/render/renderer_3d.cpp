@@ -53,6 +53,7 @@ static struct
 	UniformBufferHandle line_ubo;
 	ShaderHandle line_shader;
 	ShaderHandle dirlight_shader;
+	ShaderHandle skybox_shader;
 	UniformBufferHandle frame_ubo;
 	UniformBufferHandle transform_ubo;
 
@@ -73,12 +74,14 @@ void Renderer3D::init()
     // Init resources
 	s_storage.line_shader     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
 	s_storage.dirlight_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
+	s_storage.skybox_shader   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
 	s_storage.line_ubo        = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
 	s_storage.frame_ubo       = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
 	s_storage.transform_ubo   = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
 
 	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.transform_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
+	Renderer::shader_attach_uniform_buffer(s_storage.skybox_shader, s_storage.frame_ubo);
 }
 
 void Renderer3D::shutdown()
@@ -86,6 +89,7 @@ void Renderer3D::shutdown()
 	Renderer::destroy(s_storage.transform_ubo);
 	Renderer::destroy(s_storage.frame_ubo);
 	Renderer::destroy(s_storage.line_ubo);
+	Renderer::destroy(s_storage.skybox_shader);
 	Renderer::destroy(s_storage.dirlight_shader);
 	Renderer::destroy(s_storage.line_shader);
 }
@@ -303,6 +307,27 @@ void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.line_shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, (void*)&instance_data, sizeof(LineInstanceData), DataOwnership::Copy));
+	Renderer::submit(key.encode(), dc);
+}
+
+void Renderer3D::draw_skybox(CubemapHandle cubemap)
+{
+	VertexArrayHandle cube = CommonGeometry::get_vertex_array("cube"_h);
+
+	RenderState state;
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.rasterizer_state.cull_mode = CullMode::Front;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_func = DepthFunc::LEqual;
+	state.depth_stencil_state.depth_test_enabled = true;
+	state.depth_stencil_state.depth_lock = true;
+	auto state_flags = state.encode();
+
+	SortKey key;
+	key.set_sequence(0, Renderer::next_layer_id(), s_storage.skybox_shader);
+
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.skybox_shader, cube);
+	dc.set_cubemap(cubemap, 0);
 	Renderer::submit(key.encode(), dc);
 }
 

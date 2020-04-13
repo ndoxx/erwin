@@ -2,8 +2,6 @@ set(SRC_SANDBOX
     source/editor_app.cpp
     source/layer_game.cpp
     source/game/game_components.cpp
-    source/game/gizmo_system.cpp
-    source/game/bounding_box_system.cpp
    )
 
 add_executable(sandbox ${SRC_SANDBOX})

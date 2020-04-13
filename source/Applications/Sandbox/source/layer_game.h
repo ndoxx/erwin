@@ -4,8 +4,6 @@
 #include "game/pbr_deferred_render_system.h"
 #include "game/forward_sun_render_system.h"
 #include "game/forward_skybox_render_system.h"
-#include "game/gizmo_system.h"
-#include "game/bounding_box_system.h"
 
 class GameLayer: public erwin::Layer
 {
@@ -33,6 +31,4 @@ private:
 	erwin::PBRDeferredRenderSystem PBR_deferred_render_system_;
 	erwin::ForwardSunRenderSystem forward_sun_render_system_;
 	erwin::ForwardSkyboxRenderSystem forward_skybox_render_system_;
-	erwin::GizmoSystem gizmo_system_; // TODO: This should be an "engine system" (heavily related to the editor)
-	erwin::BoundingBoxSystem bounding_box_system_;
 };

@@ -21,6 +21,7 @@ public:
 		static constexpr uint32_t cm_width = 512;
 		static constexpr uint32_t cm_height = 512;
 
+		// Proceduraly generate a cubemap
 		// cubemap face order: (-x, +x, -y, +y, -z, +z)
 		static std::array<std::array<uint8_t,3*cm_width*cm_height>, 6> faces;
 
@@ -67,34 +68,11 @@ public:
 		};
 
 		cubemap = Renderer::create_cubemap(desc);
-		skybox_shader = AssetManager::load_system_shader("shaders/skybox.glsl");
-		Renderer3D::register_shader(skybox_shader, {}, ShaderFlags::SAMPLE_ENVIRONMENT);
-		// Renderer3D::set_environment_cubemap(cubemap);
 	}
 
 	void render()
 	{
-		VertexArrayHandle cube = CommonGeometry::get_vertex_array("cube"_h);
-
-		RenderState state;
-		state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
-		state.rasterizer_state.cull_mode = CullMode::Front;
-		state.blend_state = BlendState::Opaque;
-		state.depth_stencil_state.depth_func = DepthFunc::LEqual;
-		state.depth_stencil_state.depth_test_enabled = true;
-		state.depth_stencil_state.depth_lock = true;
-		auto state_flags = state.encode();
-
-		SortKey key;
-		key.set_sequence(0, Renderer::next_layer_id(), skybox_shader);
-
-		DrawCall dc(DrawCall::Indexed, state_flags, skybox_shader, cube);
-		dc.set_cubemap(cubemap, 0);
-		Renderer::submit(key.encode(), dc);
-
-		// Renderer3D::begin_forward_pass();
-		// Renderer3D::draw_mesh(cube, glm::mat4(1.f), skybox_shader);
-		// Renderer3D::end_forward_pass();
+		Renderer3D::draw_skybox(cubemap);
 	}
 };
 

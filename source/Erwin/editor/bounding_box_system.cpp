@@ -1,4 +1,4 @@
-#include "game/bounding_box_system.h"
+#include "editor/bounding_box_system.h"
 #include "asset/bounding.h"
 #include "level/scene.h"
 

@@ -3,6 +3,8 @@
 #include "erwin.h"
 #include "level/scene.h"
 #include "editor/widget.h"
+#include "editor/gizmo_system.h"
+#include "editor/bounding_box_system.h"
 
 namespace editor
 {
@@ -41,6 +43,8 @@ protected:
 private:
 	std::vector<MenuDescriptor> menus_;
 	erwin::ShaderHandle background_shader_;
+	erwin::GizmoSystem gizmo_system_;
+	erwin::BoundingBoxSystem bounding_box_system_;
 };
 
 } // namespace editor

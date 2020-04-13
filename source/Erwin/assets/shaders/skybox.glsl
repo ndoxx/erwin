@@ -10,6 +10,7 @@ void main()
     v_uv3 = a_position;
     vec4 pos = u_m4_aavp * vec4(a_position, 1.0);
     // z component always 1 after perspective divide
+    // NOTE(ndx): requires "less equal" depth func
     gl_Position = pos.xyww;
 }
 

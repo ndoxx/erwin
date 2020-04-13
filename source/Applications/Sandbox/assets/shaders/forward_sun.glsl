@@ -72,7 +72,7 @@ void main()
     float dist = length(v_uv)+0.0001f;
     float intensity = 0.20f/dist // halo
                     + 0.10f*max(0.f, 1.f-abs(100.f*v_uv.x*v_uv.y))  // cross
-                    + 0.07f*max(0.f, 1.f-abs(100.f*v_uv_r.x*v_uv_r.y)); // 45° cross
+                    + 0.05f*max(0.f, 1.f-abs(100.f*v_uv_r.x*v_uv_r.y)); // 45° cross
 
     intensity = smoothstep(0.25f,1.0f,intensity);
 

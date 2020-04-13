@@ -42,6 +42,8 @@ public:
 	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, ShaderHandle shader, TextureGroupHandle tg={}, UniformBufferHandle ubo={}, void* material_data=nullptr, uint32_t data_size=0);
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material, void* material_data=nullptr);
+	// Render a cubemap as a skybox (whole pass)
+	static void draw_skybox(CubemapHandle cubemap);
 	// Draw a debug cube
 	static void draw_cube(const glm::mat4& model_matrix, glm::vec3 color);
 

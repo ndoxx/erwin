@@ -156,6 +156,8 @@ set(SRC_EDITOR
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_materials.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_stats.cpp
     ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_camera_tracker.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/gizmo_system.cpp
+    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/bounding_box_system.cpp
   )
 
 set(SRC_PLATFORM

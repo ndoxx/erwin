@@ -147,7 +147,6 @@ void GameLayer::on_update(GameClock& clock)
 		tt = 0.f;
 
     Scene::camera_controller.update(clock);
-	bounding_box_system_.update(clock);
 
     // TMP: SCENE must have a directional light entity or this fails
     const auto& dirlight = Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light);
@@ -163,13 +162,15 @@ void GameLayer::on_render()
 	PBR_deferred_render_system_.render();
 	forward_skybox_render_system_.render();
 	forward_sun_render_system_.render();
-	gizmo_system_.render();
-	bounding_box_system_.render();
 
 	// Presentation
-	PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-	PostProcessingRenderer::combine("LBuffer"_h, 0, true);
-	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
+	// TODO: do post processing here if editor is turned off
+	// atm, EditorLayer is responsible for the post processing pass.
+	// The idea is that the last layer should do it. Maybe this is
+	// not well thought through...
+	// PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
+	// PostProcessingRenderer::combine("LBuffer"_h, 0, true);
+	// // PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
 }
 
 bool GameLayer::on_event(const MouseButtonEvent& event)
