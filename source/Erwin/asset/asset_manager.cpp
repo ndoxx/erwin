@@ -145,6 +145,23 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 	return handle;
 }
 
+ShaderHandle AssetManager::load_system_shader(const fs::path& filepath, const std::string& name)
+{
+	hash_t hname = H_(filepath.string().c_str());
+	auto it = s_storage.shader_cache_.find(hname);
+	if(it!=s_storage.shader_cache_.end())
+		return it->second;
+
+	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
+
+	std::string shader_name = name.empty() ? filepath.stem().string() : name;
+	ShaderHandle handle = Renderer::create_shader(filesystem::get_system_asset_dir() / filepath, shader_name);
+	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
+	s_storage.shader_cache_.insert({hname, handle});
+
+	return handle;
+}
+
 UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
 {
 	auto it = s_storage.ubo_cache_.find(component_id);
@@ -166,7 +183,7 @@ MaterialHandle AssetManager::create_material(const std::string& name,
 	MaterialHandle handle = MaterialHandle::acquire();
 	s_storage.materials_[handle.index] = W_NEW(Material, s_storage.material_pool_) {shader, tg, ubo, data_size};
 	s_storage.material_descriptors_[handle.index] = {handle, is_public, name, ""};
-	Renderer3D::register_material(handle);
+	Renderer3D::register_shader(handle);
 	return handle;
 }
 

@@ -18,6 +18,8 @@ namespace erwin
 
 // Maximum amount of texture slots per draw call
 static constexpr uint32_t k_max_texture_slots = 32;
+// Maximum amount of cubemap slots per draw call
+static constexpr uint32_t k_max_cubemap_slots = 8;
 // Maximum amount of render commands per frame, per command buffer
 static constexpr uint32_t k_max_render_commands = 2048;
 // Maximum amount of draw calls per frame

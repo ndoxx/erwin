@@ -49,7 +49,7 @@ class ABase: public virtual BufBase
 protected:
     int a_;
     float b_;
-    std::vector<float> vec_;
+    BufferLayout layout_;
 
 public:
     ABase(int a, float b):
@@ -112,10 +112,8 @@ ABase* ABase::create(PoolArena& arena, int a, float b)
 {
     if(s_impl == 1)
     {
-        void* ptr = W_NEW(ADerived1, arena)(a,b);
-        DLOGW("memory") << "As void:  " << std::hex << uint64_t(ptr) << std::endl;
-        DLOGW("memory") << "As ABase: " << std::hex << uint64_t((ABase*)ptr) << std::endl;
-        return (ABase*)ptr;
+        return W_NEW(ADerived1, arena)(a,b);
+        // return (ABase*)(void*)W_NEW(ADerived1, arena)(a,b); // Seems to work. WHY?
     }
     else
         return W_NEW(ADerived2, arena)(a,b);
@@ -174,12 +172,13 @@ int main(int argc, char** argv)
 
     memory::HeapArea renderer_memory(1_MB);
 
-#if 0
+#if 1
     ResourcePool<ABase, AHandle, 10> a_pool(renderer_memory, sizeof(ADerived1), "As");
 
     AHandle ah = a_pool.acquire();
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
-    a_pool.factory_create(ah, 42, 42.42f);
+    auto* pa = a_pool.factory_create(ah, 42, 42.42f);
+    pa->print();
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);
     a_pool.destroy(ah);
     memory::hex_dump(std::cout, reinterpret_cast<uint8_t*>(renderer_memory.begin()), 256_B);

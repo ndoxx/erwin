@@ -31,6 +31,8 @@ void GameLayer::on_attach()
 	REFLECT_COMPONENT(ComponentRenderableDirectionalLight);
 	REFLECT_COMPONENT(ComponentDirectionalLight);
 
+	forward_skybox_render_system_.init();
+
 	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Paved floor",
@@ -159,6 +161,7 @@ void GameLayer::on_render()
 
 	// Draw scene geometry
 	PBR_deferred_render_system_.render();
+	forward_skybox_render_system_.render();
 	forward_sun_render_system_.render();
 	gizmo_system_.render();
 	bounding_box_system_.render();

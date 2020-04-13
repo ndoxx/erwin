@@ -69,14 +69,14 @@ const float f_bright_knee = 0.1f;
 
 void main()
 {
-    float dist = length(v_uv)+0.01f;
+    float dist = length(v_uv)+0.0001f;
     float intensity = 0.20f/dist // halo
-                    + 0.25f*max(0.f, 1.f-abs(100.f*v_uv.x*v_uv.y))  // cross
+                    + 0.10f*max(0.f, 1.f-abs(100.f*v_uv.x*v_uv.y))  // cross
                     + 0.07f*max(0.f, 1.f-abs(100.f*v_uv_r.x*v_uv_r.y)); // 45° cross
 
-    intensity = smoothstep(0.15f,1.0f,intensity);
+    intensity = smoothstep(0.25f,1.0f,intensity);
 
-    out_color = mix(u_v4_sun_color,vec4(1.0f),0.6f*intensity)*intensity*1.1f;
+    out_color = mix(u_v4_sun_color,vec4(1.0f),0.6f*intensity)*intensity;
 
     // Sun already has a halo, no need for bloom effect on top of it
     out_glow = vec4(0.f);

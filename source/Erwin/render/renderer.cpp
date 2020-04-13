@@ -1216,6 +1216,9 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	cw.write(&dc.texture_count);
 	for(uint8_t ii=0; ii<dc.texture_count; ++ii)
 		cw.write(&dc.textures[ii]);
+	cw.write(&dc.cubemap_count);
+	for(uint8_t ii=0; ii<dc.cubemap_count; ++ii)
+		cw.write(&dc.cubemaps[ii]);
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
 
@@ -1871,12 +1874,14 @@ void draw(memory::LinearBuffer<>& buf)
 	// * Detect if a new shader needs to be used, update and bind shader resources
 	static uint16_t last_shader_index = k_invalid_handle;
 	static uint16_t last_texture_index[k_max_texture_slots];
+	static uint16_t last_cubemap_index[k_max_cubemap_slots];
 	auto& shader = *s_storage.shaders[data.shader.index];
 	if(data.shader.index != last_shader_index)
 	{
 		shader.bind();
 		last_shader_index = data.shader.index;
 		std::fill(last_texture_index, last_texture_index+k_max_texture_slots, k_invalid_handle);
+		std::fill(last_cubemap_index, last_cubemap_index+k_max_cubemap_slots, k_invalid_handle);
 	}
 
 	uint8_t texture_count;
@@ -1892,6 +1897,22 @@ void draw(memory::LinearBuffer<>& buf)
 			auto& texture = *s_storage.textures[hnd.index];
 			shader.attach_texture_2D(texture, ii);
 			last_texture_index[ii] = hnd.index;
+		}
+	}
+
+	uint8_t cubemap_count;
+	buf.read(&cubemap_count);
+	for(uint8_t ii=0; ii<cubemap_count; ++ii)
+	{
+		CubemapHandle hnd;
+		buf.read(&hnd);
+
+		// Avoid texture switching if not necessary
+		if(hnd.index != last_cubemap_index[ii])
+		{
+			auto& cubemap = *s_storage.cubemaps[hnd.index];
+			shader.attach_cubemap(cubemap, ii);
+			last_cubemap_index[ii] = hnd.index;
 		}
 	}
 

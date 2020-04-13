@@ -146,6 +146,22 @@ static inline hash_t slot_to_sampler2D_name(int32_t slot)
     }
 }
 
+static inline hash_t slot_to_sampler_cube_name(int32_t slot)
+{
+    switch(slot)
+    {
+        case 0: return "SAMPLER_CUBE_0"_h;
+        case 1: return "SAMPLER_CUBE_1"_h;
+        case 2: return "SAMPLER_CUBE_2"_h;
+        case 3: return "SAMPLER_CUBE_3"_h;
+        case 4: return "SAMPLER_CUBE_4"_h;
+        case 5: return "SAMPLER_CUBE_5"_h;
+        case 6: return "SAMPLER_CUBE_6"_h;
+        case 7: return "SAMPLER_CUBE_7"_h;
+        default: return 0;
+    }
+}
+
 static std::string get_shader_error_report(GLuint ShaderID)
 {
     char* log = nullptr;
@@ -283,6 +299,12 @@ void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
 {
     texture.bind(slot);
     send_uniform<int>(slot_to_sampler2D_name(slot), slot);
+}
+
+void OGLShader::attach_cubemap(const Cubemap& cubemap, int32_t slot) const
+{
+    cubemap.bind(slot);
+    send_uniform<int>(slot_to_sampler_cube_name(slot), slot);
 }
 
 void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)

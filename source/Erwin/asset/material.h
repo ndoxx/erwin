@@ -4,6 +4,7 @@
 #include "filesystem/filesystem.h"
 #include "render/handles.h"
 #include "asset/handles.h"
+#include "asset/material_common.h"
 #include "render/renderer_config.h"
 
 namespace erwin
@@ -34,6 +35,7 @@ struct Material
 	TextureGroupHandle texture_group;
 	UniformBufferHandle ubo;
 	uint32_t data_size = 0;
+	int shader_flags = 0;
 };
 
 } // namespace erwin

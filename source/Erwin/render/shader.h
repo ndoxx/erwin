@@ -9,11 +9,13 @@
 #include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/buffer.h"
+#include "asset/material_common.h"
 
 namespace erwin
 {
 
 class Texture2D;
+class Cubemap;
 class Shader
 {
 public:
@@ -36,6 +38,8 @@ public:
 	virtual uint32_t get_texture_count() const = 0;
 	// Attach a texture to a sampler without having to manipulate solts
 	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const = 0;
+	// Attach a cubemap texture to a sampler
+	virtual void attach_cubemap(const Cubemap& cubemap, int32_t slot) const = 0;
 
 	// Attach an SSBO that will automatically be bound when this shader is bound
 	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) = 0;

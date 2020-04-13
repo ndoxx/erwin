@@ -6,8 +6,9 @@
 #include "asset/material.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
+#include "glm/gtx/euler_angles.hpp"
 
-#include <set>
+#include <map>
 
 namespace erwin
 {
@@ -22,6 +23,7 @@ struct FrameData
 {
 	glm::mat4 view_matrix;
 	glm::mat4 view_projection_matrix;
+	glm::mat4 axis_aligned_view_projection_matrix;
 	glm::vec4 eye_position;
 	glm::vec4 camera_params;
 	glm::vec4 framebuffer_size; // x,y: framebuffer dimensions in pixels, z: aspect ratio, w: padding
@@ -40,6 +42,11 @@ struct TransformData
 	glm::mat4 mvp;
 };
 
+struct Environment
+{
+	CubemapHandle cubemap;
+};
+
 static struct
 {
 	// Resources
@@ -50,8 +57,9 @@ static struct
 	UniformBufferHandle transform_ubo;
 
 	FrameData frame_data;
+	Environment environment;
 
-	std::set<uint32_t> registered_shaders;
+	std::map<uint32_t, int> registered_shaders;
 
 	// State
 	uint64_t pass_state;
@@ -88,8 +96,16 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	float near = camera.get_frustum().near;
 	float far  = camera.get_frustum().far;
 
+	// Create a view matrix without the translational part, for skybox-type rendering
+	glm::mat4 aa_view = camera.get_view_matrix();
+	aa_view[3][0] = 0.f;
+	aa_view[3][1] = 0.f;
+	aa_view[3][2] = 0.f;
+
 	s_storage.frame_data.view_matrix = camera.get_view_matrix();
 	s_storage.frame_data.view_projection_matrix = camera.get_view_projection_matrix();
+	s_storage.frame_data.axis_aligned_view_projection_matrix = camera.get_projection_matrix() * aa_view;
+
 	s_storage.frame_data.eye_position = glm::vec4(camera.get_position(), 1.f);
 	s_storage.frame_data.camera_params = glm::vec4(near,far,0.f,0.f);
 	s_storage.frame_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
@@ -103,20 +119,29 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::register_material(MaterialHandle handle)
+void Renderer3D::set_environment_cubemap(CubemapHandle cubemap)
+{
+	s_storage.environment.cubemap = cubemap;
+}
+
+void Renderer3D::register_shader(MaterialHandle handle)
 {
 	const Material& material = AssetManager::get(handle);
+	register_shader(material.shader, material.ubo, material.shader_flags);
+}
 
+void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo, int shader_flags)
+{
 	// Check if already registered
-	if(s_storage.registered_shaders.find(material.shader.index) != s_storage.registered_shaders.end())
+	if(s_storage.registered_shaders.find(shader.index) != s_storage.registered_shaders.end())
 		return;
 
-	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.frame_ubo);
-	Renderer::shader_attach_uniform_buffer(material.shader, s_storage.transform_ubo);
-	if(material.ubo.index != k_invalid_handle)
-		Renderer::shader_attach_uniform_buffer(material.shader, material.ubo);
+	Renderer::shader_attach_uniform_buffer(shader, s_storage.frame_ubo);
+	Renderer::shader_attach_uniform_buffer(shader, s_storage.transform_ubo);
+	if(ubo.index != k_invalid_handle)
+		Renderer::shader_attach_uniform_buffer(shader, ubo);
 
-	s_storage.registered_shaders.insert(material.shader.index);
+	s_storage.registered_shaders.insert({shader.index, shader_flags});
 }
 
 bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material)
@@ -177,7 +202,7 @@ void Renderer3D::end_deferred_pass()
 	Renderer::blit_depth(key.encode(), GBuffer, LBuffer);
 }
 
-void Renderer3D::begin_forward_pass()
+void Renderer3D::begin_forward_pass(BlendState blend_state)
 {
     W_PROFILE_FUNCTION()
 
@@ -186,7 +211,7 @@ void Renderer3D::begin_forward_pass()
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
-	state.blend_state = BlendState::Alpha;
+	state.blend_state = blend_state;
 	state.depth_stencil_state.depth_test_enabled = true;
 
 	s_storage.pass_state = state.encode();
@@ -216,10 +241,10 @@ void Renderer3D::end_line_pass()
 
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material_handle, void* material_data)
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, 
+						   ShaderHandle shader, TextureGroupHandle texture_group, 
+						   UniformBufferHandle ubo, void* material_data, uint32_t data_size)
 {
-	const Material& material = AssetManager::get(material_handle);
-
 	// Compute matrices
 	TransformData transform_data;
 	transform_data.m   = model_matrix;
@@ -230,19 +255,35 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	glm::vec4 clip = glm::column(transform_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	SortKey key;
-	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, material.shader);
+	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, shader);
 
-	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
+	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, (void*)&transform_data, sizeof(TransformData), DataOwnership::Copy));
-	if(material.ubo.index != k_invalid_handle && material_data)
-		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
-	if(material.texture_group.index != k_invalid_handle)
+	if(ubo.index != k_invalid_handle && material_data)
+		dc.add_dependency(Renderer::update_uniform_buffer(ubo, material_data, data_size, DataOwnership::Copy));
+	if(texture_group.index != k_invalid_handle)
 	{
-		const TextureGroup& tg = AssetManager::get(material.texture_group);
+		const TextureGroup& tg = AssetManager::get(texture_group);
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
+
+	// Environment
+	/*auto it = s_storage.registered_shaders.find(shader.index);
+	if(it!=s_storage.registered_shaders.end())
+	{
+		int flags = it->second;
+		if(flags & ShaderFlags::SAMPLE_ENVIRONMENT)
+			dc.set_cubemap(s_storage.environment.cubemap, 0);
+	}*/
+
 	Renderer::submit(key.encode(), dc);
+}
+
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material_handle, void* material_data)
+{
+	const Material& material = AssetManager::get(material_handle);
+	draw_mesh(VAO, model_matrix, material.shader, material.texture_group, material.ubo, material_data, material.data_size);
 }
 
 void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
