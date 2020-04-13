@@ -22,6 +22,7 @@ include(cotire)
 
 cmake_minimum_required(VERSION 3.10)
 project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine shared library")
+include(standard_settings)
 
 if(DEFINED CLANG6)
   include(toolchain_clang6)
@@ -34,6 +35,13 @@ else()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+
+
+# Interface library to enable us to pass on options to multiple projects
+add_library(project_warnings INTERFACE)
+include(compiler_warnings)
+set_project_warnings(project_warnings)
+
 
 # include_directories(BEFORE "/usr/include/c++/8/")
 # include_directories(AFTER "/usr/include/x86_64-linux-gnu/c++/8/")
@@ -258,6 +266,7 @@ set_target_properties(eastl PROPERTIES
 )
 
 target_link_libraries(erwin
+                      project_warnings
                       m
                       z
                       stdc++fs

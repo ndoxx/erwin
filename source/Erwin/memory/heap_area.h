@@ -46,7 +46,7 @@ public:
 	inline std::pair<void*,void*> require_block(size_t size, const char* debug_name=nullptr)
 	{
 		// Page align returned block to avoid false sharing if multiple threads access this area
-        size_t padding = utils::alignment_padding((std::size_t)(head_), 64);
+        size_t padding = utils::alignment_padding(reinterpret_cast<std::size_t>(head_), 64);
 		W_ASSERT(head_ + size + padding < end(), "[HeapArea] Out of memory!");
 
     	// Mark padding area
@@ -63,13 +63,13 @@ public:
 		}
 		DLOGI << "Size:      "   << WCC('v') << size                                                 << WCC(0) << "B" << std::endl;
 		DLOGI << "Padding:   "   << WCC('v') << padding                                              << WCC(0) << "B" << std::endl;
-		DLOGI << "Remaining: "   << WCC('v') << uint64_t((uint8_t*)(end())-(head_ + size + padding)) << WCC(0) << "B" << std::endl;
-		DLOGI << "Address:   0x" << std::hex << uint64_t(head_ + padding)                            << std::dec << std::endl;
+		DLOGI << "Remaining: "   << WCC('v') << static_cast<uint64_t>(static_cast<uint8_t*>(end())-(head_ + size + padding)) << WCC(0) << "B" << std::endl;
+		DLOGI << "Address:   0x" << std::hex << reinterpret_cast<uint64_t>(head_ + padding)                            << std::dec << std::endl;
 
 		head_ += size + padding;
 
 #ifdef W_DEBUG
-		items_.push_back({debug_name ? debug_name : "block", (std::size_t)range.first, (std::size_t)range.second, size + padding});
+		items_.push_back({debug_name ? debug_name : "block", reinterpret_cast<std::size_t>(range.first), reinterpret_cast<std::size_t>(range.second), size + padding});
 #endif
 		return range;
 	}
