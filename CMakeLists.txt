@@ -39,7 +39,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Interface library to enable us to pass on options to multiple projects
 add_library(project_warnings INTERFACE)
-include(compiler_warnings)
+include(compiler_warnings) # Hardcore warnings
 set_project_warnings(project_warnings)
 
 set(CMAKE_BUILD_TYPE Release)
