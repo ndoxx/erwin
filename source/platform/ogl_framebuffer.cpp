@@ -34,7 +34,7 @@ Framebuffer(width, height, layout, depth, stencil)
 
     	// Register color attachment
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
-    	GLenum attachment = GL_COLOR_ATTACHMENT0 + ncolor_attachments++;
+    	GLenum attachment = GLenum(int(GL_COLOR_ATTACHMENT0) + ncolor_attachments++);
         glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture_handle, 0);
         // Save target texture name
         texture_names_.insert(std::make_pair(elt.target_name, textures_.size()));
@@ -120,7 +120,7 @@ const Texture2D& OGLFramebuffer::get_named_texture(hash_t name)
 
 uint32_t OGLFramebuffer::get_texture_count()
 {
-    return textures_.size();
+    return uint32_t(textures_.size());
 }
 
 void OGLFramebuffer::screenshot(const std::string& filepath)
@@ -139,7 +139,7 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Write to png file
-    stbi_write_png(filepath.c_str(), width_, height_, 4, pixels, width_ * 4);
+    stbi_write_png(filepath.c_str(), int(width_), int(height_), 4, pixels, int(width_) * 4);
 
     // Cleanup
     delete[] pixels;

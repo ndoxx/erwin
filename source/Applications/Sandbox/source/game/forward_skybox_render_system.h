@@ -13,7 +13,6 @@ class ForwardSkyboxRenderSystem
 {
 private:
 	CubemapHandle cubemap;
-	ShaderHandle skybox_shader;
 
 public:
 	void init()
@@ -30,7 +29,7 @@ public:
 			for(int yy=0; yy<cm_height; ++yy)
 			{
 				float h = yy/float(cm_height-1);
-				h = h*h;
+				// h = h*h;
 				for(int xx=0; xx<cm_width; ++xx)
 				{
 					uint32_t index = yy*cm_width + xx;

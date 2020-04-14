@@ -31,19 +31,23 @@ void Widget::imgui_render()
     }
 
     ImVec2 window_pos = ImGui::GetWindowPos();
-    if(window_pos.x != x_pos_ || window_pos.y != y_pos_)
+    int32_t win_pos_x = int32_t(window_pos.x);
+    int32_t win_pos_y = int32_t(window_pos.y);
+    if(win_pos_x != x_pos_ || win_pos_y != y_pos_)
     {
-        on_move(window_pos.x, window_pos.y);
-        x_pos_ = window_pos.x;
-        y_pos_ = window_pos.y;
+        on_move(win_pos_x, win_pos_y);
+        x_pos_ = win_pos_x;
+        y_pos_ = win_pos_y;
     }
 
     ImVec2 window_size = ImGui::GetWindowSize();
-    if(window_size.x != width_ || window_size.y != height_)
+    uint32_t win_size_x = uint32_t(window_size.x);
+    uint32_t win_size_y = uint32_t(window_size.y);
+    if(win_size_x != width_ || win_size_y != height_)
     {
-    	on_resize(window_size.x, window_size.y);
-    	width_ = window_size.x;
-    	height_ = window_size.y;
+    	on_resize(win_size_x, win_size_y);
+    	width_ = win_size_x;
+    	height_ = win_size_y;
     }
 
     has_focus_ = ImGui::IsWindowFocused();

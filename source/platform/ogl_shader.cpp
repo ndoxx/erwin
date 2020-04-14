@@ -130,7 +130,7 @@ static std::string ogl_interface_to_string(GLenum iface)
     }
 }
 
-static inline hash_t slot_to_sampler2D_name(int32_t slot)
+static inline hash_t slot_to_sampler2D_name(uint32_t slot)
 {
     switch(slot)
     {
@@ -146,7 +146,7 @@ static inline hash_t slot_to_sampler2D_name(int32_t slot)
     }
 }
 
-static inline hash_t slot_to_sampler_cube_name(int32_t slot)
+static inline hash_t slot_to_sampler_cube_name(uint32_t slot)
 {
     switch(slot)
     {
@@ -169,10 +169,10 @@ static std::string get_shader_error_report(GLuint ShaderID)
 
     glGetShaderiv(ShaderID, GL_INFO_LOG_LENGTH, &logsize);
 
-    log = (char*) malloc(logsize + 1);
+    log = static_cast<char*>(malloc(size_t(logsize) + 1));
     W_ASSERT(log, "Cannot allocate memory for Shader Error Report!");
 
-    memset(log, '\0', logsize + 1);
+    memset(log, '\0', size_t(logsize) + 1);
     glGetShaderInfoLog(ShaderID, logsize, &logsize, log);
 
     std::string ret(log);
@@ -223,10 +223,10 @@ static void program_error_report(GLuint ProgramID)
 
     glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &logsize);
 
-    log = (char*) malloc(logsize + 1);
+    log = static_cast<char*>(malloc(size_t(logsize) + 1));
     W_ASSERT(log, "Cannot allocate memory for Program Error Report!");
 
-    memset(log, '\0', logsize + 1);
+    memset(log, '\0', size_t(logsize) + 1);
     glGetProgramInfoLog(ProgramID, logsize, &logsize, log);
     DLOGR("shader") << log << std::endl;
 
@@ -292,19 +292,19 @@ uint32_t OGLShader::get_texture_slot(hash_t sampler) const
 
 uint32_t OGLShader::get_texture_count() const
 {
-    return texture_slots_.size();
+    return uint32_t(texture_slots_.size());
 }
 
-void OGLShader::attach_texture_2D(const Texture2D& texture, int32_t slot) const
+void OGLShader::attach_texture_2D(const Texture2D& texture, uint32_t slot) const
 {
     texture.bind(slot);
-    send_uniform<int>(slot_to_sampler2D_name(slot), slot);
+    send_uniform<int>(slot_to_sampler2D_name(slot), int(slot));
 }
 
-void OGLShader::attach_cubemap(const Cubemap& cubemap, int32_t slot) const
+void OGLShader::attach_cubemap(const Cubemap& cubemap, uint32_t slot) const
 {
     cubemap.bind(slot);
-    send_uniform<int>(slot_to_sampler_cube_name(slot), slot);
+    send_uniform<int>(slot_to_sampler_cube_name(slot), int(slot));
 }
 
 void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
@@ -316,7 +316,7 @@ void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
         DLOGW("shader") << "Unknown binding name: " << buffer.get_name() << std::endl;
         return;
     }
-    GLint binding_point = it->second;
+    GLint binding_point = GLint(it->second);
     uint32_t render_handle = static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_SHADER_STORAGE_BUFFER }));
 }
@@ -330,7 +330,7 @@ void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
         DLOGW("shader") << "Unknown binding name: " << buffer.get_name() << std::endl;
         return;
     }
-    GLint binding_point = it->second;
+    GLint binding_point = GLint(it->second);
     uint32_t render_handle = static_cast<const OGLUniformBuffer&>(buffer).get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_UNIFORM_BUFFER }));
 }
@@ -338,7 +338,7 @@ void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
 void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
-    GLint binding_point = block_bindings_.at(hname);
+    GLint binding_point = GLint(block_bindings_.at(hname));
     if(size)
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle(), base_offset, size);
     else
@@ -348,7 +348,7 @@ void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t 
 void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
-    GLint binding_point = block_bindings_.at(hname);
+    GLint binding_point = GLint(block_bindings_.at(hname));
     if(size)
         glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle(), offset, size);
     else
@@ -428,7 +428,7 @@ bool OGLShader::build_spirv(const fs::path& filepath)
 
         GLuint shader_id = glCreateShader(to_gl_shader_type(type));
         glShaderBinary(1, &shader_id, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv.data(), spirv.size());
-        glSpecializeShader(shader_id, (const GLchar*)stage.entry_point.c_str(), 0, nullptr, nullptr);
+        glSpecializeShader(shader_id, static_cast<const GLchar*>(stage.entry_point.c_str()), 0, nullptr, nullptr);
 
         // Check compilation status
         GLint is_compiled = 0;
@@ -472,7 +472,7 @@ bool OGLShader::link(const std::vector<GLuint>& shader_ids)
 
     // * Check linking status
     GLint is_linked = 0;
-    glGetProgramiv(rd_handle_, GL_LINK_STATUS, (int*) &is_linked);
+    glGetProgramiv(rd_handle_, GL_LINK_STATUS, static_cast<int*>(&is_linked));
 
     if(is_linked == GL_FALSE)
     {
@@ -533,7 +533,7 @@ void OGLShader::introspect()
     std::vector<BufferLayoutElement> attribute_layout;
     uint32_t attribute_count = 0;
 
-    for(int ii=0; ii<interfaces.size(); ++ii)
+    for(size_t ii=0; ii<interfaces.size(); ++ii)
     {
         // Get active objects count
         GLint num_active;
@@ -553,14 +553,14 @@ void OGLShader::introspect()
         prop_values.resize(properties.size());
         
         if(iface == GL_PROGRAM_INPUT)
-            attribute_layout.resize(num_active);
+            attribute_layout.resize(size_t(num_active));
 
         for(int jj=0; jj<num_active; ++jj)
         {
             glGetProgramResourceiv(rd_handle_, iface, jj, properties.size(),
                                    &properties[0], prop_values.size(), nullptr, &prop_values[0]);
 
-            resource_name.resize(prop_values[0]); // The length of the name
+            resource_name.resize(size_t(prop_values[0])); // The length of the name
             glGetProgramResourceName(rd_handle_, iface, jj, resource_name.size(), nullptr, &resource_name[0]);
             hash_t hname = H_(resource_name.c_str());
 
@@ -568,12 +568,12 @@ void OGLShader::introspect()
             if(iface == GL_PROGRAM_INPUT)
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
-                DLOGI << "[Loc: " << prop_values[2] << "] " << ogl_attribute_type_to_string(prop_values[1]) 
+                DLOGI << "[Loc: " << prop_values[2] << "] " << ogl_attribute_type_to_string(GLenum(prop_values[1])) 
                       << " " << WCC('u') << resource_name << WCC(0) << std::endl;
                 // For attribute layout detection
                 if(prop_values[2] != -1)
                 {
-                    attribute_layout[prop_values[2]] = BufferLayoutElement(H_(resource_name.c_str()), ogl_attribute_type_to_shader_data_type(prop_values[1]));
+                    attribute_layout[size_t(prop_values[2])] = BufferLayoutElement(H_(resource_name.c_str()), ogl_attribute_type_to_shader_data_type(GLenum(prop_values[1])));
                     ++attribute_count;
                 }
             }
@@ -586,7 +586,7 @@ void OGLShader::introspect()
                     uniform_locations_.insert(std::make_pair(hname, prop_values[3])); // Save location
                     if(prop_values[2] == GL_SAMPLER_2D || prop_values[2] == GL_SAMPLER_CUBE)
                         texture_slots_.insert(std::make_pair(hname, current_slot_++));
-                    DLOGI << "[Loc: " << prop_values[3] << "] " << ogl_uniform_type_to_string(prop_values[2]) 
+                    DLOGI << "[Loc: " << prop_values[3] << "] " << ogl_uniform_type_to_string(GLenum(prop_values[2])) 
                           << " " << WCC('u') << resource_name << WCC(0) << std::endl;
                 }
 
@@ -601,19 +601,19 @@ void OGLShader::introspect()
                 if(num_active_uniforms==0) continue;
 
                 // Get all active uniform indices for this block
-                std::vector<GLint> block_unif_indices(num_active_uniforms);
+                std::vector<GLint> block_unif_indices(static_cast<size_t>(num_active_uniforms));
                 glGetProgramResourceiv(rd_handle_, GL_UNIFORM_BLOCK, jj, 1, &active_unif_prop[0], 
                                        num_active_uniforms, nullptr, &block_unif_indices[0]);
 
                 // Iterate over all uniforms in this block
                 std::vector<BlockElement> block_elements;
-                for(int kk=0; kk<num_active_uniforms; ++kk)
+                for(size_t kk=0; kk<size_t(num_active_uniforms); ++kk)
                 {
                     // UNIF PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
                     std::vector<GLint> unif_prop_values(unif_props.size());
                     glGetProgramResourceiv(rd_handle_, GL_UNIFORM, block_unif_indices[kk], unif_props.size(),
                                            &unif_props[0], unif_prop_values.size(), nullptr, &unif_prop_values[0]);
-                    uniform_name.resize(unif_prop_values[0]);
+                    uniform_name.resize(size_t(unif_prop_values[0]));
                     glGetProgramResourceName(rd_handle_, GL_UNIFORM, block_unif_indices[kk], uniform_name.size(), 
                                              nullptr, &uniform_name[0]);
                     // Save uniform porperties
@@ -626,7 +626,7 @@ void OGLShader::introspect()
                 });
                 for(auto&& elt: block_elements)
                 {
-                    DLOGI << "[Offset: " << elt.offset << "] " << ogl_uniform_type_to_string(elt.type) << " " 
+                    DLOGI << "[Offset: " << elt.offset << "] " << ogl_uniform_type_to_string(GLenum(elt.type)) << " " 
                           << WCC('u') << elt.name << WCC(0) << std::endl;
                 }
 #endif
@@ -718,7 +718,7 @@ bool OGLShader::send_uniform<glm::vec2>(hash_t name, const glm::vec2& value) con
         return false;
     }
 
-    glUniform2fv(it->second, 1, (const GLfloat*)&value);
+    glUniform2fv(it->second, 1, static_cast<const GLfloat*>(&value[0]));
     return true;
 }
 
@@ -732,7 +732,7 @@ bool OGLShader::send_uniform<glm::vec3>(hash_t name, const glm::vec3& value) con
         return false;
     }
 
-    glUniform3fv(it->second, 1, (const GLfloat*)&value);
+    glUniform3fv(it->second, 1, static_cast<const GLfloat*>(&value[0]));
     return true;
 }
 
@@ -746,7 +746,7 @@ bool OGLShader::send_uniform<glm::vec4>(hash_t name, const glm::vec4& value) con
         return false;
     }
 
-    glUniform4fv(it->second, 1, (const GLfloat*)&value);
+    glUniform4fv(it->second, 1, static_cast<const GLfloat*>(&value[0]));
     return true;
 }
 

@@ -27,11 +27,11 @@ static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayo
 	const auto& layout = Renderer::get_vertex_buffer_layout(layout_handle);
 	Extent dims = (*geom)(layout, vdata, idata, nullptr);
 
-	IndexBufferHandle IBO = Renderer::create_index_buffer(idata.data(), idata.size(), primitive);
-	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), vdata.size(), UsagePattern::Static);
+	IndexBufferHandle IBO = Renderer::create_index_buffer(idata.data(), uint32_t(idata.size()), primitive);
+	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), uint32_t(vdata.size()), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-	MeshStub mesh {VAO, layout_handle, dims};
+	MeshStub mesh {VAO, layout_handle, dims, {}};
 	snprintf(mesh.name, 32, "%s", name.c_str());
 
 	s_storage.meshes_.insert({hname, mesh});

@@ -71,15 +71,15 @@ bool Ray::collides_extent(const Extent& extent, CollisionData& data)
     float Tfar  = std::numeric_limits<float>::max();
 
     // For each X/Y/Z slab
-    for(uint32_t ii=0; ii<3; ++ii)
+    for(size_t ii=0; ii<3; ++ii)
     {
         float xxl = extent[2*ii];
         float xxh = extent[2*ii+1];
-        float xxo = origin[ii];
-        float xxd = direction[ii];
+        float xxo = origin[int(ii)];
+        float xxd = direction[int(ii)];
 
         // If ray parallel to planes
-        if(fabs(xxd)<k_epsilon)
+        if(std::abs(xxd)<k_epsilon)
         {
             // If ray origin not between slab, no intersection for this slab
             if(xxo < xxl || xxo > xxh)

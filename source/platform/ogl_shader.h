@@ -26,8 +26,8 @@ public:
 	virtual void unbind() const override;
 	virtual uint32_t get_texture_slot(hash_t sampler) const override;
 	virtual uint32_t get_texture_count() const override;
-	virtual void attach_texture_2D(const Texture2D& texture, int32_t slot) const override;
-	virtual void attach_cubemap(const Cubemap& cubemap, int32_t slot) const override;
+	virtual void attach_texture_2D(const Texture2D& texture, uint32_t slot) const override;
+	virtual void attach_cubemap(const Cubemap& cubemap, uint32_t slot) const override;
 
 	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) override;
 	virtual void attach_uniform_buffer(const UniformBuffer& buffer) override;
@@ -39,7 +39,7 @@ public:
 
     // Uniform management
     template <typename T>
-    bool send_uniform(hash_t u_name, const T& value) const
+    bool send_uniform(hash_t, const T&) const
     {
     	W_ASSERT(false, "Unknown uniform type!");
         return false;

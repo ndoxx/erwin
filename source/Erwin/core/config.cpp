@@ -28,7 +28,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     	uint32_t chan_verbosity=0;
 		if(!xml::parse_attribute(chan, "name", chan_name)) continue;
 		xml::parse_attribute(chan, "verbosity", chan_verbosity);
-		WLOGGER(create_channel(chan_name, chan_verbosity));
+		WLOGGER(create_channel(chan_name, uint8_t(chan_verbosity)));
 	}
 
 	// Add and configure sinks

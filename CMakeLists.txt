@@ -22,6 +22,7 @@ include(cotire)
 
 cmake_minimum_required(VERSION 3.10)
 project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine shared library")
+include(standard_settings)
 
 if(DEFINED CLANG6)
   include(toolchain_clang6)
@@ -35,8 +36,11 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
-# include_directories(BEFORE "/usr/include/c++/8/")
-# include_directories(AFTER "/usr/include/x86_64-linux-gnu/c++/8/")
+
+# Interface library to enable us to pass on options to multiple projects
+add_library(project_warnings INTERFACE)
+include(compiler_warnings) # Hardcore warnings
+set_project_warnings(project_warnings)
 
 set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_BUILD_TYPE Debug)
@@ -45,142 +49,21 @@ set(CMAKE_BUILD_TYPE Release)
 
 subdirs(source)
 
-set(SRC_CORE
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/core.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/intern_string.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/unique_id.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/config.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/registry.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/application.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/time_base.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/layer_stack.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/linear_allocator.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/pool_allocator.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/free_list.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/memory_utils.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/handle_pool.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/memory/heap_area.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/utils/random.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_layer.cpp
-  )
-
-set(SRC_EVENT
-    ${CMAKE_SOURCE_DIR}/source/Erwin/event/event_bus.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/event/window_events.cpp
-  )
-
-set(SRC_ASSET
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/asset_manager.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/handles.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/texture_atlas.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/material.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/procedural_geometry.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/asset/bounding.cpp
-  )
-
-set(SRC_FILESYSTEM
-    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/filesystem.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/spv_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/tom_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/cat_file.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/filesystem/xml_file.cpp
-  )
-
-set(SRC_MATH
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/color.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/math/convolution.cpp
-  )
-
-set(SRC_ENTITY
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_transform.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/component_bounding_box.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/light.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/entity/reflection.cpp
-  )
-
-set(SRC_DEBUG
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/stack_trace.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_common.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_thread.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger_sink.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/logger.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/debug/instrumentor.cpp
-  )
-
-set(SRC_RENDERER
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer_layout.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/buffer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_layout.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/framebuffer_pool.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/texture.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_device.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/render_state.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_2d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_pp.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer_3d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/renderer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_2d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/camera_3d.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader_lang.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/shader.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/query_timer.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/common_geometry.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/render/handles.cpp
-  )
-
-set(SRC_INPUT
-    ${CMAKE_SOURCE_DIR}/source/Erwin/input/input.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_2d_controller.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/input/camera_3d_controller.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/input/freefly_camera_controller.cpp
-  )
-
-set(SRC_LEVEL
-    ${CMAKE_SOURCE_DIR}/source/Erwin/level/scene.cpp
-  )
-
-set(SRC_EDITOR
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/layer_editor.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_console.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_view.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_scene_hierarchy.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_inspector.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_rt_peek.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_hex_dump.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_keybindings.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/widget_materials.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_stats.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/overlay_camera_tracker.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/gizmo_system.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/editor/bounding_box_system.cpp
-  )
-
-set(SRC_PLATFORM
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_context.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_render_device.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_buffer.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_framebuffer.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_texture.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_shader.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/ogl_query_timer.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/glfw_window.cpp
-    ${CMAKE_SOURCE_DIR}/source/platform/glfw_input.cpp
-  )
+file(GLOB_RECURSE SRC_ERWIN    "${CMAKE_SOURCE_DIR}/source/Erwin/*.cpp")
+file(GLOB_RECURSE SRC_PLATFORM "${CMAKE_SOURCE_DIR}/source/platform/*.cpp")
 
 set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_demo.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_draw.cpp
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_utils.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/imgui_build.cpp
-    ${CMAKE_SOURCE_DIR}/source/Erwin/imgui/theme.cpp
   )
+
+# Disable all warnings for third party stuff
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties(${SRC_IMGUI} PROPERTIES COMPILE_FLAGS -w)
 
 add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)
@@ -191,33 +74,24 @@ if(DEFINED W_DEBUG)
 endif()
 
 add_library(erwin SHARED
-            ${SRC_CORE}
-            ${SRC_EVENT}
-            ${SRC_ASSET}
-            ${SRC_FILESYSTEM}
-            ${SRC_MATH}
-            ${SRC_ENTITY}
-            ${SRC_LEVEL}
-            ${SRC_DEBUG}
-            ${SRC_RENDERER}
-            ${SRC_INPUT}
+            ${SRC_ERWIN}
             ${SRC_PLATFORM}
             ${SRC_IMGUI}
-            ${SRC_EDITOR}
             ${CMAKE_SOURCE_DIR}/source/vendor/inih/ini.c
             ${CMAKE_SOURCE_DIR}/source/vendor/inih/cpp/INIReader.cpp
             )
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/taskflow")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/entt/src")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/taskflow")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/entt/src")
+
 set_target_properties(erwin PROPERTIES PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/source/erwin.h")
 set_target_properties(erwin PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(erwin PROPERTIES SOVERSION 1)
@@ -250,7 +124,7 @@ set(INC_EASTL
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAStdC/include
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EATest/include
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAThread/include)
-target_include_directories(erwin PRIVATE "${INC_EASTL}")
+target_include_directories(erwin SYSTEM PRIVATE "${INC_EASTL}")
 add_library(eastl STATIC IMPORTED)
 set_target_properties(eastl PROPERTIES
   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
@@ -258,12 +132,14 @@ set_target_properties(eastl PROPERTIES
 )
 
 target_link_libraries(erwin
-                      m
-                      z
-                      stdc++fs
-                      pthread
-                      atomic
-                      X11
-                      glad
-                      glfw
+                      PRIVATE
+                        project_warnings
+                        m
+                        z
+                        stdc++fs
+                        pthread
+                        atomic
+                        X11
+                        glad
+                        glfw
                       )

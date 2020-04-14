@@ -21,23 +21,23 @@ namespace traits
 } // namespace traits
 
 // Associate a component type ID to a reflection hash string
-extern void add_reflection(uint64_t type_id, uint64_t reflected_type);
+extern void add_reflection(uint64_t type_id, uint32_t reflected_type);
 
 // Obtain reflection hash string from type ID
-extern uint64_t reflect(uint64_t type_id);
+extern uint32_t reflect(uint64_t type_id);
 
 // Obtain map of reflection hash string to component name
-extern const std::map<uint64_t, std::string>& get_component_names();
+extern const std::map<uint32_t, std::string>& get_component_names();
 
 // Helpers to invoke meta-functions
 template <typename... Args>
-static inline auto invoke(uint64_t func_name, uint64_t reflected_type, Args&&... args)
+static inline auto invoke(uint32_t func_name, uint32_t reflected_type, Args&&... args)
 {
 	return entt::resolve(reflected_type).func(func_name).invoke({}, std::forward<Args>(args)...);
 }
 // ASSUME: registry is always the first meta-function argument
 template <typename... Args>
-static inline auto invoke(uint64_t func_name, uint64_t reflected_type, entt::registry& reg, Args&&... args)
+static inline auto invoke(uint32_t func_name, uint32_t reflected_type, entt::registry& reg, Args&&... args)
 {
 	return entt::resolve(reflected_type).func(func_name).invoke({}, std::ref(reg), std::forward<Args>(args)...);
 }
@@ -50,7 +50,7 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& 
 {
 	reg.visit(e, [&reg,&func,e](uint64_t type_id)
 	{
-		uint64_t reflected_type = reflect(type_id);
+		uint32_t reflected_type = reflect(type_id);
 		if(reflected_type==0)
 			return;
 		auto any = invoke(W_METAFUNC_GET_COMPONENT, reflected_type, reg, e);
@@ -62,11 +62,11 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& 
 // For each component in an entity, invoke a meta-function by name.
 // The meta-function should exist in the meta-object associated to each component
 // this function call is susceptible to come upon.
-static inline void visit_entity(entt::registry& reg, entt::entity e, uint64_t meta_func)
+static inline void visit_entity(entt::registry& reg, entt::entity e, uint32_t meta_func)
 {
 	reg.visit(e, [&reg,meta_func,e](uint64_t type_id)
 	{
-		uint64_t reflected_type = reflect(type_id);
+		uint32_t reflected_type = reflect(type_id);
 		if(reflected_type==0)
 			return;
 		auto any = invoke(W_METAFUNC_GET_COMPONENT, reflected_type, reg, e);

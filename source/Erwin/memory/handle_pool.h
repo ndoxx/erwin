@@ -43,8 +43,8 @@ private:
 
 	inline uint16_t* get_dense_ptr() const
 	{
-		uint8_t* ptr = (uint8_t*)reinterpret_cast<const uint8_t*>(this);
-		return (uint16_t*)&ptr[sizeof(HandlePool)];
+		uint8_t* ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(this));
+		return reinterpret_cast<uint16_t*>(&ptr[sizeof(HandlePool)]);
 	}
 
 	inline uint16_t* get_sparse_ptr() const
@@ -112,8 +112,8 @@ private:
 
 	inline HandleInternal* get_dense_ptr() const
 	{
-		uint8_t* ptr = (uint8_t*)reinterpret_cast<const uint8_t*>(this);
-		return (HandleInternal*)&ptr[sizeof(RobustHandlePool)];
+		uint8_t* ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(this));
+		return reinterpret_cast<HandleInternal*>(&ptr[sizeof(RobustHandlePool)]);
 	}
 
 	inline HandleInternal* get_sparse_ptr() const

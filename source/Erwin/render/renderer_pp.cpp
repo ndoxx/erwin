@@ -103,7 +103,7 @@ void PostProcessingRenderer::init()
 		{
 			std::string fb_name     = "bloom_" + std::to_string(ii);
 			hash_t h_fb_name     = H_(fb_name.c_str());
-			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(2.f+ii);//1.f/(pow(2.f,ii+1.f));
+			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(2.f+float(ii));//1.f/(pow(2.f,ii+1.f));
 #if BLOOM_FBO_NP2
 			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
 #else
@@ -318,7 +318,7 @@ void PostProcessingRenderer::on_imgui_render()
 		if(ImGui::Checkbox("Enable##en_gam", &enable_gamma))
 			s_storage.pp_data.set_flag_enabled(PP_EN_GAMMA, enable_gamma);
 
-        ImGui::SliderFloat3("Gamma", (float*)&s_storage.pp_data.cor_gamma, 1.0f, 2.0f);
+        ImGui::SliderFloat3("Gamma", &s_storage.pp_data.cor_gamma[0], 1.0f, 2.0f);
         ImGui::TreePop();
         ImGui::Separator();
     }
@@ -329,7 +329,7 @@ void PostProcessingRenderer::on_imgui_render()
 			s_storage.pp_data.set_flag_enabled(PP_EN_VIBRANCE, enable_vibrance);
 
         ImGui::SliderFloat("Strength", &s_storage.pp_data.vib_strength, -1.0f, 2.0f);
-        ImGui::SliderFloat3("Balance", (float*)&s_storage.pp_data.vib_balance, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Balance", &s_storage.pp_data.vib_balance[0], 0.0f, 1.0f);
         ImGui::TreePop();
         ImGui::Separator();
     }

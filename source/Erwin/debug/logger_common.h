@@ -18,7 +18,6 @@ struct WCC
     WCC() = default;
     explicit WCC(char cc);
     WCC(uint8_t R, uint8_t G, uint8_t B);
-    WCC(const WCC& other);
 
     friend std::ostream& operator <<(std::ostream& stream, const WCC& wcc);
 
@@ -34,7 +33,6 @@ struct WCB
     WCB() = default;
     explicit WCB(int cc);
     WCB(uint8_t R, uint8_t G, uint8_t B);
-    WCB(const WCB& other);
 
     friend std::ostream& operator <<(std::ostream& stream, const WCB& wcc);
 

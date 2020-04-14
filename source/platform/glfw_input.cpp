@@ -30,20 +30,20 @@ std::pair<float,float> GLFWInput::get_mouse_position_impl() const
 	GLFWwindow* window = static_cast<GLFWwindow*>(Application::get_instance().get_window().get_native());
 	double xpos, ypos;
 	glfwGetCursorPos(window, &xpos, &ypos);
-	return { (float)xpos, (float)ypos };
+	return { float(xpos), float(ypos) };
 }
 
 void GLFWInput::set_mouse_position_impl(float x, float y) const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(Application::get_instance().get_window().get_native());
-	glfwSetCursorPos(window, x, y);
+	glfwSetCursorPos(window, double(x), double(y));
 }
 
 void GLFWInput::center_mouse_position_impl() const
 {
 	const Window& app_win = Application::get_instance().get_window();
 	GLFWwindow* window = static_cast<GLFWwindow*>(app_win.get_native());
-	glfwSetCursorPos(window, 0.5f*app_win.get_width(), 0.5f*app_win.get_height());
+	glfwSetCursorPos(window, 0.5*double(app_win.get_width()), 0.5*double(app_win.get_height()));
 }
 
 void GLFWInput::show_cursor_impl(bool value) const

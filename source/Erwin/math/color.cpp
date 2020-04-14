@@ -16,25 +16,25 @@ glm::vec3 rgb2hsl(const glm::vec3& rgb_color)
     float a = 0.5f*(2.0f*rgb_color.r-rgb_color.g-rgb_color.b);
     float b = SQ3_2*(rgb_color.g-rgb_color.b);
     // Hue
-    float h = atan2(b, a);
+    float h = std::atan2(b, a);
     // Chroma
-    float c = sqrt(a*a+b*b);
+    float c = std::sqrt(a*a+b*b);
     // We choose Luma Y_709 (for sRGB primaries) as a definition for Lightness
     float l = glm::dot(rgb_color, W);
     // Saturation
-    float s = (l==1.0f) ? 0.0f : c/(1.0f-fabs(2*l-1));
+    float s = (l==1.0f) ? 0.0f : c/(1.0f-std::abs(2*l-1));
     // Just convert hue from radians in [-pi/2,pi/2] to [0,1]
-    return glm::vec3(h/M_PI+0.5f,s,l);
+    return glm::vec3(h/float(M_PI)+0.5f,s,l);
 }
 
 glm::vec3 hsl2rgb(const glm::vec3& hsl_color)
 {
     // Chroma
-    float c = (1.0f-fabs(2.0f*hsl_color.z-1.0f))*hsl_color.y;
+    float c = (1.0f-std::abs(2.0f*hsl_color.z-1.0f))*hsl_color.y;
     // Intermediate
     float Hp = hsl_color.x*6.0f; // Map to degrees -> *360°, divide by 60° -> *6
-    float x = c*(1.0f-fabs(fmod(Hp,2) - 1.0f));
-    uint8_t hn = uint8_t(floor(Hp));
+    float x = c*(1.0f-std::abs(fmodf(Hp,2) - 1.0f));
+    uint8_t hn = uint8_t(std::floor(Hp));
 
     // Lightness offset
     float m = hsl_color.z-0.5f*c;

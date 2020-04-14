@@ -160,8 +160,8 @@ OGLTexture2D::OGLTexture2D(const fs::path filepath)
 	// 5th parameter can be used to force a format like RGBA when input file is just RGB
 	stbi_uc* data = stbi_load(filepath.string().c_str(), &width, &height, &channels, 0);
 	W_ASSERT(data, "Failed to load image!");
-	width_ = width;
-	height_ = height;
+	width_ = uint32_t(width);
+	height_ = uint32_t(height);
 
 	DLOGI << "WxH:    " << width_ << "x" << height_ << std::endl;
 
@@ -258,7 +258,7 @@ void OGLTexture2D::unbind() const
 void* OGLTexture2D::get_native_handle()
 {
     // Cast to void* directly for compatibility with ImGUI
-    return (void*)(uint64_t)(rd_handle_);
+    return reinterpret_cast<void*>(uint64_t(rd_handle_));
 }
 
 
@@ -280,17 +280,17 @@ height_(descriptor.height)
     glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
 
     bool has_data = true;
-    for(int face=0; face<6; ++face)
+    for(size_t face=0; face<6; ++face)
         has_data &= (descriptor.face_data[face] != nullptr);
 
     if(has_data)
     {
-        for(int face=0; face<6; ++face)
+        for(size_t face=0; face<6; ++face)
         {
             if(fd.is_compressed)
-                glCompressedTextureSubImage3D(rd_handle_, 0, 0, 0, face, width_, height_, 1, fd.format, width_*height_, descriptor.face_data[face]);
+                glCompressedTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, width_*height_, descriptor.face_data[face]);
             else
-                glTextureSubImage3D(rd_handle_, 0, 0, 0, face, width_, height_, 1, fd.format, fd.data_type, descriptor.face_data[face]);
+                glTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, fd.data_type, descriptor.face_data[face]);
         }
     }
 
@@ -337,7 +337,7 @@ void OGLCubemap::unbind() const
 void* OGLCubemap::get_native_handle()
 {
     // Cast to void* directly for compatibility with ImGUI
-    return (void*)(uint64_t)(rd_handle_);
+    return reinterpret_cast<void*>(uint64_t(rd_handle_));
 }
 
 

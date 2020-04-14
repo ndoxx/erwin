@@ -20,8 +20,8 @@ public:
 
 	virtual void on_layer_render() override;
 
-	uint32_t new_pane(const std::string& name);
-	void register_texture(uint32_t pane_index, erwin::TextureHandle texture, const std::string& name, bool is_depth = false);
+	size_t new_pane(const std::string& name);
+	void register_texture(size_t pane_index, erwin::TextureHandle texture, const std::string& name, bool is_depth = false);
 	void register_framebuffer(const std::string& framebuffer_name);
 
 protected:

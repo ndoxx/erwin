@@ -107,7 +107,7 @@ void ConsoleWidget::on_imgui_render()
     bool reclaim_focus = false;
 	if(ImGui::InputText("Input", input_buffer_, IM_ARRAYSIZE(input_buffer_), 
 	   ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_CallbackHistory,
-	   &text_edit_forward_callback, (void*)this))
+	   &text_edit_forward_callback, reinterpret_cast<void*>(this)))
 	{
 		send_command(std::string(input_buffer_));
 		memset(input_buffer_, 0, sizeof(input_buffer_));
@@ -155,7 +155,7 @@ console_(p_console)
 
 }
 
-void ConsoleWidgetSink::send(const erwin::dbg::LogStatement& stmt, const erwin::dbg::LogChannel& chan)
+void ConsoleWidgetSink::send(const erwin::dbg::LogStatement& stmt, const erwin::dbg::LogChannel&)
 {
 	float ts = std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count();
 	std::stringstream ss;

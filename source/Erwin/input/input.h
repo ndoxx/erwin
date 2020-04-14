@@ -76,7 +76,7 @@ public:
 		return actions[action].key;
 	}
 
-	static inline uint32_t get_action_count()
+	static inline size_t get_action_count()
 	{
 		return actions.size();
 	}

@@ -120,7 +120,7 @@ void init()
             continue;
 
         hash_t hname = H_(theme_name.c_str());
-        uint32_t index = s_themes.size();
+        size_t index = s_themes.size();
         s_themes.push_back({theme_name, entry.path()});
         if(hname=="Default"_h)
         {

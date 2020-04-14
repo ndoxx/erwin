@@ -18,7 +18,7 @@ void OGLContext::init()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(window_handle_);
 	glfwMakeContextCurrent(window);
-	int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+	int status = gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
 
 	if(!status)
 	{
@@ -44,7 +44,7 @@ void OGLContext::init()
 
 	GLint n_comp;
 	glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &n_comp);
-	GLint* comp_list = new GLint[n_comp];
+	GLint* comp_list = new GLint[size_t(n_comp)];
 	glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, comp_list);
 	for(int ii=0; ii<n_comp; ++ii)
 	{

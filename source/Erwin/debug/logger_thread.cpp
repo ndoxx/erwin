@@ -187,11 +187,11 @@ void LoggerThread::dispatch(const LogStatement& stmt)
 	uint8_t required_verbosity = 3 - ((stmt.severity>3) ? 3 : stmt.severity);
 	if(chan.verbosity >= required_verbosity)
 	{
-		for(auto&& it=range.first; it!=range.second; ++it)
+		for(auto&& it2=range.first; it2!=range.second; ++it2)
 		{
-			if(sinks_.at(it->second)->is_enabled())
+			if(sinks_.at(it2->second)->is_enabled())
 			{
-				auto&& sink = sinks_.at(it->second);
+				auto&& sink = sinks_.at(it2->second);
 				sink->send(stmt, chan);
 
 				// send backtrace if required

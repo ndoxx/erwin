@@ -40,7 +40,7 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint64_t reflected_type, void* data)
+        erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint32_t reflected_type, void* data)
         {
             // Don't let special editor components be editable this way
             // TODO: automate this via a component meta data flag
@@ -56,7 +56,7 @@ void InspectorWidget::entity_tab()
                 if(ImGui::Button(ICON_FA_WINDOW_CLOSE))
                 {
                     Scene::mark_for_removal(Scene::selected_entity, reflected_type);
-                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << (unsigned long)Scene::selected_entity << std::endl;
+                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(Scene::selected_entity) << std::endl;
                     return;
                 }
 
@@ -84,7 +84,7 @@ void InspectorWidget::entity_tab()
                 {
                     invoke(W_METAFUNC_CREATE_COMPONENT, reflected, Scene::registry, Scene::selected_entity);
                     DLOG("editor",1) << "Added " << component_names.at(reflected) 
-                                     << " to entity " << (unsigned long)Scene::selected_entity << std::endl;
+                                     << " to entity " << static_cast<unsigned long>(Scene::selected_entity) << std::endl;
                     break;
                 }
             }

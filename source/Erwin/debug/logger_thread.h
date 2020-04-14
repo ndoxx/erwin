@@ -62,7 +62,7 @@ public:
     inline void set_channel_verbosity(hash_t name, uint32_t verbosity)
     {
     	std::unique_lock<std::mutex> lock(mutex_);
-        channels_.at(name).verbosity = std::min(verbosity, 3u);
+        channels_.at(name).verbosity = uint8_t(std::min(verbosity, 3u));
     }
     // Mute channel by setting its verbosity to 0
     inline void mute_channel(hash_t name)

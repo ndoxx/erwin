@@ -197,7 +197,7 @@ void Renderer3D::end_deferred_pass()
 
 	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
-	for(int ii=0; ii<4; ++ii)
+	for(uint32_t ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
 	Renderer::submit(key.encode(), dc);
 
@@ -262,7 +262,7 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, shader);
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, shader, VAO);
-	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, (void*)&transform_data, sizeof(TransformData), DataOwnership::Copy));
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
 	if(ubo.index != k_invalid_handle && material_data)
 		dc.add_dependency(Renderer::update_uniform_buffer(ubo, material_data, data_size, DataOwnership::Copy));
 	if(texture_group.index != k_invalid_handle)
@@ -306,7 +306,7 @@ void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, s_storage.line_shader);
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.line_shader, VAO);
-	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, (void*)&instance_data, sizeof(LineInstanceData), DataOwnership::Copy));
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, static_cast<void*>(&instance_data), sizeof(LineInstanceData), DataOwnership::Copy));
 	Renderer::submit(key.encode(), dc);
 }
 

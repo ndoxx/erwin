@@ -9,10 +9,10 @@ namespace memory
 #ifdef W_DEBUG
 void HeapArea::debug_show_content()
 {
-	size_t b_addr = (size_t)begin_;
-	size_t h_addr = (size_t)head_;
+	size_t b_addr = reinterpret_cast<size_t>(begin_);
+	size_t h_addr = reinterpret_cast<size_t>(head_);
 	size_t used_mem = h_addr - b_addr;
-	float usage = used_mem / float(size_);
+	float usage = float(used_mem) / float(size_);
 
 	static const float R1 = 204.f; static const float R2 = 255.f;
 	static const float G1 = 255.f; static const float G2 = 51.f;
@@ -27,7 +27,7 @@ void HeapArea::debug_show_content()
 					 << WCC(R,G,B) << 100*usage << WCC(0) << "%)" << std::endl;
 	for(auto&& item: items_)
 	{
-		usage = item.size / float(used_mem);
+		usage = float(item.size) / float(used_mem);
 		R = uint8_t((1.f-usage)*R1 + usage*R2);
 		G = uint8_t((1.f-usage)*G1 + usage*G2);
 		B = uint8_t((1.f-usage)*B1 + usage*B2);

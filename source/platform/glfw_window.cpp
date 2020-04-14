@@ -130,13 +130,13 @@ void GLFWWindow::init(const WindowProps& props)
 */
     // Open a window
     if(props.full_screen)
-        data_->window = glfwCreateWindow(props.width, props.height, props.title.c_str(), glfwGetPrimaryMonitor(), NULL);
+        data_->window = glfwCreateWindow(int(props.width), int(props.height), props.title.c_str(), glfwGetPrimaryMonitor(), NULL);
     else
-        data_->window = glfwCreateWindow(props.width, props.height, props.title.c_str(), NULL, NULL);
+        data_->window = glfwCreateWindow(int(props.width), int(props.height), props.title.c_str(), NULL, NULL);
     ++s_glfw_num_windows;
 
-    data_->width = props.width;
-    data_->height = props.height;
+    data_->width = int(props.width);
+    data_->height = int(props.height);
     data_->title = props.title;
 
     if(data_->window == NULL)
@@ -187,7 +187,7 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 	glfwSetErrorCallback(GLFW_error_callback);
 
 	// Window close event
-	glfwSetWindowCloseCallback(data_->window, [](GLFWwindow* window)
+	glfwSetWindowCloseCallback(data_->window, [](GLFWwindow*)
 	{
 		EVENTBUS.publish(WindowCloseEvent());
 	});
@@ -206,38 +206,38 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 		});
 
 		// On window resize, framebuffer needs resizing and glViewport must be called with the new size
-		glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow* window, int width, int height)
+		glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow*, int width, int height)
 		{
 			EVENTBUS.publish(FramebufferResizeEvent(width, height));
 		});
 	}
 
 	// Keyboard event
-	glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+	glfwSetKeyCallback(data_->window, [](GLFWwindow*, int key, int /*scancode*/, int action, int mods)
 	{
-		keymap::WKEY wkey = keymap::GLFW_KEY_to_WKEY(key);
+		keymap::WKEY wkey = keymap::GLFW_KEY_to_WKEY(uint16_t(key));
 		switch(action)
 		{
 			case GLFW_PRESS:
 			{
-				EVENTBUS.publish(KeyboardEvent(wkey, mods, true, false));
+				EVENTBUS.publish(KeyboardEvent(wkey, uint8_t(mods), true, false));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EVENTBUS.publish(KeyboardEvent(wkey, mods, false, false));
+				EVENTBUS.publish(KeyboardEvent(wkey, uint8_t(mods), false, false));
 				break;
 			}
 			case GLFW_REPEAT:
 			{
-				EVENTBUS.publish(KeyboardEvent(wkey, mods, true, true));
+				EVENTBUS.publish(KeyboardEvent(wkey, uint8_t(mods), true, true));
 				break;
 			}
 		}
 	});
 
 	// Key typed event
-	glfwSetCharCallback(data_->window, [](GLFWwindow* window, unsigned int codepoint)
+	glfwSetCharCallback(data_->window, [](GLFWwindow*, unsigned int codepoint)
 	{
 		EVENTBUS.publish(KeyTypedEvent(codepoint));
 	});
@@ -248,33 +248,33 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 		double x,y;
     	glfwGetCursorPos(window, &x, &y);
 
-    	keymap::WMOUSE wbutton = keymap::GLFW_MB_to_WMOUSE(button);
+    	keymap::WMOUSE wbutton = keymap::GLFW_MB_to_WMOUSE(uint16_t(button));
 
 		switch(action)
 		{
 			case GLFW_PRESS:
 			{
-				EVENTBUS.publish(MouseButtonEvent(wbutton,mods,true,x,y));
+				EVENTBUS.publish(MouseButtonEvent(wbutton, uint8_t(mods), true, float(x), float(y)));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EVENTBUS.publish(MouseButtonEvent(wbutton,mods,false,x,y));
+				EVENTBUS.publish(MouseButtonEvent(wbutton, uint8_t(mods), false, float(x), float(y)));
 				break;
 			}
 		}
 	});
 
 	// Cursor moving event
-	glfwSetCursorPosCallback(data_->window, [](GLFWwindow* window, double x, double y)
+	glfwSetCursorPosCallback(data_->window, [](GLFWwindow*, double x, double y)
 	{
-		EVENTBUS.publish(MouseMovedEvent(x, y));
+		EVENTBUS.publish(MouseMovedEvent(float(x), float(y)));
 	});
 
 	// Mouse scroll event
-	glfwSetScrollCallback(data_->window, [](GLFWwindow* window, double x_offset, double y_offset)
+	glfwSetScrollCallback(data_->window, [](GLFWwindow*, double x_offset, double y_offset)
 	{
-		EVENTBUS.publish(MouseScrollEvent(x_offset, y_offset));
+		EVENTBUS.publish(MouseScrollEvent(float(x_offset), float(y_offset)));
 	});
 }
 
@@ -303,7 +303,7 @@ uint32_t GLFWWindow::get_width() const
 	/*int width, height;
 	glfwGetWindowSize(data_->window, &width, &height);
 	return width;*/
-	return data_->width;
+	return uint32_t(data_->width);
 }
 
 uint32_t GLFWWindow::get_height() const
@@ -311,7 +311,7 @@ uint32_t GLFWWindow::get_height() const
 	/*int width, height;
 	glfwGetWindowSize(data_->window, &width, &height);
 	return height;*/
-	return data_->height;
+	return uint32_t(data_->height);
 }
 
 void GLFWWindow::set_vsync(bool value)

@@ -10,7 +10,7 @@ Freelist::Freelist(void* begin, std::size_t element_size, std::size_t max_elemen
 	init(begin, element_size, max_elements, alignment, offset);
 }
 
-void Freelist::init(void* begin, std::size_t element_size, std::size_t max_elements, std::size_t alignment, std::size_t offset)
+void Freelist::init(void* begin, std::size_t element_size, std::size_t max_elements, std::size_t, std::size_t)
 {
 	union
 	{

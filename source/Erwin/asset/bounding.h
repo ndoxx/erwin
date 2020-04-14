@@ -47,13 +47,13 @@ struct Extent
 	{
 		for(int dd=0; dd<3; ++dd)
 		{
-			value[2*dd]   = fmin(value[2*dd],   position[dd]); // x/y/z-min
-			value[2*dd+1] = fmax(value[2*dd+1], position[dd]); // x/y/z-max
+			value[2*dd]   = std::min(value[2*dd],   position[dd]); // x/y/z-min
+			value[2*dd+1] = std::max(value[2*dd+1], position[dd]); // x/y/z-max
 		}
 	}
 
-	inline float& operator[](int index)      { return value[index]; }
-	inline float operator[](int index) const { return value[index]; }
+	inline float& operator[](size_t index)      { return value[index]; }
+	inline float operator[](size_t index) const { return value[index]; }
 	inline float& xmin() { return value[0]; }
 	inline float& xmaw() { return value[1]; }
 	inline float& ymin() { return value[2]; }

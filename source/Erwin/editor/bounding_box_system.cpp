@@ -40,7 +40,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
 	return true;
 }
 
-void BoundingBoxSystem::update(const GameClock& clock)
+void BoundingBoxSystem::update(const GameClock&)
 {
     auto view = Scene::registry.view<ComponentOBB,ComponentTransform3D>();
     for(const entt::entity e: view)

@@ -35,7 +35,7 @@ void KeybindingsWidget::on_imgui_render()
 {
     static const char* s_hint = "<press a key>";
 
-    uint32_t action_count = Input::get_action_count();
+    uint32_t action_count = uint32_t(Input::get_action_count());
 
     ImGui::Columns(2, "Keys");  // 3-ways, no border
     for(uint32_t ii=1; ii<action_count; ++ii)

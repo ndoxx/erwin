@@ -18,11 +18,11 @@ namespace detail
     // compile-time hash helper function
     extern constexpr unsigned long long hash_one(char c, const char* remain, unsigned long long value)
     {
-        return c == 0 ? value : hash_one(remain[0], remain + 1, (value ^ c) * prime);
+        return c == 0 ? value : hash_one(remain[0], remain + 1, (value ^ static_cast<unsigned long long>(c)) * prime);
     }
 
 
-    inline void hash_combine(std::size_t& seed) { }
+    inline void hash_combine([[maybe_unused]] std::size_t& seed) { }
 
     template <typename T, typename... Rest>
     inline void hash_combine(std::size_t& seed, const T& v, Rest... rest)
@@ -65,7 +65,7 @@ inline hash_t HCOMBINE_(hash_t first, hash_t second)
 inline hash_t HCOMBINE_(const std::vector<hash_t>& hashes)
 {
     hash_t ret = hashes[0];
-    for(int ii=1; ii<hashes.size(); ++ii)
+    for(size_t ii=1; ii<hashes.size(); ++ii)
         ret = HCOMBINE_(ret, hashes[ii]);
     return ret;
 }

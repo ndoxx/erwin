@@ -10,7 +10,6 @@
 
 ##TODO:
     --[EDITOR]--
-<<<<<<< Updated upstream
     [ ] Undo / Redo system
     [X] Ajouter / détruire des composants pour chaque entité
         [ ] Undo / Redo
@@ -18,10 +17,8 @@
         dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [X] Créer / détruire des entités
         [ ] Undo / Redo
-=======
     [ ] Ajouter / détruire des composants pour chaque entité
     [ ] Créer / détruire des entités
->>>>>>> Stashed changes
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
@@ -37,11 +34,7 @@
         stocker dans les CAT files.
 
     --[ENGINE FEATURES]--
-<<<<<<< Updated upstream
     [X] Resource caching
-=======
-    [ ] Resource caching
->>>>>>> Stashed changes
     [/] Ecrire un renderer 2D multi-threaded
         [ ] Ecrire des classes ingame GUI basiques tirant parti du renderer 2D
     [/] Ecrire un renderer 3D multi-threaded
@@ -2250,7 +2243,6 @@ J'ai aussi codé un widget ImGui pour l'éditeur qui permet de changer les keybi
 #[12-04-20]
 ##Placement new GOTCHA
 En travaillant sur le pooling des objets render, je me suis rendu compte que ma _PoolArena_ déconnait sévère lors de la désallocation de types en héritage multiple (oui, c'est assez spécifique !). En clair, le pointeur retourné par le placement new de la macro W_NEW était décallé d'un octet par rapport au user pointer calculé par l'allocation, et lors de la désallocation, bien entendu, memory::Delete() récupérait un pointeur décallé et faisait n'imp.
-Il se trouve que le standard ne contraint pas new à retourner le user pointer pur et simple, parfois l'adresse est ajustée (voir [1]). L'opérateur delete ajuste le pointeur dans l'autre sens automatiquement. La plupart des compilos n'ajustent pas le pointeur en cas d'héritage simple, ce qui explique que le bug est resté non détecté jusqu'alors, mais tous vont le faire en cas d'héritage multiple. 
 Mon fix est une conversion dynamique en void* pour les types polymorphiques uniquement dans memory::Delete() :
 
 ```cpp
@@ -2268,6 +2260,10 @@ void Delete(T* object, ArenaT& arena)
 ```
 
 S'attendre à un bug similaire avec W_DELETE_ARRAY que je n'ai pas encore fixé.
+
+###Pas si vite...
+Il semblerait que le fix ne fonctionne pas systématiquement. En particulier quand le type de base possède un std::vector en membre, va savoir pourquoi. J'ai encore du boulot pour essayer de biter ce qui se passe.
+Placement new est supposé retourner le pointeur tel quel, donc je suppose que c'est un type casting ultérieur qui me baise. D'ailleurs un cast en void* suivi d'un cast vers le type de base semble être efficace pour régler le problème sur un exemple jouet, mais c'est inenvisageable pour un fix sérieux...
 
 ###Sources:
     [1] https://stackoverflow.com/questions/41246633/placement-new-crashing

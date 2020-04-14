@@ -13,7 +13,7 @@ struct ComponentDirectionalLight
 	{
 		float inclination   = glm::radians(inclination_deg);
 		float arg_periapsis = glm::radians(arg_periapsis_deg);
-		position = {cos(inclination),sin(inclination)*sin(arg_periapsis),sin(inclination)*cos(arg_periapsis)};
+		position = {std::cos(inclination),std::sin(inclination)*std::sin(arg_periapsis),std::sin(inclination)*std::cos(arg_periapsis)};
 	}
 
 	glm::vec3 position      = {0.f,0.f,0.f};

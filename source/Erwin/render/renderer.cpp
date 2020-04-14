@@ -257,7 +257,7 @@ struct FrameDrawCallData
 			}));
 	}
 
-	inline void on_dispatch(uint64_t key)
+	inline void on_dispatch(uint64_t)
 	{
 		// Nothing to do for now, map ordering is the same as queue ordering once sorted
 	}
@@ -428,7 +428,7 @@ void FrameDrawCallData::export_json()
     	ofs << "{"
     		<< "\"key\":" << key << ","
     		<< "\"sub\":" << summary.submission_index << ","
-    		<< "\"typ\":" << (int)summary.type << ","
+    		<< "\"typ\":" << int(summary.type) << ","
     		<< "\"shd\":\"" << s_storage.shaders[summary.shader_handle]->get_name() << "\","
     		<< "\"sta\":\"" << render_state.to_string() << "\""
             << ((count<submitted-1) ? "}," : "}") << std::endl;
@@ -577,7 +577,7 @@ hash_t Renderer::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t
 uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	return s_storage.framebuffer_textures_[handle.index].handles.size();
+	return uint32_t(s_storage.framebuffer_textures_[handle.index].handles.size());
 }
 
 #ifdef W_DEBUG
@@ -593,7 +593,7 @@ VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector
 	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-	s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>((BufferLayoutElement*)elements.data(), elements.size());
+	s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(const_cast<BufferLayoutElement*>(elements.data()), elements.size());
 
 	return handle;
 }
@@ -916,7 +916,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 
 	// Create handles for framebuffer textures
 	FramebufferTextureVector texture_vector;
-	uint32_t tex_count = depth ? layout.get_count()+1 : layout.get_count(); // Take the depth texture into account
+	uint32_t tex_count = depth ? uint32_t(layout.get_count())+1 : uint32_t(layout.get_count()); // Take the depth texture into account
 	for(uint32_t ii=0; ii<tex_count; ++ii)
 	{
 		TextureHandle tex_handle = TextureHandle::acquire();
@@ -925,7 +925,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 		texture_vector.debug_names.push_back((depth && ii==tex_count-1) ? "depth"_h : layout[ii].target_name);
 	}
 	s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
-	uint32_t count = layout.get_count();
+	uint32_t count = uint32_t(layout.get_count());
 
 	// Allocate auxiliary data
 	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, count, s_storage.auxiliary_arena_);
@@ -1185,7 +1185,7 @@ public:
 	{
 		W_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
 		cmdbuf_.entries[cmdbuf_.count] = {key, head_};
-		return cmdbuf_.count++;
+		return uint32_t(cmdbuf_.count++);
 	}
 
 private:
@@ -1602,7 +1602,7 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 		s_storage.textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
 }
 
-void clear_framebuffers(memory::LinearBuffer<>& buf)
+void clear_framebuffers(memory::LinearBuffer<>&)
 {
 	FramebufferPool::traverse_framebuffers([](FramebufferHandle handle)
 	{
@@ -1621,7 +1621,7 @@ void set_host_window_size(memory::LinearBuffer<>& buf)
 	s_storage.host_window_size_ = {width, height};
 }
 
-void nop(memory::LinearBuffer<>& buf) { }
+void nop(memory::LinearBuffer<>&) { }
 
 void framebuffer_screenshot(memory::LinearBuffer<>& buf)
 {
@@ -1749,7 +1749,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 } // namespace render_dispatch
 
 typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
-static backend_dispatch_func_t render_backend_dispatch[(std::size_t)RenderCommand::Count] =
+static backend_dispatch_func_t render_backend_dispatch[std::size_t(RenderCommand::Count)] =
 {
 	&render_dispatch::create_index_buffer,
 	&render_dispatch::create_vertex_buffer,
@@ -1962,14 +1962,14 @@ void clear(memory::LinearBuffer<>& buf)
 	{
 		Gfx::device->bind_default_framebuffer();
 		Gfx::device->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
-		Gfx::device->clear(flags);
+		Gfx::device->clear(int(flags));
 	}
 	else
 	{
 		auto& fb = *s_storage.framebuffers[target.index];
 		fb.bind();
-		Gfx::device->viewport(0, 0, fb.get_width(), fb.get_height());
-		Gfx::device->clear(flags);
+		Gfx::device->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
+		Gfx::device->clear(int(flags));
 	}
 
 	if(s_storage.current_framebuffer_ != target)
@@ -1984,7 +1984,7 @@ void clear(memory::LinearBuffer<>& buf)
 		{
 			auto& fb = *s_storage.framebuffers[s_storage.current_framebuffer_.index];
 			fb.bind();
-			Gfx::device->viewport(0, 0, fb.get_width(), fb.get_height());
+			Gfx::device->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
 		}
 	}
     Gfx::device->set_clear_color(0.f,0.f,0.f,0.f);
@@ -2036,7 +2036,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 
 } // namespace draw_dispatch
 
-static backend_dispatch_func_t draw_backend_dispatch[(std::size_t)RenderCommand::Count] =
+static backend_dispatch_func_t draw_backend_dispatch[std::size_t(RenderCommand::Count)] =
 {
 	&draw_dispatch::draw,
 	&draw_dispatch::clear,
@@ -2054,7 +2054,7 @@ void RenderQueue::flush()
     Gfx::device->set_clear_color(clear_color_.r, clear_color_.g, clear_color_.b, clear_color_.a);
 
     // Execute all draw commands in command buffer
-	for(int ii=0; ii<command_buffer_.count; ++ii)
+	for(size_t ii=0; ii<command_buffer_.count; ++ii)
 	{
 		auto&& [key,cmd] = command_buffer_.entries[ii];
 
@@ -2071,18 +2071,18 @@ void RenderQueue::flush()
 		command_buffer_.storage.read(&type);
 
 		// If type is a draw call, unroll and dispatch dependencies first
-		if(type == (uint16_t)DrawCommand::Draw)
+		if(type == uint16_t(DrawCommand::Draw))
 		{
 		    uint8_t dependency_count;
 		    static void* deps[k_max_draw_call_dependencies];
 			command_buffer_.storage.read(&dependency_count);
-		    for(uint8_t ii=0; ii<dependency_count; ++ii)
-				command_buffer_.storage.read(&deps[ii]);
+		    for(uint8_t jj=0; jj<dependency_count; ++jj)
+				command_buffer_.storage.read(&deps[jj]);
 
 			void* ret = command_buffer_.storage.head();
-		    for(uint8_t ii=0; ii<dependency_count; ++ii)
+		    for(uint8_t jj=0; jj<dependency_count; ++jj)
 			{
-				command_buffer_.storage.seek(deps[ii]);
+				command_buffer_.storage.seek(deps[jj]);
 				uint16_t dep_type;
 				command_buffer_.storage.read(&dep_type);
 				(*draw_backend_dispatch[dep_type])(command_buffer_.storage);
@@ -2099,7 +2099,7 @@ static void flush_command_buffer(RenderCommandBuffer& cmdbuf)
     W_PROFILE_RENDER_FUNCTION()
 
     // Dispatch render commands in specified command buffer
-	for(int ii=0; ii<cmdbuf.count; ++ii)
+	for(size_t ii=0; ii<cmdbuf.count; ++ii)
 	{
 		auto&& [key,cmd] = cmdbuf.entries[ii];
 		cmdbuf.storage.seek(cmd);
@@ -2159,8 +2159,8 @@ void Renderer::flush()
 	{
 		auto GPU_render_duration = s_storage.query_timer->stop();
         auto CPU_flush_duration  = flush_clock.get_elapsed_time();
-		s_storage.stats[FRONT].GPU_render_time = std::chrono::duration_cast<std::chrono::microseconds>(GPU_render_duration).count();
-		s_storage.stats[FRONT].CPU_flush_time  = std::chrono::duration_cast<std::chrono::microseconds>(CPU_flush_duration).count();
+		s_storage.stats[FRONT].GPU_render_time = float(std::chrono::duration_cast<std::chrono::microseconds>(GPU_render_duration).count());
+		s_storage.stats[FRONT].CPU_flush_time  = float(std::chrono::duration_cast<std::chrono::microseconds>(CPU_flush_duration).count());
 	}
 
 	std::swap(FRONT, BACK);

@@ -11,7 +11,7 @@ using namespace keymap;
 // Helper function to get "top" dimension from FOV and z-near
 inline float fovy_znear_to_top(float fovy, float znear)
 {
-	return znear * tan(0.5f * fovy * (M_PI / 180.f));
+	return znear * std::tan(0.5f * fovy * (float(M_PI) / 180.f));
 }
 
 FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar)
@@ -33,7 +33,7 @@ void FreeflyController::init(float aspect_ratio, float fovy, float znear, float 
 	znear_        = znear;
 	zfar_         = zfar;
 	camera_translation_speed_ = 2.f;
-	camera_rotation_speed_    = 2.5f * M_PI / 180.f;
+	camera_rotation_speed_    = 2.5f * float(M_PI) / 180.f;
 	camera_yaw_               = camera_.get_yaw();
 	camera_pitch_             = camera_.get_pitch();
 	camera_position_          = camera_.get_position();
@@ -76,7 +76,7 @@ void FreeflyController::update(GameClock& clock)
 	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
 }
 
-void FreeflyController::enable_inputs(bool value)
+void FreeflyController::enable_inputs(bool)
 {
 	inputs_enabled_ = !inputs_enabled_;
 	Input::show_cursor(!inputs_enabled_);
@@ -93,9 +93,9 @@ void FreeflyController::enable_inputs(bool value)
 
 bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
 {
-	win_width_ = event.width;
-	win_height_ = event.height;
-	aspect_ratio_ = event.width/float(event.height);
+	win_width_ = float(event.width);
+	win_height_ = float(event.height);
+	aspect_ratio_ = float(event.width)/float(event.height);
 	float top = fovy_znear_to_top(fovy_, znear_);
 	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
 	return false;
@@ -103,8 +103,8 @@ bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
 
 bool FreeflyController::on_window_moved_event(const erwin::WindowMovedEvent& event)
 {
-	win_x_ = event.x;
-	win_y_ = event.y;
+	win_x_ = float(event.x);
+	win_y_ = float(event.y);
 	return false;
 }
 
@@ -123,7 +123,7 @@ bool FreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
 	return true;
 }
 
-bool FreeflyController::on_mouse_button_event(const MouseButtonEvent& event)
+bool FreeflyController::on_mouse_button_event(const MouseButtonEvent&)
 {
 	return false;
 }
