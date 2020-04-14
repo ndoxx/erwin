@@ -59,10 +59,11 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
   )
 
-# Disable all warnings for STB lib
+# Disable all warnings for third party stuff
 set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
 set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
 set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties(${SRC_IMGUI} PROPERTIES COMPILE_FLAGS -w)
 
 add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)
