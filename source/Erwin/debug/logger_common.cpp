@@ -42,7 +42,7 @@ WCC::WCC(const WCC& other)
 }
 
 
-WCB::WCB(int cc)
+WCB::WCB(int)
 {
     escape = "\033[0m";
 }

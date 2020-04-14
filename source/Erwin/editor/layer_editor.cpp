@@ -24,8 +24,8 @@ static struct
 	bool exit_required = false;
 	bool enable_docking = true;
 
-	uint32_t settings_menu;
-	uint32_t view_menu;
+	size_t settings_menu;
+	size_t view_menu;
 
     editor::SceneViewWidget* scene_view_widget_ = nullptr;
 } s_storage;
@@ -44,14 +44,14 @@ Layer("EditorLayer")
 
 }
 
-uint32_t EditorLayer::add_menu(const std::string& menu_name)
+size_t EditorLayer::add_menu(const std::string& menu_name)
 {
-	uint32_t index = menus_.size();
+	size_t index = menus_.size();
 	menus_.push_back({menu_name, {}});
 	return index;
 }
 
-void EditorLayer::add_widget(uint32_t menu, Widget* widget)
+void EditorLayer::add_widget(size_t menu, Widget* widget)
 {
 	menus_[menu].widgets.push_back(widget);
 }
@@ -294,12 +294,12 @@ bool EditorLayer::on_event(const MouseButtonEvent& event)
     return s_storage.scene_view_widget_->on_mouse_event(event);
 }
 
-bool EditorLayer::on_event(const WindowResizeEvent& event)
+bool EditorLayer::on_event(const WindowResizeEvent&)
 {
 	return false;
 }
 
-bool EditorLayer::on_event(const MouseScrollEvent& event)
+bool EditorLayer::on_event(const MouseScrollEvent&)
 {
     ImGuiIO& io = ImGui::GetIO();
     return io.WantCaptureMouse;
@@ -324,7 +324,7 @@ bool EditorLayer::on_event(const KeyboardEvent& event)
     return false;
 }
 
-bool EditorLayer::on_event(const KeyTypedEvent& event)
+bool EditorLayer::on_event(const KeyTypedEvent&)
 {
     // Don't propagate event if ImGui wants to handle it
     ImGuiIO& io = ImGui::GetIO();

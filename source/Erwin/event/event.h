@@ -45,7 +45,7 @@ typedef uint64_t EventID;
     void EVENT_NAME::operator delete(void* ptr) \
     { \
         W_ASSERT_FMT(s_pool_.is_initialized(), "Memory pool for %s has not been created yet. Call init_pool().", #EVENT_NAME); \
-        W_DELETE( (EVENT_NAME*)(ptr) , s_pool_ ); \
+        W_DELETE( reinterpret_cast<EVENT_NAME*>(ptr) , s_pool_ ); \
     }
 
 // Base class for an event
@@ -56,7 +56,7 @@ struct WEvent
 
     virtual const std::string& get_name() const = 0;
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const {}
+    virtual void print(std::ostream&) const {}
     friend std::ostream& operator <<(std::ostream& stream, const WEvent& event)
     {
         event.print(stream);

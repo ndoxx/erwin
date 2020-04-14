@@ -59,6 +59,11 @@ set(SRC_IMGUI
     ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
   )
 
+# Disable all warnings for STB lib
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
+
 add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)
 add_definitions(-DLOGGING_ENABLED=1)
@@ -77,11 +82,11 @@ add_library(erwin SHARED
 
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source")
 target_include_directories(erwin PUBLIC "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/taskflow")
-target_include_directories(erwin PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/taskflow")
+target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
 target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
 target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include")
 target_include_directories(erwin SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/entt/src")
@@ -118,7 +123,7 @@ set(INC_EASTL
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAStdC/include
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EATest/include
     ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAThread/include)
-target_include_directories(erwin PRIVATE "${INC_EASTL}")
+target_include_directories(erwin SYSTEM PRIVATE "${INC_EASTL}")
 add_library(eastl STATIC IMPORTED)
 set_target_properties(eastl PROPERTIES
   IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"

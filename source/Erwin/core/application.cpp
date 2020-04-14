@@ -345,8 +345,8 @@ void Application::run()
     // Profiling options
     W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
 
-    float target_fps = cfg::get<uint32_t>("erwin.display.target_fps"_h, 60);
-    const std::chrono::nanoseconds frame_duration_ns_(uint32_t(1e9*1.0f/target_fps));
+    float target_fps = float(cfg::get<uint32_t>("erwin.display.target_fps"_h, 60));
+    const std::chrono::nanoseconds frame_duration_ns_(uint32_t(float(1e9)/target_fps));
 
     nanoClock frame_clock;
     frame_clock.restart();
@@ -428,7 +428,7 @@ void Application::run()
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 }
 
-bool Application::on_window_close_event(const WindowCloseEvent& e)
+bool Application::on_window_close_event(const WindowCloseEvent&)
 {
 	is_running_ = false;
 	return false;

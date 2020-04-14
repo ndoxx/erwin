@@ -23,8 +23,8 @@ void TextureAtlas::load(const fs::path& filepath)
 
 		width = descriptor.texture_width;
 		height = descriptor.texture_height;
-		float fwidth = width;
-		float fheight = height;
+		float fwidth = float(width);
+		float fheight = float(height);
 
 		// Apply half-pixel correction if linear filtering is used
 		/*glm::vec4 correction = (filter & MAG_LINEAR) ? glm::vec4(0.5f/fwidth, 0.5f/fheight, -0.5f/fwidth, -0.5f/fheight)
@@ -90,8 +90,8 @@ void FontAtlas::load(const fs::path& filepath)
 
 		width = descriptor.texture_width;
 		height = descriptor.texture_height;
-		float fwidth = width;
-		float fheight = height;
+		float fwidth = float(width);
+		float fheight = float(height);
 
 		// Get maximal index and resize remapping table accordingly
 		/*uint64_t max_index = 0;

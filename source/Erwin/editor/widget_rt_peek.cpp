@@ -47,8 +47,8 @@ struct PeekData
 static struct
 {
     std::vector<DebugPane> panes_;
-    int current_pane_;
-    int current_tex_;
+    size_t current_pane_;
+    size_t current_tex_;
     bool tone_map_;
     bool show_r_;
     bool show_g_;
@@ -97,14 +97,14 @@ Widget("Framebuffers", true)
     s_storage.pass_state_ = state.encode();
 }
 
-uint32_t RTPeekWidget::new_pane(const std::string& name)
+size_t RTPeekWidget::new_pane(const std::string& name)
 {
-    uint32_t pane_index = s_storage.panes_.size();
-    s_storage.panes_.push_back(DebugPane{name});
+    size_t pane_index = s_storage.panes_.size();
+    s_storage.panes_.push_back(DebugPane{name,{}});
     return pane_index;
 }
 
-void RTPeekWidget::register_texture(uint32_t pane_index, TextureHandle texture, const std::string& name, bool is_depth)
+void RTPeekWidget::register_texture(size_t pane_index, TextureHandle texture, const std::string& name, bool is_depth)
 {
     W_ASSERT(pane_index < s_storage.panes_.size(), "Pane index out of bounds.");
     s_storage.panes_[pane_index].properties.push_back({texture, is_depth, name});
@@ -116,7 +116,7 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
     FramebufferHandle fb = FramebufferPool::get_framebuffer(hframebuffer);
     bool has_depth = FramebufferPool::has_depth(hframebuffer);
     uint32_t ntex = Renderer::get_framebuffer_texture_count(fb);
-    uint32_t pane_index = new_pane(framebuffer_name);
+    size_t pane_index = new_pane(framebuffer_name);
 
     for(uint32_t ii=0; ii<ntex; ++ii)
     {
@@ -173,7 +173,7 @@ void RTPeekWidget::on_imgui_render()
 
     if(ImGui::BeginCombo("Target", cur_target_item))
     {
-        for(int ii=0; ii<s_storage.panes_.size(); ++ii)
+        for(size_t ii=0; ii<s_storage.panes_.size(); ++ii)
         {
             const DebugPane& pane = s_storage.panes_[ii];
             bool is_selected = (cur_target_item == pane.name.data());
@@ -190,13 +190,13 @@ void RTPeekWidget::on_imgui_render()
         ImGui::EndCombo();
     }
 
-    int ntex = s_storage.panes_[s_storage.current_pane_].properties.size();
+    size_t ntex = s_storage.panes_[s_storage.current_pane_].properties.size();
     const DebugPane& pane = s_storage.panes_[s_storage.current_pane_];
 
     // Select attachment
     if(ImGui::BeginCombo("Texture", cur_tex_item))
     {
-        for(int ii=0; ii<ntex; ++ii)
+        for(size_t ii=0; ii<ntex; ++ii)
         {
             const DebugTextureProperties& props = pane.properties[ii];
             bool is_selected = (cur_tex_item == props.name.data());

@@ -26,8 +26,8 @@ public:
 	virtual void on_attach() override;
 	virtual void on_detach() override;
 
-	uint32_t add_menu(const std::string& menu_name);
-	void add_widget(uint32_t menu, editor::Widget* widget);
+	size_t add_menu(const std::string& menu_name);
+	void add_widget(size_t menu, editor::Widget* widget);
 	
 	void show_dockspace_window(bool* p_open);
 

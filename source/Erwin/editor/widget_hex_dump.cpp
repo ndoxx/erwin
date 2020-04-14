@@ -18,7 +18,7 @@ static struct
     std::vector<BlockDescriptions> area_descriptions_;
     std::map<uint32_t, std::string> names_;
     uint32_t current_area_;
-    uint32_t current_block_;
+    size_t current_block_;
 } s_storage;
 
 HexDumpWidget::HexDumpWidget():
@@ -54,7 +54,7 @@ void HexDumpWidget::on_imgui_render()
 
     if(ImGui::BeginCombo("Area", cur_area))
     {
-        for(int ii=0; ii<s_storage.area_descriptions_.size(); ++ii)
+        for(unsigned int ii=0; ii<s_storage.area_descriptions_.size(); ++ii)
         {
             bool is_selected = (cur_area == s_storage.names_[ii].data());
 
@@ -83,7 +83,7 @@ void HexDumpWidget::on_imgui_render()
 
     if(ImGui::BeginCombo("Block", cur_block))
     {
-        for(int ii=0; ii<bd.size(); ++ii)
+        for(size_t ii=0; ii<bd.size(); ++ii)
         {
             bool is_selected = (cur_block == bd[ii].name.data());
 
@@ -102,8 +102,8 @@ void HexDumpWidget::on_imgui_render()
 
     const memory::debug::AreaItem& item = bd[s_storage.current_block_];
 
-    const uint8_t* begin = static_cast<const uint8_t*>((void*)item.begin);
-    const uint8_t* end   = static_cast<const uint8_t*>((void*)item.end);
+    const uint8_t* begin = static_cast<const uint8_t*>(reinterpret_cast<void*>(item.begin));
+    const uint8_t* end   = static_cast<const uint8_t*>(reinterpret_cast<void*>(item.end));
     uint8_t* current = const_cast<uint8_t*>(begin);
 
     static std::stringstream ss;
@@ -120,7 +120,7 @@ void HexDumpWidget::on_imgui_render()
         for(int ii=0; ii<8; ++ii)
         {
             uint8_t value = *current;
-            ss << std::setfill('0') << std::setw(2) << (int)value << (ii==3 ? "  " : " ");
+            ss << std::setfill('0') << std::setw(2) << int(value) << (ii==3 ? "  " : " ");
 
             ++current;
             ++page_size;
@@ -137,7 +137,7 @@ void HexDumpWidget::on_imgui_render()
     {
         for(int ii=0; ii<8; ++ii)
         {
-            char value = (char)*current;
+            char value = char(*current);
             value = (value < 33 || value > 126) ? '.' : value;
             ss << value << " ";
 

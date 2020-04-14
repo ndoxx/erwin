@@ -29,8 +29,8 @@ void inspector_GUI<ComponentOBB>(ComponentOBB* cmp)
 {
     ImGui::Checkbox("Display", &cmp->display);
 
-    for(int ii=0; ii<8; ++ii)
-    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], cmp->vertices_w[ii].x, cmp->vertices_w[ii].y, cmp->vertices_w[ii].z);
+    for(size_t ii=0; ii<8; ++ii)
+    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], double(cmp->vertices_w[ii].x), double(cmp->vertices_w[ii].y), double(cmp->vertices_w[ii].z));
 }
 
 

@@ -151,9 +151,9 @@ struct SortKey
 	inline void set_depth(float _depth, uint8_t layer_id, uint64_t state_flags, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
 	{
 		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
-		view         = (uint16_t(layer_id)<<8);
+		view         = uint16_t(uint16_t(layer_id)<<8);
 		view        |= uint8_t((state_flags & k_framebuffer_mask) >> k_framebuffer_shift);
-		shader       = shader_handle.index;
+		shader       = uint8_t(shader_handle.index);
 		sub_sequence = _sub_sequence;
 		depth        = uint32_t(glm::clamp(std::fabs(_depth), 0.f, 1.f) * 0x00ffffff);
 		blending     = RenderState::is_transparent(state_flags);
@@ -163,8 +163,8 @@ struct SortKey
 	inline void set_sequence(uint32_t _sequence, uint8_t layer_id, ShaderHandle shader_handle, uint8_t _sub_sequence=0)
 	{
 		W_ASSERT(shader_handle.index<256, "Shader index out of bounds in shader sorting key section.");
-		view         = (uint16_t(layer_id)<<8);
-		shader       = shader_handle.index;
+		view         = uint16_t(uint16_t(layer_id)<<8);
+		shader       = uint8_t(shader_handle.index);
 		sub_sequence = _sub_sequence;
 		sequence     = _sequence;
 		blending     = false;

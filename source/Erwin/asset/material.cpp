@@ -78,7 +78,7 @@ void TextureGroup::load(const fs::path& filepath, TextureLayout* layout)
 
 #ifdef W_DEBUG
 		DLOGI << "Found " << WCC('v') << texture_count << WCC(0) << " texture maps. TextureHandles: { ";
-		for(int ii=0; ii<texture_count; ++ii)
+		for(size_t ii=0; ii<texture_count; ++ii)
 		{
 			DLOG("texture",1) << WCC('v') << textures[ii].index << " ";
 		}

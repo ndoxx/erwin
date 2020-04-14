@@ -29,7 +29,7 @@ public:
             frame_speed_ = 0.0f;
     }
 
-    inline void update(std::chrono::nanoseconds dt) { dt_ = dt.count()/1.0e9; }
+    inline void update(std::chrono::nanoseconds dt) { dt_ = float(dt.count())/float(1.0e9); }
     inline void release_flags() { next_frame_required_ = false; }
     inline float get_scaled_frame_duration() const { return get_frame_speed()*dt_; }
     inline float get_frame_duration() const { return dt_; }

@@ -25,7 +25,7 @@ public:
 	void end();
 
 protected:
-	virtual void on_update(GameClock& clock) override {}
+	virtual void on_update(GameClock&) override {}
 };
 
 

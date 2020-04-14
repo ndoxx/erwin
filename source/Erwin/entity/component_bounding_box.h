@@ -33,7 +33,7 @@ struct ComponentOBB
         scale = _scale;
 
     	bound::to_model_space_vertices(extent_m, vertices_w);
-    	for(int ii=0; ii<8; ++ii)
+    	for(size_t ii=0; ii<8; ++ii)
     		vertices_w[ii] = model_matrix * glm::vec4(vertices_w[ii], 1.f);
     }
 };

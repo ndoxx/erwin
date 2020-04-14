@@ -8,7 +8,7 @@
 namespace erwin
 {
 
-#define REACT(EVENT) virtual bool on_event(const EVENT& event) { return false; }
+#define REACT(EVENT) virtual bool on_event(const EVENT&) { return false; }
 
 class Layer
 {
@@ -32,7 +32,7 @@ public:
 	virtual void on_imgui_render() { }
 
 protected:
-	virtual void on_update(GameClock& clock) { }
+	virtual void on_update(GameClock&) { }
 	virtual void on_render() { }
 
 	REACT(KeyboardEvent)

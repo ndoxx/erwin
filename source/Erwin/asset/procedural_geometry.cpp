@@ -179,7 +179,7 @@ static Extent build_shape(const BufferLayout& layout, std::vector<float>& vdata,
 	}
 
 	// Get the total number of components per vertex
-	uint32_t vertex_size = std::accumulate(components_count, components_count+k_max_attrib, 0);
+	uint32_t vertex_size = uint32_t(std::accumulate(components_count, components_count+k_max_attrib, 0));
 
 	W_ASSERT(has_position, "Meshes must have a position attribute.");
 
@@ -192,19 +192,19 @@ static Extent build_shape(const BufferLayout& layout, std::vector<float>& vdata,
 	// Interleave vertex data
 	Extent dims;
 	// For each vertex
-	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
+	for(size_t ii=0; ii<tl_storage.vertex_count; ++ii)
 	{
 		// Update dimensions in this loop for efficiency
 		dims.update(tl_storage.position[ii]);
 
 		uint32_t offset = 0;
 		// For each layout element
-		for(int jj=0; jj<elements_count; ++jj)
+		for(size_t jj=0; jj<elements_count; ++jj)
 		{
 			uint32_t ccount = components_count[jj];
 			float* data = containers[jj] + ii*ccount;
 			// For each component of this layout element
-			for(int kk=0; kk<ccount; ++kk)
+			for(size_t kk=0; kk<ccount; ++kk)
 			{
 				vdata[ii*vertex_size+offset+kk] = data[kk];
 			}
@@ -351,14 +351,14 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     add_vertex({-PHI_N,  0.f,    ONE_N});
 
     // Compute UVs
-	for(int ii=0; ii<tl_storage.vertex_count; ++ii)
+	for(size_t ii=0; ii<tl_storage.vertex_count; ++ii)
     {
     	// Compute positions in spherical coordinates
     	const glm::vec3& pos = tl_storage.position[ii];
-		float phi = atan2(pos.y, pos.x);
-		float theta = acos(pos.z); // Position is normalized -> r = 1
+		float phi = std::atan2(pos.y, pos.x);
+		float theta = std::acos(pos.z); // Position is normalized -> r = 1
 		// Remap latitude and longitude angles to [0,1] and use them as UVs
-		tl_storage.uv[ii] = {0.5f+phi/(2*M_PI), theta/M_PI};
+		tl_storage.uv[ii] = {0.5f+phi/(2*float(M_PI)), theta/float(M_PI)};
     }
 
     add_triangle(0,  11, 5);

@@ -30,8 +30,8 @@ class FbFixedConstraint: public FbConstraint
 public:
 	FbFixedConstraint(uint32_t width, uint32_t height): width_(width), height_(height) { }
 
-	virtual uint32_t get_width(uint32_t viewport_width) override   { return width_; }
-	virtual uint32_t get_height(uint32_t viewport_height) override { return height_; }
+	virtual uint32_t get_width(uint32_t) override   { return width_; }
+	virtual uint32_t get_height(uint32_t) override { return height_; }
 	virtual bool is_fixed() override { return true; }
 
 private:
@@ -44,8 +44,8 @@ class FbRatioConstraint: public FbConstraint
 public:
 	FbRatioConstraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
 
-	virtual uint32_t get_width(uint32_t viewport_width) override   { return uint32_t(std::roundf(width_mul_*viewport_width)); }
-	virtual uint32_t get_height(uint32_t viewport_height) override { return uint32_t(std::roundf(height_mul_*viewport_height)); }
+	virtual uint32_t get_width(uint32_t viewport_width) override   { return uint32_t(std::roundf(width_mul_*float(viewport_width))); }
+	virtual uint32_t get_height(uint32_t viewport_height) override { return uint32_t(std::roundf(height_mul_*float(viewport_height))); }
 
 private:
 	float width_mul_;
@@ -58,8 +58,8 @@ class FbRatioNP2Constraint: public FbConstraint
 public:
 	FbRatioNP2Constraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
 
-	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::np2(uint32_t(std::roundf(width_mul_*viewport_width))); }
-	virtual uint32_t get_height(uint32_t viewport_height) override { return math::np2(uint32_t(std::roundf(height_mul_*viewport_height))); }
+	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::np2(uint32_t(std::roundf(width_mul_*float(viewport_width)))); }
+	virtual uint32_t get_height(uint32_t viewport_height) override { return math::np2(uint32_t(std::roundf(height_mul_*float(viewport_height)))); }
 
 private:
 	float width_mul_;
@@ -72,8 +72,8 @@ class FbRatioPP2Constraint: public FbConstraint
 public:
 	FbRatioPP2Constraint(float width_mul=1.f, float height_mul=1.f): width_mul_(width_mul), height_mul_(height_mul) { }
 
-	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::pp2(uint32_t(std::roundf(width_mul_*viewport_width))); }
-	virtual uint32_t get_height(uint32_t viewport_height) override { return math::pp2(uint32_t(std::roundf(height_mul_*viewport_height))); }
+	virtual uint32_t get_width(uint32_t viewport_width) override   { return math::pp2(uint32_t(std::roundf(width_mul_*float(viewport_width)))); }
+	virtual uint32_t get_height(uint32_t viewport_height) override { return math::pp2(uint32_t(std::roundf(height_mul_*float(viewport_height)))); }
 
 private:
 	float width_mul_;

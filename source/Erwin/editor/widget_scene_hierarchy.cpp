@@ -23,7 +23,7 @@ void SceneHierarchyWidget::on_imgui_render()
     {
         // For the moment, create an entity with editor description only
         EntityID ent = Scene::registry.create();
-        Scene::add_entity(ent, "Entity #" + std::to_string((unsigned long)ent));
+        Scene::add_entity(ent, "Entity #" + std::to_string(static_cast<unsigned long>(ent)));
     }
 
     ImGui::Separator();
@@ -46,18 +46,18 @@ void SceneHierarchyWidget::on_imgui_render()
         if(e == Scene::selected_entity)
             flags |= ImGuiTreeNodeFlags_Selected;
 
-        ImGui::TreeNodeEx((void*)(intptr_t)ii, flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+        ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
         if(ImGui::IsItemClicked())
             new_selection = e;
 
         // Context menu for entities
-        ImGui::PushID(ImGui::GetID((void*)(intptr_t)ii));
+        ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(static_cast<intptr_t>(ii)))));
         if(ImGui::BeginPopupContextItem("Entity context menu"))
         {
             if(ImGui::Selectable("Remove"))
             {
                 Scene::mark_for_removal(e);
-                DLOG("editor",1) << "Removed entity " << (unsigned long)e << std::endl;
+                DLOG("editor",1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
             }
             ImGui::EndPopup();
         }

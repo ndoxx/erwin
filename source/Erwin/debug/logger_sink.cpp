@@ -43,7 +43,7 @@ filename_(filename)
 
 }
 
-void LogFileSink::send(const LogStatement& stmt, const LogChannel& chan)
+void LogFileSink::send(const LogStatement& stmt, const LogChannel&)
 {
 	if(stmt.msg_type != MsgType::RAW)
 	{

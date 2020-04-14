@@ -55,21 +55,21 @@ void SceneViewWidget::on_update()
 
 void SceneViewWidget::on_resize(uint32_t width, uint32_t height)
 {
-	float rw = std::max(width  - (k_border + k_start_x), 1.f);
-	float rh = std::max(height - (k_border + k_start_y), 1.f);
+	float rw = std::max(float(width)  - (k_border + k_start_x), 1.f);
+	float rh = std::max(float(height) - (k_border + k_start_y), 1.f);
 	render_surface_.x1 = render_surface_.x0 + rw;
 	render_surface_.y1 = render_surface_.y0 + rh;
     render_surface_.w = rw;
     render_surface_.h = rh;
 
-	EVENTBUS.publish(WindowResizeEvent(width, height));
-	EVENTBUS.publish(FramebufferResizeEvent(rw, rh));
+	EVENTBUS.publish(WindowResizeEvent(int(width), int(height)));
+	EVENTBUS.publish(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
 void SceneViewWidget::on_move(int32_t x, int32_t y)
 {
-	render_surface_.x0 = x + k_start_x;
-	render_surface_.y0 = y + k_start_y;
+	render_surface_.x0 = float(x) + k_start_x;
+	render_surface_.y0 = float(y) + k_start_y;
 
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }

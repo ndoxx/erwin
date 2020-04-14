@@ -195,7 +195,7 @@ const std::string& AssetManager::get_name(MaterialHandle handle)
 
 void AssetManager::visit_materials(MaterialVisitor visit)
 {
-	for(int ii=0; ii<k_max_materials; ++ii)
+	for(size_t ii=0; ii<k_max_materials; ++ii)
 	{
 		if(s_storage.materials_[ii] == nullptr)
 			continue;
