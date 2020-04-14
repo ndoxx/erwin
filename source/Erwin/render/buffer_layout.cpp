@@ -99,7 +99,7 @@ bool BufferLayout::operator ==(const BufferLayout& other)
         return false;
 
     bool ret = true;
-    for(int ii=0; ii<elements_.size(); ++ii)
+    for(size_t ii=0; ii<elements_.size(); ++ii)
         ret &= elements_[ii] == other.elements_[ii];
     return ret;
 }

@@ -68,20 +68,20 @@ void read_cat(CATDescriptor& desc)
 
     desc.texture_width        = header.texture_width;
     desc.texture_height       = header.texture_height;
-    desc.texture_blob_size    = header.texture_blob_size;
-    desc.remapping_blob_size  = header.remapping_blob_size;
-    desc.texture_compression  = (TextureCompression)header.texture_compression;
-    desc.lossless_compression = (LosslessCompression)header.lossless_compression;
-    desc.remapping_type       = (RemappingType)header.remapping_type;
+    desc.texture_blob_size    = uint32_t(header.texture_blob_size);
+    desc.remapping_blob_size  = uint32_t(header.remapping_blob_size);
+    desc.texture_compression  = static_cast<TextureCompression>(header.texture_compression);
+    desc.lossless_compression = static_cast<LosslessCompression>(header.lossless_compression);
+    desc.remapping_type       = static_cast<RemappingType>(header.remapping_type);
 
     // Read data blobs
-    char* texture_blob = (char*)new_blob(desc.texture_blob_size);
+    char* texture_blob = reinterpret_cast<char*>(new_blob(desc.texture_blob_size));
     ifs.read(texture_blob, desc.texture_blob_size);
     // Inflate (decompress) blob if needed
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
-        uint8_t* inflated = (uint8_t*)new_blob(header.blob_inflate_size);
-        erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), desc.texture_blob_size, inflated, header.blob_inflate_size);
+        uint8_t* inflated = reinterpret_cast<uint8_t*>(new_blob(header.blob_inflate_size));
+        erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), int(desc.texture_blob_size), inflated, int(header.blob_inflate_size));
         desc.texture_blob = inflated;
         // delete[] texture_blob;
         delete_blob(texture_blob);
@@ -109,20 +109,20 @@ void write_cat(const CATDescriptor& desc)
     header.magic                = CAT_MAGIC;
     header.version_major        = CAT_VERSION_MAJOR;
     header.version_minor        = CAT_VERSION_MINOR;
-    header.texture_width        = (uint16_t)desc.texture_width;
-    header.texture_height       = (uint16_t)desc.texture_height;
+    header.texture_width        = uint16_t(desc.texture_width);
+    header.texture_height       = uint16_t(desc.texture_height);
     header.remapping_blob_size  = desc.remapping_blob_size;
-    header.texture_compression  = (uint16_t)desc.texture_compression;
-    header.lossless_compression = (uint16_t)desc.lossless_compression;
-    header.remapping_type       = (uint16_t)desc.remapping_type;
+    header.texture_compression  = uint16_t(desc.texture_compression);
+    header.lossless_compression = uint16_t(desc.lossless_compression);
+    header.remapping_type       = uint16_t(desc.remapping_type);
 
     std::ofstream ofs(desc.filepath, std::ios::binary);
 
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
-        uint32_t max_size = erwin::get_max_compressed_len(desc.texture_blob_size);
+        uint32_t max_size = uint32_t(erwin::get_max_compressed_len(int(desc.texture_blob_size)));
         uint8_t* deflated = new uint8_t[max_size];
-        uint32_t comp_size = erwin::compress_data(reinterpret_cast<uint8_t*>(desc.texture_blob), desc.texture_blob_size, deflated, max_size);
+        uint32_t comp_size = uint32_t(erwin::compress_data(reinterpret_cast<uint8_t*>(desc.texture_blob), int(desc.texture_blob_size), deflated, int(max_size)));
         
         header.texture_blob_size = comp_size;
         header.blob_inflate_size = desc.texture_blob_size;
@@ -147,14 +147,14 @@ void write_cat(const CATDescriptor& desc)
 void traverse_texture_remapping(const CATDescriptor& desc, std::function<void(const CATAtlasRemapElement&)> visit)
 {
 	uint32_t num_remap = desc.remapping_blob_size / sizeof(CATAtlasRemapElement);
-	for(int ii=0; ii<num_remap; ++ii)
+	for(uint32_t ii=0; ii<num_remap; ++ii)
 		visit(*(reinterpret_cast<const CATAtlasRemapElement*>(desc.remapping_blob) + ii));
 }
 
 void traverse_font_remapping(const CATDescriptor& desc, std::function<void(const CATFontRemapElement&)> visit)
 {
     uint32_t num_remap = desc.remapping_blob_size / sizeof(CATFontRemapElement);
-    for(int ii=0; ii<num_remap; ++ii)
+    for(uint32_t ii=0; ii<num_remap; ++ii)
         visit(*(reinterpret_cast<const CATFontRemapElement*>(desc.remapping_blob) + ii));
 }
 

@@ -40,11 +40,11 @@ XorShiftEngine::Seed::Seed(uint64_t seed)
 	// Two rounds of splitmix to avoid the zero-seed situation
 	uint64_t smstate = seed;
 	uint64_t tmp = splitmix64(smstate);
-	state_[0] = (uint32_t)tmp;
-	state_[1] = (uint32_t)(tmp >> 32);
+	state_[0] = uint32_t(tmp);
+	state_[1] = uint32_t((tmp >> 32));
 	tmp = splitmix64(smstate);
-	state_[0] = (uint32_t)tmp;
-	state_[1] = (uint32_t)(tmp >> 32);
+	state_[0] = uint32_t(tmp);
+	state_[1] = uint32_t((tmp >> 32));
 }
 
 std::ostream& operator <<(std::ostream& stream, XorShiftEngine::Seed rhs)
@@ -71,10 +71,10 @@ uint64_t XorShiftEngine::rand64()
 void XorShiftEngine::seed()
 {
 	using namespace std::chrono;
-	uint64_t epoch_ms = duration_cast<milliseconds>
+	uint64_t epoch_ms = uint64_t(duration_cast<milliseconds>
 	(
 	    system_clock::now().time_since_epoch()
-	).count();
+	).count());
 	seed(epoch_ms);
 }
 

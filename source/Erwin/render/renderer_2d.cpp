@@ -206,7 +206,7 @@ void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHa
 		batch.max_depth = transform.position.z;
 
 	glm::vec4 uvs = atlas.get_uv(tile);
-	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
+	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale), {}};
 	++batch.count;
 }
 
@@ -226,7 +226,7 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 	if(transform.position.z > batch.max_depth)
 		batch.max_depth = transform.position.z;
 
-	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
+	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale), {}};
 	++batch.count;
 }
 
@@ -247,7 +247,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	std::string::const_iterator itc;
     for(itc = text.begin(); itc != text.end(); ++itc)
     {
-    	const FontAtlas::RemappingElement& remap = font.get_remapping(*itc);
+    	const FontAtlas::RemappingElement& remap = font.get_remapping(uint64_t(*itc));
     	// Handle null size characters
     	if(remap.w == 0)
     	{
@@ -261,7 +261,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 
     	glm::vec2 vscale = {scale*remap.w/s_storage.fb_size.x, scale*remap.h/s_storage.fb_size.y};
 
-    	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale};
+    	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale, {}};
 
     	x += k_adv_factor*scale*remap.advance / s_storage.fb_size.y;
     }

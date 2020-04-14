@@ -76,8 +76,8 @@ void read_tom(TOMDescriptor& desc)
 
     desc.width       = header.texture_width;
     desc.height      = header.texture_height;
-    desc.compression = (LosslessCompression)header.blob_compression;
-    desc.address_UV  = (TextureWrap)header.address_UV;
+    desc.compression = static_cast<LosslessCompression>(header.blob_compression);
+    desc.address_UV  = static_cast<TextureWrap>(header.address_UV);
 
     uint32_t num_maps          = header.num_maps;
     uint64_t blob_size         = header.blob_size;
@@ -96,27 +96,27 @@ void read_tom(TOMDescriptor& desc)
 
     	TextureMapDescriptor bdesc =
     	{
-			(TextureFilter)block.filter,
+			static_cast<TextureFilter>(block.filter),
 			block.channels,
-            (bool)block.srgb,
-			(TextureCompression)block.compression,
+            bool(block.srgb),
+			static_cast<TextureCompression>(block.compression),
 			block.size,
 			nullptr,
-			(hash_t)block.name
+			static_cast<hash_t>(block.name)
     	};
     	desc.texture_maps.push_back(bdesc);
     }
 
     // Read data blob
     uint8_t* blob = new uint8_t[blob_size];
-    ifs.read(reinterpret_cast<char*>(blob), blob_size);
+    ifs.read(reinterpret_cast<char*>(blob), long(blob_size));
     ifs.close();
 
     // Inflate (decompress) blob if needed
     if(desc.compression == LosslessCompression::Deflate)
     {
         uint8_t* inflated = new uint8_t[blob_inflate_size];
-        erwin::uncompress_data(reinterpret_cast<uint8_t*>(blob), blob_size, inflated, blob_inflate_size);
+        erwin::uncompress_data(reinterpret_cast<uint8_t*>(blob), int(blob_size), inflated, int(blob_inflate_size));
 
         // Free compressed blob buffer and reassign
         delete[] blob;
@@ -143,7 +143,7 @@ void read_tom(TOMDescriptor& desc)
 
 void write_tom(const TOMDescriptor& desc)
 {
-	uint16_t num_maps = desc.texture_maps.size();
+	uint16_t num_maps = uint16_t(desc.texture_maps.size());
 
 	// Compute total uncompressed blob size
 	uint64_t blob_size = 0;
@@ -163,12 +163,12 @@ void write_tom(const TOMDescriptor& desc)
 		// Generate block descriptor
 		BlockDescriptor block =
 		{
-			(uint8_t)tmap.filter,
+			uint8_t(tmap.filter),
 			tmap.channels,
-            (uint8_t)tmap.srgb,
-			(uint8_t)tmap.compression,
+            uint8_t(tmap.srgb),
+			uint8_t(tmap.compression),
 			tmap.size,
-			(uint64_t)tmap.name
+			uint64_t(tmap.name)
 		};
 
 		blocks.push_back(block);
@@ -181,9 +181,9 @@ void write_tom(const TOMDescriptor& desc)
 	header.version_minor     = TOM_VERSION_MINOR;
 	header.texture_width     = desc.width;
 	header.texture_height    = desc.height;
-	header.address_UV        = (uint16_t)desc.address_UV;
+	header.address_UV        = uint16_t(desc.address_UV);
 	header.num_maps          = num_maps;
-	header.blob_compression  = (uint16_t)desc.compression;
+	header.blob_compression  = uint16_t(desc.compression);
 	header.blob_size         = blob_size;
     header.blob_inflate_size = blob_size;
 
@@ -193,9 +193,9 @@ void write_tom(const TOMDescriptor& desc)
     if(desc.compression == LosslessCompression::Deflate)
     {
     	// DEFLATE compression
-        uint32_t max_size = erwin::get_max_compressed_len(blob_size);
+        uint32_t max_size = uint32_t(erwin::get_max_compressed_len(int(blob_size)));
         uint8_t* deflated = new uint8_t[max_size];
-        header.blob_size  = erwin::compress_data(reinterpret_cast<uint8_t*>(blob), blob_size, deflated, max_size);
+        header.blob_size  = uint32_t(erwin::compress_data(reinterpret_cast<uint8_t*>(blob), int(blob_size), deflated, int(max_size)));
         header.blob_inflate_size = blob_size;
 
         // Free uncompressed blob buffer and reassign
@@ -208,7 +208,7 @@ void write_tom(const TOMDescriptor& desc)
     // Write block descriptors
     ofs.write(reinterpret_cast<const char*>(blocks.data()), num_maps*sizeof(BlockDescriptor));
     // Write blob
-    ofs.write(reinterpret_cast<const char*>(blob), header.blob_size);
+    ofs.write(reinterpret_cast<const char*>(blob), long(header.blob_size));
 
     ofs.close();
 

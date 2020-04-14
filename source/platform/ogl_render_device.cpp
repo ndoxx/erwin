@@ -21,6 +21,11 @@ inline bool is_power_of_2(int value)
     return bool((value) && ((value &(value - 1)) == 0));
 }
 
+inline bool is_power_of_2(uint32_t value)
+{
+    return is_power_of_2(int(value));
+}
+
 void OGLRenderDevice::viewport(float xx, float yy, float width, float height)
 {
     glViewport(xx, yy, width, height);
@@ -56,7 +61,7 @@ void OGLRenderDevice::draw_indexed(const VertexArray& vertexArray,
 	glDrawElements(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()], 
 				   (bool(count) ? count : vertexArray.get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
-				   (void*)(offset * sizeof(GLuint)));
+				   reinterpret_cast<void*>(offset * sizeof(GLuint)));
     // vertexArray.unbind();
 }
 
@@ -81,7 +86,7 @@ void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
     glDrawElementsInstanced(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()],
                             (bool(elements_count) ? elements_count : vertexArray.get_index_buffer().get_count()),
                             GL_UNSIGNED_INT,
-                            (void*)(offset * sizeof(GLuint)),
+                            reinterpret_cast<void*>(offset * sizeof(GLuint)),
                             instance_count);
     // vertexArray.unbind();
 }

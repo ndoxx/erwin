@@ -37,7 +37,7 @@ static fs::path get_selfpath()
 {
 #ifdef __linux__
     char buff[PATH_MAX];
-    std::size_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
     W_ASSERT(len != -1, "Cannot read self path using readlink.");
 
     buff[len] = '\0';
@@ -234,7 +234,7 @@ void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
     ifs.seekg(0, std::ios::beg);
 
     // Allocate & read
-    vec.reserve(file_size);
+    vec.reserve(size_t(file_size));
     vec.insert(vec.begin(),
                std::istream_iterator<uint8_t>(ifs),
                std::istream_iterator<uint8_t>());

@@ -25,8 +25,8 @@ static FramebufferPoolStorage s_storage;
 
 static bool on_framebuffer_resize_event(const FramebufferResizeEvent& event)
 {
-	s_storage.current_width_  = event.width;
-	s_storage.current_height_ = event.height;
+	s_storage.current_width_  = uint32_t(event.width);
+	s_storage.current_height_ = uint32_t(event.height);
 
 	// Recreate each dynamic framebuffer to fit the new size, given its constraints
 	for(auto&& [name, constraint]: s_storage.constraints_)
@@ -106,7 +106,7 @@ glm::vec2 FramebufferPool::get_texel_size(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
 	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
-	return {1.f/it->second->get_width(s_storage.current_width_), 1.f/it->second->get_height(s_storage.current_height_)};
+	return {1.f/float(it->second->get_width(s_storage.current_width_)), 1.f/float(it->second->get_height(s_storage.current_height_))};
 }
 
 uint32_t FramebufferPool::get_screen_width()
@@ -126,7 +126,7 @@ glm::vec2 FramebufferPool::get_screen_size()
 
 glm::vec2 FramebufferPool::get_screen_texel_size()
 {
-	return {1.f/s_storage.current_width_, 1.f/s_storage.current_height_};
+	return {1.f/float(s_storage.current_width_), 1.f/float(s_storage.current_height_)};
 }
 
 FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)

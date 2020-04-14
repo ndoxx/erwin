@@ -14,16 +14,16 @@ constexpr uint32_t k_simpson_subdivisions = 6;
 static float integrate_simpson(std::function<float (float)> f, float lb, float ub, uint32_t subintervals)
 {
     // * Simpson's rule is more accurate if we subdivide the interval of integration
-    float h        = (ub-lb)/subintervals, // width of subintervals
+    float h        = float(ub-lb)/float(subintervals), // width of subintervals
           sum_odd  = 0.0f,                 // sum of odd subinterval contributions
           sum_even = 0.0f,                 // sum of even subinterval contributions
           y0       = f(lb),                // f value at lower bound
           yn       = f(ub);                // f value at upper bound
 
     // loop to evaluate intermediary sums
-    for(int ii=1; ii<subintervals; ++ii)
+    for(uint32_t ii=1; ii<subintervals; ++ii)
     {
-        float yy = f(lb + ii*h); // evaluate y_ii
+        float yy = f(lb + float(ii)*h); // evaluate y_ii
         // sum of odd terms go into sum_odd and sum of even terms go into sum_even
         ((ii%2)?sum_odd:sum_even) += yy;
     }
@@ -35,8 +35,8 @@ static float integrate_simpson(std::function<float (float)> f, float lb, float u
 static float gaussian_distribution(float x, float mu, float sigma)
 {
     float d = x - mu;
-    float n = 1.0f / (sqrt(2.0f * M_PI) * sigma);
-    return exp(-d*d/(2 * sigma * sigma)) * n;
+    float n = 1.0f / (std::sqrt(2.0f * float(M_PI)) * sigma);
+    return std::exp(-d*d/(2 * sigma * sigma)) * n;
 };
 
 SeparableGaussianKernel::SeparableGaussianKernel(uint32_t size, float sigma)
@@ -48,7 +48,7 @@ void SeparableGaussianKernel::init(uint32_t size, float _sigma)
 {
 	W_ASSERT_FMT(size%2==1, "Gaussian kernel size must be odd, got %u.", size);
 	W_ASSERT_FMT((size+1)/2<=k_max_kernel_coefficients, "Gaussian kernel size out of bounds, got %u.", size);
-	W_ASSERT_FMT(_sigma>0.f, "Gaussian kernel sigma must be strictly positive, got %f.", _sigma);
+	W_ASSERT_FMT(_sigma>0.f, "Gaussian kernel sigma must be strictly positive, got %f.", double(_sigma));
 
 	half_size = (size+1)/2;
 
@@ -58,8 +58,8 @@ void SeparableGaussianKernel::init(uint32_t size, float _sigma)
     float sum = 0.0f;
     for(uint32_t ii=0; ii<half_size; ++ii)
     {
-        float x_lb = ii - 0.5f;
-        float x_ub = ii + 0.5f;
+        float x_lb = float(ii) - 0.5f;
+        float x_ub = float(ii) + 0.5f;
         weights[ii] = integrate_simpson([&](float x){ return gaussian_distribution(x, 0.0f, _sigma); }, x_lb, x_ub, k_simpson_subdivisions);
         // First (central) weight is counted once, other elements must be counted twice
         sum += ((ii==0)?1.0f:2.0f) * weights[ii];

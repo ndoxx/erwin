@@ -41,7 +41,7 @@ std::chrono::nanoseconds OGLQueryTimer::stop()
 {
 #ifndef USE_TIMESTAMP
     glEndQuery(GL_TIME_ELAPSED);
-    glGetQueryObjectuiv(query_ID_[query_front_buffer_], GL_QUERY_RESULT, (GLuint*)&timer_);
+    glGetQueryObjectuiv(query_ID_[query_front_buffer_], GL_QUERY_RESULT, static_cast<GLuint*>(&timer_));
     std::swap(query_back_buffer_, query_front_buffer_);
 
     return std::chrono::nanoseconds(timer_);

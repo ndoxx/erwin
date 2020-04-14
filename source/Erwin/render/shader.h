@@ -25,9 +25,9 @@ public:
 	// Initialize shader from glsl source string
 	// virtual bool init_glsl_string(const std::string& name, const std::string& source) { return false; }
 	// Initialize shader from packed GLSL source
-	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) { return false; }
+	virtual bool init_glsl(const std::string&, const fs::path&) { return false; }
 	// Initialize shader from SPIR-V file
-	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) { return false; }
+	virtual bool init_spirv(const std::string&, const fs::path&) { return false; }
 	// Use this program
 	virtual void bind() const = 0;
 	// Stop using this program

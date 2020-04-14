@@ -16,7 +16,7 @@ std::vector<EntityID> Scene::entities;
 FreeflyController Scene::camera_controller;
 entt::registry Scene::registry;
 
-static std::queue<std::tuple<erwin::EntityID, uint64_t>> s_removed_components;
+static std::queue<std::tuple<erwin::EntityID, uint32_t>> s_removed_components;
 static std::queue<erwin::EntityID> s_removed_entities;
 
 void Scene::init()
@@ -51,7 +51,7 @@ void Scene::drop_selection()
 	selected_entity = k_invalid_entity_id;
 }
 
-void Scene::mark_for_removal(erwin::EntityID entity, uint64_t reflected_component)
+void Scene::mark_for_removal(erwin::EntityID entity, uint32_t reflected_component)
 {
 	s_removed_components.push({entity, reflected_component});
 }

@@ -398,7 +398,7 @@ public:
 	inline void read(T* destination) { read(destination, sizeof(T)); }
 	inline void write_str(const std::string& str)
 	{
-		uint32_t str_size = str.size();
+		uint32_t str_size = uint32_t(str.size());
 		write(&str_size, sizeof(uint32_t));
 		write(str.data(), str_size);
 	}

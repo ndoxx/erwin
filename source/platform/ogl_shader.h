@@ -39,7 +39,7 @@ public:
 
     // Uniform management
     template <typename T>
-    bool send_uniform(hash_t u_name, const T& value) const
+    bool send_uniform(hash_t, const T&) const
     {
     	W_ASSERT(false, "Unknown uniform type!");
         return false;

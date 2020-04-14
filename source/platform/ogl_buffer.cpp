@@ -145,7 +145,7 @@ OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const Buffe
 OGLBuffer(GL_ARRAY_BUFFER),
 VertexBuffer(layout, count)
 {
-    uint32_t size = count_*layout_.get_stride();
+    uint32_t size = uint32_t(count_)*layout_.get_stride();
     init(vertex_data, size, mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
@@ -162,7 +162,7 @@ OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimiti
 OGLBuffer(GL_ELEMENT_ARRAY_BUFFER),
 IndexBuffer(count, primitive)
 {
-    uint32_t size = count_*sizeof(uint32_t);
+    uint32_t size = uint32_t(count_)*sizeof(uint32_t);
     init(index_data, size, mode);
 
     DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
@@ -235,7 +235,7 @@ void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
 							  to_ogl_base_type(element.type),
 							  element.normalized ? GL_TRUE : GL_FALSE,
 							  layout.get_stride(),
-							  (const void*)(intptr_t)element.offset);
+							  reinterpret_cast<const void*>(intptr_t(element.offset)));
 		++vb_index_;
 	}
     glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls

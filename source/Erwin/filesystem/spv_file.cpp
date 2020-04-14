@@ -66,7 +66,7 @@ std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path)
             }
         }
 
-        ifs.seekg(pos + wcount*sizeof(uint32_t));
+        ifs.seekg(pos + long(wcount*sizeof(uint32_t)));
         if(!ifs) break;
     }
 
