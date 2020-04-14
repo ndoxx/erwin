@@ -111,17 +111,17 @@ struct RenderState
 
     inline uint64_t encode() const
     {
-        return (((uint64_t)render_target.index                      << k_framebuffer_shift)  & k_framebuffer_mask)
-             | (((uint64_t)rasterizer_state.clear_flags             << k_clear_shift)        & k_clear_mask)
-             | (((uint64_t)blend_state                              << k_transp_shift)       & k_transp_mask)
-             | (((uint64_t)rasterizer_state.cull_mode               << k_cull_mode_shift)    & k_cull_mode_mask)
-             | (((uint64_t)depth_stencil_state.depth_test_enabled   << k_depth_test_shift)   & k_depth_test_mask)
-             | (((uint64_t)depth_stencil_state.stencil_test_enabled << k_stencil_test_shift) & k_stencil_test_mask)
-             | (((uint64_t)depth_stencil_state.depth_lock           << k_depth_lock_shift)   & k_depth_lock_mask)
-             | (((uint64_t)depth_stencil_state.stencil_lock         << k_stencil_lock_shift) & k_stencil_lock_mask)
-             | (((uint64_t)depth_stencil_state.depth_func           << k_depth_func_shift)   & k_depth_func_mask)
-             | (((uint64_t)depth_stencil_state.stencil_func         << k_stencil_func_shift) & k_stencil_func_mask)
-             | (((uint64_t)depth_stencil_state.stencil_operator     << k_stencil_op_shift)   & k_stencil_op_mask);
+        return ((static_cast<uint64_t>(render_target.index)                      << k_framebuffer_shift)  & k_framebuffer_mask)
+             | ((static_cast<uint64_t>(rasterizer_state.clear_flags)             << k_clear_shift)        & k_clear_mask)
+             | ((static_cast<uint64_t>(blend_state)                              << k_transp_shift)       & k_transp_mask)
+             | ((static_cast<uint64_t>(rasterizer_state.cull_mode)               << k_cull_mode_shift)    & k_cull_mode_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_test_enabled)   << k_depth_test_shift)   & k_depth_test_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_test_enabled) << k_stencil_test_shift) & k_stencil_test_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_lock)           << k_depth_lock_shift)   & k_depth_lock_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_lock)         << k_stencil_lock_shift) & k_stencil_lock_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_func)           << k_depth_func_shift)   & k_depth_func_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_func)         << k_stencil_func_shift) & k_stencil_func_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_operator)     << k_stencil_op_shift)   & k_stencil_op_mask);
     }
 
     inline void decode(uint64_t state)

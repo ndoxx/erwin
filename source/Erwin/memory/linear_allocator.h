@@ -23,7 +23,7 @@ public:
 	inline const uint8_t* end() const   { return end_; }
 
 	void* allocate(std::size_t size, std::size_t alignment, std::size_t offset);
-	inline void deallocate(void* ptr) { }
+	inline void deallocate(void*) { }
 	inline void reset() { current_offset_ = 0; }
 
 private:

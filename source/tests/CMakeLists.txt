@@ -71,10 +71,10 @@ cotire(test_serial)
 set(SRC_ENGINE_TEST
     catch_app.cpp
     test_memory.cpp
-    test_ecs.cpp
+    # test_ecs.cpp
     test_rng.cpp
     test_event.cpp
-    test_jobs.cpp
+    # test_jobs.cpp
    )
 
 add_executable(test_erwin ${SRC_ENGINE_TEST})

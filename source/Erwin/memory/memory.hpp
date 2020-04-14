@@ -58,10 +58,10 @@ private:
 class NoBoundsChecking
 {
 public:
-	inline void put_sentinel_front(uint8_t* ptr) const   { }
-	inline void put_sentinel_back(uint8_t* ptr) const    { }
-	inline void check_sentinel_front(uint8_t* ptr) const { }
-	inline void check_sentinel_back(uint8_t* ptr) const  { }
+	inline void put_sentinel_front(uint8_t*) const   { }
+	inline void put_sentinel_back(uint8_t*) const    { }
+	inline void check_sentinel_front(uint8_t*) const { }
+	inline void check_sentinel_back(uint8_t*) const  { }
 
 	static constexpr size_t SIZE_FRONT = 0;
 	static constexpr size_t SIZE_BACK = 0;
@@ -72,8 +72,8 @@ class SimpleBoundsChecking
 public:
 	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT_FMT(*(uint32_t*)(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
-	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT_FMT(*(uint32_t*)(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", (void*)ptr, *(uint32_t*)(ptr)); }
+	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
+	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
 
 	static constexpr size_t SIZE_FRONT = 4;
 	static constexpr size_t SIZE_BACK = 4;
@@ -82,14 +82,14 @@ public:
 class NoMemoryTagging
 {
 public:
-	inline void tag_allocation(uint8_t* ptr, size_t size) const   { }
-	inline void tag_deallocation(uint8_t* ptr, size_t size) const { }
+	inline void tag_allocation(uint8_t*, size_t) const   { }
+	inline void tag_deallocation(uint8_t*, size_t) const { }
 };
 
 class NoMemoryTracking
 {
 public:
-	inline void on_allocation(uint8_t*, size_t size, size_t alignment) const { }
+	inline void on_allocation(uint8_t*, size_t, size_t) const { }
 	inline void on_deallocation(uint8_t*) const { }
 	inline int32_t get_allocation_count() const { return 0; }
 	inline void report() const { }
@@ -98,7 +98,7 @@ public:
 class SimpleMemoryTracking
 {
 public:
-	inline void on_allocation(uint8_t*, size_t size, size_t alignment) { ++num_allocs_; }
+	inline void on_allocation(uint8_t*, size_t, size_t) { ++num_allocs_; }
 	inline void on_deallocation(uint8_t*) { --num_allocs_; }
 	inline int32_t get_allocation_count() const { return num_allocs_; }
 	inline void report() const
@@ -166,7 +166,7 @@ public:
 
     inline bool is_initialized() const { return is_initialized_; }
 
-	void* allocate(size_t size, size_t alignment, size_t offset, const char* file, int line)
+	void* allocate(size_t size, size_t alignment, size_t offset, [[maybe_unused]] const char* file, [[maybe_unused]] int line)
 	{
 		// Lock resource
 		thread_guard_.enter();
@@ -192,7 +192,7 @@ public:
 		current += BoundsCheckerT::SIZE_FRONT;
 
 		// Save allocation size
-		*(reinterpret_cast<SIZE_TYPE*>(current)) = (SIZE_TYPE)decorated_size;
+		*(reinterpret_cast<SIZE_TYPE*>(current)) = static_cast<SIZE_TYPE>(decorated_size);
 		current += sizeof(SIZE_TYPE);
 
 		// More bookkeeping
@@ -265,15 +265,11 @@ T* NewArray(ArenaT& arena, size_t N, size_t alignment, const char* file, int lin
 	{
 		// new[] operator stores the number of instances in the first 4 bytes and
 		// returns a pointer to the address right after, we emulate this behavior here.
-		union
-		{
-			uint32_t* as_uint;
-			T*        as_T;
-		};
-		as_uint = static_cast<uint32_t*>(arena.allocate(sizeof(uint32_t) + sizeof(T)*N, alignment, sizeof(uint32_t), file, line));
-		*(as_uint++) = (uint32_t)N;
+		uint32_t* as_uint = static_cast<uint32_t*>(arena.allocate(sizeof(uint32_t) + sizeof(T)*N, alignment, sizeof(uint32_t), file, line));
+		*(as_uint++) = static_cast<uint32_t>(N);
 
 		// Construct instances using placement new
+		T* as_T = reinterpret_cast<T*>(as_uint);
 		const T* const end = as_T + N;
 		while (as_T < end)
 			new (as_T++) T;
