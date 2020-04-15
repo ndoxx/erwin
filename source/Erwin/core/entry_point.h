@@ -10,7 +10,7 @@ namespace erwin
 	extern Application* create_application();
 }
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
 	W_PROFILE_BEGIN_SESSION("startup", "wprofile-startup.json");
 	auto app = erwin::create_application();
@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 	W_PROFILE_END_SESSION();
 
 	W_PROFILE_BEGIN_SESSION("shutdown", "wprofile-shutdown.json");
+	app->shutdown();
 	delete app;
 	W_PROFILE_END_SESSION();
 

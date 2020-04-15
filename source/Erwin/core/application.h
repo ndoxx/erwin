@@ -20,7 +20,7 @@ class W_API Application
 {
 public:
 	Application();
-	virtual ~Application();
+	virtual ~Application() = default;
 
 	virtual void on_pre_init() { }
 	virtual void on_client_init() { }
@@ -42,6 +42,7 @@ public:
 
 	bool init();
 	void run();
+	void shutdown();
 
 	static memory::HeapArea& get_client_area();
 	static const memory::HeapArea& get_system_area();

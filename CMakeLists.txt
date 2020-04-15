@@ -22,6 +22,12 @@ include(cotire)
 
 cmake_minimum_required(VERSION 3.10)
 project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine shared library")
+
+set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE MinSizeRel)
+# set(CMAKE_BUILD_TYPE RelWithDebInfo)
+
 include(standard_settings)
 
 if(DEFINED CLANG6)
@@ -41,11 +47,6 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(project_warnings INTERFACE)
 include(compiler_warnings) # Hardcore warnings
 set_project_warnings(project_warnings)
-
-set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_BUILD_TYPE MinSizeRel)
-# set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 subdirs(source)
 

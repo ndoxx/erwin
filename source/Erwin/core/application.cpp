@@ -70,44 +70,6 @@ minimized_(false)
     filesystem::init();
 }
 
-Application::~Application()
-{
-    {
-        W_PROFILE_SCOPE("Layer stack shutdown")
-        layer_stack_.clear();
-        IMGUI_LAYER->on_detach();
-    }
-    {
-        W_PROFILE_SCOPE("Application unloading")
-        on_unload();
-    }
-    {
-        W_PROFILE_SCOPE("Asset Manager shutdown")
-        AssetManager::shutdown();
-    }
-    {
-        W_PROFILE_SCOPE("Renderer shutdown")
-        FramebufferPool::shutdown();
-        PostProcessingRenderer::shutdown();
-        Renderer2D::shutdown();
-        Renderer3D::shutdown();
-        CommonGeometry::shutdown();
-        Renderer::shutdown();
-    }
-    {
-        W_PROFILE_SCOPE("Low level systems shutdown")
-        Input::shutdown();
-        WLOGGER(kill());
-
-        // Shutdown all event pools
-        #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
-        FOR_ALL_EVENTS
-        #undef DO_ACTION
-
-        EventBus::shutdown();
-    }
-}
-
 void Application::add_configuration(const std::string& filename)
 {
     fs::path filepath = filesystem::get_client_config_dir() / filename;
@@ -312,6 +274,44 @@ bool Application::init()
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
     return true;
+}
+
+void Application::shutdown()
+{
+    {
+        W_PROFILE_SCOPE("Layer stack shutdown")
+        layer_stack_.clear();
+        IMGUI_LAYER->on_detach();
+    }
+    {
+        W_PROFILE_SCOPE("Application unloading")
+        on_unload();
+    }
+    {
+        W_PROFILE_SCOPE("Asset Manager shutdown")
+        AssetManager::shutdown();
+    }
+    {
+        W_PROFILE_SCOPE("Renderer shutdown")
+        FramebufferPool::shutdown();
+        PostProcessingRenderer::shutdown();
+        Renderer2D::shutdown();
+        Renderer3D::shutdown();
+        CommonGeometry::shutdown();
+        Renderer::shutdown();
+    }
+    {
+        W_PROFILE_SCOPE("Low level systems shutdown")
+        Input::shutdown();
+        WLOGGER(kill());
+
+        // Shutdown all event pools
+        #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
+        FOR_ALL_EVENTS
+        #undef DO_ACTION
+
+        EventBus::shutdown();
+    } 
 }
 
 size_t Application::push_layer(Layer* layer)
