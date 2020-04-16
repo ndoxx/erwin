@@ -37,6 +37,20 @@ WRef<Texture2D> Texture2D::create(const Texture2DDescriptor& descriptor)
     }
 }
 
+/*Texture2D* Texture2D::create(PoolArena& arena, const Texture2DDescriptor& descriptor)
+{
+    switch(Gfx::get_api())
+    {
+        case GfxAPI::None:
+            DLOGE("texture") << "Texture2D: not implemented for GfxAPI::None." << std::endl;
+            return nullptr;
+
+        case GfxAPI::OpenGL:
+            return W_NEW(OGLTexture2D, arena)(descriptor);
+    }
+}*/
+
+
 
 WRef<Cubemap> Cubemap::create(const CubemapDescriptor& descriptor)
 {

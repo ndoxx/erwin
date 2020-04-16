@@ -53,7 +53,7 @@ void InspectorWidget::entity_tab()
             {
                 // Basic controls over this component
                 ImGui::SameLine(ImGui::GetWindowWidth()-50);
-                if(ImGui::Button(ICON_FA_WINDOW_CLOSE))
+                if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
                 {
                     Scene::mark_for_removal(Scene::selected_entity, reflected_type);
                     DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(Scene::selected_entity) << std::endl;

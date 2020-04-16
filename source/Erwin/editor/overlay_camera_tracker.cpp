@@ -24,7 +24,7 @@ void CameraTrackerOverlay::on_imgui_render()
     const glm::vec3& cam_pos = Scene::camera_controller.get_camera().get_position();
     const glm::vec3& cam_ang = Scene::camera_controller.get_camera().get_angles();
 
-    ImGui::Text("%s Camera", ICON_FA_VIDEO_CAMERA);
+    ImGui::Text("%s Camera", W_ICON(VIDEO_CAMERA));
 
     ImGui::Text("x      %.3f", double(cam_pos.x));
     ImGui::Text("y      %.3f", double(cam_pos.y));

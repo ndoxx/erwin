@@ -85,7 +85,7 @@ void GameLayer::on_attach()
 		Scene::registry.assign<ComponentRenderableDirectionalLight>(ent, renderable);
 
 		Scene::directional_light = ent;
-		Scene::add_entity(ent, "Sun", ICON_FA_SUN_O);
+		Scene::add_entity(ent, "Sun", W_ICON(SUN_O));
 	}
 
 	glm::vec3 pos[] = 

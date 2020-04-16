@@ -445,4 +445,16 @@ constexpr size_t operator"" _GB(unsigned long long size) { return 1073741824*siz
 #define W_DELETE( OBJECT , ARENA ) memory::Delete( OBJECT , ARENA )
 #define W_DELETE_ARRAY( OBJECT , ARENA ) memory::DeleteArray( OBJECT , ARENA )
 
+// When this feature is implemented in C++20, use source_location and something like:
+/*
+	#include <source_location>
+
+	template <typename T, typename ArenaT, typename... Args>
+	T* w_new(ArenaT& arena, Args... args,
+	         const std::source_location& location = std::source_location::current())
+	{
+	    return new(arena.allocate(sizeof(T), 0, 0, location.file_name(), location.line()))(std::forward<Args>(args)...);
+	}
+*/
+
 } // namespace erwin

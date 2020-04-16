@@ -35,7 +35,7 @@ struct CATHeader
 #define CAT_VERSION_MINOR 2
 
 // Helper functions to (de)allocate data blobs inside the filesystem resource arena if possible, on the heap if not
-static inline void* new_blob(std::size_t size)
+static inline uint8_t* new_blob(std::size_t size)
 {
     if(filesystem::is_arena_initialized())
     {
@@ -54,13 +54,20 @@ static inline void delete_blob(void* ptr)
         delete[] static_cast<uint8_t*>(ptr);
 }
 
+// Only well defined for PODs
+template <typename T>
+static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
+
+template <typename T>
+static inline const char* opaque_cast(const T* in) { return static_cast<const char*>(static_cast<void*>(in)); }
+
 void read_cat(CATDescriptor& desc)
 {
     std::ifstream ifs(desc.filepath, std::ios::binary);
 
     // Read header & sanity check
     CATHeader header;
-    ifs.read(reinterpret_cast<char*>(&header), sizeof(CATHeader));
+    ifs.read(opaque_cast(&header), sizeof(CATHeader));
 
     W_ASSERT(header.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
     W_ASSERT(header.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
@@ -70,18 +77,18 @@ void read_cat(CATDescriptor& desc)
     desc.texture_height       = header.texture_height;
     desc.texture_blob_size    = uint32_t(header.texture_blob_size);
     desc.remapping_blob_size  = uint32_t(header.remapping_blob_size);
-    desc.texture_compression  = static_cast<TextureCompression>(header.texture_compression);
-    desc.lossless_compression = static_cast<LosslessCompression>(header.lossless_compression);
-    desc.remapping_type       = static_cast<RemappingType>(header.remapping_type);
+    desc.texture_compression  = TextureCompression(header.texture_compression);
+    desc.lossless_compression = LosslessCompression(header.lossless_compression);
+    desc.remapping_type       = RemappingType(header.remapping_type);
 
     // Read data blobs
-    char* texture_blob = reinterpret_cast<char*>(new_blob(desc.texture_blob_size));
-    ifs.read(texture_blob, desc.texture_blob_size);
+    uint8_t* texture_blob = new_blob(desc.texture_blob_size);
+    ifs.read(opaque_cast(texture_blob), desc.texture_blob_size);
     // Inflate (decompress) blob if needed
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
-        uint8_t* inflated = reinterpret_cast<uint8_t*>(new_blob(header.blob_inflate_size));
-        erwin::uncompress_data(reinterpret_cast<uint8_t*>(texture_blob), int(desc.texture_blob_size), inflated, int(header.blob_inflate_size));
+        uint8_t* inflated = new_blob(header.blob_inflate_size);
+        erwin::uncompress_data(texture_blob, int(desc.texture_blob_size), inflated, int(header.blob_inflate_size));
         desc.texture_blob = inflated;
         // delete[] texture_blob;
         delete_blob(texture_blob);
@@ -91,8 +98,8 @@ void read_cat(CATDescriptor& desc)
         desc.texture_blob = texture_blob;
     }
 
-    desc.remapping_blob = new_blob(desc.remapping_blob_size);
-    ifs.read(reinterpret_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
+    desc.remapping_blob = static_cast<void*>(new_blob(desc.remapping_blob_size));
+    ifs.read(opaque_cast(desc.remapping_blob), desc.remapping_blob_size);
 
     ifs.close();
 }
@@ -122,13 +129,13 @@ void write_cat(const CATDescriptor& desc)
     {
         uint32_t max_size = uint32_t(erwin::get_max_compressed_len(int(desc.texture_blob_size)));
         uint8_t* deflated = new uint8_t[max_size];
-        uint32_t comp_size = uint32_t(erwin::compress_data(reinterpret_cast<uint8_t*>(desc.texture_blob), int(desc.texture_blob_size), deflated, int(max_size)));
+        uint32_t comp_size = uint32_t(erwin::compress_data(static_cast<uint8_t*>(desc.texture_blob), int(desc.texture_blob_size), deflated, int(max_size)));
         
         header.texture_blob_size = comp_size;
         header.blob_inflate_size = desc.texture_blob_size;
 
-        ofs.write(reinterpret_cast<const char*>(&header), sizeof(CATHeader));
-        ofs.write(reinterpret_cast<const char*>(deflated), comp_size);
+        ofs.write(opaque_cast(&header), sizeof(CATHeader));
+        ofs.write(opaque_cast(deflated), comp_size);
         delete[] deflated;
     }
     else
@@ -136,11 +143,11 @@ void write_cat(const CATDescriptor& desc)
         header.texture_blob_size = desc.texture_blob_size;
         header.blob_inflate_size = desc.texture_blob_size;
 
-        ofs.write(reinterpret_cast<const char*>(&header), sizeof(CATHeader));
-        ofs.write(reinterpret_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
+        ofs.write(opaque_cast(&header), sizeof(CATHeader));
+        ofs.write(opaque_cast(desc.texture_blob), desc.texture_blob_size);
     }
 
-    ofs.write(reinterpret_cast<const char*>(desc.remapping_blob), desc.remapping_blob_size);
+    ofs.write(opaque_cast(desc.remapping_blob), desc.remapping_blob_size);
     ofs.close();
 }
 

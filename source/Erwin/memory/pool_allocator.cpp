@@ -34,7 +34,7 @@ void* PoolAllocator::allocate(std::size_t size, std::size_t alignment, std::size
     // Check if alignment is required. If so, find the next aligned memory address.
     std::size_t padding = 0;
     if(alignment && std::size_t(next+offset) % alignment)
-        padding = utils::alignment_padding(reinterpret_cast<std::size_t>(next+offset), alignment);
+        padding = utils::alignment_padding(next+offset, alignment);
 
 	W_ASSERT(padding + size <= node_size_, "[PoolAllocator] Allocation size does not fit initial requirement.");
 	

@@ -46,12 +46,12 @@ void SceneHierarchyWidget::on_imgui_render()
         if(e == Scene::selected_entity)
             flags |= ImGuiTreeNodeFlags_Selected;
 
-        ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+        ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
         if(ImGui::IsItemClicked())
             new_selection = e;
 
         // Context menu for entities
-        ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(static_cast<intptr_t>(ii)))));
+        ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(ii)))));
         if(ImGui::BeginPopupContextItem("Entity context menu"))
         {
             if(ImGui::Selectable("Remove"))

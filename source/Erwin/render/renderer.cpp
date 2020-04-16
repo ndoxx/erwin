@@ -613,7 +613,7 @@ bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shade
 	if(!s_storage.shader_compat[shader.index].ready)
 		return false;
 
-	return (*s_storage.vertex_buffer_layouts[layout.index]) == s_storage.shader_compat[shader.index].layout;
+	return s_storage.vertex_buffer_layouts[layout.index]->compare(s_storage.shader_compat[shader.index].layout);
 }
 
 
@@ -1591,15 +1591,23 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 
 	bool has_depth   = s_storage.framebuffers[fb_handle.index]->has_depth();
 	bool has_stencil = s_storage.framebuffers[fb_handle.index]->has_stencil();
+	bool has_cubemap = s_storage.framebuffers[fb_handle.index]->has_cubemap();
 	auto layout      = s_storage.framebuffers[fb_handle.index]->get_layout();
 
-	s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
+	if(!has_cubemap)
+	{
+		s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
 
-	// Update framebuffer textures
-	auto& fb = s_storage.framebuffers[fb_handle.index];
-	auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
-	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+		// Update framebuffer textures
+		auto& fb = s_storage.framebuffers[fb_handle.index];
+		auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
+		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+	}
+	else
+	{
+		W_ASSERT(false, "Cubemap attachment not supported yet.");
+	}
 }
 
 void clear_framebuffers(memory::LinearBuffer<>&)
