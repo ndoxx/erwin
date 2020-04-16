@@ -1491,7 +1491,7 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	auto& fb = s_storage.framebuffers[handle.index];
 	const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
 	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage.textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
+		s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
@@ -1599,7 +1599,7 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	auto& fb = s_storage.framebuffers[fb_handle.index];
 	auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
 	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage.textures[texture_vector.handles[ii].index] = fb->get_shared_texture(ii);
+		s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
 }
 
 void clear_framebuffers(memory::LinearBuffer<>&)

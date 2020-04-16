@@ -15,9 +15,7 @@ public:
 
 	virtual void bind() override;
 	virtual void unbind() override;
-	virtual WRef<Texture2D> get_shared_texture(uint32_t index=0) override;
-	virtual const Texture2D& get_texture(uint32_t index) override;
-	virtual const Texture2D& get_named_texture(hash_t name) override;
+	virtual WRef<Texture> get_shared_texture(uint32_t index=0) override;
 	virtual uint32_t get_texture_count() override;
 	virtual void screenshot(const std::string& filepath) override;
 	virtual void blit_depth(const Framebuffer& source) override;
@@ -26,9 +24,7 @@ private:
 	void framebuffer_error_report();
 
 private:
-	std::vector<WRef<Texture2D>> textures_;
-	std::vector<uint32_t> color_buffers_;
-	std::map<hash_t, uint32_t> texture_names_;
+	std::vector<WRef<Texture>> textures_;
 
 	uint32_t rd_handle_ = 0;
 	uint32_t render_buffer_handle_ = 0;
