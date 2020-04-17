@@ -96,13 +96,10 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         // Register color attachment
         uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(texture)->get_handle();
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, 0);
-        glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-        // Depth renderbuffer
-        glCreateRenderbuffers(1, &render_buffer_handle_);
-        glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_buffer_handle_);
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, draw_buffers);
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
         // Save texture and attachments
         textures_.push_back(texture);
@@ -188,23 +185,45 @@ void OGLFramebuffer::blit_depth(const Framebuffer& source)
 
 void OGLFramebuffer::framebuffer_error_report()
 {
+    /*
+    GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT is returned if any of the framebuffer attachment points are framebuffer incomplete.
+    GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT is returned if the framebuffer does not have at least one image attached to it.
+    GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER is returned if the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for any color attachment point(s) named by GL_DRAW_BUFFERi.
+    GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER is returned if GL_READ_BUFFER is not GL_NONE and the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER.
+    GL_FRAMEBUFFER_UNSUPPORTED is returned if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions.
+    GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the value of GL_TEXTURE_SAMPLES.
+    GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is also returned if the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not the same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures.
+    GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS is returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target.
+    */
+
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if(status != GL_FRAMEBUFFER_COMPLETE)
     {
         switch(status)
         {
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            DLOGE("render")
-                << "[Framebuffer] Not all framebuffer attachment points are framebuffer attachment complete."
-                << std::endl;
+            DLOGE("render") << "[Framebuffer] Not all framebuffer attachment points are framebuffer attachment complete." << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
             DLOGE("render") << "[Framebuffer] No images are attached to the framebuffer." << std::endl;
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+            DLOGE("render") << "[Framebuffer] Incomplete draw buffer." << std::endl;
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+            DLOGE("render") << "[Framebuffer] Incomplete read buffer." << std::endl;
             break;
         case GL_FRAMEBUFFER_UNSUPPORTED:
             DLOGE("render") << "[Framebuffer] The combination of internal formats of the attached images violates an "
                                "implementation-dependent set of restrictions."
                             << std::endl;
+        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+            DLOGE("render") << "[Framebuffer] Incomplete multisample." << std::endl;
+            break;
+        case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+            DLOGE("render") << "[Framebuffer] Incomplete layer targets." << std::endl;
+            break;
+        default:
             break;
         }
     }

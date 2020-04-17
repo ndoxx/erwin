@@ -20,6 +20,7 @@ public:
 		static constexpr uint32_t cm_width = 512;
 		static constexpr uint32_t cm_height = 512;
 
+#if 0
 		// Proceduraly generate a cubemap
 		// cubemap face order: (-x, +x, -y, +y, -z, +z)
 		static std::array<std::array<uint8_t,3*cm_width*cm_height>, 6> faces;
@@ -67,6 +68,9 @@ public:
 		};
 
 		cubemap = Renderer::create_cubemap(desc);
+#else
+		cubemap = AssetManager::load_cubemap_hdr("osef.hdr", cm_width, cm_height);
+#endif
 	}
 
 	void render()

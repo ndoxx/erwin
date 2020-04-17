@@ -4,6 +4,7 @@
 #include "memory/arena.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/common_geometry.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
 #include "EASTL/map.h"
@@ -45,6 +46,8 @@ static struct
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
 	eastl::vector<MaterialDescriptor> material_descriptors_;
+
+	ShaderHandle equirectangular_to_cubemap_shader_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -126,6 +129,38 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 	s_storage.texture_cache_.insert({hname, handle});
 
 	return handle;
+}
+
+CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath, uint32_t width, uint32_t height)
+{
+	(void)filepath;
+	// TMP
+	FramebufferLayout layout
+	{
+	    {"cubemap"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	};
+	FramebufferHandle fb = Renderer::create_framebuffer(width, height, FB_CUBEMAP_ATTACHMENT, layout);
+	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
+
+	RenderState state;
+	state.render_target = fb;
+	state.rasterizer_state.cull_mode = CullMode::None;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
+
+	uint64_t state_flags = state.encode();
+
+	SortKey key;
+	key.set_sequence(0, 0, s_storage.equirectangular_to_cubemap_shader_);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader_, quad);
+
+	Renderer::submit(key.encode(), dc);
+	Renderer::destroy(fb, true);
+
+	return cubemap;
 }
 
 ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
@@ -305,6 +340,8 @@ void AssetManager::init(memory::HeapArea& area)
 	s_storage.materials_.resize(k_max_materials, nullptr);
 	s_storage.material_descriptors_.resize(k_max_materials, {{},false,"",""});
 
+	s_storage.equirectangular_to_cubemap_shader_ = load_system_shader("shaders/equirectangular_to_cubemap.glsl", "ER2C");
+
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);
 	FOR_ALL_HANDLES
@@ -328,6 +365,8 @@ void AssetManager::shutdown()
 	for(Material* mat: s_storage.materials_)
 		if(mat)
 			W_DELETE(mat, s_storage.material_pool_);
+
+	release(s_storage.equirectangular_to_cubemap_shader_);
 
 	// Destroy handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(s_storage.handle_arena_);
