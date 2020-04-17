@@ -115,9 +115,11 @@ void Renderer2D::init()
 
 	s_storage.white_texture_data = 0xffffffff;
 	s_storage.white_texture = Renderer::create_texture_2D(Texture2DDescriptor{1,1,
-								  					 				   			&s_storage.white_texture_data,
-								  					 				   			ImageFormat::RGBA8,
-								  					 				   			MAG_NEAREST | MIN_NEAREST});
+								  					 				   		  &s_storage.white_texture_data,
+								  					 				   		  ImageFormat::RGBA8,
+								  					 				   		  MAG_NEAREST | MIN_NEAREST,
+								  					 				   		  TextureWrap::REPEAT,
+								  					 				   		  TF_NONE});
 	::erwin::create_batch(0, s_storage.white_texture);
 }
 

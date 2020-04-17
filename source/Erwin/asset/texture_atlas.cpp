@@ -50,10 +50,12 @@ void TextureAtlas::load(const fs::path& filepath)
 		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
 		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
-									  					 			  descriptor.texture_height,
-									  					 			  descriptor.texture_blob,
-									  					 			  format,
-									  					 			  filter});
+									  					 		  descriptor.texture_height,
+									  					 		  descriptor.texture_blob,
+									  					 		  format,
+									  					 		  filter,
+									  					 		  TextureWrap::REPEAT,
+									  					 		  TF_MUST_FREE});
 
 		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " sub-textures in atlas." << std::endl;
 		DLOG("texture",1) << "TextureHandle: " << WCC('v') << texture.index << std::endl;
@@ -125,11 +127,13 @@ void FontAtlas::load(const fs::path& filepath)
 		// uint8_t filter = MAG_LINEAR | MIN_NEAREST_MIPMAP_NEAREST;
 
 		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
-									  					 			  descriptor.texture_height,
-									  					 			  descriptor.texture_blob,
-									  					 			  ImageFormat::RGBA8,
-									  					 			  // ImageFormat::R8,
-									  					 			  filter});
+									  					 		  descriptor.texture_height,
+									  					 		  descriptor.texture_blob,
+									  					 		  ImageFormat::RGBA8,
+									  					 		  // ImageFormat::R8,
+									  					 		  filter,
+									  					 		  TextureWrap::REPEAT,
+									  					 		  TF_NONE});
 
 		DLOG("texture",1) << "Found " << WCC('v') << remapping.size() << WCC(0) << " characters in atlas." << std::endl;
 		DLOG("texture",1) << "TextureHandle: " << WCC('v') << texture.index << std::endl;

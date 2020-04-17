@@ -139,7 +139,7 @@ CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath, uint32_t 
 	// Create an ad-hoc framebuffer to render to a cubemap
 	FramebufferLayout layout
 	{
-	    {"cubemap"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
 	};
 	FramebufferHandle fb = Renderer::create_framebuffer(width, height, FB_CUBEMAP_ATTACHMENT, layout);
 	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);

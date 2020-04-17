@@ -33,6 +33,8 @@ void GameLayer::on_attach()
 
 	forward_skybox_render_system_.init();
 
+	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
+
 	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Paved floor",

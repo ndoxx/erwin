@@ -33,7 +33,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         {
             // First, create textures for color buffers
             auto texture = Texture2D::create(
-                Texture2DDescriptor{width_, height_, nullptr, elt.image_format, elt.filter, elt.wrap, false});
+                Texture2DDescriptor{width_, height_, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
 
             // Register color attachment
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
@@ -53,7 +53,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         if(has_depth() && has_stencil())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH24_STENCIL8});
+                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);
@@ -61,7 +61,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         else if(has_depth())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH_COMPONENT24});
+                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);

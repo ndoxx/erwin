@@ -220,7 +220,7 @@ height_(descriptor.height)
 	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap)
+    if(has_mipmap && !descriptor.lazy_mipmap())
         generate_mipmaps(rd_handle_, 0, 3);
     else
     {

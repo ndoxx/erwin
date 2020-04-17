@@ -191,9 +191,6 @@ bool Application::init()
             DLOGF("application") << "Cannot allocate client memory." << std::endl;
             return false;
         }
-
-        // Setup filesystem arena
-        filesystem::init_arena(s_storage.client_area, cfg::get<size_t>("client.memory.filesystem.assets"_h, 10_MB));
     }
 
     // Create window

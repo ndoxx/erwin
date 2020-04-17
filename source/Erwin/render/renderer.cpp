@@ -1464,6 +1464,8 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	buf.read(&descriptor);
 
 	s_storage.textures[handle.index] = Texture2D::create(descriptor);
+	// Free resources if needed
+	descriptor.release();
 }
 
 void create_cubemap(memory::LinearBuffer<>& buf)

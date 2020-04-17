@@ -52,10 +52,10 @@ vec3 to_world_vector(vec2 uv, int face_idx)
 
 vec2 sample_spherical_map(vec3 v)
 {
-	const vec2 invAtan = vec2(0.1591f, 0.3183f);
+	const vec2 inv_atan = vec2(0.1591f, 0.3183f);
+	
     vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += 0.5f;
+    uv = uv * inv_atan + 0.5f;
     return uv;
 }
 
@@ -68,9 +68,9 @@ void main()
 	vec3 pos_w = to_world_vector(uv, gl_Layer);
     vec2 s_uv = sample_spherical_map(pos_w);
     // vec3 color = texture(SAMPLER_2D_0, s_uv).rgb;
-    
-    // vec3 color = vec3(s_uv,0.f);
-    vec3 color = 0.5f*pos_w+0.5f;
+
+    vec3 color = vec3(s_uv,0.f);
+    // vec3 color = 0.5f*pos_w+0.5f;
     // vec3 color = pos_w;
 
     out_color = vec4(color, 1.f);
