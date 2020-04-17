@@ -8,9 +8,9 @@
 		<Channel name="memory"      verbosity="1"/>
 		<Channel name="thread"      verbosity="1"/>
 		<Channel name="entity"      verbosity="1"/>
-		<Channel name="render"      verbosity="1"/>
-		<Channel name="shader"      verbosity="3"/>
-		<Channel name="texture"     verbosity="1"/>
+		<Channel name="render"      verbosity="3"/>
+		<Channel name="shader"      verbosity="1"/>
+		<Channel name="texture"     verbosity="3"/>
 		<Channel name="util"        verbosity="1"/>
 		<Channel name="config"      verbosity="3"/>
 

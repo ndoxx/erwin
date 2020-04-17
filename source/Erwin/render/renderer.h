@@ -53,6 +53,8 @@ public:
 	static FramebufferHandle  default_render_target();
 	// Get a handle to a specified color or depth attachment of a given framebuffer
 	static TextureHandle 	  get_framebuffer_texture(FramebufferHandle handle, uint32_t index);
+	// Get a handle to the cubemap attachment of a given framebuffer
+	static CubemapHandle 	  get_framebuffer_cubemap(FramebufferHandle handle);
 	// Get the debug name of a specified color or depth attachment of a given framebuffer
 	static hash_t 			  get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index);
 	// Get the number of attachments in a given framebuffer

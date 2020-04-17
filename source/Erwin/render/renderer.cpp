@@ -296,6 +296,7 @@ struct FramebufferTextureVector
 {
 	std::vector<TextureHandle> handles;
 	std::vector<hash_t> debug_names;
+	CubemapHandle cubemap;
 };
 
 struct ShaderCompatibility
@@ -557,6 +558,12 @@ TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
 	W_ASSERT(index < s_storage.framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
 	return s_storage.framebuffer_textures_[handle.index].handles[index];
+}
+
+CubemapHandle Renderer::get_framebuffer_cubemap(FramebufferHandle handle)
+{
+	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+	return s_storage.framebuffer_textures_[handle.index].cubemap;
 }
 
 hash_t Renderer::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
@@ -907,15 +914,29 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 
 	// Create handles for framebuffer textures
 	FramebufferTextureVector texture_vector;
-	bool depth = bool(flags & FBFlag::FB_DEPTH_ATTACHMENT);
-	uint32_t tex_count = depth ? uint32_t(layout.get_count())+1 : uint32_t(layout.get_count()); // Take the depth texture into account
-	for(uint32_t ii=0; ii<tex_count; ++ii)
+	bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
+
+	if(!has_cubemap)
 	{
-		TextureHandle tex_handle = TextureHandle::acquire();
-		W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
-		texture_vector.handles.push_back(tex_handle);
-		texture_vector.debug_names.push_back((depth && ii==tex_count-1) ? "depth"_h : layout[ii].target_name);
+		bool has_depth = bool(flags & FBFlag::FB_DEPTH_ATTACHMENT);
+		uint32_t tex_count = has_depth ? uint32_t(layout.get_count())+1 : uint32_t(layout.get_count()); // Take the depth texture into account
+		for(uint32_t ii=0; ii<tex_count; ++ii)
+		{
+			TextureHandle tex_handle = TextureHandle::acquire();
+			W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
+			texture_vector.handles.push_back(tex_handle);
+			texture_vector.debug_names.push_back((has_depth && ii==tex_count-1) ? "depth"_h : layout[ii].target_name);
+		}
 	}
+	else
+	{
+		CubemapHandle cm_handle = CubemapHandle::acquire();
+		W_ASSERT(cm_handle.is_valid(), "No more free handle in handle pool.");
+		W_ASSERT(layout.get_count() == 1, "Only one cubemap attachment per framebuffer allowed.");
+		texture_vector.cubemap = cm_handle;
+		texture_vector.debug_names.push_back(layout[0].target_name);
+	}
+
 	s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
 	uint32_t count = uint32_t(layout.get_count());
 
@@ -1480,8 +1501,15 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	// Register framebuffer textures as regular textures accessible by handles
 	auto& fb = s_storage.framebuffers[handle.index];
 	const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
-	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-		s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+	if(!fb->has_cubemap())
+	{
+		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+	}
+	else
+	{
+		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<Cubemap>(fb->get_shared_texture(0));
+	}
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
@@ -1582,21 +1610,20 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	uint8_t flags = s_storage.framebuffers[fb_handle.index]->get_flags();
 	auto layout   = s_storage.framebuffers[fb_handle.index]->get_layout();
 
-	bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
+	s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, flags, layout);
 
+	// Update framebuffer textures
+	auto& fb = s_storage.framebuffers[fb_handle.index];
+	auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
+	bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
 	if(!has_cubemap)
 	{
-		s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, flags, layout);
-
-		// Update framebuffer textures
-		auto& fb = s_storage.framebuffers[fb_handle.index];
-		auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
 		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
 			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
 	}
 	else
 	{
-		W_ASSERT(false, "Cubemap attachment not supported yet.");
+		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<Cubemap>(fb->get_shared_texture(0));
 	}
 }
 
@@ -1733,17 +1760,27 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	buf.read(&detach_textures);
 
+	bool has_cubemap = s_storage.framebuffers[handle.index]->has_cubemap();
 	s_storage.framebuffers[handle.index] = nullptr;
 
 	// Delete framebuffer textures if they are not detached
 	if(!detach_textures)
 	{
 		auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
-		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+		if(!has_cubemap)
 		{
-			uint16_t tex_index = texture_vector.handles[ii].index;
-			s_storage.textures[tex_index] = nullptr;
-			texture_vector.handles[ii].release();
+			for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+			{
+				uint16_t tex_index = texture_vector.handles[ii].index;
+				s_storage.textures[tex_index] = nullptr;
+				texture_vector.handles[ii].release();
+			}
+		}
+		else
+		{
+			uint16_t cm_index = texture_vector.cubemap.index;
+			s_storage.cubemaps[cm_index] = nullptr;
+			texture_vector.cubemap.release();
 		}
 	}
 

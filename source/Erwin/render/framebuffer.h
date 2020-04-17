@@ -17,7 +17,10 @@ public:
 	height_(height),
 	flags_(flags)
 	{
-
+		if(has_cubemap())
+		{
+			W_ASSERT(!has_depth() && !has_stencil(), "Cubemap framebuffer attachment is incompatible with depth and stencil attachments.");
+		}
 	}
 
 	virtual ~Framebuffer() = default;
