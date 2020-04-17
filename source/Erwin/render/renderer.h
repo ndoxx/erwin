@@ -94,7 +94,7 @@ public:
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
 	static CubemapHandle 			 create_cubemap(const CubemapDescriptor& desc);
-	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout);
+	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout);
 	static void 					 update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
 	static void 					 update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
 	static void 					 update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
@@ -115,7 +115,7 @@ public:
 	static void 					 destroy(ShaderHandle handle);
 	static void 					 destroy(TextureHandle handle);
 	static void 					 destroy(CubemapHandle handle);
-	static void 					 destroy(FramebufferHandle handle);
+	static void 					 destroy(FramebufferHandle handle, bool detach_textures=false);
 
 #ifdef W_DEBUG
 	static void set_profiling_enabled(bool value=true);

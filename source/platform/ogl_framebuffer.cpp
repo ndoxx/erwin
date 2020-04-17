@@ -10,8 +10,8 @@ namespace erwin
 {
 
 
-OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, const FramebufferLayout& layout, bool depth, bool stencil):
-Framebuffer(width, height, layout, depth, stencil)
+OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout):
+Framebuffer(width, height, flags, layout)
 {
     DLOG("render",1) << "Creating OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << "." << std::endl;
 
@@ -21,8 +21,8 @@ Framebuffer(width, height, layout, depth, stencil)
     DLOGI << "handle:       " << rd_handle_ << std::endl;
     DLOGI << "width*height: " << width_ << "*" << height_ << std::endl;
     DLOGI << "#color bufs:  " << layout.get_count() << std::endl;
-    DLOGI << "has depth:    " << (has_depth_attachment_ ? "true" : "false") << std::endl;
-    DLOGI << "has stencil:  " << (has_stencil_attachment_ ? "true" : "false") << std::endl;
+    DLOGI << "has depth:    " << (has_depth() ? "true" : "false") << std::endl;
+    DLOGI << "has stencil:  " << (has_stencil() ? "true" : "false") << std::endl;
 
     // * Color buffers
     std::vector<GLenum> draw_buffers;
@@ -41,21 +41,21 @@ Framebuffer(width, height, layout, depth, stencil)
         draw_buffers.push_back(attachment);
     }
     // Specify list of color buffers to draw to
-    if(has_depth_attachment_ && ncolor_attachments == 0) // Depth only texture
+    if(has_depth() && ncolor_attachments == 0) // Depth only texture
         glDrawBuffer(GL_NONE);
     else
         glDrawBuffers(ncolor_attachments, draw_buffers.data());
 
 
     // * Handle depth / depth-stencil texture and attachment creation
-    if(has_depth_attachment_ && has_stencil_attachment_)
+    if(has_depth() && has_stencil())
     {
     	auto texture = Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH24_STENCIL8});
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
     	textures_.push_back(texture);
     }
-    else if(has_depth_attachment_)
+    else if(has_depth())
     {
     	auto texture = Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH_COMPONENT24});
     	uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
@@ -65,7 +65,7 @@ Framebuffer(width, height, layout, depth, stencil)
 
     // No depth texture -> Attach a render buffer to frame buffer as a z-buffer
     // or else, framebuffer is not complete
-    if(!has_depth_attachment_)
+    if(!has_depth())
     {
         glCreateRenderbuffers(1, &render_buffer_handle_);
         glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);

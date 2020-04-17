@@ -10,7 +10,7 @@ namespace erwin
 class OGLFramebuffer: public Framebuffer
 {
 public:
-	OGLFramebuffer(uint32_t width, uint32_t height, const FramebufferLayout& layout, bool depth, bool stencil);
+	OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout);
 	~OGLFramebuffer();
 
 	virtual void bind() override;

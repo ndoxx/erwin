@@ -480,7 +480,7 @@ void Renderer::init(memory::HeapArea& area)
 	        // R: Metallic, G: AO, B: Roughness, A: ?
 	        {"mar"_h,    ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	    FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT, layout);
 	}
 	{
 	    FramebufferLayout layout
@@ -490,17 +490,8 @@ void Renderer::init(memory::HeapArea& area)
 	        // RGB: Glow color, A: Glow intensity
 	        {"glow"_h,   ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
 	    };
-	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), layout, true, true);
+	    FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT, layout);
 	}
-	/*{
-		// Debug render target
-	    FramebufferLayout layout =
-	    {
-	        {"target_0"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-	        {"target_1"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-	    };
-	    FramebufferPool::create_framebuffer("DBuffer"_h, make_scope<FbRatioConstraint>(), layout, false);
-	}*/
 
 	s_storage.initialized_ = true;
 
@@ -909,13 +900,14 @@ CubemapHandle Renderer::create_cubemap(const CubemapDescriptor& desc)
 	return handle;
 }
 
-FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, bool depth, bool stencil, const FramebufferLayout& layout)
+FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout)
 {
 	FramebufferHandle handle = FramebufferHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
 	// Create handles for framebuffer textures
 	FramebufferTextureVector texture_vector;
+	bool depth = bool(flags & FBFlag::FB_DEPTH_ATTACHMENT);
 	uint32_t tex_count = depth ? uint32_t(layout.get_count())+1 : uint32_t(layout.get_count()); // Take the depth texture into account
 	for(uint32_t ii=0; ii<tex_count; ++ii)
 	{
@@ -935,8 +927,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 	cw.write(&handle);
 	cw.write(&width);
 	cw.write(&height);
-	cw.write(&depth);
-	cw.write(&stencil);
+	cw.write(&flags);
 	cw.write(&count);
 	cw.write(&auxiliary);
 	cw.submit();
@@ -1142,12 +1133,13 @@ void Renderer::destroy(CubemapHandle handle)
 	cw.submit();
 }
 
-void Renderer::destroy(FramebufferHandle handle)
+void Renderer::destroy(FramebufferHandle handle, bool detach_textures)
 {
 	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
 
 	RenderCommandWriter cw(RenderCommand::DestroyFramebuffer);
 	cw.write(&handle);
+	cw.write(&detach_textures);
 	cw.submit();
 }
 
@@ -1472,20 +1464,18 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	uint32_t width;
 	uint32_t height;
 	uint32_t count;
-	bool depth;
-	bool stencil;
+	uint8_t flags;
 	FramebufferHandle handle;
 	FramebufferLayoutElement* auxiliary;
 	buf.read(&handle);
 	buf.read(&width);
 	buf.read(&height);
-	buf.read(&depth);
-	buf.read(&stencil);
+	buf.read(&flags);
 	buf.read(&count);
 	buf.read(&auxiliary);
 
 	FramebufferLayout layout(auxiliary, count);
-	s_storage.framebuffers[handle.index] = Framebuffer::create(width, height, layout, depth, stencil);
+	s_storage.framebuffers[handle.index] = Framebuffer::create(width, height, flags, layout);
 
 	// Register framebuffer textures as regular textures accessible by handles
 	auto& fb = s_storage.framebuffers[handle.index];
@@ -1589,14 +1579,14 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	buf.read(&width);
 	buf.read(&height);
 
-	bool has_depth   = s_storage.framebuffers[fb_handle.index]->has_depth();
-	bool has_stencil = s_storage.framebuffers[fb_handle.index]->has_stencil();
-	bool has_cubemap = s_storage.framebuffers[fb_handle.index]->has_cubemap();
-	auto layout      = s_storage.framebuffers[fb_handle.index]->get_layout();
+	uint8_t flags = s_storage.framebuffers[fb_handle.index]->get_flags();
+	auto layout   = s_storage.framebuffers[fb_handle.index]->get_layout();
+
+	bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
 
 	if(!has_cubemap)
 	{
-		s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, layout, has_depth, has_stencil);
+		s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, flags, layout);
 
 		// Update framebuffer textures
 		auto& fb = s_storage.framebuffers[fb_handle.index];
@@ -1739,17 +1729,24 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
     W_PROFILE_RENDER_FUNCTION()
 
 	FramebufferHandle handle;
+	bool detach_textures;
 	buf.read(&handle);
+	buf.read(&detach_textures);
+
 	s_storage.framebuffers[handle.index] = nullptr;
 
-	// Delete framebuffer textures
-	auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
-	for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+	// Delete framebuffer textures if they are not detached
+	if(!detach_textures)
 	{
-		uint16_t tex_index = texture_vector.handles[ii].index;
-		s_storage.textures[tex_index] = nullptr;
-		texture_vector.handles[ii].release();
+		auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
+		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
+		{
+			uint16_t tex_index = texture_vector.handles[ii].index;
+			s_storage.textures[tex_index] = nullptr;
+			texture_vector.handles[ii].release();
+		}
 	}
+
 	s_storage.framebuffer_textures_.erase(handle.index);
 	handle.release();
 }

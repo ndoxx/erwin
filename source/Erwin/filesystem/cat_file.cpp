@@ -54,13 +54,6 @@ static inline void delete_blob(void* ptr)
         delete[] static_cast<uint8_t*>(ptr);
 }
 
-// Only well defined for PODs
-template <typename T>
-static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
-
-template <typename T>
-static inline const char* opaque_cast(const T* in) { return static_cast<const char*>(static_cast<void*>(in)); }
-
 void read_cat(CATDescriptor& desc)
 {
     std::ifstream ifs(desc.filepath, std::ios::binary);
@@ -99,7 +92,7 @@ void read_cat(CATDescriptor& desc)
     }
 
     desc.remapping_blob = static_cast<void*>(new_blob(desc.remapping_blob_size));
-    ifs.read(opaque_cast(desc.remapping_blob), desc.remapping_blob_size);
+    ifs.read(static_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
 
     ifs.close();
 }
@@ -144,10 +137,10 @@ void write_cat(const CATDescriptor& desc)
         header.blob_inflate_size = desc.texture_blob_size;
 
         ofs.write(opaque_cast(&header), sizeof(CATHeader));
-        ofs.write(opaque_cast(desc.texture_blob), desc.texture_blob_size);
+        ofs.write(static_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
     }
 
-    ofs.write(opaque_cast(desc.remapping_blob), desc.remapping_blob_size);
+    ofs.write(static_cast<const char*>(desc.remapping_blob), desc.remapping_blob_size);
     ofs.close();
 }
 

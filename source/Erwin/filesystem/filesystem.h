@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <type_traits>
 #include "core/core.h"
 #include "memory/memory.hpp"
 #include "memory/linear_allocator.h"
@@ -70,4 +71,13 @@ ResourceArena& get_arena();
 bool is_arena_initialized();
 
 } // namespace filesystem
+
+// Helpers for stream read/write pointer cast
+// Only well defined for PODs
+template <typename T, typename = std::enable_if_t<std::is_pod_v<T>>>
+static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
+
+template <typename T, typename = std::enable_if_t<std::is_pod_v<T>>>
+static inline const char* opaque_cast(const T* in) { return static_cast<const char*>(static_cast<void*>(in)); }
+
 } // namespace erwin

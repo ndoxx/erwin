@@ -14,10 +14,6 @@ namespace spv
 
 #define SPV_MAGIC 0x07230203
 
-// Only well defined for PODs
-template <typename T>
-static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
-
 
 std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path)
 {

@@ -105,16 +105,16 @@ void PostProcessingRenderer::init()
 			hash_t h_fb_name     = H_(fb_name.c_str());
 			float ratio = s_storage.bloom_stage_ratios[ii] = 1.f/(2.f+float(ii));//1.f/(pow(2.f,ii+1.f));
 #if BLOOM_FBO_NP2
-			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), layout, false);
+			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioNP2Constraint>(ratio, ratio), FB_NONE, layout);
 #else
-			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), layout, false);
+			s_storage.bloom_fbos[ii] = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(ratio, ratio), FB_NONE, layout);
 #endif
 		}
 
 		// Bloom output framebuffer
 		std::string fb_name = "BloomCombine";
 		hash_t h_fb_name    = H_(fb_name.c_str());
-		s_storage.bloom_combine_fbo = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(0.5f,0.5f), layout, false);
+		s_storage.bloom_combine_fbo = FramebufferPool::create_framebuffer(h_fb_name, make_scope<FbRatioConstraint>(0.5f,0.5f), FB_NONE, layout);
 	}
 
 	// Initialize Gaussian kernel for bloom blur passes

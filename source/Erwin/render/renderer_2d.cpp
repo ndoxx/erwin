@@ -101,7 +101,7 @@ void Renderer2D::init()
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
+    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT, layout);
 
 	s_storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 

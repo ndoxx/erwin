@@ -72,7 +72,7 @@ Widget("Framebuffers", true)
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+    FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
     // s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
     s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");

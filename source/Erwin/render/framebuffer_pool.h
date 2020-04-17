@@ -100,7 +100,7 @@ public:
 	static glm::vec2 get_screen_texel_size();
 	// Create a framebuffer inside the pool, specifying a name, size constraints relative to the viewport,
 	// a layout for color buffers, and optional depth / depth-stencil textures
-	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil=false);
+	static FramebufferHandle create_framebuffer(hash_t name, WScope<FbConstraint> constraint, uint8_t flags, const FramebufferLayout& layout);
 
 private:
 	friend class Application;

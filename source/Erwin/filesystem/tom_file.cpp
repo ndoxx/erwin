@@ -61,13 +61,6 @@ void TOMDescriptor::release()
 		tmap.release();
 }
 
-// Only well defined for PODs
-template <typename T>
-static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
-
-template <typename T>
-static inline const char* opaque_cast(const T* in) { return static_cast<const char*>(static_cast<void*>(in)); }
-
 
 void read_tom(TOMDescriptor& desc)
 {
