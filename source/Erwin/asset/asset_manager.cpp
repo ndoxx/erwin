@@ -134,7 +134,9 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath, uint32_t width, uint32_t height)
 {
 	(void)filepath;
-	// TMP
+
+
+	// Create an ad-hoc framebuffer to render to a cubemap
 	FramebufferLayout layout
 	{
 	    {"cubemap"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
@@ -142,6 +144,8 @@ CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath, uint32_t 
 	FramebufferHandle fb = Renderer::create_framebuffer(width, height, FB_CUBEMAP_ATTACHMENT, layout);
 	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
 
+	// Draw call
+	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
 	RenderState state;
 	state.render_target = fb;
 	state.rasterizer_state.cull_mode = CullMode::None;
@@ -158,6 +162,8 @@ CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath, uint32_t 
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader_, quad);
 
 	Renderer::submit(key.encode(), dc);
+
+	// Cleanup
 	Renderer::destroy(fb, true);
 
 	return cubemap;
