@@ -46,7 +46,7 @@ public:
 	inline std::pair<void*,void*> require_block(size_t size, const char* debug_name=nullptr)
 	{
 		// Page align returned block to avoid false sharing if multiple threads access this area
-        size_t padding = utils::alignment_padding(reinterpret_cast<std::size_t>(head_), 64);
+        size_t padding = utils::alignment_padding(head_, 64);
 		W_ASSERT(head_ + size + padding < end(), "[HeapArea] Out of memory!");
 
     	// Mark padding area
@@ -69,7 +69,7 @@ public:
 		head_ += size + padding;
 
 #ifdef W_DEBUG
-		items_.push_back({debug_name ? debug_name : "block", reinterpret_cast<std::size_t>(range.first), reinterpret_cast<std::size_t>(range.second), size + padding});
+		items_.push_back({debug_name ? debug_name : "block", range.first, range.second, size + padding});
 #endif
 		return range;
 	}

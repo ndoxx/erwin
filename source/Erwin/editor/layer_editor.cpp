@@ -83,7 +83,7 @@ void EditorLayer::on_attach()
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), layout, false);
+    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
 	// Build UI
 	ConsoleWidget* console = new editor::ConsoleWidget();

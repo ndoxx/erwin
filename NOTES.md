@@ -2268,3 +2268,57 @@ Placement new est supposé retourner le pointeur tel quel, donc je suppose que c
 ###Sources:
     [1] https://stackoverflow.com/questions/41246633/placement-new-crashing
         -when-used-with-virtual-inheritance-hierarchy-in-visual-c
+
+
+
+
+##Procedural test cubemap
+Pour référence...
+
+```cpp
+    // Proceduraly generate a cubemap
+    // cubemap face order: (-x, +x, -y, +y, -z, +z)
+    static std::array<std::array<uint8_t,3*cm_width*cm_height>, 6> faces;
+
+    for(int ff=0; ff<6; ++ff)
+    {
+        for(int yy=0; yy<cm_height; ++yy)
+        {
+            float h = yy/float(cm_height-1);
+            // h = h*h;
+            for(int xx=0; xx<cm_width; ++xx)
+            {
+                uint32_t index = yy*cm_width + xx;
+                if(ff!=2 && ff!=3)
+                {
+                    faces[ff][3*index+0] = uint8_t((1-h)*51 +h*128);
+                    faces[ff][3*index+1] = uint8_t((1-h)*153+h*128);
+                    faces[ff][3*index+2] = uint8_t((1-h)*255+h*128);
+                }
+                else if(ff==2)
+                {
+                    faces[ff][3*index+0] = uint8_t(51);
+                    faces[ff][3*index+1] = uint8_t(153);
+                    faces[ff][3*index+2] = uint8_t(255);
+                }
+                else
+                {
+                    faces[ff][3*index+0] = uint8_t(128);
+                    faces[ff][3*index+1] = uint8_t(128);
+                    faces[ff][3*index+2] = uint8_t(128);
+                }
+            }
+        }
+    }
+
+    CubemapDescriptor desc
+    {
+        cm_width,
+        cm_height,
+        {faces[0].data(),faces[1].data(),faces[2].data(),faces[3].data(),faces[4].data(),faces[5].data()},
+        ImageFormat::RGB8,
+        MIN_LINEAR | MAG_LINEAR,
+        TextureWrap::CLAMP_TO_EDGE,
+        false
+    };
+```

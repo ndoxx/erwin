@@ -15,9 +15,5 @@
     </display>
 	<memory>
     	<size name="area" value="32_MB"/>
-	    <!-- Filesystem asset memory -->
-	    <filesystem>
-	    	<size name="assets" value="24_MB"/>
-	    </filesystem>
     </memory>>
 </Config>

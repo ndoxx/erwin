@@ -33,6 +33,8 @@ void GameLayer::on_attach()
 
 	forward_skybox_render_system_.init();
 
+	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
+
 	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Paved floor",
@@ -71,7 +73,7 @@ void GameLayer::on_attach()
 		EntityID ent = Scene::registry.create();
 
 		ComponentDirectionalLight directional_light;
-		directional_light.set_position(90.f, 160.f);
+		directional_light.set_position(48.327f, 44.424f);
 		directional_light.color         = {0.95f,0.85f,0.5f};
 		directional_light.ambient_color = {0.95f,0.85f,0.5f};
 		directional_light.ambient_strength = 0.1f;
@@ -85,7 +87,7 @@ void GameLayer::on_attach()
 		Scene::registry.assign<ComponentRenderableDirectionalLight>(ent, renderable);
 
 		Scene::directional_light = ent;
-		Scene::add_entity(ent, "Sun", ICON_FA_SUN_O);
+		Scene::add_entity(ent, "Sun", W_ICON(SUN_O));
 	}
 
 	glm::vec3 pos[] = 
@@ -130,7 +132,8 @@ void GameLayer::on_attach()
 		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
 	}
 
-	Scene::camera_controller.set_position({0.f,1.5f,4.5f});
+	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});
+	Scene::camera_controller.set_angles(228.f, 5.f);
 }
 
 void GameLayer::on_detach()

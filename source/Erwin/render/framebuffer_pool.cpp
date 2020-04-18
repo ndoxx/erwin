@@ -7,16 +7,11 @@
 namespace erwin
 {
 
-struct FramebufferProperties
-{
-	bool has_depth;
-};
-
 struct FramebufferPoolStorage
 {
 	std::map<hash_t, FramebufferHandle> framebuffers_;
 	std::map<hash_t, WScope<FbConstraint>> constraints_;
-	std::map<hash_t, FramebufferProperties> properties_;
+	std::map<hash_t, uint8_t> flags_;
 
 	uint32_t current_width_;
 	uint32_t current_height_;
@@ -76,9 +71,9 @@ void FramebufferPool::traverse_framebuffers(std::function<void(FramebufferHandle
 
 bool FramebufferPool::has_depth(hash_t name)
 {
-	auto it = s_storage.properties_.find(name);
-	W_ASSERT(it != s_storage.properties_.end(), "[FramebufferPool] Invalid framebuffer name.");
-	return it->second.has_depth;
+	auto it = s_storage.flags_.find(name);
+	W_ASSERT(it != s_storage.flags_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return bool(it->second & FBFlag::FB_DEPTH_ATTACHMENT);
 }
 
 uint32_t FramebufferPool::get_width(hash_t name)
@@ -129,7 +124,7 @@ glm::vec2 FramebufferPool::get_screen_texel_size()
 	return {1.f/float(s_storage.current_width_), 1.f/float(s_storage.current_height_)};
 }
 
-FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
+FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, uint8_t flags, const FramebufferLayout& layout)
 {
 	// Check that no framebuffer is already registered to this name
 	auto it = s_storage.framebuffers_.find(name);
@@ -142,10 +137,10 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	uint32_t width  = constraint->get_width(s_storage.current_width_);
 	uint32_t height = constraint->get_width(s_storage.current_height_);
 
-	FramebufferHandle handle = Renderer::create_framebuffer(width, height, depth, stencil, layout);
+	FramebufferHandle handle = Renderer::create_framebuffer(width, height, flags, layout);
 	s_storage.framebuffers_.insert(std::make_pair(name, handle));
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
-	s_storage.properties_.insert(std::make_pair(name, FramebufferProperties{depth}));
+	s_storage.flags_.insert(std::make_pair(name, flags));
 
 	return handle;
 }

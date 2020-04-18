@@ -68,11 +68,12 @@ void TextureGroup::load(const fs::path& filepath, TextureLayout* layout)
 
 			ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
 			TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
-										  					 				    	descriptor.height,
-										  					 				    	tmap.data,
-										  					 				    	format,
-										  					 				    	tmap.filter,
-										  					 				    	descriptor.address_UV});
+										  					 				    descriptor.height,
+										  					 				    tmap.data,
+										  					 				    format,
+										  					 				    tmap.filter,
+										  					 				    descriptor.address_UV,
+										  					 					TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
 			textures[texture_count++] = tex;
 		}
 

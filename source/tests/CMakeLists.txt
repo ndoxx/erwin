@@ -109,11 +109,11 @@ set(SRC_NUCLEAR
 add_executable(nuclear ${SRC_NUCLEAR})
 
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
-target_include_directories(nuclear PRIVATE "${INC_EASTL}")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
+target_include_directories(nuclear SYSTEM PRIVATE "${INC_EASTL}")
 
 set_target_properties(nuclear
     PROPERTIES

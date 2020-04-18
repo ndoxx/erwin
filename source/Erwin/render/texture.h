@@ -6,6 +6,7 @@
 #include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/texture_common.h"
+#include "memory/arena.h"
 
 namespace erwin
 {
@@ -39,6 +40,7 @@ public:
 	static WRef<Texture2D> create(const fs::path& filepath);
 	// Create a 2D texture from descriptor
 	static WRef<Texture2D> create(const Texture2DDescriptor& descriptor);
+	// static Texture2D* create(PoolArena& arena, const Texture2DDescriptor& descriptor);
 };
 
 class Cubemap: public Texture

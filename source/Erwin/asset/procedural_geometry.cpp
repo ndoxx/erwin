@@ -148,28 +148,28 @@ static Extent build_shape(const BufferLayout& layout, std::vector<float>& vdata,
 		  	case "a_position"_h:
 		  	{
 		  		has_position = true;
-		  		containers[elements_count] = reinterpret_cast<float*>(tl_storage.position);
+		  		containers[elements_count] = &tl_storage.position[0][0];
 		  		components_count[elements_count] = 3;
 		  		break;
 		  	}
 		  	case "a_normal"_h:
 		  	{
 		  		has_normal = true;
-		  		containers[elements_count] = reinterpret_cast<float*>(tl_storage.normal);
+		  		containers[elements_count] = &tl_storage.normal[0][0];
 		  		components_count[elements_count] = 3;
 		  		break;
 		  	}
 		  	case "a_tangent"_h:
 		  	{
 		  		has_tangent = true;
-		  		containers[elements_count] = reinterpret_cast<float*>(tl_storage.tangent);
+		  		containers[elements_count] = &tl_storage.tangent[0][0];
 		  		components_count[elements_count] = 3;
 		  		break;
 		  	}
 		  	case "a_uv"_h:
 		  	{
 		  		has_uv = true;
-		  		containers[elements_count] = reinterpret_cast<float*>(tl_storage.uv);
+		  		containers[elements_count] = &tl_storage.uv[0][0];
 		  		components_count[elements_count] = 2;
 		  		break;
 		  	}

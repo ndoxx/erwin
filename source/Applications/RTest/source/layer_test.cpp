@@ -10,7 +10,7 @@ using namespace erwin;
 
 static struct
 {
-	CubemapHandle cubemap;
+	FramebufferHandle fb;
 } s_storage;
 
 LayerTest::LayerTest(): Layer("TestLayer")
@@ -25,23 +25,16 @@ void LayerTest::on_imgui_render()
 
 void LayerTest::on_attach()
 {
-	CubemapDescriptor desc
+	FramebufferLayout layout
 	{
-	    512,
-	    512,
-	    {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr},
-	    ImageFormat::RGB16F,
-	    MIN_LINEAR | MAG_LINEAR,
-	    TextureWrap::CLAMP_TO_EDGE,
-	    false
+	    {"cubemap"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
 	};
-
-	s_storage.cubemap = Renderer::create_cubemap(desc);
+	s_storage.fb = FramebufferPool::create_framebuffer("cmfb"_h, make_scope<FbFixedConstraint>(512, 512), FB_CUBEMAP_ATTACHMENT, layout);
 }
 
 void LayerTest::on_detach()
 {
-	Renderer::destroy(s_storage.cubemap);
+
 }
 
 void LayerTest::on_update(GameClock& clock)

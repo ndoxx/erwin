@@ -13,11 +13,13 @@ namespace memory
 namespace utils
 {
 
-static inline std::size_t alignment_padding(std::size_t base_address, std::size_t alignment)
+static inline std::size_t alignment_padding(uint8_t* base_address, std::size_t alignment)
 {
-	std::size_t multiplier = (base_address / alignment) + 1;
+	size_t base_address_sz = reinterpret_cast<std::size_t>(base_address);
+
+	std::size_t multiplier = (base_address_sz / alignment) + 1;
 	std::size_t aligned_address = multiplier * alignment;
-	std::size_t padding = aligned_address - base_address;
+	std::size_t padding = aligned_address - base_address_sz;
 	
 	return padding;
 }
@@ -34,8 +36,8 @@ namespace debug
 struct AreaItem
 {
 	std::string name;
-	std::size_t begin;
-	std::size_t end;
+	void* begin;
+	void* end;
 	std::size_t size;
 };
 

@@ -33,7 +33,7 @@ void Scene::shutdown()
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
-	ComponentEditorDescription desc = {name, (_icon) ? _icon : ICON_FA_CUBE, ""};
+	ComponentEditorDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
 	registry.assign<ComponentEditorDescription>(entity, desc);
 
 	entities.push_back(entity);

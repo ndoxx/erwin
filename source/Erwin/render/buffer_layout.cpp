@@ -104,6 +104,17 @@ bool BufferLayout::operator ==(const BufferLayout& other)
     return ret;
 }
 
+bool BufferLayout::compare(const BufferLayout& other)
+{
+    if(elements_.size() != other.elements_.size())
+        return false;
+
+    bool ret = true;
+    for(size_t ii=0; ii<elements_.size(); ++ii)
+        ret &= elements_[ii] == other.elements_[ii];
+    return ret;
+}
+
 void BufferLayout::compute_offset_and_stride()
 {
 	// Each element offset is determined by previous elements' sizes

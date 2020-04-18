@@ -25,6 +25,7 @@ public:
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureGroupHandle load_texture_group(const fs::path& filepath);
+	static CubemapHandle load_cubemap_hdr(const fs::path& filepath);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 	static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);

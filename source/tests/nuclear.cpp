@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #include <bitset>
 #include <atomic>
 
@@ -40,6 +41,7 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+/*
 class BufBase {};
 class BufDerived1: virtual BufBase {};
 class BufDerived2: virtual BufBase {};
@@ -219,4 +221,23 @@ int main(int argc, char** argv)
 
     return 0;
 #endif
+}
+*/
+
+
+int main(int argc, char** argv)
+{
+    init_logger();
+
+    memory::hex_dump_highlight(0xf0f0f0f0, WCB(200,50,0));
+    memory::hex_dump_highlight(0x0f0f0f0f, WCB(0,50,200));
+    memory::hex_dump_highlight(0xd0d0d0d0, WCB(50,120,0));
+
+    #define ICON_FA_GLASS u8"\uf000"
+
+    std::cout << ICON_FA_GLASS << std::endl;
+
+    printf("Plop: %s", ICON_FA_GLASS);
+
+    return 0;
 }

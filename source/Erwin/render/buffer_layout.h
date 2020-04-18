@@ -56,6 +56,7 @@ public:
     void clear();
 
     bool operator ==(const BufferLayout& other);
+    bool compare(const BufferLayout& other);
 
     // Iterators for use in range-based for loops
     inline std::vector<BufferLayoutElement>::iterator begin()             { return elements_.begin(); }

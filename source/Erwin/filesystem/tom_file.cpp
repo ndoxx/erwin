@@ -47,11 +47,6 @@ struct BlockDescriptor
 
 void TextureMapDescriptor::release()
 {
-    if(filesystem::is_arena_initialized())
-    {
-        W_DELETE_ARRAY(data, filesystem::get_arena());
-    }
-    else
 	   delete[] data;
 }
 
@@ -68,7 +63,7 @@ void read_tom(TOMDescriptor& desc)
 
     // Read header & sanity check
     TOMHeader header;
-    ifs.read(reinterpret_cast<char*>(&header), sizeof(TOMHeader));
+    ifs.read(opaque_cast(&header), sizeof(TOMHeader));
 
     W_ASSERT(header.magic == TOM_MAGIC, "Invalid TOM file: magic number mismatch.");
     W_ASSERT(header.version_major == TOM_VERSION_MAJOR, "Invalid TOM file: version (major) mismatch.");
@@ -76,8 +71,8 @@ void read_tom(TOMDescriptor& desc)
 
     desc.width       = header.texture_width;
     desc.height      = header.texture_height;
-    desc.compression = static_cast<LosslessCompression>(header.blob_compression);
-    desc.address_UV  = static_cast<TextureWrap>(header.address_UV);
+    desc.compression = LosslessCompression(header.blob_compression);
+    desc.address_UV  = TextureWrap(header.address_UV);
 
     uint32_t num_maps          = header.num_maps;
     uint64_t blob_size         = header.blob_size;
@@ -86,7 +81,7 @@ void read_tom(TOMDescriptor& desc)
     // Read block descriptors
 	std::vector<BlockDescriptor> blocks;
     blocks.resize(num_maps);
-    ifs.read(reinterpret_cast<char*>(blocks.data()), num_maps*sizeof(BlockDescriptor));
+    ifs.read(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
 
     for(auto&& block: blocks)
     {
@@ -109,14 +104,14 @@ void read_tom(TOMDescriptor& desc)
 
     // Read data blob
     uint8_t* blob = new uint8_t[blob_size];
-    ifs.read(reinterpret_cast<char*>(blob), long(blob_size));
+    ifs.read(opaque_cast(blob), long(blob_size));
     ifs.close();
 
     // Inflate (decompress) blob if needed
     if(desc.compression == LosslessCompression::Deflate)
     {
         uint8_t* inflated = new uint8_t[blob_inflate_size];
-        erwin::uncompress_data(reinterpret_cast<uint8_t*>(blob), int(blob_size), inflated, int(blob_inflate_size));
+        erwin::uncompress_data(blob, int(blob_size), inflated, int(blob_inflate_size));
 
         // Free compressed blob buffer and reassign
         delete[] blob;
@@ -127,12 +122,7 @@ void read_tom(TOMDescriptor& desc)
 	uint64_t offset = 0;
     for(auto&& tmap: desc.texture_maps)
     {
-        if(filesystem::is_arena_initialized())
-        {
-            tmap.data = W_NEW_ARRAY_DYNAMIC(uint8_t, tmap.size, filesystem::get_arena());
-        }
-        else
-    	   tmap.data = new uint8_t[tmap.size];
+    	tmap.data = new uint8_t[tmap.size];
     	memcpy(tmap.data, blob+offset, tmap.size);
     	offset += tmap.size;
     }
@@ -195,7 +185,7 @@ void write_tom(const TOMDescriptor& desc)
     	// DEFLATE compression
         uint32_t max_size = uint32_t(erwin::get_max_compressed_len(int(blob_size)));
         uint8_t* deflated = new uint8_t[max_size];
-        header.blob_size  = uint32_t(erwin::compress_data(reinterpret_cast<uint8_t*>(blob), int(blob_size), deflated, int(max_size)));
+        header.blob_size  = uint32_t(erwin::compress_data(blob, int(blob_size), deflated, int(max_size)));
         header.blob_inflate_size = blob_size;
 
         // Free uncompressed blob buffer and reassign
@@ -204,11 +194,11 @@ void write_tom(const TOMDescriptor& desc)
     }
 
     // Write header
-    ofs.write(reinterpret_cast<const char*>(&header), sizeof(TOMHeader));
+    ofs.write(opaque_cast(&header), sizeof(TOMHeader));
     // Write block descriptors
-    ofs.write(reinterpret_cast<const char*>(blocks.data()), num_maps*sizeof(BlockDescriptor));
+    ofs.write(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
     // Write blob
-    ofs.write(reinterpret_cast<const char*>(blob), long(header.blob_size));
+    ofs.write(opaque_cast(blob), long(header.blob_size));
 
     ofs.close();
 

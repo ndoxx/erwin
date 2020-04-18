@@ -23,6 +23,7 @@ public:
 	inline const erwin::PerspectiveCamera3D& get_camera() const { return camera_; }
 	inline erwin::PerspectiveCamera3D& get_camera()             { return camera_; }
 	inline void set_position(const glm::vec3& value)            { camera_position_ = value; camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_); }
+	inline void set_angles(float yaw, float pitch)              { camera_yaw_ = yaw; camera_pitch_ = pitch; camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_); }
 
 	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
 	bool on_window_moved_event(const erwin::WindowMovedEvent& event);

@@ -102,8 +102,8 @@ void HexDumpWidget::on_imgui_render()
 
     const memory::debug::AreaItem& item = bd[s_storage.current_block_];
 
-    const uint8_t* begin = static_cast<const uint8_t*>(reinterpret_cast<void*>(item.begin));
-    const uint8_t* end   = static_cast<const uint8_t*>(reinterpret_cast<void*>(item.end));
+    const uint8_t* begin = static_cast<const uint8_t*>(item.begin);
+    const uint8_t* end   = static_cast<const uint8_t*>(item.end);
     uint8_t* current = const_cast<uint8_t*>(begin);
 
     static std::stringstream ss;

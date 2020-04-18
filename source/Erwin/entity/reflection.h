@@ -62,7 +62,7 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& 
 // For each component in an entity, invoke a meta-function by name.
 // The meta-function should exist in the meta-object associated to each component
 // this function call is susceptible to come upon.
-static inline void visit_entity(entt::registry& reg, entt::entity e, uint32_t meta_func)
+[[maybe_unused]] static inline void visit_entity(entt::registry& reg, entt::entity e, uint32_t meta_func)
 {
 	reg.visit(e, [&reg,meta_func,e](uint64_t type_id)
 	{

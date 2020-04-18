@@ -1,9 +1,11 @@
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
 #include "asset/material.h"
+#include "filesystem/hdr_file.h"
 #include "memory/arena.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/common_geometry.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
 #include "EASTL/map.h"
@@ -31,6 +33,11 @@ struct MaterialDescriptor
 	std::string description;
 };
 
+struct EquirectangularConversionData
+{
+	glm::vec2 viewport_size;
+};
+
 static struct
 {
 	eastl::vector<TextureAtlas*> texture_atlases_;
@@ -45,6 +52,9 @@ static struct
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
 	eastl::vector<MaterialDescriptor> material_descriptors_;
+
+	ShaderHandle equirectangular_to_cubemap_shader_;
+	UniformBufferHandle equirectangular_conversion_ubo_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -126,6 +136,90 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 	s_storage.texture_cache_.insert({hname, handle});
 
 	return handle;
+}
+
+CubemapHandle AssetManager::load_cubemap_hdr(const fs::path& filepath)
+{
+	DLOGN("asset") << "[AssetManager] Creating new cubemap from HDR file:" << std::endl;
+	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
+	
+	fs::path fullpath = filesystem::get_asset_dir() / filepath;
+
+	// Sanity check
+	if(!fs::exists(fullpath))
+	{
+		DLOGW("asset") << "[AssetManager] File does not exist. Returning invalid handle." << std::endl;
+		return CubemapHandle();
+	}
+
+	if(filepath.extension().string().compare(".hdr"))
+	{
+		DLOGW("asset") << "[AssetManager] File is not a valid HDR file. Returning invalid handle." << std::endl;
+		return CubemapHandle();
+	}
+
+	// Load HDR file
+	hdr::HDRDescriptor desc { fullpath };
+	hdr::read_hdr(desc);
+
+	DLOGI << "Width:    " << WCC('v') << desc.width << std::endl;
+	DLOGI << "Height:   " << WCC('v') << desc.height << std::endl;
+	DLOGI << "Channels: " << WCC('v') << desc.channels << std::endl;
+
+	// Sanity check
+	uint32_t cm_size = desc.height;
+	if(2*desc.height != desc.width)
+	{
+		DLOGW("asset") << "[AssetManager] HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
+		cm_size = std::min(desc.height, desc.width);
+	}
+
+	// Create texture
+	TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{desc.width,
+								  					 				    desc.height,
+								  					 				    desc.data,
+								  					 				    ImageFormat::RGB32F,
+								  					 				    MIN_LINEAR | MAG_LINEAR,
+								  					 				    TextureWrap::REPEAT,
+								  					 					TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+
+	// Create an ad-hoc framebuffer to render to a cubemap
+	FramebufferLayout layout
+	{
+	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	};
+	FramebufferHandle fb = Renderer::create_framebuffer(cm_size, cm_size, FB_CUBEMAP_ATTACHMENT, layout);
+	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
+
+	// Draw call
+	EquirectangularConversionData data;
+	data.viewport_size = { cm_size, cm_size };
+
+	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
+	RenderState state;
+	state.render_target = fb;
+	state.rasterizer_state.cull_mode = CullMode::None;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
+
+	uint64_t state_flags = state.encode();
+
+	SortKey key;
+	key.set_sequence(0, 0, s_storage.equirectangular_to_cubemap_shader_);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader_, quad);
+	dc.set_texture(tex);
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo_, static_cast<void*>(&data), sizeof(EquirectangularConversionData), DataOwnership::Copy));
+
+	Renderer::submit(key.encode(), dc);
+
+	// Cleanup
+	Renderer::destroy(fb, true);
+	Renderer::destroy(tex);
+
+	return cubemap;
 }
 
 ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
@@ -305,6 +399,10 @@ void AssetManager::init(memory::HeapArea& area)
 	s_storage.materials_.resize(k_max_materials, nullptr);
 	s_storage.material_descriptors_.resize(k_max_materials, {{},false,"",""});
 
+	s_storage.equirectangular_to_cubemap_shader_ = load_system_shader("shaders/equirectangular_to_cubemap.glsl", "ER2C");
+	s_storage.equirectangular_conversion_ubo_ = Renderer::create_uniform_buffer("parameters", nullptr, sizeof(EquirectangularConversionData), UsagePattern::Dynamic);
+	Renderer::shader_attach_uniform_buffer(s_storage.equirectangular_to_cubemap_shader_, s_storage.equirectangular_conversion_ubo_);
+
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);
 	FOR_ALL_HANDLES
@@ -328,6 +426,9 @@ void AssetManager::shutdown()
 	for(Material* mat: s_storage.materials_)
 		if(mat)
 			W_DELETE(mat, s_storage.material_pool_);
+
+	release(s_storage.equirectangular_to_cubemap_shader_);
+	Renderer::destroy(s_storage.equirectangular_conversion_ubo_);
 
 	// Destroy handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(s_storage.handle_arena_);

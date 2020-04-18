@@ -101,7 +101,7 @@ void Renderer2D::init()
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
+    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT, layout);
 
 	s_storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
@@ -115,9 +115,11 @@ void Renderer2D::init()
 
 	s_storage.white_texture_data = 0xffffffff;
 	s_storage.white_texture = Renderer::create_texture_2D(Texture2DDescriptor{1,1,
-								  					 				   			&s_storage.white_texture_data,
-								  					 				   			ImageFormat::RGBA8,
-								  					 				   			MAG_NEAREST | MIN_NEAREST});
+								  					 				   		  &s_storage.white_texture_data,
+								  					 				   		  ImageFormat::RGBA8,
+								  					 				   		  MAG_NEAREST | MIN_NEAREST,
+								  					 				   		  TextureWrap::REPEAT,
+								  					 				   		  TF_NONE});
 	::erwin::create_batch(0, s_storage.white_texture);
 }
 

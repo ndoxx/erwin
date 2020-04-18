@@ -1,6 +1,5 @@
 #include "filesystem/filesystem.h"
 #include "core/core.h"
-#include "memory/heap_area.h"
 #include "render/shader_lang.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
@@ -28,8 +27,6 @@ static fs::path s_root_path;
 static fs::path s_asset_path;
 static fs::path s_client_config_path;
 static fs::path s_sys_asset_path;
-
-static ResourceArena s_arena;
 
 
 // Get path to executable
@@ -238,28 +235,6 @@ void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
     vec.insert(vec.begin(),
                std::istream_iterator<uint8_t>(ifs),
                std::istream_iterator<uint8_t>());
-}
-
-void init_arena(memory::HeapArea& area, std::size_t size)
-{
-    s_arena.init(area, size, "ResourceArena");
-
-    EVENTBUS.subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
-    {
-        s_arena.reset();
-        return false;
-    });
-}
-
-ResourceArena& get_arena()
-{
-    W_ASSERT(s_arena.is_initialized(), "Resource arena is not initialized. Call filesystem::init_arena() first.");
-    return s_arena;
-}
-
-bool is_arena_initialized()
-{
-    return s_arena.is_initialized();
 }
 
 

@@ -24,9 +24,9 @@ static std::map<ImageFormat, FormatDescriptor> FORMAT_DESCRIPTOR =
     {ImageFormat::R8,                              {GL_R8,                                  GL_RED,             					GL_UNSIGNED_BYTE,  				   false}},
     {ImageFormat::RGB8,                            {GL_RGB8,                                GL_RGB,             					GL_UNSIGNED_BYTE,  				   false}},
     {ImageFormat::RGBA8,                           {GL_RGBA8,                               GL_RGBA,            					GL_UNSIGNED_BYTE,  				   false}},
-    {ImageFormat::RG16F,                           {GL_RG16F,                               GL_RG,              					GL_HALF_FLOAT,     				   false}},
-    {ImageFormat::RGB16F,                          {GL_RGB16F,                              GL_RGB,             					GL_HALF_FLOAT,     				   false}},
-    {ImageFormat::RGBA16F,                         {GL_RGBA16F,                             GL_RGBA,            					GL_HALF_FLOAT,     				   false}},
+    {ImageFormat::RG16F,                           {GL_RG16F,                               GL_RG,              					GL_FLOAT,     				   false}},
+    {ImageFormat::RGB16F,                          {GL_RGB16F,                              GL_RGB,             					GL_FLOAT,     				   false}},
+    {ImageFormat::RGBA16F,                         {GL_RGBA16F,                             GL_RGBA,            					GL_FLOAT,     				   false}},
     {ImageFormat::RGB32F,                          {GL_RGB32F,                              GL_RGB,             					GL_FLOAT, 	       				   false}},
     {ImageFormat::RGBA32F,                         {GL_RGBA32F,                             GL_RGBA,            					GL_FLOAT, 	       				   false}},
     {ImageFormat::SRGB8,                           {GL_SRGB8,                               GL_RGB,                                 GL_UNSIGNED_BYTE,                  false}},
@@ -220,7 +220,7 @@ height_(descriptor.height)
 	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap)
+    if(has_mipmap && !descriptor.lazy_mipmap())
         generate_mipmaps(rd_handle_, 0, 3);
     else
     {

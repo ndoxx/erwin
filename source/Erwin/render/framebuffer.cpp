@@ -6,7 +6,7 @@
 namespace erwin
 {
 
-WScope<Framebuffer> Framebuffer::create(uint32_t width, uint32_t height, const FramebufferLayout& layout, bool depth, bool stencil)
+WScope<Framebuffer> Framebuffer::create(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout)
 {
     switch(Gfx::get_api())
     {
@@ -15,7 +15,7 @@ WScope<Framebuffer> Framebuffer::create(uint32_t width, uint32_t height, const F
             return nullptr;
 
         case GfxAPI::OpenGL:
-            return make_scope<OGLFramebuffer>(width, height, layout, depth, stencil);
+            return make_scope<OGLFramebuffer>(width, height, flags, layout);
     }
 }
 

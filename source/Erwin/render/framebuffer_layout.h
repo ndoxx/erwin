@@ -36,4 +36,12 @@ private:
     std::vector<FramebufferLayoutElement> elements_;
 };
 
+enum FBFlag: uint8_t
+{
+    FB_NONE               = 0,
+    FB_DEPTH_ATTACHMENT   = (1<<0),
+    FB_STENCIL_ATTACHMENT = (1<<1),
+    FB_CUBEMAP_ATTACHMENT = (1<<2)
+};
+
 } // namespace erwin
