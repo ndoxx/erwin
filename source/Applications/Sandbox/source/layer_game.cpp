@@ -73,7 +73,7 @@ void GameLayer::on_attach()
 		EntityID ent = Scene::registry.create();
 
 		ComponentDirectionalLight directional_light;
-		directional_light.set_position(90.f, 160.f);
+		directional_light.set_position(48.327f, 44.424f);
 		directional_light.color         = {0.95f,0.85f,0.5f};
 		directional_light.ambient_color = {0.95f,0.85f,0.5f};
 		directional_light.ambient_strength = 0.1f;
@@ -132,7 +132,8 @@ void GameLayer::on_attach()
 		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
 	}
 
-	Scene::camera_controller.set_position({0.f,1.5f,4.5f});
+	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});
+	Scene::camera_controller.set_angles(228.f, 5.f);
 }
 
 void GameLayer::on_detach()

@@ -39,6 +39,11 @@ layout(location = 0) out vec4 out_color;
 
 SAMPLER_2D_(0); // Equirectangular HDR texture
 
+layout(std140, binding = 0) uniform parameters
+{
+	vec2 u_v2_viewport_size;
+};
+
 vec3 to_world_vector(vec2 uv, int face_idx)
 {
 	//                                  +x           -x           +y            -y          +z              -z
@@ -64,12 +69,12 @@ void main()
 	// float intensity = float(gl_Layer+1)/6.f;
 	// out_color = vec4(intensity,0.5f,1.f-intensity,1.f);
 
-	vec2 uv = (gl_FragCoord.xy/512.f)*2.f-1.f;
+	vec2 uv = (gl_FragCoord.xy/u_v2_viewport_size)*2.f-1.f;
 	vec3 pos_w = to_world_vector(uv, gl_Layer);
     vec2 s_uv = sample_spherical_map(pos_w);
-    // vec3 color = texture(SAMPLER_2D_0, s_uv).rgb;
+    vec3 color = texture(SAMPLER_2D_0, s_uv).rgb;
 
-    vec3 color = vec3(s_uv,0.f);
+    // vec3 color = vec3(s_uv,0.f);
     // vec3 color = 0.5f*pos_w+0.5f;
     // vec3 color = pos_w;
 
