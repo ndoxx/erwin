@@ -31,8 +31,15 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 // Fresnel-Schlick approx.
 vec3 FresnelSchlick(float VdotH, vec3 F0)
 {
-    float flipVdotH = 1.0f - VdotH;
-    return ((1.0f - F0) * (flipVdotH*flipVdotH*flipVdotH*flipVdotH*flipVdotH)) + F0;
+    float flipVdotH = 1.f - VdotH;
+    return ((1.f - F0) * (flipVdotH*flipVdotH*flipVdotH*flipVdotH*flipVdotH)) + F0;
+}
+
+// Fresnel-Schlick with a roughness factor for diffuse IBL
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    float flipCosTheta = 1.f - cosTheta;
+    return (max(vec3(1.f - roughness), F0) - F0) * (flipCosTheta*flipCosTheta*flipCosTheta*flipCosTheta*flipCosTheta) + F0;
 }
 
 // Gaussian Spherical approx.

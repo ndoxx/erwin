@@ -3,7 +3,6 @@
 #include "render/handles.h"
 #include "render/render_state.h"
 #include "asset/handles.h"
-#include "asset/material_common.h"
 #include "entity/light.h"
 #include "glm/glm.hpp"
 
@@ -17,9 +16,14 @@ class Renderer3D
 public:
 	// Setup frame data
 	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
-	// static void set_environment_cubemap(CubemapHandle cubemap);
+	// Set an irradiance cubemap for PBR
+	static void set_environment(CubemapHandle irradiance);
+	// Enable/Disable IBL
+	static void enable_IBL(bool value);
+	// Set IBL ambient strength
+	static void set_IBL_ambient_strength(float value);
 	// Register a shader for use with this system
-	static void register_shader(ShaderHandle shader, UniformBufferHandle ubo={}, int shader_flags = 0);
+	static void register_shader(ShaderHandle shader, UniformBufferHandle ubo={});
 	// Same as previous function, but pass the shader and its UBO via an material
 	static void register_shader(MaterialHandle material);
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material

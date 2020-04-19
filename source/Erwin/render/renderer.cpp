@@ -496,6 +496,9 @@ void Renderer::init(memory::HeapArea& area)
 
 	s_storage.initialized_ = true;
 
+	// Renderer configuration
+	Gfx::device->set_seamless_cubemaps_enabled(cfg::get<bool>("erwin.renderer.enable_cubemap_seamless"_h, false));
+
 	DLOGI << "done" << std::endl;
 }
 
@@ -1955,7 +1958,7 @@ void draw(memory::LinearBuffer<>& buf)
 		if(hnd.index != last_cubemap_index[ii])
 		{
 			auto& cubemap = *s_storage.cubemaps[hnd.index];
-			shader.attach_cubemap(cubemap, ii);
+			shader.attach_cubemap(cubemap, ii+texture_count); // Cubemap samplers after 2d samplers (this is awkward)
 			last_cubemap_index[ii] = hnd.index;
 		}
 	}

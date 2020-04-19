@@ -16,7 +16,7 @@ void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight* cmp)
         cmp->set_position(inclination_deg, arg_periapsis_deg);
 
     ImGui::SliderFloat("Brightness", &cmp->brightness, 0.0f, 30.0f);
-    ImGui::SliderFloat("Ambient str.", &cmp->ambient_strength, 0.0f, 0.5f);
+    ImGui::SliderFloat("Ambient str.", &cmp->ambient_strength, 0.0f, 1.f);
     ImGui::ColorEdit3("Color", &cmp->color[0]);
     ImGui::ColorEdit3("Amb. color", &cmp->ambient_color[0]);
 }

@@ -22,12 +22,13 @@ public:
 		// env_map = AssetManager::load_cubemap_hdr("textures/hdr/lakeside_1k.hdr");
 		// env_map = AssetManager::load_cubemap_hdr("textures/hdr/dirt_bike_track_01_1k.hdr");
 		diffuse_irradiance_map = Renderer3D::generate_irradiance_map(env_map);
+		Renderer3D::set_environment(diffuse_irradiance_map);
 	}
 
 	void render()
 	{
-		// Renderer3D::draw_skybox(env_map);
-		Renderer3D::draw_skybox(diffuse_irradiance_map);
+		Renderer3D::draw_skybox(env_map);
+		// Renderer3D::draw_skybox(diffuse_irradiance_map);
 	}
 };
 

@@ -24,6 +24,7 @@ public:
 protected:
 	virtual void on_imgui_render() override;
 	void entity_tab();
+	void environment_tab();
 };
 
 } // namespace editor

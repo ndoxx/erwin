@@ -8,7 +8,7 @@
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/euler_angles.hpp"
 
-#include <map>
+#include <set>
 
 namespace erwin
 {
@@ -17,6 +17,12 @@ struct LineInstanceData
 {
 	glm::mat4 mvp;
 	glm::vec4 color;
+};
+
+enum FrameDataFlags: int
+{
+	FD_NONE               = 0,
+	FD_ENABLE_DIFFUSE_IBL = 1<<0,
 };
 
 struct FrameData
@@ -33,6 +39,7 @@ struct FrameData
 	glm::vec4 light_color;
 	glm::vec4 light_ambient_color;
 	float light_ambient_strength;
+	int flags;
 };
 
 struct TransformData
@@ -48,10 +55,13 @@ struct DiffuseIrradianceData
 	float delta_sample;
 };
 
-/*struct Environment
+struct Environment
 {
-	CubemapHandle cubemap;
-};*/
+	CubemapHandle irradiance;
+
+	bool IBL_enabled = true;
+	float ambient_strength = 0.4f;
+};
 
 static struct
 {
@@ -66,9 +76,9 @@ static struct
 	UniformBufferHandle diffuse_irradiance_ubo;
 
 	FrameData frame_data;
-	// Environment environment;
+	Environment environment;
 
-	std::map<uint32_t, int> registered_shaders;
+	std::set<uint32_t> registered_shaders;
 
 	// State
 	uint64_t pass_state;
@@ -131,23 +141,44 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	s_storage.frame_data.light_position = glm::vec4(dir_light.position, 0.f);
 	s_storage.frame_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
 	s_storage.frame_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
-	s_storage.frame_data.light_ambient_strength = dir_light.ambient_strength;
+
+	// Environment
+	if(s_storage.environment.IBL_enabled)
+	{
+		s_storage.frame_data.flags |= FrameDataFlags::FD_ENABLE_DIFFUSE_IBL;
+		s_storage.frame_data.light_ambient_strength = s_storage.environment.ambient_strength;
+	}
+	else
+	{
+		s_storage.frame_data.flags &= ~FrameDataFlags::FD_ENABLE_DIFFUSE_IBL;
+		s_storage.frame_data.light_ambient_strength = dir_light.ambient_strength;
+	}
 
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-/*void Renderer3D::set_environment_cubemap(CubemapHandle cubemap)
+void Renderer3D::set_environment(CubemapHandle irradiance)
 {
-	s_storage.environment.cubemap = cubemap;
-}*/
+	s_storage.environment.irradiance = irradiance;
+}
+
+void Renderer3D::enable_IBL(bool value)
+{
+	s_storage.environment.IBL_enabled = value;
+}
+
+void Renderer3D::set_IBL_ambient_strength(float value)
+{
+	s_storage.environment.ambient_strength = value;
+}
 
 void Renderer3D::register_shader(MaterialHandle handle)
 {
 	const Material& material = AssetManager::get(handle);
-	register_shader(material.shader, material.ubo, material.shader_flags);
+	register_shader(material.shader, material.ubo);
 }
 
-void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo, int shader_flags)
+void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo)
 {
 	// Check if already registered
 	if(s_storage.registered_shaders.find(shader.index) != s_storage.registered_shaders.end())
@@ -158,7 +189,7 @@ void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo, i
 	if(ubo.index != k_invalid_handle)
 		Renderer::shader_attach_uniform_buffer(shader, ubo);
 
-	s_storage.registered_shaders.insert({shader.index, shader_flags});
+	s_storage.registered_shaders.insert(shader.index);
 }
 
 bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material)
@@ -258,6 +289,10 @@ void Renderer3D::end_deferred_pass()
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
 	for(uint32_t ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
+	// Environment
+	if(s_storage.environment.irradiance.is_valid())
+		dc.set_cubemap(s_storage.environment.irradiance, 0);
+
 	Renderer::submit(key.encode(), dc);
 
 	// Blit GBuffer's depth buffer into LBuffer
@@ -330,15 +365,6 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
 			dc.set_texture(tg.textures[ii], ii);
 	}
-
-	// Environment
-	/*auto it = s_storage.registered_shaders.find(shader.index);
-	if(it!=s_storage.registered_shaders.end())
-	{
-		int flags = it->second;
-		if(flags & ShaderFlags::SAMPLE_ENVIRONMENT)
-			dc.set_cubemap(s_storage.environment.cubemap, 0);
-	}*/
 
 	Renderer::submit(key.encode(), dc);
 }

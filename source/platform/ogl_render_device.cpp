@@ -110,6 +110,14 @@ void OGLRenderDevice::lock_color_buffer()
     glDrawBuffer(0);
 }
 
+void OGLRenderDevice::set_seamless_cubemaps_enabled(bool value)
+{
+    if(value)
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    else
+        glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+}
+
 void OGLRenderDevice::set_depth_lock(bool value)
 {
     glDepthMask(!value);

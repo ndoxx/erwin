@@ -27,6 +27,13 @@ layout (location = 1) out vec4 out_glow;
 
 void main()
 {
-    out_color = texture(SAMPLER_CUBE_0, v_uv3);
+    vec3 env_color = texture(SAMPLER_CUBE_0, v_uv3).rgb;
+
+    // Tonemap and gamma correction
+    // env_color = env_color / (env_color + vec3(1.f));
+    // env_color = pow(env_color, vec3(1.f/2.2f));
+
+    out_color = vec4(env_color, 1.f);
+
     out_glow = vec4(0.f);
 }
