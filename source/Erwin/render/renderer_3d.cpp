@@ -42,10 +42,16 @@ struct TransformData
 	glm::mat4 mvp;
 };
 
-struct Environment
+struct DiffuseIrradianceData
+{
+	glm::vec2 viewport_size;
+	float delta_sample;
+};
+
+/*struct Environment
 {
 	CubemapHandle cubemap;
-};
+};*/
 
 static struct
 {
@@ -54,11 +60,13 @@ static struct
 	ShaderHandle line_shader;
 	ShaderHandle dirlight_shader;
 	ShaderHandle skybox_shader;
+	ShaderHandle diffuse_irradiance_shader;
 	UniformBufferHandle frame_ubo;
 	UniformBufferHandle transform_ubo;
+	UniformBufferHandle diffuse_irradiance_ubo;
 
 	FrameData frame_data;
-	Environment environment;
+	// Environment environment;
 
 	std::map<uint32_t, int> registered_shaders;
 
@@ -72,23 +80,28 @@ void Renderer3D::init()
     W_PROFILE_FUNCTION()
 
     // Init resources
-	s_storage.line_shader     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
-	s_storage.dirlight_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
-	s_storage.skybox_shader   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
-	s_storage.line_ubo        = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
-	s_storage.frame_ubo       = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
-	s_storage.transform_ubo   = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
+	s_storage.line_shader               = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
+	s_storage.dirlight_shader           = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
+	s_storage.skybox_shader             = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
+	s_storage.diffuse_irradiance_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
+	s_storage.line_ubo               = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
+	s_storage.frame_ubo              = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
+	s_storage.transform_ubo          = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
+	s_storage.diffuse_irradiance_ubo = Renderer::create_uniform_buffer("parameters", nullptr, sizeof(DiffuseIrradianceData), UsagePattern::Dynamic);
 
 	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.transform_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.skybox_shader, s_storage.frame_ubo);
+	Renderer::shader_attach_uniform_buffer(s_storage.diffuse_irradiance_shader, s_storage.diffuse_irradiance_ubo);
 }
 
 void Renderer3D::shutdown()
 {
+	Renderer::destroy(s_storage.diffuse_irradiance_ubo);
 	Renderer::destroy(s_storage.transform_ubo);
 	Renderer::destroy(s_storage.frame_ubo);
 	Renderer::destroy(s_storage.line_ubo);
+	Renderer::destroy(s_storage.diffuse_irradiance_shader);
 	Renderer::destroy(s_storage.skybox_shader);
 	Renderer::destroy(s_storage.dirlight_shader);
 	Renderer::destroy(s_storage.line_shader);
@@ -123,10 +136,10 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::set_environment_cubemap(CubemapHandle cubemap)
+/*void Renderer3D::set_environment_cubemap(CubemapHandle cubemap)
 {
 	s_storage.environment.cubemap = cubemap;
-}
+}*/
 
 void Renderer3D::register_shader(MaterialHandle handle)
 {
@@ -153,6 +166,52 @@ bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle m
 	auto shader = AssetManager::get(material).shader;
 	return Renderer::is_compatible(layout, shader);
 }
+
+
+
+CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
+{
+	constexpr uint32_t ecm_size = 32;
+
+	// Create an ad-hoc framebuffer to render to a cubemap
+	FramebufferLayout layout
+	{
+	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	};
+	FramebufferHandle fb = Renderer::create_framebuffer(ecm_size, ecm_size, FB_CUBEMAP_ATTACHMENT, layout);
+	CubemapHandle ecm = Renderer::get_framebuffer_cubemap(fb);
+
+	DiffuseIrradianceData data;
+	data.viewport_size = {ecm_size, ecm_size};
+	data.delta_sample = 0.025f;
+
+	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
+	RenderState state;
+	state.render_target = fb;
+	state.rasterizer_state.cull_mode = CullMode::None;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
+
+	uint64_t state_flags = state.encode();
+
+	SortKey key;
+	key.set_sequence(1, 0, s_storage.diffuse_irradiance_shader);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.diffuse_irradiance_shader, quad);
+	dc.set_cubemap(env_map);
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.diffuse_irradiance_ubo, static_cast<void*>(&data), sizeof(DiffuseIrradianceData), DataOwnership::Copy));
+
+	Renderer::submit(key.encode(), dc);
+
+	// Cleanup
+	Renderer::destroy(fb, true); // Destroy FB but keep cubemap attachment alive
+
+	return ecm;
+}
+
+
 
 void Renderer3D::begin_deferred_pass()
 {

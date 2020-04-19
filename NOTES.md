@@ -79,6 +79,10 @@
 > apitrace trace --api=gl --output=sandbox.trace ../bin/sandbox
 > LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace sandbox.trace
 
+###Renderdoc
+Alternative (en gros) à nsight-gfx pour du frame capture / analysis.
+> qrenderdoc
+
 ###Vérifier qu'une lib contient du code "relocatable"
 > ar -x libXXX.a  
 > readelf --relocs XXX.o | egrep '(GOT|PLT|JU?MP_SLOT)'

@@ -17,13 +17,16 @@ class Renderer3D
 public:
 	// Setup frame data
 	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
-	static void set_environment_cubemap(CubemapHandle cubemap);
+	// static void set_environment_cubemap(CubemapHandle cubemap);
 	// Register a shader for use with this system
 	static void register_shader(ShaderHandle shader, UniformBufferHandle ubo={}, int shader_flags = 0);
 	// Same as previous function, but pass the shader and its UBO via an material
 	static void register_shader(MaterialHandle material);
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
 	static bool is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material);
+
+	// Generate a pre-computed environment convolution map for diffuse IBL
+	static CubemapHandle generate_irradiance_map(CubemapHandle env_map);
 
 	// Start a new deferred rendering pass
 	static void begin_deferred_pass();
