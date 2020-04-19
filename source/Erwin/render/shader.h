@@ -9,7 +9,6 @@
 #include "core/unique_id.h"
 #include "filesystem/filesystem.h"
 #include "render/buffer.h"
-#include "asset/material_common.h"
 
 namespace erwin
 {

@@ -4,6 +4,7 @@
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
 #include "render/renderer_pp.h"
+#include "render/renderer_3d.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -95,6 +96,30 @@ void InspectorWidget::entity_tab()
     }
 }
 
+void InspectorWidget::environment_tab()
+{
+    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+    if(ImGui::TreeNode("IBL"))
+    {
+        static bool enable_diffuse_IBL = true;
+        if(ImGui::Checkbox("Diffuse IBL", &enable_diffuse_IBL))
+        {
+            Renderer3D::enable_IBL(enable_diffuse_IBL);
+        }
+
+        static float ambient_strength = 0.4f;
+        if(enable_diffuse_IBL)
+        {
+            if(ImGui::SliderFloat("Ambient str.", &ambient_strength, 0.f, 1.f))
+            {
+                Renderer3D::set_IBL_ambient_strength(ambient_strength);
+            }
+        }
+
+        ImGui::TreePop();
+    }
+}
+
 void InspectorWidget::on_imgui_render()
 {
 	static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_Reorderable;
@@ -106,6 +131,11 @@ void InspectorWidget::on_imgui_render()
 			entity_tab();
 			ImGui::EndTabItem();
 		}
+        if(ImGui::BeginTabItem("Environment"))
+        {
+            environment_tab();
+            ImGui::EndTabItem();
+        }
 		if(ImGui::BeginTabItem("Post-Processing"))
 		{
 			PostProcessingRenderer::on_imgui_render();

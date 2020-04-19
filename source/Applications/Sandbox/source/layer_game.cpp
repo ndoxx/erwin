@@ -73,7 +73,7 @@ void GameLayer::on_attach()
 		EntityID ent = Scene::registry.create();
 
 		ComponentDirectionalLight directional_light;
-		directional_light.set_position(48.327f, 44.424f);
+		directional_light.set_position(47.626f, 49.027f);
 		directional_light.color         = {0.95f,0.85f,0.5f};
 		directional_light.ambient_color = {0.95f,0.85f,0.5f};
 		directional_light.ambient_strength = 0.1f;

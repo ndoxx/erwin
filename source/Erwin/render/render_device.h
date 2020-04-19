@@ -57,6 +57,9 @@ public:
     // Prevent from drawing in current framebuffer's color attachment(s)
     virtual void lock_color_buffer() = 0;
 
+    // * Global state
+    virtual void set_seamless_cubemaps_enabled(bool value) = 0;
+
     // * Depth-stencil state
     // Lock/Unlock writing to the current framebuffer's depth buffer
     virtual void set_depth_lock(bool value) = 0;

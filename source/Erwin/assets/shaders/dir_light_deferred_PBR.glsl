@@ -40,6 +40,8 @@ SAMPLER_2D_(1); // normal
 SAMPLER_2D_(2); // metallic - ambient occlusion - roughness - emissivity
 SAMPLER_2D_(3); // depth
 
+SAMPLER_CUBE_(4); // irradiance cubemap
+
 layout(location = 0) in vec2 v_uv;          // Texture coordinates
 layout(location = 1) in vec2 v2_frag_ray_v;
 layout(location = 2) in vec3 v3_light_dir_v;
@@ -79,7 +81,24 @@ void main()
                                  frag_albedo,
                                  frag_metallic,
                                  frag_roughness);
-    vec3 ambient = (frag_ao * u_f_light_ambient_strength) * frag_albedo * u_v4_light_ambient_color.rgb;
+
+    vec3 ambient;
+    if(bool(u_i_frame_flags & FRAME_FLAG_ENABLE_DIFFUSE_IBL))
+    {
+        // Ambient IBL
+        vec3 F0 = mix(vec3(0.04f), frag_albedo, frag_metallic);
+        vec3 kS = FresnelSchlickRoughness(max(dot(frag_normal, view_dir), 0.f), F0, frag_roughness);
+        vec3 kD = 1.f - kS;
+        vec3 irradiance = texture(SAMPLER_CUBE_4, frag_normal).rgb;
+        vec3 diffuse    = irradiance * frag_albedo;
+        ambient         = (kD * diffuse) * frag_ao * u_f_light_ambient_strength;
+    }
+    else
+    {
+        // Uniform ambient term
+        ambient = (frag_ao * u_f_light_ambient_strength) * frag_albedo * u_v4_light_ambient_color.rgb;
+    }
+
     vec3 total_light = radiance + ambient;
 
     total_light += frag_emissive * frag_albedo;

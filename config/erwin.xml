@@ -28,6 +28,7 @@
 
     <renderer>
         <uint name="max_2d_batch_count" value="8192"/>
+        <bool name="enable_cubemap_seamless" value="true"/>
     </renderer>
 
 	<memory>

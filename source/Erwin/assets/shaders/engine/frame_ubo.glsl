@@ -1,3 +1,5 @@
+#define FRAME_FLAG_ENABLE_DIFFUSE_IBL 1<<0
+
 layout(std140, binding = 0) uniform frame_data
 {
 	mat4 u_m4_v;     // view
@@ -12,4 +14,5 @@ layout(std140, binding = 0) uniform frame_data
 	vec4 u_v4_light_color;
 	vec4 u_v4_light_ambient_color;
 	float u_f_light_ambient_strength;
+	int u_i_frame_flags;
 };
