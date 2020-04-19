@@ -49,6 +49,11 @@ struct TransformData
 	glm::mat4 mvp;
 };
 
+struct EquirectangularConversionData
+{
+	glm::vec2 viewport_size;
+};
+
 struct DiffuseIrradianceData
 {
 	glm::vec2 viewport_size;
@@ -60,7 +65,7 @@ struct Environment
 	CubemapHandle irradiance;
 
 	bool IBL_enabled = true;
-	float ambient_strength = 0.4f;
+	float ambient_strength = 0.15f;
 };
 
 static struct
@@ -70,9 +75,11 @@ static struct
 	ShaderHandle line_shader;
 	ShaderHandle dirlight_shader;
 	ShaderHandle skybox_shader;
+	ShaderHandle equirectangular_to_cubemap_shader;
 	ShaderHandle diffuse_irradiance_shader;
 	UniformBufferHandle frame_ubo;
 	UniformBufferHandle transform_ubo;
+	UniformBufferHandle equirectangular_conversion_ubo;
 	UniformBufferHandle diffuse_irradiance_ubo;
 
 	FrameData frame_data;
@@ -90,27 +97,32 @@ void Renderer3D::init()
     W_PROFILE_FUNCTION()
 
     // Init resources
-	s_storage.line_shader               = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
-	s_storage.dirlight_shader           = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
-	s_storage.skybox_shader             = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
-	s_storage.diffuse_irradiance_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
-	s_storage.line_ubo               = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
-	s_storage.frame_ubo              = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
-	s_storage.transform_ubo          = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
-	s_storage.diffuse_irradiance_ubo = Renderer::create_uniform_buffer("parameters", nullptr, sizeof(DiffuseIrradianceData), UsagePattern::Dynamic);
+	s_storage.line_shader                       = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
+	s_storage.dirlight_shader                   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
+	s_storage.skybox_shader                     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
+	s_storage.equirectangular_to_cubemap_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/equirectangular_to_cubemap.glsl", "ER2C");
+	s_storage.diffuse_irradiance_shader         = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
+	s_storage.line_ubo                          = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
+	s_storage.frame_ubo                         = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
+	s_storage.transform_ubo                     = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
+	s_storage.equirectangular_conversion_ubo    = Renderer::create_uniform_buffer("parameters", nullptr, sizeof(EquirectangularConversionData), UsagePattern::Dynamic);
+	s_storage.diffuse_irradiance_ubo            = Renderer::create_uniform_buffer("parameters", nullptr, sizeof(DiffuseIrradianceData), UsagePattern::Dynamic);
 
 	Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.transform_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.skybox_shader, s_storage.frame_ubo);
+	Renderer::shader_attach_uniform_buffer(s_storage.equirectangular_to_cubemap_shader, s_storage.equirectangular_conversion_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.diffuse_irradiance_shader, s_storage.diffuse_irradiance_ubo);
 }
 
 void Renderer3D::shutdown()
 {
 	Renderer::destroy(s_storage.diffuse_irradiance_ubo);
+	Renderer::destroy(s_storage.equirectangular_conversion_ubo);
 	Renderer::destroy(s_storage.transform_ubo);
 	Renderer::destroy(s_storage.frame_ubo);
 	Renderer::destroy(s_storage.line_ubo);
+	Renderer::destroy(s_storage.equirectangular_to_cubemap_shader);
 	Renderer::destroy(s_storage.diffuse_irradiance_shader);
 	Renderer::destroy(s_storage.skybox_shader);
 	Renderer::destroy(s_storage.dirlight_shader);
@@ -199,6 +211,49 @@ bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle m
 }
 
 
+
+
+CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size)
+{
+	// Create an ad-hoc framebuffer to render to a cubemap
+	FramebufferLayout layout
+	{
+	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	};
+	FramebufferHandle fb = Renderer::create_framebuffer(size, size, FB_CUBEMAP_ATTACHMENT, layout);
+	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
+
+	// Draw call
+	EquirectangularConversionData data;
+	data.viewport_size = { size, size };
+
+	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
+	RenderState state;
+	state.render_target = fb;
+	state.rasterizer_state.cull_mode = CullMode::None;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
+
+	uint64_t state_flags = state.encode();
+
+	// TODO: Reserve several layer IDs for this kind of operations that
+	// only take place once in a while
+	SortKey key;
+	key.set_sequence(0, 0, s_storage.equirectangular_to_cubemap_shader);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader, quad);
+	dc.set_texture(hdr_tex);
+	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo, static_cast<void*>(&data), sizeof(EquirectangularConversionData), DataOwnership::Copy));
+
+	Renderer::submit(key.encode(), dc);
+
+	// Cleanup
+	Renderer::destroy(fb, true); // Destroy FB but keep cubemap attachment alive
+
+	return cubemap;
+}
 
 CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 {

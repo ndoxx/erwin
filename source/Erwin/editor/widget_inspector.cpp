@@ -107,7 +107,7 @@ void InspectorWidget::environment_tab()
             Renderer3D::enable_IBL(enable_diffuse_IBL);
         }
 
-        static float ambient_strength = 0.4f;
+        static float ambient_strength = 0.15f;
         if(enable_diffuse_IBL)
         {
             if(ImGui::SliderFloat("Ambient str.", &ambient_strength, 0.f, 1.f))

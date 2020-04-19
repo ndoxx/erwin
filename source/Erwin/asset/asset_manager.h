@@ -12,6 +12,13 @@
 namespace erwin
 {
 
+/*
+	TODO: [ ] Remove TextureGroupHandle and MaterialHandle
+			  -> User should be free to manipulate the objects directly
+			  -> However, we need a way for multiple objects to refer to the same material archetype
+			     with possible data overrides
+*/
+
 struct TextureAtlas;
 struct FontAtlas;
 struct TextureGroup;
@@ -25,7 +32,7 @@ public:
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureGroupHandle load_texture_group(const fs::path& filepath);
-	static CubemapHandle load_cubemap_hdr(const fs::path& filepath);
+	static TextureHandle load_hdr(const fs::path& filepath, uint32_t& height);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 	static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);

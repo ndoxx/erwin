@@ -29,7 +29,9 @@ public:
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
 	static bool is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material);
 
-	// Generate a pre-computed environment convolution map for diffuse IBL
+	// Generate a cubemap from a 2:1 equirectangular HDR texture
+	static CubemapHandle generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size);
+	// Generate a pre-computed environment convolution map for diffuse IBL from an environment cubemap
 	static CubemapHandle generate_irradiance_map(CubemapHandle env_map);
 
 	// Start a new deferred rendering pass
@@ -46,7 +48,6 @@ public:
 	static void end_line_pass();
 
 	// Draw a textured mesh
-	// TMP: VertexArrayHandle argument will be replaced by a proper mesh handle
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, ShaderHandle shader, TextureGroupHandle tg={}, UniformBufferHandle ubo={}, void* material_data=nullptr, uint32_t data_size=0);
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material, void* material_data=nullptr);
 	// Render a cubemap as a skybox (whole pass)

@@ -18,9 +18,12 @@ private:
 public:
 	void init()
 	{
-		env_map = AssetManager::load_cubemap_hdr("textures/hdr/autumn_park_2k.hdr");
-		// env_map = AssetManager::load_cubemap_hdr("textures/hdr/lakeside_1k.hdr");
-		// env_map = AssetManager::load_cubemap_hdr("textures/hdr/dirt_bike_track_01_1k.hdr");
+		uint32_t height = 512;
+		TextureHandle hdr_tex = AssetManager::load_hdr("textures/hdr/autumn_park_2k.hdr", height);
+		// TextureHandle hdr_tex = AssetManager::load_hdr("textures/hdr/lakeside_1k.hdr", height);
+		// TextureHandle hdr_tex = AssetManager::load_hdr("textures/hdr/dirt_bike_track_01_1k.hdr", height);
+		env_map = Renderer3D::generate_cubemap_hdr(hdr_tex, height);
+		Renderer::destroy(hdr_tex);
 		diffuse_irradiance_map = Renderer3D::generate_irradiance_map(env_map);
 		Renderer3D::set_environment(diffuse_irradiance_map);
 	}
