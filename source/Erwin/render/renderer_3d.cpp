@@ -28,6 +28,7 @@ enum FrameDataFlags: int
 struct FrameData
 {
 	glm::mat4 view_matrix;
+	glm::mat4 transposed_view_matrix;
 	glm::mat4 view_projection_matrix;
 	glm::mat4 axis_aligned_view_projection_matrix;
 	glm::vec4 eye_position;
@@ -142,6 +143,7 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	aa_view[3][2] = 0.f;
 
 	s_storage.frame_data.view_matrix = camera.get_view_matrix();
+	s_storage.frame_data.transposed_view_matrix = glm::transpose(camera.get_view_matrix());
 	s_storage.frame_data.view_projection_matrix = camera.get_view_projection_matrix();
 	s_storage.frame_data.axis_aligned_view_projection_matrix = camera.get_projection_matrix() * aa_view;
 

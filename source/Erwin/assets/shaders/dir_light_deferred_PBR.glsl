@@ -86,10 +86,12 @@ void main()
     if(bool(u_i_frame_flags & FRAME_FLAG_ENABLE_DIFFUSE_IBL))
     {
         // Ambient IBL
+        // Convert normal from view space to world space
+        vec3 normal_w = (u_m4_Tv * vec4(frag_normal, 0.f)).xyz;
         vec3 F0 = mix(vec3(0.04f), frag_albedo, frag_metallic);
-        vec3 kS = FresnelSchlickRoughness(max(dot(frag_normal, view_dir), 0.f), F0, frag_roughness);
+        vec3 kS = FresnelSchlickRoughness(max(dot(normal_w, view_dir), 0.f), F0, frag_roughness);
         vec3 kD = 1.f - kS;
-        vec3 irradiance = texture(SAMPLER_CUBE_4, frag_normal).rgb;
+        vec3 irradiance = texture(SAMPLER_CUBE_4, normal_w).rgb;
         vec3 diffuse    = irradiance * frag_albedo;
         ambient         = (kD * diffuse) * frag_ao * u_f_light_ambient_strength;
     }

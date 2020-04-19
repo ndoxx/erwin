@@ -3,6 +3,7 @@
 layout(std140, binding = 0) uniform frame_data
 {
 	mat4 u_m4_v;     // view
+	mat4 u_m4_Tv;    // transposed view
 	mat4 u_m4_vp;    // view-projection
 	mat4 u_m4_aavp;  // axis-aligned view-projection
 	vec4 u_v4_eye_w; // camera position, world space
