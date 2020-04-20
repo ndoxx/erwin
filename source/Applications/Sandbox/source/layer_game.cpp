@@ -35,35 +35,35 @@ void GameLayer::on_attach()
 
 	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
-	MaterialHandle mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
+	const Material& mat_paved_floor = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Paved floor",
 		"shaders/deferred_PBR.glsl",
 		"textures/map/pavedFloor.tom"
 	);
 
-	MaterialHandle mat_rock = AssetManager::create_material<ComponentRenderablePBR>
+	const Material& mat_rock = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Rock tiling",
 		"shaders/deferred_PBR.glsl",
 		"textures/map/rockTiling.tom"
 	);
 
-	MaterialHandle mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
+	const Material& mat_dirt = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Dirt",
 		"shaders/deferred_PBR.glsl",
 		"textures/map/dirt.tom"
 	);
 
-	MaterialHandle mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
+	const Material& mat_test_emissive = AssetManager::create_material<ComponentRenderablePBR>
 	(
 		"Magma",
 		"shaders/deferred_PBR.glsl",
 		"textures/map/testEmissive.tom"
 	);
 
-	MaterialHandle mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
+	const Material& mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
 	(
 		"Sun",
 		"shaders/forward_sun.glsl"
@@ -97,12 +97,12 @@ void GameLayer::on_attach()
 		{ 1.f,0.f,-1.f},
 		{ 3.f,0.f,-1.f},
 	};
-	MaterialHandle mats[] =
+	std::array mats =
 	{
-		mat_paved_floor,
-		mat_rock,
-		mat_dirt,
-		mat_test_emissive,
+		std::cref(mat_paved_floor),
+		std::cref(mat_rock),
+		std::cref(mat_dirt),
+		std::cref(mat_test_emissive),
 	};
 	for(int ii=0; ii<4; ++ii)
 	{

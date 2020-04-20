@@ -11,22 +11,20 @@
 #include "EASTL/vector.h"
 #include "EASTL/map.h"
 #include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
+#include "core/intern_string.h"
 
 namespace erwin
 {
 constexpr std::size_t k_handle_alloc_size = 2*(sizeof(HandlePoolT<k_max_atlases>)
-										  +    sizeof(HandlePoolT<k_max_font_atlases>)
-										  +    sizeof(HandlePoolT<k_max_materials>));
+										  +    sizeof(HandlePoolT<k_max_font_atlases>));
 
 #define FOR_ALL_HANDLES                   \
 		DO_ACTION( TextureAtlasHandle )   \
-		DO_ACTION( FontAtlasHandle )      \
-		DO_ACTION( MaterialHandle )
+		DO_ACTION( FontAtlasHandle )
 
 
 struct MaterialDescriptor
 {
-	MaterialHandle material;
 	bool is_public;
 	std::string name;
 	std::string description;
@@ -36,20 +34,18 @@ static struct
 {
 	eastl::vector<TextureAtlas*> texture_atlases_;
 	eastl::vector<FontAtlas*> font_atlases_;
-	eastl::vector<TextureGroup*> texture_groups_;
-	eastl::vector<Material*> materials_;
 
 	eastl::map<hash_t, TextureAtlasHandle> atlas_cache_;
 	eastl::map<hash_t, FontAtlasHandle> font_cache_;
 	eastl::map<hash_t, ShaderHandle> shader_cache_;
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	eastl::vector<MaterialDescriptor> material_descriptors_;
+	eastl::map<hash_t, MaterialDescriptor> material_descriptors_;
+	eastl::map<hash_t, Material> materials_;
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
 	PoolArena font_atlas_pool_;
-	PoolArena material_pool_;
 } s_storage;
 
 
@@ -279,36 +275,52 @@ UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component
 	return handle;
 }
 
-MaterialHandle AssetManager::create_material(const std::string& name,
-									  		 const TextureGroup& tg,
-									  		 ShaderHandle shader,
-									  		 UniformBufferHandle ubo,
-									  		 uint32_t data_size,
-									  		 bool is_public)
+const Material& AssetManager::create_material(const std::string& name,
+									  		  const TextureGroup& tg,
+									  		  ShaderHandle shader,
+									  		  UniformBufferHandle ubo,
+									  		  uint32_t data_size,
+									  		  bool is_public)
 {
-	MaterialHandle handle = MaterialHandle::acquire();
-	s_storage.materials_[handle.index] = W_NEW(Material, s_storage.material_pool_) {tg, shader, ubo, data_size};
-	s_storage.material_descriptors_[handle.index] = {handle, is_public, name, ""};
-	Renderer3D::register_shader(handle);
-	return handle;
+	hash_t archetype = H_(name.c_str());
+
+	auto it = s_storage.materials_.find(archetype);
+	if(it!=s_storage.materials_.end())
+		return it->second;
+
+	s_storage.materials_.insert({archetype, {archetype, tg, shader, ubo, data_size}});
+	s_storage.material_descriptors_.insert({archetype, {is_public, name, ""}});
+	Renderer3D::register_shader(shader);
+	if(ubo.index != k_invalid_handle)
+		Renderer::shader_attach_uniform_buffer(shader, ubo);
+	return s_storage.materials_.at(archetype);
 }
 
-const std::string& AssetManager::get_name(MaterialHandle handle)
+const Material& AssetManager::get_material(hash_t archetype)
 {
-	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
-	return s_storage.material_descriptors_[handle.index].name;
+	auto it = s_storage.materials_.find(archetype);
+	W_ASSERT_FMT(it!=s_storage.materials_.end(), "Unknown material: %s", istr::resolve(archetype).c_str());
+	return it->second;
+}
+
+const std::string& AssetManager::get_material_name(hash_t arch_name)
+{
+	auto it = s_storage.material_descriptors_.find(arch_name);
+	static const std::string empty_str = "";
+	if(it!=s_storage.material_descriptors_.end())
+		return it->second.name;
+	else
+		return empty_str;
 }
 
 void AssetManager::visit_materials(MaterialVisitor visit)
 {
-	for(size_t ii=0; ii<k_max_materials; ++ii)
+	for(auto&& [archetype, material]: s_storage.materials_)
 	{
-		if(s_storage.materials_[ii] == nullptr)
-			continue;
-		const auto& desc = s_storage.material_descriptors_[ii];
+		const auto& desc = s_storage.material_descriptors_.at(archetype);
 		if(!desc.is_public)
 			continue;
-		if(visit(desc.material, desc.name, desc.description))
+		if(visit(material, desc.name, desc.description))
 			break;
 	}
 }
@@ -360,17 +372,19 @@ void AssetManager::release(TextureGroup tg)
 			Renderer::destroy(tex_handle);
 }
 
-void AssetManager::release(MaterialHandle handle)
+void AssetManager::release(hash_t archetype)
 {
-	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
+	auto it = s_storage.materials_.find(archetype);
+	if(it==s_storage.materials_.end())
+	{
+		DLOGW("asset") << "[AssetManager] Cannot release unknown material: " << istr::resolve(archetype) << std::endl;
+		return;
+	}
+
 	DLOGN("asset") << "[AssetManager] Releasing material:" << std::endl;
-	Material* mat = s_storage.materials_.at(handle.index);
-	W_DELETE(mat, s_storage.material_pool_);
-	s_storage.materials_[handle.index] = nullptr;
-	s_storage.material_descriptors_[handle.index] = {{},false,"",""};
-	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
-	
-	handle.release();
+	DLOGI << WCC('n') << istr::resolve(archetype) << std::endl;
+	s_storage.materials_.erase(it);
+	s_storage.material_descriptors_.erase(archetype);
 }
 
 void AssetManager::release(ShaderHandle handle)
@@ -397,12 +411,9 @@ void AssetManager::init(memory::HeapArea& area)
 	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
 	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "TextureAtlasPool");
 	s_storage.font_atlas_pool_.init(area, sizeof(FontAtlas) + PoolArena::DECORATION_SIZE, k_max_font_atlases, "FontAtlasPool");
-	s_storage.material_pool_.init(area, sizeof(Material) + PoolArena::DECORATION_SIZE, k_max_materials, "MaterialPool");
 
 	s_storage.texture_atlases_.resize(k_max_atlases, nullptr);
 	s_storage.font_atlases_.resize(k_max_font_atlases, nullptr);
-	s_storage.materials_.resize(k_max_materials, nullptr);
-	s_storage.material_descriptors_.resize(k_max_materials, {{},false,"",""});
 
 	// Init handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::init_pool(s_storage.handle_arena_);
@@ -420,10 +431,6 @@ void AssetManager::shutdown()
 		if(atlas)
 			W_DELETE(atlas, s_storage.font_atlas_pool_);
 
-	for(Material* mat: s_storage.materials_)
-		if(mat)
-			W_DELETE(mat, s_storage.material_pool_);
-
 	// Destroy handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(s_storage.handle_arena_);
 	FOR_ALL_HANDLES
@@ -440,12 +447,6 @@ const FontAtlas& AssetManager::get(FontAtlasHandle handle)
 {
 	W_ASSERT_FMT(handle.is_valid(), "FontAtlasHandle of index %hu is invalid.", handle.index);
 	return *s_storage.font_atlases_[handle.index];
-}
-
-const Material& AssetManager::get(MaterialHandle handle)
-{
-	W_ASSERT_FMT(handle.is_valid(), "MaterialHandle of index %hu is invalid.", handle.index);
-	return *s_storage.materials_[handle.index];
 }
 
 

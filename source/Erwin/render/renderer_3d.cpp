@@ -186,13 +186,7 @@ void Renderer3D::set_IBL_ambient_strength(float value)
 	s_storage.environment.ambient_strength = value;
 }
 
-void Renderer3D::register_shader(MaterialHandle handle)
-{
-	const Material& material = AssetManager::get(handle);
-	register_shader(material.shader, material.ubo);
-}
-
-void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo)
+void Renderer3D::register_shader(ShaderHandle shader)
 {
 	// Check if already registered
 	if(s_storage.registered_shaders.find(shader.index) != s_storage.registered_shaders.end())
@@ -200,16 +194,13 @@ void Renderer3D::register_shader(ShaderHandle shader, UniformBufferHandle ubo)
 
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.frame_ubo);
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.transform_ubo);
-	if(ubo.index != k_invalid_handle)
-		Renderer::shader_attach_uniform_buffer(shader, ubo);
 
 	s_storage.registered_shaders.insert(shader.index);
 }
 
-bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material)
+bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, const Material& material)
 {
-	auto shader = AssetManager::get(material).shader;
-	return Renderer::is_compatible(layout, shader);
+	return Renderer::is_compatible(layout, material.shader);
 }
 
 
@@ -422,9 +413,8 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	Renderer::submit(key.encode(), dc);
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material_handle, void* material_data)
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data)
 {
-	const Material& material = AssetManager::get(material_handle);
 	draw_mesh(VAO, model_matrix, material.shader, material.texture_group, material.ubo, material_data, material.data_size);
 }
 

@@ -16,18 +16,18 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
         ImGui::OpenPopup("popup_select_material");
     
     ImGui::SameLine();
-    if(cmp->material.is_valid())
-        ImGui::TextUnformatted(AssetManager::get_name(cmp->material).c_str());
+    if(cmp->is_material_ready())
+        ImGui::TextUnformatted(AssetManager::get_material_name(cmp->material.archetype).c_str());
     else
         ImGui::TextUnformatted("None");
 
     if(ImGui::BeginPopup("popup_select_material"))
     {
-        AssetManager::visit_materials([&cmp](MaterialHandle handle, const std::string& name, const std::string& description)
+        AssetManager::visit_materials([&cmp](const Material& material, const std::string& name, const std::string& description)
         {
             if(ImGui::Selectable(name.c_str()))
             {
-                cmp->set_material(handle);
+                cmp->set_material(material);
                 return true;
             }
             return false;
@@ -46,7 +46,7 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
         CommonGeometry::visit_meshes([&cmp](const MeshStub& mesh)
         {
             // Skip mesh if not compatible with shader, allow any mesh if material is not set
-            if(!cmp->material.is_valid() || Renderer3D::is_compatible(mesh.layout, cmp->material))
+            if(!cmp->is_material_ready() || Renderer3D::is_compatible(mesh.layout, cmp->material))
             {
                 if(ImGui::Selectable(mesh.name))
                 {

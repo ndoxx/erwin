@@ -26,6 +26,7 @@ struct TextureGroup
 // Associates a shader with all uniform and sampler data needed for it to perform
 struct Material
 {
+	hash_t archetype;
 	TextureGroup texture_group;
 	ShaderHandle shader;
 	UniformBufferHandle ubo;

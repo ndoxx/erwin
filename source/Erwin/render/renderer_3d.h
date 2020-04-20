@@ -24,11 +24,9 @@ public:
 	// Set IBL ambient strength
 	static void set_IBL_ambient_strength(float value);
 	// Register a shader for use with this system
-	static void register_shader(ShaderHandle shader, UniformBufferHandle ubo={});
-	// Same as previous function, but pass the shader and its UBO via an material
-	static void register_shader(MaterialHandle material);
+	static void register_shader(ShaderHandle shader);
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
-	static bool is_compatible(VertexBufferLayoutHandle layout, MaterialHandle material);
+	static bool is_compatible(VertexBufferLayoutHandle layout, const Material& material);
 
 	// Generate a cubemap from a 2:1 equirectangular HDR texture
 	static CubemapHandle generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size);
@@ -50,7 +48,7 @@ public:
 
 	// Draw a textured mesh
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, ShaderHandle shader, const TextureGroup& tg={}, UniformBufferHandle ubo={}, void* material_data=nullptr, uint32_t data_size=0);
-	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material, void* material_data=nullptr);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data=nullptr);
 	// Render a cubemap as a skybox (whole pass)
 	static void draw_skybox(CubemapHandle cubemap);
 	// Draw a debug cube
