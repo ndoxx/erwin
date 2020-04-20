@@ -1,7 +1,7 @@
-if(DEFINED TOOLCHAIN_CLANG_7_)
+if(DEFINED TOOLCHAIN_CLANG_LOCAL_)
   return()
 else()
-  set(TOOLCHAIN_CLANG_7_ 1)
+  set(TOOLCHAIN_CLANG_LOCAL_ 1)
 endif()
 
 SET (CMAKE_C_COMPILER             "/usr/local/bin/clang")
@@ -13,7 +13,6 @@ SET (CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 SET (CMAKE_CXX_COMPILER_ID			"Clang")
 SET (CMAKE_CXX_COMPILER             "/usr/local/bin/clang++")
-SET (CMAKE_CXX_FLAGS                "-stdlib=libstdc++")
 SET (CMAKE_CXX_FLAGS_DEBUG          "-g")
 SET (CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
 SET (CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
