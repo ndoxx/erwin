@@ -17,7 +17,7 @@ Widget("Materials", true)
 
 void MaterialsWidget::on_imgui_render()
 {
-	AssetManager::visit_materials([](MaterialHandle, const std::string& name, const std::string& description)
+	AssetManager::visit_materials([](const Material&, const std::string& name, const std::string& description)
 	{
 		ImGui::Text("%s %s", W_ICON(PICTURE_O), name.c_str());
 		if(description.size())

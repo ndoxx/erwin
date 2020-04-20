@@ -56,7 +56,7 @@ set_target_properties(erwin
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-)
+    )
 target_compile_definitions(erwin PRIVATE W_BUILD_LIB=1)
 
 # GLAD
@@ -70,7 +70,7 @@ set_target_properties(glad
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         POSITION_INDEPENDENT_CODE ON
-)
+    )
 target_link_libraries(glad GL)
 
 # GLFW library as a static import
@@ -79,7 +79,7 @@ set_target_properties(glfw
     PROPERTIES
         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglfw3.a"
         INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
-)
+    )
 
 # ImGui: Compile as an object library (with relocatable code)
 add_library(imgui OBJECT)
@@ -93,7 +93,7 @@ target_sources(imgui
 set_target_properties(imgui
     PROPERTIES
         POSITION_INDEPENDENT_CODE ON
-)
+    )
 target_link_libraries(imgui)
 
 # EASTL
@@ -101,7 +101,7 @@ set_target_properties(eastl
     PROPERTIES
         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
         INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
-)
+    )
 
 target_link_libraries(erwin
     PRIVATE
@@ -115,6 +115,6 @@ target_link_libraries(erwin
         glad
         glfw
         imgui
-)
+    )
 
 cotire(erwin)

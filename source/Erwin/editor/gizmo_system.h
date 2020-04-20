@@ -17,7 +17,7 @@ public:
 	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
 
 private:
-    erwin::MaterialHandle gizmo_material_;
+    erwin::Material gizmo_material_;
     int selected_part_;
 
     struct GizmoData

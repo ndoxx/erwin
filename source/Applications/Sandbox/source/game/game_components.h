@@ -15,7 +15,7 @@ struct ComponentRenderablePBR
 	};
 
 	VertexArrayHandle vertex_array;
-	MaterialHandle material;
+	Material material;
 
 	struct MaterialData
 	{
@@ -34,11 +34,10 @@ struct ComponentRenderablePBR
 
 	uint8_t flags = 0;
 
-	inline void set_material(MaterialHandle _material)
+	inline void set_material(const Material& mat)
 	{
-		material = _material;
-		if(material.is_valid())
-			flags |= Flags::MATERIAL_READY;
+		material = mat;
+		flags |= Flags::MATERIAL_READY;
 	}
 
 	inline void set_vertex_array(VertexArrayHandle _vertex_array)
@@ -64,9 +63,11 @@ struct ComponentRenderablePBR
 			material_data.flags &= ~MaterialData::Flags::ENABLE_PARALLAX;
 	}
 
-	inline bool is_emissive() const  { return bool(material_data.flags & MaterialData::Flags::ENABLE_EMISSIVE); }
-	inline bool has_parallax() const { return bool(material_data.flags & MaterialData::Flags::ENABLE_PARALLAX); }
-	inline bool is_ready() const     { return bool(flags & Flags::MATERIAL_READY) && bool(flags & Flags::MESH_READY); }
+	inline bool is_emissive() const       { return bool(material_data.flags & MaterialData::Flags::ENABLE_EMISSIVE); }
+	inline bool has_parallax() const      { return bool(material_data.flags & MaterialData::Flags::ENABLE_PARALLAX); }
+	inline bool is_material_ready() const { return bool(flags & Flags::MATERIAL_READY); }
+	inline bool is_mesh_ready() const     { return bool(flags & Flags::MESH_READY); }
+	inline bool is_ready() const          { return is_material_ready() && is_mesh_ready(); }
 };
 
 template <> [[maybe_unused]] void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR*);
@@ -79,7 +80,7 @@ struct ComponentRenderableDirectionalLight
 		READY = 1<<0,
 	};
 
-	MaterialHandle material;
+	Material material;
 
 	struct MaterialData
 	{
@@ -90,11 +91,10 @@ struct ComponentRenderableDirectionalLight
 
 	uint8_t flags = 0;
 
-	inline void set_material(MaterialHandle _material)
+	inline void set_material(const Material& mat)
 	{
-		material = _material;
-		if(material.is_valid())
-			flags |= Flags::READY;
+		material = mat;
+		flags |= Flags::READY;
 	}
 
 	inline bool is_ready() const { return bool(flags & Flags::READY); }
