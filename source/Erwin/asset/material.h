@@ -3,7 +3,6 @@
 #include <array>
 #include "filesystem/filesystem.h"
 #include "render/handles.h"
-#include "asset/handles.h"
 #include "render/renderer_config.h"
 
 namespace erwin
@@ -27,8 +26,8 @@ struct TextureGroup
 // Associates a shader with all uniform and sampler data needed for it to perform
 struct Material
 {
+	TextureGroup texture_group;
 	ShaderHandle shader;
-	TextureGroupHandle texture_group;
 	UniformBufferHandle ubo;
 	uint32_t data_size = 0;
 };

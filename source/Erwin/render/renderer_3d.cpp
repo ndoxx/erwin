@@ -397,7 +397,7 @@ void Renderer3D::end_line_pass()
 }
 
 void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, 
-						   ShaderHandle shader, TextureGroupHandle texture_group, 
+						   ShaderHandle shader, const TextureGroup& texture_group, 
 						   UniformBufferHandle ubo, void* material_data, uint32_t data_size)
 {
 	// Compute matrices
@@ -416,12 +416,8 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
 	if(ubo.index != k_invalid_handle && material_data)
 		dc.add_dependency(Renderer::update_uniform_buffer(ubo, material_data, data_size, DataOwnership::Copy));
-	if(texture_group.index != k_invalid_handle)
-	{
-		const TextureGroup& tg = AssetManager::get(texture_group);
-		for(uint32_t ii=0; ii<tg.texture_count; ++ii)
-			dc.set_texture(tg.textures[ii], ii);
-	}
+	for(uint32_t ii=0; ii<texture_group.texture_count; ++ii)
+		dc.set_texture(texture_group.textures[ii], ii);
 
 	Renderer::submit(key.encode(), dc);
 }

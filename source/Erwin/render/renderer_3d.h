@@ -3,6 +3,7 @@
 #include "render/handles.h"
 #include "render/render_state.h"
 #include "asset/handles.h"
+#include "asset/material.h"
 #include "entity/light.h"
 #include "glm/glm.hpp"
 
@@ -48,7 +49,7 @@ public:
 	static void end_line_pass();
 
 	// Draw a textured mesh
-	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, ShaderHandle shader, TextureGroupHandle tg={}, UniformBufferHandle ubo={}, void* material_data=nullptr, uint32_t data_size=0);
+	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, ShaderHandle shader, const TextureGroup& tg={}, UniformBufferHandle ubo={}, void* material_data=nullptr, uint32_t data_size=0);
 	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, MaterialHandle material, void* material_data=nullptr);
 	// Render a cubemap as a skybox (whole pass)
 	static void draw_skybox(CubemapHandle cubemap);
