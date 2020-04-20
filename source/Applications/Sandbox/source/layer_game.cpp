@@ -63,6 +63,12 @@ void GameLayer::on_attach()
 		"textures/map/testEmissive.tom"
 	);
 
+	const Material& mat_uniform = AssetManager::create_material<ComponentRenderablePBR>
+	(
+		"Unimat",
+		"shaders/deferred_PBR.glsl"
+	);
+
 	const Material& mat_sun = AssetManager::create_material<ComponentRenderableDirectionalLight>
 	(
 		"Sun",
@@ -116,6 +122,11 @@ void GameLayer::on_attach()
 		ComponentRenderablePBR renderable;
 		renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
 		renderable.set_material(mats[ii]);
+		renderable.enable_albedo_map();
+		renderable.enable_normal_map();
+		renderable.enable_metallic_map();
+		renderable.enable_ao_map();
+		renderable.enable_roughness_map();
 		if(ii==3)
 		{
 			renderable.enable_emissivity();
@@ -131,6 +142,40 @@ void GameLayer::on_attach()
 
 		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
 	}
+
+
+	constexpr int k_row = 8;
+	for(int ii=0; ii<k_row; ++ii)
+	{
+		float metallic = float(ii)/float(k_row-1);
+		for(int jj=0; jj<k_row; ++jj)
+		{
+			float roughness = float(jj)/float(k_row-1);
+			roughness = std::max(roughness, 0.1f);
+
+			EntityID ent = Scene::registry.create();
+
+			ComponentTransform3D transform = {{2.5*ii,5.f+2.5*jj,8.f}, {0.f,0.f,0.f}, 1.5f};
+
+			ComponentOBB OBB(CommonGeometry::get_extent("cube_pbr"_h));
+			OBB.update(transform.get_model_matrix(), transform.uniform_scale);
+
+			ComponentRenderablePBR renderable;
+			renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+			renderable.set_material(mat_uniform);
+			renderable.material_data.uniform_metallic = metallic;
+			renderable.material_data.uniform_roughness = roughness;
+			renderable.material_data.uniform_albedo = {1.f,0.6f,0.2f,1.f};
+
+			Scene::registry.assign<ComponentTransform3D>(ent, transform);
+			Scene::registry.assign<ComponentOBB>(ent, OBB);
+			Scene::registry.assign<ComponentRenderablePBR>(ent, renderable);
+
+			Scene::add_entity(ent, "UniCube #" + std::to_string(ii*k_row+jj));
+		}
+	}
+
+
 
 	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});
 	Scene::camera_controller.set_angles(228.f, 5.f);
