@@ -155,13 +155,13 @@ void GameLayer::on_attach()
 
 			EntityID ent = Scene::registry.create();
 
-			ComponentTransform3D transform = {{2.5*ii,5.f+2.5*jj,8.f}, {0.f,0.f,0.f}, 1.5f};
+			ComponentTransform3D transform = {{2.5*ii,5.f+2.5*jj,8.f}, {0.f,0.f,0.f}, 0.75f};
 
 			ComponentOBB OBB(CommonGeometry::get_extent("cube_pbr"_h));
 			OBB.update(transform.get_model_matrix(), transform.uniform_scale);
 
 			ComponentRenderablePBR renderable;
-			renderable.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+			renderable.set_vertex_array(CommonGeometry::get_vertex_array("icosphere_pbr"_h));
 			renderable.set_material(mat_uniform);
 			renderable.material_data.uniform_metallic = metallic;
 			renderable.material_data.uniform_roughness = roughness;
