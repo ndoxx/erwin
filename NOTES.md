@@ -2326,3 +2326,137 @@ Pour référence...
         false
     };
 ```
+
+
+#[20-04-20]
+##CMake
+J'ai complètement modernisé les CMakeLists.txt.
+    -> Autocomplétion plus rapide dans mon shell
+        -> Je suppose qu'un des plugins zsh que j'utilise faisait bien la gueule lors du parsing de mes anciens CMakeLists.txt de merde
+    -> Compilation plus rapide
+        -> liberwin n'était pas cotired ?!
+    -> Exécution plus rapide
+        -> Mes targets étaient tellement mal gérées que je devais faire tourner du code debug sans m'en rendre compte. J'ai honte.
+Moralité : Être hyper strict avec les fichiers CMake dès le début d'un projet.
+
+Jason Turner (C++ weekly @youtube) avait présenté un excellent starter project C++ avec du code CMake moderne et modulaire ([1] et [2]) dont je me suis largement inspiré pour l'archi du top level CMakeLists.txt.
+Entre autres, il explique que toute la complexité peut être cachée dans des includes, dans un dossier cmake à la racine du projet. En particulier, la génération des warnings peut être réalisée via une "interface library", sorte de lib target sans code dont d'autres targets peuvent hériter, de sorte que CMake va y propager les build requirements de l'interface :
+```cmake
+    set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
+    include(compiler_warnings)
+    add_library(project_warnings INTERFACE)
+    set_project_warnings(project_warnings)
+```
+L'include compiler_warnings.cmake définit une fonction set_project_warnings() qui permet de configurer les options de compilation d'une interface lib (ici nommée project_warnings), via :
+```cmake
+    target_compile_options(${project_name} INTERFACE ${PROJECT_WARNINGS})
+```
+Toute target supposée utiliser ces warnings n'aura qu'à "link" cette interface lib :
+```cmake
+    target_link_libraries(erwin
+        PRIVATE
+            project_warnings
+            # ...
+    )
+```
+Plus de manipulation des CXX flags.
+
+Autre tool intéressant que j'ai découvert grâce à lui : CCache. Ce petit bijou permet de mettre les builds en cache pour une compilation plus rapide (typiquement après un make clean, la recompilation est quasi-immédiate). Turner utilise un autre top level include (chez-moi standard_settings.cmake) qui (entre autres choses) cherche une installation de CCache et l'utilise automatiquement si elle existe :
+```cmake
+    find_program(CCACHE ccache)
+    if(CCACHE)
+        message("using ccache")
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+    else()
+        message("ccache not found cannot use")
+    endif()
+```
+
+Deniz Bahadir a aussi donné deux conférences intéressantes sur l'usage moderne de CMake (More Modern CMake & Oh No! More Modern CMake @Meeting C++ 2019) ([3] et [4]).
+
+J'y ai notamment découvert l'existence des "object libraries", targets un peu spéciales qui n'ont d'autre utilité que de regrouper plusieurs .obj pour les rendre linkables de manière plus modulaire avec une autre target. Comme les .obj ne sont pas linkés (duh!), une object lib n'a pas de dépendance. C'est comme ça que je gère ma dépendence avec les sources ImGui que je dois compiler de mon côté :
+```cmake
+    add_library(imgui OBJECT)
+    target_sources(imgui
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_demo.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_draw.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_widgets.cpp"
+        )
+    set_target_properties(imgui
+        PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+    )
+    target_link_libraries(imgui)
+
+    # ...
+
+    target_link_libraries(erwin
+        PRIVATE
+            # ...
+            imgui
+        )
+```
+De fait ma target erwin reste complètement indépendante du code third party de ImGui.
+
+###Toolz
+Par ailleurs, le projet de Turner vient livré avec des fichiers de config .clang-tidy et .clang-format, deux tools que j'ai appris à utiliser récemment. J'ai intégré clang-tidy à SublimeText via EasyClangComplete (ECC) pour faire du linting de mes sources. Pour référence, comme j'en ai chié à configurer ECC et que c'était une plaie au cul de trouver un tuto, voilà mon erwin.sublime-project où j'en déclare la configuration :
+
+```json
+{
+    "folders":
+    [
+        {
+            "path": "source"
+        }
+    ],
+    "settings":
+    {
+        // NOTE(ndx): finding information on EasyClangComplete configuration was tedious to say the least.
+        // https://pbs.twimg.com/media/EVBj7AQXgAAMk0i?format=jpg&name=small
+        // I used this page as a source:
+        // https://niosus.github.io/EasyClangComplete/settings
+        // Takeaways:
+        // - All ECC settings should be put in the "settings" field of this config file
+        // - All listed flags should be prefixed by "ecc_"
+        // - Use ${project_path} to refer to the project top folder, nothing else
+        // - If ECC complains about a non existing header, force-feed it the path with the help of a -I command as done below
+        //   Hint: match the target_include_directories() directives in the relevant CMakeLists.txt
+        // - If ECC complains about the syntax and does not find certain std symbols, set the ecc_lang_flags field
+        "ecc_common_flags" : [
+            "-I/usr/include",
+            "-I${project_path}/source",
+            "-I${project_path}/source/Erwin",
+            "-I${project_path}/source/vendor",
+            "-I${project_path}/source/vendor/glm",
+            "-I${project_path}/source/vendor/imgui",
+            "-I${project_path}/source/vendor/taskflow",
+            "-I${project_path}/source/vendor/glad/include",
+            "-I${project_path}/source/vendor/ctti/include",
+            "-I${project_path}/source/vendor/freetype/include",
+            "-I${project_path}/source/vendor/entt/src",
+            // this is needed to include the correct headers for clang
+            "-I/usr/lib/clang/$clang_version/include",
+        ],
+        "ecc_lang_flags": {
+            "CPP": ["-std=c++17"],
+        },
+        // For clang-tidy linter to work, we must provide a path to the compile_commands.json
+        // file generated by cmake
+        "SublimeLinter.linters.clangtidy.compile_commands": "${project_path}/build",
+        // ClangFormat plugin settings
+        "ClangFormat": {
+            "format_on_save": false
+        }
+    }
+}
+```
+clang-format permet lui, de définir formellement un style d'écriture en C++, afin de formater automatiquement une source donnée. Je l'ai intégré dans Sublime, et je n'ai qu'à sélectionner un bout de code et hit ctrl+alt+A pour le formater automatiquement avec mon propre style !
+
+
+###Sources:
+    [1] https://www.youtube.com/watch?v=YbgH7yat-Jo
+    [2] https://github.com/lefticus/cpp_starter_project
+    [3] https://www.youtube.com/watch?v=y7ndUhdQuU8
+    [4] https://www.youtube.com/watch?v=y9kSr5enrSk

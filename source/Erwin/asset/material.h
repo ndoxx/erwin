@@ -14,15 +14,12 @@ namespace erwin
 struct TextureLayout
 {
 	std::array<hash_t, k_max_texture_slots> texture_slots;
-	uint32_t texture_count;
+	uint32_t texture_count = 0;
 };
 
 // Set of texture maps used by one or multiple materials
 struct TextureGroup
 {
-	void load(const fs::path& filepath, TextureLayout* layout=nullptr);
-	void release();
-
 	std::array<TextureHandle, k_max_texture_slots> textures;
 	uint32_t texture_count = 0;
 };

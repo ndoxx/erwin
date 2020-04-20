@@ -2,6 +2,7 @@
 #include "asset/texture_atlas.h"
 #include "asset/material.h"
 #include "filesystem/hdr_file.h"
+#include "filesystem/tom_file.h"
 #include "memory/arena.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
@@ -56,6 +57,38 @@ static struct
 } s_storage;
 
 
+static ImageFormat select_image_format(uint8_t channels, TextureCompression compression, bool srgb)
+{
+	if(channels==4)
+	{
+		switch(compression)
+		{
+			case TextureCompression::None: return srgb ? ImageFormat::SRGB_ALPHA : ImageFormat::RGBA8;
+			case TextureCompression::DXT1: return srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT1 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT1;
+			case TextureCompression::DXT5: return srgb ? ImageFormat::COMPRESSED_SRGB_ALPHA_S3TC_DXT5 : ImageFormat::COMPRESSED_RGBA_S3TC_DXT5;
+		}
+	}
+	else if(channels==3)
+	{
+		switch(compression)
+		{
+			case TextureCompression::None: return srgb ? ImageFormat::SRGB8 : ImageFormat::RGB8;
+			case TextureCompression::DXT1: return srgb ? ImageFormat::COMPRESSED_SRGB_S3TC_DXT1 : ImageFormat::COMPRESSED_RGB_S3TC_DXT1;
+			default:
+			{
+				DLOGE("texture") << "Unsupported compression option, defaulting to RGB8." << std::endl;
+				return ImageFormat::RGB8;
+			}
+		}
+	}
+	else
+	{
+		DLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << int(channels) << std::endl;
+		DLOGI << "Defaulting to RGBA8." << std::endl;
+		return ImageFormat::RGBA8;
+	}
+}
+
 // ---------------- PUBLIC API ----------------
 
 // TODO: Cache lookup before creating any resource
@@ -106,9 +139,22 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 
 TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 {
+	fs::path fullpath = filesystem::get_asset_dir() / filepath;
+
+	// Sanity check
 	// If filepath is empty, return default invalid handle
 	if(filepath.empty())
 		return TextureGroupHandle();
+	if(!fs::exists(fullpath))
+	{
+		DLOGE("texture") << "File does not exist." << std::endl;
+		return TextureGroupHandle();
+	}
+	if(filepath.extension().string().compare(".tom"))
+	{
+		DLOGE("texture") << "Invalid input file." << std::endl;
+		return TextureGroupHandle();
+	}
 
 	hash_t hname = H_(filepath.string().c_str());
 	auto it = s_storage.texture_cache_.find(hname);
@@ -121,7 +167,34 @@ TextureGroupHandle AssetManager::load_texture_group(const fs::path& filepath)
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
 	TextureGroup* tg = W_NEW(TextureGroup, s_storage.texture_group_pool_);
-	tg->load(filesystem::get_asset_dir() / filepath, nullptr); // TODO: get a layout and check shader compatibility
+
+	DLOG("texture",1) << "Loading TOM file" << std::endl;
+	tom::TOMDescriptor descriptor;
+	descriptor.filepath = fullpath;
+	tom::read_tom(descriptor);
+
+	// Create and register all texture maps
+	for(auto&& tmap: descriptor.texture_maps)
+	{
+		ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
+		TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
+									  					 				    descriptor.height,
+									  					 				    tmap.data,
+									  					 				    format,
+									  					 				    tmap.filter,
+									  					 				    descriptor.address_UV,
+									  					 					TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+		tg->textures[tg->texture_count++] = tex;
+	}
+
+#ifdef W_DEBUG
+	DLOGI << "Found " << WCC('v') << tg->texture_count << WCC(0) << " texture maps. TextureHandles: { ";
+	for(size_t ii=0; ii<tg->texture_count; ++ii)
+	{
+		DLOG("texture",1) << WCC('v') << tg->textures[ii].index << " ";
+	}
+	DLOG("texture",1) << WCC(0) << "}" << std::endl;
+#endif
 
 	// Register group
 	s_storage.texture_groups_[handle.index] = tg;
@@ -298,7 +371,11 @@ void AssetManager::release(TextureGroupHandle handle)
 	W_ASSERT_FMT(handle.is_valid(), "TextureGroupHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing texture group:" << std::endl;
 	TextureGroup* tg = s_storage.texture_groups_.at(handle.index);
-	tg->release();
+
+	for(auto&& tex_handle: tg->textures)
+		if(tex_handle.is_valid())
+			Renderer::destroy(tex_handle);
+
 	W_DELETE(tg, s_storage.texture_group_pool_);
 	s_storage.texture_groups_[handle.index] = nullptr;
 	DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
