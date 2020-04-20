@@ -5,14 +5,6 @@
 
 #define W_ENTRY_POINT
 #include "erwin.h"
-
-#include "render/buffer.h"
-#include "render/shader.h"
-#include "render/render_device.h"
-#include "render/common_geometry.h"
-#include "platform/ogl_shader.h"
-#include "platform/ogl_texture.h"
-
 #include "glm/glm.hpp"
 
 using namespace erwin;

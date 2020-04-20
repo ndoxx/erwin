@@ -1,60 +1,52 @@
-
-file(GLOB_RECURSE SRC_ERWIN    "${CMAKE_SOURCE_DIR}/source/Erwin/*.cpp")
-file(GLOB_RECURSE SRC_PLATFORM "${CMAKE_SOURCE_DIR}/source/platform/*.cpp")
-
-set(SRC_IMGUI
-    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui.cpp
-    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_demo.cpp
-    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_draw.cpp
-    ${CMAKE_SOURCE_DIR}/source/vendor/imgui/imgui_widgets.cpp
-    )
+file(GLOB_RECURSE SRC_ERWIN    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE SRC_PLATFORM "${CMAKE_CURRENT_SOURCE_DIR}/../platform/*.cpp")
 
 set(INC_EASTL
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/include
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAAssert/include
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EABase/include/Common
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAMain/include
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAStdC/include
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EATest/include
-    ${CMAKE_SOURCE_DIR}/source/vendor/eastl/test/packages/EAThread/include
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAAssert/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EABase/include/Common"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAMain/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAStdC/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EATest/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAThread/include"
     )
 
 # Disable all warnings for third party stuff
-set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
-set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/render/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
-set_source_files_properties("${CMAKE_SOURCE_DIR}/source/Erwin/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
-set_source_files_properties(${SRC_IMGUI} PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/render/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
 
 if(DEFINED W_DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic")
 endif()
 
-add_library(erwin 
-    SHARED
+add_library(erwin SHARED)
+target_sources(erwin
+    PRIVATE
         ${SRC_ERWIN}
         ${SRC_PLATFORM}
-        ${SRC_IMGUI}
     )
 
 target_include_directories(erwin
     PRIVATE
         "${CMAKE_SOURCE_DIR}/source"
-        "${CMAKE_SOURCE_DIR}/source/Erwin"
+        "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 target_include_directories(erwin
     SYSTEM PRIVATE
-        "${CMAKE_SOURCE_DIR}/source/vendor"
-        "${CMAKE_SOURCE_DIR}/source/vendor/glm"
-        "${CMAKE_SOURCE_DIR}/source/vendor/imgui"
-        "${CMAKE_SOURCE_DIR}/source/vendor/taskflow"
-        "${CMAKE_SOURCE_DIR}/source/vendor/glad/include"
-        "${CMAKE_SOURCE_DIR}/source/vendor/glfw/include"
-        "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include"
-        "${CMAKE_SOURCE_DIR}/source/vendor/freetype/include"
-        "${CMAKE_SOURCE_DIR}/source/vendor/entt/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/taskflow"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glad/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glfw/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/freetype/include"
+    SYSTEM PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glm"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
+        "${INC_EASTL}"
     )
-target_include_directories(erwin SYSTEM PUBLIC "${INC_EASTL}")
 
 set_target_properties(erwin
     PROPERTIES
@@ -89,11 +81,26 @@ set_target_properties(glfw
         INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
 )
 
+# ImGui: Compile as an object library (with relocatable code)
+add_library(imgui OBJECT)
+target_sources(imgui
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_demo.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_draw.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui/imgui_widgets.cpp"
+    )
+set_target_properties(imgui
+    PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+)
+target_link_libraries(imgui)
+
+# EASTL
 set_target_properties(eastl
     PROPERTIES
         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
         INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
-        POSITION_INDEPENDENT_CODE ON
 )
 
 target_link_libraries(erwin
@@ -107,6 +114,7 @@ target_link_libraries(erwin
         X11
         glad
         glfw
+        imgui
 )
 
 cotire(erwin)

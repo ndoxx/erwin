@@ -1,18 +1,14 @@
-set(SRC_SANDBOX
-    source/editor_app.cpp
-    source/layer_game.cpp
-    source/game/game_components.cpp
-   )
+file(GLOB_RECURSE SRC_SANDBOX "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 
-add_executable(sandbox ${SRC_SANDBOX})
+add_executable(sandbox)
+target_sources(sandbox
+    PRIVATE
+        ${SRC_SANDBOX}
+    )
 target_include_directories(sandbox
     PRIVATE
         "${CMAKE_SOURCE_DIR}/source/Applications/Sandbox/source"
         "${CMAKE_SOURCE_DIR}/source/Erwin"
-        "${CMAKE_SOURCE_DIR}/source/vendor/glm"
-        "${CMAKE_SOURCE_DIR}/source/vendor/imgui"
-        "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include"
-        "${CMAKE_SOURCE_DIR}/source/vendor/entt/src"
     )
 
 set_target_properties(sandbox
