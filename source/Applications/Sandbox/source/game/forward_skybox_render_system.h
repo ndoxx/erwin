@@ -32,8 +32,9 @@ public:
 
 	void render()
 	{
-		Renderer3D::draw_skybox(env_map);
+		// Renderer3D::draw_skybox(env_map);
 		// Renderer3D::draw_skybox(diffuse_irradiance_map);
+		Renderer3D::draw_skybox(prefiltered_env_map);
 	}
 };
 

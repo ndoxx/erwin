@@ -14,6 +14,7 @@ struct FramebufferLayoutElement
 	ImageFormat image_format = ImageFormat::RGBA8;
 	uint8_t filter = MIN_LINEAR | MAG_NEAREST;
 	TextureWrap wrap = TextureWrap::REPEAT;
+    uint8_t mips = 0;
 };
 
 struct FramebufferLayout

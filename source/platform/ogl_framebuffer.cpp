@@ -87,7 +87,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         CubemapDescriptor desc;
         desc.width = width_;
         desc.height = height_;
-        desc.mips = 0;
+        desc.mips = elt.mips;
         desc.image_format = elt.image_format;
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;

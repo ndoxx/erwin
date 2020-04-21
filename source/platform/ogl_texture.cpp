@@ -205,7 +205,7 @@ mips_(descriptor.mips)
 	DLOGI << "height: " << height_ << std::endl;
 
 	const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
-	glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+	glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
 	DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 
 	if(descriptor.data)
@@ -217,10 +217,14 @@ mips_(descriptor.mips)
 	}
 
 	bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-	DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
     if(has_mipmap)
     {
-        DLOGI << "mipmap levels: " << mips_ << std::endl;
+        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+        DLOGI << "levels: " << mips_ << std::endl;
+    }
+    else
+    {
+        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
     }
 	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
@@ -289,7 +293,8 @@ mips_(descriptor.mips)
     DLOGI << "height: " << height_ << std::endl;
 
     const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
-    glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+    glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
+    DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 
     bool has_data = true;
     for(size_t face=0; face<6; ++face)
@@ -307,10 +312,14 @@ mips_(descriptor.mips)
     }
 
     bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-    DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
     if(has_mipmap)
     {
-        DLOGI << "mipmap levels: " << mips_ << std::endl;
+        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+        DLOGI << "levels: " << mips_ << std::endl;
+    }
+    else
+    {
+        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
     }
     handle_address_UV_3D(rd_handle_, descriptor.wrap);
 

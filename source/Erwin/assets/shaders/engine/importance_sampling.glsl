@@ -1,4 +1,4 @@
-#define PI 3.141592654f
+#define PI 3.14159265359f
 
 float VanDerCorpus(uint n, uint base)
 {
