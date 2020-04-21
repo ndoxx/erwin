@@ -194,7 +194,8 @@ OGLTexture2D::OGLTexture2D(const fs::path filepath)
 
 OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor):
 width_(descriptor.width),
-height_(descriptor.height)
+height_(descriptor.height),
+mips_(descriptor.mips)
 {
 	DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
 
@@ -217,11 +218,15 @@ height_(descriptor.height)
 
 	bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
 	DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+    if(has_mipmap)
+    {
+        DLOGI << "mipmap levels: " << mips_ << std::endl;
+    }
 	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap())
-        generate_mipmaps(rd_handle_, 0, 3);
+    if(has_mipmap && !descriptor.lazy_mipmap() && mips_>0)
+        generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -245,6 +250,12 @@ uint32_t OGLTexture2D::get_height() const
 	return height_;
 }
 
+uint32_t OGLTexture2D::get_mips() const
+{
+    return mips_;
+}
+
+
 void OGLTexture2D::bind(uint32_t slot) const
 {
 	glBindTextureUnit(slot, rd_handle_);
@@ -267,7 +278,8 @@ void* OGLTexture2D::get_native_handle()
 
 OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor):
 width_(descriptor.width),
-height_(descriptor.height)
+height_(descriptor.height),
+mips_(descriptor.mips)
 {
     DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
 
@@ -296,11 +308,15 @@ height_(descriptor.height)
 
     bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
     DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+    if(has_mipmap)
+    {
+        DLOGI << "mipmap levels: " << mips_ << std::endl;
+    }
     handle_address_UV_3D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap)
-        generate_mipmaps(rd_handle_, 0, 3);
+    if(has_mipmap && !descriptor.lazy_mipmap && mips_>0)
+        generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -322,6 +338,11 @@ uint32_t OGLCubemap::get_width() const
 uint32_t OGLCubemap::get_height() const
 {
     return height_;
+}
+
+uint32_t OGLCubemap::get_mips() const
+{
+    return mips_;
 }
 
 void OGLCubemap::bind(uint32_t slot) const

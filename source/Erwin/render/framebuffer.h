@@ -24,7 +24,7 @@ public:
 	}
 
 	virtual ~Framebuffer() = default;
-	virtual void bind() = 0;
+	virtual void bind(uint32_t mip_level=0) = 0;
 	virtual void unbind() = 0;
 	virtual WRef<Texture> get_shared_texture(uint32_t index=0) = 0;
 	virtual uint32_t get_texture_count() = 0;

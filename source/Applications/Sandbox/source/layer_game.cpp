@@ -144,7 +144,7 @@ void GameLayer::on_attach()
 	}
 
 
-	constexpr int k_row = 8;
+	constexpr int k_row = 5;
 	for(int ii=0; ii<k_row; ++ii)
 	{
 		float metallic = float(ii)/float(k_row-1);
@@ -157,7 +157,7 @@ void GameLayer::on_attach()
 
 			ComponentTransform3D transform = {{2.5*ii,5.f+2.5*jj,8.f}, {0.f,0.f,0.f}, 0.75f};
 
-			ComponentOBB OBB(CommonGeometry::get_extent("cube_pbr"_h));
+			ComponentOBB OBB(CommonGeometry::get_extent("icosphere_pbr"_h));
 			OBB.update(transform.get_model_matrix(), transform.uniform_scale);
 
 			ComponentRenderablePBR renderable;

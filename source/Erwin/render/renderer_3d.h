@@ -32,6 +32,10 @@ public:
 	static CubemapHandle generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size);
 	// Generate a pre-computed environment convolution map for diffuse IBL from an environment cubemap
 	static CubemapHandle generate_irradiance_map(CubemapHandle env_map);
+	// Generate a pre-filtered environment map for specular IBL from an environment cubemap
+	static CubemapHandle generate_prefiltered_map(CubemapHandle env_map);
+	// Generate a BRDF integration lookup texture
+	static TextureHandle generate_BRDF_integration();
 
 	// Start a new deferred rendering pass
 	static void begin_deferred_pass();

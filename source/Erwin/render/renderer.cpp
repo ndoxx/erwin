@@ -1855,7 +1855,7 @@ static void handle_state(uint64_t state_flags)
 				Gfx::device->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
 			}
 			else
-				s_storage.framebuffers[state.render_target.index]->bind();
+				s_storage.framebuffers[state.render_target.index]->bind(state.target_mip_level);
 
 			s_storage.current_framebuffer_ = state.render_target;
 

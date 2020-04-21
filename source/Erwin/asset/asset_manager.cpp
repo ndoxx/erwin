@@ -164,6 +164,7 @@ TextureGroup AssetManager::load_texture_group(const fs::path& filepath)
 		ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
 		TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
 									  					 				    descriptor.height,
+									  					 				    0,
 									  					 				    tmap.data,
 									  					 				    format,
 									  					 				    tmap.filter,
@@ -223,6 +224,7 @@ TextureHandle AssetManager::load_hdr(const fs::path& filepath, uint32_t& height)
 	// Create texture
 	return Renderer::create_texture_2D(Texture2DDescriptor{desc.width,
 								  					 	   desc.height,
+								  					 	   0,
 								  					 	   desc.data,
 								  					 	   ImageFormat::RGB32F,
 								  					 	   MIN_LINEAR | MAG_LINEAR,

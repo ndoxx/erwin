@@ -211,7 +211,7 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
 	// Create an ad-hoc framebuffer to render to a cubemap
 	FramebufferLayout layout
 	{
-	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	    {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
 	};
 	FramebufferHandle fb = Renderer::create_framebuffer(size, size, FB_CUBEMAP_ATTACHMENT, layout);
 	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
@@ -255,7 +255,7 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 	// Create an ad-hoc framebuffer to render to a cubemap
 	FramebufferLayout layout
 	{
-	    {"cubemap"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	    {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
 	};
 	FramebufferHandle fb = Renderer::create_framebuffer(ecm_size, ecm_size, FB_CUBEMAP_ATTACHMENT, layout);
 	CubemapHandle ecm = Renderer::get_framebuffer_cubemap(fb);
@@ -290,6 +290,50 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 	return ecm;
 }
 
+CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map)
+{
+	constexpr uint32_t pfm_size = 128;
+
+	// Create an ad-hoc framebuffer to render to a cubemap
+	FramebufferLayout layout
+	{
+	    {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR_MIPMAP_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	};
+	FramebufferHandle fb = Renderer::create_framebuffer(pfm_size, pfm_size, FB_CUBEMAP_ATTACHMENT, layout);
+	CubemapHandle pfm = Renderer::get_framebuffer_cubemap(fb);
+
+
+	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
+	/*RenderState state;
+	state.render_target = fb;
+	state.target_mip_level = 1;
+	state.rasterizer_state.cull_mode = CullMode::None;
+	state.blend_state = BlendState::Opaque;
+	state.depth_stencil_state.depth_test_enabled = false;
+	state.depth_stencil_state.depth_lock = true;
+
+	uint64_t state_flags = state.encode();
+
+	SortKey key;
+	key.set_sequence(2, 0, s_storage.diffuse_irradiance_shader);
+
+	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.diffuse_irradiance_shader, quad);
+	dc.set_cubemap(env_map);
+	// dc.add_dependency(Renderer::update_uniform_buffer(s_storage.diffuse_irradiance_ubo, static_cast<void*>(&data), sizeof(DiffuseIrradianceData), DataOwnership::Copy));
+
+	Renderer::submit(key.encode(), dc);*/
+
+	// Cleanup
+	Renderer::destroy(fb, true); // Destroy FB but keep cubemap attachment alive
+
+	return pfm;
+}
+
+/*TextureHandle Renderer3D::generate_BRDF_integration()
+{
+
+}*/
 
 
 void Renderer3D::begin_deferred_pass()

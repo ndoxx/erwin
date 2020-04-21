@@ -13,7 +13,7 @@ public:
 	OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout);
 	~OGLFramebuffer();
 
-	virtual void bind() override;
+	virtual void bind(uint32_t mip_level=0) override;
 	virtual void unbind() override;
 	virtual WRef<Texture> get_shared_texture(uint32_t index=0) override;
 	virtual uint32_t get_texture_count() override;

@@ -14,6 +14,7 @@ class ForwardSkyboxRenderSystem
 private:
 	CubemapHandle env_map;
 	CubemapHandle diffuse_irradiance_map;
+	CubemapHandle prefiltered_env_map;
 
 public:
 	void init()
@@ -25,6 +26,7 @@ public:
 		env_map = Renderer3D::generate_cubemap_hdr(hdr_tex, height);
 		Renderer::destroy(hdr_tex);
 		diffuse_irradiance_map = Renderer3D::generate_irradiance_map(env_map);
+		prefiltered_env_map = Renderer3D::generate_prefiltered_map(env_map);
 		Renderer3D::set_environment(diffuse_irradiance_map);
 	}
 

@@ -14,6 +14,7 @@ public:
 
 	virtual uint32_t get_width() const override;
 	virtual uint32_t get_height() const override;
+	virtual uint32_t get_mips() const override;
 
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
@@ -24,6 +25,7 @@ public:
 private:
 	uint32_t width_;
 	uint32_t height_;
+	uint32_t mips_;
 	uint32_t rd_handle_;
 };
 
@@ -36,6 +38,7 @@ public:
 
 	virtual uint32_t get_width() const override;
 	virtual uint32_t get_height() const override;
+	virtual uint32_t get_mips() const override;
 
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
@@ -46,6 +49,7 @@ public:
 private:
 	uint32_t width_;
 	uint32_t height_;
+	uint32_t mips_;
 	uint32_t rd_handle_;
 };
 
