@@ -67,7 +67,7 @@ void main()
     vec3 view_dir = normalize(-frag_pos);
 
 	vec3 frag_albedo     = GBuffer_albedo.rgb;
-	vec3 frag_normal     = decompress_normal_spheremap_transform(GBuffer_normal.xy);
+	vec3 frag_normal     = decompress_normal_z_reconstruct(GBuffer_normal.xy);
 	float frag_metallic  = GBuffer_mar.x;
 	float frag_ao        = GBuffer_mar.y;
 	float frag_roughness = GBuffer_mar.z;

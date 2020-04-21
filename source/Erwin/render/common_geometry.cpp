@@ -71,6 +71,8 @@ void CommonGeometry::init()
 	make_geometry("cube_pbr", PBR_VBL, &pg::make_cube);
 	// PBR Icosahedron
 	make_geometry("icosahedron_pbr", PBR_VBL, &pg::make_icosahedron);
+	// PBR icosphere
+	make_geometry("icosphere_pbr", PBR_VBL, &pg::make_icosphere);
 
 	// Renderer::flush();
 }
