@@ -331,6 +331,7 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map)
 	{
 		data.roughness = float(mip_level) / float(max_mips - 1);
 		state.target_mip_level = mip_level;
+
 		uint64_t state_flags = state.encode();
 
 		SortKey key;

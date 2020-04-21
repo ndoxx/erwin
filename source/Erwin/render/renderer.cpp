@@ -1847,7 +1847,8 @@ static void handle_state(uint64_t state_flags)
 		RenderState state;
 		state.decode(state_flags);
 
-		if(has_mutated(state_flags, s_storage.state_cache_, k_framebuffer_mask))
+		if(has_mutated(state_flags, s_storage.state_cache_, k_framebuffer_mask) ||
+		   has_mutated(state_flags, s_storage.state_cache_, k_target_mips_mask))
 		{
 			if(state.render_target == s_storage.default_framebuffer_)
 			{
