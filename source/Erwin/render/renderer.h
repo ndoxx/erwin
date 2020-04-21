@@ -107,6 +107,7 @@ public:
 	static void 					 clear_framebuffers();
 	static void						 set_host_window_size(uint32_t width, uint32_t height);
 	// POST-BUFFER -> executed after draw commands
+	static void 					 generate_mipmaps(CubemapHandle cubemap);
 	static void 					 framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
 	static void 					 destroy(IndexBufferHandle handle);
 	static void 					 destroy(VertexBufferLayoutHandle handle);

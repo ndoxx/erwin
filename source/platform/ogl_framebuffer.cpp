@@ -91,7 +91,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         desc.image_format = elt.image_format;
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;
-        desc.lazy_mipmap = false;
+        desc.lazy_mipmap = elt.lazy_mipmap;
         auto texture = Cubemap::create(desc);
 
         // Register color attachment

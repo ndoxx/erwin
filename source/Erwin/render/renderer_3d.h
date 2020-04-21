@@ -33,7 +33,7 @@ public:
 	// Generate a pre-computed environment convolution map for diffuse IBL from an environment cubemap
 	static CubemapHandle generate_irradiance_map(CubemapHandle env_map);
 	// Generate a pre-filtered environment map for specular IBL from an environment cubemap
-	static CubemapHandle generate_prefiltered_map(CubemapHandle env_map);
+	static CubemapHandle generate_prefiltered_map(CubemapHandle env_map, uint32_t source_resolution);
 	// Generate a BRDF integration lookup texture
 	static TextureHandle generate_BRDF_integration();
 

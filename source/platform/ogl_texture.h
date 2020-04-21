@@ -16,6 +16,7 @@ public:
 	virtual uint32_t get_height() const override;
 	virtual uint32_t get_mips() const override;
 
+	virtual void generate_mipmaps() const override;
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
 
@@ -40,6 +41,7 @@ public:
 	virtual uint32_t get_height() const override;
 	virtual uint32_t get_mips() const override;
 
+	virtual void generate_mipmaps() const override;
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
 

@@ -45,6 +45,7 @@ layout(std140, binding = 0) uniform parameters
 {
     vec2 u_v2_viewport_size;
     float u_f_roughness;
+    float u_f_source_resolution;
 };
 
 void main()
@@ -68,7 +69,22 @@ void main()
         float NdotL = max(dot(N, L), 0.f);
         if(NdotL > 0.f)
         {
+#if 1
+            // sample from the environment's mip level based on roughness/pdf
+            // avoids bright dots artifacts near bright areas for high roughness mips 
+            float NdotH = max(dot(N, H), 0.f);
+            float HdotV = max(dot(H, V), 0.f);
+            float D   = TrowbridgeReitzGGX(NdotH, u_f_roughness);
+            float pdf = D * NdotH / (4.f * HdotV) + 0.0001f; 
+
+            float saTexel  = 4.f * PI / (6.f * u_f_source_resolution * u_f_source_resolution);
+            float saSample = 1.f / (float(SAMPLE_COUNT) * pdf + 0.0001f);
+
+            float mipLevel = u_f_roughness == 0.f ? 0.f : 0.5f * log2(saSample / saTexel);
+			prefilteredColor += textureLod(SAMPLER_CUBE_0, L, mipLevel).rgb * NdotL;
+#else
             prefilteredColor += texture(SAMPLER_CUBE_0, L).rgb * NdotL;
+#endif
             totalWeight      += NdotL;
         }
     }

@@ -62,3 +62,13 @@ vec3 importance_sample_GGX(vec2 Xi, vec3 N, float roughness)
     vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
     return normalize(sampleVec);
 }
+
+float TrowbridgeReitzGGX(float NdotH, float roughness)
+{
+    float r2    = roughness*roughness;
+    float r4    = r2*r2;
+    float denom = (NdotH * NdotH * (r4 - 1.0f) + 1.0f);
+    denom = PI * (denom * denom);
+
+    return r4 / denom;
+}

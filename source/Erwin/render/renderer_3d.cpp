@@ -65,6 +65,7 @@ struct PrefilterEnvmapData
 {
 	glm::vec2 viewport_size;
 	float roughness;
+	float source_resolution;
 };
 
 struct Environment
@@ -224,7 +225,7 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
 	// Create an ad-hoc framebuffer to render to a cubemap
 	FramebufferLayout layout
 	{
-	    {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE}
+	    {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR_MIPMAP_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE, 5, true}
 	};
 	FramebufferHandle fb = Renderer::create_framebuffer(size, size, FB_CUBEMAP_ATTACHMENT, layout);
 	CubemapHandle cubemap = Renderer::get_framebuffer_cubemap(fb);
@@ -254,6 +255,7 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo, static_cast<void*>(&data), sizeof(EquirectangularConversionData), DataOwnership::Copy));
 
 	Renderer::submit(key.encode(), dc);
+	Renderer::generate_mipmaps(cubemap);
 
 	// Cleanup
 	Renderer::destroy(fb, true); // Destroy FB but keep cubemap attachment alive
@@ -303,7 +305,7 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 	return ecm;
 }
 
-CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map)
+CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32_t source_resolution)
 {
 	constexpr uint32_t pfm_size = 128;
 	constexpr uint8_t max_mips = 5;
@@ -318,6 +320,7 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map)
 
 	PrefilterEnvmapData data;
 	data.viewport_size = {pfm_size, pfm_size};
+	data.source_resolution = float(source_resolution);
 
 	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
 	RenderState state;

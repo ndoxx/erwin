@@ -654,6 +654,7 @@ enum class RenderCommand: uint16_t
 
 	Post,
 
+	GenerateCubemapMipmaps,
 	FramebufferScreenshot,
 
 	DestroyIndexBuffer,
@@ -1063,6 +1064,15 @@ void Renderer::set_host_window_size(uint32_t width, uint32_t height)
 	RenderCommandWriter cw(RenderCommand::SetHostWindowSize);
 	cw.write(&width);
 	cw.write(&height);
+	cw.submit();
+}
+
+void Renderer::generate_mipmaps(CubemapHandle cubemap)
+{
+	W_ASSERT(cubemap.is_valid(), "Invalid CubemapHandle!");
+
+	RenderCommandWriter cw(RenderCommand::GenerateCubemapMipmaps);
+	cw.write(&cubemap);
 	cw.submit();
 }
 
@@ -1653,6 +1663,14 @@ void set_host_window_size(memory::LinearBuffer<>& buf)
 
 void nop(memory::LinearBuffer<>&) { }
 
+void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
+{
+	CubemapHandle handle;
+	buf.read(&handle);
+
+	s_storage.cubemaps[handle.index]->generate_mipmaps();
+}
+
 void framebuffer_screenshot(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
@@ -1820,6 +1838,7 @@ static backend_dispatch_func_t render_backend_dispatch[std::size_t(RenderCommand
 
 	&render_dispatch::nop,
 
+	&render_dispatch::generate_cubemap_mipmaps,
 	&render_dispatch::framebuffer_screenshot,
 	&render_dispatch::destroy_index_buffer,
 	&render_dispatch::destroy_vertex_buffer_layout,

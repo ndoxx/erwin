@@ -125,7 +125,7 @@ static void handle_address_UV_3D(uint32_t rd_handle, TextureWrap wrap)
     glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_R, param);
 }
 
-static void generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_t max_level)
+static void do_generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_t max_level)
 {
     W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
 
@@ -230,7 +230,7 @@ mips_(descriptor.mips)
 
     // Handle mipmap if specified
     if(has_mipmap && !descriptor.lazy_mipmap() && mips_>0)
-        generate_mipmaps(rd_handle_, 0, mips_);
+        do_generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -259,6 +259,10 @@ uint32_t OGLTexture2D::get_mips() const
     return mips_;
 }
 
+void OGLTexture2D::generate_mipmaps() const
+{
+    do_generate_mipmaps(rd_handle_, 0, mips_);
+}
 
 void OGLTexture2D::bind(uint32_t slot) const
 {
@@ -325,7 +329,7 @@ mips_(descriptor.mips)
 
     // Handle mipmap if specified
     if(has_mipmap && !descriptor.lazy_mipmap && mips_>0)
-        generate_mipmaps(rd_handle_, 0, mips_);
+        do_generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -352,6 +356,11 @@ uint32_t OGLCubemap::get_height() const
 uint32_t OGLCubemap::get_mips() const
 {
     return mips_;
+}
+
+void OGLCubemap::generate_mipmaps() const
+{
+    do_generate_mipmaps(rd_handle_, 0, mips_);
 }
 
 void OGLCubemap::bind(uint32_t slot) const

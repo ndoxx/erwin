@@ -15,6 +15,7 @@ struct FramebufferLayoutElement
 	uint8_t filter = MIN_LINEAR | MAG_NEAREST;
 	TextureWrap wrap = TextureWrap::REPEAT;
     uint8_t mips = 0;
+    bool lazy_mipmap = false;
 };
 
 struct FramebufferLayout
