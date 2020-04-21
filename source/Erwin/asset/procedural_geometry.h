@@ -1,11 +1,13 @@
 #pragma once
 
 #include <vector>
-#include "render/buffer_layout.h"
 #include "asset/bounding.h"
 
 namespace erwin
 {
+
+class BufferLayout;
+
 namespace pg
 {
 

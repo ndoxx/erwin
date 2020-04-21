@@ -121,7 +121,7 @@ void main()
         frag_normal = v_normal;
 
     // Compress normal
-    vec2 normal_cmp = compress_normal_spheremap_transform(frag_normal);
+    vec2 normal_cmp = compress_normal_z_reconstruct(frag_normal);
 
     vec4 frag_mare_tex = texture(SAMPLER_2D_2, tex_coord);
     vec3 frag_mar;

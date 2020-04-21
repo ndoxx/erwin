@@ -171,7 +171,7 @@ void GameLayer::on_attach()
 			Scene::registry.assign<ComponentOBB>(ent, OBB);
 			Scene::registry.assign<ComponentRenderablePBR>(ent, renderable);
 
-			Scene::add_entity(ent, "UniCube #" + std::to_string(ii*k_row+jj));
+			Scene::add_entity(ent, "Icosphere #" + std::to_string(ii*k_row+jj));
 		}
 	}
 
