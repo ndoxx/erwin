@@ -1,4 +1,4 @@
-#define FRAME_FLAG_ENABLE_DIFFUSE_IBL 1<<0
+#define FRAME_FLAG_ENABLE_IBL  1<<0
 
 layout(std140, binding = 0) uniform frame_data
 {

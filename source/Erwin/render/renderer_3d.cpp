@@ -21,8 +21,8 @@ struct LineInstanceData
 
 enum FrameDataFlags: int
 {
-	FD_NONE               = 0,
-	FD_ENABLE_DIFFUSE_IBL = 1<<0,
+	FD_NONE       = 0,
+	FD_ENABLE_IBL = 1<<0,
 };
 
 struct FrameData
@@ -71,6 +71,7 @@ struct PrefilterEnvmapData
 struct Environment
 {
 	CubemapHandle irradiance;
+	CubemapHandle prefiltered_map;
 
 	bool IBL_enabled = true;
 	float ambient_strength = 0.15f;
@@ -130,7 +131,7 @@ void Renderer3D::init()
 
 	// Load BRDF integration map
 	uint32_t brdfim_width, brdfim_height;
-	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_lut.png", brdfim_width, brdfim_height, true);
+	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_integration.png", brdfim_width, brdfim_height, true);
 }
 
 void Renderer3D::shutdown()
@@ -179,21 +180,22 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	// Environment
 	if(s_storage.environment.IBL_enabled)
 	{
-		s_storage.frame_data.flags |= FrameDataFlags::FD_ENABLE_DIFFUSE_IBL;
+		s_storage.frame_data.flags |= FrameDataFlags::FD_ENABLE_IBL;
 		s_storage.frame_data.light_ambient_strength = s_storage.environment.ambient_strength;
 	}
 	else
 	{
-		s_storage.frame_data.flags &= ~FrameDataFlags::FD_ENABLE_DIFFUSE_IBL;
+		s_storage.frame_data.flags &= ~FrameDataFlags::FD_ENABLE_IBL;
 		s_storage.frame_data.light_ambient_strength = dir_light.ambient_strength;
 	}
 
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::set_environment(CubemapHandle irradiance)
+void Renderer3D::set_environment(CubemapHandle irradiance, CubemapHandle prefiltered)
 {
 	s_storage.environment.irradiance = irradiance;
+	s_storage.environment.prefiltered_map = prefiltered;
 }
 
 void Renderer3D::enable_IBL(bool value)
@@ -411,6 +413,7 @@ void Renderer3D::end_deferred_pass()
 	{
 		dc.set_texture(s_storage.BRDF_integration_map, 4);
 		dc.set_cubemap(s_storage.environment.irradiance, 0);
+		dc.set_cubemap(s_storage.environment.prefiltered_map, 1);
 	}
 
 	Renderer::submit(key.encode(), dc);

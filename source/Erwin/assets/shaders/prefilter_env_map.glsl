@@ -69,7 +69,6 @@ void main()
         float NdotL = max(dot(N, L), 0.f);
         if(NdotL > 0.f)
         {
-#if 1
             // sample from the environment's mip level based on roughness/pdf
             // avoids bright dots artifacts near bright areas for high roughness mips 
             float NdotH = max(dot(N, H), 0.f);
@@ -82,9 +81,6 @@ void main()
 
             float mipLevel = u_f_roughness == 0.f ? 0.f : 0.5f * log2(saSample / saTexel);
 			prefilteredColor += textureLod(SAMPLER_CUBE_0, L, mipLevel).rgb * NdotL;
-#else
-            prefilteredColor += texture(SAMPLER_CUBE_0, L).rgb * NdotL;
-#endif
             totalWeight      += NdotL;
         }
     }

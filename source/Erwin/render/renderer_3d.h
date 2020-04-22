@@ -18,7 +18,7 @@ public:
 	// Setup frame data
 	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
 	// Set an irradiance cubemap for PBR
-	static void set_environment(CubemapHandle irradiance);
+	static void set_environment(CubemapHandle irradiance, CubemapHandle prefiltered);
 	// Enable/Disable IBL
 	static void enable_IBL(bool value);
 	// Set IBL ambient strength
