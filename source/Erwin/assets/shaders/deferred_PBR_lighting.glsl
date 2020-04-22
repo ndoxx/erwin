@@ -39,8 +39,9 @@ SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal
 SAMPLER_2D_(2); // metallic - ambient occlusion - roughness - emissivity
 SAMPLER_2D_(3); // depth
+SAMPLER_2D_(4); // BRDF integration map
 
-SAMPLER_CUBE_(4); // irradiance cubemap
+SAMPLER_CUBE_(5); // irradiance cubemap
 
 layout(location = 0) in vec2 v_uv;          // Texture coordinates
 layout(location = 1) in vec2 v2_frag_ray_v;
@@ -91,7 +92,7 @@ void main()
         vec3 F0 = mix(vec3(0.04f), frag_albedo, frag_metallic);
         vec3 kS = FresnelSchlickRoughness(max(dot(frag_normal, view_dir), 0.f), F0, frag_roughness);
         vec3 kD = 1.f - kS;
-        vec3 irradiance = texture(SAMPLER_CUBE_4, normal_w).rgb;
+        vec3 irradiance = texture(SAMPLER_CUBE_5, normal_w).rgb;
         vec3 diffuse    = irradiance * frag_albedo;
         ambient         = (kD * diffuse) * frag_ao * u_f_light_ambient_strength;
     }

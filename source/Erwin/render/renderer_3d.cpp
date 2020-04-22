@@ -2,8 +2,8 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/camera_3d.h"
-#include "asset/asset_manager.h"
 #include "asset/material.h"
+#include "asset/asset_manager.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/euler_angles.hpp"
@@ -79,18 +79,19 @@ struct Environment
 static struct
 {
 	// Resources
-	UniformBufferHandle line_ubo;
 	ShaderHandle line_shader;
 	ShaderHandle dirlight_shader;
 	ShaderHandle skybox_shader;
 	ShaderHandle equirectangular_to_cubemap_shader;
 	ShaderHandle diffuse_irradiance_shader;
 	ShaderHandle prefilter_env_map_shader;
+	UniformBufferHandle line_ubo;
 	UniformBufferHandle frame_ubo;
 	UniformBufferHandle transform_ubo;
 	UniformBufferHandle equirectangular_conversion_ubo;
 	UniformBufferHandle diffuse_irradiance_ubo;
 	UniformBufferHandle prefilter_env_map_ubo;
+	TextureHandle BRDF_integration_map;
 
 	FrameData frame_data;
 	Environment environment;
@@ -108,7 +109,7 @@ void Renderer3D::init()
 
     // Init resources
 	s_storage.line_shader                       = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
-	s_storage.dirlight_shader                   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/dir_light_deferred_PBR.glsl", "dir_light_deferred_PBR");
+	s_storage.dirlight_shader                   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
 	s_storage.skybox_shader                     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
 	s_storage.equirectangular_to_cubemap_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/equirectangular_to_cubemap.glsl", "ER2C");
 	s_storage.diffuse_irradiance_shader         = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
@@ -126,10 +127,15 @@ void Renderer3D::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.equirectangular_to_cubemap_shader, s_storage.equirectangular_conversion_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.diffuse_irradiance_shader, s_storage.diffuse_irradiance_ubo);
 	Renderer::shader_attach_uniform_buffer(s_storage.prefilter_env_map_shader, s_storage.prefilter_env_map_ubo);
+
+	// Load BRDF integration map
+	uint32_t brdfim_width, brdfim_height;
+	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_lut.png", brdfim_width, brdfim_height, true);
 }
 
 void Renderer3D::shutdown()
 {
+	Renderer::destroy(s_storage.BRDF_integration_map);
 	Renderer::destroy(s_storage.prefilter_env_map_ubo);
 	Renderer::destroy(s_storage.diffuse_irradiance_ubo);
 	Renderer::destroy(s_storage.equirectangular_conversion_ubo);
@@ -354,11 +360,6 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
 	return pfm;
 }
 
-/*TextureHandle Renderer3D::generate_BRDF_integration()
-{
-
-}*/
-
 
 void Renderer3D::begin_deferred_pass()
 {
@@ -405,9 +406,12 @@ void Renderer3D::end_deferred_pass()
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
 	for(uint32_t ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
-	// Environment
+	// IBL
 	if(s_storage.environment.irradiance.is_valid())
+	{
+		dc.set_texture(s_storage.BRDF_integration_map, 4);
 		dc.set_cubemap(s_storage.environment.irradiance, 0);
+	}
 
 	Renderer::submit(key.encode(), dc);
 
