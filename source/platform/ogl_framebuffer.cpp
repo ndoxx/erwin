@@ -102,6 +102,11 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         glDrawBuffers(1, draw_buffers);
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
+        // glCreateRenderbuffers(1, &render_buffer_handle_);
+        // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
+        // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width_, height_);
+        // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_buffer_handle_);
+
         // Save texture and attachments
         textures_.push_back(texture);
     }
@@ -133,6 +138,8 @@ void OGLFramebuffer::bind(uint32_t mip_level)
         W_ASSERT(has_cubemap(), "[Framebuffer] Target mipmap level only available for cubemap attachements.");
         uint32_t mip_width  = std::max(1u, uint32_t(width_ / (1u << mip_level)));
         uint32_t mip_height = std::max(1u, uint32_t(height_ / (1u << mip_level)));
+        // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
+        // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
         uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(textures_[0])->get_handle();
         glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
         glViewport(0, 0, mip_width, mip_height);

@@ -327,7 +327,6 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
 	CubemapHandle pfm = Renderer::get_framebuffer_cubemap(fb);
 
 	PrefilterEnvmapData data;
-	data.viewport_size = {pfm_size, pfm_size};
 	data.source_resolution = float(source_resolution);
 
 	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
@@ -340,6 +339,8 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
 
 	for(uint8_t mip_level=0; mip_level<max_mips; ++mip_level)
 	{
+        uint32_t mip_size  = std::max(1u, uint32_t(pfm_size / (1u << mip_level)));
+		data.viewport_size = {mip_size, mip_size};
 		data.roughness = float(mip_level) / float(max_mips - 1);
 		state.target_mip_level = mip_level;
 
