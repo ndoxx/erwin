@@ -30,7 +30,6 @@ public:
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
-	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 
 	static TextureGroup load_texture_group(const fs::path& filepath);
 

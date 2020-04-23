@@ -275,25 +275,15 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 
 	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
 
-	std::string shader_name = name.empty() ? filepath.stem().string() : name;
-	ShaderHandle handle = Renderer::create_shader(filesystem::get_asset_dir() / filepath, shader_name);
-	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
-	s_storage.shader_cache_.insert({hname, handle});
-
-	return handle;
-}
-
-ShaderHandle AssetManager::load_system_shader(const fs::path& filepath, const std::string& name)
-{
-	hash_t hname = H_(filepath.string().c_str());
-	auto it = s_storage.shader_cache_.find(hname);
-	if(it!=s_storage.shader_cache_.end())
-		return it->second;
-
-	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
+	// First, check if shader file exists in system assets
+	fs::path fullpath;
+	if(fs::exists(filesystem::get_system_asset_dir() / filepath))
+		fullpath = filesystem::get_system_asset_dir() / filepath;
+	else
+		fullpath = filesystem::get_asset_dir() / filepath;
 
 	std::string shader_name = name.empty() ? filepath.stem().string() : name;
-	ShaderHandle handle = Renderer::create_shader(filesystem::get_system_asset_dir() / filepath, shader_name);
+	ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
 	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
 	s_storage.shader_cache_.insert({hname, handle});
 
