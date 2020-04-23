@@ -318,7 +318,7 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 
 CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32_t source_resolution)
 {
-	constexpr uint32_t pfm_size = 128;
+	constexpr uint32_t pfm_size = 512;
 	constexpr uint8_t max_mips = 5;
 
 	// Create an ad-hoc framebuffer to render to a cubemap
