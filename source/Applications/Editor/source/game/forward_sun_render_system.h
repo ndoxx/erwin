@@ -2,7 +2,7 @@
 
 #include "erwin.h"
 #include "level/scene.h"
-#include "game/game_components.h"
+#include "entity/component_dirlight_material.h"
 
 namespace erwin
 {
@@ -15,11 +15,11 @@ public:
 		VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
 		Renderer3D::begin_forward_pass(BlendState::Light);
-		auto view = Scene::registry.view<ComponentDirectionalLight,ComponentRenderableDirectionalLight>();
+		auto view = Scene::registry.view<ComponentDirectionalLight,ComponentDirectionalLightMaterial>();
 		for(const entt::entity e: view)
 		{
 			const ComponentDirectionalLight& dirlight = view.get<ComponentDirectionalLight>(e);
-			ComponentRenderableDirectionalLight& renderable = view.get<ComponentRenderableDirectionalLight>(e);
+			ComponentDirectionalLightMaterial& renderable = view.get<ComponentDirectionalLightMaterial>(e);
 			if(!renderable.is_ready())
 				continue;
 

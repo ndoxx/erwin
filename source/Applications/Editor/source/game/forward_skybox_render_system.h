@@ -2,7 +2,6 @@
 
 #include "erwin.h"
 #include "level/scene.h"
-#include "game/game_components.h"
 
 #include <array>
 
