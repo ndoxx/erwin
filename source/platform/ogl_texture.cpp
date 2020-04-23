@@ -125,7 +125,7 @@ static void handle_address_UV_3D(uint32_t rd_handle, TextureWrap wrap)
     glTextureParameteri(rd_handle, GL_TEXTURE_WRAP_R, param);
 }
 
-static void generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_t max_level)
+static void do_generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_t max_level)
 {
     W_ASSERT(max_level>=base_level, "Max mipmap level must be greater than base mipmap level.");
 
@@ -194,7 +194,8 @@ OGLTexture2D::OGLTexture2D(const fs::path filepath)
 
 OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor):
 width_(descriptor.width),
-height_(descriptor.height)
+height_(descriptor.height),
+mips_(descriptor.mips)
 {
 	DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
 
@@ -204,7 +205,7 @@ height_(descriptor.height)
 	DLOGI << "height: " << height_ << std::endl;
 
 	const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
-	glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+	glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
 	DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 
 	if(descriptor.data)
@@ -216,12 +217,20 @@ height_(descriptor.height)
 	}
 
 	bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-	DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+    if(has_mipmap)
+    {
+        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+        DLOGI << "levels: " << mips_ << std::endl;
+    }
+    else
+    {
+        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
+    }
 	handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap())
-        generate_mipmaps(rd_handle_, 0, 3);
+    if(has_mipmap && !descriptor.lazy_mipmap() && mips_>0)
+        do_generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -243,6 +252,16 @@ uint32_t OGLTexture2D::get_width() const
 uint32_t OGLTexture2D::get_height() const
 {
 	return height_;
+}
+
+uint32_t OGLTexture2D::get_mips() const
+{
+    return mips_;
+}
+
+void OGLTexture2D::generate_mipmaps() const
+{
+    do_generate_mipmaps(rd_handle_, 0, mips_);
 }
 
 void OGLTexture2D::bind(uint32_t slot) const
@@ -267,7 +286,8 @@ void* OGLTexture2D::get_native_handle()
 
 OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor):
 width_(descriptor.width),
-height_(descriptor.height)
+height_(descriptor.height),
+mips_(descriptor.mips)
 {
     DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
 
@@ -277,7 +297,8 @@ height_(descriptor.height)
     DLOGI << "height: " << height_ << std::endl;
 
     const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
-    glTextureStorage2D(rd_handle_, 1, fd.internal_format, width_, height_);
+    glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
+    DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 
     bool has_data = true;
     for(size_t face=0; face<6; ++face)
@@ -295,12 +316,20 @@ height_(descriptor.height)
     }
 
     bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-    DLOGI << "mipmap: " << (has_mipmap ? "true" : "false") << std::endl;
+    if(has_mipmap)
+    {
+        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+        DLOGI << "levels: " << mips_ << std::endl;
+    }
+    else
+    {
+        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
+    }
     handle_address_UV_3D(rd_handle_, descriptor.wrap);
 
     // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap)
-        generate_mipmaps(rd_handle_, 0, 3);
+    if(has_mipmap && !descriptor.lazy_mipmap && mips_>0)
+        do_generate_mipmaps(rd_handle_, 0, mips_);
     else
     {
         glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
@@ -322,6 +351,16 @@ uint32_t OGLCubemap::get_width() const
 uint32_t OGLCubemap::get_height() const
 {
     return height_;
+}
+
+uint32_t OGLCubemap::get_mips() const
+{
+    return mips_;
+}
+
+void OGLCubemap::generate_mipmaps() const
+{
+    do_generate_mipmaps(rd_handle_, 0, mips_);
 }
 
 void OGLCubemap::bind(uint32_t slot) const

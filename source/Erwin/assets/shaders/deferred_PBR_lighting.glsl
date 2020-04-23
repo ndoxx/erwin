@@ -39,8 +39,10 @@ SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal
 SAMPLER_2D_(2); // metallic - ambient occlusion - roughness - emissivity
 SAMPLER_2D_(3); // depth
+SAMPLER_2D_(4); // BRDF integration map
 
-SAMPLER_CUBE_(4); // irradiance cubemap
+SAMPLER_CUBE_(5); // irradiance cubemap
+SAMPLER_CUBE_(6); // prefiltered cubemap
 
 layout(location = 0) in vec2 v_uv;          // Texture coordinates
 layout(location = 1) in vec2 v2_frag_ray_v;
@@ -51,6 +53,7 @@ layout(location = 1) out vec4 out_glow;
 
 const float f_bright_threshold = 0.7f;
 const float f_bright_knee = 0.1f;
+const float f_max_reflection_LOD = 4.f;
 
 void main()
 {
@@ -83,17 +86,28 @@ void main()
                                  frag_roughness);
 
     vec3 ambient;
-    if(bool(u_i_frame_flags & FRAME_FLAG_ENABLE_DIFFUSE_IBL))
+    if(bool(u_i_frame_flags & FRAME_FLAG_ENABLE_IBL))
     {
         // Ambient IBL
-        // Convert normal from view space to world space
+        // Convert normal and view direction from view space to world space
         vec3 normal_w = (u_m4_Tv * vec4(frag_normal, 0.f)).xyz;
+        vec3 view_dir_w = (u_m4_Tv * vec4(view_dir, 0.f)).xyz;
+        float NdotV = max(dot(frag_normal, view_dir), 0.f);
+
         vec3 F0 = mix(vec3(0.04f), frag_albedo, frag_metallic);
-        vec3 kS = FresnelSchlickRoughness(max(dot(frag_normal, view_dir), 0.f), F0, frag_roughness);
+        vec3 kS = FresnelSchlickRoughness(NdotV, F0, frag_roughness);
         vec3 kD = 1.f - kS;
-        vec3 irradiance = texture(SAMPLER_CUBE_4, normal_w).rgb;
+        kD = -frag_metallic*kD + kD;
+        vec3 irradiance = texture(SAMPLER_CUBE_5, normal_w).rgb;
         vec3 diffuse    = irradiance * frag_albedo;
         ambient         = (kD * diffuse) * frag_ao * u_f_light_ambient_strength;
+
+        // Specular IBL
+        vec3 reflection_ray = reflect(-view_dir_w, normal_w);
+        vec3 prefiltered_color = textureLod(SAMPLER_CUBE_6, reflection_ray,  frag_roughness * f_max_reflection_LOD).rgb;    
+        vec2 brdf  = texture(SAMPLER_2D_4, vec2(NdotV, frag_roughness)).rg;
+        vec3 specular = prefiltered_color * (kS * brdf.x + brdf.y);
+        radiance += specular;
     }
     else
     {

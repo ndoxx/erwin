@@ -5,13 +5,18 @@
 #include "asset/handles.h"
 #include "asset/material.h"
 #include "render/handles.h"
-#include "render/renderer_3d.h"
+#include "render/texture_common.h"
 #include "filesystem/filesystem.h"
 #include "memory/memory.hpp"
 #include "ctti/type_id.hpp"
 
 namespace erwin
 {
+
+/*
+	TODO: [ ] Code universal paths that could point to an engine resource or an
+	application resource.
+*/
 
 struct TextureAtlas;
 struct FontAtlas;
@@ -23,7 +28,7 @@ public:
 	// Cached queries
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
-	static TextureHandle load_hdr(const fs::path& filepath, uint32_t& height);
+	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 

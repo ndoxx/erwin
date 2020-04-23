@@ -1,11 +1,12 @@
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
 #include "asset/material.h"
-#include "filesystem/hdr_file.h"
+#include "filesystem/image_file.h"
 #include "filesystem/tom_file.h"
 #include "memory/arena.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
@@ -164,6 +165,7 @@ TextureGroup AssetManager::load_texture_group(const fs::path& filepath)
 		ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
 		TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
 									  					 				    descriptor.height,
+									  					 				    3,
 									  					 				    tmap.data,
 									  					 				    format,
 									  					 				    tmap.filter,
@@ -184,13 +186,18 @@ TextureGroup AssetManager::load_texture_group(const fs::path& filepath)
 	return tg;
 }
 
-TextureHandle AssetManager::load_hdr(const fs::path& filepath, uint32_t& height)
+TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path)
 {
 	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
 	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
 	
-	fs::path fullpath = filesystem::get_asset_dir() / filepath;
+	fs::path fullpath;
+	if(engine_path)
+		fullpath = filesystem::get_system_asset_dir() / filepath;
+	else
+		fullpath = filesystem::get_asset_dir() / filepath;
 
+	 
 	// Sanity check
 	if(!fs::exists(fullpath))
 	{
@@ -198,36 +205,65 @@ TextureHandle AssetManager::load_hdr(const fs::path& filepath, uint32_t& height)
 		return TextureHandle();
 	}
 
-	if(filepath.extension().string().compare(".hdr"))
+	hash_t hextension = H_(filepath.extension().string().c_str());
+
+	switch(hextension)
 	{
-		DLOGW("asset") << "[AssetManager] File is not a valid HDR file. Returning invalid handle." << std::endl;
-		return TextureHandle();
+		case ".hdr"_h:
+		{
+			// Load HDR file
+			img::HDRDescriptor hdrfile { fullpath };
+			img::read_hdr(hdrfile);
+
+			DLOGI << "Width:    " << WCC('v') << hdrfile.width << std::endl;
+			DLOGI << "Height:   " << WCC('v') << hdrfile.height << std::endl;
+			DLOGI << "Channels: " << WCC('v') << hdrfile.channels << std::endl;
+
+			if(2*hdrfile.height != hdrfile.width)
+			{
+				DLOGW("asset") << "[AssetManager] HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
+			}
+
+			descriptor.width  = hdrfile.width;
+			descriptor.height = hdrfile.height;
+			descriptor.mips = 0;
+			descriptor.data = hdrfile.data;
+			descriptor.image_format = ImageFormat::RGB32F;
+			descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+
+			// Create texture
+			return Renderer::create_texture_2D(descriptor); 
+			break;
+		}
+		case ".png"_h:
+		{
+			// Load PNG file
+			img::PNGDescriptor pngfile { fullpath };
+			// Force 4 channels
+			pngfile.channels = 4;
+			img::read_png(pngfile);
+
+			DLOGI << "Width:    " << WCC('v') << pngfile.width << std::endl;
+			DLOGI << "Height:   " << WCC('v') << pngfile.height << std::endl;
+			DLOGI << "Channels: " << WCC('v') << pngfile.channels << std::endl;
+
+			descriptor.width  = pngfile.width;
+			descriptor.height = pngfile.height;
+			descriptor.data = pngfile.data;
+			descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+
+			// Create texture
+			return Renderer::create_texture_2D(descriptor);
+			break;
+		}
+		default:
+		{
+			DLOGW("asset") << "[AssetManager] Unknown file type: " << filepath.extension().string() << std::endl;
+			DLOGI << "Returning invalid texture handle." << std::endl;
+		}
 	}
 
-	// Load HDR file
-	hdr::HDRDescriptor desc { fullpath };
-	hdr::read_hdr(desc);
-
-	DLOGI << "Width:    " << WCC('v') << desc.width << std::endl;
-	DLOGI << "Height:   " << WCC('v') << desc.height << std::endl;
-	DLOGI << "Channels: " << WCC('v') << desc.channels << std::endl;
-
-	// Sanity check
-	height = desc.height;
-	if(2*desc.height != desc.width)
-	{
-		DLOGW("asset") << "[AssetManager] HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
-		height = std::min(desc.height, desc.width);
-	}
-
-	// Create texture
-	return Renderer::create_texture_2D(Texture2DDescriptor{desc.width,
-								  					 	   desc.height,
-								  					 	   desc.data,
-								  					 	   ImageFormat::RGB32F,
-								  					 	   MIN_LINEAR | MAG_LINEAR,
-								  					 	   TextureWrap::REPEAT,
-								  				   		   TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+	return TextureHandle();
 }
 
 ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)

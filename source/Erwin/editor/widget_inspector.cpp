@@ -101,14 +101,14 @@ void InspectorWidget::environment_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("IBL"))
     {
-        static bool enable_diffuse_IBL = true;
-        if(ImGui::Checkbox("Diffuse IBL", &enable_diffuse_IBL))
+        static bool enable_IBL = true;
+        if(ImGui::Checkbox("IBL", &enable_IBL))
         {
-            Renderer3D::enable_IBL(enable_diffuse_IBL);
+            Renderer3D::enable_IBL(enable_IBL);
         }
 
         static float ambient_strength = 0.15f;
-        if(enable_diffuse_IBL)
+        if(enable_IBL)
         {
             if(ImGui::SliderFloat("Ambient str.", &ambient_strength, 0.f, 1.f))
             {

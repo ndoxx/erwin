@@ -33,7 +33,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         {
             // First, create textures for color buffers
             auto texture = Texture2D::create(
-                Texture2DDescriptor{width_, height_, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
+                Texture2DDescriptor{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
 
             // Register color attachment
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
@@ -53,7 +53,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         if(has_depth() && has_stencil())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
+                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);
@@ -61,7 +61,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         else if(has_depth())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
+                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);
@@ -87,10 +87,11 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         CubemapDescriptor desc;
         desc.width = width_;
         desc.height = height_;
+        desc.mips = elt.mips;
         desc.image_format = elt.image_format;
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;
-        desc.lazy_mipmap = false;
+        desc.lazy_mipmap = elt.lazy_mipmap;
         auto texture = Cubemap::create(desc);
 
         // Register color attachment
@@ -100,6 +101,11 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, draw_buffers);
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+        // glCreateRenderbuffers(1, &render_buffer_handle_);
+        // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
+        // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width_, height_);
+        // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_buffer_handle_);
 
         // Save texture and attachments
         textures_.push_back(texture);
@@ -120,10 +126,25 @@ OGLFramebuffer::~OGLFramebuffer()
         glDeleteRenderbuffers(1, &render_buffer_handle_);
 }
 
-void OGLFramebuffer::bind()
+void OGLFramebuffer::bind(uint32_t mip_level)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
-    glViewport(0, 0, width_, height_);
+    if(mip_level==0)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
+        glViewport(0, 0, width_, height_);
+    }
+    else
+    {
+        W_ASSERT(has_cubemap(), "[Framebuffer] Target mipmap level only available for cubemap attachements.");
+        uint32_t mip_width  = std::max(1u, uint32_t(width_ / (1u << mip_level)));
+        uint32_t mip_height = std::max(1u, uint32_t(height_ / (1u << mip_level)));
+        // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
+        // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
+        uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(textures_[0])->get_handle();
+        glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
+        glViewport(0, 0, mip_width, mip_height);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, int(mip_level));
+    }
 }
 
 void OGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }

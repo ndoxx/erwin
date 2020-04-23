@@ -51,6 +51,7 @@ void TextureAtlas::load(const fs::path& filepath)
 
 		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
 									  					 		  descriptor.texture_height,
+									  					 		  0,
 									  					 		  descriptor.texture_blob,
 									  					 		  format,
 									  					 		  filter,
@@ -128,6 +129,7 @@ void FontAtlas::load(const fs::path& filepath)
 
 		texture = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.texture_width,
 									  					 		  descriptor.texture_height,
+									  					 		  0,
 									  					 		  descriptor.texture_blob,
 									  					 		  ImageFormat::RGBA8,
 									  					 		  // ImageFormat::R8,

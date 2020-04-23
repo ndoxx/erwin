@@ -18,7 +18,7 @@ public:
 	// Setup frame data
 	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
 	// Set an irradiance cubemap for PBR
-	static void set_environment(CubemapHandle irradiance);
+	static void set_environment(CubemapHandle irradiance, CubemapHandle prefiltered);
 	// Enable/Disable IBL
 	static void enable_IBL(bool value);
 	// Set IBL ambient strength
@@ -32,6 +32,8 @@ public:
 	static CubemapHandle generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size);
 	// Generate a pre-computed environment convolution map for diffuse IBL from an environment cubemap
 	static CubemapHandle generate_irradiance_map(CubemapHandle env_map);
+	// Generate a pre-filtered environment map for specular IBL from an environment cubemap
+	static CubemapHandle generate_prefiltered_map(CubemapHandle env_map, uint32_t source_resolution);
 
 	// Start a new deferred rendering pass
 	static void begin_deferred_pass();

@@ -75,9 +75,5 @@ void main()
     }
     irradiance = PI * irradiance / sample_count;
 
-    // HACK? tonemap and gamma correction on output irradiance avoids weird diffuse IBL reflections
-    irradiance = irradiance / (irradiance + vec3(1.f));
-    irradiance = pow(irradiance, vec3(1.f/2.2f));
-
     out_color = vec4(irradiance, 1.f);
 }
