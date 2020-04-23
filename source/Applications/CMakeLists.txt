@@ -1,5 +1,5 @@
 subdirs(InternString)
 subdirs(Fudge)
-subdirs(Sandbox)
+subdirs(Editor)
 subdirs(RTest)
 subdirs(FractalExplorer)

@@ -14,11 +14,11 @@ using namespace editor;
 /*
 	Test application to assess the level and asset editor for Erwin Engine
 */
-class EditorSandbox: public Application
+class ErwinEditor: public Application
 {
 public:
-	EditorSandbox() = default;
-	~EditorSandbox() = default;
+	ErwinEditor() = default;
+	~ErwinEditor() = default;
 
 	virtual void on_pre_init() override;
 	virtual void on_client_init() override;
@@ -33,5 +33,5 @@ private:
 
 Application* erwin::create_application()
 {
-	return new EditorSandbox();
+	return new ErwinEditor();
 }
