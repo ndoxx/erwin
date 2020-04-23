@@ -6,6 +6,7 @@
 #include "memory/arena.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
+#include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "debug/logger.h"
 #include "EASTL/vector.h"
@@ -185,7 +186,7 @@ TextureGroup AssetManager::load_texture_group(const fs::path& filepath)
 	return tg;
 }
 
-TextureHandle AssetManager::load_image(const fs::path& filepath, uint32_t& width, uint32_t& height, bool engine_path)
+TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path)
 {
 	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
 	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
@@ -211,55 +212,48 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, uint32_t& width
 		case ".hdr"_h:
 		{
 			// Load HDR file
-			img::HDRDescriptor desc { fullpath };
-			img::read_hdr(desc);
+			img::HDRDescriptor hdrfile { fullpath };
+			img::read_hdr(hdrfile);
 
-			DLOGI << "Width:    " << WCC('v') << desc.width << std::endl;
-			DLOGI << "Height:   " << WCC('v') << desc.height << std::endl;
-			DLOGI << "Channels: " << WCC('v') << desc.channels << std::endl;
+			DLOGI << "Width:    " << WCC('v') << hdrfile.width << std::endl;
+			DLOGI << "Height:   " << WCC('v') << hdrfile.height << std::endl;
+			DLOGI << "Channels: " << WCC('v') << hdrfile.channels << std::endl;
 
-			height = desc.height;
-			width  = desc.width;
-			if(2*desc.height != desc.width)
+			if(2*hdrfile.height != hdrfile.width)
 			{
 				DLOGW("asset") << "[AssetManager] HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
 			}
 
+			descriptor.width  = hdrfile.width;
+			descriptor.height = hdrfile.height;
+			descriptor.mips = 0;
+			descriptor.data = hdrfile.data;
+			descriptor.image_format = ImageFormat::RGB32F;
+			descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+
 			// Create texture
-			return Renderer::create_texture_2D(Texture2DDescriptor{desc.width,
-										  					 	   desc.height,
-										  					 	   0,
-										  					 	   desc.data,
-										  					 	   ImageFormat::RGB32F,
-										  					 	   MIN_LINEAR | MAG_LINEAR,
-										  					 	   TextureWrap::REPEAT,
-										  				   		   TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+			return Renderer::create_texture_2D(descriptor); 
 			break;
 		}
 		case ".png"_h:
 		{
 			// Load PNG file
-			img::PNGDescriptor desc { fullpath };
+			img::PNGDescriptor pngfile { fullpath };
 			// Force 4 channels
-			desc.channels = 4;
-			img::read_png(desc);
+			pngfile.channels = 4;
+			img::read_png(pngfile);
 
-			DLOGI << "Width:    " << WCC('v') << desc.width << std::endl;
-			DLOGI << "Height:   " << WCC('v') << desc.height << std::endl;
-			DLOGI << "Channels: " << WCC('v') << desc.channels << std::endl;
+			DLOGI << "Width:    " << WCC('v') << pngfile.width << std::endl;
+			DLOGI << "Height:   " << WCC('v') << pngfile.height << std::endl;
+			DLOGI << "Channels: " << WCC('v') << pngfile.channels << std::endl;
 
-			height = desc.height;
-			width  = desc.width;
+			descriptor.width  = pngfile.width;
+			descriptor.height = pngfile.height;
+			descriptor.data = pngfile.data;
+			descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
 
 			// Create texture
-			return Renderer::create_texture_2D(Texture2DDescriptor{desc.width,
-										  					 	   desc.height,
-										  					 	   0,
-										  					 	   desc.data,
-										  					 	   ImageFormat::RGBA8,
-										  					 	   MIN_LINEAR | MAG_LINEAR,
-										  					 	   TextureWrap::REPEAT,
-										  				   		   TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+			return Renderer::create_texture_2D(descriptor);
 			break;
 		}
 		default:

@@ -165,7 +165,7 @@ void GameLayer::on_attach()
 			renderable.set_material(mat_uniform);
 			renderable.material_data.uniform_metallic = metallic;
 			renderable.material_data.uniform_roughness = roughness;
-			renderable.material_data.uniform_albedo = {1.f,0.6f,0.2f,1.f};
+			renderable.material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
 
 			Scene::registry.assign<ComponentTransform3D>(ent, transform);
 			Scene::registry.assign<ComponentOBB>(ent, OBB);

@@ -5,7 +5,7 @@
 #include "asset/handles.h"
 #include "asset/material.h"
 #include "render/handles.h"
-#include "render/renderer_3d.h"
+#include "render/texture_common.h"
 #include "filesystem/filesystem.h"
 #include "memory/memory.hpp"
 #include "ctti/type_id.hpp"
@@ -28,7 +28,7 @@ public:
 	// Cached queries
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
-	static TextureHandle load_image(const fs::path& filepath, uint32_t& width, uint32_t& height, bool engine_path=false);
+	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 

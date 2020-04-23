@@ -92,9 +92,9 @@ void main()
         // Convert normal and view direction from view space to world space
         vec3 normal_w = (u_m4_Tv * vec4(frag_normal, 0.f)).xyz;
         vec3 view_dir_w = (u_m4_Tv * vec4(view_dir, 0.f)).xyz;
+        float NdotV = max(dot(frag_normal, view_dir), 0.f);
 
         vec3 F0 = mix(vec3(0.04f), frag_albedo, frag_metallic);
-        float NdotV = max(dot(frag_normal, view_dir), 0.f);
         vec3 kS = FresnelSchlickRoughness(NdotV, F0, frag_roughness);
         vec3 kD = 1.f - kS;
         kD = -frag_metallic*kD + kD;

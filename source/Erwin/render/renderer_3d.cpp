@@ -130,8 +130,11 @@ void Renderer3D::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.prefilter_env_map_shader, s_storage.prefilter_env_map_ubo);
 
 	// Load BRDF integration map
-	uint32_t brdfim_width, brdfim_height;
-	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_integration.png", brdfim_width, brdfim_height, true);
+	Texture2DDescriptor brdf_lut_desc;
+	brdf_lut_desc.image_format = ImageFormat::RGBA8;
+	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
+	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
+	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_integration.png", brdf_lut_desc, true);
 }
 
 void Renderer3D::shutdown()

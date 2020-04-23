@@ -80,7 +80,7 @@ struct Texture2DDescriptor
 {
     uint32_t width;
     uint32_t height;
-    uint32_t mips;
+    uint32_t mips = 0;
     void* data = nullptr;
     ImageFormat image_format = ImageFormat::RGBA8;
     uint8_t filter = MIN_LINEAR | MAG_NEAREST;
