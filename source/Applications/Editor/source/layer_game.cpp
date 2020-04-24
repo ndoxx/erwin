@@ -1,9 +1,8 @@
 #include "layer_game.h"
 #include "erwin.h"
-#include "entity/component_transform.h"
-#include "entity/component_bounding_box.h"
 #include "editor/font_awesome.h"
 #include "core/application.h"
+#include "level/scene.h"
 
 #include <iostream>
 #include <iomanip>
@@ -24,52 +23,22 @@ void GameLayer::on_imgui_render()
 
 void GameLayer::on_attach()
 {	
-	REFLECT_COMPONENT(ComponentTransform3D);
-	REFLECT_COMPONENT(ComponentOBB);
-	REFLECT_COMPONENT(ComponentMesh);
-	REFLECT_COMPONENT(ComponentPBRMaterial);
-	REFLECT_COMPONENT(ComponentDirectionalLightMaterial);
-	REFLECT_COMPONENT(ComponentDirectionalLight);
+	// Scene::load_hdr_environment("textures/hdr/autumn_park_2k.hdr");
+	// Scene::load_hdr_environment("textures/hdr/lakeside_1k.hdr");
+	// Scene::load_hdr_environment("textures/hdr/dirt_bike_track_01_1k.hdr");
+	// Scene::load_hdr_environment("textures/hdr/georgentor_2k.hdr");
+	Scene::load_hdr_environment("textures/hdr/small_cathedral_2k.hdr");
 
-	forward_skybox_render_system_.init();
 
 	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
-	const Material& mat_paved_floor = AssetManager::create_material<ComponentPBRMaterial>
-	(
-		"Paved floor",
-		"shaders/deferred_PBR.glsl",
-		"textures/map/pavedFloor.tom"
-	);
+	const Material& mat_paved_floor = AssetManager::create_PBR_material("textures/map/pavedFloor.tom");
+    const Material& mat_rock = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
+    const Material& mat_dirt = AssetManager::create_PBR_material("textures/map/dirt.tom");
+    const Material& mat_test_emissive = AssetManager::create_PBR_material("textures/map/testEmissive.tom");
+    const Material& mat_uniform = AssetManager::create_uniform_PBR_material("unimat");
 
-	const Material& mat_rock = AssetManager::create_material<ComponentPBRMaterial>
-	(
-		"Rock tiling",
-		"shaders/deferred_PBR.glsl",
-		"textures/map/rockTiling.tom"
-	);
-
-	const Material& mat_dirt = AssetManager::create_material<ComponentPBRMaterial>
-	(
-		"Dirt",
-		"shaders/deferred_PBR.glsl",
-		"textures/map/dirt.tom"
-	);
-
-	const Material& mat_test_emissive = AssetManager::create_material<ComponentPBRMaterial>
-	(
-		"Magma",
-		"shaders/deferred_PBR.glsl",
-		"textures/map/testEmissive.tom"
-	);
-
-	const Material& mat_uniform = AssetManager::create_material<ComponentPBRMaterial>
-	(
-		"Unimat",
-		"shaders/deferred_PBR.glsl"
-	);
-
-	const Material& mat_sun = AssetManager::create_material<ComponentDirectionalLightMaterial>
+    const Material& mat_sun = AssetManager::create_material<ComponentDirectionalLightMaterial>
 	(
 		"Sun",
 		"shaders/forward_sun.glsl"
@@ -213,11 +182,44 @@ void GameLayer::on_render()
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
 	// Draw scene geometry
-	PBR_deferred_render_system_.render();
-	forward_skybox_render_system_.render();
-	forward_sun_render_system_.render();
+    {
+        Renderer3D::begin_deferred_pass();
+        auto view = Scene::registry.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
+        for(const entt::entity e : view)
+        {
+            const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
+            ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
+            ComponentMesh& cmesh = view.get<ComponentMesh>(e);
+            if(cmaterial.is_ready() && cmesh.is_ready())
+                Renderer3D::draw_mesh(cmesh.vertex_array, ctransform.get_model_matrix(), cmaterial.material,
+                                      &cmaterial.material_data);
+        }
+        Renderer3D::end_deferred_pass();
+    }
 
-	// Presentation
+    Renderer3D::draw_skybox(Scene::environment.environment_map);
+
+    {
+        VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+
+        Renderer3D::begin_forward_pass(BlendState::Light);
+        auto view = Scene::registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
+        for(const entt::entity e : view)
+        {
+            const ComponentDirectionalLight& dirlight = view.get<ComponentDirectionalLight>(e);
+            ComponentDirectionalLightMaterial& renderable = view.get<ComponentDirectionalLightMaterial>(e);
+            if(!renderable.is_ready())
+                continue;
+
+            renderable.material_data.color = glm::vec4(dirlight.color, 1.f);
+            renderable.material_data.brightness = dirlight.brightness;
+
+            Renderer3D::draw_mesh(quad, glm::mat4(1.f), renderable.material, &renderable.material_data);
+        }
+        Renderer3D::end_forward_pass();
+    }
+
+    // Presentation
 	// TODO: do post processing here if editor is turned off
 	// atm, EditorLayer is responsible for the post processing pass.
 	// The idea is that the last layer should do it. Maybe this is

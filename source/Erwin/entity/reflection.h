@@ -85,18 +85,18 @@ constexpr EntityID k_invalid_entity_id = entt::null;
 
 namespace metafunc
 {
+	// Check if an entity has a specific component
+	template <typename ComponentType>
+	static inline bool has_component(const entt::registry& reg, entt::entity e)
+	{
+	    return reg.has<ComponentType>(e);
+	}
+	
 	// Get a component from its associated meta-object
 	template <typename ComponentType>
 	static inline ComponentType& get_component(entt::registry& reg, entt::entity e)
 	{
 	    return reg.get<ComponentType>(e);
-	}
-
-	// Check if an entity has a specific component
-	template <typename ComponentType>
-	static inline bool has_component(entt::registry& reg, entt::entity e)
-	{
-	    return reg.has<ComponentType>(e);
 	}
 
 	// Create a component
@@ -134,14 +134,14 @@ namespace metafunc
 } // namespace erwin
 
 // Create a reflection meta-object for an input component type
-#define REFLECT_COMPONENT(_type) \
-	entt::meta< _type >() \
-		.type( #_type ##_hs) \
-		.prop("name"_hs, #_type ) \
-		.func<&erwin::metafunc::get_component< _type >, entt::as_alias_t>(W_METAFUNC_GET_COMPONENT) \
-		.func<&erwin::metafunc::has_component< _type >>(W_METAFUNC_HAS_COMPONENT) \
-		.func<&erwin::metafunc::create_component< _type >, entt::as_void_t>(W_METAFUNC_CREATE_COMPONENT) \
-		.func<&erwin::metafunc::remove_component< _type >, entt::as_void_t>(W_METAFUNC_REMOVE_COMPONENT) \
-		.func<&erwin::metafunc::try_remove_component< _type >, entt::as_void_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
-		.func<&erwin::metafunc::inspector_GUI_typecast< _type >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
-	erwin::add_reflection(entt::type_info< _type >::id(), #_type ##_hs)
+#define REFLECT_COMPONENT( CTYPE ) \
+	entt::meta< CTYPE >() \
+		.type( #CTYPE ##_hs) \
+		.prop("name"_hs, #CTYPE ) \
+		.func<&erwin::metafunc::get_component< CTYPE >, entt::as_alias_t>(W_METAFUNC_GET_COMPONENT) \
+		.func<&erwin::metafunc::has_component< CTYPE >>(W_METAFUNC_HAS_COMPONENT) \
+		.func<&erwin::metafunc::create_component< CTYPE >, entt::as_void_t>(W_METAFUNC_CREATE_COMPONENT) \
+		.func<&erwin::metafunc::remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_REMOVE_COMPONENT) \
+		.func<&erwin::metafunc::try_remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
+		.func<&erwin::metafunc::inspector_GUI_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
+	erwin::add_reflection(entt::type_info< CTYPE >::id(), #CTYPE ##_hs)

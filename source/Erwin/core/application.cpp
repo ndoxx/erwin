@@ -2,8 +2,6 @@
 #include "core/clock.hpp"
 #include "core/intern_string.h"
 #include "core/config.h"
-#include "debug/logger.h"
-#include "debug/logger_thread.h"
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
 #include "filesystem/filesystem.h"
@@ -16,6 +14,9 @@
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
 #include "level/scene.h"
+#include "entity/init.h"
+#include "debug/logger.h"
+#include "debug/logger_thread.h"
 
 #include <iostream>
 
@@ -191,6 +192,12 @@ bool Application::init()
             DLOGF("application") << "Cannot allocate client memory." << std::endl;
             return false;
         }
+    }
+
+    // Reflect components
+    {
+        W_PROFILE_SCOPE("Components reflection")
+        entity::init_components();
     }
 
     // Create window

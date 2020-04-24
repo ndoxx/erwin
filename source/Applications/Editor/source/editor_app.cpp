@@ -9,7 +9,7 @@ void ErwinEditor::on_client_init()
 {
 	filesystem::set_asset_dir("source/Applications/Editor/assets");
 	filesystem::set_client_config_dir("source/Applications/Editor/config");
-	this->add_configuration("client.xml");
+	add_configuration("client.xml");
 }
 
 void ErwinEditor::on_load()

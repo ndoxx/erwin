@@ -12,7 +12,7 @@ using namespace erwin;
 using namespace editor;
 
 /*
-	Test application to assess the level and asset editor for Erwin Engine
+	Editor application for Erwin Engine
 */
 class ErwinEditor: public Application
 {

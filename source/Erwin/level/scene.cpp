@@ -2,6 +2,9 @@
 #include "editor/font_awesome.h"
 #include "editor/editor_components.h"
 #include "entity/reflection.h"
+#include "asset/asset_manager.h"
+#include "render/renderer_3d.h"
+#include "render/renderer.h"
 #include "debug/logger.h"
 
 #include <queue>
@@ -16,8 +19,10 @@ std::vector<EntityID> Scene::entities;
 FreeflyController Scene::camera_controller;
 entt::registry Scene::registry;
 
-static std::queue<std::tuple<erwin::EntityID, uint32_t>> s_removed_components;
-static std::queue<erwin::EntityID> s_removed_entities;
+static std::queue<std::tuple<EntityID, uint32_t>> s_removed_components;
+static std::queue<EntityID> s_removed_entities;
+
+Scene::Environment Scene::environment;
 
 void Scene::init()
 {
@@ -30,6 +35,18 @@ void Scene::shutdown()
 {
 
 }
+
+void Scene::load_hdr_environment(const fs::path& hdr_file)
+{
+	Texture2DDescriptor hdr_desc;
+	TextureHandle hdr_tex = AssetManager::load_image(hdr_file, hdr_desc);
+	environment.environment_map = Renderer3D::generate_cubemap_hdr(hdr_tex, hdr_desc.height);
+	Renderer::destroy(hdr_tex);
+	environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
+	environment.prefiltered_env_map = Renderer3D::generate_prefiltered_map(environment.environment_map, hdr_desc.height);
+	Renderer3D::set_environment(environment.diffuse_irradiance_map, environment.prefiltered_env_map);
+}
+
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
@@ -51,12 +68,12 @@ void Scene::drop_selection()
 	selected_entity = k_invalid_entity_id;
 }
 
-void Scene::mark_for_removal(erwin::EntityID entity, uint32_t reflected_component)
+void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 {
 	s_removed_components.push({entity, reflected_component});
 }
 
-void Scene::mark_for_removal(erwin::EntityID entity)
+void Scene::mark_for_removal(EntityID entity)
 {
 	s_removed_entities.push(entity);
 }
