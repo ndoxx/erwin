@@ -21,6 +21,12 @@ struct TextureGroup
 {
 	std::array<TextureHandle, k_max_texture_slots> textures;
 	uint32_t texture_count = 0;
+
+	inline TextureHandle& operator[](uint32_t index)
+	{
+		W_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
+		return textures[index];
+	}
 };
 
 // Associates a shader with all uniform and sampler data needed for it to perform

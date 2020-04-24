@@ -6,6 +6,7 @@
 #include "asset/material.h"
 #include "render/handles.h"
 #include "render/texture_common.h"
+#include "entity/component_PBR_material.h"
 #include "filesystem/filesystem.h"
 #include "memory/memory.hpp"
 #include "ctti/type_id.hpp"
@@ -30,9 +31,16 @@ public:
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
-	static ShaderHandle load_system_shader(const fs::path& filepath, const std::string& name="");
 
 	static TextureGroup load_texture_group(const fs::path& filepath);
+
+	static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);
+	template <typename ComponentT>
+	static inline UniformBufferHandle create_material_data_buffer()
+	{
+		using MaterialData = typename ComponentT::MaterialData;
+		return create_material_data_buffer(ctti::type_id<ComponentT>().hash(), sizeof(MaterialData));
+	}
 
 	// Create a material from diverse resource handles
 	static const Material& create_material(const std::string& name,
@@ -51,10 +59,20 @@ public:
 		using MaterialData = typename ComponentT::MaterialData;
 
 		ShaderHandle shader     = load_shader(shader_path);
+		UniformBufferHandle ubo = create_material_data_buffer<ComponentT>();
 		TextureGroup tg         = load_texture_group(texture_group_path);
-		UniformBufferHandle ubo = create_material_data_buffer(ctti::type_id<ComponentT>().hash(), sizeof(MaterialData));
 
 		return create_material(name, tg, shader, ubo, sizeof(MaterialData));
+	}
+
+	static inline const Material& create_PBR_material(const fs::path& tomfile)
+	{
+		return create_material<ComponentPBRMaterial>(tomfile.stem().string(), "shaders/deferred_PBR.glsl", tomfile);
+	}
+
+	static inline const Material& create_uniform_PBR_material(const std::string& name)
+	{
+		return create_material<ComponentPBRMaterial>(name, "shaders/deferred_PBR.glsl", "");
 	}
 
 	static const Material& get_material(hash_t arch_name);
@@ -79,8 +97,6 @@ private:
 	static void shutdown();
 	static const TextureAtlas& get(TextureAtlasHandle handle);
 	static const FontAtlas& get(FontAtlasHandle handle);
-
-	static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);
 };
 
 } // namespace erwin

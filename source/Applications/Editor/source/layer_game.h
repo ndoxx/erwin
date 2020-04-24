@@ -1,9 +1,6 @@
 #pragma once
 
 #include "erwin.h"
-#include "game/forward_skybox_render_system.h"
-#include "game/forward_sun_render_system.h"
-#include "game/pbr_deferred_render_system.h"
 
 class GameLayer : public erwin::Layer
 {
@@ -26,9 +23,4 @@ protected:
     virtual bool on_event(const erwin::MouseScrollEvent& event) override;
     virtual bool on_event(const erwin::MouseMovedEvent& event) override;
     virtual bool on_event(const erwin::KeyboardEvent& event) override;
-
-private:
-    erwin::PBRDeferredRenderSystem PBR_deferred_render_system_;
-    erwin::ForwardSunRenderSystem forward_sun_render_system_;
-    erwin::ForwardSkyboxRenderSystem forward_skybox_render_system_;
 };

@@ -1,29 +1,28 @@
-#include "game/game_components.h"
+#include "entity/component_PBR_material.h"
 #include "asset/asset_manager.h"
 #include "editor/font_awesome.h"
-#include "render/common_geometry.h"
-#include "render/renderer.h"
 #include "imgui/imgui_utils.h"
+#include "imgui.h"
 
 namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
+void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 {
     // Select material
     if(ImGui::Button("Material"))
         ImGui::OpenPopup("popup_select_material");
     
     ImGui::SameLine();
-    if(cmp->is_material_ready())
+    if(cmp->is_ready())
         ImGui::TextUnformatted(AssetManager::get_material_name(cmp->material.archetype).c_str());
     else
         ImGui::TextUnformatted("None");
 
     if(ImGui::BeginPopup("popup_select_material"))
     {
-        AssetManager::visit_materials([&cmp](const Material& material, const std::string& name, const std::string& description)
+        AssetManager::visit_materials([&cmp](const Material& material, const std::string& name, const std::string&)
         {
             if(ImGui::Selectable(name.c_str()))
             {
@@ -35,34 +34,8 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
         ImGui::EndPopup();
     }
 
-
-    // Select mesh
-    // TMP: Only common geometry meshes for now
-    if(ImGui::Button("Mesh"))
-        ImGui::OpenPopup("popup_select_mesh");
-
-    if(ImGui::BeginPopup("popup_select_mesh"))
-    {
-        CommonGeometry::visit_meshes([&cmp](const MeshStub& mesh)
-        {
-            // Skip mesh if not compatible with shader, allow any mesh if material is not set
-            if(!cmp->is_material_ready() || Renderer3D::is_compatible(mesh.layout, cmp->material))
-            {
-                if(ImGui::Selectable(mesh.name))
-                {
-                    cmp->set_vertex_array(mesh.VAO);
-                    // TODO: Update OBB if any (send event?)
-                    return true;
-                }
-            }
-            return false;
-        });
-        ImGui::EndPopup();
-    }
-
-
     // PBR parameters
-    ImGui::ColorEdit3("Tint", (float*)&cmp->material_data.tint);
+    ImGui::ColorEdit3("Tint", static_cast<float*>(&cmp->material_data.tint[0]));
     ImGui::SliderFloatDefault("Tiling", &cmp->material_data.tiling_factor, 0.1f, 10.f, 1.f);
 
     bool enable_emissivity = cmp->is_emissive();
@@ -82,12 +55,6 @@ void inspector_GUI<ComponentRenderablePBR>(ComponentRenderablePBR* cmp)
         ImGui::SameLine();
         ImGui::SliderFloatDefault("##Parallax", &cmp->material_data.parallax_height_scale, 0.005f, 0.05f, 0.03f);
     }
-}
-
-template <>
-void inspector_GUI<ComponentRenderableDirectionalLight>(ComponentRenderableDirectionalLight* cmp)
-{
-    ImGui::SliderFloat("App. diameter", &cmp->material_data.scale, 0.1f, 0.4f);
 }
 
 } // namespace erwin

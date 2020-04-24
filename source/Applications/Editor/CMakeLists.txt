@@ -1,24 +1,24 @@
-file(GLOB_RECURSE SRC_SANDBOX "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
+file(GLOB_RECURSE SRC_EDITOR "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 
-add_executable(sandbox)
-target_sources(sandbox
+add_executable(editor)
+target_sources(editor
     PRIVATE
-        ${SRC_SANDBOX}
+        ${SRC_EDITOR}
     )
-target_include_directories(sandbox
+target_include_directories(editor
     PRIVATE
-        "${CMAKE_SOURCE_DIR}/source/Applications/Sandbox/source"
+        "${CMAKE_CURRENT_SOURCE_DIR}/source"
         "${CMAKE_SOURCE_DIR}/source/Erwin"
     )
 
-set_target_properties(sandbox
+set_target_properties(editor
     PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
-target_link_libraries(sandbox
+target_link_libraries(editor
     PRIVATE
         erwin
         pthread
@@ -26,4 +26,4 @@ target_link_libraries(sandbox
         eastl
 )
 
-cotire(sandbox)
+cotire(editor)

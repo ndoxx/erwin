@@ -26,9 +26,12 @@
 #include "asset/material.h"
 
 #include "entity/reflection.h"
-#include "entity/light.h"
 #include "entity/component_transform.h"
 #include "entity/component_bounding_box.h"
+#include "entity/component_mesh.h"
+#include "entity/component_PBR_material.h"
+#include "entity/component_dirlight_material.h"
+#include "entity/light.h"
 
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
