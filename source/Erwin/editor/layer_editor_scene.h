@@ -9,25 +9,18 @@
 namespace editor
 {
 
-class EditorLayer: public erwin::Layer
+class SceneViewWidget;
+class SceneEditorLayer: public erwin::Layer
 {
 public:
-	struct MenuDescriptor
-	{
-		std::string name;
-		std::vector<Widget*> widgets;
-	};
-
-	EditorLayer();
+	SceneEditorLayer();
 
 	virtual void on_imgui_render() override;
 	virtual void on_attach() override;
 	virtual void on_detach() override;
 
-	size_t add_menu(const std::string& menu_name);
-	void add_widget(size_t menu, editor::Widget* widget);
-	
-	void show_dockspace_window(bool* p_open);
+	void add_widget(editor::Widget* widget);
+	inline const auto& get_widgets() { return widgets_; }
 
 protected:
 	virtual void on_update(erwin::GameClock& clock) override;
@@ -39,9 +32,11 @@ protected:
 	virtual bool on_event(const erwin::KeyTypedEvent& event) override;
 
 private:
-	std::vector<MenuDescriptor> menus_;
+	std::vector<Widget*> widgets_;
 	erwin::GizmoSystem gizmo_system_;
 	erwin::BoundingBoxSystem bounding_box_system_;
+
+	SceneViewWidget* scene_view_widget_ = nullptr;
 };
 
 } // namespace editor
