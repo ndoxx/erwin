@@ -4,8 +4,8 @@
 #include "level/scene.h"
 #include "core/config.h"
 #include "core/application.h"
-#include "event/window_events.h"
 #include "event/event_bus.h"
+#include "event/window_events.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "entity/reflection.h"
@@ -26,14 +26,14 @@ static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
 SceneViewWidget::SceneViewWidget():
-Widget("Scene", true)
+Widget("Scene", true),
+render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 {
 	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
     camera_overlay_ = new CameraTrackerOverlay();
-    render_surface_ = {0.f,0.f,0.f,0.f,0.f,0.f};
 }
 
 SceneViewWidget::~SceneViewWidget()
@@ -135,7 +135,7 @@ void SceneViewWidget::on_imgui_render()
 
     // * Show game render in window
 	// Retrieve the native framebuffer texture handle
-	FramebufferHandle fb = FramebufferPool::get_framebuffer("game_view"_h);
+	FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
 	TextureHandle texture = Renderer::get_framebuffer_texture(fb, 0);
 	void* framebuffer_texture_native = Renderer::get_native_texture_handle(texture);
     ImGui::GetWindowDrawList()->AddImage(framebuffer_texture_native,

@@ -77,13 +77,11 @@ void EditorLayer::on_attach()
 	// Load resources
     Scene::init();
 
-	background_shader_ = AssetManager::load_shader("shaders/background.glsl");
-
     FramebufferLayout layout
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("game_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
+    FramebufferPool::create_framebuffer("host"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
 	// Build UI
 	ConsoleWidget* console = new editor::ConsoleWidget();
@@ -125,7 +123,6 @@ void EditorLayer::on_detach()
 		for(Widget* widget: desc.widgets)
 			delete widget;
 
-	Renderer::destroy(background_shader_);
     Scene::shutdown();    
 }
 
@@ -143,26 +140,9 @@ void EditorLayer::on_render()
     bounding_box_system_.render();
     gizmo_system_.render();
 
-    PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-    PostProcessingRenderer::combine("LBuffer"_h, 0, true);
-
 	for(auto& desc: menus_)
 		for(Widget* widget: desc.widgets)
 			widget->on_layer_render();
-
-	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
-	RenderState state;
-	state.render_target = Renderer::default_render_target();
-	state.rasterizer_state.cull_mode = CullMode::Back;
-	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
-	state.blend_state = BlendState::Opaque;
-	state.depth_stencil_state.depth_test_enabled = true;
-
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
-	SortKey key;
-	key.set_sequence(0, Renderer::next_layer_id(), background_shader_);
-	DrawCall dc(DrawCall::Indexed, state.encode(), background_shader_, quad);
-	Renderer::submit(key.encode(), dc);
 }
 
 void EditorLayer::on_imgui_render()
@@ -332,16 +312,3 @@ bool EditorLayer::on_event(const KeyTypedEvent&)
 }
 
 } // namespace editor
-
-
-
-namespace erwin
-{
-
-void Application::build_editor()
-{
-    DLOG("editor",1) << "Pushing editor layer." << std::endl;
-    push_overlay(EDITOR_LAYER = new editor::EditorLayer());
-}
-
-} // namespace erwin

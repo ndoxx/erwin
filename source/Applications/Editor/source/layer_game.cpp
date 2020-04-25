@@ -178,7 +178,7 @@ void GameLayer::on_update(GameClock& clock)
 
 void GameLayer::on_render()
 {
-	// FramebufferHandle fb = FramebufferPool::get_framebuffer("game_view"_h);
+	// FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
 	// Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
 	// Draw scene geometry
@@ -218,15 +218,6 @@ void GameLayer::on_render()
         }
         Renderer3D::end_forward_pass();
     }
-
-    // Presentation
-	// TODO: do post processing here if editor is turned off
-	// atm, EditorLayer is responsible for the post processing pass.
-	// The idea is that the last layer should do it. Maybe this is
-	// not well thought through...
-	// PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-	// PostProcessingRenderer::combine("LBuffer"_h, 0, true);
-	// // PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
 }
 
 bool GameLayer::on_event(const MouseButtonEvent& event)

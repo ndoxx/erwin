@@ -12,8 +12,6 @@ namespace editor
 class EditorLayer: public erwin::Layer
 {
 public:
-	friend class Editor;
-	
 	struct MenuDescriptor
 	{
 		std::string name;
@@ -42,7 +40,6 @@ protected:
 
 private:
 	std::vector<MenuDescriptor> menus_;
-	erwin::ShaderHandle background_shader_;
 	erwin::GizmoSystem gizmo_system_;
 	erwin::BoundingBoxSystem bounding_box_system_;
 };

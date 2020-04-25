@@ -6,10 +6,16 @@
 
 #define W_ENTRY_POINT
 #include "erwin.h"
-#include "layer_game.h"
 
 using namespace erwin;
 using namespace editor;
+
+namespace editor
+{
+	class EditorLayer;
+	class EditorBackgroundLayer;
+}
+class GameLayer;
 
 /*
 	Editor application for Erwin Engine
@@ -29,6 +35,8 @@ public:
 
 private:
 	GameLayer* game_layer_;
+	EditorLayer* editor_layer_;
+	EditorBackgroundLayer* editor_background_layer_;
 };
 
 Application* erwin::create_application()
