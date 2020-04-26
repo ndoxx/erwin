@@ -31,6 +31,7 @@
 #include "entity/component_mesh.h"
 #include "entity/component_PBR_material.h"
 #include "entity/component_dirlight_material.h"
+#include "entity/component_description.h"
 #include "entity/light.h"
 
 #include "imgui.h"

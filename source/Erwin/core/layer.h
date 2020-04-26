@@ -43,7 +43,7 @@ protected:
 	REACT(WindowResizeEvent)
 	REACT(WindowMovedEvent)
 
-private:
+protected:
 	std::string debug_name_;
 	bool enabled_;
 	uint8_t layer_id_;

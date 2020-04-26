@@ -1,7 +1,7 @@
 #include "level/scene.h"
-#include "editor/font_awesome.h"
-#include "editor/editor_components.h"
+#include "imgui/font_awesome.h"
 #include "entity/reflection.h"
+#include "entity/component_description.h"
 #include "asset/asset_manager.h"
 #include "render/renderer_3d.h"
 #include "render/renderer.h"
@@ -13,8 +13,8 @@
 namespace erwin
 {
 
-EntityID Scene::selected_entity;
-EntityID Scene::directional_light;
+EntityID Scene::selected_entity = k_invalid_entity_id;
+EntityID Scene::directional_light = k_invalid_entity_id;
 std::vector<EntityID> Scene::entities;
 FreeflyController Scene::camera_controller;
 entt::registry Scene::registry;
@@ -23,18 +23,6 @@ static std::queue<std::tuple<EntityID, uint32_t>> s_removed_components;
 static std::queue<EntityID> s_removed_entities;
 
 Scene::Environment Scene::environment;
-
-void Scene::init()
-{
-	camera_controller.init(1280.f/1024.f, 60, 0.1f, 100.f);
-	selected_entity = k_invalid_entity_id;
-	directional_light = k_invalid_entity_id;
-}
-
-void Scene::shutdown()
-{
-
-}
 
 void Scene::load_hdr_environment(const fs::path& hdr_file)
 {
@@ -50,8 +38,8 @@ void Scene::load_hdr_environment(const fs::path& hdr_file)
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
-	ComponentEditorDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
-	registry.assign<ComponentEditorDescription>(entity, desc);
+	ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
+	registry.assign<ComponentDescription>(entity, desc);
 
 	entities.push_back(entity);
 

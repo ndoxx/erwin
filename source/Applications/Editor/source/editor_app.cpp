@@ -1,10 +1,10 @@
 #include "editor_app.h"
-#include "layer_game.h"
-#include "editor/font_awesome.h"
-#include "editor/layer_editor_scene.h"
-#include "editor/layer_editor_background.h"
-#include "editor/widget_console.h"
-#include "editor/widget_keybindings.h"
+#include "imgui/font_awesome.h"
+#include "layer/layer_scene_view.h"
+#include "layer/layer_scene_editor.h"
+#include "layer/layer_editor_background.h"
+#include "widget/widget_console.h"
+#include "widget/widget_keybindings.h"
 #include "imgui/theme.h"
 #include "debug/logger_thread.h"
 
@@ -54,14 +54,20 @@ void ErwinEditor::on_load()
 
 	console_ = new editor::ConsoleWidget();
 	WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_), {"editor"_h, "application"_h, "entity"_h}));
-
 	keybindings_widget_ = new editor::KeybindingsWidget();
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
-    push_overlay(scene_editor_layer_ = new editor::SceneEditorLayer());
-    push_overlay(editor_background_layer_ = new editor::EditorBackgroundLayer());
-    DLOG("application",1) << "Pushing game layer." << std::endl;
-    push_layer(game_layer_ = new GameLayer());
+
+    auto* scene_view_layer = new SceneViewLayer();
+    auto* scene_editor_layer = new editor::SceneEditorLayer();
+    //scene_edition_state_ = {{scene_view_layer}, scene_editor_layer};
+    create_state(EditorStateIdx::SCENE_EDITION, {{scene_view_layer}, scene_editor_layer});
+
+    push_layer(scene_view_layer);
+    push_overlay(scene_editor_layer);
+
+    push_overlay(new editor::EditorBackgroundLayer());
+    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
     // If editor is enabled, PPRenderer should draw to the host window framebuffer instead of the default one
     PostProcessingRenderer::set_final_render_target("host"_h);
@@ -77,7 +83,10 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
 {
 	// Terminate on Ctrl+ESCAPE
 	if(e.pressed && e.key == keymap::WKEY::ESCAPE && (e.mods & keymap::WKEYMOD::CONTROL))
+	{
 		EVENTBUS.publish(WindowCloseEvent());
+		return true;
+	}
 
 	return false;
 }
@@ -128,16 +137,18 @@ void ErwinEditor::on_imgui_render()
 
 	    	ImGui::Separator();
 	    	ImGui::Checkbox("Docking", &enable_docking_);
-	    	ImGui::Separator();
-	    	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
 
         	ImGui::EndMenu();
     	}
 
     	if(ImGui::BeginMenu("View"))
     	{
-			for(Widget* widget: scene_editor_layer_->get_widgets())
+        	ImGui::MenuItem(console_->get_name().c_str(), NULL, &console_->open_);
+			for(Widget* widget: states_[size_t(current_state_idx_)].gui_layer->get_widgets())
         		ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
+        
+	    	ImGui::Separator();
+	    	ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
         
         	ImGui::EndMenu();
     	}
@@ -154,7 +165,6 @@ void ErwinEditor::on_imgui_render()
 		EVENTBUS.publish(WindowCloseEvent());
 	}
 }
-
 
 void ErwinEditor::show_dockspace_window(bool* p_open)
 {
@@ -193,4 +203,22 @@ void ErwinEditor::show_dockspace_window(bool* p_open)
     }
 
     ImGui::End();
+}
+
+void ErwinEditor::create_state(EditorStateIdx idx, EditorState&& state)
+{
+	W_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
+	states_[size_t(idx)] = state;
+}
+
+void ErwinEditor::switch_state(EditorStateIdx idx)
+{
+	if(idx == current_state_idx_)
+		return;
+
+	W_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
+	states_[size_t(current_state_idx_)].enable(false);
+	states_[size_t(idx)].enable(true);
+
+	current_state_idx_ = idx;
 }
