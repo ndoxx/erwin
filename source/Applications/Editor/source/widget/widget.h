@@ -23,6 +23,16 @@ public:
 
 	inline bool is_hovered() const { return is_hovered_; }
 
+	inline void save_state_and_hide()
+	{
+		was_open_ = open_;
+		open_ = false;
+	}
+	inline void restore()
+	{
+		open_ = was_open_;
+	}
+
 	bool open_;
 
 protected:
@@ -39,6 +49,7 @@ protected:
 	int32_t y_pos_;
 	bool has_focus_;
 	bool is_hovered_;
+	bool was_open_;
 };
 
 

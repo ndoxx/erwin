@@ -25,19 +25,19 @@ void SceneEditorLayer::on_attach()
     REFLECT_COMPONENT(ComponentDescription);
 
 	// Build UI
-    editor::HexDumpWidget* hex_widget;
-    add_widget(hex_widget = new editor::HexDumpWidget());
+    HexDumpWidget* hex_widget;
+    add_widget(hex_widget = new HexDumpWidget());
     hex_widget->refresh();
 
-    scene_view_widget_ = new editor::SceneViewWidget();
+    scene_view_widget_ = new SceneViewWidget();
     add_widget(scene_view_widget_);
-    add_widget(new editor::SceneHierarchyWidget());
-    add_widget(new editor::MaterialsWidget());
-    add_widget(new editor::InspectorWidget());
+    add_widget(new SceneHierarchyWidget());
+    add_widget(new MaterialsWidget());
+    add_widget(new InspectorWidget());
 
     // Register main render targets in peek widget
-    editor::RTPeekWidget* peek_widget;
-    add_widget(peek_widget = new editor::RTPeekWidget());
+    RTPeekWidget* peek_widget;
+    add_widget(peek_widget = new RTPeekWidget());
 	peek_widget->register_framebuffer("GBuffer");
 	peek_widget->register_framebuffer("SpriteBuffer");
 	peek_widget->register_framebuffer("BloomCombine");

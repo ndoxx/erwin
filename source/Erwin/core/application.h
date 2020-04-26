@@ -28,8 +28,8 @@ public:
 	virtual void on_unload() { }
 	virtual void on_imgui_render() { }
 
-	size_t push_layer(Layer* layer);
-	size_t push_overlay(Layer* layer);
+	size_t push_layer(Layer* layer, bool enabled=true);
+	size_t push_overlay(Layer* layer, bool enabled=true);
 
 	inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
 	void toggle_imgui_layer();

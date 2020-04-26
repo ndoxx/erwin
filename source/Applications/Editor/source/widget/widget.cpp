@@ -14,7 +14,8 @@ height_(0),
 x_pos_(0),
 y_pos_(0),
 has_focus_(false),
-is_hovered_(false)
+is_hovered_(false),
+was_open_(open)
 {
 
 }

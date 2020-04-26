@@ -307,17 +307,19 @@ void Application::shutdown()
     } 
 }
 
-size_t Application::push_layer(Layer* layer)
+size_t Application::push_layer(Layer* layer, bool enabled)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_layer(layer);
+    layer->set_enabled(enabled);
 	return index;
 }
 
-size_t Application::push_overlay(Layer* layer)
+size_t Application::push_overlay(Layer* layer, bool enabled)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_overlay(layer);
+    layer->set_enabled(enabled);
 	return index;
 }
 

@@ -19,6 +19,7 @@ class SceneViewLayer;
 */
 struct EditorState
 {
+	std::string name;
 	std::vector<erwin::Layer*> layers;
 	editor::GuiLayer* gui_layer = nullptr;
 
@@ -34,6 +35,7 @@ struct EditorState
 enum class EditorStateIdx: size_t
 {
 	SCENE_EDITION = 0,
+	MATERIAL_AUTHORING,
 
 	COUNT
 };
@@ -41,7 +43,7 @@ enum class EditorStateIdx: size_t
 /*
 	Editor application for Erwin Engine
 */
-class ErwinEditor: public Application
+class ErwinEditor: public erwin::Application
 {
 public:
 	virtual void on_pre_init() override;
@@ -67,7 +69,7 @@ private:
 	bool enable_docking_ = true;
 };
 
-Application* erwin::create_application()
+erwin::Application* erwin::create_application()
 {
 	return new ErwinEditor();
 }

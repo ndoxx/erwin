@@ -1,4 +1,4 @@
-#include "widget/widget_material_authoring.h"
+#include "widget/widget_material_view.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "render/handles.h"
@@ -16,24 +16,24 @@ static constexpr float k_border = 4.f;
 static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 
-MaterialAuthoringWidget::MaterialAuthoringWidget():
-Widget("Material Authoring", true),
+MaterialViewWidget::MaterialViewWidget():
+Widget("Material view", true),
 render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 {
 	// flags_ |= ImGuiWindowFlags_MenuBar;
 }
 
-MaterialAuthoringWidget::~MaterialAuthoringWidget()
+MaterialViewWidget::~MaterialViewWidget()
 {
 
 }
 
-void MaterialAuthoringWidget::on_update()
+void MaterialViewWidget::on_update()
 {
 
 }
 
-void MaterialAuthoringWidget::on_resize(uint32_t width, uint32_t height)
+void MaterialViewWidget::on_resize(uint32_t width, uint32_t height)
 {
 	float rw = std::max(float(width)  - (k_border + k_start_x), 1.f);
 	float rh = std::max(float(height) - (k_border + k_start_y), 1.f);
@@ -46,7 +46,7 @@ void MaterialAuthoringWidget::on_resize(uint32_t width, uint32_t height)
 	EVENTBUS.publish(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
-void MaterialAuthoringWidget::on_move(int32_t x, int32_t y)
+void MaterialViewWidget::on_move(int32_t x, int32_t y)
 {
 	render_surface_.x0 = float(x) + k_start_x;
 	render_surface_.y0 = float(y) + k_start_y;
@@ -54,7 +54,7 @@ void MaterialAuthoringWidget::on_move(int32_t x, int32_t y)
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }
 
-void MaterialAuthoringWidget::on_imgui_render()
+void MaterialViewWidget::on_imgui_render()
 {
     // * Show game render in window
 	// Retrieve the native framebuffer texture handle
@@ -67,5 +67,11 @@ void MaterialAuthoringWidget::on_imgui_render()
                                          ImVec2(render_surface_.x1, render_surface_.y1),
                                          ImVec2(0, 1), ImVec2(1, 0));
 }
+
+bool MaterialViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
+{
+	return true;
+}
+
 
 } // namespace editor

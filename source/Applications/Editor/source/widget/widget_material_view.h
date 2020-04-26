@@ -5,14 +5,15 @@
 namespace editor
 {
 
-class MaterialAuthoringWidget: public Widget
+class MaterialViewWidget: public Widget
 {
 public:
-	MaterialAuthoringWidget();
-	virtual ~MaterialAuthoringWidget();
+	MaterialViewWidget();
+	virtual ~MaterialViewWidget();
 
 	virtual void on_update() override;
-	
+
+	bool on_mouse_event(const erwin::MouseButtonEvent& event);
 
 protected:
 	virtual void on_imgui_render() override;
