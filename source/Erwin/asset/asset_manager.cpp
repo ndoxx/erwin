@@ -9,10 +9,16 @@
 #include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "debug/logger.h"
-#include "EASTL/vector.h"
-#include "EASTL/map.h"
-#include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
 #include "core/intern_string.h"
+
+#ifdef W_USE_EASTL
+	#include "EASTL/vector.h"
+	#include "EASTL/map.h"
+	#include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
+#else
+	#include <vector>
+	#include <map>
+#endif
 
 namespace erwin
 {
@@ -33,6 +39,7 @@ struct MaterialDescriptor
 
 static struct
 {
+#ifdef W_USE_EASTL
 	eastl::vector<TextureAtlas*> texture_atlases_;
 	eastl::vector<FontAtlas*> font_atlases_;
 
@@ -43,6 +50,18 @@ static struct
 
 	eastl::map<hash_t, MaterialDescriptor> material_descriptors_;
 	eastl::map<hash_t, Material> materials_;
+#else
+	std::vector<TextureAtlas*> texture_atlases_;
+	std::vector<FontAtlas*> font_atlases_;
+
+	std::map<hash_t, TextureAtlasHandle> atlas_cache_;
+	std::map<hash_t, FontAtlasHandle> font_cache_;
+	std::map<hash_t, ShaderHandle> shader_cache_;
+	std::map<uint64_t, UniformBufferHandle> ubo_cache_;
+
+	std::map<hash_t, MaterialDescriptor> material_descriptors_;
+	std::map<hash_t, Material> materials_;
+#endif
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -351,15 +370,27 @@ void AssetManager::visit_materials(MaterialVisitor visit)
 	}
 }
 
-template <typename KeyT, typename HandleT>
-static void erase_by_value(eastl::map<KeyT, HandleT>& cache, HandleT handle)
-{
-	auto it = cache.begin();
-	for(; it!=cache.end(); ++it)
-    	if(it->second == handle)
-    		break;
-	cache.erase(it);
-}
+#ifdef W_USE_EASTL
+	template <typename KeyT, typename HandleT>
+	static void erase_by_value(eastl::map<KeyT, HandleT>& cache, HandleT handle)
+	{
+		auto it = cache.begin();
+		for(; it!=cache.end(); ++it)
+	    	if(it->second == handle)
+	    		break;
+		cache.erase(it);
+	}
+#else
+	template <typename KeyT, typename HandleT>
+	static void erase_by_value(std::map<KeyT, HandleT>& cache, HandleT handle)
+	{
+		auto it = cache.begin();
+		for(; it!=cache.end(); ++it)
+	    	if(it->second == handle)
+	    		break;
+		cache.erase(it);
+	}
+#endif
 
 void AssetManager::release(TextureAtlasHandle handle)
 {

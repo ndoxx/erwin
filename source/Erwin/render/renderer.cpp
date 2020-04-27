@@ -945,7 +945,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 	uint32_t count = uint32_t(layout.get_count());
 
 	// Allocate auxiliary data
-	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC(FramebufferLayoutElement, count, s_storage.auxiliary_arena_);
+	FramebufferLayoutElement* auxiliary = W_NEW_ARRAY_DYNAMIC_ALIGN(FramebufferLayoutElement, count, s_storage.auxiliary_arena_, 8);
 	memcpy(auxiliary, layout.data(), count * sizeof(FramebufferLayoutElement));
 
 	RenderCommandWriter cw(RenderCommand::CreateFramebuffer);

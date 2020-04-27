@@ -17,10 +17,15 @@ include(cotire)
 include(standard_settings)
 include(toolchain_clang_local)
 include(compiler_warnings) # Hardcore warnings
+include(sanitizers)
 
 # Interface library to enable us to pass on options to multiple projects
 add_library(project_warnings INTERFACE)
 set_project_warnings(project_warnings)
+
+add_library(project_options INTERFACE)
+target_compile_features(project_options INTERFACE cxx_std_17)
+enable_sanitizers(project_options)
 
 # Global definitions
 add_definitions(-DW_DEBUG)

@@ -1,7 +1,12 @@
 #pragma once
 
-#include "EASTL/hash_map.h"
-#include "EASTL/vector.h"
+#ifdef W_USE_EASTL
+	#include "EASTL/vector.h"
+	#include "EASTL/map.h"
+#else
+	#include <vector>
+	#include <map>
+#endif
 
 #include "render/handles.h"
 #include "filesystem/filesystem.h"
@@ -27,7 +32,11 @@ struct TextureAtlas
 	uint32_t height;
 
 private:
+#ifdef W_USE_EASTL
 	eastl::hash_map<hash_t, glm::vec4> remapping;
+#else
+	std::map<hash_t, glm::vec4> remapping;
+#endif
 };
 
 struct FontAtlas
@@ -56,7 +65,11 @@ struct FontAtlas
 	uint32_t height;
 
 private:
+#ifdef W_USE_EASTL
 	eastl::hash_map<uint64_t,RemappingElement> remapping;
+#else
+	std::map<uint64_t,RemappingElement> remapping;
+#endif
 };
 
 } // namespace erwin

@@ -34,7 +34,11 @@ void TextureAtlas::load(const fs::path& filepath)
 		{
 			glm::vec4 uvs((remap.x)/fwidth, (remap.y)/fheight, 
 					      (remap.x+remap.w)/fwidth, (remap.y+remap.h)/fheight);
+#ifdef W_USE_EASTL
 		    remapping.insert(eastl::make_pair(H_(remap.name), uvs/*+correction*/));
+#else
+		    remapping.insert(std::make_pair(H_(remap.name), uvs/*+correction*/));
+#endif
 		});
 
 		// Create texture

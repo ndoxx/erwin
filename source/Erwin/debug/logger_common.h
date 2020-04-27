@@ -13,8 +13,6 @@ namespace erwin
 // Evaluates to an ansi string when submitted to a stream
 struct WCC
 {
-    static std::map<char, std::string> COLORMAP;
-
     WCC() = default;
     explicit WCC(char cc);
     WCC(uint8_t R, uint8_t G, uint8_t B);
@@ -28,8 +26,6 @@ struct WCC
 // Evaluates to an ansi string when submitted to a stream
 struct WCB
 {
-    static std::map<char, std::string> COLORMAP;
-
     WCB() = default;
     explicit WCB(int cc);
     WCB(uint8_t R, uint8_t G, uint8_t B);

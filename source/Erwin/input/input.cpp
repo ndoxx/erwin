@@ -8,7 +8,11 @@
 namespace erwin
 {
 
-eastl::vector<Input::ActionDescriptor> Input::actions;
+#ifdef W_USE_EASTL
+	eastl::vector<Input::ActionDescriptor> Input::actions;
+#else
+	std::vector<Input::ActionDescriptor> Input::actions;
+#endif
 
 
 void Input::init()

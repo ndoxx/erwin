@@ -7,6 +7,8 @@ namespace erwin
 namespace memory
 {
 
+#pragma pack(push)
+#pragma pack(1) // Force 1-byte alignment to avoid undefined behavior during (UGLY) union-cast in init()
 class Freelist
 {
 public:
@@ -45,6 +47,7 @@ public:
 private:
   Freelist* next_;
 };
+#pragma pack(pop)
 
 } // namespace memory
 } // namespace erwin

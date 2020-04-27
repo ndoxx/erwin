@@ -20,6 +20,8 @@ set_target_properties(editor
 
 target_link_libraries(editor
     PRIVATE
+        project_warnings
+        project_options
         erwin
         pthread
         stdc++fs

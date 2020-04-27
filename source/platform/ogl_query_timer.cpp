@@ -33,6 +33,7 @@ void OGLQueryTimer::start(bool sync)
     }
     glBeginQuery(GL_TIME_ELAPSED, query_ID_[query_back_buffer_]);
 #else
+    (void)sync;
     glQueryCounter(query_ID_[0], GL_TIMESTAMP);
 #endif
 }

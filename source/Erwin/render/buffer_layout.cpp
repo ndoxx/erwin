@@ -82,8 +82,8 @@ stride_(0)
 
 void BufferLayout::init(BufferLayoutElement* elements, uint32_t count)
 {
-    elements_.resize(count);
-    memcpy(elements_.data(), elements, count * sizeof(BufferLayoutElement));
+    for(uint32_t ii=0; ii<count; ++ii)
+        elements_.push_back(elements[ii]);
     compute_offset_and_stride();
 }
 

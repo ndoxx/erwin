@@ -6,9 +6,9 @@
 namespace erwin
 {
 
-std::map<char, std::string> WCC::COLORMAP = 
+static std::map<char, std::string> s_COLORMAP = 
 {
-	{0,   "\033[1;38;2;255;255;255m"}, // previous style
+	{0,   "\033[0m"}, // previous style
     {'p', "\033[1;38;2;0;255;255m"},   // highlight paths in light blue
     {'n', "\033[1;38;2;255;50;0m"},    // names and symbols in dark orange
     {'i', "\033[1;38;2;255;190;10m"},  // instructions in light orange
@@ -25,10 +25,9 @@ std::map<char, std::string> WCC::COLORMAP =
 };
 
 WCC::WCC(char cc):
-escape(COLORMAP.at(cc))
+escape(s_COLORMAP.at(cc))
 {
-	if(cc == 0)
-		escape = "\033[0m";
+
 }
 
 WCC::WCC(uint8_t R, uint8_t G, uint8_t B)

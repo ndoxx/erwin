@@ -3,7 +3,12 @@
 #include "core/core.h"
 #include "input/keys.h"
 #include "input/action.h"
-#include "EASTL/vector.h"
+
+#ifdef W_USE_EASTL
+	#include "EASTL/vector.h"
+#else
+	#include <vector>
+#endif
 
 namespace erwin
 {
@@ -101,7 +106,11 @@ private:
 
 private:
 	static Input* INSTANCE_;
+#ifdef W_USE_EASTL
 	static eastl::vector<ActionDescriptor> actions;
+#else
+	static std::vector<ActionDescriptor> actions;
+#endif
 };
 
 

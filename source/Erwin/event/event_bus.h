@@ -7,9 +7,16 @@
 
 #pragma once
 #include <memory>
-#include "EASTL/list.h"
-#include "EASTL/hash_map.h"
-#include "EASTL/queue.h"
+
+#ifdef W_USE_EASTL
+    #include "EASTL/list.h"
+    #include "EASTL/hash_map.h"
+    #include "EASTL/queue.h"
+#else
+    #include <list>
+    #include <map>
+    #include <queue>
+#endif
 
 #include "ctti/type_id.hpp"
 
@@ -27,7 +34,11 @@ public:
     NON_COPYABLE(EventBus);
     NON_MOVABLE(EventBus);
 
+#ifdef W_USE_EASTL
     using DelegateList = eastl::list<AbstractDelegate<WEvent>*>;
+#else
+    using DelegateList = std::list<AbstractDelegate<WEvent>*>;
+#endif
 
     static void init();
     static void shutdown();
@@ -40,7 +51,11 @@ public:
     void init_event_pool(memory::HeapArea& area, size_t max_events)
     {
         EventT::init_pool(area, sizeof(EventT), max_events, EventT::NAME.c_str());
+#ifdef W_USE_EASTL
         event_queues_.emplace(eastl::piecewise_construct, eastl::make_tuple(EventT::ID), eastl::make_tuple());
+#else
+        event_queues_.emplace(std::piecewise_construct, std::make_tuple(EventT::ID), std::make_tuple());
+#endif
     }
 
     template<typename EventT>
@@ -124,8 +139,13 @@ public:
     }
 
 private:
+#ifdef W_USE_EASTL
     using Subscribers = eastl::hash_map<EventID, DelegateList*>;
     using EventQueues = eastl::hash_map<EventID, eastl::queue<WEvent*>>;
+#else
+    using Subscribers = std::map<EventID, DelegateList*>;
+    using EventQueues = std::map<EventID, std::queue<WEvent*>>;
+#endif
 
     Subscribers subscribers_;
     EventQueues event_queues_;

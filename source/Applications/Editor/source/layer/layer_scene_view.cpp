@@ -82,7 +82,7 @@ void SceneViewLayer::on_attach()
 		std::cref(mat_dirt),
 		std::cref(mat_test_emissive),
 	};
-	for(int ii=0; ii<4; ++ii)
+	for(size_t ii=0; ii<4; ++ii)
 	{
 		EntityID ent = Scene::registry.create();
 
@@ -130,7 +130,7 @@ void SceneViewLayer::on_attach()
 
 			EntityID ent = Scene::registry.create();
 
-			ComponentTransform3D ctransform = {{2.5*ii,5.f+2.5*jj,8.f}, {0.f,0.f,0.f}, 0.75f};
+			ComponentTransform3D ctransform = {{2.5f*float(ii),5.f+2.5f*float(jj),8.f}, {0.f,0.f,0.f}, 0.75f};
 
 			ComponentOBB cOBB(CommonGeometry::get_extent("icosphere_pbr"_h));
 			cOBB.update(ctransform.get_model_matrix(), ctransform.uniform_scale);
