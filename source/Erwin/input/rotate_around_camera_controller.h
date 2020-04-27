@@ -22,8 +22,9 @@ public:
 
 	inline const erwin::PerspectiveCamera3D& get_camera() const { return camera_; }
 	inline erwin::PerspectiveCamera3D& get_camera()             { return camera_; }
-	inline void set_position(const glm::vec3& value)            { camera_position_ = value; camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_); }
-	inline void set_angles(float yaw, float pitch)              { camera_yaw_ = yaw; camera_pitch_ = pitch; camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_); }
+
+	inline void set_target(const glm::vec3& target) { camera_target_ = target; }
+	void set_position(float radius, float azimuth, float colatitude);
 
 	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
 	bool on_window_moved_event(const erwin::WindowMovedEvent& event);
@@ -43,10 +44,10 @@ private:
 	float fovy_;
 	float znear_;
 	float zfar_;
-	float camera_translation_speed_;
 	float camera_rotation_speed_;
-	float camera_yaw_;
-	float camera_pitch_;
+	float camera_azimuth_;
+	float camera_colatitude_;
+	float camera_radius_;
 	float win_width_;
 	float win_height_;
 	float win_x_;
@@ -55,6 +56,7 @@ private:
 	float prev_mouse_y_;
 	bool inputs_enabled_;
 	glm::vec3 camera_position_;
+	glm::vec3 camera_target_;
 };
 
 

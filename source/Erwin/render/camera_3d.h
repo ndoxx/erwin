@@ -32,6 +32,8 @@ public:
 
     void init(const Frustum3D& frustum);
 
+    void look_at(const glm::vec3& eye, const glm::vec3& target);
+
     inline const glm::vec3& get_position() const { return position_; }
     inline float get_yaw() const { return yaw_; }
     inline float get_pitch() const { return pitch_; }

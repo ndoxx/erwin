@@ -8,6 +8,8 @@
 #include "render/framebuffer_pool.h"
 #include "render/common_geometry.h"
 
+#include "level/scene.h" // TMP
+
 #include "imgui.h"
 
 using namespace erwin;
@@ -26,10 +28,10 @@ render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 	// flags_ |= ImGuiWindowFlags_MenuBar;
 	// Create scene with a sphere in the middle
 	camera_controller_.init(1280.f/1024.f, 60, 0.1f, 100.f);
-	camera_controller_.set_position({-5.8f,2.3f,-5.8f});
-	camera_controller_.set_angles(228.f, 5.f);
+	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
+	camera_controller_.set_target({0.f,0.f,0.f});
 
-	const Material& mat = AssetManager::create_PBR_material("textures/map/pavedFloor.tom");
+	const Material& mat = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
 	current_material_.set_material(mat);
 	current_material_.enable_albedo_map();
 	current_material_.enable_normal_map();
@@ -84,6 +86,10 @@ void MaterialViewWidget::on_layer_render()
     Renderer3D::begin_deferred_pass();
     Renderer3D::draw_mesh(icosphere, transform_.get_model_matrix(), current_material_.material, &current_material_.material_data);
     Renderer3D::end_deferred_pass();
+
+    // TODO: Use local envmap
+    // BUG: If not used, camera control will bug?!
+    Renderer3D::draw_skybox(Scene::environment.environment_map);
 }
 
 void MaterialViewWidget::on_imgui_render()

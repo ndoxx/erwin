@@ -9,7 +9,7 @@ namespace erwin
 using namespace keymap;
 
 // Helper function to get "top" dimension from FOV and z-near
-inline float fovy_znear_to_top(float fovy, float znear)
+inline static float fovy_znear_to_top(float fovy, float znear)
 {
 	return znear * std::tan(0.5f * fovy * (float(M_PI) / 180.f));
 }
@@ -32,11 +32,13 @@ void RotateAroundController::init(float aspect_ratio, float fovy, float znear, f
 	fovy_         = fovy;
 	znear_        = znear;
 	zfar_         = zfar;
-	camera_translation_speed_ = 2.f;
-	camera_rotation_speed_    = 2.5f * float(M_PI) / 180.f;
-	camera_yaw_               = camera_.get_yaw();
-	camera_pitch_             = camera_.get_pitch();
-	camera_position_          = camera_.get_position();
+	camera_rotation_speed_ = 2.5f * float(M_PI) / 180.f;
+	camera_azimuth_        = 0.f;
+	camera_colatitude_     = 90.f;
+	camera_radius_         = 5.f;
+	camera_target_         = {0.f,0.f,0.f};
+
+	set_position(camera_radius_, camera_azimuth_, camera_colatitude_);
 
 	win_x_ = 0.f;
 	win_y_ = 0.f;
@@ -45,37 +47,9 @@ void RotateAroundController::init(float aspect_ratio, float fovy, float znear, f
 	prev_mouse_y_ = 0.f;
 }
 
-void RotateAroundController::update(const GameClock& clock)
+void RotateAroundController::update(const GameClock&)
 {
-	if(!inputs_enabled_)
-		return;
-
-	// Translational magnitude
-	float dt = clock.get_frame_duration();
-	float speed_modifier = Input::is_action_key_pressed(ACTION_FREEFLY_GO_FAST) ? 5.f : 1.f;
-	float translation = dt * speed_modifier * camera_translation_speed_;
-
-	// Front direction is the normalized projection of the camera forward axis on the horizontal plane
-	glm::vec3 front = camera_.get_forward();
-	front.y = 0.f;
-	front = glm::normalize(front);
-
-	// Handle keyboard inputs
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_FORWARD))
-		camera_position_ += translation*front;
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_MOVE_BACKWARD))
-		camera_position_ -= translation*front;
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_STRAFE_LEFT))
-		camera_position_ -= translation*camera_.get_right();
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_STRAFE_RIGHT))
-		camera_position_ += translation*camera_.get_right();
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_ASCEND))
-		camera_position_ += translation*glm::vec3(0.f,1.f,0.f);
-	if(Input::is_action_key_pressed(ACTION_FREEFLY_DESCEND))
-		camera_position_ -= translation*glm::vec3(0.f,1.f,0.f);
-
-	// Update camera parameters
-	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
+	camera_.look_at(camera_position_, camera_target_);
 }
 
 void RotateAroundController::enable_inputs(bool)
@@ -115,13 +89,10 @@ bool RotateAroundController::on_mouse_scroll_event(const MouseScrollEvent& event
 	if(!inputs_enabled_)
 		return false;
 
-	// Update and constrain FOV
-	fovy_ *= (event.y_offset<0) ? 1.05f : 0.95f;
-	fovy_  = (fovy_>120.f) ? 120.f : fovy_;
-	fovy_  = (fovy_<20.f)  ? 20.f  : fovy_;
+	// Update radius
+	float factor = (event.y_offset<0) ? 1.05f : 0.95f;
+	set_position(camera_radius_*factor, camera_azimuth_, camera_colatitude_);
 
-	float top = fovy_znear_to_top(fovy_, znear_);
-	camera_.set_projection({-aspect_ratio_*top, aspect_ratio_*top, -top, top, znear_, zfar_});
 	return true;
 }
 
@@ -130,20 +101,31 @@ bool RotateAroundController::on_mouse_button_event(const MouseButtonEvent&)
 	return false;
 }
 
+void RotateAroundController::set_position(float radius, float azimuth, float colatitude)
+{
+	camera_radius_ = radius;
+	camera_azimuth_ = azimuth;
+	camera_colatitude_ = colatitude;
+
+	camera_azimuth_ = (camera_azimuth_>360.f) ? camera_azimuth_-360.f : camera_azimuth_;
+	camera_azimuth_ = (camera_azimuth_<0.f)   ? 360.f-camera_azimuth_ : camera_azimuth_;
+	camera_colatitude_ = (camera_colatitude_> 179.f) ?  179.f : camera_colatitude_;
+	camera_colatitude_ = (camera_colatitude_<1.f) ? 1.f : camera_colatitude_;
+
+	camera_position_ = {camera_radius_*std::sin(glm::radians(camera_colatitude_))*std::cos(glm::radians(camera_azimuth_)),
+						camera_radius_*std::cos(glm::radians(camera_colatitude_)),
+						camera_radius_*std::sin(glm::radians(camera_colatitude_))*std::sin(glm::radians(camera_azimuth_))};
+}
+
 bool RotateAroundController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
 	if(!inputs_enabled_)
 		return false;
 
-	// Update and constrain yaw and pitch
-	float old_x = win_x_+0.5f*win_width_;
-	float old_y = win_y_+0.5f*win_height_;
-	camera_yaw_   -= camera_rotation_speed_ * (event.x-old_x);
-	camera_yaw_    = (camera_yaw_>360.f) ? camera_yaw_-360.f : camera_yaw_;
-	camera_yaw_    = (camera_yaw_<0.f)   ? 360.f-camera_yaw_ : camera_yaw_;
-	camera_pitch_ -= camera_rotation_speed_ * (event.y-old_y);
-	camera_pitch_  = (camera_pitch_> 89.f) ?  89.f : camera_pitch_;
-	camera_pitch_  = (camera_pitch_<-89.f) ? -89.f : camera_pitch_;
+	float dphi   = camera_rotation_speed_ * float(event.x - (win_x_+0.5f*win_width_));
+	float dtheta = camera_rotation_speed_ * float(event.y - (win_y_+0.5f*win_height_));
+
+	set_position(camera_radius_, camera_azimuth_ - dphi, camera_colatitude_ + dtheta);
 
 	// Set cursor back to the center of the screen
 	Input::set_mouse_position(win_x_+0.5f*win_width_, win_y_+0.5f*win_height_);

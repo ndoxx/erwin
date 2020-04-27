@@ -153,8 +153,6 @@ void SceneViewLayer::on_attach()
 		}
 	}
 
-
-
 	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});
 	Scene::camera_controller.set_angles(228.f, 5.f);
 }
