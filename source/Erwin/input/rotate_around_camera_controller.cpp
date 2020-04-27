@@ -1,4 +1,4 @@
-#include "input/freefly_camera_controller.h"
+#include "input/rotate_around_camera_controller.h"
 #include "input/input.h"
 #include "debug/logger.h"
 
@@ -14,12 +14,12 @@ inline float fovy_znear_to_top(float fovy, float znear)
 	return znear * std::tan(0.5f * fovy * (float(M_PI) / 180.f));
 }
 
-FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar)
+RotateAroundController::RotateAroundController(float aspect_ratio, float fovy, float znear, float zfar)
 {
 	init(aspect_ratio, fovy, znear, zfar);
 }
 
-void FreeflyController::init(float aspect_ratio, float fovy, float znear, float zfar)
+void RotateAroundController::init(float aspect_ratio, float fovy, float znear, float zfar)
 {
 	camera_.init({-aspect_ratio*fovy_znear_to_top(fovy,znear), 
 				   aspect_ratio*fovy_znear_to_top(fovy,znear),
@@ -45,7 +45,7 @@ void FreeflyController::init(float aspect_ratio, float fovy, float znear, float 
 	prev_mouse_y_ = 0.f;
 }
 
-void FreeflyController::update(const GameClock& clock)
+void RotateAroundController::update(const GameClock& clock)
 {
 	if(!inputs_enabled_)
 		return;
@@ -78,7 +78,7 @@ void FreeflyController::update(const GameClock& clock)
 	camera_.set_parameters(camera_position_, camera_yaw_, camera_pitch_);
 }
 
-void FreeflyController::enable_inputs(bool)
+void RotateAroundController::enable_inputs(bool)
 {
 	inputs_enabled_ = !inputs_enabled_;
 	Input::show_cursor(!inputs_enabled_);
@@ -93,7 +93,7 @@ void FreeflyController::enable_inputs(bool)
 		Input::set_mouse_position(prev_mouse_x_, prev_mouse_y_);
 }
 
-bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
+bool RotateAroundController::on_window_resize_event(const WindowResizeEvent& event)
 {
 	win_width_ = float(event.width);
 	win_height_ = float(event.height);
@@ -103,14 +103,14 @@ bool FreeflyController::on_window_resize_event(const WindowResizeEvent& event)
 	return false;
 }
 
-bool FreeflyController::on_window_moved_event(const erwin::WindowMovedEvent& event)
+bool RotateAroundController::on_window_moved_event(const erwin::WindowMovedEvent& event)
 {
 	win_x_ = float(event.x);
 	win_y_ = float(event.y);
 	return false;
 }
 
-bool FreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
+bool RotateAroundController::on_mouse_scroll_event(const MouseScrollEvent& event)
 {
 	if(!inputs_enabled_)
 		return false;
@@ -125,12 +125,12 @@ bool FreeflyController::on_mouse_scroll_event(const MouseScrollEvent& event)
 	return true;
 }
 
-bool FreeflyController::on_mouse_button_event(const MouseButtonEvent&)
+bool RotateAroundController::on_mouse_button_event(const MouseButtonEvent&)
 {
 	return false;
 }
 
-bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
+bool RotateAroundController::on_mouse_moved_event(const MouseMovedEvent& event)
 {
 	if(!inputs_enabled_)
 		return false;
@@ -152,7 +152,7 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 	return true;
 }
 
-bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
+bool RotateAroundController::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
 	if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_FREEFLY_TOGGLE))
 	{

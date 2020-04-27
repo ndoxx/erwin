@@ -2,6 +2,7 @@
 
 #include <string>
 #include "event/window_events.h"
+#include "core/game_clock.h"
 
 namespace editor
 {
@@ -12,7 +13,7 @@ public:
 	Widget(const std::string& name, bool open);
 	virtual ~Widget() = default;
 
-	virtual void on_update() { }
+	virtual void on_update(const erwin::GameClock&) { }
 	virtual void on_layer_render() { }
 
 	void imgui_render();

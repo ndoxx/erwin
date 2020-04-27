@@ -11,7 +11,7 @@ public:
 	RenderStatsOverlay();
 	virtual ~RenderStatsOverlay() = default;
 
-	virtual void on_update() override;
+	virtual void on_update(const erwin::GameClock& clock) override;
 
 protected:
 	virtual void on_imgui_render() override;

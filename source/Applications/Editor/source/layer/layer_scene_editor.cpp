@@ -55,7 +55,7 @@ void SceneEditorLayer::on_update(GameClock& clock)
     bounding_box_system_.update(clock);
     
 	for(Widget* widget: widgets_)
-		widget->on_update();
+		widget->on_update(clock);
 }
 
 void SceneEditorLayer::on_render()

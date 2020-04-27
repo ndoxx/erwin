@@ -235,7 +235,7 @@ bool SceneViewLayer::on_event(const WindowResizeEvent& event)
 
 bool SceneViewLayer::on_event(const WindowMovedEvent& event)
 {
-	return false;
+	return Scene::camera_controller.on_window_moved_event(event);
 }
 
 bool SceneViewLayer::on_event(const MouseScrollEvent& event)

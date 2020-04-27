@@ -42,9 +42,9 @@ SceneViewWidget::~SceneViewWidget()
 	delete camera_overlay_;
 }
 
-void SceneViewWidget::on_update()
+void SceneViewWidget::on_update(const GameClock& clock)
 {
-	stats_overlay_->on_update();
+	stats_overlay_->on_update(clock);
 
 	if(track_next_frame_draw_calls_)
 	{

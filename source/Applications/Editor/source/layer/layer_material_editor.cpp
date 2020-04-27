@@ -29,7 +29,7 @@ void MaterialEditorLayer::on_detach()
 void MaterialEditorLayer::on_update(GameClock& clock)
 {
 	for(Widget* widget: widgets_)
-		widget->on_update();
+		widget->on_update(clock);
 }
 
 void MaterialEditorLayer::on_render()
@@ -54,18 +54,29 @@ bool MaterialEditorLayer::on_event(const MouseButtonEvent& event)
             return true;
     }
 
-    return material_view_widget_->on_mouse_event(event);
+    return material_view_widget_->on_event(event);
 }
 
-bool MaterialEditorLayer::on_event(const WindowResizeEvent&)
+bool MaterialEditorLayer::on_event(const MouseMovedEvent& event)
 {
-	return false;
+    return material_view_widget_->on_event(event);
 }
 
-bool MaterialEditorLayer::on_event(const MouseScrollEvent&)
+bool MaterialEditorLayer::on_event(const WindowResizeEvent& event)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    return io.WantCaptureMouse;
+    return material_view_widget_->on_event(event);
+}
+
+bool MaterialEditorLayer::on_event(const MouseScrollEvent& event)
+{
+    if(!material_view_widget_->is_hovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if(io.WantCaptureMouse)
+            return true;
+    }
+
+    return material_view_widget_->on_event(event);
 }
 
 bool MaterialEditorLayer::on_event(const KeyboardEvent& event)
@@ -78,7 +89,7 @@ bool MaterialEditorLayer::on_event(const KeyboardEvent& event)
             return true;
     }
 
-    return false;
+    return material_view_widget_->on_event(event);
 }
 
 bool MaterialEditorLayer::on_event(const KeyTypedEvent&)

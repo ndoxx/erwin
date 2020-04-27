@@ -18,7 +18,7 @@ Widget("Statistics", false)
            | ImGuiWindowFlags_NoNav;
 }
 
-void RenderStatsOverlay::on_update()
+void RenderStatsOverlay::on_update(const GameClock&)
 {
     Renderer::set_profiling_enabled(open_);
 }

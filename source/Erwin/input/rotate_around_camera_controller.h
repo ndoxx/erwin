@@ -7,11 +7,11 @@
 namespace erwin
 {
 
-class FreeflyController
+class RotateAroundController
 {
 public:
-	FreeflyController() = default;
-	FreeflyController(float aspect_ratio, float fovy, float znear, float zfar);
+	RotateAroundController() = default;
+	RotateAroundController(float aspect_ratio, float fovy, float znear, float zfar);
 
 	void init(float aspect_ratio, float fovy, float znear, float zfar);
 

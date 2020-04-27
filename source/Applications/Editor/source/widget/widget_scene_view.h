@@ -11,7 +11,7 @@ public:
 	SceneViewWidget();
 	virtual ~SceneViewWidget();
 
-	virtual void on_update() override;
+	virtual void on_update(const erwin::GameClock& clock) override;
 	
 	bool on_mouse_event(const erwin::MouseButtonEvent& event);
 

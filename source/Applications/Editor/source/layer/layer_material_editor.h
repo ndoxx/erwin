@@ -20,6 +20,7 @@ protected:
 	virtual void on_update(erwin::GameClock& clock) override;
 	virtual void on_render() override;
 	virtual bool on_event(const erwin::MouseButtonEvent& event) override;
+	virtual bool on_event(const erwin::MouseMovedEvent& event) override;
 	virtual bool on_event(const erwin::WindowResizeEvent& event) override;
 	virtual bool on_event(const erwin::MouseScrollEvent& event) override;
 	virtual bool on_event(const erwin::KeyboardEvent& event) override;
