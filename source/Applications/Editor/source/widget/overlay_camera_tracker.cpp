@@ -11,7 +11,7 @@ namespace editor
 {
 
 CameraTrackerOverlay::CameraTrackerOverlay():
-Widget("Camera tracker", false)
+Widget("Camera tracker", true)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar 
            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize 

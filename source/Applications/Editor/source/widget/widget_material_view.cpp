@@ -74,8 +74,12 @@ void MaterialViewWidget::on_resize(uint32_t width, uint32_t height)
 
 void MaterialViewWidget::on_move(int32_t x, int32_t y)
 {
+    float rw = std::max(float(width_)  - (k_border + k_start_x), 1.f);
+    float rh = std::max(float(height_) - (k_border + k_start_y), 1.f);
 	render_surface_.x0 = float(x) + k_start_x;
 	render_surface_.y0 = float(y) + k_start_y;
+    render_surface_.x1 = render_surface_.x0 + rw;
+    render_surface_.y1 = render_surface_.y0 + rh;
 
 	EVENTBUS.publish(WindowMovedEvent(x, y));
 }

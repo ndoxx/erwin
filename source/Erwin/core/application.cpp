@@ -388,9 +388,9 @@ void Application::run()
             if(IMGUI_LAYER->is_enabled())
             {
         		IMGUI_LAYER->begin();
+                this->on_imgui_render();
         		for(auto* layer: layer_stack_)
         			layer->on_imgui_render();
-                this->on_imgui_render();
         		IMGUI_LAYER->end();
             }
         }

@@ -7,6 +7,7 @@ namespace editor
 {
 
 class MaterialViewWidget;
+class MaterialAuthoringWidget;
 class MaterialEditorLayer: public GuiLayer
 {
 public:
@@ -28,6 +29,7 @@ protected:
 
 private:
 	MaterialViewWidget* material_view_widget_ = nullptr;
+	MaterialAuthoringWidget* material_authoring_widget_ = nullptr;
 };
 
 } // namespace editor

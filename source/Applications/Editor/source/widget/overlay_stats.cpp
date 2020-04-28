@@ -10,7 +10,7 @@ namespace editor
 {
 
 RenderStatsOverlay::RenderStatsOverlay():
-Widget("Statistics", false)
+Widget("Statistics", true)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar 
            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize 

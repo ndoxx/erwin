@@ -29,7 +29,7 @@ SceneViewWidget::SceneViewWidget():
 Widget("Scene", true),
 render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 {
-	flags_ |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
