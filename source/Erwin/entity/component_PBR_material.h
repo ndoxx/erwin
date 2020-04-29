@@ -2,6 +2,7 @@
 
 #include "entity/reflection.h"
 #include "asset/material.h"
+#include "render/texture_common.h"
 #include "glm/glm.hpp"
 
 
@@ -14,17 +15,6 @@ struct ComponentPBRMaterial
 
 	struct MaterialData
 	{
-		enum Flags
-		{
-			ENABLE_EMISSIVE      = 1<<0,
-			ENABLE_PARALLAX      = 1<<1,
-			ENABLE_ALBEDO_MAP    = 1<<2,
-			ENABLE_NORMAL_MAP    = 1<<3,
-			ENABLE_METALLIC_MAP  = 1<<4,
-			ENABLE_AO_MAP        = 1<<5,
-			ENABLE_ROUGHNESS_MAP = 1<<6,
-		};
-
 		glm::vec4 tint = {1.f,1.f,1.f,1.f};
 		int flags = 0;
 		float emissive_scale = 1.f;
@@ -45,7 +35,7 @@ struct ComponentPBRMaterial
 		ready = true;
 	}
 
-	inline void enable_flag(MaterialData::Flags flag, bool enabled = true)
+	inline void enable_flag(TextureMapFlag flag, bool enabled = true)
 	{
 		if(enabled)
 			material_data.flags |= flag;
@@ -53,15 +43,15 @@ struct ComponentPBRMaterial
 			material_data.flags &= ~flag;
 	}
 
-	inline void enable_emissivity(bool enabled = true)    { enable_flag(MaterialData::Flags::ENABLE_EMISSIVE, enabled); }
-	inline void enable_parallax(bool enabled = true)      { enable_flag(MaterialData::Flags::ENABLE_PARALLAX, enabled); }
-	inline void enable_albedo_map(bool enabled = true)    { enable_flag(MaterialData::Flags::ENABLE_ALBEDO_MAP, enabled); }
-	inline void enable_normal_map(bool enabled = true)    { enable_flag(MaterialData::Flags::ENABLE_NORMAL_MAP, enabled); }
-	inline void enable_metallic_map(bool enabled = true)  { enable_flag(MaterialData::Flags::ENABLE_METALLIC_MAP, enabled); }
-	inline void enable_ao_map(bool enabled = true)        { enable_flag(MaterialData::Flags::ENABLE_AO_MAP, enabled); }
-	inline void enable_roughness_map(bool enabled = true) { enable_flag(MaterialData::Flags::ENABLE_ROUGHNESS_MAP, enabled); }
-	inline bool is_emissive() const       				  { return bool(material_data.flags & MaterialData::Flags::ENABLE_EMISSIVE); }
-	inline bool has_parallax() const      				  { return bool(material_data.flags & MaterialData::Flags::ENABLE_PARALLAX); }
+	inline void enable_albedo_map(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_ALBEDO, enabled); }
+	inline void enable_normal_map(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_NORMAL, enabled); }
+	inline void enable_parallax(bool enabled = true)      { enable_flag(TextureMapFlag::TMF_DEPTH, enabled); }
+	inline void enable_metallic_map(bool enabled = true)  { enable_flag(TextureMapFlag::TMF_METAL, enabled); }
+	inline void enable_ao_map(bool enabled = true)        { enable_flag(TextureMapFlag::TMF_AO, enabled); }
+	inline void enable_roughness_map(bool enabled = true) { enable_flag(TextureMapFlag::TMF_ROUGHNESS, enabled); }
+	inline void enable_emissivity(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_EMISSIVITY, enabled); }
+	inline bool is_emissive() const       				  { return bool(material_data.flags & TextureMapFlag::TMF_EMISSIVITY); }
+	inline bool has_parallax() const      				  { return bool(material_data.flags & TextureMapFlag::TMF_DEPTH); }
 	inline bool is_ready() const          				  { return ready; }
 };
 

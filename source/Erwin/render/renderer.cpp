@@ -1960,6 +1960,9 @@ void draw(memory::LinearBuffer<>& buf)
 		TextureHandle hnd;
 		buf.read(&hnd);
 
+		if(hnd.index == k_invalid_handle)
+			continue;
+
 		// Avoid texture switching if not necessary
 		if(hnd.index != last_texture_index[ii])
 		{

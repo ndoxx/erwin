@@ -25,6 +25,8 @@ public:
 	inline bool on_event(const erwin::MouseMovedEvent& event)	{ return camera_controller_.on_mouse_moved_event(event); }
 	inline bool on_event(const erwin::KeyboardEvent& event)		{ return camera_controller_.on_keyboard_event(event); }
 
+	inline void set_material(const erwin::ComponentPBRMaterial& mat) { current_material_ = mat; }
+
 protected:
 	virtual void on_imgui_render() override;
 	virtual void on_resize(uint32_t width, uint32_t height) override;

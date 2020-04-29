@@ -26,7 +26,7 @@ static constexpr uint32_t k_max_render_commands = 2048;
 static constexpr uint32_t k_max_draw_calls = 8192;
 // Maximum amount of handles for every object managed by the main renderer
 // TODO: each object should have its own amount
-static constexpr uint32_t k_max_render_handles = 128;
+static constexpr uint32_t k_max_render_handles = 256;
 // Maximum amount of dependencies per draw call
 static constexpr uint32_t k_max_draw_call_dependencies = 8;
 

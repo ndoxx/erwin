@@ -69,6 +69,16 @@ public:
 		return create_material(name, tg, shader, ubo, sizeof(MaterialData));
 	}
 
+	static inline const Material& create_PBR_material(const std::string& name, const TextureGroup& tg)
+	{
+		using MaterialData = typename ComponentPBRMaterial::MaterialData;
+
+		ShaderHandle shader     = load_shader("shaders/deferred_PBR.glsl");
+		UniformBufferHandle ubo = create_material_data_buffer<ComponentPBRMaterial>();
+		
+		return create_material(name, tg, shader, ubo, sizeof(MaterialData));
+	}
+
 	static inline const Material& create_PBR_material(const fs::path& tomfile)
 	{
 		return create_material<ComponentPBRMaterial>(tomfile.stem().string(), "shaders/deferred_PBR.glsl", tomfile);

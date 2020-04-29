@@ -246,7 +246,6 @@ struct DrawCall
 	// Set a texture at next slot
 	inline void add_texture(TextureHandle tex)
 	{
-		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		W_ASSERT_FMT(texture_count<k_max_texture_slots-1, "Texture slot out of bounds: %u", texture_count);
 		textures[texture_count++] = tex;
 	}
@@ -254,7 +253,6 @@ struct DrawCall
 	// Set a texture at a given slot
 	inline void set_texture(TextureHandle tex, uint32_t slot=0)
 	{
-		W_ASSERT_FMT(tex.is_valid(), "Invalid TextureHandle of index: %hu", tex.index);
 		W_ASSERT_FMT(slot<k_max_texture_slots, "Texture slot out of bounds: %u", slot);
 		textures[slot] = tex;
 		++texture_count;

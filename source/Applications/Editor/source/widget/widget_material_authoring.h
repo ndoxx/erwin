@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "widget/widget.h"
 #include "asset/material.h"
 #include "render/handles.h"
@@ -8,29 +10,28 @@
 namespace editor
 {
 
+class MaterialViewWidget;
 class MaterialAuthoringWidget: public Widget
 {
 public:
-	MaterialAuthoringWidget();
+	MaterialAuthoringWidget(MaterialViewWidget& material_view);
 	virtual ~MaterialAuthoringWidget();
 
 protected:
 	virtual void on_imgui_render() override;
 
 private:
+	erwin::TextureGroup pack_textures();
+
+private:
+	struct MaterialComposition;
+
 	erwin::TextureHandle checkerboard_tex_;
+	erwin::ShaderHandle PBR_packing_shader_;
+	erwin::UniformBufferHandle packing_ubo_;
+	std::unique_ptr<MaterialComposition> current_composition_;
 
-	struct MaterialComposition
-	{
-		TMEnum texture_maps = TMF_NONE;
-		erwin::TextureGroup textures;
-
-        inline bool has_map(TextureMapType map_type)   { return bool(texture_maps & (1 << map_type)); }
-        inline void set_map(TextureMapType map_type)   { texture_maps |= (1 << map_type); }
-        inline void clear_map(TextureMapType map_type) { texture_maps &= ~(1 << map_type); textures[size_t(map_type)] = {}; }
-    };
-
-	MaterialComposition current_composition_;
+	MaterialViewWidget& material_view_;
 };
 
 } // namespace editor
