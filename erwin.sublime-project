@@ -25,6 +25,7 @@
 		    "-I${project_path}/source/vendor",
 			"-I${project_path}/source/vendor/glm",
 			"-I${project_path}/source/vendor/imgui",
+			"-I${project_path}/source/vendor/imgui_filedialog",
 			"-I${project_path}/source/vendor/taskflow",
 			"-I${project_path}/source/vendor/glad/include",
 			"-I${project_path}/source/vendor/ctti/include",
