@@ -15,7 +15,7 @@ public:
 
 	void init(float aspect_ratio, float fovy, float znear, float zfar);
 
-	void update(erwin::GameClock& clock);
+	void update(const erwin::GameClock& clock);
 	void enable_inputs(bool value);
 	inline bool is_enabled() const { return inputs_enabled_; }
 	inline void toggle_inputs()    { enable_inputs(!inputs_enabled_); }

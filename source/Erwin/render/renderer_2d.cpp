@@ -34,7 +34,6 @@ static struct
 	UniformBufferHandle pass_ubo;
 	ShaderStorageBufferHandle instance_ssbo;
 	TextureHandle white_texture;
-	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
 	glm::mat4 projection_matrix;
@@ -113,13 +112,7 @@ void Renderer2D::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.batch_2d_shader, s_storage.pass_ubo);
 	Renderer::shader_attach_storage_buffer(s_storage.batch_2d_shader, s_storage.instance_ssbo);
 
-	s_storage.white_texture_data = 0xffffffff;
-	s_storage.white_texture = Renderer::create_texture_2D(Texture2DDescriptor{1,1,0,
-								  					 				   		  &s_storage.white_texture_data,
-								  					 				   		  ImageFormat::RGBA8,
-								  					 				   		  MAG_NEAREST | MIN_NEAREST,
-								  					 				   		  TextureWrap::REPEAT,
-								  					 				   		  TF_NONE});
+	s_storage.white_texture = AssetManager::create_debug_texture("white"_h, 1);
 	::erwin::create_batch(0, s_storage.white_texture);
 }
 
@@ -127,7 +120,6 @@ void Renderer2D::shutdown()
 {
     W_PROFILE_FUNCTION()
 
-	Renderer::destroy(s_storage.white_texture);
 	Renderer::destroy(s_storage.instance_ssbo);
 	Renderer::destroy(s_storage.pass_ubo);
 	Renderer::destroy(s_storage.batch_2d_shader);

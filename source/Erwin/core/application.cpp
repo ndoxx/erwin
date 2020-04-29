@@ -60,7 +60,6 @@ static inline void configure_event_tracking()
 }
 
 Application::Application():
-EDITOR_LAYER(nullptr),
 is_running_(true),
 minimized_(false)
 {
@@ -237,16 +236,6 @@ bool Application::init()
     }
 
     {
-        W_PROFILE_SCOPE("Editor overlay creation")
-        if(cfg::get<bool>("client.editor.enabled"_h, false))
-        {
-            build_editor();
-            // If editor is enabled, PPRenderer should draw to the game_view framebuffer instead of the default one
-            PostProcessingRenderer::set_final_render_target("game_view"_h);
-        }
-    }
-
-    {
         W_PROFILE_SCOPE("Layer event tracking setup")
         // Propagate input events to layers
         layer_stack_.track_event<KeyboardEvent>();
@@ -318,17 +307,19 @@ void Application::shutdown()
     } 
 }
 
-size_t Application::push_layer(Layer* layer)
+size_t Application::push_layer(Layer* layer, bool enabled)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_layer(layer);
+    layer->set_enabled(enabled);
 	return index;
 }
 
-size_t Application::push_overlay(Layer* layer)
+size_t Application::push_overlay(Layer* layer, bool enabled)
 {
     W_PROFILE_FUNCTION()
 	size_t index = layer_stack_.push_overlay(layer);
+    layer->set_enabled(enabled);
 	return index;
 }
 
@@ -397,9 +388,9 @@ void Application::run()
             if(IMGUI_LAYER->is_enabled())
             {
         		IMGUI_LAYER->begin();
+                this->on_imgui_render();
         		for(auto* layer: layer_stack_)
         			layer->on_imgui_render();
-                this->on_imgui_render();
         		IMGUI_LAYER->end();
             }
         }

@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Config>
-    <editor>
-        <bool name="enabled" value="true"/>
-    </editor>
     <display>
     	<string name="title"    value="Erwin Editor"/>
         <uint name="width"      value="1920"/>

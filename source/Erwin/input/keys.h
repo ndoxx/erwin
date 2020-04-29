@@ -1,6 +1,10 @@
 #pragma once
 
-#include "EASTL/map.h"
+#ifdef W_USE_EASTL
+	#include "EASTL/map.h"
+#else
+	#include <map>
+#endif
 
 namespace erwin
 {
@@ -156,7 +160,13 @@ enum WKEYMOD: uint8_t
 	ALT     = 4
 };
 
-static const eastl::map<WKEY, std::string> KEY_NAMES =
+#ifdef W_USE_EASTL
+	using KeyNameMap = eastl::map<WKEY, std::string>;
+#else
+	using KeyNameMap = std::map<WKEY, std::string>;
+#endif
+
+static const KeyNameMap KEY_NAMES =
 {
 	{WKEY::NONE, 			"<NONE>"},
 	{WKEY::SPACE, 			"SPACE"},
@@ -415,7 +425,13 @@ static const eastl::map<WKEY, std::string> KEY_NAMES =
 	return WKEY::NONE;
 }
 
-static const eastl::map<WMOUSE, std::string> MB_NAMES =
+#ifdef W_USE_EASTL
+	using MouseButtonMap = eastl::map<WMOUSE, std::string>;
+#else
+	using MouseButtonMap = std::map<WMOUSE, std::string>;
+#endif
+
+static const MouseButtonMap MB_NAMES =
 {
 	{WMOUSE::NONE, 	   "<NONE>"},
 	{WMOUSE::BUTTON_0, "LMB"},

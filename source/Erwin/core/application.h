@@ -28,11 +28,8 @@ public:
 	virtual void on_unload() { }
 	virtual void on_imgui_render() { }
 
-	size_t push_layer(Layer* layer);
-	size_t push_overlay(Layer* layer);
-
-	// Create an editor overlay and push it to the layer stack (defined in editor/layer_editor.cpp)
-	void build_editor();
+	size_t push_layer(Layer* layer, bool enabled=true);
+	size_t push_overlay(Layer* layer, bool enabled=true);
 
 	inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
 	void toggle_imgui_layer();
@@ -52,9 +49,6 @@ public:
 	inline const Window& get_window() { return *window_; }
 
 	bool on_window_close_event(const WindowCloseEvent& e);
-
-protected:
-	editor::EditorLayer* EDITOR_LAYER;
 
 private:
 	static Application* pinstance_;

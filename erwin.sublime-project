@@ -30,6 +30,7 @@
 			"-I${project_path}/source/vendor/ctti/include",
 			"-I${project_path}/source/vendor/freetype/include",
 			"-I${project_path}/source/vendor/entt/src",
+		    "-I${project_path}/source/Applications/Editor/source",
 		    // this is needed to include the correct headers for clang
 		    "-I/usr/lib/clang/$clang_version/include",
 		],

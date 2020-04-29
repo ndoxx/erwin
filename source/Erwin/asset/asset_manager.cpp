@@ -9,10 +9,16 @@
 #include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "debug/logger.h"
-#include "EASTL/vector.h"
-#include "EASTL/map.h"
-#include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
 #include "core/intern_string.h"
+
+#ifdef W_USE_EASTL
+	#include "EASTL/vector.h"
+	#include "EASTL/map.h"
+	#include "core/eastl_new.h" // new overloads needed by EASTL (linker error otherwise)
+#else
+	#include <vector>
+	#include <map>
+#endif
 
 namespace erwin
 {
@@ -33,9 +39,11 @@ struct MaterialDescriptor
 
 static struct
 {
+#ifdef W_USE_EASTL
 	eastl::vector<TextureAtlas*> texture_atlases_;
 	eastl::vector<FontAtlas*> font_atlases_;
 
+	eastl::map<hash_t, TextureHandle> special_textures_cache_;
 	eastl::map<hash_t, TextureAtlasHandle> atlas_cache_;
 	eastl::map<hash_t, FontAtlasHandle> font_cache_;
 	eastl::map<hash_t, ShaderHandle> shader_cache_;
@@ -43,6 +51,19 @@ static struct
 
 	eastl::map<hash_t, MaterialDescriptor> material_descriptors_;
 	eastl::map<hash_t, Material> materials_;
+#else
+	std::vector<TextureAtlas*> texture_atlases_;
+	std::vector<FontAtlas*> font_atlases_;
+
+	std::map<hash_t, TextureHandle> special_textures_cache_;
+	std::map<hash_t, TextureAtlasHandle> atlas_cache_;
+	std::map<hash_t, FontAtlasHandle> font_cache_;
+	std::map<hash_t, ShaderHandle> shader_cache_;
+	std::map<uint64_t, UniformBufferHandle> ubo_cache_;
+
+	std::map<hash_t, MaterialDescriptor> material_descriptors_;
+	std::map<hash_t, Material> materials_;
+#endif
 
 	LinearArena handle_arena_;
 	PoolArena texture_atlas_pool_;
@@ -83,6 +104,103 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
 }
 
 // ---------------- PUBLIC API ----------------
+
+constexpr uint8_t k_dark  = 153;
+constexpr uint8_t k_light = 255;
+
+[[maybe_unused]] static void dashed_texture(uint8_t* buffer, uint32_t size_px)
+{
+	for(uint32_t yy=0; yy<size_px; ++yy)
+	{
+		for(uint32_t xx=0; xx<size_px; ++xx)
+		{
+			uint32_t index = 3*(yy*size_px+xx);
+			bool step = (xx+yy)%16 < 8;
+			buffer[index+0] = step ? k_light : k_dark;
+			buffer[index+1] = step ? k_light : k_dark;
+			buffer[index+2] = step ? k_light : k_dark;
+		}
+	}
+}
+
+[[maybe_unused]] static void grid_texture(uint8_t* buffer, uint32_t size_px)
+{
+	for(uint32_t yy=0; yy<size_px; ++yy)
+	{
+		for(uint32_t xx=0; xx<size_px; ++xx)
+		{
+			uint32_t index = 3*(yy*size_px+xx);
+			bool step = (xx%16 < 8) && (yy%16 < 8);
+			buffer[index+0] = step ? k_light : k_dark;
+			buffer[index+1] = step ? k_light : k_dark;
+			buffer[index+2] = step ? k_light : k_dark;
+		}
+	}
+}
+
+[[maybe_unused]] static void checkerboard_texture(uint8_t* buffer, uint32_t size_px)
+{
+	for(uint32_t yy=0; yy<size_px; ++yy)
+	{
+		for(uint32_t xx=0; xx<size_px; ++xx)
+		{
+			uint32_t index = 3*(yy*size_px+xx);
+			bool step = ((xx%16 < 8) && (yy%16 < 8)) || ((xx%16 > 8) && (yy%16 > 8));
+			buffer[index+0] = step ? k_light : k_dark;
+			buffer[index+1] = step ? k_light : k_dark;
+			buffer[index+2] = step ? k_light : k_dark;
+		}
+	}
+}
+
+[[maybe_unused]] static void colored_texture(uint8_t* buffer, uint32_t size_px, uint8_t r, uint8_t g, uint8_t b)
+{
+	for(uint32_t yy=0; yy<size_px; ++yy)
+	{
+		for(uint32_t xx=0; xx<size_px; ++xx)
+		{
+			uint32_t index = 3*(yy*size_px+xx);
+			buffer[index+0] = r;
+			buffer[index+1] = g;
+			buffer[index+2] = b;
+		}
+	}
+}
+
+TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
+{
+	// First, check cache
+	hash_t hname = HCOMBINE_(type, hash_t(size_px));
+	auto it = s_storage.special_textures_cache_.find(hname);
+	if(it != s_storage.special_textures_cache_.end())
+		return it->second;
+
+	// Create checkerboard pattern
+	uint8_t* buffer = new uint8_t[size_px*size_px*3];
+	switch(type)
+	{
+		case "dashed"_h:       dashed_texture(buffer, size_px); break;
+		case "grid"_h:         grid_texture(buffer, size_px); break;
+		case "checkerboard"_h: checkerboard_texture(buffer, size_px); break;
+		case "white"_h:        colored_texture(buffer, size_px, 255, 255, 255); break;
+		case "red"_h:          colored_texture(buffer, size_px, 255, 0, 0); break;
+		default:               checkerboard_texture(buffer, size_px); hname = "checkerboard"_h; break;
+	}
+
+	Texture2DDescriptor descriptor;
+	descriptor.width  = size_px;
+	descriptor.height = size_px;
+	descriptor.mips = 0;
+	descriptor.data = buffer;
+    descriptor.image_format = ImageFormat::RGB8;
+	descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+
+	// Create texture
+	TextureHandle tex = Renderer::create_texture_2D(descriptor);
+	s_storage.special_textures_cache_.insert({hname, tex});
+	return tex;
+}
+
 
 // TODO: Cache lookup before creating any resource
 TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
@@ -351,15 +469,27 @@ void AssetManager::visit_materials(MaterialVisitor visit)
 	}
 }
 
-template <typename KeyT, typename HandleT>
-static void erase_by_value(eastl::map<KeyT, HandleT>& cache, HandleT handle)
-{
-	auto it = cache.begin();
-	for(; it!=cache.end(); ++it)
-    	if(it->second == handle)
-    		break;
-	cache.erase(it);
-}
+#ifdef W_USE_EASTL
+	template <typename KeyT, typename HandleT>
+	static void erase_by_value(eastl::map<KeyT, HandleT>& cache, HandleT handle)
+	{
+		auto it = cache.begin();
+		for(; it!=cache.end(); ++it)
+	    	if(it->second == handle)
+	    		break;
+		cache.erase(it);
+	}
+#else
+	template <typename KeyT, typename HandleT>
+	static void erase_by_value(std::map<KeyT, HandleT>& cache, HandleT handle)
+	{
+		auto it = cache.begin();
+		for(; it!=cache.end(); ++it)
+	    	if(it->second == handle)
+	    		break;
+		cache.erase(it);
+	}
+#endif
 
 void AssetManager::release(TextureAtlasHandle handle)
 {
@@ -456,6 +586,9 @@ void AssetManager::shutdown()
 	for(FontAtlas* atlas: s_storage.font_atlases_)
 		if(atlas)
 			W_DELETE(atlas, s_storage.font_atlas_pool_);
+
+	for(auto&& [hname,tex]: s_storage.special_textures_cache_)
+		Renderer::destroy(tex);
 
 	// Destroy handle pools
 	#define DO_ACTION( HANDLE_NAME ) HANDLE_NAME::destroy_pool(s_storage.handle_arena_);

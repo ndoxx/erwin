@@ -106,6 +106,7 @@ set_target_properties(eastl
 target_link_libraries(erwin
     PRIVATE
         project_warnings
+        project_options
         m
         z
         stdc++fs

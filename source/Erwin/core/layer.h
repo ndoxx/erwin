@@ -19,7 +19,6 @@ public:
 	virtual ~Layer() = default;
 
 	inline const std::string& get_name() const  { return debug_name_; }
-	inline void set_enabled(bool value)         { enabled_ = value; }
 	inline void toggle()                        { enabled_ = !enabled_; }
 	inline void set_layer_id(uint8_t layer_id)  { layer_id_ = layer_id; }
 	inline uint8_t get_layer_id() const         { return layer_id_; }
@@ -27,6 +26,7 @@ public:
 	inline void update(GameClock& clock)        { if(enabled_) on_update(clock); }
 	inline void render()                        { if(enabled_) on_render(); }
 
+	virtual void set_enabled(bool value) { enabled_ = value; }
 	virtual void on_attach() { }
 	virtual void on_detach() { }
 	virtual void on_imgui_render() { }
@@ -43,7 +43,7 @@ protected:
 	REACT(WindowResizeEvent)
 	REACT(WindowMovedEvent)
 
-private:
+protected:
 	std::string debug_name_;
 	bool enabled_;
 	uint8_t layer_id_;

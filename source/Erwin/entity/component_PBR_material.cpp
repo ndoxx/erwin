@@ -1,6 +1,6 @@
 #include "entity/component_PBR_material.h"
 #include "asset/asset_manager.h"
-#include "editor/font_awesome.h"
+#include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
 #include "imgui.h"
 

@@ -38,12 +38,14 @@ void FreeflyController::init(float aspect_ratio, float fovy, float znear, float 
 	camera_pitch_             = camera_.get_pitch();
 	camera_position_          = camera_.get_position();
 
+	win_x_ = 0.f;
+	win_y_ = 0.f;
 	inputs_enabled_ = false;
 	prev_mouse_x_ = 0.f;
 	prev_mouse_y_ = 0.f;
 }
 
-void FreeflyController::update(GameClock& clock)
+void FreeflyController::update(const GameClock& clock)
 {
 	if(!inputs_enabled_)
 		return;
@@ -134,12 +136,12 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 		return false;
 
 	// Update and constrain yaw and pitch
-	float old_x = win_x_+0.5f*win_width_;
-	float old_y = win_y_+0.5f*win_height_;
-	camera_yaw_   -= camera_rotation_speed_ * (event.x-old_x);
+	float dx = float(event.x - (win_x_+0.5f*win_width_));
+	float dy = float(event.y - (win_y_+0.5f*win_height_));
+	camera_yaw_   -= camera_rotation_speed_ * dx;
 	camera_yaw_    = (camera_yaw_>360.f) ? camera_yaw_-360.f : camera_yaw_;
 	camera_yaw_    = (camera_yaw_<0.f)   ? 360.f-camera_yaw_ : camera_yaw_;
-	camera_pitch_ -= camera_rotation_speed_ * (event.y-old_y);
+	camera_pitch_ -= camera_rotation_speed_ * dy;
 	camera_pitch_  = (camera_pitch_> 89.f) ?  89.f : camera_pitch_;
 	camera_pitch_  = (camera_pitch_<-89.f) ? -89.f : camera_pitch_;
 

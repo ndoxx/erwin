@@ -76,6 +76,37 @@ enum TextureFlags: uint8_t
     TF_MUST_FREE   = (1<<1)
 };
 
+using TMEnum = uint8_t;
+
+enum TextureMapType: TMEnum
+{
+    TM_ALBEDO     = 0,
+    TM_NORMAL     = 1,
+    TM_DEPTH      = 2,
+    TM_METAL      = 3,
+    TM_AO         = 4,
+    TM_ROUGHNESS  = 5,
+    TM_EMISSIVITY = 6,
+
+    TM_COUNT
+};
+
+enum TextureMapFlag: TMEnum
+{
+    TMF_NONE       = 0,
+    TMF_ALBEDO     = (1<<TM_ALBEDO),
+    TMF_NORMAL     = (1<<TM_NORMAL),
+    TMF_DEPTH      = (1<<TM_DEPTH),
+    TMF_METAL      = (1<<TM_METAL),
+    TMF_AO         = (1<<TM_AO),
+    TMF_ROUGHNESS  = (1<<TM_ROUGHNESS),
+    TMF_EMISSIVITY = (1<<TM_EMISSIVITY)
+};
+
+static constexpr TMEnum TMF_PACK_A    = TMF_ALBEDO;
+static constexpr TMEnum TMF_PACK_ND   = TMF_NORMAL | TMF_DEPTH;
+static constexpr TMEnum TMF_PACK_MARE = TMF_METAL | TMF_AO | TMF_ROUGHNESS | TMF_EMISSIVITY;
+
 struct Texture2DDescriptor
 {
     uint32_t width;

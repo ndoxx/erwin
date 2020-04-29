@@ -13,6 +13,7 @@
 #include "filesystem/filesystem.h"
 #include "input/camera_2d_controller.h"
 #include "input/camera_3d_controller.h"
+#include "input/input.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "debug/logger.h"
@@ -31,6 +32,7 @@
 #include "entity/component_mesh.h"
 #include "entity/component_PBR_material.h"
 #include "entity/component_dirlight_material.h"
+#include "entity/component_description.h"
 #include "entity/light.h"
 
 #include "imgui.h"

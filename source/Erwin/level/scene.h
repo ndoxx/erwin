@@ -14,9 +14,6 @@ namespace erwin
 class Scene
 {
 public:
-	static void init();
-	static void shutdown();
-
 	static void load_hdr_environment(const fs::path& hdr_file);
 
 	static void add_entity(EntityID entity, const std::string& name, const char* icon = nullptr);

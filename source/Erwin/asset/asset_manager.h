@@ -26,7 +26,11 @@ class AssetManager
 public:
 	using MaterialVisitor = std::function<bool(const Material&, const std::string&, const std::string&)>;
 
-	// Cached queries
+	// Proceduraly generated assets for the editor and debug purposes
+	// type can be "dashed"_h, "grid"_h, "checkerboard"_h, "white"_h or "red"_h
+	static TextureHandle create_debug_texture(hash_t type, uint32_t size_px);
+
+	// Loading stuff
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
