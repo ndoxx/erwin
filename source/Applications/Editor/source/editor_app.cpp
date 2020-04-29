@@ -86,6 +86,12 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
         EVENTBUS.publish(WindowCloseEvent());
         return true;
     }
+    // Cycle editor state
+    if(e.pressed && !e.repeat && e.key == Input::get_action_key(ACTION_EDITOR_CYCLE_MODE))
+    {
+    	cycle_state();
+    	return true;
+    }
 
     return false;
 }
@@ -235,4 +241,12 @@ void ErwinEditor::switch_state(EditorStateIdx idx)
     states_[size_t(idx)].enable(true);
 
     current_state_idx_ = idx;
+}
+
+EditorStateIdx ErwinEditor::cycle_state()
+{
+	size_t next = size_t(current_state_idx_);
+	next = (next+1)%size_t(EditorStateIdx::COUNT);
+	switch_state(EditorStateIdx(next));
+	return current_state_idx_;
 }

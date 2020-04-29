@@ -10,4 +10,6 @@
 	<action name="ACTION_FREEFLY_GO_FAST"       desc="Move faster" 			  key="LEFT_SHIFT"/>
 
 	<action name="ACTION_DROP_SELECTION" desc="Invalidate current selection" key="Q"/>
+
+	<action name="ACTION_EDITOR_CYCLE_MODE" desc="Cycle between editor modes" key="C"/>
 </Keymap>

@@ -13,6 +13,7 @@
 #include "filesystem/filesystem.h"
 #include "input/camera_2d_controller.h"
 #include "input/camera_3d_controller.h"
+#include "input/input.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "debug/logger.h"

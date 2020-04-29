@@ -585,6 +585,8 @@ uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
 void* Renderer::get_native_texture_handle(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+	if(s_storage.textures[handle.index] == nullptr)
+		return nullptr;
 	return s_storage.textures[handle.index]->get_native_handle();
 }
 #endif

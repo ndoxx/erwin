@@ -57,6 +57,7 @@ public:
 
 	void create_state(EditorStateIdx idx, EditorState&& state);
 	void switch_state(EditorStateIdx idx);
+	EditorStateIdx cycle_state();
 
 private:
 	std::array<EditorState, size_t(EditorStateIdx::COUNT)> states_;
