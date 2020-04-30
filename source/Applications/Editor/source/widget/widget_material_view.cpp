@@ -31,13 +31,11 @@ render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
 	camera_controller_.set_target({0.f,0.f,0.f});
 
-	const Material& mat = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
-	current_material_.set_material(mat);
-	current_material_.enable_albedo_map();
-	current_material_.enable_normal_map();
-	current_material_.enable_metallic_map();
-	current_material_.enable_ao_map();
-	current_material_.enable_roughness_map();
+    const Material& mat_uniform = AssetManager::create_uniform_PBR_material("unimat");
+    current_material_.set_material(mat_uniform);
+	current_material_.material_data.uniform_metallic = 0.f;
+	current_material_.material_data.uniform_roughness = 0.01f;
+	current_material_.material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
 
 	transform_ = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.f};
 
