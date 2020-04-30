@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui/font_awesome.h"
 #include "imgui/color.h"
+#include "imgui/dialog.h"
 #include "ImGuiFileDialog/ImGuiFileDialog.h"
 
 using namespace erwin;
@@ -156,7 +157,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
 // Load all textures in a folder, try to recognize file names to assign texture maps correctly
 void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
 {
-	clear_texture_maps();
+	clear();
 
 	DLOG("editor",1) << "Loading texture directory:" << std::endl;
 	DLOGI << WCC('p') << dirpath << std::endl;
@@ -199,10 +200,13 @@ void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
 	}
 }
 
-void MaterialAuthoringWidget::clear_texture_maps()
+void MaterialAuthoringWidget::clear()
 {
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
     	clear_texture_map(TextureMapType(tm));
+
+    current_composition_->name = "";
+	material_view_.reset_material();
 }
 
 
@@ -232,9 +236,19 @@ void MaterialAuthoringWidget::on_imgui_render()
 	ImGui::PopStyleColor(1);
 
     // Pack textures and apply to material view widget
+    ImVec2 btn_half_span_size(ImGui::GetContentRegionAvailWidth()*0.5f, 0.f);
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(153, 204, 0));
-	if(ImGui::Button("Apply", btn_span_size))
+	if(ImGui::Button("Apply", btn_half_span_size))
 		pack_textures();
+	ImGui::PopStyleColor(1);
+
+    // Pack textures and apply to material view widget
+    ImGui::SameLine();
+    ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(255, 153, 0));
+	if(ImGui::Button("Clear", btn_half_span_size))
+		ImGui::OpenModal("Confirm");
+	if(ImGui::CheckYesNo("Confirm", "Are you sure?") == ImGui::DialogState::YES)
+		clear();
 	ImGui::PopStyleColor(1);
 
 	ImGui::Separator();

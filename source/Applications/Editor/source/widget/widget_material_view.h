@@ -26,6 +26,7 @@ public:
 	inline bool on_event(const erwin::KeyboardEvent& event)		{ return camera_controller_.on_keyboard_event(event); }
 
 	inline void set_material(const erwin::ComponentPBRMaterial& mat) { current_material_ = mat; }
+	void reset_material();
 
 protected:
 	virtual void on_imgui_render() override;

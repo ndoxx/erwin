@@ -28,7 +28,7 @@ private:
 	void load_directory(const fs::path& dirpath);
 	void pack_textures();
 	void clear_texture_map(TextureMapType tm_type);
-	void clear_texture_maps();
+	void clear();
 
 private:
 	struct MaterialComposition;

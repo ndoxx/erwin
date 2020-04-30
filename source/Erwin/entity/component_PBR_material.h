@@ -43,6 +43,11 @@ struct ComponentPBRMaterial
 			material_data.flags &= ~flag;
 	}
 
+	inline void clear_flags()
+	{
+		material_data.flags = 0;
+	}
+
 	inline void enable_albedo_map(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_ALBEDO, enabled); }
 	inline void enable_normal_map(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_NORMAL, enabled); }
 	inline void enable_parallax(bool enabled = true)      { enable_flag(TextureMapFlag::TMF_DEPTH, enabled); }
