@@ -93,6 +93,32 @@ Sortie vide -> pas compilée avec -fPIC.
 > pipx run gdbgui
     voir: https://www.gdbgui.com/installation/
 
+###Perf
+> sudo apt-get install linux-tools-common
+> uname -r
+    5.3.0-46-generic
+> sudo apt-get install linux-tools-5.3.0-46-generic
+> sudo perf stat ../bin/editor
+    Performance counter stats for '../bin/editor':
+             3 188,65 msec task-clock                #    0,199 CPUs utilized          
+               38 220      context-switches          #    0,012 M/sec                  
+                  979      cpu-migrations            #    0,307 K/sec                  
+               49 287      page-faults               #    0,015 M/sec                  
+        5 284 325 934      cycles                    #    1,657 GHz                    
+        5 125 615 680      instructions              #    0,97  insn per cycle         
+          903 969 499      branches                  #  283,496 M/sec                  
+           24 801 809      branch-misses             #    2,74% of all branches        
+
+         16,006432799 seconds time elapsed
+
+          2,677690000 seconds user
+          1,129994000 seconds sys
+
+> sudo perf record -g ../bin/editor
+    -> Lancer le debug build de préférence
+> sudo perf report
+    -> Profiling data
+
 ##[GIT]
 ###SSH
 Créer une paire de clés RSA pour permettre une connexion SSH avec Github :
