@@ -35,7 +35,7 @@ public:
 
     inline void fulfill(size_t token, T&& value)
     {
-        promises_.at(token).set_value(std::forward(value));
+        promises_.at(token).set_value(std::forward<T>(value));
         promises_.erase(token);
     }
 };

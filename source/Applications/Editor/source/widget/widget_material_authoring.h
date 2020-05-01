@@ -19,6 +19,7 @@ class MaterialAuthoringWidget: public Widget
 public:
 	MaterialAuthoringWidget(MaterialViewWidget& material_view);
 	virtual ~MaterialAuthoringWidget();
+	virtual void on_update(const erwin::GameClock& clock) override;
 
 protected:
 	virtual void on_imgui_render() override;
@@ -29,14 +30,18 @@ private:
 	void pack_textures();
 	void clear_texture_map(TextureMapType tm_type);
 	void clear();
+	void export_TOM(const fs::path& tom_path);
 
 private:
 	struct MaterialComposition;
+	struct TOMExportTask;
 
 	erwin::TextureHandle checkerboard_tex_;
 	erwin::ShaderHandle PBR_packing_shader_;
 	erwin::UniformBufferHandle packing_ubo_;
 	std::unique_ptr<MaterialComposition> current_composition_;
+
+	std::vector<std::unique_ptr<TOMExportTask>> tom_export_tasks_;
 
 	MaterialViewWidget& material_view_;
 };

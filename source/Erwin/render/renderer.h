@@ -4,6 +4,7 @@
 #include <cmath>
 #include <utility>
 #include <functional>
+#include <future>
 
 #include "filesystem/filesystem.h"
 #include "memory/memory.hpp"
@@ -22,6 +23,12 @@ enum class DataOwnership: uint8_t
 {
 	Forward = 0, // Do not copy data, forward pointer as is
 	Copy = 1     // Copy data to renderer memory
+};
+
+struct PixelData
+{
+	uint8_t* data;
+	size_t size;
 };
 
 struct DrawCall;
@@ -107,6 +114,7 @@ public:
 	static void 					 clear_framebuffers();
 	static void						 set_host_window_size(uint32_t width, uint32_t height);
 	// POST-BUFFER -> executed after draw commands
+	static std::future<PixelData>    get_pixel_data(TextureHandle handle);
 	static void 					 generate_mipmaps(CubemapHandle cubemap);
 	static void 					 framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath);
 	static void 					 destroy(IndexBufferHandle handle);

@@ -68,6 +68,11 @@
     Deadlife - Anxious Souls
     
 
+##[SCRIPTS]
+###imgui_sanity_check.py
+Comme j'ai la sale habitude de run en release, il m'arrive souvent de péter la branche debug à cause d'un ImGui assert dû à un ImGui::Begin...() / ImGui::End...() mismatch, et de m'en rendre compte bien plus tard. Comme l'erreur runtime se produit toujours en fin de frame (c'est là qu'ImGui fait son sanity check en debug build), c'est lourdingue à tracker.
+Donc j'ai codé ce petit script pour parser toutes mes sources qui contiennent du code ImGui et identifier de possibles mismatch. Au moins avec ça je sais dans quelle source chercher le problème...
+
 
 ##[Command Galore]
 ###Callgrind profiling

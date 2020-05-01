@@ -24,4 +24,5 @@ protected:
 	virtual bool on_event(const MouseScrollEvent& event) override;
 
 private:
+	std::vector<std::future<erwin::PixelData>> futures_;
 };

@@ -264,6 +264,14 @@ void OGLTexture2D::generate_mipmaps() const
     do_generate_mipmaps(rd_handle_, 0, mips_);
 }
 
+std::pair<uint8_t*, size_t> OGLTexture2D::read_pixels() const
+{
+    size_t bufsize = 4*width_*height_;
+    uint8_t* buffer = new uint8_t[bufsize];
+    glGetTextureImage(rd_handle_, 0, GL_RGBA, GL_UNSIGNED_BYTE, GLsizei(bufsize), buffer);
+    return {buffer, bufsize};
+}
+
 void OGLTexture2D::bind(uint32_t slot) const
 {
 	glBindTextureUnit(slot, rd_handle_);

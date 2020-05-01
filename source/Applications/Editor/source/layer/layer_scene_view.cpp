@@ -35,7 +35,7 @@ void SceneViewLayer::on_attach()
 
 	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
-	const Material& mat_paved_floor = AssetManager::create_PBR_material("textures/map/pavedFloor.tom");
+	const Material& mat_greasy_metal = AssetManager::create_PBR_material("textures/map/greasyMetal.tom");
     const Material& mat_rock = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
     const Material& mat_dirt = AssetManager::create_PBR_material("textures/map/dirt.tom");
     const Material& mat_test_emissive = AssetManager::create_PBR_material("textures/map/testEmissive.tom");
@@ -77,7 +77,7 @@ void SceneViewLayer::on_attach()
 	};
 	std::array mats =
 	{
-		std::cref(mat_paved_floor),
+		std::cref(mat_greasy_metal),
 		std::cref(mat_rock),
 		std::cref(mat_dirt),
 		std::cref(mat_test_emissive),
