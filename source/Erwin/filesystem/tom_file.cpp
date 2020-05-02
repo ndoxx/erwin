@@ -1,5 +1,6 @@
 #include "filesystem/tom_file.h"
 #include "filesystem/filesystem.h"
+#include "asset/dxt_compressor.h"
 #include "core/core.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
@@ -144,7 +145,7 @@ void read_tom(TOMDescriptor& desc)
     delete[] blob;
 }
 
-void write_tom(const TOMDescriptor& desc)
+void write_tom(TOMDescriptor& desc)
 {
 	uint16_t num_maps = uint16_t(desc.texture_maps.size());
 
@@ -152,6 +153,17 @@ void write_tom(const TOMDescriptor& desc)
 	uint64_t blob_size = 0;
 	for(auto&& tmap: desc.texture_maps)
 		blob_size += tmap.size;
+
+    // DXT compression if needed
+    for(auto&& tmap: desc.texture_maps)
+    {
+        if(tmap.compression == TextureCompression::DXT5)
+        {
+            uint8_t* compressed = dxt::compress_DXT5(tmap.data, uint32_t(desc.width), uint32_t(desc.height));
+            delete[] tmap.data;
+            tmap.data = compressed;
+        }
+    }
 
 	// Process per-texture map data
 	std::vector<BlockDescriptor> blocks;

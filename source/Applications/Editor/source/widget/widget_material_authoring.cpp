@@ -271,6 +271,7 @@ static void handle_tom_export(const fs::path& path, size_t width, size_t height,
         tom::LosslessCompression::Deflate,
         TextureWrap::REPEAT
     };
+    tom_desc.material_type = tom::MaterialType::PBR;
 
     uint32_t size = uint32_t(width * height * 4);
 
@@ -279,7 +280,7 @@ static void handle_tom_export(const fs::path& path, size_t width, size_t height,
         TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
         4,
         true, // sRGB
-        TextureCompression::None, // TODO: Implement DXT5 compression pass in tom_file.cpp, Fudge did it separately. 
+        TextureCompression::DXT5,
         size,
         albedo,
         "albedo"_h
@@ -311,6 +312,7 @@ static void handle_tom_export(const fs::path& path, size_t width, size_t height,
     tom_desc.texture_maps.push_back(nd_desc);
     tom_desc.texture_maps.push_back(mare_desc);
     tom::write_tom(tom_desc);
+    tom_desc.release();
 }
 
 void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
@@ -329,10 +331,6 @@ void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
             DLOGI << WCC('p') << task->export_path << std::endl;
 
             handle_tom_export(task->export_path, task->width, task->height, a_data, nd_data, mare_data);
-
-            delete[] a_data;
-            delete[] nd_data;
-            delete[] mare_data;
 
             tom_export_tasks_.erase(it);
         }

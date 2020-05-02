@@ -62,7 +62,7 @@ struct TOMDescriptor
 // Read a TOM file, put data into descriptor (will allocate memory)
 extern void read_tom(TOMDescriptor& desc);
 // Write a TOM file using data contained in descriptor
-extern void write_tom(const TOMDescriptor& desc);
+extern void write_tom(TOMDescriptor& desc);
 
 } // namespace tom
 } // namespace erwin

@@ -33,6 +33,32 @@
         [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
         stocker dans les CAT files.
 
+    [/] Génération de PBR materials depuis l'éditeur
+        [/] Authoring widget
+            [X] File open/save dialog
+            [X] Chargement d'images
+            [X] Chargement d'un dossier complet et affectation automatique
+            [X] Affichage des texture maps chargées
+            [X] Packing des textures sous le layout A/ND/MARE via un shader
+            [ ] Edition des material data
+            [/] Export TOM
+                [X] Récupérer les données pixel avec le Renderer
+                    [X] Gestion des promises côté renderer
+                    [X] Gestion des futures et TOM export tasks côté client
+                [X] Ecriture au format TOM actuel
+                [X] DXT5 prepass dans tom_file.cpp
+                [ ] Les TOM files contiennent les données complètes d'un material
+                [ ] Async task
+        [/] Material viewer widget
+            [X] "Rotate-around" camera controller
+            [X] Affichage du material sur un mesh
+            [ ] Choix du mesh
+        [ ] ComponentPBRMaterial inspector GUI
+            [ ] Import de fichiers TOM directement
+        [ ] Simplification de l'AssetManager
+            [ ] Caching des ComponentPBRMaterials directement (archétypes)
+
+
     --[ENGINE FEATURES]--
     [X] Resource caching
     [/] Ecrire un renderer 2D multi-threaded
