@@ -47,12 +47,16 @@
                     [X] Gestion des futures et TOM export tasks côté client
                 [X] Ecriture au format TOM actuel
                 [X] DXT5 prepass dans tom_file.cpp
-                [ ] Les TOM files contiennent les données complètes d'un material
-                [ ] Async task
-        [/] Material viewer widget
+                [/] Les TOM files contiennent les données complètes d'un material
+                [X] Async task
+            [ ] Load/Save material "project"
+            [ ] Génération procédurale de certaines texture maps
+                [ ] Normal map depuis depth map (Sobel...)
+                    -> Récupérer du code de Waterial qui fait déjà ça
+        [X] Material viewer widget
             [X] "Rotate-around" camera controller
             [X] Affichage du material sur un mesh
-            [ ] Choix du mesh
+            [X] Choix du mesh
         [ ] ComponentPBRMaterial inspector GUI
             [ ] Import de fichiers TOM directement
         [ ] Simplification de l'AssetManager

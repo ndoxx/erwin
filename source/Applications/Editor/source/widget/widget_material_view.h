@@ -48,6 +48,8 @@ private:
 	erwin::ComponentPBRMaterial current_material_;
 	erwin::ComponentDirectionalLight directional_light_;
 	erwin::RotateAroundController camera_controller_;
+
+	erwin::VertexArrayHandle current_mesh_;
 };
 
 } // namespace editor

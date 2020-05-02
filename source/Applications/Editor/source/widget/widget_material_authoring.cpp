@@ -225,7 +225,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
     {
         // Extract directory name and make it the material name
         current_composition_->name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_composition_->name << "\" as a material name."
+        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_composition_->name << WCC(0) << "\" as a material name."
                           << std::endl;
     }
 }
@@ -256,63 +256,51 @@ void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
     auto fut_a = Renderer::get_pixel_data(current_composition_->packed_textures[0]);
     auto fut_nd = Renderer::get_pixel_data(current_composition_->packed_textures[1]);
     auto fut_mare = Renderer::get_pixel_data(current_composition_->packed_textures[2]);
-    tom_export_tasks_.push_back(std::make_unique<TOMExportTask>(std::move(fut_a), std::move(fut_nd),
-                                                                std::move(fut_mare), current_composition_->width,
-                                                                current_composition_->height, tom_path));
+    tom_export_tasks_.emplace_back(std::move(fut_a), std::move(fut_nd), std::move(fut_mare),
+                                   current_composition_->width, current_composition_->height, tom_path);
 }
 
-static void handle_tom_export(const fs::path& path, size_t width, size_t height, uint8_t* albedo, uint8_t* normal_depth, uint8_t* mare)
+static void handle_tom_export(const fs::path& path, size_t width, size_t height, uint8_t* albedo, uint8_t* normal_depth,
+                              uint8_t* mare)
 {
-    tom::TOMDescriptor tom_desc
-    {
-        path,
-        uint16_t(width),
-        uint16_t(height),
-        tom::LosslessCompression::Deflate,
-        TextureWrap::REPEAT
-    };
+    tom::TOMDescriptor tom_desc{path, uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
+                                TextureWrap::REPEAT};
     tom_desc.material_type = tom::MaterialType::PBR;
 
     uint32_t size = uint32_t(width * height * 4);
 
-    tom::TextureMapDescriptor albedo_desc
-    {
-        TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
-        4,
-        true, // sRGB
-        TextureCompression::DXT5,
-        size,
-        albedo,
-        "albedo"_h
-    };
+    tom::TextureMapDescriptor albedo_desc{TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
+                                          4,
+                                          true, // sRGB
+                                          TextureCompression::DXT5,
+                                          size,
+                                          albedo,
+                                          "albedo"_h};
 
-    tom::TextureMapDescriptor nd_desc
-    {
-        TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
-        4,
-        false,
-        TextureCompression::None,
-        size,
-        normal_depth,
-        "normal_depth"_h
-    };
+    tom::TextureMapDescriptor nd_desc{TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
+                                      4,
+                                      false,
+                                      TextureCompression::None,
+                                      size,
+                                      normal_depth,
+                                      "normal_depth"_h};
 
-    tom::TextureMapDescriptor mare_desc
-    {
-        TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
-        4,
-        false,
-        TextureCompression::None,
-        size,
-        mare,
-        "mare"_h
-    };
+    tom::TextureMapDescriptor mare_desc{TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
+                                        4,
+                                        false,
+                                        TextureCompression::None,
+                                        size,
+                                        mare,
+                                        "mare"_h};
 
     tom_desc.texture_maps.push_back(albedo_desc);
     tom_desc.texture_maps.push_back(nd_desc);
     tom_desc.texture_maps.push_back(mare_desc);
     tom::write_tom(tom_desc);
     tom_desc.release();
+
+    DLOG("editor", 1) << "Exported material to:" << std::endl;
+    DLOGI << WCC('p') << path << std::endl;
 }
 
 void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
@@ -321,16 +309,14 @@ void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
     for(auto it = tom_export_tasks_.begin(); it != tom_export_tasks_.end();)
     {
         auto&& task = *it;
-        if(task->is_ready())
+        if(task.is_ready())
         {
-            auto&& [a_data, a_size] = task->albedo.get();
-            auto&& [nd_data, nd_size] = task->normal_depth.get();
-            auto&& [mare_data, mare_size] = task->mare.get();
+            auto&& [a_data, a_size] = task.albedo.get();
+            auto&& [nd_data, nd_size] = task.normal_depth.get();
+            auto&& [mare_data, mare_size] = task.mare.get();
 
-            DLOG("editor", 1) << "Exporting to:" << std::endl;
-            DLOGI << WCC('p') << task->export_path << std::endl;
-
-            handle_tom_export(task->export_path, task->width, task->height, a_data, nd_data, mare_data);
+            // Run export task asynchronously
+            std::async(std::launch::async, &handle_tom_export, task.export_path, task.width, task.height, a_data, nd_data, mare_data);
 
             tom_export_tasks_.erase(it);
         }
@@ -395,7 +381,8 @@ void MaterialAuthoringWidget::on_imgui_render()
         {
             std::string default_filename = current_composition_->name + ".tom";
             ImGui::SetNextWindowSize({700, 400});
-            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", asset_dir, default_filename);
+            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", asset_dir,
+                                                         default_filename);
         }
     }
     ImGui::PopStyleColor(1);

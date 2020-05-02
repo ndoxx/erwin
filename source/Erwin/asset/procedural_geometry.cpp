@@ -120,7 +120,7 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Constants to get normalized vertex positions
-    static constexpr float PHI = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
+    static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
     static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
     static constexpr float PHI_N = PHI * ONE_N;
 

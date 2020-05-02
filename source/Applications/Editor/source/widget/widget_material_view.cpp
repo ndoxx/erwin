@@ -19,7 +19,7 @@ namespace editor
 
 static constexpr float k_border = 4.f;
 static constexpr float k_start_x = 4.f;
-static constexpr float k_start_y = 43.f;
+static constexpr float k_start_y = 50.f;
 
 MaterialViewWidget::MaterialViewWidget():
 Widget("Material view", true),
@@ -40,6 +40,8 @@ render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 	directional_light_.ambient_color = {0.95f,0.85f,0.5f};
 	directional_light_.ambient_strength = 0.1f;
 	directional_light_.brightness = 3.7f;
+
+	current_mesh_ = CommonGeometry::get_vertex_array("icosphere_pbr"_h);
 }
 
 MaterialViewWidget::~MaterialViewWidget()
@@ -90,9 +92,8 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
 
 void MaterialViewWidget::on_layer_render()
 {
-    VertexArrayHandle icosphere = CommonGeometry::get_vertex_array("icosphere_pbr"_h);
     Renderer3D::begin_deferred_pass();
-    Renderer3D::draw_mesh(icosphere, transform_.get_model_matrix(), current_material_.material, &current_material_.material_data);
+    Renderer3D::draw_mesh(current_mesh_, transform_.get_model_matrix(), current_material_.material, &current_material_.material_data);
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap
@@ -102,7 +103,38 @@ void MaterialViewWidget::on_layer_render()
 
 void MaterialViewWidget::on_imgui_render()
 {
-    // * Show game render in window
+	// * Controls
+	static std::vector<std::string> mesh_names =
+	{
+		"Icosphere",
+		"Cube",
+	};
+	static std::vector<hash_t> va_name =
+	{
+		"icosphere_pbr"_h,
+		"cube_pbr"_h,
+	};
+	static size_t current_index = 0;
+	static const char* current_mesh_name = mesh_names[current_index].c_str();
+    if(ImGui::BeginCombo("Mesh", current_mesh_name))
+    {
+    	for(size_t ii=0; ii<va_name.size(); ++ii)
+    	{
+            bool is_selected = (ii == current_index);
+            if(ImGui::Selectable(mesh_names[ii].c_str(), is_selected))
+            {
+                current_index = ii;
+                current_mesh_name = mesh_names[current_index].c_str();
+                current_mesh_ = CommonGeometry::get_vertex_array(va_name[ii]);
+            }
+            if(is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+
+    // * Show render in this window
 	// Retrieve the native framebuffer texture handle
 	FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
 	TextureHandle texture = Renderer::get_framebuffer_texture(fb, 0);

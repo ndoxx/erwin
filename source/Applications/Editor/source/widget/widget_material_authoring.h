@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <filesystem>
+#include <queue>
 
 #include "widget/widget.h"
 #include "asset/material.h"
@@ -41,7 +41,7 @@ private:
 	erwin::UniformBufferHandle packing_ubo_;
 	std::unique_ptr<MaterialComposition> current_composition_;
 
-	std::vector<std::unique_ptr<TOMExportTask>> tom_export_tasks_;
+	std::vector<TOMExportTask> tom_export_tasks_;
 
 	MaterialViewWidget& material_view_;
 };
