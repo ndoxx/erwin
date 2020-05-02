@@ -33,6 +33,36 @@
         [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
         stocker dans les CAT files.
 
+    [/] Génération de PBR materials depuis l'éditeur
+        [/] Authoring widget
+            [X] File open/save dialog
+            [X] Chargement d'images
+            [X] Chargement d'un dossier complet et affectation automatique
+            [X] Affichage des texture maps chargées
+            [X] Packing des textures sous le layout A/ND/MARE via un shader
+            [X] Edition des material data
+            [/] Export TOM
+                [X] Récupérer les données pixel avec le Renderer
+                    [X] Gestion des promises côté renderer
+                    [X] Gestion des futures et TOM export tasks côté client
+                [X] Ecriture au format TOM actuel
+                [X] DXT5 prepass dans tom_file.cpp
+                [X] Les TOM files contiennent les données complètes d'un material
+                [X] Async task
+            [ ] Load/Save material "project"
+            [ ] Génération procédurale de certaines texture maps
+                [ ] Normal map depuis depth map (Sobel...)
+                    -> Récupérer du code de Waterial qui fait déjà ça
+        [X] Material viewer widget
+            [X] "Rotate-around" camera controller
+            [X] Affichage du material sur un mesh
+            [X] Choix du mesh
+        [X] ComponentPBRMaterial inspector GUI
+            [X] Import de fichiers TOM directement
+        [X] Simplification de l'AssetManager
+            [X] Caching des ComponentPBRMaterials directement (archétypes)
+
+
     --[ENGINE FEATURES]--
     [X] Resource caching
     [/] Ecrire un renderer 2D multi-threaded
@@ -68,6 +98,11 @@
     Deadlife - Anxious Souls
     
 
+##[SCRIPTS]
+###imgui_sanity_check.py
+Comme j'ai la sale habitude de run en release, il m'arrive souvent de péter la branche debug à cause d'un ImGui assert dû à un ImGui::Begin...() / ImGui::End...() mismatch, et de m'en rendre compte bien plus tard. Comme l'erreur runtime se produit toujours en fin de frame (c'est là qu'ImGui fait son sanity check en debug build), c'est lourdingue à tracker.
+Donc j'ai codé ce petit script pour parser toutes mes sources qui contiennent du code ImGui et identifier de possibles mismatch. Au moins avec ça je sais dans quelle source chercher le problème...
+
 
 ##[Command Galore]
 ###Callgrind profiling
@@ -92,6 +127,32 @@ Sortie vide -> pas compilée avec -fPIC.
 ###GUI pour GDB sous Chrome
 > pipx run gdbgui
     voir: https://www.gdbgui.com/installation/
+
+###Perf
+> sudo apt-get install linux-tools-common
+> uname -r
+    5.3.0-46-generic
+> sudo apt-get install linux-tools-5.3.0-46-generic
+> sudo perf stat ../bin/editor
+    Performance counter stats for '../bin/editor':
+             3 188,65 msec task-clock                #    0,199 CPUs utilized          
+               38 220      context-switches          #    0,012 M/sec                  
+                  979      cpu-migrations            #    0,307 K/sec                  
+               49 287      page-faults               #    0,015 M/sec                  
+        5 284 325 934      cycles                    #    1,657 GHz                    
+        5 125 615 680      instructions              #    0,97  insn per cycle         
+          903 969 499      branches                  #  283,496 M/sec                  
+           24 801 809      branch-misses             #    2,74% of all branches        
+
+         16,006432799 seconds time elapsed
+
+          2,677690000 seconds user
+          1,129994000 seconds sys
+
+> sudo perf record -g ../bin/editor
+    -> Lancer le debug build de préférence
+> sudo perf report
+    -> Profiling data
 
 ##[GIT]
 ###SSH

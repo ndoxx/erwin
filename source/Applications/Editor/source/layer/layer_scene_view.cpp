@@ -35,17 +35,15 @@ void SceneViewLayer::on_attach()
 
 	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
-	const Material& mat_paved_floor = AssetManager::create_PBR_material("textures/map/pavedFloor.tom");
-    const Material& mat_rock = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
-    const Material& mat_dirt = AssetManager::create_PBR_material("textures/map/dirt.tom");
-    const Material& mat_test_emissive = AssetManager::create_PBR_material("textures/map/testEmissive.tom");
-    const Material& mat_uniform = AssetManager::create_uniform_PBR_material("unimat");
+	ComponentPBRMaterial mat_greasy_metal = AssetManager::load_PBR_material(filesystem::get_asset_dir() / "textures/map/greasyMetal.tom");
 
-    const Material& mat_sun = AssetManager::create_material<ComponentDirectionalLightMaterial>
-	(
-		"Sun",
-		"shaders/forward_sun.glsl"
-	);
+	Material mat_sun;
+	mat_sun.archetype = "Sun"_h;
+	mat_sun.shader = AssetManager::load_shader("shaders/forward_sun.glsl");
+	mat_sun.ubo = AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
+	mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
+	Renderer3D::register_shader(mat_sun.shader);
+	Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
 
 	{
 		EntityID ent = Scene::registry.create();
@@ -68,25 +66,10 @@ void SceneViewLayer::on_attach()
 		Scene::add_entity(ent, "Sun", W_ICON(SUN_O));
 	}
 
-	glm::vec3 pos[] = 
-	{
-		{-3.f,0.f,-1.f},
-		{-1.f,0.f,-1.f},
-		{ 1.f,0.f,-1.f},
-		{ 3.f,0.f,-1.f},
-	};
-	std::array mats =
-	{
-		std::cref(mat_paved_floor),
-		std::cref(mat_rock),
-		std::cref(mat_dirt),
-		std::cref(mat_test_emissive),
-	};
-	for(size_t ii=0; ii<4; ++ii)
 	{
 		EntityID ent = Scene::registry.create();
 
-		ComponentTransform3D ctransform = {pos[ii], {0.f,0.f,0.f}, 1.8f};
+		ComponentTransform3D ctransform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
 
 		ComponentOBB cOBB(CommonGeometry::get_extent("cube_pbr"_h));
 		cOBB.update(ctransform.get_model_matrix(), ctransform.uniform_scale);
@@ -94,63 +77,13 @@ void SceneViewLayer::on_attach()
 		ComponentMesh cmesh;
 		cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
 
-		ComponentPBRMaterial cmaterial;
-		cmaterial.set_material(mats[ii]);
-		cmaterial.enable_albedo_map();
-		cmaterial.enable_normal_map();
-		cmaterial.enable_metallic_map();
-		cmaterial.enable_ao_map();
-		cmaterial.enable_roughness_map();
-		if(ii==3)
-		{
-			cmaterial.enable_emissivity();
-			cmaterial.material_data.emissive_scale = 5.f;
-		}
-
-		cmaterial.material_data.tint = {1.f,1.f,1.f,1.f};
-
 		Scene::registry.assign<ComponentTransform3D>(ent, ctransform);
 		Scene::registry.assign<ComponentOBB>(ent, cOBB);
 		Scene::registry.assign<ComponentMesh>(ent, cmesh);
-		Scene::registry.assign<ComponentPBRMaterial>(ent, cmaterial);
+		Scene::registry.assign<ComponentPBRMaterial>(ent, mat_greasy_metal);
 
 
-		Scene::add_entity(ent, "Cube #" + std::to_string(ii));
-	}
-
-
-	constexpr int k_row = 5;
-	for(int ii=0; ii<k_row; ++ii)
-	{
-		float metallic = float(ii)/float(k_row-1);
-		for(int jj=0; jj<k_row; ++jj)
-		{
-			float roughness = float(jj)/float(k_row-1);
-			roughness = std::max(roughness, 0.1f);
-
-			EntityID ent = Scene::registry.create();
-
-			ComponentTransform3D ctransform = {{2.5f*float(ii),5.f+2.5f*float(jj),8.f}, {0.f,0.f,0.f}, 0.75f};
-
-			ComponentOBB cOBB(CommonGeometry::get_extent("icosphere_pbr"_h));
-			cOBB.update(ctransform.get_model_matrix(), ctransform.uniform_scale);
-
-			ComponentMesh cmesh;
-			cmesh.set_vertex_array(CommonGeometry::get_vertex_array("icosphere_pbr"_h));
-
-			ComponentPBRMaterial cmaterial;
-			cmaterial.set_material(mat_uniform);
-			cmaterial.material_data.uniform_metallic = metallic;
-			cmaterial.material_data.uniform_roughness = roughness;
-			cmaterial.material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
-
-			Scene::registry.assign<ComponentTransform3D>(ent, ctransform);
-			Scene::registry.assign<ComponentOBB>(ent, cOBB);
-			Scene::registry.assign<ComponentMesh>(ent, cmesh);
-			Scene::registry.assign<ComponentPBRMaterial>(ent, cmaterial);
-
-			Scene::add_entity(ent, "Icosphere #" + std::to_string(ii*k_row+jj));
-		}
+		Scene::add_entity(ent, "Cube #0");
 	}
 
 	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});

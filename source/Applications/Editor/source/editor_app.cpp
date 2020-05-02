@@ -170,6 +170,7 @@ void ErwinEditor::on_imgui_render()
 
             ImGui::EndMenu();
         }
+        ImGui::EndMainMenuBar();
     }
 
     if(enable_docking_)

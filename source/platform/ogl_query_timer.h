@@ -4,7 +4,7 @@
 
 #include "render/query_timer.h"
 
-// #define USE_TIMESTAMP
+#define USE_TIMESTAMP // BUG: UB if I use the other implementation (Uninitialized variable)
 
 namespace erwin
 {

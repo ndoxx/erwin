@@ -1,36 +1,49 @@
 #pragma once
 
+#include <filesystem>
+#include <queue>
+
 #include "widget/widget.h"
 #include "asset/material.h"
 #include "render/handles.h"
 #include "render/texture_common.h"
 
+namespace fs = std::filesystem;
+
 namespace editor
 {
 
+class MaterialViewWidget;
 class MaterialAuthoringWidget: public Widget
 {
 public:
-	MaterialAuthoringWidget();
+	MaterialAuthoringWidget(MaterialViewWidget& material_view);
 	virtual ~MaterialAuthoringWidget();
+	virtual void on_update(const erwin::GameClock& clock) override;
 
 protected:
 	virtual void on_imgui_render() override;
 
 private:
+	void load_texture_map(TextureMapType tm_type, const fs::path& filepath);
+	void load_directory(const fs::path& dirpath);
+	void pack_textures();
+	void clear_texture_map(TextureMapType tm_type);
+	void clear();
+	void export_TOM(const fs::path& tom_path);
+
+private:
+	struct MaterialComposition;
+	struct TOMExportTask;
+
 	erwin::TextureHandle checkerboard_tex_;
+	erwin::ShaderHandle PBR_packing_shader_;
+	erwin::UniformBufferHandle packing_ubo_;
+	std::unique_ptr<MaterialComposition> current_composition_;
 
-	struct MaterialComposition
-	{
-		TMEnum texture_maps = TMF_NONE;
-		erwin::TextureGroup textures;
+	std::vector<TOMExportTask> tom_export_tasks_;
 
-        inline bool has_map(TextureMapType map_type)   { return bool(texture_maps & (1 << map_type)); }
-        inline void set_map(TextureMapType map_type)   { texture_maps |= (1 << map_type); }
-        inline void clear_map(TextureMapType map_type) { texture_maps &= ~(1 << map_type); textures[size_t(map_type)] = {}; }
-    };
-
-	MaterialComposition current_composition_;
+	MaterialViewWidget& material_view_;
 };
 
 } // namespace editor

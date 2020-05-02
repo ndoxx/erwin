@@ -141,6 +141,16 @@ static inline void split_string(const std::string& str, Container& cont, char de
     }
 }
 
+static inline void to_lower(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::tolower(c); });
+}
+
+static inline void to_upper(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::toupper(c); });
+}
+
 namespace rx
 {
 // Regex replace with a callback

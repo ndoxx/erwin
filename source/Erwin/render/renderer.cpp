@@ -18,6 +18,8 @@
 #include "render/shader.h"
 #include "render/query_timer.h"
 #include "math/color.h"
+#include "utils/promise_storage.hpp"
+
 
 namespace erwin
 {
@@ -385,6 +387,8 @@ static struct RendererStorage
 
 	ShaderCompatibility shader_compat[k_max_render_handles];
 
+	PromiseStorage<PixelData> texture_data_promises_;
+
 	FramebufferHandle default_framebuffer_;
 	FramebufferHandle current_framebuffer_;
 	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
@@ -581,7 +585,6 @@ uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
 	return uint32_t(s_storage.framebuffer_textures_[handle.index].handles.size());
 }
 
-#ifdef W_DEBUG
 void* Renderer::get_native_texture_handle(TextureHandle handle)
 {
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
@@ -589,7 +592,7 @@ void* Renderer::get_native_texture_handle(TextureHandle handle)
 		return nullptr;
 	return s_storage.textures[handle.index]->get_native_handle();
 }
-#endif
+
 
 VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
 {
@@ -656,6 +659,7 @@ enum class RenderCommand: uint16_t
 
 	Post,
 
+	GetPixelData,
 	GenerateCubemapMipmaps,
 	FramebufferScreenshot,
 
@@ -1067,6 +1071,19 @@ void Renderer::set_host_window_size(uint32_t width, uint32_t height)
 	cw.write(&width);
 	cw.write(&height);
 	cw.submit();
+}
+
+std::future<PixelData> Renderer::get_pixel_data(TextureHandle handle)
+{
+	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+
+    auto&& [token, fut] = s_storage.texture_data_promises_.future_operation();
+	RenderCommandWriter cw(RenderCommand::GetPixelData);
+	cw.write(&handle);
+	cw.write(&token);
+	cw.submit();
+
+	return std::move(fut);
 }
 
 void Renderer::generate_mipmaps(CubemapHandle cubemap)
@@ -1665,6 +1682,18 @@ void set_host_window_size(memory::LinearBuffer<>& buf)
 
 void nop(memory::LinearBuffer<>&) { }
 
+void get_pixel_data(memory::LinearBuffer<>& buf)
+{
+	TextureHandle handle;
+	size_t promise_token;
+
+	buf.read(&handle);
+	buf.read(&promise_token);
+
+	auto&& [data, size] =  s_storage.textures[handle.index]->read_pixels();
+    s_storage.texture_data_promises_.fulfill(promise_token, PixelData{data, size});
+}
+
 void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
 {
 	CubemapHandle handle;
@@ -1840,6 +1869,7 @@ static backend_dispatch_func_t render_backend_dispatch[std::size_t(RenderCommand
 
 	&render_dispatch::nop,
 
+	&render_dispatch::get_pixel_data,
 	&render_dispatch::generate_cubemap_mipmaps,
 	&render_dispatch::framebuffer_screenshot,
 	&render_dispatch::destroy_index_buffer,
@@ -1959,6 +1989,9 @@ void draw(memory::LinearBuffer<>& buf)
 	{
 		TextureHandle hnd;
 		buf.read(&hnd);
+
+		if(hnd.index == k_invalid_handle)
+			continue;
 
 		// Avoid texture switching if not necessary
 		if(hnd.index != last_texture_index[ii])

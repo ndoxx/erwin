@@ -21,10 +21,11 @@ public:
 	virtual uint32_t get_height() const = 0;
 	virtual uint32_t get_mips() const = 0;
 
-	virtual void generate_mipmaps() const = 0;
 	virtual void bind(uint32_t slot = 0) const = 0;
 	virtual void unbind() const = 0;
 
+	virtual void generate_mipmaps() const = 0;
+	virtual std::pair<uint8_t*, size_t> read_pixels() const { return {nullptr,0}; }
 	virtual void* get_native_handle() = 0;
 
     inline W_ID get_unique_id() const { return unique_id_; }

@@ -1,8 +1,10 @@
 #include "entity/component_PBR_material.h"
 #include "asset/asset_manager.h"
+#include "filesystem/filesystem.h"
 #include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
 #include "imgui.h"
+#include "ImGuiFileDialog/ImGuiFileDialog.h"
 
 namespace erwin
 {
@@ -10,29 +12,37 @@ namespace erwin
 template <>
 void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 {
-    // Select material
-    if(ImGui::Button("Material"))
-        ImGui::OpenPopup("popup_select_material");
+    // Load material from file
+    if(ImGui::Button("Load"))
+    {
+        static std::string asset_dir = filesystem::get_asset_dir().string() + "/textures/map/";
+        ImGui::SetNextWindowSize({700, 400});
+        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".tom", asset_dir, "");
+    }
+
+    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseFileDlgKey"))
+    {
+        // action if OK
+        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
+        {
+            const ComponentPBRMaterial& other = AssetManager::load_PBR_material(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
+            // Copy material
+            cmp->material = other.material;
+            cmp->material_data = other.material_data;
+            cmp->ready = other.ready;
+            cmp->name = other.name;
+        }
+        // close
+        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseFileDlgKey");
+    }
+
     
     ImGui::SameLine();
     if(cmp->is_ready())
-        ImGui::TextUnformatted(AssetManager::get_material_name(cmp->material.archetype).c_str());
+        ImGui::TextUnformatted(cmp->name.c_str());
     else
         ImGui::TextUnformatted("None");
 
-    if(ImGui::BeginPopup("popup_select_material"))
-    {
-        AssetManager::visit_materials([&cmp](const Material& material, const std::string& name, const std::string&)
-        {
-            if(ImGui::Selectable(name.c_str()))
-            {
-                cmp->set_material(material);
-                return true;
-            }
-            return false;
-        });
-        ImGui::EndPopup();
-    }
 
     // PBR parameters
     ImGui::ColorEdit3("Tint", static_cast<float*>(&cmp->material_data.tint[0]));
@@ -55,6 +65,11 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
         ImGui::SameLine();
         ImGui::SliderFloatDefault("##Parallax", &cmp->material_data.parallax_height_scale, 0.005f, 0.05f, 0.03f);
     }
+
+    // Uniform parameters
+    ImGui::ColorEdit3("Unif. albedo", static_cast<float*>(&cmp->material_data.uniform_albedo[0]));
+    ImGui::SliderFloat("Unif. metal", &cmp->material_data.uniform_metallic, 0.f, 1.f);
+    ImGui::SliderFloat("Unif. rough", &cmp->material_data.uniform_roughness, 0.f, 1.f);
 }
 
 } // namespace erwin

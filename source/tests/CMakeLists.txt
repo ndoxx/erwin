@@ -71,6 +71,7 @@ cotire(test_serial)
 set(SRC_ENGINE_TEST
     catch_app.cpp
     test_memory.cpp
+    test_async.cpp
     # test_ecs.cpp
     test_rng.cpp
     test_event.cpp

@@ -2,6 +2,7 @@
 #include "asset/bounding.h"
 #include "level/scene.h"
 #include "asset/asset_manager.h"
+#include "render/renderer_3d.h"
 
 namespace erwin
 {
@@ -10,7 +11,9 @@ GizmoSystem::GizmoSystem()
 {
     auto gizmo_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     auto gizmo_ubo    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
-    gizmo_material_   = AssetManager::create_material("Gizmo", {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData), false);
+    gizmo_material_   = {"gizmo"_h, {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData)};
+    Renderer3D::register_shader(gizmo_shader);
+    Renderer::shader_attach_uniform_buffer(gizmo_shader, gizmo_ubo);
 
     EVENTBUS.subscribe(this, &GizmoSystem::on_ray_scene_query_event);
     selected_part_ = -1;

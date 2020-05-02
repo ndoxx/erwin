@@ -49,8 +49,7 @@ static struct
 	eastl::map<hash_t, ShaderHandle> shader_cache_;
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	eastl::map<hash_t, MaterialDescriptor> material_descriptors_;
-	eastl::map<hash_t, Material> materials_;
+	eastl::map<hash_t, ComponentPBRMaterial> pbr_materials_;
 #else
 	std::vector<TextureAtlas*> texture_atlases_;
 	std::vector<FontAtlas*> font_atlases_;
@@ -61,8 +60,7 @@ static struct
 	std::map<hash_t, ShaderHandle> shader_cache_;
 	std::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	std::map<hash_t, MaterialDescriptor> material_descriptors_;
-	std::map<hash_t, Material> materials_;
+	std::map<hash_t, ComponentPBRMaterial> pbr_materials_;
 #endif
 
 	LinearArena handle_arena_;
@@ -248,62 +246,6 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 	return handle;
 }
 
-TextureGroup AssetManager::load_texture_group(const fs::path& filepath)
-{
-	fs::path fullpath = filesystem::get_asset_dir() / filepath;
-
-	// Sanity check
-	// If filepath is empty, return default invalid handle
-	if(filepath.empty())
-		return {};
-	if(!fs::exists(fullpath))
-	{
-		DLOGE("texture") << "File does not exist." << std::endl;
-		return {};
-	}
-	if(filepath.extension().string().compare(".tom"))
-	{
-		DLOGE("texture") << "Invalid input file." << std::endl;
-		return {};
-	}
-
-	DLOGN("asset") << "[AssetManager] Creating new texture group:" << std::endl;
-	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
-
-	TextureGroup tg;
-
-	DLOG("texture",1) << "Loading TOM file" << std::endl;
-	tom::TOMDescriptor descriptor;
-	descriptor.filepath = fullpath;
-	tom::read_tom(descriptor);
-
-	// Create and register all texture maps
-	for(auto&& tmap: descriptor.texture_maps)
-	{
-		ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
-		TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
-									  					 				    descriptor.height,
-									  					 				    3,
-									  					 				    tmap.data,
-									  					 				    format,
-									  					 				    tmap.filter,
-									  					 				    descriptor.address_UV,
-									  					 					TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
-		tg.textures[tg.texture_count++] = tex;
-	}
-
-#ifdef W_DEBUG
-	DLOGI << "Found " << WCC('v') << tg.texture_count << WCC(0) << " texture maps. TextureHandles: { ";
-	for(size_t ii=0; ii<tg.texture_count; ++ii)
-	{
-		DLOG("texture",1) << WCC('v') << tg.textures[ii].index << " ";
-	}
-	DLOG("texture",1) << WCC(0) << "}" << std::endl;
-#endif
-
-	return tg;
-}
-
 TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path)
 {
 	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
@@ -419,55 +361,77 @@ UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component
 	return handle;
 }
 
-const Material& AssetManager::create_material(const std::string& name,
-									  		  const TextureGroup& tg,
-									  		  ShaderHandle shader,
-									  		  UniformBufferHandle ubo,
-									  		  uint32_t data_size,
-									  		  bool is_public)
+const ComponentPBRMaterial& AssetManager::load_PBR_material(const fs::path& tom_path)
 {
-	hash_t archetype = H_(name.c_str());
+	// * Sanity check
+	W_ASSERT(fs::exists(tom_path), "[AssetManager] File does not exist.");
+	W_ASSERT(!tom_path.extension().string().compare(".tom"), "[AssetManager] Invalid input file.");
 
-	auto it = s_storage.materials_.find(archetype);
-	if(it!=s_storage.materials_.end())
-		return it->second;
-
-	s_storage.materials_.insert({archetype, {archetype, tg, shader, ubo, data_size}});
-	s_storage.material_descriptors_.insert({archetype, {is_public, name, ""}});
-	Renderer3D::register_shader(shader);
-	if(ubo.index != k_invalid_handle)
-		Renderer::shader_attach_uniform_buffer(shader, ubo);
-	return s_storage.materials_.at(archetype);
-}
-
-const Material& AssetManager::get_material(hash_t archetype)
-{
-	auto it = s_storage.materials_.find(archetype);
-	W_ASSERT_FMT(it!=s_storage.materials_.end(), "Unknown material: %s", istr::resolve(archetype).c_str());
-	return it->second;
-}
-
-const std::string& AssetManager::get_material_name(hash_t arch_name)
-{
-	auto it = s_storage.material_descriptors_.find(arch_name);
-	static const std::string empty_str = "";
-	if(it!=s_storage.material_descriptors_.end())
-		return it->second.name;
-	else
-		return empty_str;
-}
-
-void AssetManager::visit_materials(MaterialVisitor visit)
-{
-	for(auto&& [archetype, material]: s_storage.materials_)
+	// * Check cache first
+	hash_t hname = H_(tom_path.string().c_str());
+	auto it = s_storage.pbr_materials_.find(hname);
+	if(it!=s_storage.pbr_materials_.end())
 	{
-		const auto& desc = s_storage.material_descriptors_.at(archetype);
-		if(!desc.is_public)
-			continue;
-		if(visit(material, desc.name, desc.description))
-			break;
+		DLOG("asset",1) << "[AssetManager] Loading PBR material " << WCC('i') << "from cache" << WCC(0) << ":" << std::endl;
+		DLOG("asset",1) << WCC('p') << tom_path << WCC(0) << std::endl;
+		return it->second;
 	}
+
+	DLOGN("asset") << "[AssetManager] Loading PBR material:" << std::endl;
+	DLOG("asset",1) << WCC('p') << tom_path << WCC(0) << std::endl;
+
+	TextureGroup tg;
+
+	tom::TOMDescriptor descriptor;
+	descriptor.filepath = tom_path;
+	tom::read_tom(descriptor);
+
+	// Create and register all texture maps
+	for(auto&& tmap: descriptor.texture_maps)
+	{
+		ImageFormat format = select_image_format(tmap.channels, tmap.compression, tmap.srgb);
+		TextureHandle tex = Renderer::create_texture_2D(Texture2DDescriptor{descriptor.width,
+									  					 				    descriptor.height,
+									  					 				    3,
+									  					 				    tmap.data,
+									  					 				    format,
+									  					 				    tmap.filter,
+									  					 				    descriptor.address_UV,
+									  					 					TF_MUST_FREE}); // Let the renderer free the resources once the texture is loaded
+		tg.textures[tg.texture_count++] = tex;
+	}
+
+#ifdef W_DEBUG
+	DLOGI << "Found " << WCC('v') << tg.texture_count << WCC(0) << " texture maps. TextureHandles: { ";
+	for(size_t ii=0; ii<tg.texture_count; ++ii)
+	{
+		DLOG("texture",1) << WCC('v') << tg.textures[ii].index << " ";
+	}
+	DLOG("texture",1) << WCC(0) << "}" << std::endl;
+#endif
+
+
+	W_ASSERT(descriptor.material_type == tom::MaterialType::PBR, "[AssetManager] Material is not PBR.");
+	W_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData), "[AssetManager] Invalid material data size.");
+	ShaderHandle shader     = load_shader("shaders/deferred_PBR.glsl");
+	UniformBufferHandle ubo = create_material_data_buffer<ComponentPBRMaterial>();
+	
+	std::string name = tom_path.stem().string();
+
+	Material mat = {H_(name.c_str()), tg, shader, ubo, sizeof(ComponentPBRMaterial::MaterialData)};
+	Renderer3D::register_shader(shader);
+	Renderer::shader_attach_uniform_buffer(shader, ubo);
+
+	ComponentPBRMaterial pbr_mat;
+	pbr_mat.set_material(mat);
+	memcpy(&pbr_mat.material_data, descriptor.material_data, descriptor.material_data_size);
+	delete[] descriptor.material_data;
+
+	s_storage.pbr_materials_.emplace(hname, std::move(pbr_mat));
+
+	return s_storage.pbr_materials_.at(hname);
 }
+
 
 #ifdef W_USE_EASTL
 	template <typename KeyT, typename HandleT>
@@ -517,30 +481,6 @@ void AssetManager::release(FontAtlasHandle handle)
 	
 	erase_by_value(s_storage.font_cache_, handle);
 	handle.release();
-}
-
-void AssetManager::release(TextureGroup tg)
-{
-	DLOGN("asset") << "[AssetManager] Releasing texture group." << std::endl;
-
-	for(auto&& tex_handle: tg.textures)
-		if(tex_handle.is_valid())
-			Renderer::destroy(tex_handle);
-}
-
-void AssetManager::release(hash_t archetype)
-{
-	auto it = s_storage.materials_.find(archetype);
-	if(it==s_storage.materials_.end())
-	{
-		DLOGW("asset") << "[AssetManager] Cannot release unknown material: " << istr::resolve(archetype) << std::endl;
-		return;
-	}
-
-	DLOGN("asset") << "[AssetManager] Releasing material:" << std::endl;
-	DLOGI << WCC('n') << istr::resolve(archetype) << std::endl;
-	s_storage.materials_.erase(it);
-	s_storage.material_descriptors_.erase(archetype);
 }
 
 void AssetManager::release(ShaderHandle handle)

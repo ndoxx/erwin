@@ -43,6 +43,7 @@ target_include_directories(erwin
     SYSTEM PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glm"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui_filedialog"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
         "${INC_EASTL}"
@@ -96,6 +97,49 @@ set_target_properties(imgui
     )
 target_link_libraries(imgui)
 
+
+# ImGuiFileDialog: Compile as an object library (with relocatable code)
+add_library(imgui_filedialog OBJECT)
+target_sources(imgui_filedialog
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui_filedialog/ImGuiFileDialog/ImGuiFileDialog.cpp"
+    )
+target_include_directories(imgui_filedialog 
+    PRIVATE 
+        "${CMAKE_SOURCE_DIR}/source/vendor/imgui_filedialog/ImGuiFileDialog"
+        "${CMAKE_SOURCE_DIR}/source/vendor/imgui"
+    )
+set_target_properties(imgui_filedialog
+    PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+if(UNIX)
+    if(APPLE)
+        target_compile_definitions(imgui_filedialog PRIVATE APPLE)
+    else()
+        target_compile_definitions(imgui_filedialog PRIVATE LINUX)
+    endif()
+    target_compile_definitions(imgui_filedialog PRIVATE UNIX)
+elseif(WIN32)
+    target_compile_definitions(imgui_filedialog PRIVATE WIN32)
+    if(MINGW)
+        target_compile_definitions(imgui_filedialog PRIVATE MINGW32)
+    endif()
+    set(DIRENT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/source/vendor/imgui_filedialog/3rdparty/dirent/include)
+    include_directories(${DIRENT_INCLUDE_DIR})
+endif()
+
+if(MSVC)
+    # Ignore 4055 for glad
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /IGNORE:4055")
+    target_compile_definitions(imgui_filedialog PRIVATE _USE_MATH_DEFINES)
+    target_compile_definitions(imgui_filedialog PRIVATE MSVC)
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++11")
+endif ()
+target_link_libraries(imgui_filedialog PRIVATE)
+
+
 # EASTL
 set_target_properties(eastl
     PROPERTIES
@@ -116,6 +160,7 @@ target_link_libraries(erwin
         glad
         glfw
         imgui
+        imgui_filedialog
     )
 
 cotire(erwin)

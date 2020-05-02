@@ -18,7 +18,7 @@ void MaterialEditorLayer::on_attach()
 {
 	// Build UI
     material_view_widget_ = new MaterialViewWidget();
-    material_authoring_widget_ = new MaterialAuthoringWidget();
+    material_authoring_widget_ = new MaterialAuthoringWidget(*material_view_widget_);
     add_widget(material_view_widget_);
     add_widget(material_authoring_widget_);
 }

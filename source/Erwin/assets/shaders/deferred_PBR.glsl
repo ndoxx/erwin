@@ -62,13 +62,13 @@ void main()
 #include "engine/frame_ubo.glsl"
 #include "engine/transform_ubo.glsl"
 
-#define PBR_EN_EMISSIVE      1<<0
-#define PBR_EN_PARALLAX      1<<1
-#define PBR_EN_ALBEDO_MAP    1<<2
-#define PBR_EN_NORMAL_MAP    1<<3
-#define PBR_EN_METALLIC_MAP  1<<4
-#define PBR_EN_AO_MAP        1<<5
-#define PBR_EN_ROUGHNESS_MAP 1<<6
+#define PBR_EN_ALBEDO_MAP    1<<0
+#define PBR_EN_NORMAL_MAP    1<<1
+#define PBR_EN_PARALLAX      1<<2
+#define PBR_EN_METALLIC_MAP  1<<3
+#define PBR_EN_AO_MAP        1<<4
+#define PBR_EN_ROUGHNESS_MAP 1<<5
+#define PBR_EN_EMISSIVE      1<<6
 
 SAMPLER_2D_(0); // albedo
 SAMPLER_2D_(1); // normal - depth

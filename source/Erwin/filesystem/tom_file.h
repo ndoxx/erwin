@@ -24,6 +24,12 @@ enum class LosslessCompression: uint8_t
 	Deflate
 };
 
+enum class MaterialType: uint8_t
+{
+	NONE = 0,
+	PBR
+};
+
 struct TextureMapDescriptor
 {
 	TextureFilter filter;
@@ -46,13 +52,17 @@ struct TOMDescriptor
     TextureWrap address_UV;
     std::vector<TextureMapDescriptor> texture_maps;
 
+    uint8_t* material_data = nullptr;
+    uint32_t material_data_size = 0;
+    MaterialType material_type = MaterialType::NONE;
+
     void release();
 };
 
 // Read a TOM file, put data into descriptor (will allocate memory)
 extern void read_tom(TOMDescriptor& desc);
 // Write a TOM file using data contained in descriptor
-extern void write_tom(const TOMDescriptor& desc);
+extern void write_tom(TOMDescriptor& desc);
 
 } // namespace tom
 } // namespace erwin
