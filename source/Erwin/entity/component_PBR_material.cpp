@@ -58,6 +58,11 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
         ImGui::SameLine();
         ImGui::SliderFloatDefault("##Parallax", &cmp->material_data.parallax_height_scale, 0.005f, 0.05f, 0.03f);
     }
+
+    // Uniform parameters
+    ImGui::ColorEdit3("Unif. albedo", static_cast<float*>(&cmp->material_data.uniform_albedo[0]));
+    ImGui::SliderFloat("Unif. metal", &cmp->material_data.uniform_metallic, 0.f, 1.f);
+    ImGui::SliderFloat("Unif. rough", &cmp->material_data.uniform_roughness, 0.f, 1.f);
 }
 
 } // namespace erwin

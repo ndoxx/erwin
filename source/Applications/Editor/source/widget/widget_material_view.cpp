@@ -31,6 +31,7 @@ render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
 	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
 	camera_controller_.set_target({0.f,0.f,0.f});
 
+	current_material_ = std::make_shared<ComponentPBRMaterial>();
 	reset_material();
 
 	transform_ = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.f};
@@ -52,11 +53,11 @@ MaterialViewWidget::~MaterialViewWidget()
 void MaterialViewWidget::reset_material()
 {
     const Material& mat_uniform = AssetManager::create_uniform_PBR_material("unimat");
-    current_material_.set_material(mat_uniform);
-	current_material_.clear_flags();
-	current_material_.material_data.uniform_metallic = 0.f;
-	current_material_.material_data.uniform_roughness = 0.01f;
-	current_material_.material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
+    current_material_->set_material(mat_uniform);
+	current_material_->clear_flags();
+	current_material_->material_data.uniform_metallic = 0.f;
+	current_material_->material_data.uniform_roughness = 0.01f;
+	current_material_->material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
 }
 
 void MaterialViewWidget::on_update(const GameClock& clock)
@@ -93,7 +94,7 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
 void MaterialViewWidget::on_layer_render()
 {
     Renderer3D::begin_deferred_pass();
-    Renderer3D::draw_mesh(current_mesh_, transform_.get_model_matrix(), current_material_.material, &current_material_.material_data);
+    Renderer3D::draw_mesh(current_mesh_, transform_.get_model_matrix(), current_material_->material, &current_material_->material_data);
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap

@@ -7,6 +7,7 @@
 #include "imgui/color.h"
 #include "imgui/dialog.h"
 #include "imgui/font_awesome.h"
+#include "imgui/imgui_utils.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
@@ -52,9 +53,9 @@ static TextureMapType detect_texture_map(const std::string& name)
 
 struct MaterialAuthoringWidget::MaterialComposition
 {
+    std::shared_ptr<ComponentPBRMaterial> pbr_material;
     TMEnum texture_maps = TMF_NONE;
-    erwin::TextureGroup textures;
-    erwin::TextureGroup packed_textures;
+    TextureGroup textures_unpacked;
     uint32_t width;
     uint32_t height;
 
@@ -64,11 +65,11 @@ struct MaterialAuthoringWidget::MaterialComposition
     inline void clear_map(TextureMapType map_type)
     {
         texture_maps &= ~(1 << map_type);
-        textures[size_t(map_type)] = {};
+        textures_unpacked[size_t(map_type)] = {};
     }
     inline void set_map(TextureMapType map_type, TextureHandle tex)
     {
-        textures[size_t(map_type)] = tex;
+        textures_unpacked[size_t(map_type)] = tex;
         texture_maps |= (1 << map_type);
     }
 };
@@ -102,6 +103,7 @@ MaterialAuthoringWidget::MaterialAuthoringWidget(MaterialViewWidget& material_vi
     : Widget("Material authoring", true), material_view_(material_view)
 {
     current_composition_ = std::make_unique<MaterialComposition>();
+    current_composition_->pbr_material = material_view_.get_material_shared();
 
     checkerboard_tex_ = AssetManager::create_debug_texture("checkerboard"_h, 64);
     PBR_packing_shader_ =
@@ -150,7 +152,7 @@ void MaterialAuthoringWidget::pack_textures()
     VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
     DrawCall dc(DrawCall::Indexed, state_flags, PBR_packing_shader_, quad);
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
-        dc.set_texture(current_composition_->textures[size_t(tm)], uint32_t(tm));
+        dc.set_texture(current_composition_->textures_unpacked[size_t(tm)], uint32_t(tm));
     dc.add_dependency(Renderer::update_uniform_buffer(packing_ubo_, static_cast<void*>(&data), sizeof(PBRPackingData),
                                                       DataOwnership::Copy));
 
@@ -164,17 +166,10 @@ void MaterialAuthoringWidget::pack_textures()
     Renderer::destroy(fb, true); // Destroy FB but keep attachments alive
 
     // * Create material and send to Material View widget
-    current_composition_->packed_textures = tg;
     const Material& mat = AssetManager::create_PBR_material(current_composition_->name, tg);
-    ComponentPBRMaterial cmaterial;
-    cmaterial.set_material(mat);
+    current_composition_->pbr_material->set_material(mat);
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
-        cmaterial.enable_flag(TextureMapFlag(1 << tm), current_composition_->has_map(TextureMapType(tm)));
-
-    // TODO: Implement an interface for each texture map to adjust uniform data
-    // cmaterial.material_data.uniform_roughness = ...;
-
-    material_view_.set_material(cmaterial);
+        current_composition_->pbr_material->enable_flag(TextureMapFlag(1 << tm), current_composition_->has_map(TextureMapType(tm)));
 }
 
 void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs::path& filepath)
@@ -232,7 +227,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
 
 void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
 {
-    TextureHandle tex = current_composition_->textures[size_t(tm_type)];
+    TextureHandle tex = current_composition_->textures_unpacked[size_t(tm_type)];
     if(tex.is_valid())
     {
         Renderer::destroy(tex);
@@ -246,16 +241,16 @@ void MaterialAuthoringWidget::clear()
         clear_texture_map(TextureMapType(tm));
 
     current_composition_->name = "";
-    current_composition_->packed_textures = {};
+    current_composition_->pbr_material->material.texture_group = {};
     material_view_.reset_material();
 }
 
 void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 {
     // * Create an export task that will execute when we receive data
-    auto fut_a = Renderer::get_pixel_data(current_composition_->packed_textures[0]);
-    auto fut_nd = Renderer::get_pixel_data(current_composition_->packed_textures[1]);
-    auto fut_mare = Renderer::get_pixel_data(current_composition_->packed_textures[2]);
+    auto fut_a = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[0]);
+    auto fut_nd = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[1]);
+    auto fut_mare = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[2]);
     tom_export_tasks_.emplace_back(std::move(fut_a), std::move(fut_nd), std::move(fut_mare),
                                    current_composition_->width, current_composition_->height, tom_path);
 }
@@ -265,6 +260,8 @@ static void handle_tom_export(const fs::path& path, size_t width, size_t height,
 {
     tom::TOMDescriptor tom_desc{path, uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
                                 TextureWrap::REPEAT};
+
+    // Copy material data
     tom_desc.material_type = tom::MaterialType::PBR;
 
     uint32_t size = uint32_t(width * height * 4);
@@ -325,7 +322,7 @@ void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
     }
 }
 
-static constexpr size_t k_image_size = 100;
+static constexpr size_t k_image_size = 150;
 void MaterialAuthoringWidget::on_imgui_render()
 {
     // Restrict to opaque PBR materials for now
@@ -377,7 +374,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     if(ImGui::Button("Export", btn_span_size))
     {
         // Current material must have been applied
-        if(current_composition_->packed_textures.texture_count > 0)
+        if(current_composition_->pbr_material->material.texture_group.texture_count > 0)
         {
             std::string default_filename = current_composition_->name + ".tom";
             ImGui::SetNextWindowSize({700, 400});
@@ -398,6 +395,7 @@ void MaterialAuthoringWidget::on_imgui_render()
 
     ImGui::Separator();
 
+    ImGui::Columns(2, "##PBR_textures");
     // * For each possible texture map
     bool show_file_open_dialog = false;
     static TMEnum selected_tm = 0;
@@ -410,7 +408,7 @@ void MaterialAuthoringWidget::on_imgui_render()
         // * Display a clickable image of the texture map
         // Display currently bound texture map
         // Default to checkerboard pattern if no texture map is loaded
-        TextureHandle tex = current_composition_->textures[size_t(tm)];
+        TextureHandle tex = current_composition_->textures_unpacked[size_t(tm)];
         void* image_native = has_map ? Renderer::get_native_texture_handle(tex) : checkerboard_native;
 
         if(image_native)
@@ -436,8 +434,9 @@ void MaterialAuthoringWidget::on_imgui_render()
             ImGui::EndPopup();
         }
         ImGui::PopID();
-        ImGui::Separator();
+        ImGui::NextColumn();
     }
+    ImGui::Columns(1);
 
     if(show_file_open_dialog)
     {
@@ -457,6 +456,35 @@ void MaterialAuthoringWidget::on_imgui_render()
         // close
         igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseFileDlgKey");
     }
+
+    ImGui::Separator();
+
+    // * Uniform parameters
+    ImGui::ColorEdit3("Tint", static_cast<float*>(&current_composition_->pbr_material->material_data.tint[0]));
+    ImGui::SliderFloatDefault("Tiling", &current_composition_->pbr_material->material_data.tiling_factor, 0.1f, 10.f, 1.f);
+
+    bool enable_emissivity = current_composition_->pbr_material->is_emissive();
+    if(ImGui::Checkbox("Emissive", &enable_emissivity))
+        current_composition_->pbr_material->enable_emissivity(enable_emissivity);
+    if(current_composition_->pbr_material->is_emissive())
+    {
+        ImGui::SameLine();
+        ImGui::SliderFloatDefault("##Emissivity", &current_composition_->pbr_material->material_data.emissive_scale, 0.1f, 10.f, 1.f);
+    }
+
+    bool enable_parallax = current_composition_->pbr_material->has_parallax();
+    if(ImGui::Checkbox("Parallax", &enable_parallax))
+        current_composition_->pbr_material->enable_parallax(enable_parallax);
+    if(current_composition_->pbr_material->has_parallax())
+    {
+        ImGui::SameLine();
+        ImGui::SliderFloatDefault("##Parallax", &current_composition_->pbr_material->material_data.parallax_height_scale, 0.005f, 0.05f, 0.03f);
+    }
+
+    // Uniform parameters
+    ImGui::ColorEdit3("Unif. albedo", static_cast<float*>(&current_composition_->pbr_material->material_data.uniform_albedo[0]));
+    ImGui::SliderFloat("Unif. metal", &current_composition_->pbr_material->material_data.uniform_metallic, 0.f, 1.f);
+    ImGui::SliderFloat("Unif. rough", &current_composition_->pbr_material->material_data.uniform_roughness, 0.f, 1.f);
 }
 
 } // namespace editor

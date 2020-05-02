@@ -40,7 +40,7 @@
             [X] Chargement d'un dossier complet et affectation automatique
             [X] Affichage des texture maps chargées
             [X] Packing des textures sous le layout A/ND/MARE via un shader
-            [ ] Edition des material data
+            [X] Edition des material data
             [/] Export TOM
                 [X] Récupérer les données pixel avec le Renderer
                     [X] Gestion des promises côté renderer
