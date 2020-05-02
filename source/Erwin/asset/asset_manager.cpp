@@ -49,8 +49,7 @@ static struct
 	eastl::map<hash_t, ShaderHandle> shader_cache_;
 	eastl::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	eastl::map<hash_t, MaterialDescriptor> material_descriptors_;
-	eastl::map<hash_t, Material> materials_;
+	eastl::map<hash_t, ComponentPBRMaterial> pbr_materials_;
 #else
 	std::vector<TextureAtlas*> texture_atlases_;
 	std::vector<FontAtlas*> font_atlases_;
@@ -61,8 +60,7 @@ static struct
 	std::map<hash_t, ShaderHandle> shader_cache_;
 	std::map<uint64_t, UniformBufferHandle> ubo_cache_;
 
-	std::map<hash_t, MaterialDescriptor> material_descriptors_;
-	std::map<hash_t, Material> materials_;
+	std::map<hash_t, ComponentPBRMaterial> pbr_materials_;
 #endif
 
 	LinearArena handle_arena_;
@@ -363,15 +361,21 @@ UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component
 	return handle;
 }
 
-ComponentPBRMaterial AssetManager::load_PBR_material(const fs::path& tom_path)
+const ComponentPBRMaterial& AssetManager::load_PBR_material(const fs::path& tom_path)
 {
-	fs::path fullpath = filesystem::get_asset_dir() / tom_path;
-
 	// * Sanity check
-	W_ASSERT(fs::exists(fullpath), "[AssetManager] File does not exist.");
+	W_ASSERT(fs::exists(tom_path), "[AssetManager] File does not exist.");
 	W_ASSERT(!tom_path.extension().string().compare(".tom"), "[AssetManager] Invalid input file.");
 
 	// * Check cache first
+	hash_t hname = H_(tom_path.string().c_str());
+	auto it = s_storage.pbr_materials_.find(hname);
+	if(it!=s_storage.pbr_materials_.end())
+	{
+		DLOG("asset",1) << "[AssetManager] Loading PBR material " << WCC('i') << "from cache" << WCC(0) << ":" << std::endl;
+		DLOG("asset",1) << WCC('p') << tom_path << WCC(0) << std::endl;
+		return it->second;
+	}
 
 	DLOGN("asset") << "[AssetManager] Loading PBR material:" << std::endl;
 	DLOG("asset",1) << WCC('p') << tom_path << WCC(0) << std::endl;
@@ -379,7 +383,7 @@ ComponentPBRMaterial AssetManager::load_PBR_material(const fs::path& tom_path)
 	TextureGroup tg;
 
 	tom::TOMDescriptor descriptor;
-	descriptor.filepath = fullpath;
+	descriptor.filepath = tom_path;
 	tom::read_tom(descriptor);
 
 	// Create and register all texture maps
@@ -420,10 +424,12 @@ ComponentPBRMaterial AssetManager::load_PBR_material(const fs::path& tom_path)
 
 	ComponentPBRMaterial pbr_mat;
 	pbr_mat.set_material(mat);
-
 	memcpy(&pbr_mat.material_data, descriptor.material_data, descriptor.material_data_size);
+	delete[] descriptor.material_data;
 
-	return pbr_mat;
+	s_storage.pbr_materials_.emplace(hname, std::move(pbr_mat));
+
+	return s_storage.pbr_materials_.at(hname);
 }
 
 
@@ -475,30 +481,6 @@ void AssetManager::release(FontAtlasHandle handle)
 	
 	erase_by_value(s_storage.font_cache_, handle);
 	handle.release();
-}
-
-void AssetManager::release(TextureGroup tg)
-{
-	DLOGN("asset") << "[AssetManager] Releasing texture group." << std::endl;
-
-	for(auto&& tex_handle: tg.textures)
-		if(tex_handle.is_valid())
-			Renderer::destroy(tex_handle);
-}
-
-void AssetManager::release(hash_t archetype)
-{
-	auto it = s_storage.materials_.find(archetype);
-	if(it==s_storage.materials_.end())
-	{
-		DLOGW("asset") << "[AssetManager] Cannot release unknown material: " << istr::resolve(archetype) << std::endl;
-		return;
-	}
-
-	DLOGN("asset") << "[AssetManager] Releasing material:" << std::endl;
-	DLOGI << WCC('n') << istr::resolve(archetype) << std::endl;
-	s_storage.materials_.erase(it);
-	s_storage.material_descriptors_.erase(archetype);
 }
 
 void AssetManager::release(ShaderHandle handle)

@@ -35,7 +35,7 @@ public:
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
 	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
-	static ComponentPBRMaterial load_PBR_material(const fs::path& tom_path);
+	static const ComponentPBRMaterial& load_PBR_material(const fs::path& tom_path);
 
 	static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);
 	template <typename ComponentT>
@@ -45,14 +45,10 @@ public:
 		return create_material_data_buffer(ctti::type_id<ComponentT>().hash(), sizeof(MaterialData));
 	}
 
-
 	static void release(TextureAtlasHandle handle);
 	static void release(FontAtlasHandle handle);
 	static void release(ShaderHandle handle);
 	static void release(UniformBufferHandle handle);
-
-	static void release(TextureGroup tg);
-	static void release(hash_t material);
 
 private:
 	friend class Renderer2D;

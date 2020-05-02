@@ -47,7 +47,7 @@
                     [X] Gestion des futures et TOM export tasks côté client
                 [X] Ecriture au format TOM actuel
                 [X] DXT5 prepass dans tom_file.cpp
-                [/] Les TOM files contiennent les données complètes d'un material
+                [X] Les TOM files contiennent les données complètes d'un material
                 [X] Async task
             [ ] Load/Save material "project"
             [ ] Génération procédurale de certaines texture maps
@@ -57,10 +57,10 @@
             [X] "Rotate-around" camera controller
             [X] Affichage du material sur un mesh
             [X] Choix du mesh
-        [ ] ComponentPBRMaterial inspector GUI
-            [ ] Import de fichiers TOM directement
-        [ ] Simplification de l'AssetManager
-            [ ] Caching des ComponentPBRMaterials directement (archétypes)
+        [X] ComponentPBRMaterial inspector GUI
+            [X] Import de fichiers TOM directement
+        [X] Simplification de l'AssetManager
+            [X] Caching des ComponentPBRMaterials directement (archétypes)
 
 
     --[ENGINE FEATURES]--
