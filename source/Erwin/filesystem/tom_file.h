@@ -24,6 +24,12 @@ enum class LosslessCompression: uint8_t
 	Deflate
 };
 
+enum class MaterialType: uint8_t
+{
+	NONE = 0,
+	PBR
+};
+
 struct TextureMapDescriptor
 {
 	TextureFilter filter;
@@ -45,6 +51,10 @@ struct TOMDescriptor
     LosslessCompression compression;
     TextureWrap address_UV;
     std::vector<TextureMapDescriptor> texture_maps;
+
+    uint8_t* material_data = nullptr;
+    uint32_t material_data_size = 0;
+    MaterialType material_type = MaterialType::NONE;
 
     void release();
 };

@@ -123,9 +123,9 @@ void MaterialAuthoringWidget::pack_textures()
     // Create an ad-hoc framebuffer to render to 3 textures
     FramebufferLayout layout{
         // RGB: Albedo, A: Scaled emissivity
-        {"albedo"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"albedo"_h, ImageFormat::SRGB_ALPHA, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
         // RG: Compressed normal, BA: ?
-        {"normal_depth"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"normal_depth"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
         // R: Metallic, G: AO, B: Roughness, A: ?
         {"mare"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
     };
@@ -278,8 +278,8 @@ static void handle_tom_export(const fs::path& path, size_t width, size_t height,
     {
         TextureFilter(MAG_LINEAR | MIN_LINEAR_MIPMAP_NEAREST),
         4,
-        false,
-        TextureCompression::None, // DXT5 not working
+        true, // sRGB
+        TextureCompression::None, // TODO: Implement DXT5 compression pass in tom_file.cpp, Fudge did it separately. 
         size,
         albedo,
         "albedo"_h

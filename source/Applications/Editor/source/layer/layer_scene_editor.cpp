@@ -4,7 +4,6 @@
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
 #include "widget/widget_hex_dump.h"
-#include "widget/widget_materials.h"
 #include "input/input.h"
 #include "level/scene.h"
 
@@ -32,7 +31,6 @@ void SceneEditorLayer::on_attach()
     scene_view_widget_ = new SceneViewWidget();
     add_widget(scene_view_widget_);
     add_widget(new SceneHierarchyWidget());
-    add_widget(new MaterialsWidget());
     add_widget(new InspectorWidget());
 
     // Register main render targets in peek widget

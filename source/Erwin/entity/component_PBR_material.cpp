@@ -12,7 +12,10 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 {
     // Select material
     if(ImGui::Button("Material"))
-        ImGui::OpenPopup("popup_select_material");
+    {
+        BANG();
+        // ImGui::OpenPopup("popup_select_material");
+    }
     
     ImGui::SameLine();
     if(cmp->is_ready())
@@ -20,7 +23,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
     else
         ImGui::TextUnformatted("None");
 
-    if(ImGui::BeginPopup("popup_select_material"))
+    /*if(ImGui::BeginPopup("popup_select_material"))
     {
         AssetManager::visit_materials([&cmp](const Material& material, const std::string& name, const std::string&)
         {
@@ -32,7 +35,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
             return false;
         });
         ImGui::EndPopup();
-    }
+    }*/
 
     // PBR parameters
     ImGui::ColorEdit3("Tint", static_cast<float*>(&cmp->material_data.tint[0]));

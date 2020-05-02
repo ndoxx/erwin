@@ -26,12 +26,14 @@ struct TOMHeader
     uint16_t blob_compression;      // Type of (lossless) blob compression
     uint64_t blob_size;             // Size of concat texture blob
     uint64_t blob_inflate_size;     // Size of inflated concat texture blob (after blob decompression)
+    uint64_t material_data_size;    // Size of material data structure
+    uint8_t  material_type;         // Type of material
 };
 //#pragma pack(pop)
 
 #define TOM_MAGIC 0x4d4f5457 // ASCII(WTOM)
 #define TOM_VERSION_MAJOR 1
-#define TOM_VERSION_MINOR 0
+#define TOM_VERSION_MINOR 1
 
 //#pragma pack(push,1)
 struct BlockDescriptor
@@ -54,6 +56,8 @@ void TOMDescriptor::release()
 {
 	for(auto&& tmap: texture_maps)
 		tmap.release();
+    if(material_data)
+        delete[] material_data;
 }
 
 
@@ -73,6 +77,15 @@ void read_tom(TOMDescriptor& desc)
     desc.height      = header.texture_height;
     desc.compression = LosslessCompression(header.blob_compression);
     desc.address_UV  = TextureWrap(header.address_UV);
+
+    // Read material data if any
+    if(header.material_data_size)
+    {
+        desc.material_type = MaterialType(header.material_type);
+        desc.material_data_size = uint32_t(header.material_data_size);
+        desc.material_data = new uint8_t[header.material_data_size];
+        ifs.read(opaque_cast(desc.material_data), long(header.material_data_size));
+    }
 
     uint32_t num_maps          = header.num_maps;
     uint64_t blob_size         = header.blob_size;
@@ -166,16 +179,18 @@ void write_tom(const TOMDescriptor& desc)
 
 	// Generate header
 	TOMHeader header;
-	header.magic             = TOM_MAGIC;
-	header.version_major     = TOM_VERSION_MAJOR;
-	header.version_minor     = TOM_VERSION_MINOR;
-	header.texture_width     = desc.width;
-	header.texture_height    = desc.height;
-	header.address_UV        = uint16_t(desc.address_UV);
-	header.num_maps          = num_maps;
-	header.blob_compression  = uint16_t(desc.compression);
-	header.blob_size         = blob_size;
-    header.blob_inflate_size = blob_size;
+	header.magic              = TOM_MAGIC;
+	header.version_major      = TOM_VERSION_MAJOR;
+	header.version_minor      = TOM_VERSION_MINOR;
+	header.texture_width      = desc.width;
+	header.texture_height     = desc.height;
+	header.address_UV         = uint16_t(desc.address_UV);
+	header.num_maps           = num_maps;
+	header.blob_compression   = uint16_t(desc.compression);
+	header.blob_size          = blob_size;
+    header.blob_inflate_size  = blob_size;
+    header.material_data_size = desc.material_data_size;
+    header.material_type      = uint8_t(desc.material_type);
 
     std::ofstream ofs(desc.filepath, std::ios::binary);
 
@@ -195,6 +210,9 @@ void write_tom(const TOMDescriptor& desc)
 
     // Write header
     ofs.write(opaque_cast(&header), sizeof(TOMHeader));
+    // Write material data
+    if(desc.material_data)
+        ofs.write(opaque_cast(desc.material_data), long(header.material_data_size));
     // Write block descriptors
     ofs.write(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
     // Write blob
