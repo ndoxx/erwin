@@ -19,7 +19,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
     
     ImGui::SameLine();
     if(cmp->is_ready())
-        ImGui::TextUnformatted(AssetManager::get_material_name(cmp->material.archetype).c_str());
+        ImGui::TextUnformatted(cmp->name.c_str());
     else
         ImGui::TextUnformatted("None");
 

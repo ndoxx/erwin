@@ -28,6 +28,7 @@ struct ComponentPBRMaterial
 	} material_data;
 
 	bool ready = false;
+	std::string name;
 
 	inline void set_material(const Material& mat)
 	{

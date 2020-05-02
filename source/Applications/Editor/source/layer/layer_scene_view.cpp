@@ -35,17 +35,23 @@ void SceneViewLayer::on_attach()
 
 	// TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
 
+/*
 	const Material& mat_greasy_metal = AssetManager::create_PBR_material("textures/map/greasyMetal.tom");
     const Material& mat_rock = AssetManager::create_PBR_material("textures/map/rockTiling.tom");
     const Material& mat_dirt = AssetManager::create_PBR_material("textures/map/dirt.tom");
     const Material& mat_test_emissive = AssetManager::create_PBR_material("textures/map/testEmissive.tom");
     const Material& mat_uniform = AssetManager::create_uniform_PBR_material("unimat");
+*/
 
-    const Material& mat_sun = AssetManager::create_material<ComponentDirectionalLightMaterial>
-	(
-		"Sun",
-		"shaders/forward_sun.glsl"
-	);
+	ComponentPBRMaterial mat_greasy_metal = AssetManager::load_PBR_material("textures/map/greasyMetal.tom");
+
+	Material mat_sun;
+	mat_sun.archetype = "Sun"_h;
+	mat_sun.shader = AssetManager::load_shader("shaders/forward_sun.glsl");
+	mat_sun.ubo = AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
+	mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
+	Renderer3D::register_shader(mat_sun.shader);
+	Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
 
 	{
 		EntityID ent = Scene::registry.create();
@@ -68,6 +74,27 @@ void SceneViewLayer::on_attach()
 		Scene::add_entity(ent, "Sun", W_ICON(SUN_O));
 	}
 
+	{
+		EntityID ent = Scene::registry.create();
+
+		ComponentTransform3D ctransform = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.8f};
+
+		ComponentOBB cOBB(CommonGeometry::get_extent("cube_pbr"_h));
+		cOBB.update(ctransform.get_model_matrix(), ctransform.uniform_scale);
+
+		ComponentMesh cmesh;
+		cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+
+		Scene::registry.assign<ComponentTransform3D>(ent, ctransform);
+		Scene::registry.assign<ComponentOBB>(ent, cOBB);
+		Scene::registry.assign<ComponentMesh>(ent, cmesh);
+		Scene::registry.assign<ComponentPBRMaterial>(ent, mat_greasy_metal);
+
+
+		Scene::add_entity(ent, "Cube #0");
+	}
+
+/*
 	glm::vec3 pos[] = 
 	{
 		{-3.f,0.f,-1.f},
@@ -151,7 +178,7 @@ void SceneViewLayer::on_attach()
 
 			Scene::add_entity(ent, "Icosphere #" + std::to_string(ii*k_row+jj));
 		}
-	}
+	}*/
 
 	Scene::camera_controller.set_position({-5.8f,2.3f,-5.8f});
 	Scene::camera_controller.set_angles(228.f, 5.f);
