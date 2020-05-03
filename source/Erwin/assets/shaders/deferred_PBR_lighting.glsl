@@ -63,6 +63,14 @@ void main()
     vec4 GBuffer_mar    = texture(SAMPLER_2D_2, v_uv);
     float GBuffer_depth = texture(SAMPLER_2D_3, v_uv).r;
 
+    if(bool(u_i_frame_flags & FRAME_FLAG_DEBUG_SHOW_UV))
+    {
+        // Flat shading in UV mode
+        out_color = vec4(GBuffer_albedo.rgb, 1.f);
+        out_glow  = vec4(0.f);
+        return;
+    }
+
     // Reconstruct position from depth buffer
     vec3 frag_pos = reconstruct_position(GBuffer_depth, v2_frag_ray_v, u_v4_proj_params);
 

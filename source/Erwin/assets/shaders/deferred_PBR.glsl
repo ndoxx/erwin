@@ -103,6 +103,14 @@ void main()
 {
 	vec2 tex_coord = u_f_tiling_factor*v_uv;
 
+    if(bool(u_i_frame_flags & FRAME_FLAG_DEBUG_SHOW_UV))
+    {
+        out_albedo = vec4(tex_coord, 0.f, 1.f);
+        out_normal = vec4(compress_normal_z_reconstruct(v_normal), 0.f, 1.f);
+        out_mar    = vec4(0.f, 1.f, 1.f, 0.f);
+        return;
+    }
+
 	// Parallax map
     if(bool(u_flags & PBR_EN_PARALLAX))
 	   tex_coord = parallax_map(tex_coord, v_view_dir_t, u_f_parallax_height_scale, SAMPLER_2D_1);

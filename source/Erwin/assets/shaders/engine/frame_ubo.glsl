@@ -1,4 +1,5 @@
-#define FRAME_FLAG_ENABLE_IBL  1<<0
+#define FRAME_FLAG_ENABLE_IBL    1<<0
+#define FRAME_FLAG_DEBUG_SHOW_UV 1<<1
 
 layout(std140, binding = 0) uniform frame_data
 {

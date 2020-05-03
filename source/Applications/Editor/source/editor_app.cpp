@@ -86,8 +86,9 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
         EVENTBUS.publish(WindowCloseEvent());
         return true;
     }
+
     // Cycle editor state
-    if(e.pressed && !e.repeat && e.key == Input::get_action_key(ACTION_EDITOR_CYCLE_MODE))
+    if(e.pressed && !e.repeat && e.key == Input::get_action_key(ACTION_EDITOR_CYCLE_MODE) && e.mod_shift()) // TMP: Modifiers should be handled by action
     {
     	cycle_state();
     	return true;

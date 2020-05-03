@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "asset/bounding.h"
+#include "utils/hash.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -87,24 +88,19 @@ public:
                        bool draw_lines = false);
 };
 
-struct pair_hash
-{
-    template <typename T1, typename T2> size_t operator()(const std::pair<T1, T2>& pair) const
-    {
-        return std::hash<T1>()(pair.first) ^ std::hash<T1>()(pair.second);
-    }
-};
 
 class TriangleMeshFabricator
 {
 public:
+    using VertexHashMap = std::unordered_multimap<glm::vec3, size_t, wh::vec3_hash>;
     using TriangleMap = std::multimap<size_t, size_t>;
     using TriangleRange = std::pair<TriangleMap::iterator, TriangleMap::iterator>;
     using Edge = std::pair<size_t, size_t>;
     using Triangle = std::array<size_t, 3>;
 
+    VertexHashMap vertex_hash_map; // For seams detection and fixing
     TriangleMap triangle_classes;
-    std::unordered_map<Edge, size_t, pair_hash> lookup;
+    std::unordered_map<Edge, size_t, wh::pair_hash> lookup;
     glm::vec3 positions[k_max_vertices];
     glm::vec3 normals[k_max_vertices];
     glm::vec3 tangents[k_max_vertices];
@@ -118,6 +114,7 @@ public:
     {
         vertex_count = 0;
         triangle_count = 0;
+        vertex_hash_map.clear();
         triangle_classes.clear();
         lookup.clear();
     }
@@ -139,6 +136,7 @@ public:
     {
         positions[vertex_count] = position;
         uvs[vertex_count] = uv;
+        vertex_hash_map.insert({position, vertex_count});
         ++vertex_count;
         return vertex_count - 1;
     }
@@ -171,8 +169,9 @@ public:
     void convert(MeshFabricator& mf);
 
     void build_normals();
-
     void build_tangents();
+    void smooth_normals(SmoothFuncType func);
+    void smooth_tangents(SmoothFuncType func);
 
     Extent build_shape(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata);
 };

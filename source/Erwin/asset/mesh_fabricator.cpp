@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <map>
+#include <set>
 #include <numeric>
 
 #include "debug/logger.h"
@@ -216,8 +217,8 @@ size_t TriangleMeshFabricator::get_mid_point(Edge edge)
 
 void TriangleMeshFabricator::set_triangle_by_index(size_t tri_index, const Triangle& T)
 {
-    // W_ASSERT(tri_index+2<indices.size(), "Index out of bounds during triangle assignment operation.");
-    // W_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
+    W_ASSERT(tri_index+2<3*triangle_count, "Index out of bounds during triangle assignment operation.");
+    W_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
     for(size_t ii = 0; ii < 3; ++ii)
     {
         // Remove old triangle class association
@@ -350,6 +351,87 @@ void TriangleMeshFabricator::build_tangents()
     }
 }
 
+inline glm::vec3 lerp(const glm::vec3& x, const glm::vec3& y, float t)
+{
+  return x * (1.f - t) + y * t;
+}
+
+void TriangleMeshFabricator::smooth_normals(SmoothFuncType func)
+{
+    std::set<size_t> visited;
+
+    // For each vertex
+    for(size_t ii=0; ii<vertex_count; ++ii)
+    {
+        // Compute position hash
+        size_t pos_hash = wh::vec3_hash()(positions[ii]);
+
+        // Check that we haven't already traversed the corresponding position class,
+        // and if so, continue
+        if(visited.find(pos_hash) != visited.end()) continue;
+        visited.insert(pos_hash);
+
+        // Count vertices at this position. If only one vertex, not a seam, no need to fix.
+        size_t degeneracy = vertex_hash_map.count(positions[ii]);
+        if(degeneracy == 1) continue;
+
+        // Sum up normals for each duplicate vertex
+        glm::vec3 normal0 = {0.f, 0.f, 0.f};
+        auto&& [begin, end] = vertex_hash_map.equal_range(positions[ii]);
+        for(auto it=begin; it!=end; ++it)
+            normal0 += normals[it->second];
+        normal0 = glm::normalize(normal0);
+
+        // Smooth normals
+        for(auto it=begin; it!=end; ++it)
+        {
+            const glm::vec3& normal_i = normals[it->second];
+            float alpha = s_smooth_funcs[func](glm::dot(normal_i, normal0));
+            glm::vec3 new_normal(lerp(normal_i, normal0, alpha));
+            // Update normal for each vertex from the list
+            normals[it->second] = new_normal;
+        }
+    }
+}
+
+void TriangleMeshFabricator::smooth_tangents(SmoothFuncType func)
+{
+    std::set<size_t> visited;
+
+    // For each vertex
+    for(size_t ii=0; ii<vertex_count; ++ii)
+    {
+        // Compute position hash
+        size_t pos_hash = wh::vec3_hash()(positions[ii]);
+
+        // Check that we haven't already traversed the corresponding position class,
+        // and if so, continue
+        if(visited.find(pos_hash) != visited.end()) continue;
+        visited.insert(pos_hash);
+
+        // Count vertices at this position. If only one vertex, not a seam, no need to fix.
+        size_t degeneracy = vertex_hash_map.count(positions[ii]);
+        if(degeneracy == 1) continue;
+
+        // Sum up tangents for each duplicate vertex
+        glm::vec3 tangent0 = {0.f, 0.f, 0.f};
+        auto&& [begin, end] = vertex_hash_map.equal_range(positions[ii]);
+        for(auto it=begin; it!=end; ++it)
+            tangent0 += tangents[it->second];
+        tangent0 = glm::normalize(tangent0);
+
+        // Smooth tangents
+        for(auto it=begin; it!=end; ++it)
+        {
+            const glm::vec3& tangent_i = tangents[it->second];
+            float alpha = s_smooth_funcs[func](glm::dot(tangent_i, tangent0));
+            glm::vec3 new_tangent(lerp(tangent_i, tangent0, alpha));
+            // Update normal for each vertex from the list
+            tangents[it->second] = new_tangent;
+        }
+    }
+}
+
 Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vector<float>& vdata,
                                            std::vector<uint32_t>& idata)
 {
@@ -407,9 +489,15 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
 
     // Build attributes that need to be built
     if(has_normal)
+    {
         build_normals();
+        smooth_normals(SmoothFuncType::MAX);
+    }
     if(has_tangent)
+    {
         build_tangents();
+        smooth_tangents(SmoothFuncType::MAX);
+    }
 
     // Export
     vdata.resize(vertex_count * vertex_size);

@@ -28,6 +28,9 @@ public:
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
 	static bool is_compatible(VertexBufferLayoutHandle layout, const Material& material);
 
+	// Show UV in flat shading
+	static void debug_show_uv(bool enabled=true);
+
 	// Generate a cubemap from a 2:1 equirectangular HDR texture
 	static CubemapHandle generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t size);
 	// Generate a pre-computed environment convolution map for diffuse IBL from an environment cubemap

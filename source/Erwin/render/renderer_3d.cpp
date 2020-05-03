@@ -21,8 +21,9 @@ struct LineInstanceData
 
 enum FrameDataFlags: int
 {
-	FD_NONE       = 0,
-	FD_ENABLE_IBL = 1<<0,
+	FD_NONE          = 0,
+	FD_ENABLE_IBL    = 1<<0,
+	FD_DEBUG_SHOW_UV = 1<<1,
 };
 
 struct FrameData
@@ -227,6 +228,15 @@ bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, const Material& 
 {
 	return Renderer::is_compatible(layout, material.shader);
 }
+
+void Renderer3D::debug_show_uv(bool enabled)
+{
+	if(enabled)
+		s_storage.frame_data.flags |= FrameDataFlags::FD_DEBUG_SHOW_UV;
+	else
+		s_storage.frame_data.flags &= ~FrameDataFlags::FD_DEBUG_SHOW_UV;
+}
+
 
 
 
