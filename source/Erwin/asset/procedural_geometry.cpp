@@ -199,8 +199,11 @@ void detect_wrapped_UVs(std::vector<size_t>& out_wrapped)
     }
 }
 
-void fix_wrapped_UVs(const std::vector<size_t>& wrapped)
+void fix_warped_faces()
 {
+    std::vector<size_t> wrapped;
+    detect_wrapped_UVs(wrapped);
+
     std::map<size_t, size_t> visited;
     for(size_t ii: wrapped)
     {
@@ -232,6 +235,11 @@ void fix_wrapped_UVs(const std::vector<size_t>& wrapped)
         }
         s_tm.set_triangle_by_index(ii, abc);
     }
+}
+
+void fix_shared_pole_vertices()
+{
+
 }
 
 Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
@@ -296,10 +304,9 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
         s_tm.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f -theta / float(M_PI)};
     }
 
-    // Fix UV wrap at seams
-    std::vector<size_t> wrapped;
-    detect_wrapped_UVs(wrapped);
-    fix_wrapped_UVs(wrapped);
+    // Fix UV wrap at seams and poles
+    fix_warped_faces();
+    fix_shared_pole_vertices();
 
     return s_tm.build_shape(layout, vdata, idata);
 }
