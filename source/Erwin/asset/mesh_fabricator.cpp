@@ -216,8 +216,8 @@ size_t TriangleMeshFabricator::get_mid_point(Edge edge)
 
 void TriangleMeshFabricator::set_triangle_by_index(size_t tri_index, const Triangle& T)
 {
-    // W_ASSERT(tri_index+2<indices.size(), "Index out of bounds during triangle assignment operation.");
-    // W_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
+    W_ASSERT(tri_index+2<3*triangle_count, "Index out of bounds during triangle assignment operation.");
+    W_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
     for(size_t ii = 0; ii < 3; ++ii)
     {
         // Remove old triangle class association

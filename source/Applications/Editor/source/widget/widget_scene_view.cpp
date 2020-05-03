@@ -8,6 +8,7 @@
 #include "event/window_events.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/renderer_3d.h"
 #include "entity/reflection.h"
 #include "entity/component_bounding_box.h"
 #include "entity/component_transform.h"
@@ -101,6 +102,7 @@ bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
 void SceneViewWidget::on_imgui_render()
 {
 	static bool show_frame_profiler = false;
+    static bool enable_debug_show_uv = false;
     if(ImGui::BeginMenuBar())
     {
 	    if(ImGui::BeginMenu("Profiling"))
@@ -112,6 +114,12 @@ void SceneViewWidget::on_imgui_render()
         {
             ImGui::MenuItem("Render stats", NULL,   &stats_overlay_->open_);
             ImGui::MenuItem("Camera tracker", NULL, &camera_overlay_->open_);
+            ImGui::EndMenu();
+        }
+        if(ImGui::BeginMenu("Debug"))
+        {
+            if(ImGui::MenuItem("Show UV", NULL, &enable_debug_show_uv))
+                Renderer3D::debug_show_uv(enable_debug_show_uv);
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();

@@ -116,6 +116,10 @@ struct KeyboardEvent: public WEvent
 		
 	}
 
+    inline bool mod_shift() const   { return mods & keymap::WKEYMOD::SHIFT; }
+    inline bool mod_control() const { return mods & keymap::WKEYMOD::CONTROL; }
+    inline bool mod_alt() const     { return mods & keymap::WKEYMOD::ALT; }
+
 #ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
     {
@@ -169,6 +173,10 @@ struct MouseButtonEvent: public WEvent
 	{
 		
 	}
+
+    inline bool mod_shift() const   { return mods & keymap::WKEYMOD::SHIFT; }
+    inline bool mod_control() const { return mods & keymap::WKEYMOD::CONTROL; }
+    inline bool mod_alt() const     { return mods & keymap::WKEYMOD::ALT; }
 
 #ifdef W_DEBUG
     virtual void print(std::ostream& stream) const override
