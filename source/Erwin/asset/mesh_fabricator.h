@@ -114,6 +114,7 @@ public:
     {
         vertex_count = 0;
         triangle_count = 0;
+        vertex_hash_map.clear();
         triangle_classes.clear();
         lookup.clear();
     }

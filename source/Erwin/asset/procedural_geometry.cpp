@@ -211,13 +211,15 @@ void fix_warped_faces()
         {
             s_tm.indices[ii+0], s_tm.indices[ii+1], s_tm.indices[ii+2]
         };
-        // For each index in triangle ii
+        // For each index in triangle ii detect if corresponding vertex is problematic
         for(size_t jj=0; jj<3; ++jj)
         {
             size_t ind = s_tm.indices[ii+jj];
             const glm::vec2& uv = s_tm.uvs[ind];
+            // Problematic vertex has its U coordinate close to 0
             if(uv.x < 0.25f)
             {
+                // If not already visited, duplicate vertex but unwrap U by adding 1
                 size_t temp;
                 auto it = visited.find(ind);
                 if(it==visited.end())
@@ -233,13 +235,64 @@ void fix_warped_faces()
                 abc[jj] = temp;
             }
         }
+        // Reassign triangle
         s_tm.set_triangle_by_index(ii, abc);
     }
 }
 
+// Constants to get normalized vertex positions
+static constexpr float PHI = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
+static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
+static constexpr float PHI_N = PHI * ONE_N;
+
 void fix_shared_pole_vertices()
 {
+    // Find indices of north and south poles
+    glm::vec3 north = {0.f,  1.f, 0.f};
+    glm::vec3 south = {0.f, -1.f, 0.f};
+    std::array<glm::vec3,2> poles = { north, south };
+    std::array<size_t,2> poles_idx =
+    {
+        s_tm.vertex_hash_map.find(north)->second,
+        s_tm.vertex_hash_map.find(south)->second
+    };
 
+    for(size_t pp=0; pp<2; ++pp)
+    {
+        // Visit all triangles that contain this pole
+        // In my sphere mesh, pole is always 1 mod 3 (vertex B in triangle ABC)
+        std::vector<std::pair<size_t, TriangleMeshFabricator::Triangle>> reassigned;
+        s_tm.traverse_triangle_class(poles_idx[pp], [&](TriangleMeshFabricator::TriangleRange range)
+        {
+            bool first_vertex = true;
+            for(auto it = range.first; it != range.second; ++it)
+            {
+                size_t tri_idx = it->second;
+                size_t a = s_tm.indices[tri_idx+0];
+                size_t b = s_tm.indices[tri_idx+1]; // Pole
+                size_t c = s_tm.indices[tri_idx+2];
+
+                glm::vec2 new_uv = s_tm.uvs[b];
+                new_uv.x = 0.5f * (s_tm.uvs[a].x + s_tm.uvs[c].x);
+
+                // Do not duplicate first vertex, simply reassign (avoids a dirty NaN normal later on)
+                if(first_vertex)
+                {
+                    s_tm.uvs[b] = new_uv;
+                    first_vertex = false;
+                }
+                // Duplicate pole
+                else
+                {
+                    size_t v_index = s_tm.add_vertex(poles[pp], new_uv);
+                    reassigned.push_back({tri_idx, {a, v_index, c}});
+                }
+            }
+        });
+        // Reassign triangles
+        for(auto&& [tri_idx, triangle]: reassigned)
+            s_tm.set_triangle_by_index(tri_idx, triangle);
+    }
 }
 
 Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
@@ -247,11 +300,6 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
 {
     // Ignore parameters for now, only z-plane available
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
-
-    // Constants to get normalized vertex positions
-    static constexpr float PHI = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
-    static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
-    static constexpr float PHI_N = PHI * ONE_N;
 
     // Start with an icosahedron
     s_tm.add_vertex({-ONE_N, PHI_N, 0.f});
