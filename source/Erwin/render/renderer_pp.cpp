@@ -274,20 +274,19 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	Renderer::submit(key.encode(), dc);
 }
 
+static bool s_enable_chromatic_aberration  = true;
+static bool s_enable_exposure_tone_mapping = true;
+static bool s_enable_saturation            = true;
+static bool s_enable_contrast              = true;
+static bool s_enable_gamma                 = true;
+static bool s_enable_vibrance              = true;
 void PostProcessingRenderer::on_imgui_render()
 {
-	static bool enable_chromatic_aberration  = true;
-	static bool enable_exposure_tone_mapping = true;
-	static bool enable_saturation            = true;
-	static bool enable_contrast              = true;
-	static bool enable_gamma                 = true;
-	static bool enable_vibrance              = true;
-
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Chromatic aberration"))
     {
-		if(ImGui::Checkbox("Enable##en_ca", &enable_chromatic_aberration))
-			s_storage.pp_data.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, enable_chromatic_aberration);
+		if(ImGui::Checkbox("Enable##en_ca", &s_enable_chromatic_aberration))
+			s_storage.pp_data.set_flag_enabled(PP_EN_CHROMATIC_ABERRATION, s_enable_chromatic_aberration);
 
         ImGui::SliderFloat("Shift",     &s_storage.pp_data.ca_shift, 0.0f, 10.0f);
         ImGui::SliderFloat("Magnitude", &s_storage.pp_data.ca_strength, 0.0f, 1.0f);
@@ -297,8 +296,8 @@ void PostProcessingRenderer::on_imgui_render()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Tone mapping"))
     {
-		if(ImGui::Checkbox("Enable##en_tm", &enable_exposure_tone_mapping))
-			s_storage.pp_data.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, enable_exposure_tone_mapping);
+		if(ImGui::Checkbox("Enable##en_tm", &s_enable_exposure_tone_mapping))
+			s_storage.pp_data.set_flag_enabled(PP_EN_EXPOSURE_TONE_MAPPING, s_enable_exposure_tone_mapping);
 
         ImGui::SliderFloat("Exposure", &s_storage.pp_data.tm_exposure, 0.1f, 5.0f);
         ImGui::TreePop();
@@ -307,16 +306,16 @@ void PostProcessingRenderer::on_imgui_render()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Correction"))
     {
-		if(ImGui::Checkbox("Enable##en_sat", &enable_saturation))
-			s_storage.pp_data.set_flag_enabled(PP_EN_SATURATION, enable_saturation);
+		if(ImGui::Checkbox("Enable##en_sat", &s_enable_saturation))
+			s_storage.pp_data.set_flag_enabled(PP_EN_SATURATION, s_enable_saturation);
 
         ImGui::SliderFloat("Saturation", &s_storage.pp_data.cor_saturation, 0.0f, 2.0f);
-		if(ImGui::Checkbox("Enable##en_cnt", &enable_contrast))
-			s_storage.pp_data.set_flag_enabled(PP_EN_CONTRAST, enable_contrast);
+		if(ImGui::Checkbox("Enable##en_cnt", &s_enable_contrast))
+			s_storage.pp_data.set_flag_enabled(PP_EN_CONTRAST, s_enable_contrast);
 
         ImGui::SliderFloat("Contrast", &s_storage.pp_data.cor_contrast, 0.0f, 2.0f);
-		if(ImGui::Checkbox("Enable##en_gam", &enable_gamma))
-			s_storage.pp_data.set_flag_enabled(PP_EN_GAMMA, enable_gamma);
+		if(ImGui::Checkbox("Enable##en_gam", &s_enable_gamma))
+			s_storage.pp_data.set_flag_enabled(PP_EN_GAMMA, s_enable_gamma);
 
         ImGui::SliderFloat3("Gamma", &s_storage.pp_data.cor_gamma[0], 1.0f, 2.0f);
         ImGui::TreePop();
@@ -325,8 +324,8 @@ void PostProcessingRenderer::on_imgui_render()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Vibrance"))
     {
-		if(ImGui::Checkbox("Enable##en_vib", &enable_vibrance))
-			s_storage.pp_data.set_flag_enabled(PP_EN_VIBRANCE, enable_vibrance);
+		if(ImGui::Checkbox("Enable##en_vib", &s_enable_vibrance))
+			s_storage.pp_data.set_flag_enabled(PP_EN_VIBRANCE, s_enable_vibrance);
 
         ImGui::SliderFloat("Strength", &s_storage.pp_data.vib_strength, -1.0f, 2.0f);
         ImGui::SliderFloat3("Balance", &s_storage.pp_data.vib_balance[0], 0.0f, 1.0f);

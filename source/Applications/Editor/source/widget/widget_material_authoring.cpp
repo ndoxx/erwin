@@ -19,7 +19,7 @@ using namespace erwin;
 namespace editor
 {
 
-static std::vector<std::string> s_texture_map_names = {
+static const std::vector<std::string> s_texture_map_names = {
     "Albedo",            // TM_ALBEDO
     "Normal",            // TM_NORMAL
     "Depth",             // TM_DEPTH

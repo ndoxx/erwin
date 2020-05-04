@@ -99,15 +99,15 @@ bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
     return false;
 }
 
+static bool s_show_frame_profiler = false;
+static bool s_enable_debug_show_uv = false;
 void SceneViewWidget::on_imgui_render()
 {
-	static bool show_frame_profiler = false;
-    static bool enable_debug_show_uv = false;
     if(ImGui::BeginMenuBar())
     {
 	    if(ImGui::BeginMenu("Profiling"))
 	    {
-	        ImGui::MenuItem("Frame profiler", NULL, &show_frame_profiler);
+	        ImGui::MenuItem("Frame profiler", NULL, &s_show_frame_profiler);
 	        ImGui::EndMenu();
 	    }
         if(ImGui::BeginMenu("Overlays"))
@@ -118,14 +118,14 @@ void SceneViewWidget::on_imgui_render()
         }
         if(ImGui::BeginMenu("Debug"))
         {
-            if(ImGui::MenuItem("Show UV", NULL, &enable_debug_show_uv))
-                Renderer3D::debug_show_uv(enable_debug_show_uv);
+            if(ImGui::MenuItem("Show UV", NULL, &s_enable_debug_show_uv))
+                Renderer3D::debug_show_uv(s_enable_debug_show_uv);
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
 	}
 
-    if(show_frame_profiler) frame_profiler_window(&show_frame_profiler);
+    if(s_show_frame_profiler) frame_profiler_window(&s_show_frame_profiler);
 
     if(stats_overlay_->open_)
     {
@@ -157,12 +157,11 @@ void SceneViewWidget::on_imgui_render()
                                          ImVec2(0, 1), ImVec2(1, 0));
 }
 
+static int s_profile_num_frames = 60;
+static int s_frames_counter = 0;
+static bool s_frame_profile_running = false;
 void SceneViewWidget::frame_profiler_window(bool* p_open)
 {
-	static int profile_num_frames = 60;
-	static int frames_counter = 0;
-	static bool frame_profile_running = false;
-
     if(ImGui::Begin("Profiling", p_open))
     {
         if(ImGui::Button("Runtime profiling"))
@@ -172,18 +171,18 @@ void SceneViewWidget::frame_profiler_window(bool* p_open)
         }
 
         ImGui::SameLine();
-        if(enable_runtime_profiling_ || frame_profile_running)
+        if(enable_runtime_profiling_ || s_frame_profile_running)
             ImGui::TextColored({0.f,1.f,0.f,1.f}, "[*]");
         else
             ImGui::TextColored({1.f,0.f,0.f,1.f}, "[ ]");
 
         ImGui::Text("Profile next frames");
-        ImGui::SliderInt("Frames", &profile_num_frames, 1, 120);
+        ImGui::SliderInt("Frames", &s_profile_num_frames, 1, 120);
 
         if(ImGui::Button("Start"))
         {
-            frame_profile_running = !frame_profile_running;
-            frames_counter = 0;
+            s_frame_profile_running = !s_frame_profile_running;
+            s_frames_counter = 0;
             W_PROFILE_ENABLE_SESSION(true);
         }
 
@@ -193,11 +192,11 @@ void SceneViewWidget::frame_profiler_window(bool* p_open)
 
     	ImGui::End();
     }
-    if(frame_profile_running)
+    if(s_frame_profile_running)
     {
-        if(frames_counter++ == profile_num_frames)
+        if(s_frames_counter++ == s_profile_num_frames)
         {
-            frame_profile_running = false;
+            s_frame_profile_running = false;
             W_PROFILE_ENABLE_SESSION(false);
         }
     }

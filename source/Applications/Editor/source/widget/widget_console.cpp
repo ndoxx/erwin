@@ -11,7 +11,7 @@
 namespace editor
 {
 
-static std::map<char, ImVec4> s_color_table =
+static const std::map<char, ImVec4> s_color_table =
 {
 	{'N', ImVec4(0.59f, 0.51f, 1.f, 1.f)},
 	{'W', ImVec4(1.f, 0.69f, 0.f, 1.f)},
@@ -85,7 +85,7 @@ void ConsoleWidget::on_imgui_render()
 		if(std::regex_search(item, match, style_regex))
 		{
 			char c = match.str(1)[0];
-			ImGui::PushStyleColor(ImGuiCol_Text, s_color_table[c]);
+			ImGui::PushStyleColor(ImGuiCol_Text, s_color_table.at(c));
 			pop_color = true;
 			offset = 4;
 		}
@@ -122,11 +122,9 @@ void ConsoleWidget::on_imgui_render()
 }
 
 
-
-
+static const std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
 static std::string strip_ansi(const std::string& str)
 {
-	static std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
 	return std::regex_replace(str, ansi_regex, "");
 }
 

@@ -13,7 +13,7 @@ namespace editor
 namespace theme
 {
 
-static std::map<hash_t, ImGuiCol_> s_imgui_col_map =
+static const std::map<hash_t, ImGuiCol_> s_imgui_col_map =
 {
     {"Text"_h,					ImGuiCol_Text},
     {"TextDisabled"_h,			ImGuiCol_TextDisabled},
@@ -198,7 +198,7 @@ bool load(const ThemeEntry& entry)
     }
 
     // Parse style variables
-    std::map<hash_t, void*> prop_map =
+    const std::map<hash_t, void*> prop_map =
     {
         {"Alpha"_h,               &style.Alpha},
         {"WindowPadding"_h,       &style.WindowPadding[0]},

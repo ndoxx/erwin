@@ -180,6 +180,7 @@ static std::string get_shader_error_report(GLuint ShaderID)
     return ret;
 }
 
+static const std::regex rx_errline("\\d+\\((\\d+)\\)\\s:\\s");
 static void shader_error_report(GLuint ShaderID, int line_offset, const std::string& source)
 {
     std::set<int> errlines;
@@ -189,7 +190,6 @@ static void shader_error_report(GLuint ShaderID, int line_offset, const std::str
     DLOGR("shader") << logstr << std::endl;
 
     // * Find error line numbers
-    static std::regex rx_errline("\\d+\\((\\d+)\\)\\s:\\s");
     std::regex_iterator<std::string::iterator> it(logstr.begin(), logstr.end(), rx_errline);
     std::regex_iterator<std::string::iterator> end;
 

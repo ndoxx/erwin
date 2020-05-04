@@ -15,27 +15,28 @@ namespace erwin
 
 using SmoothFunc = std::function<float(float)>;
 
-static std::array<SmoothFunc, SmoothFuncType::COUNT> s_smooth_funcs = {[](float x) {
-                                                                           (void)x;
-                                                                           return 1.0f;
-                                                                       },
-                                                                       [](float x) {
-                                                                           x = 1.f - std::abs(x);
-                                                                           return (x < 0.1f) ? 1.0f : 0.0f;
-                                                                       },
-                                                                       [](float x) {
-                                                                           x = 1.f - std::abs(x);
-                                                                           return 1.0f - x;
-                                                                       },
-                                                                       [](float x) {
-                                                                           x = 1.f - std::abs(x);
-                                                                           return (x < 0.5f) ? 1.0f : -2.0f * x + 2.0f;
-                                                                       },
-                                                                       [](float x) {
-                                                                           x = 1.f - x;
-                                                                           float a = 0.75f;
-                                                                           return a * x * x - (a + 1.0f) * x + 1.0f;
-                                                                       }};
+static const std::array<SmoothFunc, SmoothFuncType::COUNT> s_smooth_funcs = {
+    [](float x) {
+        (void)x;
+        return 1.0f;
+    },
+    [](float x) {
+        x = 1.f - std::abs(x);
+        return (x < 0.1f) ? 1.0f : 0.0f;
+    },
+    [](float x) {
+        x = 1.f - std::abs(x);
+        return 1.0f - x;
+    },
+    [](float x) {
+        x = 1.f - std::abs(x);
+        return (x < 0.5f) ? 1.0f : -2.0f * x + 2.0f;
+    },
+    [](float x) {
+        x = 1.f - x;
+        float a = 0.75f;
+        return a * x * x - (a + 1.0f) * x + 1.0f;
+    }};
 
 void MeshFabricator::build_normals()
 {

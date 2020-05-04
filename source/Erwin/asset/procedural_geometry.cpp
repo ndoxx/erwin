@@ -147,10 +147,10 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     {
         // Compute positions in spherical coordinates
         const glm::vec3& pos = s_m.positions[ii];
-        float phi = std::atan2(pos.y, pos.x);
-        float theta = std::acos(pos.z); // Position is normalized -> r = 1
+        float phi   = std::atan2(pos.z, pos.x);
+        float theta = std::asin(pos.y); // Position is normalized -> r = 1
         // Remap latitude and longitude angles to [0,1] and use them as UVs
-        s_m.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), theta / float(M_PI)};
+        s_m.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f -theta / float(M_PI)};
     }
 
     s_m.add_triangle(0, 11, 5);
@@ -178,12 +178,15 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
 }
 
 
-// Functions to fix the UV zipper artifact on icospheres
-// Thanks to this guy: https://mft-dev.dk/uv-mapping-sphere/
-void detect_wrapped_UVs(std::vector<size_t>& out_wrapped)
+// ---- Functions to fix the UV zipper artifact on icospheres ----
+// Thanks to Michael Thygesen: https://mft-dev.dk/uv-mapping-sphere/
+
+// Detect faces with wrapped UVs, return triangle indices in input vector
+std::vector<size_t> detect_wrapped_UVs()
 {
     // For each triangle in the mesh, compute UV normal, if it is
     // pointing inward, triangle is flipped, meaning UV is wrapped.
+    std::vector<size_t> wrapped;
     for(size_t ii=0; ii<s_tm.triangle_count; ++ii)
     {
         size_t tt = 3*ii;
@@ -195,14 +198,15 @@ void detect_wrapped_UVs(std::vector<size_t>& out_wrapped)
         glm::vec3 uv_c = {s_tm.uvs[c].x, s_tm.uvs[c].y, 0.f};
         glm::vec3 norm = glm::cross(uv_b-uv_a, uv_c-uv_a);
         if(norm.z < 0.f)
-            out_wrapped.push_back(tt);
+            wrapped.push_back(tt);
     }
+    return wrapped;
 }
 
+// Fix the zipper artifact with vertex duplication and UV unwrap
 void fix_warped_faces()
 {
-    std::vector<size_t> wrapped;
-    detect_wrapped_UVs(wrapped);
+    std::vector<size_t> wrapped = detect_wrapped_UVs();
 
     std::map<size_t, size_t> visited;
     for(size_t ii: wrapped)
@@ -240,11 +244,8 @@ void fix_warped_faces()
     }
 }
 
-// Constants to get normalized vertex positions
-static constexpr float PHI = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
-static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
-static constexpr float PHI_N = PHI * ONE_N;
-
+// Fix stretched UVs at the poles due to vertex sharing by duplicating the pole
+// vertices for each face, blend UVs at common edges
 void fix_shared_pole_vertices()
 {
     // Find indices of north and south poles
@@ -260,7 +261,8 @@ void fix_shared_pole_vertices()
     for(size_t pp=0; pp<2; ++pp)
     {
         // Visit all triangles that contain this pole
-        // In my sphere mesh, pole is always 1 mod 3 (vertex B in triangle ABC)
+        // In my sphere mesh, pole triangle index is always 1 mod 3 (vertex B in triangle ABC)
+        // as long as refinement is at least 2.
         std::vector<std::pair<size_t, TriangleMeshFabricator::Triangle>> reassigned;
         s_tm.traverse_triangle_class(poles_idx[pp], [&](TriangleMeshFabricator::TriangleRange range)
         {
@@ -275,7 +277,8 @@ void fix_shared_pole_vertices()
                 glm::vec2 new_uv = s_tm.uvs[b];
                 new_uv.x = 0.5f * (s_tm.uvs[a].x + s_tm.uvs[c].x);
 
-                // Do not duplicate first vertex, simply reassign (avoids a dirty NaN normal later on)
+                // Do not duplicate first vertex, simply reassign (avoids a dirty NaN normal later on
+                // due to supernumerary pole vertex)
                 if(first_vertex)
                 {
                     s_tm.uvs[b] = new_uv;
@@ -298,6 +301,11 @@ void fix_shared_pole_vertices()
 Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
                       Parameters* params)
 {
+    // Constants to get normalized vertex positions
+    static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
+    static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
+    static constexpr float PHI_N = PHI * ONE_N;
+
     // Ignore parameters for now, only z-plane available
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
@@ -337,7 +345,7 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
     s_tm.add_triangle(9, 8, 1);
 
     // Subdivide mesh
-    constexpr int k_refine = 2;
+    constexpr int k_refine = 3;
     for(int ii = 0; ii < k_refine; ++ii)
         s_tm.subdivide();
 
@@ -352,9 +360,9 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
         s_tm.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f -theta / float(M_PI)};
     }
 
-    // Fix UV wrap at seams and poles
+    // Fix UV distorsions at seams and poles
     fix_warped_faces();
-    fix_shared_pole_vertices();
+    if constexpr(k_refine>=2) fix_shared_pole_vertices(); // Will not work with a lesser refinement
 
     return s_tm.build_shape(layout, vdata, idata);
 }

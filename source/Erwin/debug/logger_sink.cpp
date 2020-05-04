@@ -26,7 +26,7 @@ void ConsoleSink::send(const LogStatement& stmt, const LogChannel& chan)
 	    std::cout << "\033[1;38;2;0;130;10m["
 	              << std::setprecision(6) << std::fixed
 	              << ts << "]" << "\033[0m";
-	    std::cout << chan.tag << " " << STYLES[stmt.msg_type] << ICON[stmt.msg_type] << stmt.message;
+	    std::cout << chan.tag << " " << STYLES.at(stmt.msg_type) << ICON.at(stmt.msg_type) << stmt.message;
 	}
 	else
 		std::cout << "\033[0m" << stmt.message << "\033[0m";
@@ -67,10 +67,10 @@ void LogFileSink::send_raw(const std::string& message)
 	entries_.push_back(message);
 }
 
+static const std::regex s_ansi_regex("\033\\[.+?m"); // matches ANSI codes
 static std::string strip_ansi(const std::string& str)
 {
-	static std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
-	return std::regex_replace(str, ansi_regex, "");
+	return std::regex_replace(str, s_ansi_regex, "");
 }
 
 void LogFileSink::finish()

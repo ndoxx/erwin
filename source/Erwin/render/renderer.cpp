@@ -599,7 +599,7 @@ VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector
 	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
 	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-	s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(const_cast<BufferLayoutElement*>(elements.data()), elements.size());
+	s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(&elements[0], elements.size());
 
 	return handle;
 }

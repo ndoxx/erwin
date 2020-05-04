@@ -73,7 +73,7 @@ struct LogChannel
 	std::string tag;
 };
 
-static std::map<MsgType, WCC> STYLES =
+static const std::map<MsgType, WCC> STYLES =
 {
     {MsgType::NORMAL,    WCC(255,255,255)},
     {MsgType::ITEM,      WCC(255,255,255)},
@@ -87,7 +87,7 @@ static std::map<MsgType, WCC> STYLES =
     {MsgType::BAD,       WCC(255,0,  0)},
 };
 
-static std::map<MsgType, std::string> ICON =
+static const std::map<MsgType, std::string> ICON =
 {
     {MsgType::NORMAL,    "    "},
     {MsgType::ITEM,      "     \u21B3 "},

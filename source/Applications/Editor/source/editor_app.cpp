@@ -97,9 +97,9 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     return false;
 }
 
+static bool s_show_demo_window = false;
 void ErwinEditor::on_imgui_render()
 {
-    static bool show_demo_window = false;
     if(ImGui::BeginMainMenuBar())
     {
         if(ImGui::BeginMenu("File"))
@@ -167,7 +167,7 @@ void ErwinEditor::on_imgui_render()
                 ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
 
             ImGui::Separator();
-            ImGui::MenuItem("ImGui Demo", NULL, &show_demo_window);
+            ImGui::MenuItem("ImGui Demo", NULL, &s_show_demo_window);
 
             ImGui::EndMenu();
         }
@@ -176,7 +176,7 @@ void ErwinEditor::on_imgui_render()
 
     if(enable_docking_)
         show_dockspace_window(&enable_docking_);
-    if(show_demo_window)
+    if(s_show_demo_window)
         ImGui::ShowDemoWindow();
 
     console_->imgui_render();
@@ -187,11 +187,10 @@ void ErwinEditor::on_imgui_render()
     }
 }
 
+static ImGuiDockNodeFlags s_dockspace_flags = ImGuiDockNodeFlags_None;
 void ErwinEditor::show_dockspace_window(bool* p_open)
 {
-    static bool opt_fullscreen_persistant = true;
-    bool opt_fullscreen = opt_fullscreen_persistant;
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+    bool opt_fullscreen = true;
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
     if(opt_fullscreen)
@@ -207,7 +206,7 @@ void ErwinEditor::show_dockspace_window(bool* p_open)
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     }
 
-    if(dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+    if(s_dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
         window_flags |= ImGuiWindowFlags_NoBackground;
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -221,7 +220,7 @@ void ErwinEditor::show_dockspace_window(bool* p_open)
     if(io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
     {
         ImGuiID dockspace_id = ImGui::GetID("EditorDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), s_dockspace_flags);
     }
 
     ImGui::End();

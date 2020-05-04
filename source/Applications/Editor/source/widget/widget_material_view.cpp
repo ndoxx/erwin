@@ -23,7 +23,8 @@ static constexpr float k_start_y = 50.f;
 
 MaterialViewWidget::MaterialViewWidget():
 Widget("Material view", true),
-render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
+render_surface_{0.f,0.f,0.f,0.f,0.f,0.f},
+current_index_(0)
 {
 	// flags_ |= ImGuiWindowFlags_MenuBar;
 	// Create scene with a sphere in the middle
@@ -105,31 +106,29 @@ void MaterialViewWidget::on_layer_render()
     Renderer3D::draw_skybox(Scene::environment.environment_map);
 }
 
+static const std::vector<std::string> s_mesh_names =
+{
+	"Icosphere",
+	"Cube",
+};
+static const std::vector<hash_t> s_va_name =
+{
+	"icosphere_pbr"_h,
+	"cube_pbr"_h,
+};
+
 void MaterialViewWidget::on_imgui_render()
 {
 	// * Controls
-	static std::vector<std::string> mesh_names =
-	{
-		"Icosphere",
-		"Cube",
-	};
-	static std::vector<hash_t> va_name =
-	{
-		"icosphere_pbr"_h,
-		"cube_pbr"_h,
-	};
-	static size_t current_index = 0;
-	static const char* current_mesh_name = mesh_names[current_index].c_str();
-    if(ImGui::BeginCombo("Mesh", current_mesh_name))
+    if(ImGui::BeginCombo("Mesh", s_mesh_names[current_index_].c_str()))
     {
-    	for(size_t ii=0; ii<va_name.size(); ++ii)
+    	for(size_t ii=0; ii<s_va_name.size(); ++ii)
     	{
-            bool is_selected = (ii == current_index);
-            if(ImGui::Selectable(mesh_names[ii].c_str(), is_selected))
+            bool is_selected = (ii == current_index_);
+            if(ImGui::Selectable(s_mesh_names[ii].c_str(), is_selected))
             {
-                current_index = ii;
-                current_mesh_name = mesh_names[current_index].c_str();
-                current_mesh_ = CommonGeometry::get_vertex_array(va_name[ii]);
+                current_index_ = ii;
+                current_mesh_ = CommonGeometry::get_vertex_array(s_va_name[ii]);
             }
             if(is_selected)
                 ImGui::SetItemDefaultFocus();

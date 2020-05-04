@@ -6,7 +6,7 @@
 namespace erwin
 {
 
-static std::map<char, std::string> s_COLORMAP = 
+static const std::map<char, std::string> s_COLORMAP = 
 {
 	{0,   "\033[0m"}, // previous style
     {'p', "\033[1;38;2;0;255;255m"},   // highlight paths in light blue

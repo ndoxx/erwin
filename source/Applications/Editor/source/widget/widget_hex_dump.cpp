@@ -106,7 +106,7 @@ void HexDumpWidget::on_imgui_render()
     const uint8_t* end   = static_cast<const uint8_t*>(item.end);
     uint8_t* current = const_cast<uint8_t*>(begin);
 
-    static std::stringstream ss;
+    std::stringstream ss;
     ss << std::hex;
     uint32_t page_size = 0;
     ImGui::Columns(2, "##hex-ascii");

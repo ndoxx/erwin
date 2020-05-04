@@ -50,9 +50,9 @@ class BufferLayout
 public:
     BufferLayout() = default;
     explicit BufferLayout(const std::initializer_list<BufferLayoutElement>& elements);
-    BufferLayout(BufferLayoutElement* elements, uint32_t count);
+    BufferLayout(BufferLayoutElement const* elements, uint32_t count);
 
-    void init(BufferLayoutElement* elements, uint32_t count);
+    void init(BufferLayoutElement const* elements, uint32_t count);
     void clear();
 
     bool operator ==(const BufferLayout& other);

@@ -19,7 +19,7 @@ struct FormatDescriptor
     bool is_compressed;
 };
 
-static std::map<ImageFormat, FormatDescriptor> FORMAT_DESCRIPTOR =
+static const std::map<ImageFormat, FormatDescriptor> s_format_descriptor =
 {
     {ImageFormat::R8,                              {GL_R8,                                  GL_RED,             					GL_UNSIGNED_BYTE,  				   false}},
     {ImageFormat::RGB8,                            {GL_RGB8,                                GL_RGB,             					GL_UNSIGNED_BYTE,  				   false}},
@@ -204,7 +204,7 @@ mips_(descriptor.mips)
 	DLOGI << "width:  " << width_ << std::endl;
 	DLOGI << "height: " << height_ << std::endl;
 
-	const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
+	const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
 	glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
 	DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 
@@ -304,7 +304,7 @@ mips_(descriptor.mips)
     DLOGI << "width:  " << width_ << std::endl;
     DLOGI << "height: " << height_ << std::endl;
 
-    const FormatDescriptor& fd = FORMAT_DESCRIPTOR.at(descriptor.image_format);
+    const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
     glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
     DLOGI << "format: " << format_to_string(fd.format) << std::endl;
 

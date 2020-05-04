@@ -108,7 +108,7 @@ static inline size_t parse_size(const std::string& input, char delimiter='_')
 
 static inline std::string size_to_string(size_t size)
 {
-    static std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
+    static const std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
 
     int ii = 0;
     while(size%1024 == 0 && ii < 4)

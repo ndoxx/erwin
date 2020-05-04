@@ -22,10 +22,10 @@ static fs::path src_path_;
 static fs::path conf_path_;
 
 // Non greedy regex that matches the H_("any_str") macro
-static std::regex hash_str_tag("H_\\(\"([a-zA-Z0-9_\\.]+?)\"\\)");
+static const std::regex hash_str_tag("H_\\(\"([a-zA-Z0-9_\\.]+?)\"\\)");
 // Non greedy regex that matches the "any_str"_h string literal
 // BUG: seems to be greedy anyway -> will generate a faulty file
-static std::regex hash_str_literal_tag("\"([a-zA-Z0-9_\\.]+?)\"_h");
+static const std::regex hash_str_literal_tag("\"([a-zA-Z0-9_\\.]+?)\"_h");
 // Associates hashes to original strings
 static std::map<hash_t, std::string> intern_strings_;
 

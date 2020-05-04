@@ -12,11 +12,11 @@ namespace memory
 namespace utils
 {
 
+static const std::string suffix[] = {"B", "kB", "MB", "GB", "TB"};
+static constexpr int length = 5;
+
 std::string human_size(std::size_t bytes)
 {
-	static std::string suffix[] = {"B", "kB", "MB", "GB", "TB"};
-	static int length = 5;
-
 	int i = 0;
 	double dblBytes = double(bytes);
 

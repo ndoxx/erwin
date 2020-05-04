@@ -74,13 +74,13 @@ stride_(0)
     compute_offset_and_stride();
 }
 
-BufferLayout::BufferLayout(BufferLayoutElement* elements, uint32_t count):
+BufferLayout::BufferLayout(BufferLayoutElement const* elements, uint32_t count):
 stride_(0)
 {
     init(elements, count);
 }
 
-void BufferLayout::init(BufferLayoutElement* elements, uint32_t count)
+void BufferLayout::init(BufferLayoutElement const* elements, uint32_t count)
 {
     for(uint32_t ii=0; ii<count; ++ii)
         elements_.push_back(elements[ii]);

@@ -96,23 +96,23 @@ void InspectorWidget::entity_tab()
     }
 }
 
+static bool s_enable_IBL = true;
+static float s_ambient_strength = 0.15f;
 void InspectorWidget::environment_tab()
 {
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("IBL"))
     {
-        static bool enable_IBL = true;
-        if(ImGui::Checkbox("IBL", &enable_IBL))
+        if(ImGui::Checkbox("IBL", &s_enable_IBL))
         {
-            Renderer3D::enable_IBL(enable_IBL);
+            Renderer3D::enable_IBL(s_enable_IBL);
         }
 
-        static float ambient_strength = 0.15f;
-        if(enable_IBL)
+        if(s_enable_IBL)
         {
-            if(ImGui::SliderFloat("Ambient str.", &ambient_strength, 0.f, 1.f))
+            if(ImGui::SliderFloat("Ambient str.", &s_ambient_strength, 0.f, 1.f))
             {
-                Renderer3D::set_IBL_ambient_strength(ambient_strength);
+                Renderer3D::set_IBL_ambient_strength(s_ambient_strength);
             }
         }
 
@@ -122,9 +122,7 @@ void InspectorWidget::environment_tab()
 
 void InspectorWidget::on_imgui_render()
 {
-	static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_Reorderable;
-
-	if(ImGui::BeginTabBar("InspectorTabs", tab_bar_flags))
+	if(ImGui::BeginTabBar("InspectorTabs", ImGuiTabBarFlags_Reorderable))
 	{
 		if(ImGui::BeginTabItem("Entity"))
 		{

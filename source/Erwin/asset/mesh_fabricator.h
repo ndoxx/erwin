@@ -14,7 +14,7 @@ namespace erwin
 {
 
 static constexpr size_t k_max_vertices = 1024;
-static constexpr size_t k_max_indices = 8 * 1024;
+static constexpr size_t k_max_indices = 8 * k_max_vertices;
 
 enum SmoothFuncType : size_t
 {

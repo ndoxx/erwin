@@ -46,6 +46,8 @@ private:
 		float h;
 	} render_surface_;
 
+	size_t current_index_;
+
 	std::shared_ptr<erwin::ComponentPBRMaterial> current_material_;
 	erwin::ComponentTransform3D transform_;
 	erwin::ComponentDirectionalLight directional_light_;
