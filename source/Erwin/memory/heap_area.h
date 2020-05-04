@@ -54,7 +54,7 @@ public:
     	std::fill(head_, head_ + padding, AREA_PADDING_MARK);
 #endif
 
-		std::pair<void*,void*> range = {head_ + padding, head_ + padding + size + 1};
+		std::pair<void*,void*> ptr_range = {head_ + padding, head_ + padding + size + 1};
 
 		DLOG("memory",1) << WCC('i') << "[HeapArea]" << WCC(0) << " allocated aligned block:" << std::endl;
 		if(debug_name)
@@ -69,9 +69,9 @@ public:
 		head_ += size + padding;
 
 #ifdef W_DEBUG
-		items_.push_back({debug_name ? debug_name : "block", range.first, range.second, size + padding});
+		items_.push_back({debug_name ? debug_name : "block", ptr_range.first, ptr_range.second, size + padding});
 #endif
-		return range;
+		return ptr_range;
 	}
 
 	inline void* require_pool_block(size_t element_size, size_t max_count, const char* debug_name=nullptr)

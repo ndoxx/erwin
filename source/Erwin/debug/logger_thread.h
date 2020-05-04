@@ -24,7 +24,7 @@ public:
     // Create a logging channel to group information of the same kind
     void create_channel(const std::string& name, uint8_t verbosity=3);
     // Attach a sink to a list of channels
-	void attach(const std::string& sink_name, std::unique_ptr<Sink> sink, const std::vector<hash_t> channels);
+	void attach(const std::string& sink_name, std::unique_ptr<Sink> sink, const std::vector<hash_t>& channels);
     // Attach a sink to all channels
 	void attach_all(const std::string& sink_name, std::unique_ptr<Sink> sink);
 	// Forward events as text as they arrive

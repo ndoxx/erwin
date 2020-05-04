@@ -19,7 +19,7 @@ camera_position_(camera_.get_position())
 
 }
 
-void OrthographicCamera2DController::update(GameClock& clock)
+void OrthographicCamera2DController::update(const GameClock& clock)
 {
 	// * Handle inputs
 	float dt = clock.get_frame_duration();

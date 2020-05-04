@@ -4,6 +4,7 @@
 #include "debug/logger.h"
 #include <vector>
 #include <regex>
+#include <algorithm>
 
 namespace erwin
 {
@@ -30,11 +31,6 @@ void register_include_directory(const fs::path& dir_path)
 	}
 }
 
-void clear_include_directories()
-{
-	s_storage.include_dirs.clear();
-}
-
 static fs::path find_include(const fs::path& base_dir, const std::string& filename)
 {
 	// First, check if file can be found in the direct vicinity
@@ -42,12 +38,10 @@ static fs::path find_include(const fs::path& base_dir, const std::string& filena
 		return base_dir / filename;
 
 	// Then, check all registered include directories
-	for(auto&& inc_path: s_storage.include_dirs)
-		if(fs::exists(inc_path / filename))
-			return inc_path / filename;
-
-	// Fail
-	return "";
+	return *std::find_if(s_storage.include_dirs.begin(), s_storage.include_dirs.end(), [&filename](const fs::path& inc_path)
+	{
+		return fs::exists(inc_path / filename);
+	}) / filename;
 }
 
 // From a source string, parse #include directives and return a new source string

@@ -109,13 +109,13 @@ std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs)
 template <>
 bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event)
 {
-	bool handled = false;
+	// bool handled = false;
 	for(auto it=layers_.end(); it!=layers_.begin();)
 	{
 		Layer* layer = *--it;
 		if(layer->on_event(event))
 		{
-			handled = true;
+			// handled = true;
 			break;
 		}
 	}

@@ -9,7 +9,7 @@ namespace erwin
 class GLFWWindow: public Window
 {
 public:
-	GLFWWindow(const WindowProps& props);
+	explicit GLFWWindow(const WindowProps& props);
 	~GLFWWindow();
 
 	virtual void update() override;

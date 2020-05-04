@@ -38,9 +38,10 @@ struct Extent
 		std::memcpy(value, other.value, 6*sizeof(float));
 	}
 
-	inline void operator =(const Extent& other)
+	inline Extent& operator =(const Extent& other)
 	{
 		std::memcpy(value, other.value, 6*sizeof(float));
+		return *this;
 	}
 
 	inline void update(const glm::vec3& position)

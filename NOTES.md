@@ -114,6 +114,9 @@ Donc j'ai codé ce petit script pour parser toutes mes sources qui contiennent d
 > apitrace trace --api=gl --output=sandbox.trace ../bin/sandbox
 > LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace sandbox.trace
 
+###CppCheck GUI
+> LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib cppcheck-gui
+
 ###Renderdoc
 Alternative (en gros) à nsight-gfx pour du frame capture / analysis.
 > qrenderdoc

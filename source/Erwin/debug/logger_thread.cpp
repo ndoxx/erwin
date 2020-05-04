@@ -52,7 +52,7 @@ void LoggerThread::create_channel(const std::string& name, uint8_t verbosity)
 	channels_.insert(std::make_pair(H_(name.c_str()), LogChannel{verbosity, name, tag}));
 }
 
-void LoggerThread::attach(const std::string& sink_name, std::unique_ptr<Sink> sink, const std::vector<hash_t> channels)
+void LoggerThread::attach(const std::string& sink_name, std::unique_ptr<Sink> sink, const std::vector<hash_t>& channels)
 {
 	hash_t hsink = H_(sink_name.c_str());
 	sinks_.insert(std::make_pair(hsink, std::move(sink)));

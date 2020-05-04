@@ -111,7 +111,6 @@ Extent MeshFabricator::build_shape(const BufferLayout& layout, std::vector<float
     bool has_position = false;
     bool has_normal = false;
     bool has_tangent = false;
-    bool has_uv = false;
     uint32_t elements_count = 0;
     for(const BufferLayoutElement& elt : layout)
     {
@@ -136,7 +135,6 @@ Extent MeshFabricator::build_shape(const BufferLayout& layout, std::vector<float
             break;
         }
         case "a_uv"_h: {
-            has_uv = true;
             containers[elements_count] = &uvs[0][0];
             components_count[elements_count] = 2;
             break;
@@ -447,7 +445,6 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
     bool has_position = false;
     bool has_normal = false;
     bool has_tangent = false;
-    bool has_uv = false;
     uint32_t elements_count = 0;
     for(const BufferLayoutElement& elt : layout)
     {
@@ -472,7 +469,6 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
             break;
         }
         case "a_uv"_h: {
-            has_uv = true;
             containers[elements_count] = &uvs[0][0];
             components_count[elements_count] = 2;
             break;

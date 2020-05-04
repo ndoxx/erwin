@@ -40,14 +40,14 @@ private:
 	template <typename EventT>
 	bool dispatch(const EventT& event)
 	{
-		bool handled = false;
+		// bool handled = false;
 		for(auto it=layers_.end(); it!=layers_.begin();)
 		{
 			Layer* layer = *--it;
 			if(!layer->is_enabled()) continue;
 			if(layer->on_event(event))
 			{
-				handled = true;
+				// handled = true;
 				break;
 			}
 		}

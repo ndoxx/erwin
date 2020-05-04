@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 /*
 	HandlePool is based on Branimir Karadzic's HandleAlloc (bx library), I
@@ -63,7 +64,9 @@ template <uint16_t MaxHandlesT>
 class HandlePoolT: public HandlePool
 {
 public:
-	HandlePoolT(): HandlePool(MaxHandlesT) { }
+	static constexpr std::size_t k_size_bytes = 2*MaxHandlesT*sizeof(uint16_t);
+
+	HandlePoolT(): HandlePool(MaxHandlesT) {}
 	~HandlePoolT() = default;
 
 private:
@@ -132,7 +135,9 @@ template <uint64_t MaxHandlesT>
 class RobustHandlePoolT: public RobustHandlePool
 {
 public:
-	RobustHandlePoolT(): RobustHandlePool(MaxHandlesT) { }
+	static constexpr std::size_t k_size_bytes = 2*MaxHandlesT*sizeof(HandleInternal);
+
+	RobustHandlePoolT(): RobustHandlePool(MaxHandlesT) {}
 	~RobustHandlePoolT() = default;
 
 private:

@@ -26,25 +26,20 @@ static const std::map<char, std::string> s_COLORMAP =
 
 WCC::WCC(char cc):
 escape(s_COLORMAP.at(cc))
-{
+{}
 
-}
-
-WCC::WCC(uint8_t R, uint8_t G, uint8_t B)
-{
-	escape = "\033[1;38;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m";
-}
+WCC::WCC(uint8_t R, uint8_t G, uint8_t B):
+escape("\033[1;38;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m")
+{}
 
 
-WCB::WCB(int)
-{
-    escape = "\033[0m";
-}
+WCB::WCB(int):
+escape("\033[0m")
+{}
 
-WCB::WCB(uint8_t R, uint8_t G, uint8_t B)
-{
-    escape = "\033[1;48;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m";
-}
+WCB::WCB(uint8_t R, uint8_t G, uint8_t B):
+escape("\033[1;48;2;" + std::to_string(R) + ";" + std::to_string(G) + ";" + std::to_string(B) + "m")
+{}
 
 std::ostream& operator <<(std::ostream& stream, const WCC& wcc)
 {

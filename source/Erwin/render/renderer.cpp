@@ -176,7 +176,7 @@ public:
 	friend class DrawCommandWriter;
 
 	RenderQueue() = default;
-	RenderQueue(memory::HeapArea& area);
+	explicit RenderQueue(memory::HeapArea& area);
 	~RenderQueue();
 
 	void init(memory::HeapArea& area);
@@ -321,7 +321,14 @@ struct ShaderCompatibility
 
 static struct RendererStorage
 {
-	RendererStorage(): initialized_(false) {}
+	RendererStorage():
+	initialized_(false),
+	default_framebuffer_(),
+	current_framebuffer_(),
+	state_cache_(RenderState().encode()),
+	profiling_enabled_(false),
+	renderer_memory_(nullptr)
+	{}
 	~RendererStorage() = default;
 
 	inline void clear_resources()
@@ -356,8 +363,6 @@ static struct RendererStorage
 
 		// Init render queue
 		queue_.set_clear_color(glm::vec4(0.f,0.f,0.f,0.f));
-
-		state_cache_ = RenderState().encode(); // Initialized as default state
 	}
 
 	inline void release()
@@ -396,7 +401,7 @@ static struct RendererStorage
 	glm::vec2 host_window_size_;
 
 	WScope<QueryTimer> query_timer;
-	bool profiling_enabled;
+	bool profiling_enabled_;
 	Renderer::Statistics stats[2]; // Double buffered
 
 #if W_RC_PROFILE_DRAW_CALLS
@@ -466,7 +471,6 @@ void Renderer::init(memory::HeapArea& area)
 	// Create and initialize storage object
 	s_storage.init(&area);
 	s_storage.query_timer = QueryTimer::create();
-	s_storage.profiling_enabled = false;
 	s_storage.default_framebuffer_ = FramebufferHandle::acquire();
 	s_storage.current_framebuffer_ = s_storage.default_framebuffer_;
 	s_storage.host_window_size_ = {0, 0};
@@ -538,7 +542,7 @@ Renderer::AuxArena& Renderer::get_arena()
 #ifdef W_DEBUG
 void Renderer::set_profiling_enabled(bool value)
 {
-	s_storage.profiling_enabled = value;
+	s_storage.profiling_enabled_ = value;
 }
 
 const Renderer::Statistics& Renderer::get_stats()
@@ -681,7 +685,7 @@ enum class RenderCommand: uint16_t
 class RenderCommandWriter
 {
 public:
-	RenderCommandWriter(RenderCommand type):
+	explicit RenderCommandWriter(RenderCommand type):
 	type_(type),
 	cmdbuf_(get_command_buffer(type_)),
 	head_(cmdbuf_.storage.head())
@@ -1214,7 +1218,7 @@ enum class DrawCommand: uint16_t
 class DrawCommandWriter
 {
 public:
-	DrawCommandWriter(DrawCommand type):
+	explicit DrawCommandWriter(DrawCommand type):
 	type_(type),
 	cmdbuf_(s_storage.queue_.command_buffer_),
 	head_(cmdbuf_.storage.head())
@@ -1267,7 +1271,7 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 	if(dc.type == DrawCall::IndexedInstanced || dc.type == DrawCall::ArrayInstanced)
 		cw.write(&dc.instance_count);
 
-	if(s_storage.profiling_enabled)
+	if(s_storage.profiling_enabled_)
 		++s_storage.stats[FRONT].draw_call_count;
 
 	cw.submit(key);
@@ -2233,7 +2237,7 @@ void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
     static nanoClock flush_clock;
-	if(s_storage.profiling_enabled)
+	if(s_storage.profiling_enabled_)
 	{
 		s_storage.query_timer->start();
     	flush_clock.restart();
@@ -2257,7 +2261,7 @@ void Renderer::flush()
 		s_storage.draw_call_data.export_json();
 #endif
 
-	if(s_storage.profiling_enabled)
+	if(s_storage.profiling_enabled_)
 	{
 		auto GPU_render_duration = s_storage.query_timer->stop();
         auto CPU_flush_duration  = flush_clock.get_elapsed_time();

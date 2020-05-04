@@ -15,7 +15,7 @@ class Layer
 public:
 	friend class LayerStack; // So that LayerStack can acces the protected on_event() overload set
 
-	explicit Layer(const std::string& debug_name): debug_name_(debug_name), enabled_(true) {}
+	explicit Layer(const std::string& debug_name): debug_name_(debug_name), enabled_(true), layer_id_(0) {}
 	virtual ~Layer() = default;
 
 	inline const std::string& get_name() const  { return debug_name_; }

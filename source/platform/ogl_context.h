@@ -8,7 +8,7 @@ namespace erwin
 class OGLContext: public GFXContext
 {
 public:
-	OGLContext(void* window_handle);
+	explicit OGLContext(void* window_handle);
 	virtual ~OGLContext() = default;
 
 	virtual void init() override;

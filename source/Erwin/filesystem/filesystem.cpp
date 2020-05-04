@@ -37,7 +37,8 @@ static fs::path get_selfpath()
     ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
     W_ASSERT(len != -1, "Cannot read self path using readlink.");
 
-    buff[len] = '\0';
+    if(len != -1)
+        buff[len] = '\0';
     return fs::path(buff);
 #else
     W_ASSERT(false, "get_selfpath() not yet implemented for this platform.");

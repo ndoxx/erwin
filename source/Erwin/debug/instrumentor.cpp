@@ -71,10 +71,10 @@ void Instrumentor::write_footer()
 
 
 InstrumentationTimer::InstrumentationTimer(const char* name):
-name_(name), stopped_(false)
-{
-    start_timepoint_ = std::chrono::high_resolution_clock::now();
-}
+name_(name),
+start_timepoint_(std::chrono::high_resolution_clock::now()),
+stopped_(false)
+{}
 
 InstrumentationTimer::~InstrumentationTimer()
 {

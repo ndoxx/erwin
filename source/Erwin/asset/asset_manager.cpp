@@ -30,13 +30,6 @@ constexpr std::size_t k_handle_alloc_size = 2*(sizeof(HandlePoolT<k_max_atlases>
 		DO_ACTION( FontAtlasHandle )
 
 
-struct MaterialDescriptor
-{
-	bool is_public;
-	std::string name;
-	std::string description;
-};
-
 static struct
 {
 #ifdef W_USE_EASTL
@@ -293,7 +286,6 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 
 			// Create texture
 			return Renderer::create_texture_2D(descriptor); 
-			break;
 		}
 		case ".png"_h:
 		{
@@ -314,7 +306,6 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 
 			// Create texture
 			return Renderer::create_texture_2D(descriptor);
-			break;
 		}
 		default:
 		{

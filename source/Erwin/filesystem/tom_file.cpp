@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <fstream>
+#include <numeric>
 
 namespace erwin
 {
@@ -150,9 +151,9 @@ void write_tom(TOMDescriptor& desc)
 	uint16_t num_maps = uint16_t(desc.texture_maps.size());
 
 	// Compute total uncompressed blob size
-	uint64_t blob_size = 0;
-	for(auto&& tmap: desc.texture_maps)
-		blob_size += tmap.size;
+    uint64_t blob_size =
+        std::accumulate(desc.texture_maps.begin(), desc.texture_maps.end(), 0u,
+                        [](uint64_t accumulator, const TextureMapDescriptor& tmap) { return accumulator + tmap.size; });
 
     // DXT compression if needed
     for(auto&& tmap: desc.texture_maps)

@@ -14,7 +14,9 @@ inline float fovy_znear_to_top(float fovy, float znear)
 	return znear * std::tan(0.5f * fovy * (float(M_PI) / 180.f));
 }
 
-FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar)
+FreeflyController::FreeflyController(float aspect_ratio, float fovy, float znear, float zfar):
+win_width_(0.f),
+win_height_(0.f)
 {
 	init(aspect_ratio, fovy, znear, zfar);
 }

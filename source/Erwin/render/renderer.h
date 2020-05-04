@@ -229,6 +229,7 @@ struct DrawCall
 		W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 		W_ASSERT(VAO.is_valid(), "Invalid VertexArrayHandle!");
 
+		instance_count   = 0;
 		dependency_count = 0;
 		texture_count    = 0;
 		cubemap_count    = 0;
