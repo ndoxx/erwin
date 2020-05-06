@@ -72,8 +72,8 @@ class SimpleBoundsChecking
 public:
 	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front(uint8_t* ptr) const { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
-	inline void check_sentinel_back(uint8_t* ptr) const  { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
+	inline void check_sentinel_front([[maybe_unused]] uint8_t* ptr) const { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
+	inline void check_sentinel_back([[maybe_unused]] uint8_t* ptr) const  { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
 
 	static constexpr size_t SIZE_FRONT = 4;
 	static constexpr size_t SIZE_BACK = 4;

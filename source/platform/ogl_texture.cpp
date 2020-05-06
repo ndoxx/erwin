@@ -50,7 +50,7 @@ static const std::map<ImageFormat, FormatDescriptor> s_format_descriptor =
 };
 
 // TODO: group ALL GLenums to string in a SINGLE function outside this class
-static std::string format_to_string(GLenum value)
+[[maybe_unused]]  static std::string format_to_string(GLenum value)
 {
 	switch(value)
 	{

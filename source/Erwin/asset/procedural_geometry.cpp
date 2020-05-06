@@ -17,7 +17,7 @@ namespace pg
 static MeshFabricator s_m;
 static TriangleMeshFabricator s_tm;
 
-Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
+Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,[[maybe_unused]] 
                  Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
@@ -68,7 +68,7 @@ Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vec
 }
 
 Extent make_cube_lines(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
-                       Parameters* params)
+                       [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
@@ -102,7 +102,7 @@ Extent make_cube_lines(const BufferLayout& layout, std::vector<float>& vdata, st
 }
 
 Extent make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
-                  Parameters* params)
+                  [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
@@ -119,7 +119,7 @@ Extent make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::ve
 }
 
 Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
-                        Parameters* params)
+                        [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");
@@ -299,7 +299,7 @@ void fix_shared_pole_vertices()
 }
 
 Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
-                      Parameters* params)
+                      [[maybe_unused]] Parameters* params)
 {
     // Constants to get normalized vertex positions
     static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
@@ -368,7 +368,7 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
 }
 
 Extent make_origin(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
-                   Parameters* params)
+                   [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now
     W_ASSERT(params == nullptr, "Parameters unsupported for now.");

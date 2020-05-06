@@ -50,7 +50,7 @@ struct TOMDescriptor
     uint16_t height;
     LosslessCompression compression;
     TextureWrap address_UV;
-    std::vector<TextureMapDescriptor> texture_maps;
+    std::vector<TextureMapDescriptor> texture_maps = {};
 
     uint8_t* material_data = nullptr;
     uint32_t material_data_size = 0;

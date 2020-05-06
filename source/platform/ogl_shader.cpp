@@ -31,7 +31,7 @@ static GLenum to_gl_shader_type(slang::ExecutionModel model)
     }
 }
 
-static std::string ogl_attribute_type_to_string(GLenum type)
+[[maybe_unused]] static std::string ogl_attribute_type_to_string(GLenum type)
 {
 	switch(type)
 	{
@@ -92,7 +92,7 @@ static ShaderDataType ogl_attribute_type_to_shader_data_type(GLenum type)
     }
 }
 
-static std::string ogl_uniform_type_to_string(GLenum type)
+[[maybe_unused]] static std::string ogl_uniform_type_to_string(GLenum type)
 {
     switch(type)
     {
@@ -117,7 +117,7 @@ static std::string ogl_uniform_type_to_string(GLenum type)
     }
 }
 
-static std::string ogl_interface_to_string(GLenum iface)
+[[maybe_unused]] static std::string ogl_interface_to_string(GLenum iface)
 {
     switch(iface)
     {
@@ -651,9 +651,9 @@ void OGLShader::introspect()
     DLOG("shader",1) << "--------" << std::endl;
 }
 
+#ifdef W_DEBUG
 static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u_name)
 {
-#ifdef W_DEBUG
 	static std::set<hash_t> marked; // So that we don't warn twice for the same uniform
     hash_t id = H_(shader_name.c_str()) ^ u_name;
 
@@ -662,8 +662,8 @@ static inline void warn_unknown_uniform(const std::string& shader_name, hash_t u
 		DLOGW("shader") << "Unknown uniform submitted to \"" << shader_name << "\": \"" << istr::resolve(u_name) << "\"" << std::endl;
 		marked.insert(id);
 	}
-#endif
 }
+#endif
 
 template <>
 bool OGLShader::send_uniform<bool>(hash_t name, const bool& value) const
@@ -671,7 +671,9 @@ bool OGLShader::send_uniform<bool>(hash_t name, const bool& value) const
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -686,7 +688,9 @@ bool OGLShader::send_uniform<float>(hash_t name, const float& value) const
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -700,7 +704,9 @@ bool OGLShader::send_uniform<int>(hash_t name, const int& value) const
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -714,7 +720,9 @@ bool OGLShader::send_uniform<glm::vec2>(hash_t name, const glm::vec2& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -728,7 +736,9 @@ bool OGLShader::send_uniform<glm::vec3>(hash_t name, const glm::vec3& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -742,7 +752,9 @@ bool OGLShader::send_uniform<glm::vec4>(hash_t name, const glm::vec4& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -756,7 +768,9 @@ bool OGLShader::send_uniform<glm::mat2>(hash_t name, const glm::mat2& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -770,7 +784,9 @@ bool OGLShader::send_uniform<glm::mat3>(hash_t name, const glm::mat3& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 
@@ -784,7 +800,9 @@ bool OGLShader::send_uniform<glm::mat4>(hash_t name, const glm::mat4& value) con
     auto it = uniform_locations_.find(name);
     if(it == uniform_locations_.end())
     {
+#ifdef W_DEBUG
         warn_unknown_uniform(name_, name);
+#endif
         return false;
     }
 

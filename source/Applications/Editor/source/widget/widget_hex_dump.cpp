@@ -11,6 +11,7 @@ using namespace erwin;
 namespace editor
 {
 
+#ifdef W_DEBUG
 using BlockDescriptions = std::vector<memory::debug::AreaItem>;
 
 static struct
@@ -150,6 +151,7 @@ void HexDumpWidget::on_imgui_render()
 
     ImGui::Columns(1);
 }
+#endif
 
 
 } // namespace editor

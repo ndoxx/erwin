@@ -27,7 +27,7 @@ void PoolAllocator::init(HeapArea& area, std::size_t node_size, std::size_t max_
     free_list_.init(begin_, node_size_, max_nodes_, 0, 0);
 }
 
-void* PoolAllocator::allocate(std::size_t size, std::size_t alignment, std::size_t offset)
+void* PoolAllocator::allocate([[maybe_unused]] std::size_t size, std::size_t alignment, std::size_t offset)
 {
 	uint8_t* next = static_cast<uint8_t*>(free_list_.acquire());
     // We want the user pointer (at next+offset) to be aligned.

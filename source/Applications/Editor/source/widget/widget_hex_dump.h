@@ -2,6 +2,7 @@
 
 #include "widget/widget.h"
 
+#ifdef W_DEBUG
 namespace erwin::memory::debug
 {
 	struct AreaItem;
@@ -27,3 +28,4 @@ private:
 };
 
 } // namespace editor
+#endif

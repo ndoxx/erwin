@@ -160,6 +160,8 @@ constexpr uint8_t k_light = 255;
 
 TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
 {
+	W_PROFILE_FUNCTION()
+
 	// First, check cache
 	hash_t hname = HCOMBINE_(type, hash_t(size_px));
 	auto it = s_storage.special_textures_cache_.find(hname);
@@ -196,6 +198,8 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
 // TODO: Cache lookup before creating any resource
 TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 {
+	W_PROFILE_FUNCTION()
+
 	hash_t hname = H_(filepath.string().c_str());
 	auto it = s_storage.atlas_cache_.find(hname);
 	if(it!=s_storage.atlas_cache_.end())
@@ -219,6 +223,8 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 
 FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 {
+	W_PROFILE_FUNCTION()
+
 	hash_t hname = H_(filepath.string().c_str());
 	auto it = s_storage.font_cache_.find(hname);
 	if(it!=s_storage.font_cache_.end())
@@ -241,6 +247,8 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 
 TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path)
 {
+	W_PROFILE_FUNCTION()
+
 	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
 	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
 	
@@ -319,6 +327,8 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 
 ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
 {
+	W_PROFILE_FUNCTION()
+
 	hash_t hname = H_(filepath.string().c_str());
 	auto it = s_storage.shader_cache_.find(hname);
 	if(it!=s_storage.shader_cache_.end())
@@ -343,6 +353,8 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
 {
+	W_PROFILE_FUNCTION()
+
 	auto it = s_storage.ubo_cache_.find(component_id);
 	if(it!=s_storage.ubo_cache_.end())
 		return it->second;
@@ -354,6 +366,8 @@ UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component
 
 const ComponentPBRMaterial& AssetManager::load_PBR_material(const fs::path& tom_path)
 {
+	W_PROFILE_FUNCTION()
+
 	// * Sanity check
 	W_ASSERT(fs::exists(tom_path), "[AssetManager] File does not exist.");
 	W_ASSERT(!tom_path.extension().string().compare(".tom"), "[AssetManager] Invalid input file.");
@@ -448,6 +462,8 @@ const ComponentPBRMaterial& AssetManager::load_PBR_material(const fs::path& tom_
 
 void AssetManager::release(TextureAtlasHandle handle)
 {
+	W_PROFILE_FUNCTION()
+
 	W_ASSERT_FMT(handle.is_valid(), "TextureAtlasHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing texture atlas:" << std::endl;
 	TextureAtlas* atlas = s_storage.texture_atlases_.at(handle.index);
@@ -462,6 +478,8 @@ void AssetManager::release(TextureAtlasHandle handle)
 
 void AssetManager::release(FontAtlasHandle handle)
 {
+	W_PROFILE_FUNCTION()
+
 	W_ASSERT_FMT(handle.is_valid(), "FontAtlasHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing font atlas:" << std::endl;
 	FontAtlas* atlas = s_storage.font_atlases_.at(handle.index);
@@ -476,6 +494,8 @@ void AssetManager::release(FontAtlasHandle handle)
 
 void AssetManager::release(ShaderHandle handle)
 {
+	W_PROFILE_FUNCTION()
+
 	W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
 	DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
 
@@ -487,6 +507,8 @@ void AssetManager::release(ShaderHandle handle)
 
 void AssetManager::release(UniformBufferHandle handle)
 {
+	W_PROFILE_FUNCTION()
+
 	erase_by_value(s_storage.ubo_cache_, handle);
 	Renderer::destroy(handle);
 }
@@ -495,6 +517,8 @@ void AssetManager::release(UniformBufferHandle handle)
 
 void AssetManager::init(memory::HeapArea& area)
 {
+	W_PROFILE_FUNCTION()
+
 	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
 	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "TextureAtlasPool");
 	s_storage.font_atlas_pool_.init(area, sizeof(FontAtlas) + PoolArena::DECORATION_SIZE, k_max_font_atlases, "FontAtlasPool");
@@ -510,6 +534,8 @@ void AssetManager::init(memory::HeapArea& area)
 
 void AssetManager::shutdown()
 {
+	W_PROFILE_FUNCTION()
+	
 	for(TextureAtlas* atlas: s_storage.texture_atlases_)
 		if(atlas)
 			W_DELETE(atlas, s_storage.texture_atlas_pool_);

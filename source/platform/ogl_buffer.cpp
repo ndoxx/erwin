@@ -12,7 +12,7 @@
 namespace erwin
 {
 
-static std::string to_string(ShaderDataType type)
+[[maybe_unused]] static std::string to_string(ShaderDataType type)
 {
 	switch(type)
 	{
@@ -30,7 +30,7 @@ static std::string to_string(ShaderDataType type)
 	}
 }
 
-static std::string to_string(UsagePattern mode)
+[[maybe_unused]] static std::string to_string(UsagePattern mode)
 {
 	switch(mode)
     {

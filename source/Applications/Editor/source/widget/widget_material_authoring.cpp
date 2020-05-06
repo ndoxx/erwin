@@ -63,11 +63,11 @@ struct MaterialAuthoringWidget::MaterialComposition
     inline void clear_map(TextureMapType map_type)
     {
         texture_maps &= ~(1 << map_type);
-        textures_unpacked[size_t(map_type)] = {};
+        textures_unpacked[uint32_t(map_type)] = {};
     }
     inline void set_map(TextureMapType map_type, TextureHandle tex)
     {
-        textures_unpacked[size_t(map_type)] = tex;
+        textures_unpacked[uint32_t(map_type)] = tex;
         texture_maps |= (1 << map_type);
     }
 };
@@ -151,7 +151,7 @@ void MaterialAuthoringWidget::pack_textures()
     VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
     DrawCall dc(DrawCall::Indexed, state_flags, PBR_packing_shader_, quad);
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
-        dc.set_texture(current_composition_->textures_unpacked[size_t(tm)], uint32_t(tm));
+        dc.set_texture(current_composition_->textures_unpacked[uint32_t(tm)], uint32_t(tm));
     dc.add_dependency(Renderer::update_uniform_buffer(packing_ubo_, static_cast<void*>(&data), sizeof(PBRPackingData),
                                                       DataOwnership::Copy));
 
@@ -228,7 +228,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
 
 void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
 {
-    TextureHandle tex = current_composition_->textures_unpacked[size_t(tm_type)];
+    TextureHandle tex = current_composition_->textures_unpacked[uint32_t(tm_type)];
     if(tex.is_valid())
     {
         Renderer::destroy(tex);
@@ -305,7 +305,7 @@ static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::
     DLOGI << WCC('p') << path << std::endl;
 }
 
-void MaterialAuthoringWidget::on_update(const erwin::GameClock& clock)
+void MaterialAuthoringWidget::on_update(const erwin::GameClock&)
 {
     // * Run export tasks when they are ready
     for(auto it = tom_export_tasks_.begin(); it != tom_export_tasks_.end();)
@@ -414,7 +414,7 @@ void MaterialAuthoringWidget::on_imgui_render()
         // * Display a clickable image of the texture map
         // Display currently bound texture map
         // Default to checkerboard pattern if no texture map is loaded
-        TextureHandle tex = current_composition_->textures_unpacked[size_t(tm)];
+        TextureHandle tex = current_composition_->textures_unpacked[uint32_t(tm)];
         void* image_native = has_map ? Renderer::get_native_texture_handle(tex) : checkerboard_native;
 
         if(image_native)

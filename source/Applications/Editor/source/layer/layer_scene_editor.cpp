@@ -24,9 +24,11 @@ void SceneEditorLayer::on_attach()
     REFLECT_COMPONENT(ComponentDescription);
 
 	// Build UI
+#ifdef W_DEBUG
     HexDumpWidget* hex_widget;
     add_widget(hex_widget = new HexDumpWidget());
     hex_widget->refresh();
+#endif
 
     scene_view_widget_ = new SceneViewWidget();
     add_widget(scene_view_widget_);

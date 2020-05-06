@@ -105,7 +105,7 @@ protected:
 
     // Helper func to queue event data
 	template <typename EventT>
-	bool log_event(const EventT& event)
+	bool log_event([[maybe_unused]] const EventT& event)
 	{
 #ifdef W_DEBUG
 		if(event_filter_[ctti::type_id<EventT>()])
