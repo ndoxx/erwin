@@ -160,6 +160,18 @@ enum WKEYMOD: uint8_t
 	ALT     = 4
 };
 
+[[maybe_unused]] static WKEYMOD mod_name_to_mod(hash_t mod_name)
+{
+	switch(mod_name)
+	{
+		default:		  return WKEYMOD::NONE;
+		case "SHIFT"_h:   return WKEYMOD::SHIFT;
+		case "CONTROL"_h: return WKEYMOD::CONTROL;
+		case "CTRL"_h:    return WKEYMOD::CONTROL;
+		case "ALT"_h:     return WKEYMOD::ALT;
+	}
+}
+
 #ifdef W_USE_EASTL
 	using KeyNameMap = eastl::map<WKEY, std::string>;
 #else
@@ -455,7 +467,7 @@ static const MouseButtonMap MB_NAMES =
             key == keymap::WKEY::RIGHT_ALT);
 }
 
-[[maybe_unused]] static std::string modifier_string(int mods)
+[[maybe_unused]] static std::string modifier_string(uint8_t mods)
 {
 	if(mods==0)
 		return "";

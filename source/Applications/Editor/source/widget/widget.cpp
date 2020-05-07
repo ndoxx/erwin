@@ -8,6 +8,7 @@ namespace editor
 Widget::Widget(const std::string& name, bool open):
 open_(open),
 name_(name),
+dbg_profile_name_("imgui_render: " + name_),
 flags_(0),
 width_(0),
 height_(0),
@@ -17,7 +18,7 @@ has_focus_(false),
 is_hovered_(false),
 was_open_(open)
 {
-
+    
 }
 
 void Widget::imgui_render()
@@ -30,6 +31,7 @@ void Widget::imgui_render()
     	ImGui::End();
     	return;
     }
+    W_PROFILE_SCOPE(dbg_profile_name_.c_str());
 
     ImVec2 window_pos = ImGui::GetWindowPos();
     int32_t win_pos_x = int32_t(window_pos.x);

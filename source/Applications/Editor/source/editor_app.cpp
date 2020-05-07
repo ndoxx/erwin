@@ -81,14 +81,14 @@ void ErwinEditor::on_unload()
 bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
 {
     // Terminate on Ctrl+ESCAPE
-    if(e.pressed && e.key == keymap::WKEY::ESCAPE && (e.mods & keymap::WKEYMOD::CONTROL))
+    if(Input::match_action(ACTION_EDITOR_QUIT, e))
     {
         EVENTBUS.publish(WindowCloseEvent());
         return true;
     }
 
     // Cycle editor state
-    if(e.pressed && !e.repeat && e.key == Input::get_action_key(ACTION_EDITOR_CYCLE_MODE) && e.mod_shift()) // TMP: Modifiers should be handled by action
+    if(Input::match_action(ACTION_EDITOR_CYCLE_MODE, e))
     {
     	cycle_state();
     	return true;
@@ -180,6 +180,7 @@ void ErwinEditor::on_imgui_render()
         ImGui::ShowDemoWindow();
 
     console_->imgui_render();
+    keybindings_widget_->imgui_render();
 
     if(exit_required_)
     {

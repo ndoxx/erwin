@@ -307,6 +307,11 @@ void Application::shutdown()
     } 
 }
 
+void Application::enable_vsync(bool value)
+{
+    window_->set_vsync(value);
+}
+
 size_t Application::push_layer(Layer* layer, bool enabled)
 {
     W_PROFILE_FUNCTION()
@@ -339,9 +344,6 @@ void Application::run()
 
     // Profiling options
     W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
-
-    float target_fps = float(cfg::get<uint32_t>("erwin.display.target_fps"_h, 60));
-    const std::chrono::nanoseconds frame_duration_ns_(uint32_t(float(1e9)/target_fps));
 
     nanoClock frame_clock;
     frame_clock.restart();
@@ -393,14 +395,6 @@ void Application::run()
         			layer->on_imgui_render();
         		IMGUI_LAYER->end();
             }
-        }
-
-        if(!window_->is_vsync())
-        {
-            W_PROFILE_SCOPE("Wait")
-            auto active_d = frame_clock.get_elapsed_time();
-            auto idle_duration = frame_duration_ns_ - active_d;
-            std::this_thread::sleep_for(idle_duration);
         }
 
         // --- CLEANUP PHASE ---

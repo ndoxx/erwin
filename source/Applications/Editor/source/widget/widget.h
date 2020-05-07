@@ -43,6 +43,7 @@ protected:
 
 protected:
 	std::string name_;
+	std::string dbg_profile_name_;
 	int flags_;
 	uint32_t width_;
 	uint32_t height_;

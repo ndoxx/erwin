@@ -66,8 +66,9 @@ static inline std::string trim_copy(std::string s)
 }
 
 // Tokenize an input string into a vector of strings, specifying a delimiter
-static inline void tokenize(const std::string& str, std::vector<std::string>& dst, char delimiter=',')
+static inline std::vector<std::string> tokenize(const std::string& str, char delimiter=',')
 {
+    std::vector<std::string> dst;
     std::stringstream ss(str);
 
     while(ss.good())
@@ -76,6 +77,7 @@ static inline void tokenize(const std::string& str, std::vector<std::string>& ds
         std::getline(ss, substr, delimiter);
         dst.push_back(substr);
     }
+    return dst;
 }
 
 // Tokenize an input string and call a visitor for each token

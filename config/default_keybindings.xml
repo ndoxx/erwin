@@ -9,7 +9,7 @@
 	<action name="ACTION_FREEFLY_DESCEND"       desc="Descend" 				  key="LEFT_CONTROL"/>
 	<action name="ACTION_FREEFLY_GO_FAST"       desc="Move faster" 			  key="LEFT_SHIFT"/>
 
-	<action name="ACTION_DROP_SELECTION" desc="Invalidate current selection" key="Q"/>
-
-	<action name="ACTION_EDITOR_CYCLE_MODE" desc="Cycle between editor modes" key="C"/>
+	<action name="ACTION_DROP_SELECTION"        desc="Invalidate current selection" key="Q"/>
+	<action name="ACTION_EDITOR_CYCLE_MODE"     desc="Cycle between editor modes"   key="SHIFT+C"/>
+	<action name="ACTION_EDITOR_QUIT"           desc="Exit editor"                  key="CTRL+ESCAPE"/>
 </Keymap>

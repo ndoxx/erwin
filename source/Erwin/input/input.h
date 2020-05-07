@@ -3,6 +3,7 @@
 #include "core/core.h"
 #include "input/keys.h"
 #include "input/action.h"
+#include "event/window_events.h"
 
 #ifdef W_USE_EASTL
 	#include "EASTL/vector.h"
@@ -59,6 +60,7 @@ public:
 		keymap::WKEY key;
 		bool pressed;
 		bool repeat;
+		uint8_t mods;
 		std::string name;
 		std::string description;
 	};
@@ -66,19 +68,10 @@ public:
 	static bool load_config();
 	static bool save_config();
 
-	static inline void modify_action(uint32_t action, keymap::WKEY key)
+	static inline void modify_action(uint32_t action, keymap::WKEY key, uint8_t mods=keymap::WKEYMOD::NONE)
 	{
 		actions[action].key = key;
-	}
-
-	static inline bool is_action_key_pressed(uint32_t action)
-	{
-		return is_key_pressed(actions[action].key);
-	}
-
-	static inline keymap::WKEY get_action_key(uint32_t action)
-	{
-		return actions[action].key;
+		actions[action].mods = mods;
 	}
 
 	static inline size_t get_action_count()
@@ -89,6 +82,17 @@ public:
 	static inline const ActionDescriptor& get_action(uint32_t action)
 	{
 		return actions[action];
+	}
+
+	static inline bool is_action_key_pressed(uint32_t action)
+	{
+		return is_key_pressed(actions[action].key);
+	}
+
+	static inline bool match_action(uint32_t action, const KeyboardEvent& e)
+	{
+		const auto& a = actions[action];
+		return (a.key == e.key) && (a.mods == e.mods) && (a.pressed == e.pressed) && (a.repeat == e.repeat);
 	}
 
 protected:

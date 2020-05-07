@@ -41,6 +41,8 @@ public:
 	void run();
 	void shutdown();
 
+	void enable_vsync(bool value=true);
+
 	static memory::HeapArea& get_client_area();
 	static const memory::HeapArea& get_system_area();
 	static const memory::HeapArea& get_render_area();

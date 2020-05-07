@@ -107,7 +107,7 @@ bool SceneEditorLayer::on_event(const KeyboardEvent& event)
             return true;
     }
 
-    if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_DROP_SELECTION))
+    if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
         Scene::drop_selection();
         return true;

@@ -22,9 +22,13 @@ bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
     if(selection_ == 0)
         return false;
 
+    // Discard modifier keys alone
+    if(keymap::is_modifier_key(event.key))
+        return false;
+
     keymap::WKEY new_key = event.key;
     if(new_key != keymap::WKEY::ESCAPE)
-        Input::modify_action(selection_, new_key);
+        Input::modify_action(selection_, new_key, event.mods);
 
     selection_ = 0;
 
@@ -42,9 +46,11 @@ void KeybindingsWidget::on_imgui_render()
 
         bool is_selected = (selection_ == ii);
 
+        std::string key_comb = keymap::modifier_string(action.mods) + keymap::KEY_NAMES.at(action.key);
+
         ImGui::TextUnformatted(action.description.c_str());
         ImGui::NextColumn();
-        if(ImGui::Selectable(is_selected ? "<press a key>" : keymap::KEY_NAMES.at(action.key).c_str(), is_selected, ImGuiSelectableFlags_AllowDoubleClick))
+        if(ImGui::Selectable(is_selected ? "<press a key>" : key_comb.c_str(), is_selected, ImGuiSelectableFlags_AllowDoubleClick))
         {
             if(ImGui::IsMouseDoubleClicked(0))
             {

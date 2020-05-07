@@ -172,8 +172,7 @@ void GLFWWindow::init(const WindowProps& props)
 
     //VSync
     data_->vsync = props.vsync;
-    if(data_->vsync)
-        glfwSwapInterval(1); // Enable vsync
+	glfwSwapInterval(props.vsync ? 1 : 0);
 
     // Send GLFW a raw pointer to our data structure so we can act on it from callbacks
     glfwSetWindowUserPointer(data_->window, &(*data_));

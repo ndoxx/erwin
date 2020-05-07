@@ -3,6 +3,7 @@
 #include "event/event_bus.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
+#include "utils/string.h"
 #include "debug/logger.h"
 
 namespace erwin
@@ -18,7 +19,7 @@ namespace erwin
 void Input::init()
 {
 	// Push null action
-	actions.push_back({keymap::WKEY::NONE, false, false, "", ""});
+	actions.push_back({keymap::WKEY::NONE, false, false, keymap::WKEYMOD::NONE, "", ""});
 
 	load_config();
 }
@@ -32,21 +33,39 @@ bool Input::parse_keybindings(void* node)
         cur_node;
         cur_node=cur_node->next_sibling("action"))
     {
-        std::string action_name, description;
+        std::string action_name, description, key_comb;
         if(!xml::parse_attribute(cur_node, "name", action_name)) return false;
         if(!xml::parse_attribute(cur_node, "desc", description))
         	description = action_name;
 
-        hash_t hkey_name = xml::parse_attribute_h(cur_node, "key");
-		if(hkey_name == 0) return false;
-		keymap::WKEY key = keymap::key_name_to_key(hkey_name);
+        // Detect and extract key modifiers
+        keymap::WKEY key = keymap::WKEY::NONE;
+        uint8_t mods = keymap::WKEYMOD::NONE;
+        if(!xml::parse_attribute(cur_node, "key", key_comb)) return false;
+        if(key_comb.find_first_of("+") != std::string::npos)
+        {
+        	auto tokens = su::tokenize(key_comb, '+');
+        	for(size_t ii=0; ii<tokens.size()-1; ++ii)
+        	{
+        		hash_t hmod = H_(tokens[ii].c_str());
+        		mods |= keymap::mod_name_to_mod(hmod);
+        	}
+        	hash_t hkey_name = H_(tokens.back().c_str());
+        	key = keymap::key_name_to_key(hkey_name);
+        }
+        else
+        {
+        	hash_t hkey_name = H_(key_comb.c_str());
+        	key = keymap::key_name_to_key(hkey_name);
+        }
+
 		if(key == keymap::WKEY::NONE) continue;
 
         hash_t htrigger = xml::parse_attribute_h(cur_node, "trigger");
         bool trigger = (htrigger == "press"_h || htrigger == 0);
 
 		// The XML file we're parsing better be in the correct enum order!
-		actions.push_back({key, trigger, false, action_name, description});
+		actions.push_back({key, trigger, false, mods, action_name, description});
     }
 
     return true;
@@ -82,9 +101,10 @@ bool Input::save_config()
 	for(uint32_t ii=1; ii<actions.size(); ++ii)
 	{
 		const auto& action = actions[ii];
+        std::string key_comb = keymap::modifier_string(action.mods) + keymap::KEY_NAMES.at(action.key);
 		ofs << "\t<action name=\"" << action.name
 			<< "\" desc=\"" << action.description
-			<< "\" key=\"" << keymap::KEY_NAMES.at(action.key)
+			<< "\" key=\"" << key_comb
 			<< "\" trigger=\"" << (action.pressed ? "press" : "release")
 			<< "\"/>" << std::endl;
 	}

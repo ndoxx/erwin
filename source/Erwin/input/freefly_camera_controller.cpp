@@ -156,7 +156,7 @@ bool FreeflyController::on_mouse_moved_event(const MouseMovedEvent& event)
 
 bool FreeflyController::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
-	if(event.pressed && !event.repeat && event.key == Input::get_action_key(ACTION_FREEFLY_TOGGLE))
+    if(Input::match_action(ACTION_FREEFLY_TOGGLE, event))
 	{
 		toggle_inputs();
 		return true;

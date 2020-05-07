@@ -106,13 +106,13 @@ Donc j'ai codé ce petit script pour parser toutes mes sources qui contiennent d
 
 ##[Command Galore]
 ###Callgrind profiling
-> valgrind --tool=callgrind ../bin/sandbox
+> valgrind --tool=callgrind ../bin/editor
 > gprof2dot --format=callgrind -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
 > gprof2dot --format=callgrind -zerwin::\* -lerwin::\* -n0.1 -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
 
 ###Apitrace usage
-> apitrace trace --api=gl --output=sandbox.trace ../bin/sandbox
-> LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace sandbox.trace
+> apitrace trace --api=gl --output=editor.trace ../bin/editor
+> LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib qapitrace editor.trace
 
 ###CppCheck GUI
 > LD_LIBRARY_PATH=/home/ndx/Qt/5.13.0/gcc_64/lib cppcheck-gui
