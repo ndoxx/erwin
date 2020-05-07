@@ -26,8 +26,6 @@ void ErwinEditor::on_client_init()
 
 void ErwinEditor::on_load()
 {
-    EVENTBUS.subscribe(this, &ErwinEditor::on_keyboard_event);
-
     // * Create host framebuffer in order to render to an ImGui window
     FramebufferLayout layout{{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}};
     FramebufferPool::create_framebuffer("host"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
@@ -61,6 +59,7 @@ void ErwinEditor::on_load()
     push_overlay(material_editor_layer, false);
     push_overlay(new editor::EditorBackgroundLayer());
 
+    EVENTBUS.subscribe(this, &ErwinEditor::on_keyboard_event);
 
     create_state(EditorStateIdx::SCENE_EDITION,      {"Scene edition", {scene_view_layer}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});

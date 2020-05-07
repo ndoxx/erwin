@@ -467,6 +467,20 @@ static const MouseButtonMap MB_NAMES =
             key == keymap::WKEY::RIGHT_ALT);
 }
 
+[[maybe_unused]] static keymap::WKEYMOD key_to_keymod(WKEY key)
+{
+	switch(key)
+	{
+	    default:                          return keymap::WKEYMOD::NONE;
+	    case keymap::WKEY::LEFT_CONTROL:  return keymap::WKEYMOD::CONTROL;
+	    case keymap::WKEY::LEFT_SHIFT:    return keymap::WKEYMOD::SHIFT;
+	    case keymap::WKEY::LEFT_ALT:      return keymap::WKEYMOD::ALT;
+	    case keymap::WKEY::RIGHT_CONTROL: return keymap::WKEYMOD::CONTROL;
+	    case keymap::WKEY::RIGHT_SHIFT:   return keymap::WKEYMOD::SHIFT;
+	    case keymap::WKEY::RIGHT_ALT:     return keymap::WKEYMOD::ALT;
+    }
+}
+
 [[maybe_unused]] static std::string modifier_string(uint8_t mods)
 {
 	if(mods==0)

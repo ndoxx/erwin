@@ -22,8 +22,8 @@ bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
     if(selection_ == 0)
         return false;
 
-    // Discard modifier keys alone
-    if(keymap::is_modifier_key(event.key))
+    // Discard modifier keys alone, unless key has been pressed then released
+    if(keymap::is_modifier_key(event.key) && event.pressed)
         return false;
 
     keymap::WKEY new_key = event.key;

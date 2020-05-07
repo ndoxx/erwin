@@ -72,6 +72,11 @@ public:
 	{
 		actions[action].key = key;
 		actions[action].mods = mods;
+
+		// If key is itself a "modifier" key, remove it from modifiers
+		keymap::WKEYMOD k2m = keymap::key_to_keymod(key);
+		if(k2m)
+			actions[action].mods &= ~k2m;
 	}
 
 	static inline size_t get_action_count()
