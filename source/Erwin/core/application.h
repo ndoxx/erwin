@@ -6,6 +6,7 @@
 #include "core/window.h"
 #include "core/layer_stack.h"
 #include "core/game_clock.h"
+#include "memory/heap_area.h"
 #include "filesystem/filesystem.h"
 
 namespace editor

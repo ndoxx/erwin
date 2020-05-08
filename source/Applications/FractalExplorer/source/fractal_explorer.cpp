@@ -143,7 +143,7 @@ public:
 
 	virtual void on_load() override
 	{
-		EVENTBUS.subscribe(this, &FractalExplorer::on_keyboard_event);
+		EventBus::subscribe(this, &FractalExplorer::on_keyboard_event);
 
 		push_layer(new FractalLayer());
 	}
@@ -152,7 +152,7 @@ public:
 	{
 		// Terminate on ESCAPE
 		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
-			EVENTBUS.publish(WindowCloseEvent());
+			EventBus::publish(WindowCloseEvent());
 
 		return false;
 	}

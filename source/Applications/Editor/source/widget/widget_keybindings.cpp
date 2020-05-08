@@ -14,7 +14,7 @@ Widget("Key bindings", false)
     flags_ = ImGuiWindowFlags_NoDocking;
     selection_ = 0;
 
-    EVENTBUS.subscribe(this, &KeybindingsWidget::on_keyboard_event);
+    EventBus::subscribe(this, &KeybindingsWidget::on_keyboard_event);
 }
 
 bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)

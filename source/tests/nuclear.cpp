@@ -42,7 +42,8 @@ void init_logger()
 namespace dev
 {
 
-template <typename EventT> class AbstractDelegate
+template <typename EventT>
+class AbstractDelegate
 {
 public:
     virtual ~AbstractDelegate() = default;
@@ -52,7 +53,8 @@ private:
     virtual bool call(const EventT& event) = 0;
 };
 
-template <typename T, typename EventT> class MemberDelegate : public AbstractDelegate<EventT>
+template <typename T, typename EventT>
+class MemberDelegate : public AbstractDelegate<EventT>
 {
 public:
     virtual ~MemberDelegate() = default;
@@ -68,7 +70,8 @@ private:
     MemberFunction memberFunction; // Pointer to member function
 };
 
-template <typename EventT> class FreeDelegate : public AbstractDelegate<EventT>
+template <typename EventT>
+class FreeDelegate : public AbstractDelegate<EventT>
 {
 public:
     virtual ~FreeDelegate() = default;

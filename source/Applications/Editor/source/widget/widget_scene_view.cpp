@@ -63,8 +63,8 @@ void SceneViewWidget::on_resize(uint32_t width, uint32_t height)
     render_surface_.w = rw;
     render_surface_.h = rh;
 
-	EVENTBUS.publish(WindowResizeEvent(int(width), int(height)));
-	EVENTBUS.publish(FramebufferResizeEvent(int(rw), int(rh)));
+	EventBus::publish(WindowResizeEvent(int(width), int(height)));
+	EventBus::publish(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
 void SceneViewWidget::on_move(int32_t x, int32_t y)
@@ -76,7 +76,7 @@ void SceneViewWidget::on_move(int32_t x, int32_t y)
     render_surface_.x1 = render_surface_.x0 + rw;
     render_surface_.y1 = render_surface_.y0 + rh;
 
-	EVENTBUS.publish(WindowMovedEvent(x, y));
+	EventBus::publish(WindowMovedEvent(x, y));
 }
 
 bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
@@ -91,7 +91,7 @@ bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
         glm::vec2 coords = {     (event.x - render_surface_.x0)/render_surface_.w, 
                              1.f-(event.y - render_surface_.y0)/render_surface_.h };
 
-        EVENTBUS.publish(RaySceneQueryEvent(coords));
+        EventBus::publish(RaySceneQueryEvent(coords));
 
         return true;
     }

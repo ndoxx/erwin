@@ -7,7 +7,7 @@ namespace erwin
 
 BoundingBoxSystem::BoundingBoxSystem()
 {
-    EVENTBUS.subscribe(this, &BoundingBoxSystem::on_ray_scene_query_event);
+    EventBus::subscribe(this, &BoundingBoxSystem::on_ray_scene_query_event);
 }
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)

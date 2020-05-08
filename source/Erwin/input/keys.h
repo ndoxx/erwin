@@ -6,6 +6,8 @@
 	#include <map>
 #endif
 
+#include "core/core.h"
+
 namespace erwin
 {
 namespace keymap

@@ -135,7 +135,7 @@ void PostProcessingRenderer::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.bloom_blur_shader, s_storage.blur_ubo);
 
 	// Reset sequence on new frame
-	EVENTBUS.subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
+	EventBus::subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
 	{
 		s_storage.sequence = 0;
 		return false;

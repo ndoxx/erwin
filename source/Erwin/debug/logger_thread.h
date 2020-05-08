@@ -6,6 +6,7 @@
 
 #include "ctti/type_id.hpp"
 
+#include "core/time_base.h"
 #include "debug/logger_common.h"
 #include "event/event_bus.h"
 
@@ -31,7 +32,7 @@ public:
 	template <typename EventT>
 	void track_event()
 	{
-		EVENTBUS.subscribe(this, &LoggerThread::log_event<EventT>);
+		EventBus::subscribe(this, &LoggerThread::log_event<EventT>);
 		event_filter_[ctti::type_id<EventT>()] = true;
 	}
 	// Enable/Disable tracking on a given registered event type
@@ -112,7 +113,7 @@ protected:
 		{
 			std::stringstream ss;
 			ss << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
-			enqueue(LogStatement{"event"_h, dbg::MsgType::EVENT, event.timestamp, 0, 0, "", ss.str()});
+			enqueue(LogStatement{"event"_h, dbg::MsgType::EVENT, TimeBase::timestamp(), 0, 0, "", ss.str()});
 		}
 #endif
         return false;

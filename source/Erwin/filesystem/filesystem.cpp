@@ -1,5 +1,6 @@
 #include "filesystem/filesystem.h"
 #include "core/core.h"
+#include "debug/logger.h"
 #include "render/shader_lang.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
