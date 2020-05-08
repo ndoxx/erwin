@@ -146,7 +146,7 @@ Extent MeshFabricator::build_shape(const BufferLayout& layout, std::vector<float
     }
 
     // Get the total number of components per vertex
-    uint32_t vertex_size = uint32_t(std::accumulate(components_count, components_count + k_max_attrib, 0));
+    uint32_t vertex_size = std::accumulate(components_count, components_count + k_max_attrib, 0u);
 
     W_ASSERT(has_position, "Meshes must have a position attribute.");
 
@@ -480,7 +480,7 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
     }
 
     // Get the total number of components per vertex
-    uint32_t vertex_size = uint32_t(std::accumulate(components_count, components_count + k_max_attrib, 0));
+    uint32_t vertex_size = std::accumulate(components_count, components_count + k_max_attrib, 0u);
 
     W_ASSERT(has_position, "Meshes must have a position attribute.");
 

@@ -61,11 +61,14 @@ bool Input::parse_keybindings(void* node)
 
 		if(key == keymap::WKEY::NONE) continue;
 
+        bool repeat = false;
+        xml::parse_attribute(cur_node, "repeat", repeat);
+
         hash_t htrigger = xml::parse_attribute_h(cur_node, "trigger");
         bool trigger = (htrigger == "press"_h || htrigger == 0);
 
 		// The XML file we're parsing better be in the correct enum order!
-		actions.push_back({key, trigger, false, mods, action_name, description});
+		actions.push_back({key, trigger, repeat, mods, action_name, description});
     }
 
     return true;

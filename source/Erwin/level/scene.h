@@ -28,7 +28,7 @@ public:
 	static EntityID selected_entity;
 	static EntityID directional_light;
 	static std::vector<EntityID> entities;
-	static FreeflyController camera_controller;
+	static FreeflyController camera_controller; // TODO: Camera here instead?
 
 	static struct Environment
 	{

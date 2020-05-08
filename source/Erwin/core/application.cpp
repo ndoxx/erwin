@@ -60,6 +60,7 @@ static inline void configure_event_tracking()
 }
 
 Application::Application():
+vsync_enabled_(false),
 is_running_(true),
 minimized_(false)
 {
@@ -213,6 +214,7 @@ bool Application::init()
             cfg::get<bool>("client.display.host"_h,         true)
         };
         window_ = Window::create(props);
+        vsync_enabled_ = props.vsync;
     }
 
     {
@@ -310,6 +312,7 @@ void Application::shutdown()
 void Application::enable_vsync(bool value)
 {
     window_->set_vsync(value);
+    vsync_enabled_ = value;
 }
 
 size_t Application::push_layer(Layer* layer, bool enabled)

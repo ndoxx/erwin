@@ -64,7 +64,6 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::SCENE_EDITION,      {"Scene edition", {scene_view_layer}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
-
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
     // If editor is enabled, PPRenderer should draw to the host window framebuffer instead of the default one
@@ -109,6 +108,14 @@ void ErwinEditor::on_imgui_render()
 
         if(ImGui::BeginMenu("Settings"))
         {
+            if(ImGui::BeginMenu("Render"))
+            {
+                if(ImGui::MenuItem("VSync", NULL, &vsync_enabled_))
+                    enable_vsync(vsync_enabled_);
+                ImGui::EndMenu();
+            }
+
+            ImGui::Separator();
             ImGui::MenuItem(keybindings_widget_->get_name().c_str(), NULL, &keybindings_widget_->open_);
 
             ImGui::Separator();

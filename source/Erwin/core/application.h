@@ -52,6 +52,9 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
+protected:
+	bool vsync_enabled_;
+
 private:
 	static Application* pinstance_;
 	WScope<Window> window_;
