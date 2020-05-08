@@ -1,8 +1,16 @@
 // Inspired by https://medium.com/@savas/nomad-game-engine-part-7-the-event-system-45a809ccb68f
-// * Using const references instead of pointers to pass events around
+// Differences are:
+// * Using const references or rvalues instead of pointers to pass events around
 // * Using constexpr ctti::type_id<>() instead of RTTI
 // * Leak free
-// * Priority system
+// * Events can be any type, no need to derive from a base event class
+// * Deferred event handling with event queues, instant firing still supported
+// * Priority mechanics
+
+// TODO:
+// [ ] Dispatch timeout
+// [ ] Dispatch deadlock detection?
+// [ ] Event pooling if deemed necessary
 
 #pragma once
 #include <list>
@@ -39,6 +47,8 @@ public:
     inline void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), size_t priority)
     {
         delegates_.push_back({priority, std::make_unique<MemberDelegate<ClassT, EventT>>(instance, memberFunction)});
+        // greater_equal generates the desired behavior: for equal priority range of subscribers,
+        // latest subscriber handles the event first
         delegates_.sort(std::greater_equal<PriorityDelegate>());
     }
 
@@ -48,15 +58,14 @@ public:
         delegates_.sort(std::greater_equal<PriorityDelegate>());
     }
 
-    // TODO: Event pooling if deemed necessary
     inline void submit(const EventT& event) { queue_.push(event); }
-    inline void submit(EventT&& event)      { queue_.push(event); }
+    inline void submit(EventT&& event) { queue_.push(event); }
 
-    inline void fire(const EventT& event)
+    inline void fire(const EventT& event) const
     {
         for(auto&& [priority, handler] : delegates_)
             if(handler->exec(event))
-                break;
+                break; // If handler returns true, event is not propagated further
     }
 
     virtual void process() override
@@ -65,7 +74,7 @@ public:
         {
             for(auto&& [priority, handler] : delegates_)
                 if(handler->exec(queue_.front()))
-                    break; // If handler returns true, event is not propagated further
+                    break;
 
             queue_.pop();
         }
@@ -87,6 +96,7 @@ private:
 class EventBus
 {
 public:
+    // Subscribe a free function to a particular event type
     template <typename EventT> static void subscribe(bool (*freeFunction)(const EventT&), size_t priority = 0u)
     {
         constexpr EventID k_id = ctti::type_id<EventT>().hash();
@@ -99,6 +109,7 @@ public:
         q_ptr->subscribe(freeFunction, priority);
     }
 
+    // Subscribe a member function to a particular event type
     template <typename ClassT, typename EventT>
     static void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), size_t priority = 0u)
     {
@@ -112,7 +123,8 @@ public:
         q_ptr->subscribe(instance, memberFunction, priority);
     }
 
-    template <typename EventT> static void publish(const EventT& event)
+    // Fire an event and have it handled immediately
+    template <typename EventT> static void fire(const EventT& event)
     {
         constexpr EventID k_id = ctti::type_id<EventT>().hash();
         auto& queue = event_queues_[k_id];
@@ -124,6 +136,7 @@ public:
         q_ptr->fire(event);
     }
 
+    // Enqueue an event for deferred handling (during the dispatch() call)
     template <typename EventT> static void enqueue(const EventT& event)
     {
         constexpr EventID k_id = ctti::type_id<EventT>().hash();
@@ -148,18 +161,17 @@ public:
         q_ptr->submit(std::forward<EventT>(event));
     }
 
+    // Handle all queued events
     static inline void dispatch()
     {
         // An event once handled can cause another event to be enqueued, so
         // we iterate till all events have been processed
-        // TODO:
-        //      [ ] Timeout
-        //      [ ] Detect deadlocks?
         while(!empty())
             for(auto&& [id, queue] : event_queues_)
                 queue->process();
     }
 
+    // Check if all queues are empty
     static inline bool empty()
     {
         for(auto&& [id, queue] : event_queues_)
@@ -168,11 +180,17 @@ public:
         return true;
     }
 
+    // Get the number of unprocessed events
     static inline size_t get_unprocessed_count()
     {
         return std::accumulate(event_queues_.begin(), event_queues_.end(), 0u,
                                [](size_t accumulator, auto&& entry) { return accumulator + entry.second->size(); });
     }
+
+#ifdef W_TEST
+    // Clear all subscribers. Only enabled for unit testing.
+    static inline void reset() { event_queues_.clear(); }
+#endif
 
 private:
     using EventID = uint64_t;

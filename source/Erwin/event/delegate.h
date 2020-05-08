@@ -15,10 +15,10 @@ class AbstractDelegate
 {
 public:
     virtual ~AbstractDelegate() = default;
-    inline bool exec(const EventT& event) { return call(event); }
+    inline bool exec(const EventT& event) const { return call(event); }
 
 private:
-    virtual bool call(const EventT& event) = 0;
+    virtual bool call(const EventT& event) const = 0;
 };
 
 // Member function wrapper, to allow classes to register their member functions as event handlers
@@ -32,7 +32,7 @@ public:
     MemberDelegate(T* instance, MemberFunction memberFunction) : instance{instance}, memberFunction{memberFunction} {};
 
     // Cast event to the correct type and call member function
-    virtual bool call(const EventT& event) override { return (instance->*memberFunction)(event); }
+    virtual bool call(const EventT& event) const override { return (instance->*memberFunction)(event); }
 
 private:
     T* instance;                   // Pointer to class instance
@@ -50,7 +50,7 @@ public:
     explicit FreeDelegate(FreeFunction freeFunction) : freeFunction{freeFunction} {};
 
     // Cast event to the correct type and call member function
-    virtual bool call(const EventT& event) override { return (*freeFunction)(event); }
+    virtual bool call(const EventT& event) const override { return (*freeFunction)(event); }
 
 private:
     FreeFunction freeFunction; // Pointer to member function
