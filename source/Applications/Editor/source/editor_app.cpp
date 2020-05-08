@@ -59,7 +59,7 @@ void ErwinEditor::on_load()
     push_overlay(material_editor_layer, false);
     push_overlay(new editor::EditorBackgroundLayer());
 
-    EVENTBUS.subscribe(this, &ErwinEditor::on_keyboard_event);
+    EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 
     create_state(EditorStateIdx::SCENE_EDITION,      {"Scene edition", {scene_view_layer}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
@@ -81,7 +81,7 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     // Terminate on Ctrl+ESCAPE
     if(Input::match_action(ACTION_EDITOR_QUIT, e))
     {
-        EVENTBUS.publish(WindowCloseEvent());
+        EventBus::enqueue(WindowCloseEvent());
         return true;
     }
 
@@ -190,7 +190,7 @@ void ErwinEditor::on_imgui_render()
 
     if(exit_required_)
     {
-        EVENTBUS.publish(WindowCloseEvent());
+        EventBus::enqueue(WindowCloseEvent());
     }
 }
 

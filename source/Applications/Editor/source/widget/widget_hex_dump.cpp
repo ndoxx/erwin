@@ -1,6 +1,7 @@
 #include "widget/widget_hex_dump.h"
-#include "imgui/font_awesome.h"
 #include "core/application.h"
+#include "memory/memory.hpp"
+#include "imgui/font_awesome.h"
 #include "imgui.h"
 
 #include <sstream>

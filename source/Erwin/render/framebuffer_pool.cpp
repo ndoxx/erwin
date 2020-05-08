@@ -43,7 +43,7 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 	s_storage.current_width_  = initial_width;
 	s_storage.current_height_ = initial_height;
 
-	EVENTBUS.subscribe(&on_framebuffer_resize_event);
+	EventBus::subscribe(&on_framebuffer_resize_event);
 	DLOGN("render") << "Framebuffer pool created." << std::endl;
 }
 

@@ -33,7 +33,7 @@ public:
 	template <typename EventT>
 	void track_event()
 	{
-		EVENTBUS.subscribe(this, &LayerStack::dispatch<EventT>);
+		EventBus::subscribe(this, &LayerStack::dispatch<EventT>);
 	}
 
 private:

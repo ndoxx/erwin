@@ -1,28 +1,32 @@
 #pragma once
 
-#include "event/event.h"
+#include <ostream>
 #include "input/keys.h"
+#include "event/event.h"
+#include "core/core.h"
 #include "glm/glm.hpp"
 
 namespace erwin
 {
 
-struct WindowCloseEvent: public WEvent
+struct WindowCloseEvent
 {
-	EVENT_DECLARATION(WindowCloseEvent);
+    EVENT_DECLARATIONS(WindowCloseEvent);
+
     WindowCloseEvent() = default;
     
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const WindowCloseEvent&)
     {
         stream << "(void)";
+        return stream;
     }
 #endif
 };
 
-struct WindowResizeEvent: public WEvent
+struct WindowResizeEvent
 {
-	EVENT_DECLARATION(WindowResizeEvent);
+    EVENT_DECLARATIONS(WindowResizeEvent);
 
     WindowResizeEvent() = default;
 	WindowResizeEvent(int width, int height):
@@ -33,9 +37,10 @@ struct WindowResizeEvent: public WEvent
 	}
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const WindowResizeEvent& rhs)
     {
-        stream << "new size: " << width << "x" << height;
+        stream << "new size: " << rhs.width << "x" << rhs.height;
+        return stream;
     }
 #endif
 
@@ -43,9 +48,9 @@ struct WindowResizeEvent: public WEvent
     int height;
 };
 
-struct WindowMovedEvent: public WEvent
+struct WindowMovedEvent
 {
-    EVENT_DECLARATION(WindowMovedEvent);
+    EVENT_DECLARATIONS(WindowMovedEvent);
 
     WindowMovedEvent() = default;
     WindowMovedEvent(int xx, int yy):
@@ -56,9 +61,10 @@ struct WindowMovedEvent: public WEvent
     }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const WindowMovedEvent& rhs)
     {
-        stream << "new position: (" << x << "," << y << ")";
+        stream << "new position: (" << rhs.x << "," << rhs.y << ")";
+        return stream;
     }
 #endif
 
@@ -66,9 +72,9 @@ struct WindowMovedEvent: public WEvent
     int y;
 };
 
-struct FramebufferResizeEvent: public WEvent
+struct FramebufferResizeEvent
 {
-    EVENT_DECLARATION(FramebufferResizeEvent);
+    EVENT_DECLARATIONS(FramebufferResizeEvent);
 
     FramebufferResizeEvent() = default;
     FramebufferResizeEvent(int width, int height):
@@ -79,9 +85,10 @@ struct FramebufferResizeEvent: public WEvent
     }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const FramebufferResizeEvent& rhs)
     {
-        stream << "new size: " << width << "x" << height;
+        stream << "new size: " << rhs.width << "x" << rhs.height;
+        return stream;
     }
 #endif
 
@@ -89,22 +96,24 @@ struct FramebufferResizeEvent: public WEvent
     int height;
 };
 
-struct BeginFrameEvent: public WEvent
+struct BeginFrameEvent
 {
-    EVENT_DECLARATION(BeginFrameEvent);
+    EVENT_DECLARATIONS(BeginFrameEvent);
+
     BeginFrameEvent() = default;
     
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const BeginFrameEvent&)
     {
         stream << "(void)";
+        return stream;
     }
 #endif
 };
 
-struct KeyboardEvent: public WEvent
+struct KeyboardEvent
 {
-	EVENT_DECLARATION(KeyboardEvent);
+    EVENT_DECLARATIONS(KeyboardEvent);
 
     KeyboardEvent() = default;
 	KeyboardEvent(keymap::WKEY key, uint8_t mods, bool pressed, bool repeat):
@@ -121,18 +130,19 @@ struct KeyboardEvent: public WEvent
     inline bool mod_alt() const     { return mods & keymap::WKEYMOD::ALT; }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const KeyboardEvent& rhs)
     {
-        stream << (pressed ? "PRE " : "REL ");
-    	if(is_modifier_key(key))
+        stream << (rhs.pressed ? "PRE " : "REL ");
+    	if(is_modifier_key(rhs.key))
     	{
-        	stream << keymap::KEY_NAMES.at(key) << (repeat ? " (r)" : "");
+        	stream << keymap::KEY_NAMES.at(rhs.key) << (rhs.repeat ? " (r)" : "");
         }
         else
         {
-        	stream << keymap::modifier_string(mods) << keymap::KEY_NAMES.at(key)
-                   << (repeat ? " (r)" : "");
+        	stream << keymap::modifier_string(rhs.mods) << keymap::KEY_NAMES.at(rhs.key)
+                   << (rhs.repeat ? " (r)" : "");
         }
+        return stream;
     }
 #endif
 
@@ -142,9 +152,9 @@ struct KeyboardEvent: public WEvent
     bool repeat;
 };
 
-struct KeyTypedEvent: public WEvent
+struct KeyTypedEvent
 {
-    EVENT_DECLARATION(KeyTypedEvent);
+    EVENT_DECLARATIONS(KeyTypedEvent);
 
     KeyTypedEvent() = default;
     explicit KeyTypedEvent(unsigned int codepoint):
@@ -154,18 +164,19 @@ struct KeyTypedEvent: public WEvent
     }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const KeyTypedEvent& rhs)
     {
-        stream << codepoint;
+        stream << rhs.codepoint;
+        return stream;
     }
 #endif
 
     unsigned int codepoint;
 };
 
-struct MouseButtonEvent: public WEvent
+struct MouseButtonEvent
 {
-	EVENT_DECLARATION(MouseButtonEvent);
+    EVENT_DECLARATIONS(MouseButtonEvent);
 
     MouseButtonEvent() = default;
 	MouseButtonEvent(keymap::WMOUSE button, uint8_t mods, bool pressed, float x, float y):
@@ -179,10 +190,11 @@ struct MouseButtonEvent: public WEvent
     inline bool mod_alt() const     { return mods & keymap::WKEYMOD::ALT; }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const MouseButtonEvent& rhs)
     {
-        stream << (pressed ? "PRE " : "REL ");
-        stream << keymap::modifier_string(mods) << keymap::MB_NAMES.at(button) << " @ (" << x << "," << y << ")";
+        stream << (rhs.pressed ? "PRE " : "REL ");
+        stream << keymap::modifier_string(rhs.mods) << keymap::MB_NAMES.at(rhs.button) << " @ (" << rhs.x << "," << rhs.y << ")";
+        return stream;
     }
 #endif
 
@@ -193,9 +205,9 @@ struct MouseButtonEvent: public WEvent
     float y;
 };
 
-struct MouseMovedEvent: public WEvent
+struct MouseMovedEvent
 {
-	EVENT_DECLARATION(MouseMovedEvent);
+    EVENT_DECLARATIONS(MouseMovedEvent);
 
     MouseMovedEvent() = default;
 	MouseMovedEvent(float x, float y):
@@ -205,9 +217,10 @@ struct MouseMovedEvent: public WEvent
 	}
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const MouseMovedEvent& rhs)
     {
-        stream << "cursor " << " @ (" << x << "," << y << ")";
+        stream << "cursor " << " @ (" << rhs.x << "," << rhs.y << ")";
+        return stream;
     }
 #endif
 
@@ -215,10 +228,10 @@ struct MouseMovedEvent: public WEvent
     float y;
 };
 
-struct MouseScrollEvent: public WEvent
+struct MouseScrollEvent
 {
-	EVENT_DECLARATION(MouseScrollEvent);
-	
+    EVENT_DECLARATIONS(MouseScrollEvent);
+
     MouseScrollEvent() = default;
 	MouseScrollEvent(float x_offset, float y_offset):
 	x_offset(x_offset), y_offset(y_offset)
@@ -227,9 +240,10 @@ struct MouseScrollEvent: public WEvent
 	}
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const MouseScrollEvent& rhs)
     {
-        stream << "(" << x_offset << "," << y_offset << ")";
+        stream << "(" << rhs.x_offset << "," << rhs.y_offset << ")";
+        return stream;
     }
 #endif
 
@@ -237,9 +251,9 @@ struct MouseScrollEvent: public WEvent
     float y_offset;
 };
 
-struct RaySceneQueryEvent: public WEvent
+struct RaySceneQueryEvent
 {
-    EVENT_DECLARATION(RaySceneQueryEvent);
+    EVENT_DECLARATIONS(RaySceneQueryEvent);
 
     RaySceneQueryEvent() = default;
     explicit RaySceneQueryEvent(const glm::vec2& screen_coords):
@@ -249,18 +263,19 @@ struct RaySceneQueryEvent: public WEvent
     }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const RaySceneQueryEvent& rhs)
     {
-        stream << "(" << coords.x << "," << coords.y << ")";
+        stream << "(" << rhs.coords.x << "," << rhs.coords.y << ")";
+        return stream;
     }
 #endif
 
     glm::vec2 coords;
 };
 
-struct ActionTriggeredEvent: public WEvent
+struct ActionTriggeredEvent
 {
-    EVENT_DECLARATION(ActionTriggeredEvent);
+    EVENT_DECLARATIONS(ActionTriggeredEvent);
 
     ActionTriggeredEvent() = default;
     explicit ActionTriggeredEvent(hash_t action_name):
@@ -270,9 +285,10 @@ struct ActionTriggeredEvent: public WEvent
     }
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const ActionTriggeredEvent& rhs)
     {
-        stream << action;
+        stream << rhs.action;
+        return stream;
     }
 #endif
 

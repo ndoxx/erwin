@@ -1,4 +1,4 @@
-#include "application.h"
+#include "core/application.h"
 #include "core/clock.hpp"
 #include "core/intern_string.h"
 #include "core/config.h"
@@ -52,7 +52,7 @@ static struct ApplicationStorage
 template <typename EventT>
 static inline void configure_event_tracking()
 {
-    std::string config_key_str = "erwin.events.track." + EventT::NAME;
+    std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
     if(cfg::get<bool>(H_(config_key_str.c_str()), false))
     {
         WLOGGER(track_event<EventT>());
@@ -109,9 +109,6 @@ bool Application::init()
         // Initialize config
         cfg::load(filesystem::get_config_dir() / "erwin.xml");
 
-        // Initialize event bus
-        EventBus::init();
-
         // Log events
         #define DO_ACTION( EVENT_NAME ) configure_event_tracking< EVENT_NAME >();
         FOR_ALL_EVENTS
@@ -157,20 +154,6 @@ bool Application::init()
             DLOGF("application") << "Cannot allocate renderer memory." << std::endl;
             return false;
         }
-    }
-
-    // Initialize system event pools
-    {
-        W_PROFILE_SCOPE("System event pools init")
-        #define DO_ACTION( EVENT_NAME ) \
-        { \
-            std::string config_key_str = "erwin.memory.event_pool." + EVENT_NAME::NAME; \
-            DLOG("memory",1) << "Configuring event pool for " << WCC('n') << EVENT_NAME::NAME << std::endl; \
-            EVENTBUS.init_event_pool< EVENT_NAME >(s_storage.system_area, cfg::get<uint32_t>(H_(config_key_str.c_str()), 8)); \
-        }
-
-        FOR_ALL_EVENTS
-        #undef DO_ACTION
     }
 
     // Configure client
@@ -250,7 +233,7 @@ bool Application::init()
     }
 
     // React to window close events (and shutdown application)
-    EVENTBUS.subscribe(this, &Application::on_window_close_event);
+    EventBus::subscribe(this, &Application::on_window_close_event);
 
     {
         W_PROFILE_SCOPE("Application load")
@@ -299,13 +282,6 @@ void Application::shutdown()
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::shutdown();
         WLOGGER(kill());
-
-        // Shutdown all event pools
-        #define DO_ACTION( EVENT_NAME ) EVENTBUS.destroy_event_pool< EVENT_NAME >();
-        FOR_ALL_EVENTS
-        #undef DO_ACTION
-
-        EventBus::shutdown();
     } 
 }
 
@@ -360,10 +336,10 @@ void Application::run()
         // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
-        EVENTBUS.publish(BeginFrameEvent());
+        EventBus::enqueue(BeginFrameEvent());
 
         // Dispatch queued events
-        EVENTBUS.dispatch();
+        EventBus::dispatch();
 
         // --- UPDATE PHASE ---
 		// For each layer, update
