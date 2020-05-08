@@ -152,7 +152,7 @@ public:
 	{
 		// Terminate on ESCAPE
 		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
-			EventBus::publish(WindowCloseEvent());
+			EventBus::enqueue(WindowCloseEvent());
 
 		return false;
 	}

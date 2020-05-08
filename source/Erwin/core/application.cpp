@@ -336,7 +336,7 @@ void Application::run()
         // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
-        EventBus::publish(BeginFrameEvent());
+        EventBus::enqueue(BeginFrameEvent());
 
         // Dispatch queued events
         EventBus::dispatch();

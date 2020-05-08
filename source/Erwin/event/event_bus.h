@@ -50,6 +50,7 @@ public:
 
     // TODO: Event pooling if deemed necessary
     inline void submit(const EventT& event) { queue_.push(event); }
+    inline void submit(EventT&& event)      { queue_.push(event); }
 
     inline void fire(const EventT& event)
     {
@@ -135,10 +136,28 @@ public:
         q_ptr->submit(event);
     }
 
+    template <typename EventT> static void enqueue(EventT&& event)
+    {
+        constexpr EventID k_id = ctti::type_id<EventT>().hash();
+        auto& queue = event_queues_[k_id];
+        if(queue == nullptr)
+            return;
+
+        auto* q_base_ptr = queue.get();
+        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
+        q_ptr->submit(std::forward<EventT>(event));
+    }
+
     static inline void dispatch()
     {
-        for(auto&& [id, queue] : event_queues_)
-            queue->process();
+        // An event once handled can cause another event to be enqueued, so
+        // we iterate till all events have been processed
+        // TODO:
+        //      [ ] Timeout
+        //      [ ] Detect deadlocks?
+        while(!empty())
+            for(auto&& [id, queue] : event_queues_)
+                queue->process();
     }
 
     static inline bool empty()

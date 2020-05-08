@@ -188,7 +188,7 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 	// Window close event
 	glfwSetWindowCloseCallback(data_->window, [](GLFWwindow*)
 	{
-		EventBus::publish(WindowCloseEvent());
+		EventBus::enqueue(WindowCloseEvent());
 	});
 
 	// If we render to a GUI window for example, we rather react to the GUI window resize events.
@@ -201,13 +201,13 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 			auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
 			data->width = width;
 			data->height = height;
-			EventBus::publish(WindowResizeEvent(width, height));
+			EventBus::enqueue(WindowResizeEvent(width, height));
 		});
 
 		// On window resize, framebuffer needs resizing and glViewport must be called with the new size
 		glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow*, int width, int height)
 		{
-			EventBus::publish(FramebufferResizeEvent(width, height));
+			EventBus::enqueue(FramebufferResizeEvent(width, height));
 		});
 	}
 
@@ -219,17 +219,17 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 		{
 			case GLFW_PRESS:
 			{
-				EventBus::publish(KeyboardEvent(wkey, uint8_t(mods), true, false));
+				EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), true, false));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EventBus::publish(KeyboardEvent(wkey, uint8_t(mods), false, false));
+				EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), false, false));
 				break;
 			}
 			case GLFW_REPEAT:
 			{
-				EventBus::publish(KeyboardEvent(wkey, uint8_t(mods), true, true));
+				EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), true, true));
 				break;
 			}
 		}
@@ -238,7 +238,7 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 	// Key typed event
 	glfwSetCharCallback(data_->window, [](GLFWwindow*, unsigned int codepoint)
 	{
-		EventBus::publish(KeyTypedEvent(codepoint));
+		EventBus::enqueue(KeyTypedEvent(codepoint));
 	});
 
 	// Mouse event
@@ -253,12 +253,12 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 		{
 			case GLFW_PRESS:
 			{
-				EventBus::publish(MouseButtonEvent(wbutton, uint8_t(mods), true, float(x), float(y)));
+				EventBus::enqueue(MouseButtonEvent(wbutton, uint8_t(mods), true, float(x), float(y)));
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				EventBus::publish(MouseButtonEvent(wbutton, uint8_t(mods), false, float(x), float(y)));
+				EventBus::enqueue(MouseButtonEvent(wbutton, uint8_t(mods), false, float(x), float(y)));
 				break;
 			}
 		}
@@ -267,13 +267,13 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
 	// Cursor moving event
 	glfwSetCursorPosCallback(data_->window, [](GLFWwindow*, double x, double y)
 	{
-		EventBus::publish(MouseMovedEvent(float(x), float(y)));
+		EventBus::enqueue(MouseMovedEvent(float(x), float(y)));
 	});
 
 	// Mouse scroll event
 	glfwSetScrollCallback(data_->window, [](GLFWwindow*, double x_offset, double y_offset)
 	{
-		EventBus::publish(MouseScrollEvent(float(x_offset), float(y_offset)));
+		EventBus::enqueue(MouseScrollEvent(float(x_offset), float(y_offset)));
 	});
 }
 

@@ -81,7 +81,7 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     // Terminate on Ctrl+ESCAPE
     if(Input::match_action(ACTION_EDITOR_QUIT, e))
     {
-        EventBus::publish(WindowCloseEvent());
+        EventBus::enqueue(WindowCloseEvent());
         return true;
     }
 
@@ -190,7 +190,7 @@ void ErwinEditor::on_imgui_render()
 
     if(exit_required_)
     {
-        EventBus::publish(WindowCloseEvent());
+        EventBus::enqueue(WindowCloseEvent());
     }
 }
 

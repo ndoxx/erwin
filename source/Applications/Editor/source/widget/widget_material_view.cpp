@@ -79,8 +79,8 @@ void MaterialViewWidget::on_resize(uint32_t width, uint32_t height)
     render_surface_.w = rw;
     render_surface_.h = rh;
 
-	EventBus::publish(WindowResizeEvent(int(width), int(height)));
-	EventBus::publish(FramebufferResizeEvent(int(rw), int(rh)));
+	EventBus::enqueue(WindowResizeEvent(int(width), int(height)));
+	EventBus::enqueue(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
 void MaterialViewWidget::on_move(int32_t x, int32_t y)
@@ -92,7 +92,7 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
     render_surface_.x1 = render_surface_.x0 + rw;
     render_surface_.y1 = render_surface_.y0 + rh;
 
-	EventBus::publish(WindowMovedEvent(x, y));
+	EventBus::enqueue(WindowMovedEvent(x, y));
 }
 
 void MaterialViewWidget::on_layer_render()
