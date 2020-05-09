@@ -3,7 +3,7 @@
 	<logger>
 		<Channel name="application" verbosity="3"/>
 		<Channel name="editor"      verbosity="3"/>
-		<Channel name="event"       verbosity="1"/>
+		<Channel name="event"       verbosity="3"/>
 		<Channel name="asset"       verbosity="3"/>
 		<Channel name="memory"      verbosity="1"/>
 		<Channel name="thread"      verbosity="1"/>
@@ -43,25 +43,13 @@
 
 	    <!-- Generic system memory -->
     	<size name="system_area" value="1_MB"/>
-	    <!-- Event pool max nodes -->
-	    <event_pool>
-			<uint name="WindowCloseEvent"       value="8"/>
-			<uint name="WindowResizeEvent"      value="8"/>
-			<uint name="WindowMovedEvent"		value="8"/>
-			<uint name="FramebufferResizeEvent" value="8"/>
-			<uint name="KeyboardEvent"          value="16"/>
-			<uint name="KeyTypedEvent"          value="16"/>
-			<uint name="MouseButtonEvent"       value="16"/>
-			<uint name="MouseMovedEvent"        value="16"/>
-			<uint name="MouseScrollEvent"       value="16"/>
-	    </event_pool>
     </memory>
 
     <events>
 		<track>
 			<bool name="WindowCloseEvent"       value="true"/>
 			<bool name="WindowResizeEvent"      value="true"/>
-			<uint name="WindowMovedEvent"		value="true"/>
+			<bool name="WindowMovedEvent"		value="true"/>
 			<bool name="FramebufferResizeEvent" value="true"/>
 			<bool name="KeyboardEvent"          value="false"/>
 			<bool name="KeyTypedEvent"          value="false"/>

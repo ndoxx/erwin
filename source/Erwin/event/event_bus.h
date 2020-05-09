@@ -22,6 +22,8 @@
 #include "ctti/type_id.hpp"
 
 #include "core/core.h"
+#include "core/config.h"
+#include "debug/logger.h"
 #include "event/delegate.h"
 
 namespace erwin
@@ -99,10 +101,14 @@ public:
     // Subscribe a free function to a particular event type
     template <typename EventT> static void subscribe(bool (*freeFunction)(const EventT&), size_t priority = 0u)
     {
-        constexpr EventID k_id = ctti::type_id<EventT>().hash();
-        auto& queue = event_queues_[k_id];
+        auto& queue = event_queues_[k_id<EventT>];
         if(queue == nullptr)
+        {
             queue = std::make_unique<EventQueue<EventT>>();
+#ifdef W_DEBUG
+            configure_event_tracking<EventT>();
+#endif
+        }
 
         auto* q_base_ptr = queue.get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
@@ -113,10 +119,14 @@ public:
     template <typename ClassT, typename EventT>
     static void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), size_t priority = 0u)
     {
-        constexpr EventID k_id = ctti::type_id<EventT>().hash();
-        auto& queue = event_queues_[k_id];
+        auto& queue = event_queues_[k_id<EventT>];
         if(queue == nullptr)
+        {
             queue = std::make_unique<EventQueue<EventT>>();
+#ifdef W_DEBUG
+            configure_event_tracking<EventT>();
+#endif
+        }
 
         auto* q_base_ptr = queue.get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
@@ -126,11 +136,11 @@ public:
     // Fire an event and have it handled immediately
     template <typename EventT> static void fire(const EventT& event)
     {
-        constexpr EventID k_id = ctti::type_id<EventT>().hash();
-        auto& queue = event_queues_[k_id];
+        auto& queue = event_queues_[k_id<EventT>];
         if(queue == nullptr)
             return;
 
+        log_event(event);
         auto* q_base_ptr = queue.get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
         q_ptr->fire(event);
@@ -139,11 +149,11 @@ public:
     // Enqueue an event for deferred handling (during the dispatch() call)
     template <typename EventT> static void enqueue(const EventT& event)
     {
-        constexpr EventID k_id = ctti::type_id<EventT>().hash();
-        auto& queue = event_queues_[k_id];
+        auto& queue = event_queues_[k_id<EventT>];
         if(queue == nullptr)
             return;
 
+        log_event(event);
         auto* q_base_ptr = queue.get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
         q_ptr->submit(event);
@@ -151,11 +161,11 @@ public:
 
     template <typename EventT> static void enqueue(EventT&& event)
     {
-        constexpr EventID k_id = ctti::type_id<EventT>().hash();
-        auto& queue = event_queues_[k_id];
+        auto& queue = event_queues_[k_id<EventT>];
         if(queue == nullptr)
             return;
 
+        log_event(event);
         auto* q_base_ptr = queue.get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
         q_ptr->submit(std::forward<EventT>(event));
@@ -187,6 +197,34 @@ public:
                                [](size_t accumulator, auto&& entry) { return accumulator + entry.second->size(); });
     }
 
+#ifdef W_DEBUG
+    // Enable event tracking for a particular type of events
+    template <typename EventT>
+    static inline void track_event(bool value = true)
+    {
+        event_filter_[k_id<EventT>] = value;
+    }
+
+    // Lookup config and enable/disable event tracking for this particular event type
+    template <typename EventT>
+    static inline void configure_event_tracking()
+    {
+        std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
+        track_event<EventT>(cfg::get<bool>(H_(config_key_str.c_str()), false));
+    }
+
+    // Log an event
+    template <typename EventT>
+    static inline void log_event(const EventT& event)
+    {
+        if(event_filter_[k_id<EventT>])
+        {
+            dbg::get_log("event"_h, dbg::MsgType::EVENT, 0)
+                << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
+        }
+    }
+#endif
+
 #ifdef W_TEST
     // Clear all subscribers. Only enabled for unit testing.
     static inline void reset() { event_queues_.clear(); }
@@ -195,7 +233,11 @@ public:
 private:
     using EventID = uint64_t;
     using EventQueues = std::map<EventID, std::unique_ptr<AbstractEventQueue>>;
+    template <typename EventT> static constexpr EventID k_id = ctti::type_id<EventT>().hash();
     static EventQueues event_queues_;
+#ifdef W_DEBUG
+    static std::map<EventID, bool> event_filter_; // Controls which tracked events are sent to the logger
+#endif
 };
 
 } // namespace erwin

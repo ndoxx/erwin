@@ -23,19 +23,6 @@
 namespace erwin
 {
 
-// This macro allows us to perform the same action for all event classes.
-// When creating a new event type, simply add a line here, that's all.
-#define FOR_ALL_EVENTS                      \
-        DO_ACTION( WindowCloseEvent )       \
-        DO_ACTION( WindowResizeEvent )      \
-        DO_ACTION( FramebufferResizeEvent ) \
-        DO_ACTION( KeyboardEvent )          \
-        DO_ACTION( KeyTypedEvent )          \
-        DO_ACTION( MouseButtonEvent )       \
-        DO_ACTION( MouseMovedEvent )        \
-        DO_ACTION( MouseScrollEvent )
-        // DO_ACTION( WindowMovedEvent )
-
 Application* Application::pinstance_ = nullptr;
 
 static ImGuiLayer* IMGUI_LAYER = nullptr;
@@ -47,17 +34,6 @@ static struct ApplicationStorage
     memory::HeapArea system_area;
     memory::HeapArea render_area;
 } s_storage;
-
-// Helper function to automatically configure an event tracking policy
-template <typename EventT>
-static inline void configure_event_tracking()
-{
-    std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
-    if(cfg::get<bool>(H_(config_key_str.c_str()), false))
-    {
-        WLOGGER(track_event<EventT>());
-    }
-}
 
 Application::Application():
 vsync_enabled_(false),
@@ -108,11 +84,6 @@ bool Application::init()
 
         // Initialize config
         cfg::load(filesystem::get_config_dir() / "erwin.xml");
-
-        // Log events
-        #define DO_ACTION( EVENT_NAME ) configure_event_tracking< EVENT_NAME >();
-        FOR_ALL_EVENTS
-        #undef DO_ACTION
 
         WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
         WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));

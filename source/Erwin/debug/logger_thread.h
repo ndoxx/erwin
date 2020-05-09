@@ -4,11 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 
-#include "ctti/type_id.hpp"
-
-#include "core/time_base.h"
 #include "debug/logger_common.h"
-#include "event/event_bus.h"
 
 namespace erwin
 {
@@ -28,20 +24,6 @@ public:
 	void attach(const std::string& sink_name, std::unique_ptr<Sink> sink, const std::vector<hash_t>& channels);
     // Attach a sink to all channels
 	void attach_all(const std::string& sink_name, std::unique_ptr<Sink> sink);
-	// Forward events as text as they arrive
-	template <typename EventT>
-	void track_event()
-	{
-		EventBus::subscribe(this, &LoggerThread::log_event<EventT>);
-		event_filter_[ctti::type_id<EventT>()] = true;
-	}
-	// Enable/Disable tracking on a given registered event type
-	template <typename EventT>
-	void set_event_tracking_enabled(bool value)
-	{
-		event_filter_[ctti::type_id<EventT>()] = value;
-	}
-
     // Launch logger thread
     void spawn();
     // Wait for logger thread to be in idle state
@@ -100,24 +82,8 @@ protected:
     void thread_run();
     // Called before the thread joins
     void thread_cleanup();
-
     // Send a log statement to each sink (depending on their channel subscriptions)
     void dispatch(const LogStatement& stmt);
-
-    // Helper func to queue event data
-	template <typename EventT>
-	bool log_event([[maybe_unused]] const EventT& event)
-	{
-#ifdef W_DEBUG
-		if(event_filter_[ctti::type_id<EventT>()])
-		{
-			std::stringstream ss;
-			ss << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
-			enqueue(LogStatement{"event"_h, dbg::MsgType::EVENT, TimeBase::timestamp(), 0, 0, "", ss.str()});
-		}
-#endif
-        return false;
-	}
 
 private:
     std::vector<LogStatement> log_statements_; // Stores log statements, access is synced
@@ -134,7 +100,6 @@ private:
 	std::map<hash_t, std::unique_ptr<Sink>> sinks_;		     // Registered sinks by hash name
 	std::map<hash_t, LogChannel> channels_;				     // Registered channels by hash name
 	std::multimap<hash_t, size_t> sink_subscriptions_;	     // Sinks can subscribe to multiple channels
-    std::unordered_map<ctti::unnamed_type_id_t, bool> event_filter_; // Controls which tracked events are propagated to the sinks
 };
 
 #if LOGGING_ENABLED==1

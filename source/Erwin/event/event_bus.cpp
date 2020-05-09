@@ -4,5 +4,8 @@ namespace erwin
 {
 
 EventBus::EventQueues EventBus::event_queues_;
+#ifdef W_DEBUG
+std::map<EventBus::EventID, bool> EventBus::event_filter_;
+#endif
 
 } // namespace erwin
