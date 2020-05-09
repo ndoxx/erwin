@@ -19,12 +19,11 @@
 #include <numeric>
 #include <queue>
 
-#include "ctti/type_id.hpp"
-
 #include "core/core.h"
 #include "core/config.h"
 #include "debug/logger.h"
 #include "event/delegate.h"
+#include "event/event.h"
 
 namespace erwin
 {
@@ -98,12 +97,6 @@ public:
         delegates_.sort(std::greater_equal<PriorityDelegate>());
     }
 
-    inline void subscribe(std::unique_ptr<AbstractDelegate<EventT>>&& delegate, uint32_t priority)
-    {
-        delegates_.push_back({priority, std::forward<>(delegate)});
-        delegates_.sort(std::greater_equal<PriorityDelegate>());
-    }
-
     inline void submit(const EventT& event) { queue_.push(event); }
     inline void submit(EventT&& event) { queue_.push(event); }
 
@@ -159,19 +152,10 @@ public:
         q_ptr->subscribe(instance, memberFunction, priority);
     }
 
-    // Subscribe a delegate directly
-    template <typename EventT>
-    inline void subscribe(std::unique_ptr<AbstractDelegate<EventT>>&& delegate, uint32_t priority = 0u)
-    {
-        auto* q_base_ptr = get_or_create<EventT>().get();
-        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
-        q_ptr->subscribe(std::forward<>(delegate), priority);
-    }
-
     // Fire an event and have it handled immediately
     template <typename EventT> static void fire(const EventT& event)
     {
-        auto& queue = event_queues_[k_id<EventT>];
+        auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
             return;
 
@@ -184,7 +168,7 @@ public:
     // Enqueue an event for deferred handling (during the dispatch() call)
     template <typename EventT> static void enqueue(const EventT& event)
     {
-        auto& queue = event_queues_[k_id<EventT>];
+        auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
             return;
 
@@ -196,7 +180,7 @@ public:
 
     template <typename EventT> static void enqueue(EventT&& event)
     {
-        auto& queue = event_queues_[k_id<EventT>];
+        auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
             return;
 
@@ -237,7 +221,7 @@ public:
     template <typename EventT>
     static inline void track_event(bool value = true)
     {
-        event_filter_[k_id<EventT>] = value;
+        event_filter_[EventT::ID] = value;
     }
 
     // Lookup config and enable/disable event tracking for this particular event type
@@ -252,10 +236,10 @@ public:
     template <typename EventT>
     static inline void log_event(const EventT& event)
     {
-        if(event_filter_[k_id<EventT>])
+        if(event_filter_[EventT::ID])
         {
             dbg::get_log("event"_h, dbg::MsgType::EVENT, 0)
-                << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.get_name() << "]\033[0m " << event << std::endl;
+                << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.NAME << "]\033[0m " << event << std::endl;
         }
     }
 #endif
@@ -270,7 +254,7 @@ private:
     template <typename EventT>
     static auto& get_or_create()
     {
-        auto& queue = event_queues_[k_id<EventT>];
+        auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
         {
             queue = std::make_unique<EventQueue<EventT>>();
@@ -282,9 +266,7 @@ private:
     }
 
 private:
-    using EventID = uint64_t;
     using EventQueues = std::map<EventID, std::unique_ptr<AbstractEventQueue>>;
-    template <typename EventT> static constexpr EventID k_id = ctti::type_id<EventT>().hash();
     static EventQueues event_queues_;
 #ifdef W_DEBUG
     static std::map<EventID, bool> event_filter_; // Controls which tracked events are sent to the logger

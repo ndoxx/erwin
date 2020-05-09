@@ -1,29 +1,25 @@
 #include "layer/layer_scene_editor.h"
-#include "widget/widget_scene_view.h"
-#include "widget/widget_scene_hierarchy.h"
-#include "widget/widget_inspector.h"
-#include "widget/widget_rt_peek.h"
-#include "widget/widget_hex_dump.h"
 #include "input/input.h"
 #include "level/scene.h"
+#include "widget/widget_hex_dump.h"
+#include "widget/widget_inspector.h"
+#include "widget/widget_rt_peek.h"
+#include "widget/widget_scene_hierarchy.h"
+#include "widget/widget_scene_view.h"
 
 using namespace erwin;
 
 namespace editor
 {
 
-SceneEditorLayer::SceneEditorLayer():
-GuiLayer("SceneEditorLayer")
-{
-
-}
+SceneEditorLayer::SceneEditorLayer() : GuiLayer("SceneEditorLayer") {}
 
 void SceneEditorLayer::on_attach()
 {
     // Reflect editor components
     REFLECT_COMPONENT(ComponentDescription);
 
-	// Build UI
+    // Build UI
 #ifdef W_DEBUG
     HexDumpWidget* hex_widget;
     add_widget(hex_widget = new HexDumpWidget());
@@ -38,24 +34,32 @@ void SceneEditorLayer::on_attach()
     // Register main render targets in peek widget
     RTPeekWidget* peek_widget;
     add_widget(peek_widget = new RTPeekWidget());
-	peek_widget->register_framebuffer("GBuffer");
-	peek_widget->register_framebuffer("SpriteBuffer");
-	peek_widget->register_framebuffer("BloomCombine");
-	peek_widget->register_framebuffer("LBuffer");
+    peek_widget->register_framebuffer("GBuffer");
+    peek_widget->register_framebuffer("SpriteBuffer");
+    peek_widget->register_framebuffer("BloomCombine");
+    peek_widget->register_framebuffer("LBuffer");
+}
+
+void SceneEditorLayer::on_commit()
+{
+    EventBus::subscribe(this, &SceneEditorLayer::on_mouse_button_event, get_subscriber_priority());
+    EventBus::subscribe(this, &SceneEditorLayer::on_mouse_scroll_event, get_subscriber_priority());
+    EventBus::subscribe(this, &SceneEditorLayer::on_keyboard_event, get_subscriber_priority());
+    EventBus::subscribe(this, &SceneEditorLayer::on_key_typed_event, get_subscriber_priority());
 }
 
 void SceneEditorLayer::on_detach()
 {
-	for(Widget* widget: widgets_)
-		delete widget; 
+    for(Widget* widget : widgets_)
+        delete widget;
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
 {
     bounding_box_system_.update(clock);
-    
-	for(Widget* widget: widgets_)
-		widget->on_update(clock);
+
+    for(Widget* widget : widgets_)
+        widget->on_update(clock);
 }
 
 void SceneEditorLayer::on_render()
@@ -63,18 +67,20 @@ void SceneEditorLayer::on_render()
     bounding_box_system_.render();
     gizmo_system_.render();
 
-	for(Widget* widget: widgets_)
-		widget->on_layer_render();
+    for(Widget* widget : widgets_)
+        widget->on_layer_render();
 }
 
 void SceneEditorLayer::on_imgui_render()
 {
-	for(Widget* widget: widgets_)
-		widget->imgui_render();
+    for(Widget* widget : widgets_)
+        widget->imgui_render();
 }
 
-bool SceneEditorLayer::on_event(const MouseButtonEvent& event)
+bool SceneEditorLayer::on_mouse_button_event(const MouseButtonEvent& event)
 {
+    if(!enabled_)
+        return false;
     // If scene view is not hovered, let ImGui consume input events
     if(!scene_view_widget_->is_hovered())
     {
@@ -86,19 +92,18 @@ bool SceneEditorLayer::on_event(const MouseButtonEvent& event)
     return scene_view_widget_->on_mouse_event(event);
 }
 
-bool SceneEditorLayer::on_event(const WindowResizeEvent&)
+bool SceneEditorLayer::on_mouse_scroll_event(const MouseScrollEvent&)
 {
-	return false;
-}
-
-bool SceneEditorLayer::on_event(const MouseScrollEvent&)
-{
+    if(!enabled_)
+        return false;
     ImGuiIO& io = ImGui::GetIO();
     return io.WantCaptureMouse;
 }
 
-bool SceneEditorLayer::on_event(const KeyboardEvent& event)
+bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 {
+    if(!enabled_)
+        return false;
     // If scene view is not hovered, let ImGui consume input events
     if(!scene_view_widget_->is_hovered())
     {
@@ -116,8 +121,10 @@ bool SceneEditorLayer::on_event(const KeyboardEvent& event)
     return false;
 }
 
-bool SceneEditorLayer::on_event(const KeyTypedEvent&)
+bool SceneEditorLayer::on_key_typed_event(const KeyTypedEvent&)
 {
+    if(!enabled_)
+        return false;
     // Don't propagate event if ImGui wants to handle it
     ImGuiIO& io = ImGui::GetIO();
     return io.WantTextInput;
