@@ -80,6 +80,15 @@ void LayerStack::pop_overlay(size_t index)
 	}
 }
 
+void LayerStack::commit()
+{
+	for(auto it=layers_.end(); it!=layers_.begin();)
+	{
+		Layer* layer = *--it;
+		layer->on_commit();
+	}
+}
+
 void LayerStack::update_layer_ids()
 {
 	uint32_t current_index = 0;
@@ -104,23 +113,6 @@ std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs)
 	stream << "]";
 
 	return stream;
-}
-
-template <>
-bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event)
-{
-	// bool handled = false;
-	for(auto it=layers_.end(); it!=layers_.begin();)
-	{
-		Layer* layer = *--it;
-		if(layer->on_event(event))
-		{
-			// handled = true;
-			break;
-		}
-	}
-
-    return false;//handled;
 }
 
 } // namespace erwin

@@ -191,24 +191,13 @@ bool Application::init()
         IMGUI_LAYER->on_attach();
     }
 
-    {
-        W_PROFILE_SCOPE("Layer event tracking setup")
-        // Propagate input events to layers
-        layer_stack_.track_event<KeyboardEvent>();
-        layer_stack_.track_event<KeyTypedEvent>();
-        layer_stack_.track_event<MouseButtonEvent>();
-        layer_stack_.track_event<MouseScrollEvent>();
-        layer_stack_.track_event<MouseMovedEvent>();
-        layer_stack_.track_event<WindowResizeEvent>();
-        layer_stack_.track_event<WindowMovedEvent>();
-    }
-
     // React to window close events (and shutdown application)
     EventBus::subscribe(this, &Application::on_window_close_event);
 
     {
         W_PROFILE_SCOPE("Application load")
         on_load();
+        layer_stack_.commit();
     }
 
     // Show memory content

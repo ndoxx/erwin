@@ -5,11 +5,6 @@
 namespace erwin
 {
 
-BoundingBoxSystem::BoundingBoxSystem()
-{
-    EventBus::subscribe(this, &BoundingBoxSystem::on_ray_scene_query_event);
-}
-
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
     glm::mat4 VP_inv = glm::inverse(Scene::camera_controller.get_camera().get_view_projection_matrix());

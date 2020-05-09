@@ -32,12 +32,6 @@ public:
 
 	~FractalLayer() = default;
 
-	virtual bool on_event(const MouseButtonEvent& event) override
-	{
-		DLOGN("event") << get_name() << " -> Handled event: " << event << std::endl;
-		return true;
-	}
-
 	virtual void on_imgui_render() override
 	{
 		if(show_menu_)
@@ -48,6 +42,7 @@ public:
 	        ImGui::SliderFloat("Attenuation", &data_.attenuation, 0.f, 5.f);
 	        ImGui::SliderFloat3("Palette", (float*)&data_.palette, 0.0f, 1.0f);
 	        ImGui::SliderFloat("Animation speed", &speed_, 0.f, 1.f);
+	        ImGui::End();
 	    }
 	}
 
@@ -95,23 +90,30 @@ protected:
 		Renderer::submit("Presentation"_h, dc);
 	}
 
-	virtual bool on_event(const WindowResizeEvent& event) override
+	bool on_window_resize_event(const WindowResizeEvent& event)
 	{
 		camera_ctl_.on_window_resize_event(event);
 		return false;
 	}
 
-	virtual bool on_event(const MouseScrollEvent& event) override
+	bool on_mouse_scroll_event(const MouseScrollEvent& event)
 	{
 		camera_ctl_.on_mouse_scroll_event(event);
 		return false;
 	}
 
-	virtual bool on_event(const KeyboardEvent& event) override
+	bool on_keyboard_event(const KeyboardEvent& event)
 	{
 		if(event.pressed && event.key == keymap::WKEY::TAB)
 			show_menu_ = !show_menu_;
 		return false;
+	}
+
+	virtual void on_commit() override
+	{
+		add_listener(this, &FractalLayer::on_window_resize_event);
+		add_listener(this, &FractalLayer::on_mouse_scroll_event);
+		add_listener(this, &FractalLayer::on_keyboard_event);
 	}
 
 private:
