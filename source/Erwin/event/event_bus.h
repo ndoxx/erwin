@@ -29,6 +29,44 @@
 namespace erwin
 {
 
+struct SubscriberPriorityKey
+{
+    uint16_t flags;
+    uint8_t layer_id;
+    uint8_t system_id;
+
+    static constexpr uint32_t k_flags_shift  = 32u - 16u;
+    static constexpr uint32_t k_layer_shift  = k_flags_shift - 8u;
+    static constexpr uint32_t k_system_shift = k_layer_shift - 8u;
+    static constexpr uint32_t k_flags_mask   = uint32_t(0x0000ffff) << k_flags_shift;
+    static constexpr uint32_t k_layer_mask   = uint32_t(0x000000ff) << k_layer_shift;
+    static constexpr uint32_t k_system_mask  = uint32_t(0x000000ff) << k_system_shift;
+
+    SubscriberPriorityKey() : flags(0), layer_id(0), system_id(0) {}
+
+    SubscriberPriorityKey(uint8_t _layer_id, uint8_t _system_id = 0, uint16_t _flags = 0)
+        : flags(_flags), layer_id(_layer_id), system_id(_system_id)
+    {}
+
+    inline uint32_t encode()
+    {
+        return (uint32_t(flags) << k_flags_shift) | (uint32_t(layer_id) << k_layer_shift) |
+               (uint32_t(system_id) << k_system_shift);
+    }
+
+    inline void decode(uint32_t priority)
+    {
+        flags     = uint16_t( (priority & k_flags_mask)  >> k_flags_shift);
+        layer_id  = uint8_t(  (priority & k_layer_mask)  >> k_layer_shift);
+        system_id = uint8_t(  (priority & k_system_mask) >> k_system_shift);
+    }
+};
+
+[[maybe_unused]] static inline uint32_t subscriber_priority(uint8_t layer_id, uint8_t system_id=0u, uint16_t flags=0u)
+{
+    return SubscriberPriorityKey(layer_id, system_id, flags).encode();
+}
+
 // Interface for an event queue
 class AbstractEventQueue
 {
@@ -46,7 +84,7 @@ public:
     virtual ~EventQueue() = default;
 
     template <typename ClassT>
-    inline void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), size_t priority)
+    inline void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint32_t priority)
     {
         delegates_.push_back({priority, std::make_unique<MemberDelegate<ClassT, EventT>>(instance, memberFunction)});
         // greater_equal generates the desired behavior: for equal priority range of subscribers,
@@ -54,9 +92,15 @@ public:
         delegates_.sort(std::greater_equal<PriorityDelegate>());
     }
 
-    inline void subscribe(bool (*freeFunction)(const EventT&), size_t priority)
+    inline void subscribe(bool (*freeFunction)(const EventT&), uint32_t priority)
     {
         delegates_.push_back({priority, std::make_unique<FreeDelegate<EventT>>(freeFunction)});
+        delegates_.sort(std::greater_equal<PriorityDelegate>());
+    }
+
+    inline void subscribe(std::unique_ptr<AbstractDelegate<EventT>>&& delegate, uint32_t priority)
+    {
+        delegates_.push_back({priority, std::forward<>(delegate)});
         delegates_.sort(std::greater_equal<PriorityDelegate>());
     }
 
@@ -87,7 +131,7 @@ public:
     virtual size_t size() const override { return queue_.size(); }
 
 private:
-    using PriorityDelegate = std::pair<size_t, std::unique_ptr<AbstractDelegate<EventT>>>;
+    using PriorityDelegate = std::pair<uint32_t, std::unique_ptr<AbstractDelegate<EventT>>>;
     using DelegateList = std::list<PriorityDelegate>;
     using Queue = std::queue<EventT>;
     DelegateList delegates_;
@@ -99,38 +143,29 @@ class EventBus
 {
 public:
     // Subscribe a free function to a particular event type
-    template <typename EventT> static void subscribe(bool (*freeFunction)(const EventT&), size_t priority = 0u)
+    template <typename EventT> static void subscribe(bool (*freeFunction)(const EventT&), uint32_t priority = 0u)
     {
-        auto& queue = event_queues_[k_id<EventT>];
-        if(queue == nullptr)
-        {
-            queue = std::make_unique<EventQueue<EventT>>();
-#ifdef W_DEBUG
-            configure_event_tracking<EventT>();
-#endif
-        }
-
-        auto* q_base_ptr = queue.get();
+        auto* q_base_ptr = get_or_create<EventT>().get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
         q_ptr->subscribe(freeFunction, priority);
     }
 
     // Subscribe a member function to a particular event type
     template <typename ClassT, typename EventT>
-    static void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), size_t priority = 0u)
+    static void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint32_t priority = 0u)
     {
-        auto& queue = event_queues_[k_id<EventT>];
-        if(queue == nullptr)
-        {
-            queue = std::make_unique<EventQueue<EventT>>();
-#ifdef W_DEBUG
-            configure_event_tracking<EventT>();
-#endif
-        }
-
-        auto* q_base_ptr = queue.get();
+        auto* q_base_ptr = get_or_create<EventT>().get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
         q_ptr->subscribe(instance, memberFunction, priority);
+    }
+
+    // Subscribe a delegate directly
+    template <typename EventT>
+    inline void subscribe(std::unique_ptr<AbstractDelegate<EventT>>&& delegate, uint32_t priority = 0u)
+    {
+        auto* q_base_ptr = get_or_create<EventT>().get();
+        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
+        q_ptr->subscribe(std::forward<>(delegate), priority);
     }
 
     // Fire an event and have it handled immediately
@@ -229,6 +264,22 @@ public:
     // Clear all subscribers. Only enabled for unit testing.
     static inline void reset() { event_queues_.clear(); }
 #endif
+
+private:
+    // Helper function to get a particular event queue if it exists or create a new one if not
+    template <typename EventT>
+    static auto& get_or_create()
+    {
+        auto& queue = event_queues_[k_id<EventT>];
+        if(queue == nullptr)
+        {
+            queue = std::make_unique<EventQueue<EventT>>();
+#ifdef W_DEBUG
+            configure_event_tracking<EventT>();
+#endif
+        }
+        return queue;
+    }
 
 private:
     using EventID = uint64_t;
