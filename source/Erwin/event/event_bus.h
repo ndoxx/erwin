@@ -19,8 +19,8 @@
 #include <numeric>
 #include <queue>
 
-#include "core/core.h"
 #include "core/config.h"
+#include "core/core.h"
 #include "debug/logger.h"
 #include "event/delegate.h"
 #include "event/event.h"
@@ -34,12 +34,12 @@ struct SubscriberPriorityKey
     uint8_t layer_id;
     uint8_t system_id;
 
-    static constexpr uint32_t k_flags_shift  = 32u - 16u;
-    static constexpr uint32_t k_layer_shift  = k_flags_shift - 8u;
+    static constexpr uint32_t k_flags_shift = 32u - 16u;
+    static constexpr uint32_t k_layer_shift = k_flags_shift - 8u;
     static constexpr uint32_t k_system_shift = k_layer_shift - 8u;
-    static constexpr uint32_t k_flags_mask   = uint32_t(0x0000ffff) << k_flags_shift;
-    static constexpr uint32_t k_layer_mask   = uint32_t(0x000000ff) << k_layer_shift;
-    static constexpr uint32_t k_system_mask  = uint32_t(0x000000ff) << k_system_shift;
+    static constexpr uint32_t k_flags_mask = uint32_t(0x0000ffff) << k_flags_shift;
+    static constexpr uint32_t k_layer_mask = uint32_t(0x000000ff) << k_layer_shift;
+    static constexpr uint32_t k_system_mask = uint32_t(0x000000ff) << k_system_shift;
 
     SubscriberPriorityKey() : flags(0), layer_id(0), system_id(0) {}
 
@@ -55,13 +55,14 @@ struct SubscriberPriorityKey
 
     inline void decode(uint32_t priority)
     {
-        flags     = uint16_t( (priority & k_flags_mask)  >> k_flags_shift);
-        layer_id  = uint8_t(  (priority & k_layer_mask)  >> k_layer_shift);
-        system_id = uint8_t(  (priority & k_system_mask) >> k_system_shift);
+        flags = uint16_t((priority & k_flags_mask) >> k_flags_shift);
+        layer_id = uint8_t((priority & k_layer_mask) >> k_layer_shift);
+        system_id = uint8_t((priority & k_system_mask) >> k_system_shift);
     }
 };
 
-[[maybe_unused]] static inline uint32_t subscriber_priority(uint8_t layer_id, uint8_t system_id=0u, uint16_t flags=0u)
+[[maybe_unused]] static inline uint32_t subscriber_priority(uint8_t layer_id, uint8_t system_id = 0u,
+                                                            uint16_t flags = 0u)
 {
     return SubscriberPriorityKey(layer_id, system_id, flags).encode();
 }
@@ -155,39 +156,27 @@ public:
     // Fire an event and have it handled immediately
     template <typename EventT> static void fire(const EventT& event)
     {
-        auto& queue = event_queues_[EventT::ID];
-        if(queue == nullptr)
-            return;
-
-        log_event(event);
-        auto* q_base_ptr = queue.get();
-        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
-        q_ptr->fire(event);
+        try_get<EventT>([&event](auto* q_ptr) {
+            log_event(event);
+            q_ptr->fire(event);
+        });
     }
 
     // Enqueue an event for deferred handling (during the dispatch() call)
     template <typename EventT> static void enqueue(const EventT& event)
     {
-        auto& queue = event_queues_[EventT::ID];
-        if(queue == nullptr)
-            return;
-
-        log_event(event);
-        auto* q_base_ptr = queue.get();
-        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
-        q_ptr->submit(event);
+        try_get<EventT>([&event](auto* q_ptr) {
+            log_event(event);
+            q_ptr->submit(event);
+        });
     }
 
     template <typename EventT> static void enqueue(EventT&& event)
     {
-        auto& queue = event_queues_[EventT::ID];
-        if(queue == nullptr)
-            return;
-
-        log_event(event);
-        auto* q_base_ptr = queue.get();
-        auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
-        q_ptr->submit(std::forward<EventT>(event));
+        try_get<EventT>([&event](auto* q_ptr) {
+            log_event(event);
+            q_ptr->submit(std::forward<EventT>(event));
+        });
     }
 
     // Handle all queued events
@@ -206,35 +195,31 @@ public:
         for(auto&& [id, queue] : event_queues_)
             if(!queue->empty())
                 return false;
+
         return true;
     }
 
     // Get the number of unprocessed events
     static inline size_t get_unprocessed_count()
     {
-        return std::accumulate(event_queues_.begin(), event_queues_.end(), 0u,
-                               [](size_t accumulator, auto&& entry) { return accumulator + entry.second->size(); });
+        return std::accumulate(event_queues_.begin(), event_queues_.end(), 0u, [](size_t accumulator, auto&& entry) {
+            return accumulator + (entry.second ? entry.second->size() : 0u);
+        });
     }
 
 #ifdef W_DEBUG
     // Enable event tracking for a particular type of events
-    template <typename EventT>
-    static inline void track_event(bool value = true)
-    {
-        event_filter_[EventT::ID] = value;
-    }
+    template <typename EventT> static inline void track_event(bool value = true) { event_filter_[EventT::ID] = value; }
 
     // Lookup config and enable/disable event tracking for this particular event type
-    template <typename EventT>
-    static inline void configure_event_tracking()
+    template <typename EventT> static inline void configure_event_tracking()
     {
         std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
         track_event<EventT>(cfg::get<bool>(H_(config_key_str.c_str()), false));
     }
 
     // Log an event
-    template <typename EventT>
-    static inline void log_event(const EventT& event)
+    template <typename EventT> static inline void log_event(const EventT& event)
     {
         if(event_filter_[EventT::ID])
         {
@@ -251,8 +236,7 @@ public:
 
 private:
     // Helper function to get a particular event queue if it exists or create a new one if not
-    template <typename EventT>
-    static auto& get_or_create()
+    template <typename EventT> static auto& get_or_create()
     {
         auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
@@ -263,6 +247,18 @@ private:
 #endif
         }
         return queue;
+    }
+
+    // Helper function to access a queue only if it exists
+    template <typename EventT> static inline void try_get(std::function<void(EventQueue<EventT>*)> visit)
+    {
+        auto findit = event_queues_.find(EventT::ID);
+        if(findit != event_queues_.end())
+        {
+            auto* q_base_ptr = findit->second.get();
+            auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
+            visit(q_ptr);
+        }
     }
 
 private:

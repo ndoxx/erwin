@@ -21,12 +21,12 @@ void MaterialEditorLayer::on_attach()
 
 void MaterialEditorLayer::on_commit()
 {
-    EventBus::subscribe(this, &MaterialEditorLayer::on_mouse_button_event, get_subscriber_priority());
-    EventBus::subscribe(this, &MaterialEditorLayer::on_mouse_moved_event, get_subscriber_priority());
-    EventBus::subscribe(this, &MaterialEditorLayer::on_window_resize_event, get_subscriber_priority());
-    EventBus::subscribe(this, &MaterialEditorLayer::on_mouse_scroll_event, get_subscriber_priority());
-    EventBus::subscribe(this, &MaterialEditorLayer::on_keyboard_event, get_subscriber_priority());
-    EventBus::subscribe(this, &MaterialEditorLayer::on_key_typed_event, get_subscriber_priority());
+    add_listener(this, &MaterialEditorLayer::on_mouse_button_event);
+    add_listener(this, &MaterialEditorLayer::on_mouse_moved_event);
+    add_listener(this, &MaterialEditorLayer::on_window_resize_event);
+    add_listener(this, &MaterialEditorLayer::on_mouse_scroll_event);
+    add_listener(this, &MaterialEditorLayer::on_keyboard_event);
+    add_listener(this, &MaterialEditorLayer::on_key_typed_event);
 }
 
 void MaterialEditorLayer::on_detach()

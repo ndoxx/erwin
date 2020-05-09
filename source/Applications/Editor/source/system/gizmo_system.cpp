@@ -15,7 +15,6 @@ GizmoSystem::GizmoSystem()
     Renderer3D::register_shader(gizmo_shader);
     Renderer::shader_attach_uniform_buffer(gizmo_shader, gizmo_ubo);
 
-    EventBus::subscribe(this, &GizmoSystem::on_ray_scene_query_event);
     selected_part_ = -1;
 }
 

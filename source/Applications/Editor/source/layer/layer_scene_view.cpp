@@ -84,12 +84,12 @@ void SceneViewLayer::on_attach()
 
 void SceneViewLayer::on_commit()
 {
-    EventBus::subscribe(this, &SceneViewLayer::on_mouse_button_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneViewLayer::on_mouse_moved_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneViewLayer::on_window_resize_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneViewLayer::on_window_moved_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneViewLayer::on_mouse_scroll_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneViewLayer::on_keyboard_event, get_subscriber_priority());
+    add_listener(this, &SceneViewLayer::on_mouse_button_event);
+    add_listener(this, &SceneViewLayer::on_mouse_moved_event);
+    add_listener(this, &SceneViewLayer::on_window_resize_event);
+    add_listener(this, &SceneViewLayer::on_window_moved_event);
+    add_listener(this, &SceneViewLayer::on_mouse_scroll_event);
+    add_listener(this, &SceneViewLayer::on_keyboard_event);
 }
 
 void SceneViewLayer::on_detach() {}

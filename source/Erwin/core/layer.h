@@ -2,14 +2,11 @@
 
 #include <string>
 
-#include "event/window_events.h"
 #include "event/event_bus.h"
 #include "core/game_clock.h"
 
 namespace erwin
 {
-
-// #define REACT(EVENT) virtual bool on_event(const EVENT&) { return false; }
 
 class Layer
 {
@@ -37,22 +34,16 @@ protected:
 	virtual void on_render() { }
 	virtual void on_commit() { }
 
-	inline uint32_t get_subscriber_priority() { return subscriber_priority(layer_id_, 0u); }
-
-	/*REACT(KeyboardEvent)
-	REACT(KeyTypedEvent)
-	REACT(MouseButtonEvent)
-	REACT(MouseScrollEvent)
-	REACT(MouseMovedEvent)
-	REACT(WindowResizeEvent)
-	REACT(WindowMovedEvent)*/
+	template <typename ClassT, typename EventT>
+	inline void add_listener(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint8_t system_id = 0u)
+	{
+		EventBus::subscribe(instance, memberFunction, subscriber_priority(layer_id_, system_id));
+	}
 
 protected:
 	std::string debug_name_;
 	bool enabled_;
 	uint8_t layer_id_;
 };
-
-// #undef REACT
 
 } // namespace erwin

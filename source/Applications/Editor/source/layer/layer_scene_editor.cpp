@@ -42,10 +42,13 @@ void SceneEditorLayer::on_attach()
 
 void SceneEditorLayer::on_commit()
 {
-    EventBus::subscribe(this, &SceneEditorLayer::on_mouse_button_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneEditorLayer::on_mouse_scroll_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneEditorLayer::on_keyboard_event, get_subscriber_priority());
-    EventBus::subscribe(this, &SceneEditorLayer::on_key_typed_event, get_subscriber_priority());
+    add_listener(this, &SceneEditorLayer::on_mouse_button_event);
+    add_listener(this, &SceneEditorLayer::on_mouse_scroll_event);
+    add_listener(this, &SceneEditorLayer::on_keyboard_event);
+    add_listener(this, &SceneEditorLayer::on_key_typed_event);
+
+    add_listener(&bounding_box_system_, &BoundingBoxSystem::on_ray_scene_query_event, 0);
+    add_listener(&gizmo_system_, &GizmoSystem::on_ray_scene_query_event, 1);
 }
 
 void SceneEditorLayer::on_detach()
