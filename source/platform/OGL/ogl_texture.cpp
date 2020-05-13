@@ -1,5 +1,4 @@
-#include "platform/ogl_texture.h"
-#include "render/render_device.h"
+#include "platform/OGL/ogl_texture.h"
 #include "core/core.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/cat_file.h"

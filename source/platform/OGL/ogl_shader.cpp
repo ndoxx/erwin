@@ -3,8 +3,8 @@
 #include <regex>
 #include <sstream>
 
-#include "platform/ogl_shader.h"
-#include "platform/ogl_buffer.h"
+#include "platform/OGL/ogl_shader.h"
+#include "platform/OGL/ogl_buffer.h"
 #include "core/core.h"
 #include "utils/string.h"
 #include "core/intern_string.h"

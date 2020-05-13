@@ -1,14 +1,14 @@
 #pragma once
 
-#include "render/render_device.h"
+#include "render/backend.h"
 
 namespace erwin
 {
 
-class OGLRenderDevice: public RenderDevice
+class OGLBackend : public Backend
 {
 public:
-    OGLRenderDevice();
+    OGLBackend();
     virtual void release() override;
 
     // * Framebuffer
@@ -28,30 +28,13 @@ public:
     virtual hash_t get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index) override;
     virtual uint32_t get_framebuffer_texture_count(FramebufferHandle handle) override;
     virtual void* get_native_texture_handle(TextureHandle handle) override;
-    virtual VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) override;
+    virtual VertexBufferLayoutHandle
+    create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) override;
     virtual const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle) override;
-
 
     // * Command dispatch
     virtual void dispatch_command(uint16_t type, memory::LinearBuffer<>& buf) override;
     virtual void dispatch_draw(uint16_t type, memory::LinearBuffer<>& buf) override;
-
-    // ------------- REMOVE -------------
-    // Draw content of specified vertex array using indices
-    virtual void draw_indexed(void* vertexArray,
-                              uint32_t count = 0,
-    						  std::size_t offset = 0) override;
-    // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(void* vertexArray,
-                            DrawPrimitive prim = DrawPrimitive::Triangles,
-                            uint32_t count = 0,
-                            std::size_t offset = 0) override;
-    // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(void* vertexArray,
-                                        uint32_t instance_count,
-                                        uint32_t elements_count = 0,
-                                        std::size_t offset = 0) override;
-    // ------------- REMOVE -------------
 
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) override;
@@ -73,7 +56,7 @@ public:
     // Enable/Disable depth test
     virtual void set_depth_test_enabled(bool value) override;
     // Set function used as a stencil test, with a reference value and a mask
-    virtual void set_stencil_func(StencilFunc value, uint16_t a=0, uint16_t b=0) override;
+    virtual void set_stencil_func(StencilFunc value, uint16_t a = 0, uint16_t b = 0) override;
     // Specify front/back stencil test action
     virtual void set_stencil_operator(StencilOperator value) override;
     // Enable/Disable stencil test

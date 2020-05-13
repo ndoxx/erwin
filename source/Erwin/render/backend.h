@@ -1,15 +1,15 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <future>
+#include <memory>
 
 #include "core/core.h"
-#include "render/render_state.h"
+#include "memory/memory.hpp"
 #include "render/buffer_layout.h"
 #include "render/handles.h"
+#include "render/render_state.h"
 #include "render/texture_common.h"
-#include "memory/memory.hpp"
 
 namespace erwin
 {
@@ -45,11 +45,10 @@ struct ShaderCompatibility
     }
 };
 
-// Following API is subject to future HEAVY changes
-class RenderDevice
+class Backend
 {
 public:
-    virtual ~RenderDevice() = default;
+    virtual ~Backend() = default;
     virtual void release() = 0;
 
     // * Framebuffer
@@ -76,23 +75,6 @@ public:
     virtual void dispatch_command(uint16_t type, memory::LinearBuffer<>& buf) = 0;
     virtual void dispatch_draw(uint16_t type, memory::LinearBuffer<>& buf) = 0;
 
-    // ------------- REMOVE -------------
-    // Draw content of specified vertex array using indices
-    virtual void draw_indexed(void* vertexArray,
-                              uint32_t count = 0,
-                              std::size_t offset = 0) = 0;
-    // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(void* vertexArray,
-                            DrawPrimitive prim = DrawPrimitive::Triangles,
-                            uint32_t count = 0,
-                            std::size_t offset = 0) = 0;
-    // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(void* vertexArray,
-                                        uint32_t instance_count,
-                                        uint32_t elements_count = 0,
-                                        std::size_t offset = 0) = 0;
-    // ------------- REMOVE -------------
-
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) = 0;
     // Clear currently bound framebuffer
@@ -113,7 +95,7 @@ public:
     // Enable/Disable depth test
     virtual void set_depth_test_enabled(bool value) = 0;
     // Set function used as a stencil test, with a reference value and a mask
-    virtual void set_stencil_func(StencilFunc value, uint16_t a=0, uint16_t b=0) = 0;
+    virtual void set_stencil_func(StencilFunc value, uint16_t a = 0, uint16_t b = 0) = 0;
     // Specify front/back stencil test action
     virtual void set_stencil_operator(StencilOperator value) = 0;
     // Enable/Disable stencil test
@@ -155,17 +137,16 @@ public:
     virtual void assert_no_error() = 0;
 };
 
-class Gfx
+class gfx
 {
 public:
-    inline static GfxAPI get_api() { return api_; }
-    static void set_api(GfxAPI api);
+    inline static GfxAPI get_backend() { return api_; }
+    static void set_backend(GfxAPI api);
 
-    static std::unique_ptr<RenderDevice> device;
+    static std::unique_ptr<Backend> backend;
 
 private:
     static GfxAPI api_;
 };
-
 
 } // namespace erwin

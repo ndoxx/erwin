@@ -3,7 +3,7 @@
 #include <vector>
 #include <map>
 #include "render/framebuffer_layout.h"
-#include "platform/ogl_texture.h"
+#include "platform/OGL/ogl_texture.h"
 
 namespace erwin
 {

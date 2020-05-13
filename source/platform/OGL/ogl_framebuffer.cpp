@@ -1,6 +1,6 @@
-#include "platform/ogl_framebuffer.h"
+#include "platform/OGL/ogl_framebuffer.h"
 #include "debug/logger.h"
-#include "platform/ogl_texture.h"
+#include "platform/OGL/ogl_texture.h"
 
 #include "stb/stb_image_write.h"
 

@@ -5,8 +5,8 @@
 
 #include "core/core.h"
 #include "render/shader_lang.h"
-#include "platform/ogl_buffer.h"
-#include "platform/ogl_texture.h"
+#include "platform/OGL/ogl_buffer.h"
+#include "platform/OGL/ogl_texture.h"
 
 #include "glm/glm.hpp"
 
