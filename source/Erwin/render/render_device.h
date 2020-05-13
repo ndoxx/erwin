@@ -16,7 +16,6 @@ enum class GfxAPI
     OpenGL = 1
 };
 
-class VertexArray;
 // Following API is subject to future HEAVY changes
 class RenderDevice
 {
@@ -36,16 +35,16 @@ public:
 
     // * Draw commands
     // Draw content of specified vertex array using indices
-    virtual void draw_indexed(const VertexArray& vertexArray,
+    virtual void draw_indexed(void* vertexArray,
                               uint32_t count = 0,
                               std::size_t offset = 0) = 0;
     // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(const VertexArray& vertexArray,
+    virtual void draw_array(void* vertexArray,
                             DrawPrimitive prim = DrawPrimitive::Triangles,
                             uint32_t count = 0,
                             std::size_t offset = 0) = 0;
     // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(const VertexArray& vertexArray,
+    virtual void draw_indexed_instanced(void* vertexArray,
                                         uint32_t instance_count,
                                         uint32_t elements_count = 0,
                                         std::size_t offset = 0) = 0;

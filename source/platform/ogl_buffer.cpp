@@ -73,11 +73,15 @@ static GLenum to_ogl_base_type(ShaderDataType type)
     return 0;
 }
 
-OGLBuffer::OGLBuffer(uint32_t target): 
+
+OGLBuffer::OGLBuffer(uint32_t target):
+unique_id_(id::unique_id()),
+persistent_map_(nullptr),
+has_persistent_mapping_(false),
 target_(target),
 rd_handle_(0)
 {
-    glGenBuffers(1, &rd_handle_);
+
 }
 
 OGLBuffer::~OGLBuffer()
@@ -130,6 +134,7 @@ void OGLBuffer::init(void* data, uint32_t size, UsagePattern mode)
 {
     GLenum gl_usage_pattern = to_ogl_usage_pattern(mode);
 
+    glGenBuffers(1, &rd_handle_);
     glBindBuffer(target_, rd_handle_);
     if(mode != UsagePattern::PersistentMapping)
         glBufferData(target_, size, data, gl_usage_pattern);
@@ -141,9 +146,11 @@ void OGLBuffer::init(void* data, uint32_t size, UsagePattern mode)
     }
 }
 
+
 OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode):
 OGLBuffer(GL_ARRAY_BUFFER),
-VertexBuffer(layout, count)
+layout_(layout),
+count_(count)
 {
     uint32_t size = uint32_t(count_)*layout_.get_stride();
     init(vertex_data, size, mode);
@@ -160,7 +167,8 @@ VertexBuffer(layout, count)
 
 OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode):
 OGLBuffer(GL_ELEMENT_ARRAY_BUFFER),
-IndexBuffer(count, primitive)
+primitive_(primitive),
+count_(count)
 {
     uint32_t size = uint32_t(count_)*sizeof(uint32_t);
     init(index_data, size, mode);
@@ -173,7 +181,8 @@ IndexBuffer(count, primitive)
 
 OGLUniformBuffer::OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode):
 OGLBuffer(GL_UNIFORM_BUFFER),
-UniformBuffer(name, struct_size)
+name_(name),
+struct_size_(struct_size)
 {
     init(data, struct_size_, mode);
 
@@ -183,7 +192,8 @@ UniformBuffer(name, struct_size)
 
 OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, UsagePattern mode):
 OGLBuffer(GL_SHADER_STORAGE_BUFFER),
-ShaderStorageBuffer(name, size)
+name_(name),
+size_(size)
 {
     init(data, size_, mode);
 
@@ -191,7 +201,8 @@ ShaderStorageBuffer(name, size)
     DLOGI << "Size: " << size_ << "B" << std::endl;
 }
 
-OGLVertexArray::OGLVertexArray()
+OGLVertexArray::OGLVertexArray():
+unique_id_(id::unique_id())
 {
     //glGenVertexArrays(1, &rd_handle_);
     glCreateVertexArrays(1, &rd_handle_);
@@ -215,7 +226,7 @@ void OGLVertexArray::unbind() const
     glBindVertexArray(0);
 }
 
-void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
+void OGLVertexArray::add_vertex_buffer(WRef<OGLVertexBuffer> p_vb)
 {
 	// Make sure buffer layout is meaningful
 	W_ASSERT(p_vb->get_layout().get_count(), "Vertex buffer has empty layout!");
@@ -246,7 +257,7 @@ void OGLVertexArray::add_vertex_buffer(WRef<VertexBuffer> p_vb)
 					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
 }
 
-void OGLVertexArray::set_index_buffer(WRef<IndexBuffer> p_ib)
+void OGLVertexArray::set_index_buffer(WRef<OGLIndexBuffer> p_ib)
 {
     glBindVertexArray(rd_handle_);
 	p_ib->bind();

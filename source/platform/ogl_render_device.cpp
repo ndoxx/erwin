@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include "platform/ogl_render_device.h"
+#include "platform/ogl_buffer.h"
 #include "core/core.h"
-#include "render/buffer.h"
 #include "glad/glad.h"
 
 namespace erwin
@@ -53,42 +53,39 @@ void OGLRenderDevice::read_framebuffer_rgba(uint32_t width, uint32_t height, uns
     set_pack_alignment(4);
 }
 
-void OGLRenderDevice::draw_indexed(const VertexArray& vertexArray,
+void OGLRenderDevice::draw_indexed(void* vertexArray,
                                    uint32_t count,
 								   std::size_t offset)
 {
-	// vertexArray.bind();
-	glDrawElements(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()], 
-				   (bool(count) ? count : vertexArray.get_index_buffer().get_count()),
+    OGLVertexArray* vao = reinterpret_cast<OGLVertexArray*>(vertexArray);
+	glDrawElements(OGLPrimitive[vao->get_index_buffer().get_primitive()], 
+				   (bool(count) ? count : vao->get_index_buffer().get_count()),
 				   GL_UNSIGNED_INT,
 				   reinterpret_cast<void*>(offset * sizeof(GLuint)));
-    // vertexArray.unbind();
 }
 
-void OGLRenderDevice::draw_array(const VertexArray& vertexArray,
+void OGLRenderDevice::draw_array(void* vertexArray,
                                  DrawPrimitive prim,
                                  uint32_t count,
                                  std::size_t offset)
 {
-    // vertexArray.bind();
+    OGLVertexArray* vao = reinterpret_cast<OGLVertexArray*>(vertexArray);
     glDrawArrays(OGLPrimitive[prim], 
                  offset, 
-                 (bool(count) ? count : vertexArray.get_vertex_buffer().get_count()));
-    // vertexArray.unbind();
+                 (bool(count) ? count : vao->get_vertex_buffer().get_count()));
 }
 
-void OGLRenderDevice::draw_indexed_instanced(const VertexArray& vertexArray,
+void OGLRenderDevice::draw_indexed_instanced(void* vertexArray,
                                              uint32_t instance_count,
                                              uint32_t elements_count,
                                              std::size_t offset)
 {
-    // vertexArray.bind();
-    glDrawElementsInstanced(OGLPrimitive[vertexArray.get_index_buffer().get_primitive()],
-                            (bool(elements_count) ? elements_count : vertexArray.get_index_buffer().get_count()),
+    OGLVertexArray* vao = reinterpret_cast<OGLVertexArray*>(vertexArray);
+    glDrawElementsInstanced(OGLPrimitive[vao->get_index_buffer().get_primitive()],
+                            (bool(elements_count) ? elements_count : vao->get_index_buffer().get_count()),
                             GL_UNSIGNED_INT,
                             reinterpret_cast<void*>(offset * sizeof(GLuint)),
                             instance_count);
-    // vertexArray.unbind();
 }
 
 void OGLRenderDevice::set_clear_color(float r, float g, float b, float a)

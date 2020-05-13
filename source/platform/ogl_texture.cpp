@@ -1,6 +1,7 @@
 #include "platform/ogl_texture.h"
 #include "render/render_device.h"
 #include "core/core.h"
+#include "filesystem/filesystem.h"
 #include "filesystem/cat_file.h"
 #include "debug/logger.h"
 
@@ -192,11 +193,12 @@ OGLTexture2D::OGLTexture2D(const fs::path filepath)
 	stbi_image_free(data);
 }
 
-OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor):
-width_(descriptor.width),
-height_(descriptor.height),
-mips_(descriptor.mips)
+OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor)
 {
+    width_ = descriptor.width;
+    height_ = descriptor.height;
+    mips_ = descriptor.mips;
+    
 	DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
@@ -244,21 +246,6 @@ OGLTexture2D::~OGLTexture2D()
 	DLOG("texture",1) << "Destroyed texture [" << rd_handle_ << "]" << std::endl;
 }
 
-uint32_t OGLTexture2D::get_width() const
-{
-	return width_;
-}
-
-uint32_t OGLTexture2D::get_height() const
-{
-	return height_;
-}
-
-uint32_t OGLTexture2D::get_mips() const
-{
-    return mips_;
-}
-
 void OGLTexture2D::generate_mipmaps() const
 {
     do_generate_mipmaps(rd_handle_, 0, mips_);
@@ -282,21 +269,14 @@ void OGLTexture2D::unbind() const
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void* OGLTexture2D::get_native_handle()
+
+
+OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor)
 {
-    // Cast to void* directly for compatibility with ImGUI
-    return reinterpret_cast<void*>(uint64_t(rd_handle_));
-}
+    width_ = descriptor.width;
+    height_ = descriptor.height;
+    mips_ = descriptor.mips;
 
-
-
-
-
-OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor):
-width_(descriptor.width),
-height_(descriptor.height),
-mips_(descriptor.mips)
-{
     DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
 
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &rd_handle_);
@@ -351,21 +331,6 @@ OGLCubemap::~OGLCubemap()
     DLOG("texture",1) << "Destroyed cubemap [" << rd_handle_ << "]" << std::endl;
 }
 
-uint32_t OGLCubemap::get_width() const
-{
-    return width_;
-}
-
-uint32_t OGLCubemap::get_height() const
-{
-    return height_;
-}
-
-uint32_t OGLCubemap::get_mips() const
-{
-    return mips_;
-}
-
 void OGLCubemap::generate_mipmaps() const
 {
     do_generate_mipmaps(rd_handle_, 0, mips_);
@@ -379,12 +344,6 @@ void OGLCubemap::bind(uint32_t slot) const
 void OGLCubemap::unbind() const
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-}
-
-void* OGLCubemap::get_native_handle()
-{
-    // Cast to void* directly for compatibility with ImGUI
-    return reinterpret_cast<void*>(uint64_t(rd_handle_));
 }
 
 

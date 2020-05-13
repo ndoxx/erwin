@@ -9,9 +9,17 @@
 namespace erwin
 {
 
-OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout)
-    : Framebuffer(width, height, flags, layout)
+OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout):
+layout_(layout),
+width_(width),
+height_(height),
+flags_(flags)
 {
+    if(has_cubemap())
+    {
+        W_ASSERT(!has_depth() && !has_stencil(), "Cubemap framebuffer attachment is incompatible with depth and stencil attachments.");
+    }
+
     DLOG("render", 1) << "Creating OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << "." << std::endl;
 
     glCreateFramebuffers(1, &rd_handle_);
@@ -32,7 +40,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         for(auto&& elt : layout_)
         {
             // First, create textures for color buffers
-            auto texture = Texture2D::create(
+            auto texture = make_ref<OGLTexture2D>(
                 Texture2DDescriptor{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
 
             // Register color attachment
@@ -53,7 +61,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         if(has_depth() && has_stencil())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
+                make_ref<OGLTexture2D>(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);
@@ -61,7 +69,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         else if(has_depth())
         {
             auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
+                make_ref<OGLTexture2D>(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
             uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
             textures_.push_back(texture);
@@ -92,7 +100,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;
         desc.lazy_mipmap = elt.lazy_mipmap;
-        auto texture = Cubemap::create(desc);
+        auto texture = make_ref<OGLCubemap>(desc);
 
         // Register color attachment
         uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(texture)->get_handle();
@@ -149,7 +157,7 @@ void OGLFramebuffer::bind(uint32_t mip_level)
 
 void OGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
-WRef<Texture> OGLFramebuffer::get_shared_texture(uint32_t index) { return textures_[index]; }
+WRef<OGLTexture> OGLFramebuffer::get_shared_texture(uint32_t index) { return textures_[index]; }
 
 uint32_t OGLFramebuffer::get_texture_count() { return uint32_t(textures_.size()); }
 
@@ -177,21 +185,19 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     DLOGI << WCC('p') << filepath << std::endl;
 }
 
-void OGLFramebuffer::blit_depth(const Framebuffer& source)
+void OGLFramebuffer::blit_depth(const OGLFramebuffer& source)
 {
     // Push state
     GLint draw_fbo = 0, read_fbo = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_fbo);
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
 
-    const OGLFramebuffer& ogl_source = static_cast<const OGLFramebuffer&>(source);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, ogl_source.rd_handle_);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, source.rd_handle_);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rd_handle_);
     glBlitFramebuffer(0,                   // src x0
                       0,                   // src y0
-                      ogl_source.width_,   // src x1
-                      ogl_source.height_,  // src y1
+                      source.width_,   // src x1
+                      source.height_,  // src y1
                       0,                   // dst x0
                       0,                   // dst y0
                       width_,              // dst x1

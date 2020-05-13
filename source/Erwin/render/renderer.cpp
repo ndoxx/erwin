@@ -13,12 +13,18 @@
 #include "memory/linear_allocator.h"
 #include "memory/handle_pool.h"
 #include "render/render_device.h"
-#include "render/buffer.h"
-#include "render/framebuffer.h"
-#include "render/shader.h"
+// #include "render/buffer.h"
+// #include "render/framebuffer.h"
+// #include "render/shader.h"
 #include "render/query_timer.h"
 #include "math/color.h"
 #include "utils/promise_storage.hpp"
+
+// TODO: move device specific implementation outside
+#include "platform/ogl_buffer.h"
+#include "platform/ogl_framebuffer.h"
+#include "platform/ogl_shader.h"
+#include "platform/ogl_texture.h"
 
 
 namespace erwin
@@ -333,8 +339,8 @@ static struct RendererStorage
 
 	inline void clear_resources()
 	{
-		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
 		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
+		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
 		std::fill(std::begin(vertex_buffers),         std::end(vertex_buffers),         nullptr);
 		std::fill(std::begin(vertex_arrays),          std::end(vertex_arrays),          nullptr);
 		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
@@ -379,16 +385,18 @@ static struct RendererStorage
 	bool initialized_;
 
 	// TODO: Drop WRefs and use arenas (with pool allocator?) to allocate memory for these objects
-	WRef<IndexBuffer>         index_buffers[k_max_render_handles];
 	WRef<BufferLayout>        vertex_buffer_layouts[k_max_render_handles];
-	WRef<VertexBuffer>        vertex_buffers[k_max_render_handles];
-	WRef<VertexArray>         vertex_arrays[k_max_render_handles];
-	WRef<UniformBuffer>       uniform_buffers[k_max_render_handles];
-	WRef<ShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
-	WRef<Texture2D>			  textures[k_max_render_handles];
-	WRef<Cubemap>			  cubemaps[k_max_render_handles];
-	WRef<Shader>			  shaders[k_max_render_handles];
-	WRef<Framebuffer>		  framebuffers[k_max_render_handles];
+
+	WRef<OGLIndexBuffer>         index_buffers[k_max_render_handles];
+	WRef<OGLVertexBuffer>        vertex_buffers[k_max_render_handles];
+	WRef<OGLVertexArray>         vertex_arrays[k_max_render_handles];
+	WRef<OGLUniformBuffer>       uniform_buffers[k_max_render_handles];
+	WRef<OGLShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
+	WRef<OGLTexture2D>			 textures[k_max_render_handles];
+	WRef<OGLCubemap>			 cubemaps[k_max_render_handles];
+	WRef<OGLShader>			     shaders[k_max_render_handles];
+	WRef<OGLFramebuffer>		 framebuffers[k_max_render_handles];
+
 
 	ShaderCompatibility shader_compat[k_max_render_handles];
 
@@ -1376,7 +1384,7 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&mode);
 	buf.read(&auxiliary);
 
-	s_storage.index_buffers[handle.index] = IndexBuffer::create(auxiliary, count, primitive, mode);
+	s_storage.index_buffers[handle.index] = make_ref<OGLIndexBuffer>(auxiliary, count, primitive, mode);
 }
 
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -1395,7 +1403,7 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
 	buf.read(&auxiliary);
 
 	const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
-	s_storage.vertex_buffers[handle.index] = VertexBuffer::create(auxiliary, count, layout, mode);
+	s_storage.vertex_buffers[handle.index] = make_ref<OGLVertexBuffer>(auxiliary, count, layout, mode);
 }
 
 void create_vertex_array(memory::LinearBuffer<>& buf)
@@ -1409,7 +1417,7 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
 	buf.read(&ib);
 	buf.read(&vb);
 
-	s_storage.vertex_arrays[handle.index] = VertexArray::create();
+	s_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
 	s_storage.vertex_arrays[handle.index]->set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
 	if(ib.index != k_invalid_handle)
 		s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
@@ -1426,7 +1434,7 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
 	buf.read(&ib);
 	buf.read(&VBO_count);
 
-	s_storage.vertex_arrays[handle.index] = VertexArray::create();
+	s_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
 
 	for(uint8_t ii=0; ii<VBO_count; ++ii)
 	{
@@ -1454,7 +1462,7 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
 	buf.read_str(name);
 	buf.read(&auxiliary);
 
-	s_storage.uniform_buffers[handle.index] = UniformBuffer::create(name, auxiliary, size, mode);
+	s_storage.uniform_buffers[handle.index] = make_ref<OGLUniformBuffer>(name, auxiliary, size, mode);
 }
 
 void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -1472,7 +1480,7 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 	buf.read_str(name);
 	buf.read(&auxiliary);
 
-	s_storage.shader_storage_buffers[handle.index] = ShaderStorageBuffer::create(name, auxiliary, size, mode);
+	s_storage.shader_storage_buffers[handle.index] = make_ref<OGLShaderStorageBuffer>(name, auxiliary, size, mode);
 }
 
 void create_shader(memory::LinearBuffer<>& buf)
@@ -1486,7 +1494,9 @@ void create_shader(memory::LinearBuffer<>& buf)
 	buf.read_str(filepath);
 	buf.read_str(name);
 
-	s_storage.shaders[handle.index] = Shader::create(name, fs::path(filepath));
+	auto ref = make_ref<OGLShader>();
+	ref->init(name, filepath);
+	s_storage.shaders[handle.index] = ref;
 	s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
 }
 
@@ -1499,7 +1509,7 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	buf.read(&descriptor);
 
-	s_storage.textures[handle.index] = Texture2D::create(descriptor);
+	s_storage.textures[handle.index] = make_ref<OGLTexture2D>(descriptor);
 	// Free resources if needed
 	descriptor.release();
 }
@@ -1513,7 +1523,7 @@ void create_cubemap(memory::LinearBuffer<>& buf)
 	buf.read(&handle);
 	buf.read(&descriptor);
 
-	s_storage.cubemaps[handle.index] = Cubemap::create(descriptor);
+	s_storage.cubemaps[handle.index] = make_ref<OGLCubemap>(descriptor);
 }
 
 void create_framebuffer(memory::LinearBuffer<>& buf)
@@ -1534,7 +1544,7 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	buf.read(&auxiliary);
 
 	FramebufferLayout layout(auxiliary, count);
-	s_storage.framebuffers[handle.index] = Framebuffer::create(width, height, flags, layout);
+	s_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
 
 	// Register framebuffer textures as regular textures accessible by handles
 	auto& fb = s_storage.framebuffers[handle.index];
@@ -1542,11 +1552,11 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
 	if(!fb->has_cubemap())
 	{
 		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
 	}
 	else
 	{
-		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<Cubemap>(fb->get_shared_texture(0));
+		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
 	}
 }
 
@@ -1648,7 +1658,7 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	uint8_t flags = s_storage.framebuffers[fb_handle.index]->get_flags();
 	auto layout   = s_storage.framebuffers[fb_handle.index]->get_layout();
 
-	s_storage.framebuffers[fb_handle.index] = Framebuffer::create(width, height, flags, layout);
+	s_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
 
 	// Update framebuffer textures
 	auto& fb = s_storage.framebuffers[fb_handle.index];
@@ -1657,11 +1667,11 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 	if(!has_cubemap)
 	{
 		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<Texture2D>(fb->get_shared_texture(ii));
+			s_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
 	}
 	else
 	{
-		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<Cubemap>(fb->get_shared_texture(0));
+		s_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
 	}
 }
 
@@ -2035,7 +2045,7 @@ void draw(memory::LinearBuffer<>& buf)
 	switch(type)
 	{
 		case DrawCall::Indexed:
-			Gfx::device->draw_indexed(va, data.count, data.offset);
+			Gfx::device->draw_indexed(&va, data.count, data.offset);
 			break;
 		case DrawCall::IndexedInstanced:
 		{
@@ -2043,7 +2053,7 @@ void draw(memory::LinearBuffer<>& buf)
 			uint32_t instance_count;
 			buf.read(&instance_count);
 			// ASSUME SSBO is attached to shader, so it is already bound at this stage
-			Gfx::device->draw_indexed_instanced(va, instance_count, data.count, data.offset);
+			Gfx::device->draw_indexed_instanced(&va, instance_count, data.count, data.offset);
 			break;
 		}
 		default:

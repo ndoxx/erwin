@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "render/texture.h"
+#include "render/texture_common.h"
 #include "core/core.h"
 
 namespace erwin
