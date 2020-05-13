@@ -25,14 +25,14 @@ public:
 	inline void render()                        { if(enabled_) on_render(); }
 
 	virtual void set_enabled(bool value) { enabled_ = value; }
-	virtual void on_attach() { }
-	virtual void on_detach() { }
 	virtual void on_imgui_render() { }
 
 protected:
+	virtual void on_attach() { }
+	virtual void on_commit() { }
+	virtual void on_detach() { }
 	virtual void on_update(GameClock&) { }
 	virtual void on_render() { }
-	virtual void on_commit() { }
 
 	template <typename ClassT, typename EventT>
 	inline void add_listener(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint8_t system_id = 0u)
