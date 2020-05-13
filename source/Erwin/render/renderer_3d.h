@@ -26,7 +26,7 @@ public:
 	// Register a shader for use with this system
 	static void register_shader(ShaderHandle shader);
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
-	static bool is_compatible(VertexBufferLayoutHandle layout, const Material& material);
+	//static bool is_compatible(VertexBufferLayoutHandle layout, const Material& material);
 
 	// Show UV in flat shading
 	static void debug_show_uv(bool enabled=true);

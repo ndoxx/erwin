@@ -223,12 +223,12 @@ void Renderer3D::register_shader(ShaderHandle shader)
 
 	s_storage.registered_shaders.insert(shader.index);
 }
-
+/*
 bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, const Material& material)
 {
 	return Renderer::is_compatible(layout, material.shader);
 }
-
+*/
 void Renderer3D::debug_show_uv(bool enabled)
 {
 	if(enabled)

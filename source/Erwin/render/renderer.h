@@ -72,7 +72,7 @@ public:
 	// Get a buffer layout from its handle
 	static const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle);
 	// Check compatibility between a buffer layout and a shader's attributes layout
-	static bool is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shader);
+	//static bool is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shader);
 	// Get native handle to a texture
 	static void* get_native_texture_handle(TextureHandle handle);
 
