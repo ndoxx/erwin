@@ -144,3 +144,9 @@ struct CubemapDescriptor
     TextureWrap wrap = TextureWrap::CLAMP_TO_EDGE;
     bool lazy_mipmap = false;
 };
+
+struct PixelData
+{
+    uint8_t* data;
+    size_t size;
+};

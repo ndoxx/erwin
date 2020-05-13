@@ -4,8 +4,8 @@
 namespace erwin
 {
 
-GfxAPI Gfx::api_ = GfxAPI::OpenGL;
-std::unique_ptr<RenderDevice> Gfx::device = std::make_unique<OGLRenderDevice>();
+GfxAPI Gfx::api_ = GfxAPI::None;
+std::unique_ptr<RenderDevice> Gfx::device = nullptr;
 
 void Gfx::set_api(GfxAPI api)
 {

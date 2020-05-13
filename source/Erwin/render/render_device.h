@@ -2,10 +2,14 @@
 
 #include <cstdint>
 #include <memory>
+#include <future>
 
 #include "core/core.h"
 #include "render/render_state.h"
 #include "render/buffer_layout.h"
+#include "render/handles.h"
+#include "render/texture_common.h"
+#include "memory/memory.hpp"
 
 namespace erwin
 {
@@ -16,24 +20,63 @@ enum class GfxAPI
     OpenGL = 1
 };
 
+struct FramebufferTextureVector
+{
+    std::vector<TextureHandle> handles;
+    std::vector<hash_t> debug_names;
+    CubemapHandle cubemap;
+};
+
+struct ShaderCompatibility
+{
+    bool ready = false;
+    BufferLayout layout;
+
+    inline void set_layout(const BufferLayout& _layout)
+    {
+        layout = _layout;
+        ready = true;
+    }
+
+    inline void clear()
+    {
+        layout.clear();
+        ready = false;
+    }
+};
+
 // Following API is subject to future HEAVY changes
 class RenderDevice
 {
 public:
     virtual ~RenderDevice() = default;
+    virtual void release() = 0;
 
     // * Framebuffer
-    // TODO: return a handle instead
-    // Get an index to default framebuffer
-    virtual uint32_t get_default_framebuffer() = 0;
-    // Set the default framebuffer
-    virtual void set_default_framebuffer(uint32_t index) = 0;
+    // Add framebuffer texture description
+    virtual void add_framebuffer_texture_vector(FramebufferHandle handle, const FramebufferTextureVector& ftv) = 0;
     // Bind the default framebuffer
     virtual void bind_default_framebuffer() = 0;
     // Read framebuffer content to an array
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) = 0;
 
-    // * Draw commands
+    // Promise texture data
+    virtual std::pair<uint64_t, std::future<PixelData>> future_texture_data() = 0;
+
+    virtual FramebufferHandle default_render_target() = 0;
+    virtual TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index) = 0;
+    virtual CubemapHandle get_framebuffer_cubemap(FramebufferHandle handle) = 0;
+    virtual hash_t get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index) = 0;
+    virtual uint32_t get_framebuffer_texture_count(FramebufferHandle handle) = 0;
+    virtual void* get_native_texture_handle(TextureHandle handle) = 0;
+    virtual VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) = 0;
+    virtual const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle) = 0;
+
+    // * Command dispatch
+    virtual void dispatch_command(uint16_t type, memory::LinearBuffer<>& buf) = 0;
+    virtual void dispatch_draw(uint16_t type, memory::LinearBuffer<>& buf) = 0;
+
+    // ------------- REMOVE -------------
     // Draw content of specified vertex array using indices
     virtual void draw_indexed(void* vertexArray,
                               uint32_t count = 0,
@@ -48,6 +91,7 @@ public:
                                         uint32_t instance_count,
                                         uint32_t elements_count = 0,
                                         std::size_t offset = 0) = 0;
+    // ------------- REMOVE -------------
 
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) = 0;

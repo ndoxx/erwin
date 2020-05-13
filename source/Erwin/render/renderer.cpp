@@ -15,13 +15,6 @@
 #include "render/render_device.h"
 #include "render/query_timer.h"
 #include "math/color.h"
-#include "utils/promise_storage.hpp"
-
-// TODO: move device specific implementation outside
-#include "platform/ogl_buffer.h"
-#include "platform/ogl_framebuffer.h"
-#include "platform/ogl_shader.h"
-#include "platform/ogl_texture.h"
 
 
 namespace erwin
@@ -297,31 +290,6 @@ struct FrameDrawCallData
 static int FRONT = 0;
 static int BACK = 1;
 
-struct FramebufferTextureVector
-{
-	std::vector<TextureHandle> handles;
-	std::vector<hash_t> debug_names;
-	CubemapHandle cubemap;
-};
-
-struct ShaderCompatibility
-{
-	bool ready = false;
-	BufferLayout layout;
-
-	inline void set_layout(const BufferLayout& _layout)
-	{
-		layout = _layout;
-		ready = true;
-	}
-
-	inline void clear()
-	{
-		layout.clear();
-		ready = false;
-	}
-};
-
 static struct RendererStorage
 {
 	inline void init(memory::HeapArea* area)
@@ -366,63 +334,6 @@ static struct RendererStorage
 	LinearArena handle_arena_;
 	RenderQueue queue_;
 } s_storage;
-
-
-// MOVE
-static struct RenderDeviceStorage
-{
-	void init()
-	{
-		state_cache_ = RenderState().encode();
-		clear_resources();
-
-		default_framebuffer_ = FramebufferHandle::acquire();
-		current_framebuffer_ = default_framebuffer_;
-		host_window_size_ = {0, 0};
-	}
-
-	void release()
-	{
-		default_framebuffer_.release();
-		clear_resources();
-	}
-
-	inline void clear_resources()
-	{
-		std::fill(std::begin(vertex_buffer_layouts),  std::end(vertex_buffer_layouts),  nullptr);
-		std::fill(std::begin(index_buffers),          std::end(index_buffers),          nullptr);
-		std::fill(std::begin(vertex_buffers),         std::end(vertex_buffers),         nullptr);
-		std::fill(std::begin(vertex_arrays),          std::end(vertex_arrays),          nullptr);
-		std::fill(std::begin(uniform_buffers),        std::end(uniform_buffers),        nullptr);
-		std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
-		std::fill(std::begin(textures),               std::end(textures),               nullptr);
-		std::fill(std::begin(cubemaps),               std::end(cubemaps),               nullptr);
-		std::fill(std::begin(shaders),                std::end(shaders),                nullptr);
-		std::fill(std::begin(framebuffers),           std::end(framebuffers),           nullptr);
-	}
-
-	FramebufferHandle default_framebuffer_ = {};
-	FramebufferHandle current_framebuffer_ = {};
-	glm::vec2 host_window_size_;
-
-	std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-	WRef<BufferLayout> vertex_buffer_layouts[k_max_render_handles];
-
-	WRef<OGLIndexBuffer>         index_buffers[k_max_render_handles];
-	WRef<OGLVertexBuffer>        vertex_buffers[k_max_render_handles];
-	WRef<OGLVertexArray>         vertex_arrays[k_max_render_handles];
-	WRef<OGLUniformBuffer>       uniform_buffers[k_max_render_handles];
-	WRef<OGLShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
-	WRef<OGLTexture2D>			 textures[k_max_render_handles];
-	WRef<OGLCubemap>			 cubemaps[k_max_render_handles];
-	WRef<OGLShader>			     shaders[k_max_render_handles];
-	WRef<OGLFramebuffer>		 framebuffers[k_max_render_handles];
-	
-	// ShaderCompatibility shader_compat[k_max_render_handles];
-	PromiseStorage<PixelData>    texture_data_promises_;
-	uint64_t state_cache_;
-} s_rd_storage;
-
 
 
 
@@ -477,12 +388,15 @@ void Renderer::init(memory::HeapArea& area)
 
 	DLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
 
+
 	// Create and initialize storage object
 	s_storage.init(&area);
+
+	// TODO: Use config
+	Gfx::set_api(GfxAPI::OpenGL);
+
 	s_storage.query_timer = QueryTimer::create();
 
-	// MOVE
-	s_rd_storage.init();
 
 	DLOGI << "done" << std::endl;
 
@@ -532,9 +446,8 @@ void Renderer::shutdown()
 	flush();
 	DLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
 	
-	// MOVE
-	s_rd_storage.release();
-	
+	Gfx::device->release();
+
 	s_storage.release();
 	s_storage.initialized_ = false;
 
@@ -572,6 +485,47 @@ void Renderer::track_draw_calls(const fs::path& json_path)
 #endif
 }
 
+
+FramebufferHandle Renderer::default_render_target()
+{
+	return Gfx::device->default_render_target();
+}
+
+TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
+{
+	return Gfx::device->get_framebuffer_texture(handle, index);
+}
+
+CubemapHandle Renderer::get_framebuffer_cubemap(FramebufferHandle handle)
+{
+	return Gfx::device->get_framebuffer_cubemap(handle);
+}
+
+hash_t Renderer::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
+{
+	return Gfx::device->get_framebuffer_texture_name(handle, index);
+}
+
+uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
+{
+	return Gfx::device->get_framebuffer_texture_count(handle);
+}
+
+void* Renderer::get_native_texture_handle(TextureHandle handle)
+{
+	return Gfx::device->get_native_texture_handle(handle);
+}
+
+VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
+{
+	return Gfx::device->create_vertex_buffer_layout(elements);
+}
+
+const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
+{
+	return Gfx::device->get_vertex_buffer_layout(handle);
+}
+
 /*
 bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shader)
 {
@@ -585,6 +539,8 @@ bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shade
 }
 */
 
+
+
 /*
 		   _____                                          _     
 		  / ____|                                        | |    
@@ -593,51 +549,6 @@ bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shade
 		 | |___| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
 		  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 */
-
-// --- Render commands ---
-
-enum class RenderCommand: uint16_t
-{
-	CreateIndexBuffer,
-	CreateVertexBuffer,
-	CreateVertexArray,
-	CreateVertexArrayMultipleVBO,
-	CreateUniformBuffer,
-	CreateShaderStorageBuffer,
-	CreateShader,
-	CreateTexture2D,
-	CreateCubemap,
-	CreateFramebuffer,
-
-	UpdateIndexBuffer,
-	UpdateVertexBuffer,
-	UpdateUniformBuffer,
-	UpdateShaderStorageBuffer,
-	ShaderAttachUniformBuffer,
-	ShaderAttachStorageBuffer,
-	UpdateFramebuffer,
-	ClearFramebuffers,
-	SetHostWindowSize,
-
-	Post,
-
-	GetPixelData,
-	GenerateCubemapMipmaps,
-	FramebufferScreenshot,
-
-	DestroyIndexBuffer,
-	DestroyVertexBufferLayout,
-	DestroyVertexBuffer,
-	DestroyVertexArray,
-	DestroyUniformBuffer,
-	DestroyShaderStorageBuffer,
-	DestroyShader,
-	DestroyTexture2D,
-	DestroyCubemap,
-	DestroyFramebuffer,
-
-	Count
-};
 
 // Helper class for command buffer access
 class RenderCommandWriter
@@ -909,7 +820,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 		texture_vector.debug_names.push_back(layout[0].target_name);
 	}
 
-	s_rd_storage.framebuffer_textures_.insert(std::make_pair(handle.index, texture_vector));
+	Gfx::device->add_framebuffer_texture_vector(handle, texture_vector);
 	uint32_t count = uint32_t(layout.get_count());
 
 	// Allocate auxiliary data
@@ -1040,7 +951,7 @@ std::future<PixelData> Renderer::get_pixel_data(TextureHandle handle)
 	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
 
 	// TODO: acquire from render device
-    auto&& [token, fut] = s_rd_storage.texture_data_promises_.future_operation();
+    auto&& [token, fut] = Gfx::device->future_texture_data();
 	RenderCommandWriter cw(RenderCommand::GetPixelData);
 	cw.write(&handle);
 	cw.write(&token);
@@ -1159,19 +1070,6 @@ void Renderer::destroy(FramebufferHandle handle, bool detach_textures)
 	cw.submit();
 }
 
-
-// --- Draw commands ---
-
-enum class DrawCommand: uint16_t
-{
-	Draw,
-	Clear,
-	BlitDepth,
-	UpdateShaderStorageBuffer,
-	UpdateUniformBuffer,
-
-	Count
-};
 
 // Helper class for draw command buffer access
 class DrawCommandWriter
@@ -1305,871 +1203,6 @@ uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data,
 }
 
 
-/*
-		  _____  _                 _       _     
-		 |  __ \(_)               | |     | |    
-		 | |  | |_ ___ _ __   __ _| |_ ___| |__  
-		 | |  | | / __| '_ \ / _` | __/ __| '_ \ 
-		 | |__| | \__ \ |_) | (_| | || (__| | | |
-		 |_____/|_|___/ .__/ \__,_|\__\___|_| |_|
-		              | |                        
-		              |_|                        
-*/
-
-// MOVE
-FramebufferHandle Renderer::default_render_target()
-{
-	return s_rd_storage.default_framebuffer_;
-}
-
-TextureHandle Renderer::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
-{
-	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	W_ASSERT(index < s_rd_storage.framebuffer_textures_[handle.index].handles.size(), "Invalid framebuffer texture index.");
-	return s_rd_storage.framebuffer_textures_[handle.index].handles[index];
-}
-
-CubemapHandle Renderer::get_framebuffer_cubemap(FramebufferHandle handle)
-{
-	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	return s_rd_storage.framebuffer_textures_[handle.index].cubemap;
-}
-
-hash_t Renderer::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
-{
-	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	return s_rd_storage.framebuffer_textures_[handle.index].debug_names[index];
-}
-
-uint32_t Renderer::get_framebuffer_texture_count(FramebufferHandle handle)
-{
-	W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-	return uint32_t(s_rd_storage.framebuffer_textures_[handle.index].handles.size());
-}
-
-void* Renderer::get_native_texture_handle(TextureHandle handle)
-{
-	W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-	if(s_rd_storage.textures[handle.index] == nullptr)
-		return nullptr;
-	return s_rd_storage.textures[handle.index]->get_native_handle();
-}
-
-VertexBufferLayoutHandle Renderer::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
-{
-	VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
-	W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
-
-	s_rd_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(&elements[0], elements.size());
-
-	return handle;
-}
-
-const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
-{
-	W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
-
-	return *s_rd_storage.vertex_buffer_layouts[handle.index];
-}
-
-
-namespace render_dispatch
-{
-
-void create_index_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	IndexBufferHandle handle;
-	uint32_t count;
-	DrawPrimitive primitive;
-	UsagePattern mode;
-	uint32_t* auxiliary;
-
-	buf.read(&handle);
-	buf.read(&count);
-	buf.read(&primitive);
-	buf.read(&mode);
-	buf.read(&auxiliary);
-
-	s_rd_storage.index_buffers[handle.index] = make_ref<OGLIndexBuffer>(auxiliary, count, primitive, mode);
-}
-
-void create_vertex_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexBufferHandle handle;
-	VertexBufferLayoutHandle layout_hnd;
-	uint32_t count;
-	UsagePattern mode;
-	float* auxiliary;
-	buf.read(&handle);
-	buf.read(&layout_hnd);
-	buf.read(&count);
-	buf.read(&mode);
-	buf.read(&auxiliary);
-
-	const auto& layout = *s_rd_storage.vertex_buffer_layouts[layout_hnd.index];
-	s_rd_storage.vertex_buffers[handle.index] = make_ref<OGLVertexBuffer>(auxiliary, count, layout, mode);
-}
-
-void create_vertex_array(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexArrayHandle handle;
-	IndexBufferHandle ib;
-	VertexBufferHandle vb;
-	buf.read(&handle);
-	buf.read(&ib);
-	buf.read(&vb);
-
-	s_rd_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
-	s_rd_storage.vertex_arrays[handle.index]->set_vertex_buffer(s_rd_storage.vertex_buffers[vb.index]);
-	if(ib.index != k_invalid_handle)
-		s_rd_storage.vertex_arrays[handle.index]->set_index_buffer(s_rd_storage.index_buffers[ib.index]);
-}
-
-void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexArrayHandle handle;
-	IndexBufferHandle ib;
-	uint8_t VBO_count;
-	buf.read(&handle);
-	buf.read(&ib);
-	buf.read(&VBO_count);
-
-	s_rd_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
-
-	for(uint8_t ii=0; ii<VBO_count; ++ii)
-	{
-		VertexBufferHandle vb;
-		buf.read(&vb);
-		s_rd_storage.vertex_arrays[handle.index]->add_vertex_buffer(s_rd_storage.vertex_buffers[vb.index]);
-	}
-
-	if(ib.index != k_invalid_handle)
-		s_rd_storage.vertex_arrays[handle.index]->set_index_buffer(s_rd_storage.index_buffers[ib.index]);
-}
-
-void create_uniform_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	UniformBufferHandle handle;
-	uint32_t size;
-	UsagePattern mode;
-	std::string name;
-	uint8_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&size);
-	buf.read(&mode);
-	buf.read_str(name);
-	buf.read(&auxiliary);
-
-	s_rd_storage.uniform_buffers[handle.index] = make_ref<OGLUniformBuffer>(name, auxiliary, size, mode);
-}
-
-void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderStorageBufferHandle handle;
-	uint32_t size;
-	UsagePattern mode;
-	std::string name;
-	uint8_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&size);
-	buf.read(&mode);
-	buf.read_str(name);
-	buf.read(&auxiliary);
-
-	s_rd_storage.shader_storage_buffers[handle.index] = make_ref<OGLShaderStorageBuffer>(name, auxiliary, size, mode);
-}
-
-void create_shader(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderHandle handle;
-	std::string filepath;
-	std::string name;
-	buf.read(&handle);
-	buf.read_str(filepath);
-	buf.read_str(name);
-
-	auto ref = make_ref<OGLShader>();
-	ref->init(name, filepath);
-	s_rd_storage.shaders[handle.index] = ref;
-	// s_rd_storage.shader_compat[handle.index].set_layout(s_rd_storage.shaders[handle.index]->get_attribute_layout());
-}
-
-void create_texture_2D(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	TextureHandle handle;
-	Texture2DDescriptor descriptor;
-	buf.read(&handle);
-	buf.read(&descriptor);
-
-	s_rd_storage.textures[handle.index] = make_ref<OGLTexture2D>(descriptor);
-	// Free resources if needed
-	descriptor.release();
-}
-
-void create_cubemap(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	CubemapHandle handle;
-	CubemapDescriptor descriptor;
-	buf.read(&handle);
-	buf.read(&descriptor);
-
-	s_rd_storage.cubemaps[handle.index] = make_ref<OGLCubemap>(descriptor);
-}
-
-void create_framebuffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	uint32_t width;
-	uint32_t height;
-	uint32_t count;
-	uint8_t flags;
-	FramebufferHandle handle;
-	FramebufferLayoutElement* auxiliary;
-	buf.read(&handle);
-	buf.read(&width);
-	buf.read(&height);
-	buf.read(&flags);
-	buf.read(&count);
-	buf.read(&auxiliary);
-
-	FramebufferLayout layout(auxiliary, count);
-	s_rd_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
-
-	// Register framebuffer textures as regular textures accessible by handles
-	auto& fb = s_rd_storage.framebuffers[handle.index];
-	const auto& texture_vector = s_rd_storage.framebuffer_textures_[handle.index];
-	if(!fb->has_cubemap())
-	{
-		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-			s_rd_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
-	}
-	else
-	{
-		s_rd_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
-	}
-}
-
-void update_index_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	IndexBufferHandle handle;
-	uint32_t count;
-	uint32_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&count);
-	buf.read(&auxiliary);
-
-	s_rd_storage.index_buffers[handle.index]->map(auxiliary, count*sizeof(uint32_t));
-}
-
-void update_vertex_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexBufferHandle handle;
-	uint32_t size;
-	uint8_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&size);
-	buf.read(&auxiliary);
-
-	s_rd_storage.vertex_buffers[handle.index]->map(auxiliary, size);
-}
-
-void update_uniform_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	UniformBufferHandle handle;
-	uint32_t size;
-	uint8_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&size);
-	buf.read(&auxiliary);
-
-	auto& UBO = *s_rd_storage.uniform_buffers[handle.index];
-	UBO.map(auxiliary, size ? size : UBO.get_size());
-}
-
-void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderStorageBufferHandle handle;
-	uint32_t size;
-	uint8_t* auxiliary;
-	buf.read(&handle);
-	buf.read(&size);
-	buf.read(&auxiliary);
-
-	s_rd_storage.shader_storage_buffers[handle.index]->map(auxiliary, size);
-}
-
-void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderHandle shader_handle;
-	UniformBufferHandle ubo_handle;
-	buf.read(&shader_handle);
-	buf.read(&ubo_handle);
-
-	auto& shader = *s_rd_storage.shaders[shader_handle.index];
-	shader.attach_uniform_buffer(*s_rd_storage.uniform_buffers[ubo_handle.index]);
-}
-
-void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderHandle shader_handle;
-	ShaderStorageBufferHandle ssbo_handle;
-	buf.read(&shader_handle);
-	buf.read(&ssbo_handle);
-
-	auto& shader = *s_rd_storage.shaders[shader_handle.index];
-	shader.attach_shader_storage(*s_rd_storage.shader_storage_buffers[ssbo_handle.index]);
-}
-
-void update_framebuffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	FramebufferHandle fb_handle;
-	uint32_t width;
-	uint32_t height;
-
-	buf.read(&fb_handle);
-	buf.read(&width);
-	buf.read(&height);
-
-	uint8_t flags = s_rd_storage.framebuffers[fb_handle.index]->get_flags();
-	auto layout   = s_rd_storage.framebuffers[fb_handle.index]->get_layout();
-
-	s_rd_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
-
-	// Update framebuffer textures
-	auto& fb = s_rd_storage.framebuffers[fb_handle.index];
-	auto& texture_vector = s_rd_storage.framebuffer_textures_[fb_handle.index];
-	bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
-	if(!has_cubemap)
-	{
-		for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-			s_rd_storage.textures[texture_vector.handles[ii].index] = std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
-	}
-	else
-	{
-		s_rd_storage.cubemaps[texture_vector.cubemap.index] = std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
-	}
-}
-
-void clear_framebuffers(memory::LinearBuffer<>&)
-{
-	FramebufferPool::traverse_framebuffers([](FramebufferHandle handle)
-	{
-		s_rd_storage.framebuffers[handle.index]->bind();
-		Gfx::device->clear(ClearFlags::CLEAR_COLOR_FLAG | ClearFlags::CLEAR_DEPTH_FLAG);
-	});
-}
-
-void set_host_window_size(memory::LinearBuffer<>& buf)
-{
-	uint32_t width;
-	uint32_t height;
-	buf.read(&width);
-	buf.read(&height);
-
-	s_rd_storage.host_window_size_ = {width, height};
-}
-
-void nop(memory::LinearBuffer<>&) { }
-
-void get_pixel_data(memory::LinearBuffer<>& buf)
-{
-	TextureHandle handle;
-	size_t promise_token;
-
-	buf.read(&handle);
-	buf.read(&promise_token);
-
-	auto&& [data, size] =  s_rd_storage.textures[handle.index]->read_pixels();
-    s_rd_storage.texture_data_promises_.fulfill(promise_token, PixelData{data, size});
-}
-
-void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
-{
-	CubemapHandle handle;
-	buf.read(&handle);
-
-	s_rd_storage.cubemaps[handle.index]->generate_mipmaps();
-}
-
-void framebuffer_screenshot(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-    FramebufferHandle handle;
-	std::string filepath;
-	buf.read(&handle);
-	buf.read_str(filepath);
-
-	s_rd_storage.framebuffers[handle.index]->screenshot(filepath);
-}
-
-void destroy_index_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	IndexBufferHandle handle;
-	buf.read(&handle);
-	s_rd_storage.index_buffers[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexBufferLayoutHandle handle;
-	buf.read(&handle);
-	s_rd_storage.vertex_buffer_layouts[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexBufferHandle handle;
-	buf.read(&handle);
-	s_rd_storage.vertex_buffers[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_vertex_array(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	VertexArrayHandle handle;
-	buf.read(&handle);
-	s_rd_storage.vertex_arrays[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	UniformBufferHandle handle;
-	buf.read(&handle);
-	s_rd_storage.uniform_buffers[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderStorageBufferHandle handle;
-	buf.read(&handle);
-	s_rd_storage.shader_storage_buffers[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_shader(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	ShaderHandle handle;
-	buf.read(&handle);
-	s_rd_storage.shaders[handle.index] = nullptr;
-	// s_rd_storage.shader_compat[handle.index].clear();
-	handle.release();
-}
-
-void destroy_texture_2D(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	TextureHandle handle;
-	buf.read(&handle);
-	s_rd_storage.textures[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_cubemap(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	CubemapHandle handle;
-	buf.read(&handle);
-	s_rd_storage.cubemaps[handle.index] = nullptr;
-	handle.release();
-}
-
-void destroy_framebuffer(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-	FramebufferHandle handle;
-	bool detach_textures;
-	buf.read(&handle);
-	buf.read(&detach_textures);
-
-	bool has_cubemap = s_rd_storage.framebuffers[handle.index]->has_cubemap();
-	s_rd_storage.framebuffers[handle.index] = nullptr;
-
-	// Delete framebuffer textures if they are not detached
-	if(!detach_textures)
-	{
-		auto& texture_vector = s_rd_storage.framebuffer_textures_[handle.index];
-		if(!has_cubemap)
-		{
-			for(uint32_t ii=0; ii<texture_vector.handles.size(); ++ii)
-			{
-				uint16_t tex_index = texture_vector.handles[ii].index;
-				s_rd_storage.textures[tex_index] = nullptr;
-				texture_vector.handles[ii].release();
-			}
-		}
-		else
-		{
-			uint16_t cm_index = texture_vector.cubemap.index;
-			s_rd_storage.cubemaps[cm_index] = nullptr;
-			texture_vector.cubemap.release();
-		}
-	}
-
-	s_rd_storage.framebuffer_textures_.erase(handle.index);
-	handle.release();
-}
-
-} // namespace render_dispatch
-
-typedef void (* backend_dispatch_func_t)(memory::LinearBuffer<>&);
-static backend_dispatch_func_t render_backend_dispatch[std::size_t(RenderCommand::Count)] =
-{
-	&render_dispatch::create_index_buffer,
-	&render_dispatch::create_vertex_buffer,
-	&render_dispatch::create_vertex_array,
-	&render_dispatch::create_vertex_array_multiple_VBO,
-	&render_dispatch::create_uniform_buffer,
-	&render_dispatch::create_shader_storage_buffer,
-	&render_dispatch::create_shader,
-	&render_dispatch::create_texture_2D,
-	&render_dispatch::create_cubemap,
-	&render_dispatch::create_framebuffer,
-	&render_dispatch::update_index_buffer,
-	&render_dispatch::update_vertex_buffer,
-	&render_dispatch::update_uniform_buffer,
-	&render_dispatch::update_shader_storage_buffer,
-	&render_dispatch::shader_attach_uniform_buffer,
-	&render_dispatch::shader_attach_storage_buffer,
-	&render_dispatch::update_framebuffer,
-	&render_dispatch::clear_framebuffers,
-	&render_dispatch::set_host_window_size,
-
-	&render_dispatch::nop,
-
-	&render_dispatch::get_pixel_data,
-	&render_dispatch::generate_cubemap_mipmaps,
-	&render_dispatch::framebuffer_screenshot,
-	&render_dispatch::destroy_index_buffer,
-	&render_dispatch::destroy_vertex_buffer_layout,
-	&render_dispatch::destroy_vertex_buffer,
-	&render_dispatch::destroy_vertex_array,
-	&render_dispatch::destroy_uniform_buffer,
-	&render_dispatch::destroy_shader_storage_buffer,
-	&render_dispatch::destroy_shader,
-	&render_dispatch::destroy_texture_2D,
-	&render_dispatch::destroy_cubemap,
-	&render_dispatch::destroy_framebuffer,
-};
-
-// Helper function to identify which part of the pass state has changed
-static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
-{
-	return ((state^old_state)&mask) > 0;
-}
-
-static void handle_state(uint64_t state_flags)
-{
-	// * If pass state has changed, decode it, find which parts have changed and update device state
-	if(state_flags != s_rd_storage.state_cache_)
-	{
-		RenderState state;
-		state.decode(state_flags);
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_framebuffer_mask) ||
-		   has_mutated(state_flags, s_rd_storage.state_cache_, k_target_mips_mask))
-		{
-			if(state.render_target == s_rd_storage.default_framebuffer_)
-			{
-				Gfx::device->bind_default_framebuffer();
-				Gfx::device->viewport(0, 0, s_rd_storage.host_window_size_.x, s_rd_storage.host_window_size_.y);
-			}
-			else
-				s_rd_storage.framebuffers[state.render_target.index]->bind(state.target_mip_level);
-
-			s_rd_storage.current_framebuffer_ = state.render_target;
-
-			// Only clear on render target switch, if clear flags are set
-			if(state.rasterizer_state.clear_flags != ClearFlags::CLEAR_NONE)
-				Gfx::device->clear(state.rasterizer_state.clear_flags);
-		}
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_cull_mode_mask))
-			Gfx::device->set_cull_mode(state.rasterizer_state.cull_mode);
-		
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_transp_mask))
-		{
-			switch(state.blend_state)
-			{
-				case BlendState::Alpha: Gfx::device->set_std_blending(); break;
-				case BlendState::Light: Gfx::device->set_light_blending(); break;
-				default:                Gfx::device->disable_blending(); break;
-			}
-		}
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_stencil_test_mask))
-		{
-			Gfx::device->set_stencil_test_enabled(state.depth_stencil_state.stencil_test_enabled);
-			if(state.depth_stencil_state.stencil_test_enabled)
-			{
-				Gfx::device->set_stencil_func(state.depth_stencil_state.stencil_func);
-				Gfx::device->set_stencil_operator(state.depth_stencil_state.stencil_operator);
-			}
-		}
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_depth_test_mask))
-		{
-			Gfx::device->set_depth_test_enabled(state.depth_stencil_state.depth_test_enabled);
-			if(state.depth_stencil_state.depth_test_enabled)
-				Gfx::device->set_depth_func(state.depth_stencil_state.depth_func);
-		}
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_depth_lock_mask))
-			Gfx::device->set_depth_lock(state.depth_stencil_state.depth_lock);
-
-		if(has_mutated(state_flags, s_rd_storage.state_cache_, k_stencil_lock_mask))
-			Gfx::device->set_stencil_lock(state.depth_stencil_state.stencil_lock);
-
-		s_rd_storage.state_cache_ = state_flags;
-	}
-}
-
-namespace draw_dispatch
-{
-
-void draw(memory::LinearBuffer<>& buf)
-{
-    W_PROFILE_RENDER_FUNCTION()
-
-    DrawCall::DrawCallType type;
-    DrawCall::Data data;
-	buf.read(&type);
-	buf.read(&data);
-
-	handle_state(data.state_flags);
-
-	// * Detect if a new shader needs to be used, update and bind shader resources
-	static uint16_t last_shader_index = k_invalid_handle;
-	static uint16_t last_texture_index[k_max_texture_slots];
-	static uint16_t last_cubemap_index[k_max_cubemap_slots];
-	auto& shader = *s_rd_storage.shaders[data.shader.index];
-	if(data.shader.index != last_shader_index)
-	{
-		shader.bind();
-		last_shader_index = data.shader.index;
-		std::fill(last_texture_index, last_texture_index+k_max_texture_slots, k_invalid_handle);
-		std::fill(last_cubemap_index, last_cubemap_index+k_max_cubemap_slots, k_invalid_handle);
-	}
-
-	uint8_t texture_count;
-	buf.read(&texture_count);
-	for(uint8_t ii=0; ii<texture_count; ++ii)
-	{
-		TextureHandle hnd;
-		buf.read(&hnd);
-
-		if(hnd.index == k_invalid_handle)
-			continue;
-
-		// Avoid texture switching if not necessary
-		if(hnd.index != last_texture_index[ii])
-		{
-			auto& texture = *s_rd_storage.textures[hnd.index];
-			shader.attach_texture_2D(texture, ii);
-			last_texture_index[ii] = hnd.index;
-		}
-	}
-
-	uint8_t cubemap_count;
-	buf.read(&cubemap_count);
-	for(uint8_t ii=0; ii<cubemap_count; ++ii)
-	{
-		CubemapHandle hnd;
-		buf.read(&hnd);
-
-		// Avoid texture switching if not necessary
-		if(hnd.index != last_cubemap_index[ii])
-		{
-			auto& cubemap = *s_rd_storage.cubemaps[hnd.index];
-			shader.attach_cubemap(cubemap, ii+texture_count); // Cubemap samplers after 2d samplers (this is awkward)
-			last_cubemap_index[ii] = hnd.index;
-		}
-	}
-
-	// * Execute draw call
-	static uint16_t last_VAO_index = k_invalid_handle;
-	auto& va = *s_rd_storage.vertex_arrays[data.VAO.index];
-	// Avoid switching vertex array when possible
-	if(data.VAO.index != last_VAO_index)
-	{
-		va.bind();
-		last_VAO_index = data.VAO.index;
-	}
-
-	switch(type)
-	{
-		case DrawCall::Indexed:
-			Gfx::device->draw_indexed(&va, data.count, data.offset);
-			break;
-		case DrawCall::IndexedInstanced:
-		{
-			// Read additional data needed for instanced rendering
-			uint32_t instance_count;
-			buf.read(&instance_count);
-			// ASSUME SSBO is attached to shader, so it is already bound at this stage
-			Gfx::device->draw_indexed_instanced(&va, instance_count, data.count, data.offset);
-			break;
-		}
-		default:
-			W_ASSERT(false, "Specified draw call type is unsupported at the moment.");
-			break;
-	}
-}
-
-void clear(memory::LinearBuffer<>& buf)
-{
-	FramebufferHandle target;
-	uint32_t flags;
-	uint32_t clear_color;
-	buf.read(&target);
-	buf.read(&flags);
-	buf.read(&clear_color);
-
-	glm::vec4 color = color::unpack(clear_color);
-
-    Gfx::device->set_clear_color(color.r, color.g, color.b, color.a);
-	if(target == s_rd_storage.default_framebuffer_ && flags != ClearFlags::CLEAR_NONE)
-	{
-		Gfx::device->bind_default_framebuffer();
-		Gfx::device->viewport(0, 0, s_rd_storage.host_window_size_.x, s_rd_storage.host_window_size_.y);
-		Gfx::device->clear(int(flags));
-	}
-	else
-	{
-		auto& fb = *s_rd_storage.framebuffers[target.index];
-		fb.bind();
-		Gfx::device->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
-		Gfx::device->clear(int(flags));
-	}
-
-	if(s_rd_storage.current_framebuffer_ != target)
-	{
-		// Rebind current framebuffer
-		if(s_rd_storage.current_framebuffer_ == s_rd_storage.default_framebuffer_)
-		{
-			Gfx::device->bind_default_framebuffer();
-			Gfx::device->viewport(0, 0, s_rd_storage.host_window_size_.x, s_rd_storage.host_window_size_.y);
-		}
-		else
-		{
-			auto& fb = *s_rd_storage.framebuffers[s_rd_storage.current_framebuffer_.index];
-			fb.bind();
-			Gfx::device->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
-		}
-	}
-    Gfx::device->set_clear_color(0.f,0.f,0.f,0.f);
-}
-
-void blit_depth(memory::LinearBuffer<>& buf)
-{
-	FramebufferHandle source;
-	FramebufferHandle target;
-	buf.read(&source);
-	buf.read(&target);
-
-	s_rd_storage.framebuffers[target.index]->blit_depth(*s_rd_storage.framebuffers[source.index]);
-}
-
-void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
-{
-	ShaderStorageBufferHandle ssbo_handle;
-	uint32_t size;
-	void* data;
-
-	buf.read(&ssbo_handle);
-	buf.read(&size);
-	buf.read(&data);
-
-	s_rd_storage.shader_storage_buffers[ssbo_handle.index]->stream(data, size, 0);
-/*
-	auto& ssbo = *s_rd_storage.shader_storage_buffers[ssbo_handle.index];
-	if(!ssbo.has_persistent_mapping())
-		ssbo.stream(data, size, 0);
-	else
-		ssbo.map_persistent(data, size, 0);
-*/
-}
-
-void update_uniform_buffer(memory::LinearBuffer<>& buf)
-{
-	UniformBufferHandle ubo_handle;
-	uint32_t size;
-	void* data;
-
-	buf.read(&ubo_handle);
-	buf.read(&size);
-	buf.read(&data);
-
-	auto& ubo = *s_rd_storage.uniform_buffers[ubo_handle.index];
-	ubo.stream(data, size ? size : ubo.get_size(), 0);
-}
-
-} // namespace draw_dispatch
-
-static backend_dispatch_func_t draw_backend_dispatch[std::size_t(RenderCommand::Count)] =
-{
-	&draw_dispatch::draw,
-	&draw_dispatch::clear,
-	&draw_dispatch::blit_depth,
-	&draw_dispatch::update_shader_storage_buffer,
-	&draw_dispatch::update_uniform_buffer,
-};
-
-
 
 void RenderQueue::flush()
 {
@@ -2209,12 +1242,12 @@ void RenderQueue::flush()
 				command_buffer_.storage.seek(deps[jj]);
 				uint16_t dep_type;
 				command_buffer_.storage.read(&dep_type);
-				(*draw_backend_dispatch[dep_type])(command_buffer_.storage);
+				Gfx::device->dispatch_draw(dep_type, command_buffer_.storage);
 			}
 			command_buffer_.storage.seek(ret);
 		}
 
-		(*draw_backend_dispatch[type])(command_buffer_.storage);
+		Gfx::device->dispatch_draw(type, command_buffer_.storage);
 	}
 }
 
@@ -2229,7 +1262,7 @@ static void flush_command_buffer(RenderCommandBuffer& cmdbuf)
 		cmdbuf.storage.seek(cmd);
 		uint16_t type;
 		cmdbuf.storage.read(&type);
-		(*render_backend_dispatch[type])(cmdbuf.storage);
+		Gfx::device->dispatch_command(type, cmdbuf.storage);
 	}
 	cmdbuf.reset();
 }
