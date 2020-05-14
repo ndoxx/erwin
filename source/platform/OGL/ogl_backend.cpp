@@ -73,21 +73,21 @@ static struct RenderDeviceStorage
     FramebufferHandle current_framebuffer_ = {};
     glm::vec2 host_window_size_;
     std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-    std::array<VertexArrayDependencies, k_max_render_handles> vertex_array_dependencies;
+    std::array<VertexArrayDependencies, k_max_handles<VertexArrayHandle>> vertex_array_dependencies;
 
-    std::array<OGLIndexBuffer, k_max_render_handles> index_buffers;
-    std::array<OGLVertexBuffer, k_max_render_handles> vertex_buffers;
-    std::array<OGLVertexArray, k_max_render_handles> vertex_arrays;
-    std::array<OGLUniformBuffer, k_max_render_handles> uniform_buffers;
-    std::array<OGLShaderStorageBuffer, k_max_render_handles> shader_storage_buffers;
+    std::array<OGLIndexBuffer, k_max_handles<IndexBufferHandle>> index_buffers;
+    std::array<OGLVertexBuffer, k_max_handles<VertexBufferHandle>> vertex_buffers;
+    std::array<OGLVertexArray, k_max_handles<VertexArrayHandle>> vertex_arrays;
+    std::array<OGLUniformBuffer, k_max_handles<UniformBufferHandle>> uniform_buffers;
+    std::array<OGLShaderStorageBuffer, k_max_handles<ShaderStorageBufferHandle>> shader_storage_buffers;
 
-    WRef<BufferLayout> vertex_buffer_layouts[k_max_render_handles];
-    WRef<OGLTexture2D> textures[k_max_render_handles];
-    WRef<OGLCubemap> cubemaps[k_max_render_handles];
-    WRef<OGLShader> shaders[k_max_render_handles];
-    WRef<OGLFramebuffer> framebuffers[k_max_render_handles];
+    WRef<BufferLayout> vertex_buffer_layouts[k_max_handles<VertexBufferLayoutHandle>];
+    WRef<OGLTexture2D> textures[k_max_handles<TextureHandle>];
+    WRef<OGLCubemap> cubemaps[k_max_handles<CubemapHandle>];
+    WRef<OGLShader> shaders[k_max_handles<ShaderHandle>];
+    WRef<OGLFramebuffer> framebuffers[k_max_handles<FramebufferHandle>];
 
-    // ShaderCompatibility shader_compat[k_max_render_handles];
+    // ShaderCompatibility shader_compat[k_max_handles<ShaderHandle>];
     PromiseStorage<PixelData> texture_data_promises_;
     uint64_t state_cache_;
 } s_storage;

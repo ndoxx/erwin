@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 // #define W_PROFILE_RENDER
 
 namespace erwin
@@ -24,10 +25,11 @@ static constexpr uint32_t k_max_cubemap_slots = 8;
 static constexpr uint32_t k_max_render_commands = 2048;
 // Maximum amount of draw calls per frame
 static constexpr uint32_t k_max_draw_calls = 8192;
-// Maximum amount of handles for every object managed by the main renderer
-// TODO: each object should have its own amount
-static constexpr uint32_t k_max_render_handles = 256;
 // Maximum amount of dependencies per draw call
 static constexpr uint32_t k_max_draw_call_dependencies = 8;
+
+// Maximum amount of handles for every object managed by the main renderer
+// Default is 256, but the HANDLE_DECLARATION() macro overrides this setting
+template<typename HandleT> static constexpr uint32_t k_max_handles = 256;
 
 } // namespace erwin

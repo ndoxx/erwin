@@ -30,8 +30,6 @@ namespace erwin
     DO_ACTION(ShaderHandle)                                                                                            \
     DO_ACTION(FramebufferHandle)
 
-constexpr std::size_t k_handle_alloc_size = 10 * 2 * sizeof(HandlePoolT<k_max_render_handles>);
-
 /*
           _____                _              ____
          |  __ \              | |            / __ \
@@ -228,7 +226,7 @@ static struct RendererStorage
                           "CB-Post");
         auxiliary_arena_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB),
                               "Auxiliary");
-        handle_arena_.init(*renderer_memory_, k_handle_alloc_size, "RenderHandles");
+        handle_arena_.init(*renderer_memory_, k_render_handle_alloc_size, "RenderHandles");
         queue_.init(*renderer_memory_);
 
 // Init handle pools

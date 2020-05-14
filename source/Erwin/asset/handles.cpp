@@ -3,7 +3,7 @@
 namespace erwin
 {
 
-HANDLE_DEFINITION( TextureAtlasHandle, k_max_atlases );
-HANDLE_DEFINITION( FontAtlasHandle, k_max_font_atlases );
+HANDLE_DEFINITION(TextureAtlasHandle);
+HANDLE_DEFINITION(FontAtlasHandle);
 
 } // namespace erwin
