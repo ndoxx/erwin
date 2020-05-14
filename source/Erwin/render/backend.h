@@ -59,16 +59,24 @@ public:
     // Read framebuffer content to an array
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) = 0;
 
+    // * Immediate
     // Promise texture data
     virtual std::pair<uint64_t, std::future<PixelData>> future_texture_data() = 0;
-
+    // Get handle of default render target
     virtual FramebufferHandle default_render_target() = 0;
+    // Get handle of a specified texture slot inside a framebuffer
     virtual TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index) = 0;
+    // Get handle of a cubemap inside a framebuffer
     virtual CubemapHandle get_framebuffer_cubemap(FramebufferHandle handle) = 0;
+    // Get name of a specified texture slot inside a framebuffer
     virtual hash_t get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index) = 0;
+    // Get texture count inside a framebuffer
     virtual uint32_t get_framebuffer_texture_count(FramebufferHandle handle) = 0;
+    // Get opaque implementation specific handle of a texture (for ImGui and debug purposes)
     virtual void* get_native_texture_handle(TextureHandle handle) = 0;
+    // Create a vertex buffer layout description
     virtual VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) = 0;
+    // Retrieve a layout description
     virtual const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle) = 0;
 
     // * Command dispatch

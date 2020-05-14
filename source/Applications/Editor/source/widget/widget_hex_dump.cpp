@@ -42,8 +42,11 @@ void HexDumpWidget::refresh()
 
 void HexDumpWidget::register_area_description(const std::string& name, const std::vector<memory::debug::AreaItem>& items)
 {
-    s_storage.names_.insert(std::make_pair(s_storage.area_descriptions_.size(), name));
-    s_storage.area_descriptions_.push_back(items);
+    if(!items.empty())
+    {
+        s_storage.names_.insert(std::make_pair(s_storage.area_descriptions_.size(), name));
+        s_storage.area_descriptions_.push_back(items);
+    }
 }
 
 void HexDumpWidget::on_imgui_render()
