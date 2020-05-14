@@ -42,12 +42,12 @@ static struct RenderDeviceStorage
 
     inline void clear_resources()
     {
+        for(auto&& obj: index_buffers) obj.release();
+        for(auto&& obj: vertex_buffers) obj.release();
+        for(auto&& obj: vertex_arrays) obj.release();
+        for(auto&& obj: uniform_buffers) obj.release();
+        for(auto&& obj: shader_storage_buffers) obj.release();
         std::fill(std::begin(vertex_buffer_layouts), std::end(vertex_buffer_layouts), nullptr);
-        std::fill(std::begin(index_buffers), std::end(index_buffers), nullptr);
-        std::fill(std::begin(vertex_buffers), std::end(vertex_buffers), nullptr);
-        std::fill(std::begin(vertex_arrays), std::end(vertex_arrays), nullptr);
-        std::fill(std::begin(uniform_buffers), std::end(uniform_buffers), nullptr);
-        std::fill(std::begin(shader_storage_buffers), std::end(shader_storage_buffers), nullptr);
         std::fill(std::begin(textures), std::end(textures), nullptr);
         std::fill(std::begin(cubemaps), std::end(cubemaps), nullptr);
         std::fill(std::begin(shaders), std::end(shaders), nullptr);
@@ -57,15 +57,15 @@ static struct RenderDeviceStorage
     FramebufferHandle default_framebuffer_ = {};
     FramebufferHandle current_framebuffer_ = {};
     glm::vec2 host_window_size_;
-
     std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
-    WRef<BufferLayout> vertex_buffer_layouts[k_max_render_handles];
 
-    WRef<OGLIndexBuffer> index_buffers[k_max_render_handles];
-    WRef<OGLVertexBuffer> vertex_buffers[k_max_render_handles];
-    WRef<OGLVertexArray> vertex_arrays[k_max_render_handles];
-    WRef<OGLUniformBuffer> uniform_buffers[k_max_render_handles];
-    WRef<OGLShaderStorageBuffer> shader_storage_buffers[k_max_render_handles];
+    std::array<OGLIndexBuffer, k_max_render_handles> index_buffers;
+    std::array<OGLVertexBuffer, k_max_render_handles> vertex_buffers;
+    std::array<OGLVertexArray, k_max_render_handles> vertex_arrays;
+    std::array<OGLUniformBuffer, k_max_render_handles> uniform_buffers;
+    std::array<OGLShaderStorageBuffer, k_max_render_handles> shader_storage_buffers;
+
+    WRef<BufferLayout> vertex_buffer_layouts[k_max_render_handles];
     WRef<OGLTexture2D> textures[k_max_render_handles];
     WRef<OGLCubemap> cubemaps[k_max_render_handles];
     WRef<OGLShader> shaders[k_max_render_handles];
@@ -351,7 +351,7 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&mode);
     buf.read(&auxiliary);
 
-    s_storage.index_buffers[handle.index] = make_ref<OGLIndexBuffer>(auxiliary, count, primitive, mode);
+    s_storage.index_buffers[handle.index].init(auxiliary, count, primitive, mode);
 }
 
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -370,7 +370,7 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
-    s_storage.vertex_buffers[handle.index] = make_ref<OGLVertexBuffer>(auxiliary, count, layout, mode);
+    s_storage.vertex_buffers[handle.index].init(auxiliary, count, layout, mode);
 }
 
 void create_vertex_array(memory::LinearBuffer<>& buf)
@@ -384,10 +384,14 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
     buf.read(&ib);
     buf.read(&vb);
 
-    s_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
-    s_storage.vertex_arrays[handle.index]->set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
+    s_storage.vertex_arrays[handle.index].init();
+    s_storage.vertex_arrays[handle.index].set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
+    vb.release();
     if(ib.index != k_invalid_handle)
-        s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
+    {
+        s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
+        ib.release();
+    }
 }
 
 void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
@@ -401,17 +405,21 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
     buf.read(&ib);
     buf.read(&VBO_count);
 
-    s_storage.vertex_arrays[handle.index] = make_ref<OGLVertexArray>();
+    s_storage.vertex_arrays[handle.index].init();
 
     for(uint8_t ii = 0; ii < VBO_count; ++ii)
     {
         VertexBufferHandle vb;
         buf.read(&vb);
-        s_storage.vertex_arrays[handle.index]->add_vertex_buffer(s_storage.vertex_buffers[vb.index]);
+        s_storage.vertex_arrays[handle.index].add_vertex_buffer(s_storage.vertex_buffers[vb.index]);
+        vb.release();
     }
 
     if(ib.index != k_invalid_handle)
-        s_storage.vertex_arrays[handle.index]->set_index_buffer(s_storage.index_buffers[ib.index]);
+    {
+        s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
+        ib.release();
+    }
 }
 
 void create_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -429,7 +437,7 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read_str(name);
     buf.read(&auxiliary);
 
-    s_storage.uniform_buffers[handle.index] = make_ref<OGLUniformBuffer>(name, auxiliary, size, mode);
+    s_storage.uniform_buffers[handle.index].init(name, auxiliary, size, mode);
 }
 
 void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
@@ -447,7 +455,7 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read_str(name);
     buf.read(&auxiliary);
 
-    s_storage.shader_storage_buffers[handle.index] = make_ref<OGLShaderStorageBuffer>(name, auxiliary, size, mode);
+    s_storage.shader_storage_buffers[handle.index].init(name, auxiliary, size, mode);
 }
 
 void create_shader(memory::LinearBuffer<>& buf)
@@ -540,7 +548,7 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&count);
     buf.read(&auxiliary);
 
-    s_storage.index_buffers[handle.index]->map(auxiliary, count * sizeof(uint32_t));
+    s_storage.index_buffers[handle.index].map(auxiliary, count * sizeof(uint32_t));
 }
 
 void update_vertex_buffer(memory::LinearBuffer<>& buf)
@@ -554,7 +562,7 @@ void update_vertex_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    s_storage.vertex_buffers[handle.index]->map(auxiliary, size);
+    s_storage.vertex_buffers[handle.index].map(auxiliary, size);
 }
 
 void update_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -568,7 +576,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    auto& UBO = *s_storage.uniform_buffers[handle.index];
+    auto& UBO = s_storage.uniform_buffers[handle.index];
     UBO.map(auxiliary, size ? size : UBO.get_size());
 }
 
@@ -583,7 +591,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    s_storage.shader_storage_buffers[handle.index]->map(auxiliary, size);
+    s_storage.shader_storage_buffers[handle.index].map(auxiliary, size);
 }
 
 void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
@@ -596,7 +604,7 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&ubo_handle);
 
     auto& shader = *s_storage.shaders[shader_handle.index];
-    shader.attach_uniform_buffer(*s_storage.uniform_buffers[ubo_handle.index]);
+    shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
 }
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
@@ -609,7 +617,7 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&ssbo_handle);
 
     auto& shader = *s_storage.shaders[shader_handle.index];
-    shader.attach_shader_storage(*s_storage.shader_storage_buffers[ssbo_handle.index]);
+    shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
 }
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
@@ -706,7 +714,7 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 
     IndexBufferHandle handle;
     buf.read(&handle);
-    s_storage.index_buffers[handle.index] = nullptr;
+    s_storage.index_buffers[handle.index].release();
     handle.release();
 }
 
@@ -726,7 +734,7 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 
     VertexBufferHandle handle;
     buf.read(&handle);
-    s_storage.vertex_buffers[handle.index] = nullptr;
+    s_storage.vertex_buffers[handle.index].release();
     handle.release();
 }
 
@@ -736,7 +744,7 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 
     VertexArrayHandle handle;
     buf.read(&handle);
-    s_storage.vertex_arrays[handle.index] = nullptr;
+    s_storage.vertex_arrays[handle.index].release();
     handle.release();
 }
 
@@ -746,7 +754,7 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 
     UniformBufferHandle handle;
     buf.read(&handle);
-    s_storage.uniform_buffers[handle.index] = nullptr;
+    s_storage.uniform_buffers[handle.index].release();
     handle.release();
 }
 
@@ -756,7 +764,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
     ShaderStorageBufferHandle handle;
     buf.read(&handle);
-    s_storage.shader_storage_buffers[handle.index] = nullptr;
+    s_storage.shader_storage_buffers[handle.index].release();
     handle.release();
 }
 
@@ -972,7 +980,7 @@ void draw(memory::LinearBuffer<>& buf)
 
     // * Execute draw call
     static uint16_t last_VAO_index = k_invalid_handle;
-    auto& va = *s_storage.vertex_arrays[data.VAO.index];
+    auto& va = s_storage.vertex_arrays[data.VAO.index];
     // Avoid switching vertex array when possible
     if(data.VAO.index != last_VAO_index)
     {
@@ -1071,7 +1079,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&data);
 
-    s_storage.shader_storage_buffers[ssbo_handle.index]->stream(data, size, 0);
+    s_storage.shader_storage_buffers[ssbo_handle.index].stream(data, size, 0);
     /*
         auto& ssbo = *s_storage.shader_storage_buffers[ssbo_handle.index];
         if(!ssbo.has_persistent_mapping())
@@ -1091,7 +1099,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&data);
 
-    auto& ubo = *s_storage.uniform_buffers[ubo_handle.index];
+    auto& ubo = s_storage.uniform_buffers[ubo_handle.index];
     ubo.stream(data, size ? size : ubo.get_size(), 0);
 }
 

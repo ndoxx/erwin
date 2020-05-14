@@ -73,24 +73,9 @@ static GLenum to_ogl_base_type(ShaderDataType type)
     return 0;
 }
 
-
-OGLBuffer::OGLBuffer(uint32_t target):
-unique_id_(id::unique_id()),
-persistent_map_(nullptr),
-has_persistent_mapping_(false),
-target_(target),
-rd_handle_(0)
-{
-
-}
-
 OGLBuffer::~OGLBuffer()
 {
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Buffer " << WCC(0) << " id=" << rd_handle_ << std::endl;
-    // Unbind and delete
-    glBindBuffer(target_, 0);
-    glDeleteBuffers(1, &rd_handle_);
-    DLOGI << "done" << std::endl;
+    release_base();
 }
 
 void OGLBuffer::bind() const
@@ -130,8 +115,11 @@ void OGLBuffer::map_persistent(void* data, uint32_t size, uint32_t offset)
     glDeleteSync(fence);
 }
 
-void OGLBuffer::init(void* data, uint32_t size, UsagePattern mode)
+void OGLBuffer::init_base(uint32_t target, void* data, uint32_t size, UsagePattern mode)
 {
+    unique_id_ = id::unique_id();
+    target_ = target;
+
     GLenum gl_usage_pattern = to_ogl_usage_pattern(mode);
 
     glGenBuffers(1, &rd_handle_);
@@ -144,76 +132,159 @@ void OGLBuffer::init(void* data, uint32_t size, UsagePattern mode)
         persistent_map_ = glMapBufferRange(target_, 0, size, gl_usage_pattern);
         has_persistent_mapping_ = true;
     }
+
+    initialized_ = true;
 }
 
-
-OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode):
-OGLBuffer(GL_ARRAY_BUFFER),
-layout_(layout),
-count_(count)
+void OGLBuffer::release_base()
 {
-    uint32_t size = uint32_t(count_)*layout_.get_stride();
-    init(vertex_data, size, mode);
-
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Vertex count:  " << count_ << std::endl;
-    DLOGI << "Size:          " << size << "B" << std::endl;
-    DLOGI << "Usage pattern: " << to_string(mode) << std::endl;
-    DLOGI << "Layout:        ";
-    for(auto&& element: layout_)
-        DLOGI << "[" << to_string(element.type) << "]";
-    DLOGI << std::endl;
+    if(initialized_)
+    {
+        DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Buffer " << WCC(0) << " id=" << rd_handle_ << std::endl;
+        // Unbind and delete
+        glBindBuffer(target_, 0);
+        glDeleteBuffers(1, &rd_handle_);
+        DLOGI << "done" << std::endl;
+        initialized_ = false;
+    }
 }
 
-OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode):
-OGLBuffer(GL_ELEMENT_ARRAY_BUFFER),
-primitive_(primitive),
-count_(count)
+
+OGLVertexBuffer::OGLVertexBuffer(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode)
 {
-    uint32_t size = uint32_t(count_)*sizeof(uint32_t);
-    init(index_data, size, mode);
-
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Index count:   " << count_ << std::endl;
-    DLOGI << "Size:          " << count_*sizeof(float) << "B" << std::endl;
-    DLOGI << "Usage pattern: " << to_string(mode) << std::endl;
+    init(vertex_data, count, layout, mode);
 }
 
-OGLUniformBuffer::OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode):
-OGLBuffer(GL_UNIFORM_BUFFER),
-name_(name),
-struct_size_(struct_size)
+void OGLVertexBuffer::init(float* vertex_data, uint32_t count, const BufferLayout& layout, UsagePattern mode)
 {
-    init(data, struct_size_, mode);
+    if(!initialized_)
+    {
+        layout_ = layout;
+        count_ = count;
+        uint32_t size = uint32_t(count_)*layout_.get_stride();
+        init_base(GL_ARRAY_BUFFER, vertex_data, size, mode);
 
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
+        DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+        DLOGI << "Vertex count:  " << count_ << std::endl;
+        DLOGI << "Size:          " << size << "B" << std::endl;
+        DLOGI << "Usage pattern: " << to_string(mode) << std::endl;
+        DLOGI << "Layout:        ";
+        for(auto&& element: layout_)
+            DLOGI << "[" << to_string(element.type) << "]";
+        DLOGI << std::endl;
+    }
 }
 
-OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, UsagePattern mode):
-OGLBuffer(GL_SHADER_STORAGE_BUFFER),
-name_(name),
-size_(size)
+void OGLVertexBuffer::release()
 {
-    init(data, size_, mode);
-
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
-    DLOGI << "Size: " << size_ << "B" << std::endl;
+    release_base();
 }
 
-OGLVertexArray::OGLVertexArray():
-unique_id_(id::unique_id())
+
+OGLIndexBuffer::OGLIndexBuffer(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode)
 {
-    //glGenVertexArrays(1, &rd_handle_);
-    glCreateVertexArrays(1, &rd_handle_);
-    DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+    init(index_data, count, primitive, mode);
 }
+
+void OGLIndexBuffer::init(uint32_t* index_data, uint32_t count, DrawPrimitive primitive, UsagePattern mode)
+{
+    if(!initialized_)
+    {
+        primitive_ = primitive;
+        count_ = count;
+        uint32_t size = uint32_t(count_)*sizeof(uint32_t);
+        init_base(GL_ELEMENT_ARRAY_BUFFER, index_data, size, mode);
+
+        DLOG("render",1) << "OpenGL " << WCC('i') << "Index Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+        DLOGI << "Index count:   " << count_ << std::endl;
+        DLOGI << "Size:          " << count_*sizeof(float) << "B" << std::endl;
+        DLOGI << "Usage pattern: " << to_string(mode) << std::endl;
+    }
+}
+
+void OGLIndexBuffer::release()
+{
+    release_base();
+}
+
+
+OGLUniformBuffer::OGLUniformBuffer(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode)
+{
+    init(name, data, struct_size, mode);
+}
+
+void OGLUniformBuffer::init(const std::string& name, void* data, uint32_t struct_size, UsagePattern mode)
+{
+    if(!initialized_)
+    {
+        name_ = name;
+        struct_size_ = struct_size;
+        init_base(GL_UNIFORM_BUFFER, data, struct_size_, mode);
+        DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+        DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
+    }
+}
+
+void OGLUniformBuffer::release()
+{
+    release_base();
+}
+
+
+OGLShaderStorageBuffer::OGLShaderStorageBuffer(const std::string& name, void* data, uint32_t size, UsagePattern mode)
+{
+    init(name, data, size, mode);
+}
+
+void OGLShaderStorageBuffer::init(const std::string& name, void* data, uint32_t size, UsagePattern mode)
+{
+    if(!initialized_)
+    {
+        name_ = name;
+        size_ = size;
+        init_base(GL_SHADER_STORAGE_BUFFER, data, size_, mode);
+
+        DLOG("render",1) << "OpenGL " << WCC('i') << "Shader Storage Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+        DLOGI << "Size: " << size_ << "B" << std::endl;
+    }
+}
+
+void OGLShaderStorageBuffer::release()
+{
+    release_base();
+}
+
 
 OGLVertexArray::~OGLVertexArray()
 {
-    DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " id=" << rd_handle_ << std::endl;
-    glDeleteVertexArrays(1, &rd_handle_);
-    DLOGI << "done" << std::endl;
+    release();
+}
+
+void OGLVertexArray::init()
+{
+    if(!initialized_)
+    {
+        unique_id_ = id::unique_id();
+        glCreateVertexArrays(1, &rd_handle_);
+        DLOG("render",1) << "OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
+        initialized_ = true;
+    }
+}
+
+void OGLVertexArray::release()
+{
+    if(initialized_)
+    {
+        DLOG("render",1) << "Destroying OpenGL " << WCC('i') << "Vertex Array" << WCC(0) << " id=" << rd_handle_ << std::endl;
+        glDeleteVertexArrays(1, &rd_handle_);
+        // release VBO/IBO
+        if(has_index_buffer())
+            index_buffer_->get().release();
+        for(auto&& vb: vertex_buffers_)
+            vb.get().release();
+        DLOGI << "done" << std::endl;
+        initialized_ = false;
+    }
 }
 
 void OGLVertexArray::bind() const
@@ -226,18 +297,19 @@ void OGLVertexArray::unbind() const
     glBindVertexArray(0);
 }
 
-void OGLVertexArray::add_vertex_buffer(WRef<OGLVertexBuffer> p_vb)
+void OGLVertexArray::add_vertex_buffer(std::reference_wrapper<OGLVertexBuffer> r_vb)
 {
+    auto& vb = r_vb.get();
 	// Make sure buffer layout is meaningful
-	W_ASSERT(p_vb->get_layout().get_count(), "Vertex buffer has empty layout!");
+	W_ASSERT(vb.get_layout().get_count(), "Vertex buffer has empty layout!");
 
 	// Bind vertex array then vertex buffer
     glBindVertexArray(rd_handle_);
-	p_vb->bind();
+	vb.bind();
 
 	// For each element in layout, enable attribute array and push 
 	// data layout description to OpenGL
-	const auto& layout = p_vb->get_layout();
+	const auto& layout = vb.get_layout();
 	for(auto&& element: layout)
 	{
 		glEnableVertexAttribArray(vb_index_);
@@ -251,22 +323,23 @@ void OGLVertexArray::add_vertex_buffer(WRef<OGLVertexBuffer> p_vb)
 	}
     glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
 
-	vertex_buffers_.push_back(p_vb);
+	vertex_buffers_.push_back(r_vb);
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: added vertex buffer ["
-					 << std::static_pointer_cast<OGLVertexBuffer>(p_vb)->get_handle() << "]" << std::endl;
+					 << vb.get_handle() << "]" << std::endl;
 }
 
-void OGLVertexArray::set_index_buffer(WRef<OGLIndexBuffer> p_ib)
+void OGLVertexArray::set_index_buffer(std::reference_wrapper<OGLIndexBuffer> r_ib)
 {
+    auto& ib = r_ib.get();
     glBindVertexArray(rd_handle_);
-	p_ib->bind();
+	ib.bind();
     glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
 	
-    index_buffer_ = p_ib;
+    index_buffer_ = r_ib;
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
-					 << std::static_pointer_cast<OGLIndexBuffer>(p_ib)->get_handle() << "]" << std::endl;
+					 << ib.get_handle() << "]" << std::endl;
 }
 
 // ----------------------------------------------------------------------------------
