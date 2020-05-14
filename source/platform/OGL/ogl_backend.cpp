@@ -22,6 +22,21 @@ inline bool is_power_of_2(int value) { return bool((value) && ((value & (value -
 
 inline bool is_power_of_2(uint32_t value) { return is_power_of_2(int(value)); }
 
+struct VertexArrayDependencies
+{
+    std::vector<VertexBufferHandle> vbos;
+    IndexBufferHandle ibo = {};
+
+    inline void release()
+    {
+        for(VertexBufferHandle vbo: vbos)
+            vbo.release();
+        if(ibo.index != k_invalid_handle)
+            ibo.release();
+        vbos.clear();
+    }
+};
+
 static struct RenderDeviceStorage
 {
     void init()
@@ -58,6 +73,7 @@ static struct RenderDeviceStorage
     FramebufferHandle current_framebuffer_ = {};
     glm::vec2 host_window_size_;
     std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
+    std::array<VertexArrayDependencies, k_max_render_handles> vertex_array_dependencies;
 
     std::array<OGLIndexBuffer, k_max_render_handles> index_buffers;
     std::array<OGLVertexBuffer, k_max_render_handles> vertex_buffers;
@@ -386,11 +402,11 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
 
     s_storage.vertex_arrays[handle.index].init();
     s_storage.vertex_arrays[handle.index].set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
-    vb.release();
+    s_storage.vertex_array_dependencies[handle.index].vbos.push_back(vb);
     if(ib.index != k_invalid_handle)
     {
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
-        ib.release();
+        s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
 }
 
@@ -412,13 +428,13 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
         VertexBufferHandle vb;
         buf.read(&vb);
         s_storage.vertex_arrays[handle.index].add_vertex_buffer(s_storage.vertex_buffers[vb.index]);
-        vb.release();
+        s_storage.vertex_array_dependencies[handle.index].vbos.push_back(vb);
     }
 
     if(ib.index != k_invalid_handle)
     {
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
-        ib.release();
+        s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
 }
 
@@ -745,6 +761,7 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
     VertexArrayHandle handle;
     buf.read(&handle);
     s_storage.vertex_arrays[handle.index].release();
+    s_storage.vertex_array_dependencies[handle.index].release(); // Release VBOs/IBO handles
     handle.release();
 }
 
