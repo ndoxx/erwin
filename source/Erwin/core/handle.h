@@ -9,6 +9,10 @@
 namespace erwin
 {
 
+// Maximum amount of handles for every managed object
+// Default is 256, but the HANDLE_DECLARATION() macro overrides this setting
+template<typename HandleT> static constexpr uint32_t k_max_handles = 256;
+
 typedef uint64_t HandleID;
 static constexpr uint16_t k_invalid_handle = 0xffff;
 static constexpr uint64_t k_invalid_robust_handle = 0xffffffffffffffff;

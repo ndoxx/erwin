@@ -28,8 +28,16 @@ static constexpr uint32_t k_max_draw_calls = 8192;
 // Maximum amount of dependencies per draw call
 static constexpr uint32_t k_max_draw_call_dependencies = 8;
 
-// Maximum amount of handles for every object managed by the main renderer
-// Default is 256, but the HANDLE_DECLARATION() macro overrides this setting
-template<typename HandleT> static constexpr uint32_t k_max_handles = 256;
+// Maximum amount of managed objects
+static constexpr uint32_t k_max_index_buffers = 512;
+static constexpr uint32_t k_max_vertex_buffer_layouts = 64;
+static constexpr uint32_t k_max_vertex_buffers = 512;
+static constexpr uint32_t k_max_vertex_arrays = 512;
+static constexpr uint32_t k_max_uniform_buffers = 256;
+static constexpr uint32_t k_max_shader_storage_buffers = 64;
+static constexpr uint32_t k_max_textures = 256;
+static constexpr uint32_t k_max_cubemaps = 256;
+static constexpr uint32_t k_max_shaders = 256;
+static constexpr uint32_t k_max_framebuffers = 256;
 
 } // namespace erwin

@@ -6,16 +6,16 @@
 namespace erwin
 {
 
-HANDLE_DECLARATION(IndexBufferHandle, 512);
-HANDLE_DECLARATION(VertexBufferLayoutHandle, 64);
-HANDLE_DECLARATION(VertexBufferHandle, 512);
-HANDLE_DECLARATION(VertexArrayHandle, 512);
-HANDLE_DECLARATION(UniformBufferHandle, 256);
-HANDLE_DECLARATION(ShaderStorageBufferHandle, 64);
-HANDLE_DECLARATION(TextureHandle, 256);
-HANDLE_DECLARATION(CubemapHandle, 256);
-HANDLE_DECLARATION(ShaderHandle, 256);
-HANDLE_DECLARATION(FramebufferHandle, 256);
+HANDLE_DECLARATION(IndexBufferHandle, k_max_index_buffers);
+HANDLE_DECLARATION(VertexBufferLayoutHandle, k_max_vertex_buffer_layouts);
+HANDLE_DECLARATION(VertexBufferHandle, k_max_vertex_buffers);
+HANDLE_DECLARATION(VertexArrayHandle, k_max_vertex_arrays);
+HANDLE_DECLARATION(UniformBufferHandle, k_max_uniform_buffers);
+HANDLE_DECLARATION(ShaderStorageBufferHandle, k_max_shader_storage_buffers);
+HANDLE_DECLARATION(TextureHandle, k_max_textures);
+HANDLE_DECLARATION(CubemapHandle, k_max_cubemaps);
+HANDLE_DECLARATION(ShaderHandle, k_max_shaders);
+HANDLE_DECLARATION(FramebufferHandle, k_max_framebuffers);
 
 static constexpr std::size_t k_render_handle_alloc_size =
     HandlePoolT<k_max_handles<IndexBufferHandle>>::k_size_bytes +
