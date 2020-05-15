@@ -1,12 +1,9 @@
-#include "platform/ogl_texture.h"
-#include "render/render_device.h"
+#include "platform/OGL/ogl_texture.h"
 #include "core/core.h"
-#include "filesystem/cat_file.h"
 #include "debug/logger.h"
 
 #include "glad/glad.h"
 #include "glm/glm.hpp"
-#include "stb/stb_image.h"
 #include <iostream>
 namespace erwin
 {
@@ -140,123 +137,79 @@ static void do_generate_mipmaps(uint32_t rd_handle, uint32_t base_level, uint32_
     glTextureParameterf(rd_handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, glm::clamp(max_anisotropy, 0.0f, 8.0f));
 }
 
-
-OGLTexture2D::OGLTexture2D(const fs::path filepath)
+OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor)
 {
-	DLOGN("texture") << "Loading texture from file: " << std::endl;
-	DLOGI << "path:   " << WCC('p') << fs::relative(filepath, filesystem::get_asset_dir()) << WCC(0) << std::endl;
-	
-	if(!fs::exists(filepath))
-	{
-		DLOGW("texture") << "File does not exist!" << std::endl;
-		DLOGI << "Loading " << WCC('d') << "default" << WCC(0) << std::endl;
-		W_ASSERT(false, "Default texture loading not implemented!");
-	}
-
-	int width, height, channels;
-	// Need to flip vertically so that data is in the expected order for OpenGL
-	stbi_set_flip_vertically_on_load(1);
-
-	// 5th parameter can be used to force a format like RGBA when input file is just RGB
-	stbi_uc* data = stbi_load(filepath.string().c_str(), &width, &height, &channels, 0);
-	W_ASSERT(data, "Failed to load image!");
-	width_ = uint32_t(width);
-	height_ = uint32_t(height);
-
-	DLOGI << "WxH:    " << width_ << "x" << height_ << std::endl;
-
-	// Setup internal format using number of channels
-	GLenum internalFormat = 0, dataFormat = 0;
-	if(channels == 4)
-	{
-		internalFormat = GL_RGBA8;
-		dataFormat = GL_RGBA;
-	}
-	else if(channels == 3)
-	{
-		internalFormat = GL_RGB8;
-		dataFormat = GL_RGB;
-	}
-	W_ASSERT(internalFormat & dataFormat, "Format not supported!");
-
-	// Upload to OpenGL
-	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
-	glTextureStorage2D(rd_handle_, 1, internalFormat, width_, height_);
-	glTextureParameteri(rd_handle_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTextureParameteri(rd_handle_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, dataFormat, GL_UNSIGNED_BYTE, data);
-
-	DLOGI << "handle: " << rd_handle_ << std::endl;
-
-	// Cleanup
-	stbi_image_free(data);
-}
-
-OGLTexture2D::OGLTexture2D(const Texture2DDescriptor& descriptor):
-width_(descriptor.width),
-height_(descriptor.height),
-mips_(descriptor.mips)
-{
-	DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
-
-	glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
-	DLOGI << "handle: " << rd_handle_ << std::endl;
-	DLOGI << "width:  " << width_ << std::endl;
-	DLOGI << "height: " << height_ << std::endl;
-
-	const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
-	glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
-	DLOGI << "format: " << format_to_string(fd.format) << std::endl;
-
-	if(descriptor.data)
-	{
-		if(fd.is_compressed)
-			glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, width_*height_, descriptor.data);
-		else
-			glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, fd.data_type, descriptor.data);
-	}
-
-	bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-    if(has_mipmap)
-    {
-        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
-        DLOGI << "levels: " << mips_ << std::endl;
-    }
-    else
-    {
-        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
-    }
-	handle_address_UV_2D(rd_handle_, descriptor.wrap);
-
-    // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap() && mips_>0)
-        do_generate_mipmaps(rd_handle_, 0, mips_);
-    else
-    {
-        glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
-        glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
-    }
+    init(descriptor);
 }
 
 OGLTexture2D::~OGLTexture2D()
 {
-	glDeleteTextures(1, &rd_handle_);
-	DLOG("texture",1) << "Destroyed texture [" << rd_handle_ << "]" << std::endl;
+    release();
 }
 
-uint32_t OGLTexture2D::get_width() const
+void OGLTexture2D::init(const Texture2DDescriptor& descriptor)
 {
-	return width_;
+    if(!initialized_)
+    {
+        width_ = descriptor.width;
+        height_ = descriptor.height;
+        mips_ = descriptor.mips;
+        format_ = descriptor.image_format;
+        filter_ = descriptor.filter;
+        wrap_ = descriptor.wrap;
+        
+        DLOGN("texture") << "Creating texture from descriptor: " << std::endl;
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &rd_handle_);
+        DLOGI << "handle: " << rd_handle_ << std::endl;
+        DLOGI << "width:  " << width_ << std::endl;
+        DLOGI << "height: " << height_ << std::endl;
+
+        const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
+        glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
+        DLOGI << "format: " << format_to_string(fd.format) << std::endl;
+
+        if(descriptor.data)
+        {
+            if(fd.is_compressed)
+                glCompressedTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, width_*height_, descriptor.data);
+            else
+                glTextureSubImage2D(rd_handle_, 0, 0, 0, width_, height_, fd.format, fd.data_type, descriptor.data);
+        }
+
+        bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
+        if(has_mipmap)
+        {
+            DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+            DLOGI << "levels: " << mips_ << std::endl;
+        }
+        else
+        {
+            DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
+        }
+        handle_address_UV_2D(rd_handle_, descriptor.wrap);
+
+        // Handle mipmap if specified
+        if(has_mipmap && !descriptor.lazy_mipmap() && mips_>0)
+            do_generate_mipmaps(rd_handle_, 0, mips_);
+        else
+        {
+            glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
+            glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
+        }
+
+        initialized_ = true;
+    }
 }
 
-uint32_t OGLTexture2D::get_height() const
+void OGLTexture2D::release()
 {
-	return height_;
-}
-
-uint32_t OGLTexture2D::get_mips() const
-{
-    return mips_;
+    if(initialized_)
+    {
+        glDeleteTextures(1, &rd_handle_);
+        DLOG("texture",1) << "Destroyed texture [" << rd_handle_ << "]" << std::endl;
+        initialized_ = false;
+    }
 }
 
 void OGLTexture2D::generate_mipmaps() const
@@ -282,88 +235,88 @@ void OGLTexture2D::unbind() const
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void* OGLTexture2D::get_native_handle()
+
+
+OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor)
 {
-    // Cast to void* directly for compatibility with ImGUI
-    return reinterpret_cast<void*>(uint64_t(rd_handle_));
-}
-
-
-
-
-
-OGLCubemap::OGLCubemap(const CubemapDescriptor& descriptor):
-width_(descriptor.width),
-height_(descriptor.height),
-mips_(descriptor.mips)
-{
-    DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
-
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &rd_handle_);
-    DLOGI << "handle: " << rd_handle_ << std::endl;
-    DLOGI << "width:  " << width_ << std::endl;
-    DLOGI << "height: " << height_ << std::endl;
-
-    const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
-    glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
-    DLOGI << "format: " << format_to_string(fd.format) << std::endl;
-
-    bool has_data = true;
-    for(size_t face=0; face<6; ++face)
-        has_data &= (descriptor.face_data[face] != nullptr);
-
-    if(has_data)
-    {
-        for(size_t face=0; face<6; ++face)
-        {
-            if(fd.is_compressed)
-                glCompressedTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, width_*height_, descriptor.face_data[face]);
-            else
-                glTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, fd.data_type, descriptor.face_data[face]);
-        }
-    }
-
-    bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
-    if(has_mipmap)
-    {
-        DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
-        DLOGI << "levels: " << mips_ << std::endl;
-    }
-    else
-    {
-        DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
-    }
-    handle_address_UV_3D(rd_handle_, descriptor.wrap);
-
-    // Handle mipmap if specified
-    if(has_mipmap && !descriptor.lazy_mipmap && mips_>0)
-        do_generate_mipmaps(rd_handle_, 0, mips_);
-    else
-    {
-        glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
-        glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
-    }
+    init(descriptor);
 }
 
 OGLCubemap::~OGLCubemap()
 {
-    glDeleteTextures(1, &rd_handle_);
-    DLOG("texture",1) << "Destroyed cubemap [" << rd_handle_ << "]" << std::endl;
+    release();
 }
 
-uint32_t OGLCubemap::get_width() const
+void OGLCubemap::init(const CubemapDescriptor& descriptor)
 {
-    return width_;
+    if(!initialized_)
+    {
+        width_ = descriptor.width;
+        height_ = descriptor.height;
+        mips_ = descriptor.mips;
+        format_ = descriptor.image_format;
+        filter_ = descriptor.filter;
+        wrap_ = descriptor.wrap;
+        
+        DLOGN("texture") << "Creating cubemap from descriptor: " << std::endl;
+
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &rd_handle_);
+        DLOGI << "handle: " << rd_handle_ << std::endl;
+        DLOGI << "width:  " << width_ << std::endl;
+        DLOGI << "height: " << height_ << std::endl;
+
+        const FormatDescriptor& fd = s_format_descriptor.at(descriptor.image_format);
+        glTextureStorage2D(rd_handle_, mips_+1, fd.internal_format, width_, height_);
+        DLOGI << "format: " << format_to_string(fd.format) << std::endl;
+
+        bool has_data = true;
+        for(size_t face=0; face<6; ++face)
+            has_data &= (descriptor.face_data[face] != nullptr);
+
+        if(has_data)
+        {
+            for(size_t face=0; face<6; ++face)
+            {
+                if(fd.is_compressed)
+                    glCompressedTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, width_*height_, descriptor.face_data[face]);
+                else
+                    glTextureSubImage3D(rd_handle_, 0, 0, 0, int(face), width_, height_, 1, fd.format, fd.data_type, descriptor.face_data[face]);
+            }
+        }
+
+        bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
+        if(has_mipmap)
+        {
+            DLOGI << "mipmap: " << WCC('g') << "true" << std::endl;
+            DLOGI << "levels: " << mips_ << std::endl;
+        }
+        else
+        {
+            DLOGI << "mipmap: " << WCC('b') << "false" << std::endl;
+        }
+        handle_address_UV_3D(rd_handle_, descriptor.wrap);
+
+        // Handle mipmap if specified
+        if(has_mipmap && !descriptor.lazy_mipmap && mips_>0)
+            do_generate_mipmaps(rd_handle_, 0, mips_);
+        else
+        {
+            glTextureParameteri(rd_handle_, GL_TEXTURE_BASE_LEVEL, 0);
+            glTextureParameteri(rd_handle_, GL_TEXTURE_MAX_LEVEL, 0);
+        }
+
+        initialized_ = true;
+    }
 }
 
-uint32_t OGLCubemap::get_height() const
+void OGLCubemap::release()
 {
-    return height_;
-}
-
-uint32_t OGLCubemap::get_mips() const
-{
-    return mips_;
+    if(initialized_)
+    {
+        glDeleteTextures(1, &rd_handle_);
+        DLOG("texture",1) << "Destroyed cubemap [" << rd_handle_ << "]" << std::endl;
+        initialized_ = false;
+    }
 }
 
 void OGLCubemap::generate_mipmaps() const
@@ -379,12 +332,6 @@ void OGLCubemap::bind(uint32_t slot) const
 void OGLCubemap::unbind() const
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-}
-
-void* OGLCubemap::get_native_handle()
-{
-    // Cast to void* directly for compatibility with ImGUI
-    return reinterpret_cast<void*>(uint64_t(rd_handle_));
 }
 
 

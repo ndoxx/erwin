@@ -1,41 +1,47 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include "core/core.h"
-#include "render/shader.h"
 #include "render/shader_lang.h"
+#include "platform/OGL/ogl_buffer.h"
+#include "platform/OGL/ogl_texture.h"
 
 #include "glm/glm.hpp"
 
 namespace erwin
 {
 
-class OGLShader: public Shader
+class OGLShader
 {
 public:
 	OGLShader() = default;
 	~OGLShader() = default;
 
+	bool init(const std::string& name, const fs::path& filepath);
 	// Initialize shader from packed GLSL source
-	virtual bool init_glsl(const std::string& name, const fs::path& glsl_file) override;
+	bool init_glsl(const std::string& name, const fs::path& glsl_file);
 	// Initialize shader from SPIR-V file
-	virtual bool init_spirv(const std::string& name, const fs::path& spv_file) override;
+	bool init_spirv(const std::string& name, const fs::path& spv_file);
 
-	virtual void bind() const override;
-	virtual void unbind() const override;
-	virtual uint32_t get_texture_slot(hash_t sampler) const override;
-	virtual uint32_t get_texture_count() const override;
-	virtual void attach_texture_2D(const Texture2D& texture, uint32_t slot) const override;
-	virtual void attach_cubemap(const Cubemap& cubemap, uint32_t slot) const override;
+	void bind() const;
+	void unbind() const;
+	uint32_t get_texture_slot(hash_t sampler) const;
+	uint32_t get_texture_count() const;
+	void attach_texture_2D(const OGLTexture2D& texture, uint32_t slot) const;
+	void attach_cubemap(const OGLCubemap& cubemap, uint32_t slot) const;
 
-	virtual void attach_shader_storage(const ShaderStorageBuffer& buffer) override;
-	virtual void attach_uniform_buffer(const UniformBuffer& buffer) override;
+	void attach_shader_storage(const OGLShaderStorageBuffer& buffer);
+	void attach_uniform_buffer(const OGLUniformBuffer& buffer);
 
-	virtual void bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const override;
-	virtual void bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const override;
+	void bind_shader_storage(const OGLShaderStorageBuffer& buffer, uint32_t size=0, uint32_t base_offset=0) const;
+	void bind_uniform_buffer(const OGLUniformBuffer& buffer, uint32_t size=0, uint32_t offset=0) const;
 
-    virtual const BufferLayout& get_attribute_layout() const override;
+    const BufferLayout& get_attribute_layout() const;
+
+	// Return program debug name
+	inline const std::string& get_name() const { return name_; }
 
     // Uniform management
     template <typename T>
@@ -62,6 +68,7 @@ private:
 		uint32_t render_handle;
 		uint32_t target;
 	};
+	std::string name_;
 
     uint32_t rd_handle_ = 0;
     uint32_t current_slot_ = 0;

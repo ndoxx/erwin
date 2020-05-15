@@ -1,38 +1,49 @@
 #pragma once
 
-#include "render/render_device.h"
+#include "render/backend.h"
 
 namespace erwin
 {
 
-class OGLRenderDevice: public RenderDevice
+class OGLTexture2D;
+class OGLCubemap;
+class OGLBackend : public Backend
 {
 public:
+    OGLBackend();
+    virtual void release() override;
+
     // * Framebuffer
-    // Get an index to default framebuffer
-    virtual uint32_t get_default_framebuffer() override;
-    // Set the default framebuffer
-    virtual void set_default_framebuffer(uint32_t index) override;
+    // Add framebuffer texture description
+    virtual void add_framebuffer_texture_vector(FramebufferHandle handle, const FramebufferTextureVector& ftv) override;
     // Bind the default framebuffer
     virtual void bind_default_framebuffer() override;
     // Read framebuffer content to an array
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) override;
 
-    // * Draw commands
-    // Draw content of specified vertex array using indices
-    virtual void draw_indexed(const VertexArray& vertexArray,
-                              uint32_t count = 0,
-    						  std::size_t offset = 0) override;
-    // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(const VertexArray& vertexArray,
-                            DrawPrimitive prim = DrawPrimitive::Triangles,
-                            uint32_t count = 0,
-                            std::size_t offset = 0) override;
-    // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(const VertexArray& vertexArray,
-                                        uint32_t instance_count,
-                                        uint32_t elements_count = 0,
-                                        std::size_t offset = 0) override;
+    // * Immediate
+    // Promise texture data
+    virtual std::pair<uint64_t, std::future<PixelData>> future_texture_data() override;
+    // Get handle of default render target
+    virtual FramebufferHandle default_render_target() override;
+    // Get handle of a specified texture slot inside a framebuffer
+    virtual TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index) override;
+    // Get handle of a cubemap inside a framebuffer
+    virtual CubemapHandle get_framebuffer_cubemap(FramebufferHandle handle) override;
+    // Get name of a specified texture slot inside a framebuffer
+    virtual hash_t get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index) override;
+    // Get texture count inside a framebuffer
+    virtual uint32_t get_framebuffer_texture_count(FramebufferHandle handle) override;
+    // Get opaque implementation specific handle of a texture (for ImGui and debug purposes)
+    virtual void* get_native_texture_handle(TextureHandle handle) override;
+    // Create a vertex buffer layout description
+    virtual VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) override;
+    // Retrieve a layout description
+    virtual const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle) override;
+
+    // * Command dispatch
+    virtual void dispatch_command(uint16_t type, memory::LinearBuffer<>& buf) override;
+    virtual void dispatch_draw(uint16_t type, memory::LinearBuffer<>& buf) override;
 
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) override;
@@ -54,7 +65,7 @@ public:
     // Enable/Disable depth test
     virtual void set_depth_test_enabled(bool value) override;
     // Set function used as a stencil test, with a reference value and a mask
-    virtual void set_stencil_func(StencilFunc value, uint16_t a=0, uint16_t b=0) override;
+    virtual void set_stencil_func(StencilFunc value, uint16_t a = 0, uint16_t b = 0) override;
     // Specify front/back stencil test action
     virtual void set_stencil_operator(StencilOperator value) override;
     // Enable/Disable stencil test
@@ -95,8 +106,11 @@ public:
     // Fail on graphics device error
     virtual void assert_no_error() override;
 
-private:
-    uint32_t default_framebuffer_ = 0;
+    // * Private API
+    const OGLTexture2D& create_texture_inplace(TextureHandle handle, const Texture2DDescriptor& desc);
+    const OGLCubemap& create_cubemap_inplace(CubemapHandle handle, const CubemapDescriptor& desc);
+    const OGLTexture2D& get_texture(TextureHandle handle);
+    const OGLCubemap& get_cubemap(CubemapHandle handle);
 };
 
 } // namespace erwin

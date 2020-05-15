@@ -3,15 +3,14 @@
 #include <regex>
 #include <sstream>
 
-#include "platform/ogl_shader.h"
-#include "platform/ogl_buffer.h"
+#include "platform/OGL/ogl_shader.h"
+#include "platform/OGL/ogl_buffer.h"
 #include "core/core.h"
 #include "utils/string.h"
 #include "core/intern_string.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
 #include "debug/logger.h"
-#include "render/texture.h"
 
 #include "glad/glad.h"
 
@@ -233,6 +232,16 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
+bool OGLShader::init(const std::string& name, const fs::path& filepath)
+{
+    std::string extension(filepath.extension().string());
+    if(!extension.compare(".glsl"))
+        return init_glsl(name, filepath);
+    else if(!extension.compare(".spv"))
+        return init_spirv(name, filepath);
+    return false;
+}
+
 // Initialize shader from packed GLSL source
 bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
 {
@@ -295,19 +304,19 @@ uint32_t OGLShader::get_texture_count() const
     return uint32_t(texture_slots_.size());
 }
 
-void OGLShader::attach_texture_2D(const Texture2D& texture, uint32_t slot) const
+void OGLShader::attach_texture_2D(const OGLTexture2D& texture, uint32_t slot) const
 {
     texture.bind(slot);
     send_uniform<int>(slot_to_sampler2D_name(slot), int(slot));
 }
 
-void OGLShader::attach_cubemap(const Cubemap& cubemap, uint32_t slot) const
+void OGLShader::attach_cubemap(const OGLCubemap& cubemap, uint32_t slot) const
 {
     cubemap.bind(slot);
     send_uniform<int>(slot_to_sampler_cube_name(slot), int(slot));
 }
 
-void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
+void OGLShader::attach_shader_storage(const OGLShaderStorageBuffer& buffer)
 {
     hash_t hname = H_(buffer.get_name().c_str());
     auto it = block_bindings_.find(hname);
@@ -317,11 +326,11 @@ void OGLShader::attach_shader_storage(const ShaderStorageBuffer& buffer)
         return;
     }
     GLint binding_point = GLint(it->second);
-    uint32_t render_handle = static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle();
+    uint32_t render_handle = buffer.get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_SHADER_STORAGE_BUFFER }));
 }
 
-void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
+void OGLShader::attach_uniform_buffer(const OGLUniformBuffer& buffer)
 {
     hash_t hname = H_(buffer.get_name().c_str());
     auto it = block_bindings_.find(hname);
@@ -331,28 +340,28 @@ void OGLShader::attach_uniform_buffer(const UniformBuffer& buffer)
         return;
     }
     GLint binding_point = GLint(it->second);
-    uint32_t render_handle = static_cast<const OGLUniformBuffer&>(buffer).get_handle();
+    uint32_t render_handle = buffer.get_handle();
     bound_buffers_.insert(std::make_pair(buffer.get_unique_id(), ResourceBinding{ binding_point, render_handle, GL_UNIFORM_BUFFER }));
 }
 
-void OGLShader::bind_shader_storage(const ShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
+void OGLShader::bind_shader_storage(const OGLShaderStorageBuffer& buffer, uint32_t size, uint32_t base_offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = GLint(block_bindings_.at(hname));
     if(size)
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle(), base_offset, size);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point, buffer.get_handle(), base_offset, size);
     else
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, static_cast<const OGLShaderStorageBuffer&>(buffer).get_handle());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, buffer.get_handle());
 }
 
-void OGLShader::bind_uniform_buffer(const UniformBuffer& buffer, uint32_t size, uint32_t offset) const
+void OGLShader::bind_uniform_buffer(const OGLUniformBuffer& buffer, uint32_t size, uint32_t offset) const
 {
     hash_t hname = H_(buffer.get_name().c_str());
     GLint binding_point = GLint(block_bindings_.at(hname));
     if(size)
-        glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle(), offset, size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, buffer.get_handle(), offset, size);
     else
-        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, static_cast<const OGLUniformBuffer&>(buffer).get_handle());
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, buffer.get_handle());
 }
 
 const BufferLayout& OGLShader::get_attribute_layout() const

@@ -1,6 +1,7 @@
-#include "platform/ogl_framebuffer.h"
+#include "platform/OGL/ogl_framebuffer.h"
+#include "platform/OGL/ogl_texture.h"
+#include "platform/OGL/ogl_backend.h"
 #include "debug/logger.h"
-#include "platform/ogl_texture.h"
 
 #include "stb/stb_image_write.h"
 
@@ -9,9 +10,15 @@
 namespace erwin
 {
 
-OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout)
-    : Framebuffer(width, height, flags, layout)
+OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout, const FramebufferTextureVector& texture_vector)
+    : layout_(layout), width_(width), height_(height), flags_(flags)
 {
+    if(has_cubemap())
+    {
+        W_ASSERT(!has_depth() && !has_stencil(),
+                 "Cubemap framebuffer attachment is incompatible with depth and stencil attachments.");
+    }
+
     DLOG("render", 1) << "Creating OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << "." << std::endl;
 
     glCreateFramebuffers(1, &rd_handle_);
@@ -24,23 +31,24 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
     DLOGI << "has depth:    " << (has_depth() ? "true" : "false") << std::endl;
     DLOGI << "has stencil:  " << (has_stencil() ? "true" : "false") << std::endl;
 
+    auto* backend = static_cast<OGLBackend*>(gfx::backend.get());
+    texture_handles_ = texture_vector.handles;
+    cubemap_handle_ = texture_vector.cubemap;
+
     if(!has_cubemap())
     {
         // * Color buffers
         std::vector<GLenum> draw_buffers;
         int ncolor_attachments = 0;
-        for(auto&& elt : layout_)
+        for(auto&& elt: layout_)
         {
             // First, create textures for color buffers
-            auto texture = Texture2D::create(
-                Texture2DDescriptor{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
 
             // Register color attachment
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             GLenum attachment = GLenum(int(GL_COLOR_ATTACHMENT0) + ncolor_attachments++);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture_handle, 0);
-            // Save texture and attachments
-            textures_.push_back(texture);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture.get_handle(), 0);
             draw_buffers.push_back(attachment);
         }
         // Specify list of color buffers to draw to
@@ -52,19 +60,15 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         // * Handle depth / depth-stencil texture and attachment creation
         if(has_depth() && has_stencil())
         {
-            auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
-            textures_.push_back(texture);
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture.get_handle(), 0);
         }
         else if(has_depth())
         {
-            auto texture =
-                Texture2D::create(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
-            textures_.push_back(texture);
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.get_handle(), 0);
         }
 
         // No depth texture -> Attach a render buffer to frame buffer as a z-buffer
@@ -79,7 +83,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
     }
     else
     {
-        W_ASSERT(layout.get_count()==1, "Framebuffer: only 1 cubemap attachment supported for now.");
+        W_ASSERT(layout.get_count() == 1, "Framebuffer: only 1 cubemap attachment supported for now.");
 
         const auto elt = layout[0];
 
@@ -92,13 +96,13 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;
         desc.lazy_mipmap = elt.lazy_mipmap;
-        auto texture = Cubemap::create(desc);
+        const auto& texture = backend->create_cubemap_inplace(cubemap_handle_, desc);
+
 
         // Register color attachment
-        uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(texture)->get_handle();
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, 0);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.get_handle(), 0);
 
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
+        GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, draw_buffers);
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -106,9 +110,6 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
         // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width_, height_);
         // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_buffer_handle_);
-
-        // Save texture and attachments
-        textures_.push_back(texture);
     }
 
     framebuffer_error_report();
@@ -128,7 +129,7 @@ OGLFramebuffer::~OGLFramebuffer()
 
 void OGLFramebuffer::bind(uint32_t mip_level)
 {
-    if(mip_level==0)
+    if(mip_level == 0)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
         glViewport(0, 0, width_, height_);
@@ -136,22 +137,19 @@ void OGLFramebuffer::bind(uint32_t mip_level)
     else
     {
         W_ASSERT(has_cubemap(), "[Framebuffer] Target mipmap level only available for cubemap attachements.");
-        uint32_t mip_width  = std::max(1u, uint32_t(width_ / (1u << mip_level)));
+        uint32_t mip_width = std::max(1u, uint32_t(width_ / (1u << mip_level)));
         uint32_t mip_height = std::max(1u, uint32_t(height_ / (1u << mip_level)));
         // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
         // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
-        uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(textures_[0])->get_handle();
+        auto* backend = static_cast<OGLBackend*>(gfx::backend.get());
+        const auto& cm = backend->get_cubemap(cubemap_handle_);
         glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
         glViewport(0, 0, mip_width, mip_height);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, int(mip_level));
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cm.get_handle(), int(mip_level));
     }
 }
 
 void OGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-
-WRef<Texture> OGLFramebuffer::get_shared_texture(uint32_t index) { return textures_[index]; }
-
-uint32_t OGLFramebuffer::get_texture_count() { return uint32_t(textures_.size()); }
 
 void OGLFramebuffer::screenshot(const std::string& filepath)
 {
@@ -177,21 +175,19 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     DLOGI << WCC('p') << filepath << std::endl;
 }
 
-void OGLFramebuffer::blit_depth(const Framebuffer& source)
+void OGLFramebuffer::blit_depth(const OGLFramebuffer& source)
 {
     // Push state
     GLint draw_fbo = 0, read_fbo = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_fbo);
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
 
-    const OGLFramebuffer& ogl_source = static_cast<const OGLFramebuffer&>(source);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, ogl_source.rd_handle_);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, source.rd_handle_);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rd_handle_);
     glBlitFramebuffer(0,                   // src x0
                       0,                   // src y0
-                      ogl_source.width_,   // src x1
-                      ogl_source.height_,  // src y1
+                      source.width_,       // src x1
+                      source.height_,      // src y1
                       0,                   // dst x0
                       0,                   // dst y0
                       width_,              // dst x1
@@ -207,14 +203,25 @@ void OGLFramebuffer::blit_depth(const Framebuffer& source)
 void OGLFramebuffer::framebuffer_error_report()
 {
     /*
-    GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT is returned if any of the framebuffer attachment points are framebuffer incomplete.
-    GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT is returned if the framebuffer does not have at least one image attached to it.
-    GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER is returned if the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for any color attachment point(s) named by GL_DRAW_BUFFERi.
-    GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER is returned if GL_READ_BUFFER is not GL_NONE and the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER.
-    GL_FRAMEBUFFER_UNSUPPORTED is returned if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions.
-    GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the value of GL_TEXTURE_SAMPLES.
-    GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is also returned if the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not the same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures.
-    GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS is returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target.
+    GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT is returned if any of the framebuffer attachment points are framebuffer
+    incomplete.
+    GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT is returned if the framebuffer does not have at least one
+    image attached to it.
+    GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER is returned if the value of
+    GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for any color attachment point(s) named by GL_DRAW_BUFFERi.
+    GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER is returned if GL_READ_BUFFER is not GL_NONE and the value of
+    GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER.
+    GL_FRAMEBUFFER_UNSUPPORTED is returned if the combination of internal formats of the attached images violates an
+    implementation-dependent set of restrictions.
+    GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all
+    attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the
+    attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the
+    value of GL_TEXTURE_SAMPLES. GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is also returned if the value of
+    GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not the same for all attached textures; or, if the attached images are a mix of
+    renderbuffers and textures, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures.
+    GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS is returned if any framebuffer attachment
+    is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures
+    of the same target.
     */
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -223,7 +230,9 @@ void OGLFramebuffer::framebuffer_error_report()
         switch(status)
         {
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            DLOGE("render") << "[Framebuffer] Not all framebuffer attachment points are framebuffer attachment complete." << std::endl;
+            DLOGE("render")
+                << "[Framebuffer] Not all framebuffer attachment points are framebuffer attachment complete."
+                << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
             DLOGE("render") << "[Framebuffer] No images are attached to the framebuffer." << std::endl;

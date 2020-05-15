@@ -1,4 +1,4 @@
-#include "platform/ogl_query_timer.h"
+#include "platform/OGL/ogl_query_timer.h"
 #include "glad/glad.h"
 
 #include <utility>

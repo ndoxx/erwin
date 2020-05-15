@@ -1,11 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <future>
 #include <memory>
 
 #include "core/core.h"
-#include "render/render_state.h"
+#include "memory/memory.hpp"
 #include "render/buffer_layout.h"
+#include "render/handles.h"
+#include "render/render_state.h"
+#include "render/texture_common.h"
 
 namespace erwin
 {
@@ -16,39 +20,68 @@ enum class GfxAPI
     OpenGL = 1
 };
 
-class VertexArray;
-// Following API is subject to future HEAVY changes
-class RenderDevice
+struct FramebufferTextureVector
+{
+    std::vector<TextureHandle> handles;
+    std::vector<hash_t> debug_names;
+    CubemapHandle cubemap;
+};
+
+struct ShaderCompatibility
+{
+    bool ready = false;
+    BufferLayout layout;
+
+    inline void set_layout(const BufferLayout& _layout)
+    {
+        layout = _layout;
+        ready = true;
+    }
+
+    inline void clear()
+    {
+        layout.clear();
+        ready = false;
+    }
+};
+
+class Backend
 {
 public:
-    virtual ~RenderDevice() = default;
+    virtual ~Backend() = default;
+    virtual void release() = 0;
 
     // * Framebuffer
-    // TODO: return a handle instead
-    // Get an index to default framebuffer
-    virtual uint32_t get_default_framebuffer() = 0;
-    // Set the default framebuffer
-    virtual void set_default_framebuffer(uint32_t index) = 0;
+    // Add framebuffer texture description
+    virtual void add_framebuffer_texture_vector(FramebufferHandle handle, const FramebufferTextureVector& ftv) = 0;
     // Bind the default framebuffer
     virtual void bind_default_framebuffer() = 0;
     // Read framebuffer content to an array
     virtual void read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels) = 0;
 
-    // * Draw commands
-    // Draw content of specified vertex array using indices
-    virtual void draw_indexed(const VertexArray& vertexArray,
-                              uint32_t count = 0,
-                              std::size_t offset = 0) = 0;
-    // Draw content of vertex array using only vertex buffer data
-    virtual void draw_array(const VertexArray& vertexArray,
-                            DrawPrimitive prim = DrawPrimitive::Triangles,
-                            uint32_t count = 0,
-                            std::size_t offset = 0) = 0;
-    // Draw instance_count instances of content of vertex array using index buffer
-    virtual void draw_indexed_instanced(const VertexArray& vertexArray,
-                                        uint32_t instance_count,
-                                        uint32_t elements_count = 0,
-                                        std::size_t offset = 0) = 0;
+    // * Immediate
+    // Promise texture data
+    virtual std::pair<uint64_t, std::future<PixelData>> future_texture_data() = 0;
+    // Get handle of default render target
+    virtual FramebufferHandle default_render_target() = 0;
+    // Get handle of a specified texture slot inside a framebuffer
+    virtual TextureHandle get_framebuffer_texture(FramebufferHandle handle, uint32_t index) = 0;
+    // Get handle of a cubemap inside a framebuffer
+    virtual CubemapHandle get_framebuffer_cubemap(FramebufferHandle handle) = 0;
+    // Get name of a specified texture slot inside a framebuffer
+    virtual hash_t get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index) = 0;
+    // Get texture count inside a framebuffer
+    virtual uint32_t get_framebuffer_texture_count(FramebufferHandle handle) = 0;
+    // Get opaque implementation specific handle of a texture (for ImGui and debug purposes)
+    virtual void* get_native_texture_handle(TextureHandle handle) = 0;
+    // Create a vertex buffer layout description
+    virtual VertexBufferLayoutHandle create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements) = 0;
+    // Retrieve a layout description
+    virtual const BufferLayout& get_vertex_buffer_layout(VertexBufferLayoutHandle handle) = 0;
+
+    // * Command dispatch
+    virtual void dispatch_command(uint16_t type, memory::LinearBuffer<>& buf) = 0;
+    virtual void dispatch_draw(uint16_t type, memory::LinearBuffer<>& buf) = 0;
 
     // Set the color used to clear any framebuffer
     virtual void set_clear_color(float r, float g, float b, float a) = 0;
@@ -70,7 +103,7 @@ public:
     // Enable/Disable depth test
     virtual void set_depth_test_enabled(bool value) = 0;
     // Set function used as a stencil test, with a reference value and a mask
-    virtual void set_stencil_func(StencilFunc value, uint16_t a=0, uint16_t b=0) = 0;
+    virtual void set_stencil_func(StencilFunc value, uint16_t a = 0, uint16_t b = 0) = 0;
     // Specify front/back stencil test action
     virtual void set_stencil_operator(StencilOperator value) = 0;
     // Enable/Disable stencil test
@@ -112,17 +145,16 @@ public:
     virtual void assert_no_error() = 0;
 };
 
-class Gfx
+class gfx
 {
 public:
-    inline static GfxAPI get_api() { return api_; }
-    static void set_api(GfxAPI api);
+    inline static GfxAPI get_backend() { return api_; }
+    static void set_backend(GfxAPI api);
 
-    static std::unique_ptr<RenderDevice> device;
+    static std::unique_ptr<Backend> backend;
 
 private:
     static GfxAPI api_;
 };
-
 
 } // namespace erwin

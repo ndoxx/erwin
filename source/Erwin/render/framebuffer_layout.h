@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "render/texture.h"
+#include "render/texture_common.h"
 #include "core/core.h"
 
 namespace erwin
@@ -20,6 +20,7 @@ struct FramebufferLayoutElement
 
 struct FramebufferLayout
 {
+    FramebufferLayout() = default;
 	explicit FramebufferLayout(const std::initializer_list<FramebufferLayoutElement>& elements): elements_(elements) { }
     FramebufferLayout(FramebufferLayoutElement* elements, uint32_t count);
 

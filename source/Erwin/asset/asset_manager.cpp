@@ -22,8 +22,6 @@
 
 namespace erwin
 {
-constexpr std::size_t k_handle_alloc_size = 2*(sizeof(HandlePoolT<k_max_atlases>)
-										  +    sizeof(HandlePoolT<k_max_font_atlases>));
 
 #define FOR_ALL_HANDLES                   \
 		DO_ACTION( TextureAtlasHandle )   \
@@ -519,7 +517,7 @@ void AssetManager::init(memory::HeapArea& area)
 {
 	W_PROFILE_FUNCTION()
 
-	s_storage.handle_arena_.init(area, k_handle_alloc_size, "AssetHandles");
+	s_storage.handle_arena_.init(area, k_asset_handle_alloc_size, "AssetHandles");
 	s_storage.texture_atlas_pool_.init(area, sizeof(TextureAtlas) + PoolArena::DECORATION_SIZE, k_max_atlases, "TextureAtlasPool");
 	s_storage.font_atlas_pool_.init(area, sizeof(FontAtlas) + PoolArena::DECORATION_SIZE, k_max_font_atlases, "FontAtlasPool");
 

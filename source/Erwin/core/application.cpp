@@ -5,7 +5,6 @@
 #include "imgui/imgui_layer.h"
 #include "input/input.h"
 #include "filesystem/filesystem.h"
-#include "render/render_device.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_2d.h"
