@@ -100,6 +100,34 @@ OGLBackend::OGLBackend()
 
 void OGLBackend::release() { s_storage.release(); }
 
+// ------------------- PRIVATE API -------------------
+const OGLTexture2D& OGLBackend::create_texture_inplace(TextureHandle handle, const Texture2DDescriptor& desc)
+{
+    auto ref = make_ref<OGLTexture2D>(desc);
+    s_storage.textures[handle.index] = ref;
+    return *ref;
+}
+
+const OGLCubemap& OGLBackend::create_cubemap_inplace(CubemapHandle handle, const CubemapDescriptor& desc)
+{
+    auto ref = make_ref<OGLCubemap>(desc);
+    s_storage.cubemaps[handle.index] = ref;
+    return *ref;
+}
+
+const OGLTexture2D& OGLBackend::get_texture(TextureHandle handle)
+{
+    W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+    return *s_storage.textures[handle.index];
+}
+
+const OGLCubemap& OGLBackend::get_cubemap(CubemapHandle handle)
+{
+    W_ASSERT(handle.is_valid(), "Invalid CubemapHandle.");
+    return *s_storage.cubemaps[handle.index];
+}
+// ------------------- PRIVATE API -------------------
+
 void OGLBackend::viewport(float xx, float yy, float width, float height) { glViewport(xx, yy, width, height); }
 
 void OGLBackend::add_framebuffer_texture_vector(FramebufferHandle handle, const FramebufferTextureVector& ftv)
@@ -535,22 +563,8 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     FramebufferLayout layout(auxiliary, count);
-    s_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
-
-    // Register framebuffer textures as regular textures accessible by handles
-    auto& fb = s_storage.framebuffers[handle.index];
     const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
-    if(!fb->has_cubemap())
-    {
-        for(uint32_t ii = 0; ii < texture_vector.handles.size(); ++ii)
-            s_storage.textures[texture_vector.handles[ii].index] =
-                std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
-    }
-    else
-    {
-        s_storage.cubemaps[texture_vector.cubemap.index] =
-            std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
-    }
+    s_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
@@ -650,24 +664,8 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 
     uint8_t flags = s_storage.framebuffers[fb_handle.index]->get_flags();
     auto layout = s_storage.framebuffers[fb_handle.index]->get_layout();
-
-    s_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout);
-
-    // Update framebuffer textures
-    auto& fb = s_storage.framebuffers[fb_handle.index];
     auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
-    bool has_cubemap = bool(flags & FBFlag::FB_CUBEMAP_ATTACHMENT);
-    if(!has_cubemap)
-    {
-        for(uint32_t ii = 0; ii < texture_vector.handles.size(); ++ii)
-            s_storage.textures[texture_vector.handles[ii].index] =
-                std::static_pointer_cast<OGLTexture2D>(fb->get_shared_texture(ii));
-    }
-    else
-    {
-        s_storage.cubemaps[texture_vector.cubemap.index] =
-            std::static_pointer_cast<OGLCubemap>(fb->get_shared_texture(0));
-    }
+    s_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
 }
 
 void clear_framebuffers(memory::LinearBuffer<>&)

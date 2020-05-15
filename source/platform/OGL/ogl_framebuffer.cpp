@@ -1,6 +1,7 @@
 #include "platform/OGL/ogl_framebuffer.h"
-#include "debug/logger.h"
 #include "platform/OGL/ogl_texture.h"
+#include "platform/OGL/ogl_backend.h"
+#include "debug/logger.h"
 
 #include "stb/stb_image_write.h"
 
@@ -9,7 +10,7 @@
 namespace erwin
 {
 
-OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout)
+OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout, const FramebufferTextureVector& texture_vector)
     : layout_(layout), width_(width), height_(height), flags_(flags)
 {
     if(has_cubemap())
@@ -30,23 +31,24 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
     DLOGI << "has depth:    " << (has_depth() ? "true" : "false") << std::endl;
     DLOGI << "has stencil:  " << (has_stencil() ? "true" : "false") << std::endl;
 
+    auto* backend = static_cast<OGLBackend*>(gfx::backend.get());
+    texture_handles_ = texture_vector.handles;
+    cubemap_handle_ = texture_vector.cubemap;
+
     if(!has_cubemap())
     {
         // * Color buffers
         std::vector<GLenum> draw_buffers;
         int ncolor_attachments = 0;
-        for(auto&& elt : layout_)
+        for(auto&& elt: layout_)
         {
             // First, create textures for color buffers
-            auto texture = make_ref<OGLTexture2D>(
-                Texture2DDescriptor{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE});
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, elt.image_format, elt.filter, elt.wrap, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
 
             // Register color attachment
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
             GLenum attachment = GLenum(int(GL_COLOR_ATTACHMENT0) + ncolor_attachments++);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture_handle, 0);
-            // Save texture and attachments
-            textures_.push_back(texture);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture.get_handle(), 0);
             draw_buffers.push_back(attachment);
         }
         // Specify list of color buffers to draw to
@@ -58,21 +60,15 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         // * Handle depth / depth-stencil texture and attachment creation
         if(has_depth() && has_stencil())
         {
-            auto texture =
-                make_ref<OGLTexture2D>(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8,
-                                                           MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
-            textures_.push_back(texture);
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, ImageFormat::DEPTH24_STENCIL8, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture.get_handle(), 0);
         }
         else if(has_depth())
         {
-            auto texture =
-                make_ref<OGLTexture2D>(Texture2DDescriptor{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24,
-                                                           MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE});
-            uint32_t texture_handle = std::static_pointer_cast<OGLTexture2D>(texture)->get_handle();
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_handle, 0);
-            textures_.push_back(texture);
+            Texture2DDescriptor desc{width_, height_, 0, nullptr, ImageFormat::DEPTH_COMPONENT24, MIN_LINEAR | MAG_NEAREST, TextureWrap::REPEAT, TF_NONE};
+            const auto& texture = backend->create_texture_inplace(texture_handles_[size_t(ncolor_attachments)], desc);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.get_handle(), 0);
         }
 
         // No depth texture -> Attach a render buffer to frame buffer as a z-buffer
@@ -100,11 +96,11 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         desc.filter = elt.filter;
         desc.wrap = elt.wrap;
         desc.lazy_mipmap = elt.lazy_mipmap;
-        auto texture = make_ref<OGLCubemap>(desc);
+        const auto& texture = backend->create_cubemap_inplace(cubemap_handle_, desc);
+
 
         // Register color attachment
-        uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(texture)->get_handle();
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, 0);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.get_handle(), 0);
 
         GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, draw_buffers);
@@ -114,9 +110,6 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
         // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
         // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width_, height_);
         // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_buffer_handle_);
-
-        // Save texture and attachments
-        textures_.push_back(texture);
     }
 
     framebuffer_error_report();
@@ -148,18 +141,15 @@ void OGLFramebuffer::bind(uint32_t mip_level)
         uint32_t mip_height = std::max(1u, uint32_t(height_ / (1u << mip_level)));
         // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
         // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
-        uint32_t cubemap_handle = std::static_pointer_cast<OGLCubemap>(textures_[0])->get_handle();
+        auto* backend = static_cast<OGLBackend*>(gfx::backend.get());
+        const auto& cm = backend->get_cubemap(cubemap_handle_);
         glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
         glViewport(0, 0, mip_width, mip_height);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubemap_handle, int(mip_level));
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cm.get_handle(), int(mip_level));
     }
 }
 
 void OGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-
-WRef<OGLTexture> OGLFramebuffer::get_shared_texture(uint32_t index) { return textures_[index]; }
-
-uint32_t OGLFramebuffer::get_texture_count() { return uint32_t(textures_.size()); }
 
 void OGLFramebuffer::screenshot(const std::string& filepath)
 {

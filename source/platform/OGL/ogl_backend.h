@@ -5,6 +5,8 @@
 namespace erwin
 {
 
+class OGLTexture2D;
+class OGLCubemap;
 class OGLBackend : public Backend
 {
 public:
@@ -103,6 +105,12 @@ public:
     virtual const std::string& show_error() override;
     // Fail on graphics device error
     virtual void assert_no_error() override;
+
+    // * Private API
+    const OGLTexture2D& create_texture_inplace(TextureHandle handle, const Texture2DDescriptor& desc);
+    const OGLCubemap& create_cubemap_inplace(CubemapHandle handle, const CubemapDescriptor& desc);
+    const OGLTexture2D& get_texture(TextureHandle handle);
+    const OGLCubemap& get_cubemap(CubemapHandle handle);
 };
 
 } // namespace erwin
