@@ -20,6 +20,7 @@ struct FramebufferLayoutElement
 
 struct FramebufferLayout
 {
+    FramebufferLayout() = default;
 	explicit FramebufferLayout(const std::initializer_list<FramebufferLayoutElement>& elements): elements_(elements) { }
     FramebufferLayout(FramebufferLayoutElement* elements, uint32_t count);
 

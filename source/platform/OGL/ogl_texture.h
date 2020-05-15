@@ -43,11 +43,13 @@ protected:
 class OGLTexture2D: public OGLTexture
 {
 public:
+	OGLTexture2D() = default;
 	OGLTexture2D(const Texture2DDescriptor& descriptor);
 	virtual ~OGLTexture2D();
 
 	void init(const Texture2DDescriptor& descriptor);
 	void release();
+	inline bool is_initialized() const { return initialized_; }
 
 	virtual void bind(uint32_t slot = 0) const override;
 	virtual void unbind() const override;
@@ -63,11 +65,13 @@ private:
 class OGLCubemap: public OGLTexture
 {
 public:
+	OGLCubemap() = default;
 	OGLCubemap(const CubemapDescriptor& descriptor);
 	virtual ~OGLCubemap();
 
 	void init(const CubemapDescriptor& descriptor);
 	void release();
+	inline bool is_initialized() const { return initialized_; }
 
 	virtual void generate_mipmaps() const override;
 	virtual void bind(uint32_t slot = 0) const override;

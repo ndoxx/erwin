@@ -62,9 +62,9 @@ static struct RenderDeviceStorage
         for(auto&& obj: vertex_arrays) obj.release();
         for(auto&& obj: uniform_buffers) obj.release();
         for(auto&& obj: shader_storage_buffers) obj.release();
+        for(auto&& obj: textures) obj.release();
+        for(auto&& obj: cubemaps) obj.release();
         std::fill(std::begin(vertex_buffer_layouts), std::end(vertex_buffer_layouts), nullptr);
-        std::fill(std::begin(textures), std::end(textures), nullptr);
-        std::fill(std::begin(cubemaps), std::end(cubemaps), nullptr);
         std::fill(std::begin(shaders), std::end(shaders), nullptr);
         std::fill(std::begin(framebuffers), std::end(framebuffers), nullptr);
     }
@@ -80,10 +80,10 @@ static struct RenderDeviceStorage
     std::array<OGLVertexArray, k_max_handles<VertexArrayHandle>> vertex_arrays;
     std::array<OGLUniformBuffer, k_max_handles<UniformBufferHandle>> uniform_buffers;
     std::array<OGLShaderStorageBuffer, k_max_handles<ShaderStorageBufferHandle>> shader_storage_buffers;
+    std::array<OGLTexture2D, k_max_handles<OGLTexture2D>> textures;
+    std::array<OGLCubemap, k_max_handles<OGLCubemap>> cubemaps;
 
     WRef<BufferLayout> vertex_buffer_layouts[k_max_handles<VertexBufferLayoutHandle>];
-    WRef<OGLTexture2D> textures[k_max_handles<TextureHandle>];
-    WRef<OGLCubemap> cubemaps[k_max_handles<CubemapHandle>];
     WRef<OGLShader> shaders[k_max_handles<ShaderHandle>];
     WRef<OGLFramebuffer> framebuffers[k_max_handles<FramebufferHandle>];
 
@@ -103,28 +103,30 @@ void OGLBackend::release() { s_storage.release(); }
 // ------------------- PRIVATE API -------------------
 const OGLTexture2D& OGLBackend::create_texture_inplace(TextureHandle handle, const Texture2DDescriptor& desc)
 {
-    auto ref = make_ref<OGLTexture2D>(desc);
-    s_storage.textures[handle.index] = ref;
-    return *ref;
+    auto& ret = s_storage.textures[handle.index];
+    ret.release();
+    ret.init(desc);
+    return ret;
 }
 
 const OGLCubemap& OGLBackend::create_cubemap_inplace(CubemapHandle handle, const CubemapDescriptor& desc)
 {
-    auto ref = make_ref<OGLCubemap>(desc);
-    s_storage.cubemaps[handle.index] = ref;
-    return *ref;
+    auto& ret = s_storage.cubemaps[handle.index];
+    ret.release();
+    ret.init(desc);
+    return ret;
 }
 
 const OGLTexture2D& OGLBackend::get_texture(TextureHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-    return *s_storage.textures[handle.index];
+    return s_storage.textures[handle.index];
 }
 
 const OGLCubemap& OGLBackend::get_cubemap(CubemapHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid CubemapHandle.");
-    return *s_storage.cubemaps[handle.index];
+    return s_storage.cubemaps[handle.index];
 }
 // ------------------- PRIVATE API -------------------
 
@@ -180,9 +182,9 @@ uint32_t OGLBackend::get_framebuffer_texture_count(FramebufferHandle handle)
 void* OGLBackend::get_native_texture_handle(TextureHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-    if(s_storage.textures[handle.index] == nullptr)
+    if(!s_storage.textures[handle.index].is_initialized())
         return nullptr;
-    return s_storage.textures[handle.index]->get_native_handle();
+    return s_storage.textures[handle.index].get_native_handle();
 }
 
 VertexBufferLayoutHandle OGLBackend::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
@@ -528,7 +530,7 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&descriptor);
 
-    s_storage.textures[handle.index] = make_ref<OGLTexture2D>(descriptor);
+    s_storage.textures[handle.index].init(descriptor);
     // Free resources if needed
     descriptor.release();
 }
@@ -542,7 +544,7 @@ void create_cubemap(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&descriptor);
 
-    s_storage.cubemaps[handle.index] = make_ref<OGLCubemap>(descriptor);
+    s_storage.cubemaps[handle.index].init(descriptor);
 }
 
 void create_framebuffer(memory::LinearBuffer<>& buf)
@@ -698,7 +700,7 @@ void get_pixel_data(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&promise_token);
 
-    auto&& [data, size] = s_storage.textures[handle.index]->read_pixels();
+    auto&& [data, size] = s_storage.textures[handle.index].read_pixels();
     s_storage.texture_data_promises_.fulfill(promise_token, PixelData{data, size});
 }
 
@@ -707,7 +709,7 @@ void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
     CubemapHandle handle;
     buf.read(&handle);
 
-    s_storage.cubemaps[handle.index]->generate_mipmaps();
+    s_storage.cubemaps[handle.index].generate_mipmaps();
 }
 
 void framebuffer_screenshot(memory::LinearBuffer<>& buf)
@@ -800,7 +802,7 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 
     TextureHandle handle;
     buf.read(&handle);
-    s_storage.textures[handle.index] = nullptr;
+    s_storage.textures[handle.index].release();
     handle.release();
 }
 
@@ -810,7 +812,7 @@ void destroy_cubemap(memory::LinearBuffer<>& buf)
 
     CubemapHandle handle;
     buf.read(&handle);
-    s_storage.cubemaps[handle.index] = nullptr;
+    s_storage.cubemaps[handle.index].release();
     handle.release();
 }
 
@@ -835,14 +837,14 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
             for(uint32_t ii = 0; ii < texture_vector.handles.size(); ++ii)
             {
                 uint16_t tex_index = texture_vector.handles[ii].index;
-                s_storage.textures[tex_index] = nullptr;
+                s_storage.textures[tex_index].release();
                 texture_vector.handles[ii].release();
             }
         }
         else
         {
             uint16_t cm_index = texture_vector.cubemap.index;
-            s_storage.cubemaps[cm_index] = nullptr;
+            s_storage.cubemaps[cm_index].release();
             texture_vector.cubemap.release();
         }
     }
@@ -971,7 +973,7 @@ void draw(memory::LinearBuffer<>& buf)
         // Avoid texture switching if not necessary
         if(hnd.index != last_texture_index[ii])
         {
-            auto& texture = *s_storage.textures[hnd.index];
+            const auto& texture = s_storage.textures[hnd.index];
             shader.attach_texture_2D(texture, ii);
             last_texture_index[ii] = hnd.index;
         }
@@ -987,7 +989,7 @@ void draw(memory::LinearBuffer<>& buf)
         // Avoid texture switching if not necessary
         if(hnd.index != last_cubemap_index[ii])
         {
-            auto& cubemap = *s_storage.cubemaps[hnd.index];
+            const auto& cubemap = s_storage.cubemaps[hnd.index];
             shader.attach_cubemap(cubemap, ii + texture_count); // Cubemap samplers after 2d samplers (this is awkward)
             last_cubemap_index[ii] = hnd.index;
         }
