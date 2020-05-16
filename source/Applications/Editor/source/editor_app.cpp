@@ -8,6 +8,7 @@
 #include "layer/layer_editor_background.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
+#include "project/project.h"
 
 static void set_gui_behavior()
 {
@@ -63,6 +64,9 @@ void ErwinEditor::on_load()
 
     create_state(EditorStateIdx::SCENE_EDITION,      {"Scene edition", {scene_view_layer}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
+
+    // Project settings
+    project::load_global_settings();
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
