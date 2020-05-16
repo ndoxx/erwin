@@ -352,6 +352,8 @@ void Application::run()
         frame_d = frame_clock.restart();
 	}
 
+    before_close();
+
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 }
 

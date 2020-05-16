@@ -67,6 +67,10 @@ void ErwinEditor::on_load()
 
     // Project settings
     project::load_global_settings();
+    bool auto_load = cfg::get("settings.project.auto_load"_h, true);
+    fs::path last_project_file = cfg::get("settings.project.last_project"_h);
+    if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
+        project::load_project(last_project_file);
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
@@ -261,4 +265,9 @@ EditorStateIdx ErwinEditor::cycle_state()
 	next = (next+1)%size_t(EditorStateIdx::COUNT);
 	switch_state(EditorStateIdx(next));
 	return current_state_idx_;
+}
+
+void ErwinEditor::before_close()
+{
+    project::save_global_settings();
 }

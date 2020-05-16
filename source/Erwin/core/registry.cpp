@@ -124,8 +124,14 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain)
         {
             std::string value;
             if(!xml::parse_attribute(xnode, "value", value)) return 0;
-            fs::path the_path(filesystem::get_root_dir() / value);
-            if(!fs::exists(the_path)) return 0;
+            bool is_absolute = false;
+            xml::parse_attribute(xnode, "absolute", is_absolute);
+            fs::path the_path;
+            if(!is_absolute)
+                the_path = filesystem::get_root_dir() / value;
+            else
+                the_path = value;
+            if(!fs::exists(the_path) && !the_path.empty()) return 0;
             paths_[full_name_hash] = the_path;
             break;
         }

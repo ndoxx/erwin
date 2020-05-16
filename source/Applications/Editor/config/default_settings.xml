@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+	<project>
+		<path name="last_project" value="" absolute="true"/>
+		<bool name="auto_load" value="true"/>
+	</project>
+</Config>

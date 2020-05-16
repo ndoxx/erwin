@@ -28,6 +28,7 @@ public:
 	virtual void on_load() { }
 	virtual void on_unload() { }
 	virtual void on_imgui_render() { }
+    virtual void before_close() { }
 
 	size_t push_layer(Layer* layer, bool enabled=true);
 	size_t push_overlay(Layer* layer, bool enabled=true);
