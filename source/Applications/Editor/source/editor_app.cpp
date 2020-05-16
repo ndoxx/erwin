@@ -10,6 +10,10 @@
 #include "widget/widget_keybindings.h"
 #include "project/project.h"
 
+
+static const fs::path user_settings_path = "config/settings.xml";
+static const fs::path default_settings_path = "default_settings.xml";
+
 static void set_gui_behavior()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -23,6 +27,7 @@ void ErwinEditor::on_client_init()
     filesystem::set_asset_dir("source/Applications/Editor/assets");
     filesystem::set_client_config_dir("source/Applications/Editor/config");
     add_configuration("client.xml");
+    add_configuration(user_settings_path, default_settings_path);
 }
 
 void ErwinEditor::on_load()
@@ -66,7 +71,6 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
     // Project settings
-    project::load_global_settings();
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
@@ -265,9 +269,4 @@ EditorStateIdx ErwinEditor::cycle_state()
 	next = (next+1)%size_t(EditorStateIdx::COUNT);
 	switch_state(EditorStateIdx(next));
 	return current_state_idx_;
-}
-
-void ErwinEditor::before_close()
-{
-    project::save_global_settings();
 }

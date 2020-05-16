@@ -123,7 +123,7 @@ void XMLFile::set_value(xml_node<>* node, const char* value)
 
 bool XMLFile::read()
 {
-    DLOGN("core") << "Parsing XML file:" << std::endl;
+    DLOG("core",0) << "Parsing XML file:" << std::endl;
     DLOGI << WCC('p') << filepath << std::endl;
 
     if(!fs::exists(filepath))

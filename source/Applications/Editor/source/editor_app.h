@@ -51,7 +51,6 @@ public:
 	virtual void on_load() override;
 	virtual void on_unload() override;
 	virtual void on_imgui_render() override;
-    virtual void before_close() override;
 
 	bool on_keyboard_event(const KeyboardEvent& e);
 

@@ -46,16 +46,30 @@ minimized_(false)
     filesystem::init();
 }
 
-void Application::add_configuration(const std::string& filename)
+void Application::add_configuration(const fs::path& filepath)
 {
-    fs::path filepath = filesystem::get_client_config_dir() / filename;
-    if(fs::exists(filepath))
-        s_storage.configuration_files.push_back(filepath);
+    fs::path fullpath = filesystem::get_client_config_dir() / filepath;
+    if(fs::exists(fullpath))
+        s_storage.configuration_files.push_back(fullpath);
     else
     {
         DLOGW("application") << "Unable to find configuration file:" << std::endl;
         DLOGI << "client configuration directory: " << WCC('p') << filesystem::get_client_config_dir() << std::endl;
-        DLOGI << "file path: " << WCC('p') << filepath << std::endl;
+        DLOGI << "file path: " << WCC('p') << fullpath << std::endl;
+    }
+}
+
+void Application::add_configuration(const fs::path& user_path, const fs::path& default_path)
+{
+    fs::path fullpath_default_path = filesystem::get_client_config_dir() / default_path;
+    fs::path full_user_path        = filesystem::get_user_dir() / user_path;
+
+    if(filesystem::ensure_user_config(full_user_path, fullpath_default_path))
+        s_storage.configuration_files.push_back(full_user_path);
+    else
+    {
+        DLOGW("application") << "Unable to find configuration file:" << std::endl;
+        DLOGI << "file path: " << WCC('p') << full_user_path << std::endl;
     }
 }
 
@@ -352,7 +366,13 @@ void Application::run()
         frame_d = frame_clock.restart();
 	}
 
-    before_close();
+    // Save all client configuration files
+    for(auto&& cfg_file: s_storage.configuration_files)
+    {
+        DLOGN("application") << "Saving config file:" << std::endl;
+        DLOGI << WCC('p') << cfg_file << std::endl;
+        cfg::save(cfg_file);
+    }
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 }

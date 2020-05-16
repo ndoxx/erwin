@@ -9,11 +9,6 @@ namespace editor
 namespace project
 {
 
-extern bool load_global_settings();
-extern bool save_global_settings();
-extern void set_current_project_file(const fs::path& filepath);
-
-
 struct ProjectSettings
 {
     fs::path project_file;
