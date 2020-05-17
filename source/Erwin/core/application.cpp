@@ -91,8 +91,6 @@ const memory::HeapArea& Application::get_render_area()
 bool Application::init()
 {
     {
-        on_pre_init();
-
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config

@@ -2,6 +2,7 @@
 #include "debug/logger_thread.h"
 #include "imgui/font_awesome.h"
 #include "imgui/theme.h"
+#include "ImGuiFileDialog/ImGuiFileDialog.h"
 #include "layer/layer_scene_view.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_material_editor.h"
@@ -11,23 +12,18 @@
 #include "project/project.h"
 
 
-static const fs::path user_settings_path = "config/settings.xml";
-static const fs::path default_settings_path = "default_settings.xml";
-
 static void set_gui_behavior()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
 }
 
-void ErwinEditor::on_pre_init() {}
-
 void ErwinEditor::on_client_init()
 {
     filesystem::set_asset_dir("source/Applications/Editor/assets");
     filesystem::set_client_config_dir("source/Applications/Editor/config");
     add_configuration("client.xml");
-    add_configuration(user_settings_path, default_settings_path);
+    add_configuration("config/settings.xml", "default_settings.xml");
 }
 
 void ErwinEditor::on_load()
@@ -107,6 +103,8 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     return false;
 }
 
+
+
 static bool s_show_demo_window = false;
 void ErwinEditor::on_imgui_render()
 {
@@ -114,7 +112,16 @@ void ErwinEditor::on_imgui_render()
     {
         if(ImGui::BeginMenu("File"))
         {
-            ImGui::MenuItem("Quit", NULL, &exit_required_);
+            if(ImGui::MenuItem("Load project", nullptr, nullptr))
+            {
+                ImGui::SetNextWindowSize({700, 400});
+                igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseProjectFileDlgKey", "Choose Project File", ".erwin", ".");
+            }
+            if(ImGui::MenuItem("Save project", nullptr, nullptr))
+                project::save_project();
+
+            ImGui::Separator();
+            ImGui::MenuItem("Quit", nullptr, &exit_required_);
             ImGui::EndMenu();
         }
 
@@ -122,13 +129,13 @@ void ErwinEditor::on_imgui_render()
         {
             if(ImGui::BeginMenu("Render"))
             {
-                if(ImGui::MenuItem("VSync", NULL, &vsync_enabled_))
+                if(ImGui::MenuItem("VSync", nullptr, &vsync_enabled_))
                     enable_vsync(vsync_enabled_);
                 ImGui::EndMenu();
             }
 
             ImGui::Separator();
-            ImGui::MenuItem(keybindings_widget_->get_name().c_str(), NULL, &keybindings_widget_->open_);
+            ImGui::MenuItem(keybindings_widget_->get_name().c_str(), nullptr, &keybindings_widget_->open_);
 
             ImGui::Separator();
             const auto& themes = editor::theme::get_list();
@@ -172,7 +179,7 @@ void ErwinEditor::on_imgui_render()
                 EditorStateIdx idx = EditorStateIdx(ii);
                 const auto& state = states_[ii];
                 bool checked = (current_state_idx_ == idx);
-                if(ImGui::MenuItem(state.name.c_str(), NULL, checked))
+                if(ImGui::MenuItem(state.name.c_str(), nullptr, checked))
                     switch_state(idx);
             }
             ImGui::EndMenu();
@@ -180,17 +187,28 @@ void ErwinEditor::on_imgui_render()
 
         if(ImGui::BeginMenu("View"))
         {
-            ImGui::MenuItem(console_->get_name().c_str(), NULL, &console_->open_);
+            ImGui::MenuItem(console_->get_name().c_str(), nullptr, &console_->open_);
             for(Widget* widget : states_[size_t(current_state_idx_)].gui_layer->get_widgets())
-                ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
+                ImGui::MenuItem(widget->get_name().c_str(), nullptr, &widget->open_);
 
             ImGui::Separator();
-            ImGui::MenuItem("ImGui Demo", NULL, &s_show_demo_window);
+            ImGui::MenuItem("ImGui Demo", nullptr, &s_show_demo_window);
 
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
+
+    // Dialogs
+    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseProjectFileDlgKey"))
+    {
+        // action if OK
+        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
+            project::load_project(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
+        // close
+        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseProjectFileDlgKey");
+    }
+
 
     if(enable_docking_)
         show_dockspace_window(&enable_docking_);

@@ -16,8 +16,9 @@ namespace erwin
 class Registry
 {
 public:
-	void deserialize(const xml::XMLFile& xml);
-	void serialize(xml::XMLFile& xml);
+	void deserialize(const xml::XMLFile& xml, const std::string& root_name="");
+	void serialize(xml::XMLFile& xml, const std::string& root_name="");
+	void clear();
 
 	template <typename T>
 	const T& get(hash_t hname, const T& def);

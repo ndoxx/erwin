@@ -20,7 +20,6 @@ public:
 	Application();
 	virtual ~Application() = default;
 
-	virtual void on_pre_init() { }
 	virtual void on_client_init() { }
 	virtual void on_load() { }
 	virtual void on_unload() { }

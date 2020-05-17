@@ -46,7 +46,6 @@ enum class EditorStateIdx: size_t
 class ErwinEditor: public erwin::Application
 {
 public:
-	virtual void on_pre_init() override;
 	virtual void on_client_init() override;
 	virtual void on_load() override;
 	virtual void on_unload() override;
