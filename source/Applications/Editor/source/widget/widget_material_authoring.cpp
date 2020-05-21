@@ -1,5 +1,5 @@
 #include "widget/widget_material_authoring.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
+#include "widget/dialog_open.h"
 #include "asset/asset_manager.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/tom_file.h"
@@ -343,21 +343,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     // Load whole directory
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
-    {
-        auto default_path = project::get_asset_path(project::DirKey::WORK_MATERIAL);
-        ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseDirectoryDlgKey", "Choose Directory", 0, default_path.string(), "");
-    }
+        dialog::show_open_directory("ChooseDirectoryDlgKey", "Choose Directory", project::get_asset_path(project::DirKey::WORK_MATERIAL));
+
     ImGui::PopStyleColor(1);
 
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseDirectoryDlgKey"))
+    dialog::on_open("ChooseDirectoryDlgKey", [this](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-            load_directory(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseDirectoryDlgKey");
-    }
+        load_directory(filepath);
+    });
 
     // Pack textures and apply to material view widget
     ImVec2 btn_half_span_size(ImGui::GetContentRegionAvailWidth() * 0.5f, 0.f);
@@ -381,24 +374,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         // Current material must have been applied
         if(current_composition_->pbr_material->material.texture_group.texture_count > 0)
-        {
-            auto default_path = project::get_asset_path(project::DirKey::MATERIAL);
-            std::string default_filename = current_composition_->pbr_material->name + ".tom";
-            ImGui::SetNextWindowSize({700, 400});
-            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", default_path.string(),
-                                                         default_filename);
-        }
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::get_asset_path(project::DirKey::MATERIAL), current_composition_->pbr_material->name + ".tom");
     }
     ImGui::PopStyleColor(1);
 
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ExportFileDlgKey"))
+    dialog::on_open("ExportTomDlgKey", [this](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-            export_TOM(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ExportFileDlgKey");
-    }
+        export_TOM(filepath);
+    });
 
     ImGui::Separator();
 
@@ -446,24 +429,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::Columns(1);
 
     if(show_file_open_dialog)
+        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png", project::get_asset_path(project::DirKey::WORK_MATERIAL));
+
+    dialog::on_open("ChoosePngDlgKey", [&](const fs::path& filepath)
     {
-        auto default_path = project::get_asset_path(project::DirKey::WORK_MATERIAL);
-        ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".png", default_path.string(), "");
-    }
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseFileDlgKey"))
-    {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-        {
-            fs::path filepath = igfd::ImGuiFileDialog::Instance()->GetFilepathName();
-            load_texture_map(TextureMapType(selected_tm), filepath);
-            // Extract parent directory name and make it the material name
-            current_composition_->pbr_material->name = filepath.parent_path().stem().string();
-        }
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseFileDlgKey");
-    }
+        load_texture_map(TextureMapType(selected_tm), filepath);
+        // Extract parent directory name and make it the material name
+        current_composition_->pbr_material->name = filepath.parent_path().stem().string();
+    });
 
     ImGui::Separator();
 

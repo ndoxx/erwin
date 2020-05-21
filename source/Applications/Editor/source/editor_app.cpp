@@ -2,7 +2,7 @@
 #include "debug/logger_thread.h"
 #include "imgui/font_awesome.h"
 #include "imgui/theme.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
+#include "widget/dialog_open.h"
 #include "layer/layer_scene_view.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_material_editor.h"
@@ -116,10 +116,8 @@ void ErwinEditor::on_imgui_render()
         if(ImGui::BeginMenu("File"))
         {
             if(ImGui::MenuItem("Load project", nullptr, nullptr))
-            {
-                ImGui::SetNextWindowSize({700, 400});
-                igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseProjectFileDlgKey", "Choose Project File", ".erwin", ".");
-            }
+                dialog::show_open("ChooseFileDlgKey", "Choose Project File", ".erwin", ".");
+
             if(ImGui::MenuItem("Save project", nullptr, nullptr))
                 project::save_project();
 
@@ -203,15 +201,10 @@ void ErwinEditor::on_imgui_render()
     }
 
     // Dialogs
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseProjectFileDlgKey"))
+    dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-            project::load_project(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseProjectFileDlgKey");
-    }
-
+        project::load_project(filepath);
+    });
 
     if(enable_docking_)
         show_dockspace_window(&enable_docking_);

@@ -135,7 +135,7 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_integration.png", brdf_lut_desc, true);
+	s_storage.BRDF_integration_map = AssetManager::load_image(filesystem::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
 }
 
 void Renderer3D::shutdown()

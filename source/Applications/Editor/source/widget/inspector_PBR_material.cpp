@@ -3,10 +3,10 @@
 #include "asset/asset_manager.h"
 #include "filesystem/filesystem.h"
 #include "project/project.h"
+#include "widget/dialog_open.h"
 #include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
 #include "imgui.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
 
 namespace erwin
 {
@@ -16,28 +16,17 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 {
     // Load material from file
     if(ImGui::Button("Load"))
-    {
-        auto default_path = editor::project::get_asset_path(editor::project::DirKey::MATERIAL);
-        ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".tom", default_path.string(), "");
-    }
+        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::get_asset_path(editor::project::DirKey::MATERIAL));
 
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseFileDlgKey"))
+    editor::dialog::on_open("ChooseTomDlgKey", [&cmp](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-        {
-            const ComponentPBRMaterial& other = AssetManager::load_PBR_material(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-            // Copy material
-            cmp->material = other.material;
-            cmp->material_data = other.material_data;
-            cmp->ready = other.ready;
-            cmp->name = other.name;
-        }
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseFileDlgKey");
-    }
-
+        const ComponentPBRMaterial& other = AssetManager::load_PBR_material(filepath);
+        // Copy material
+        cmp->material = other.material;
+        cmp->material_data = other.material_data;
+        cmp->ready = other.ready;
+        cmp->name = other.name;
+    });
     
     ImGui::SameLine();
     if(cmp->is_ready())

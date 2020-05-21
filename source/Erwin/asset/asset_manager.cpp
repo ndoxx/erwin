@@ -209,7 +209,7 @@ TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
 	TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
-	atlas->load(filesystem::get_asset_dir() / filepath);
+	atlas->load(filepath);
 
 	// Register atlas
 	Renderer2D::create_batch(atlas->texture); // TODO: this should be conditional
@@ -234,7 +234,7 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 	DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
 
 	FontAtlas* atlas = W_NEW(FontAtlas, s_storage.font_atlas_pool_);
-	atlas->load(filesystem::get_asset_dir() / filepath);
+	atlas->load(filepath);
 
 	// Register atlas
 	s_storage.font_atlases_[handle.index] = atlas;
@@ -243,22 +243,15 @@ FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
 	return handle;
 }
 
-TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path)
+TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescriptor& descriptor)
 {
 	W_PROFILE_FUNCTION()
 
 	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
 	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
-	
-	fs::path fullpath;
-	if(engine_path)
-		fullpath = filesystem::get_system_asset_dir() / filepath;
-	else
-		fullpath = filesystem::get_asset_dir() / filepath;
-
 	 
 	// Sanity check
-	if(!fs::exists(fullpath))
+	if(!fs::exists(filepath))
 	{
 		DLOGW("asset") << "[AssetManager] File does not exist. Returning invalid handle." << std::endl;
 		return TextureHandle();
@@ -271,7 +264,7 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 		case ".hdr"_h:
 		{
 			// Load HDR file
-			img::HDRDescriptor hdrfile { fullpath };
+			img::HDRDescriptor hdrfile { filepath };
 			img::read_hdr(hdrfile);
 
 			DLOGI << "Width:    " << WCC('v') << hdrfile.width << std::endl;
@@ -296,7 +289,7 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 		case ".png"_h:
 		{
 			// Load PNG file
-			img::PNGDescriptor pngfile { fullpath };
+			img::PNGDescriptor pngfile { filepath };
 			// Force 4 channels
 			pngfile.channels = 4;
 			img::read_png(pngfile);
