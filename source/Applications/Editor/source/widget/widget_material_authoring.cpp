@@ -3,6 +3,7 @@
 #include "asset/asset_manager.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/tom_file.h"
+#include "project/project.h"
 #include "imgui.h"
 #include "imgui/color.h"
 #include "imgui/dialog.h"
@@ -334,8 +335,6 @@ void MaterialAuthoringWidget::on_imgui_render()
     // Restrict to opaque PBR materials for now
 
     // * Global interface
-    static std::string asset_dir = filesystem::get_asset_dir().string() + "/textures/map/";
-
     static char name_buf[128] = "";
     if(ImGui::InputTextWithHint("Name", current_composition_->pbr_material->name.c_str(), name_buf, IM_ARRAYSIZE(name_buf)))
         current_composition_->pbr_material->name = name_buf;
@@ -345,8 +344,9 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
     {
+        auto default_path = project::get_asset_path(project::DirKey::WORK_MATERIAL);
         ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseDirectoryDlgKey", "Choose Directory", 0, asset_dir, "");
+        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseDirectoryDlgKey", "Choose Directory", 0, default_path.string(), "");
     }
     ImGui::PopStyleColor(1);
 
@@ -382,9 +382,10 @@ void MaterialAuthoringWidget::on_imgui_render()
         // Current material must have been applied
         if(current_composition_->pbr_material->material.texture_group.texture_count > 0)
         {
+            auto default_path = project::get_asset_path(project::DirKey::MATERIAL);
             std::string default_filename = current_composition_->pbr_material->name + ".tom";
             ImGui::SetNextWindowSize({700, 400});
-            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", asset_dir,
+            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", default_path.string(),
                                                          default_filename);
         }
     }
@@ -446,8 +447,9 @@ void MaterialAuthoringWidget::on_imgui_render()
 
     if(show_file_open_dialog)
     {
+        auto default_path = project::get_asset_path(project::DirKey::WORK_MATERIAL);
         ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".png", asset_dir, "");
+        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".png", default_path.string(), "");
     }
     if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseFileDlgKey"))
     {

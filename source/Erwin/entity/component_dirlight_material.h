@@ -1,6 +1,5 @@
 #pragma once
 
-#include "entity/reflection.h"
 #include "asset/material.h"
 #include "glm/glm.hpp"
 
@@ -28,7 +27,5 @@ struct ComponentDirectionalLightMaterial
 
 	inline bool is_ready() const { return ready; }
 };
-
-template <> [[maybe_unused]] void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial*);
 
 } // namespace erwin

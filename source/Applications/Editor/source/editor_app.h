@@ -7,12 +7,12 @@ using namespace editor;
 
 namespace editor
 {
+	class SceneViewLayer;
 	class SceneEditorLayer;
 	class EditorBackgroundLayer;
 	class ConsoleWidget;
 	class KeybindingsWidget;
 }
-class SceneViewLayer;
 
 /*
 	Allows to group multiple layers together and batch enable/disable them

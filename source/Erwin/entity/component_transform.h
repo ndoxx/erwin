@@ -1,6 +1,5 @@
 #pragma once
 
-#include "entity/reflection.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtx/quaternion.hpp"
@@ -14,8 +13,6 @@ struct ComponentTransform2D
 	float angle         = 0.f;
 	float uniform_scale = 1.f;
 };
-
-// template <> void inspector_GUI<ComponentTransform2D>(void* data);
 
 struct ComponentTransform3D
 {
@@ -61,8 +58,6 @@ struct ComponentTransform3D
 			 * glm::toMat4(rotation);
 	}
 };
-
-template <> [[maybe_unused]] void inspector_GUI<ComponentTransform3D>(ComponentTransform3D*);
 
 
 } // namespace erwin

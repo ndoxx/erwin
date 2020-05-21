@@ -14,11 +14,11 @@ void Registry::deserialize(const xml::XMLFile& xml, const std::string& root_name
         root = xml.filepath.stem().string();
 
     if(xml.root)
-        parse_properties(xml.root, root);
+        parse_properties(xml.root, root, xml.filepath.parent_path());
 }
 
 // Recursive parser
-void Registry::parse_properties(void* node, const std::string& name_chain)
+void Registry::parse_properties(void* node, const std::string& name_chain, const fs::path& parent_dir)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -33,12 +33,12 @@ void Registry::parse_properties(void* node, const std::string& name_chain)
             const char* node_name = cur_node->name();
             std::string chain(name_chain + "." + node_name);
             // Get configuration for next level
-            parse_properties(cur_node, chain);
+            parse_properties(cur_node, chain, parent_dir);
         }
         else
         {
             // If no child, then try to extract property
-            hash_t name_hash = parse_xml_property(cur_node, name_chain);
+            hash_t name_hash = parse_xml_property(cur_node, name_chain, parent_dir);
             if(!name_hash)
             {
                 // Node is invalid
@@ -48,7 +48,7 @@ void Registry::parse_properties(void* node, const std::string& name_chain)
 }
 
 // Property parser
-hash_t Registry::parse_xml_property(void* node, const std::string& name_chain)
+hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, const fs::path& parent_dir)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -128,7 +128,7 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain)
         xml::parse_attribute(xnode, "absolute", is_absolute);
         fs::path the_path;
         if(!is_absolute)
-            the_path = filesystem::get_root_dir() / value;
+            the_path = parent_dir / value;
         else
             the_path = value;
         paths_[full_name_hash] = the_path;
@@ -154,10 +154,10 @@ void Registry::serialize(xml::XMLFile& xml, const std::string& root_name)
         root = xml.filepath.stem().string();
 
     if(xml.root)
-        serialize_properties(&xml.doc, xml.root, root);
+        serialize_properties(&xml.doc, xml.root, root, xml.filepath.parent_path());
 }
 
-void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain)
+void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -172,12 +172,12 @@ void Registry::serialize_properties(void* pdoc, void* node, const std::string& n
             const char* node_name = cur_node->name();
             std::string chain(name_chain + "." + node_name);
             // Get configuration for next level
-            serialize_properties(pdoc, cur_node, chain);
+            serialize_properties(pdoc, cur_node, chain, parent_dir);
         }
         else
         {
             // If no child, then try to write property
-            write_xml_property(pdoc, cur_node, name_chain);
+            write_xml_property(pdoc, cur_node, name_chain, parent_dir);
         }
     }
 }
@@ -196,7 +196,7 @@ void Registry::clear()
     paths_.clear();
 }
 
-void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain)
+void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -265,16 +265,13 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         auto it = paths_.find(full_name_hash);
         if(it != paths_.end())
         {
-            if(!fs::exists(it->second))
-                return;
-
             bool is_absolute = false;
             xml::parse_attribute(xnode, "absolute", is_absolute);
             fs::path out_path;
             if(is_absolute)
                 out_path = fs::absolute(it->second);
             else
-                out_path = fs::relative(it->second, filesystem::get_root_dir());
+                out_path = fs::relative(it->second, parent_dir);
             xml::set_attribute(doc, xnode, "value", out_path.string());
         }
         break;

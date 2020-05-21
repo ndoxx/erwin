@@ -1,10 +1,8 @@
 #pragma once
 
-#include "entity/reflection.h"
 #include "asset/material.h"
 #include "render/texture_common.h"
 #include "glm/glm.hpp"
-
 
 namespace erwin
 {
@@ -60,8 +58,5 @@ struct ComponentPBRMaterial
 	inline bool has_parallax() const      				  { return bool(material_data.flags & TextureMapFlag::TMF_DEPTH); }
 	inline bool is_ready() const          				  { return ready; }
 };
-
-template <> [[maybe_unused]] void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial*);
-
 
 } // namespace erwin

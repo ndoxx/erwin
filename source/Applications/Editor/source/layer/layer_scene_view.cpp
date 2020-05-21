@@ -1,8 +1,7 @@
 #include "layer_scene_view.h"
-#include "core/application.h"
-#include "erwin.h"
-#include "imgui/font_awesome.h"
 #include "level/scene.h"
+#include "project/project.h"
+#include "imgui/font_awesome.h"
 
 #include <bitset>
 #include <iomanip>
@@ -10,25 +9,20 @@
 
 using namespace erwin;
 
+namespace editor
+{
+
 SceneViewLayer::SceneViewLayer() : Layer("SceneViewLayer") {}
 
-void SceneViewLayer::on_imgui_render() {}
-
-void SceneViewLayer::on_attach()
+void SceneViewLayer::load_scene_stub()
 {
+    // TMP -> Implement proper scene loading
+
     Scene::camera_controller.init(1280.f / 1024.f, 60, 0.1f, 100.f);
 
     // Load resources
-    // Scene::load_hdr_environment("textures/hdr/autumn_park_2k.hdr");
-    // Scene::load_hdr_environment("textures/hdr/lakeside_1k.hdr");
-    // Scene::load_hdr_environment("textures/hdr/dirt_bike_track_01_1k.hdr");
-    // Scene::load_hdr_environment("textures/hdr/georgentor_2k.hdr");
-    Scene::load_hdr_environment("textures/hdr/small_cathedral_2k.hdr");
-
-    // TextureAtlasHandle atlas = AssetManager::load_texture_atlas("textures/atlas/set1.cat");
-
-    ComponentPBRMaterial mat_greasy_metal =
-        AssetManager::load_PBR_material(filesystem::get_asset_dir() / "textures/map/greasyMetal.tom");
+    Scene::load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
+    ComponentPBRMaterial mat_greasy_metal = AssetManager::load_PBR_material(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
 
     Material mat_sun;
     mat_sun.archetype = "Sun"_h;
@@ -80,6 +74,13 @@ void SceneViewLayer::on_attach()
 
     Scene::camera_controller.set_position({-5.8f, 2.3f, -5.8f});
     Scene::camera_controller.set_angles(228.f, 5.f);
+}
+
+void SceneViewLayer::on_imgui_render() {}
+
+void SceneViewLayer::on_attach()
+{
+
 }
 
 void SceneViewLayer::on_commit()
@@ -188,3 +189,5 @@ bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
         return false;
     return Scene::camera_controller.on_keyboard_event(event);
 }
+
+} // namespace editor

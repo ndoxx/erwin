@@ -28,10 +28,10 @@ public:
 	bool set(hash_t hname, const T& value);
 
 protected:
-	hash_t parse_xml_property(void* node, const std::string& name_chain);
-	void parse_properties(void* node, const std::string& name_chain);
-	void write_xml_property(void* pdoc, void* node, const std::string& name_chain);
-	void serialize_properties(void* pdoc, void* node, const std::string& name_chain);
+	hash_t parse_xml_property(void* node, const std::string& name_chain, const fs::path& parent_dir);
+	void parse_properties(void* node, const std::string& name_chain, const fs::path& parent_dir);
+	void write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir);
+	void serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir);
 
 private:
 	std::map<hash_t, size_t>      sizes_;

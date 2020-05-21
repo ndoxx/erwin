@@ -70,7 +70,10 @@ void ErwinEditor::on_load()
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
+    {
         project::load_project(last_project_file);
+        scene_view_layer->load_scene_stub();
+    }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
