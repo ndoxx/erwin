@@ -7,12 +7,12 @@ using namespace editor;
 
 namespace editor
 {
+	class SceneViewLayer;
 	class SceneEditorLayer;
 	class EditorBackgroundLayer;
 	class ConsoleWidget;
 	class KeybindingsWidget;
 }
-class SceneViewLayer;
 
 /*
 	Allows to group multiple layers together and batch enable/disable them
@@ -46,11 +46,11 @@ enum class EditorStateIdx: size_t
 class ErwinEditor: public erwin::Application
 {
 public:
-	virtual void on_pre_init() override;
 	virtual void on_client_init() override;
 	virtual void on_load() override;
 	virtual void on_unload() override;
 	virtual void on_imgui_render() override;
+
 	bool on_keyboard_event(const KeyboardEvent& e);
 
 	void show_dockspace_window(bool* p_open);

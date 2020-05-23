@@ -135,7 +135,7 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	s_storage.BRDF_integration_map = AssetManager::load_image("textures/ibl_brdf_integration.png", brdf_lut_desc, true);
+	s_storage.BRDF_integration_map = AssetManager::load_image(filesystem::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
 }
 
 void Renderer3D::shutdown()
@@ -155,7 +155,7 @@ void Renderer3D::shutdown()
 	Renderer::destroy(s_storage.line_shader);
 }
 
-void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light)
+void Renderer3D::update_camera(const PerspectiveCamera3D& camera)
 {
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
 	float near = camera.get_frustum().near;
@@ -176,7 +176,10 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 	s_storage.frame_data.camera_params = glm::vec4(near,far,0.f,0.f);
 	s_storage.frame_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
 	s_storage.frame_data.proj_params = camera.get_projection_parameters();
+}
 
+void Renderer3D::update_light(const ComponentDirectionalLight& dir_light)
+{
 	s_storage.frame_data.light_position = glm::vec4(dir_light.position, 0.f);
 	s_storage.frame_data.light_color = glm::vec4(dir_light.color, 1.f) * dir_light.brightness;
 	s_storage.frame_data.light_ambient_color = glm::vec4(dir_light.ambient_color, 1.f);
@@ -192,7 +195,10 @@ void Renderer3D::update_frame_data(const PerspectiveCamera3D& camera, const Comp
 		s_storage.frame_data.flags &= ~FrameDataFlags::FD_ENABLE_IBL;
 		s_storage.frame_data.light_ambient_strength = dir_light.ambient_strength;
 	}
+}
 
+void Renderer3D::update_frame_data()
+{
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
@@ -529,6 +535,9 @@ void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 
 void Renderer3D::draw_skybox(CubemapHandle cubemap)
 {
+	if(!cubemap.is_valid())
+		return;
+
 	VertexArrayHandle cube = CommonGeometry::get_vertex_array("cube"_h);
 
 	RenderState state;

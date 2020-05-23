@@ -2,6 +2,9 @@
 
 #include "erwin.h"
 
+namespace editor
+{
+
 class SceneViewLayer : public erwin::Layer
 {
 public:
@@ -26,3 +29,5 @@ protected:
     bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
     bool on_keyboard_event(const erwin::KeyboardEvent& event);
 };
+
+} // namespace editor

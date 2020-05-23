@@ -1,8 +1,9 @@
 #include "widget/widget_material_authoring.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
+#include "widget/dialog_open.h"
 #include "asset/asset_manager.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/tom_file.h"
+#include "project/project.h"
 #include "imgui.h"
 #include "imgui/color.h"
 #include "imgui/dialog.h"
@@ -124,11 +125,11 @@ void MaterialAuthoringWidget::pack_textures()
     // Create an ad-hoc framebuffer to render to 3 textures
     FramebufferLayout layout{
         // RGB: Albedo, A: Scaled emissivity
-        {"albedo"_h, ImageFormat::SRGB_ALPHA, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"albedo"_h, ImageFormat::SRGB_ALPHA, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
         // RG: Compressed normal, BA: ?
-        {"normal_depth"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"normal_depth"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
         // R: Metallic, G: AO, B: Roughness, A: ?
-        {"mare"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"mare"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
     };
     FramebufferHandle fb =
         Renderer::create_framebuffer(current_composition_->width, current_composition_->height, FB_NONE, layout);
@@ -334,8 +335,6 @@ void MaterialAuthoringWidget::on_imgui_render()
     // Restrict to opaque PBR materials for now
 
     // * Global interface
-    static std::string asset_dir = filesystem::get_asset_dir().string() + "/textures/map/";
-
     static char name_buf[128] = "";
     if(ImGui::InputTextWithHint("Name", current_composition_->pbr_material->name.c_str(), name_buf, IM_ARRAYSIZE(name_buf)))
         current_composition_->pbr_material->name = name_buf;
@@ -344,20 +343,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     // Load whole directory
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
-    {
-        ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseDirectoryDlgKey", "Choose Directory", 0, asset_dir, "");
-    }
+        dialog::show_open_directory("ChooseDirectoryDlgKey", "Choose Directory", project::get_asset_path(project::DirKey::WORK_MATERIAL));
+
     ImGui::PopStyleColor(1);
 
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseDirectoryDlgKey"))
+    dialog::on_open("ChooseDirectoryDlgKey", [this](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-            load_directory(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseDirectoryDlgKey");
-    }
+        load_directory(filepath);
+    });
 
     // Pack textures and apply to material view widget
     ImVec2 btn_half_span_size(ImGui::GetContentRegionAvailWidth() * 0.5f, 0.f);
@@ -381,23 +374,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         // Current material must have been applied
         if(current_composition_->pbr_material->material.texture_group.texture_count > 0)
-        {
-            std::string default_filename = current_composition_->pbr_material->name + ".tom";
-            ImGui::SetNextWindowSize({700, 400});
-            igfd::ImGuiFileDialog::Instance()->OpenModal("ExportFileDlgKey", "Export", ".tom", asset_dir,
-                                                         default_filename);
-        }
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::get_asset_path(project::DirKey::MATERIAL), current_composition_->pbr_material->name + ".tom");
     }
     ImGui::PopStyleColor(1);
 
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ExportFileDlgKey"))
+    dialog::on_open("ExportTomDlgKey", [this](const fs::path& filepath)
     {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-            export_TOM(igfd::ImGuiFileDialog::Instance()->GetFilepathName());
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ExportFileDlgKey");
-    }
+        export_TOM(filepath);
+    });
 
     ImGui::Separator();
 
@@ -445,23 +429,14 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::Columns(1);
 
     if(show_file_open_dialog)
+        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png", project::get_asset_path(project::DirKey::WORK_MATERIAL));
+
+    dialog::on_open("ChoosePngDlgKey", [&](const fs::path& filepath)
     {
-        ImGui::SetNextWindowSize({700, 400});
-        igfd::ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", ".png", asset_dir, "");
-    }
-    if(igfd::ImGuiFileDialog::Instance()->FileDialog("ChooseFileDlgKey"))
-    {
-        // action if OK
-        if(igfd::ImGuiFileDialog::Instance()->IsOk == true)
-        {
-            fs::path filepath = igfd::ImGuiFileDialog::Instance()->GetFilepathName();
-            load_texture_map(TextureMapType(selected_tm), filepath);
-            // Extract parent directory name and make it the material name
-            current_composition_->pbr_material->name = filepath.parent_path().stem().string();
-        }
-        // close
-        igfd::ImGuiFileDialog::Instance()->CloseDialog("ChooseFileDlgKey");
-    }
+        load_texture_map(TextureMapType(selected_tm), filepath);
+        // Extract parent directory name and make it the material name
+        current_composition_->pbr_material->name = filepath.parent_path().stem().string();
+    });
 
     ImGui::Separator();
 

@@ -1,18 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <filesystem>
 
 #include "core/core.h"
 #include "core/window.h"
 #include "core/layer_stack.h"
 #include "core/game_clock.h"
 #include "memory/heap_area.h"
-#include "filesystem/filesystem.h"
 
-namespace editor
-{
-	class EditorLayer;
-}
+namespace fs = std::filesystem;
 
 namespace erwin
 {
@@ -23,7 +20,6 @@ public:
 	Application();
 	virtual ~Application() = default;
 
-	virtual void on_pre_init() { }
 	virtual void on_client_init() { }
 	virtual void on_load() { }
 	virtual void on_unload() { }
@@ -36,7 +32,8 @@ public:
 	void toggle_imgui_layer();
 
 	// Add an XML configuration file to be parsed at the end of init()
-	void add_configuration(const std::string& filename);
+	void add_configuration(const fs::path& filepath);
+	void add_configuration(const fs::path& user_path, const fs::path& default_path);
 
 	bool init();
 	void run();

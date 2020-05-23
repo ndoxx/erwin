@@ -6,8 +6,9 @@ target_sources(editor
         ${SRC_EDITOR}
     )
 target_include_directories(editor
-    PRIVATE
+    SYSTEM PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/source"
+        "${CMAKE_SOURCE_DIR}/source/vendor"
         "${CMAKE_SOURCE_DIR}/source/Erwin"
     )
 

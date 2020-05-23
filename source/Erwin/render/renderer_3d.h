@@ -16,7 +16,9 @@ class Renderer3D
 {
 public:
 	// Setup frame data
-	static void update_frame_data(const PerspectiveCamera3D& camera, const ComponentDirectionalLight& dir_light);
+	static void update_camera(const PerspectiveCamera3D& camera);
+	static void update_light(const ComponentDirectionalLight& dir_light);
+	static void update_frame_data();
 	// Set an irradiance cubemap for PBR
 	static void set_environment(CubemapHandle irradiance, CubemapHandle prefiltered);
 	// Enable/Disable IBL

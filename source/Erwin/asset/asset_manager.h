@@ -33,7 +33,7 @@ public:
 	// Loading stuff
 	static TextureAtlasHandle load_texture_atlas(const fs::path& filepath);
 	static FontAtlasHandle load_font_atlas(const fs::path& filepath);
-	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor, bool engine_path=false);
+	static TextureHandle load_image(const fs::path& filepath, Texture2DDescriptor& descriptor);
 	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
 	static const ComponentPBRMaterial& load_PBR_material(const fs::path& tom_path);
 

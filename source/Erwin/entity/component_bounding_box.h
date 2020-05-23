@@ -1,6 +1,7 @@
 #pragma once
 
-#include "entity/reflection.h"
+#include <tuple>
+
 #include "asset/bounding.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -37,7 +38,5 @@ struct ComponentOBB
     		vertices_w[ii] = model_matrix * glm::vec4(vertices_w[ii], 1.f);
     }
 };
-
-template <> [[maybe_unused]] void inspector_GUI<ComponentOBB>(ComponentOBB*);
 
 } // namespace erwin

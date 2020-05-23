@@ -1,6 +1,5 @@
 #pragma once
 
-#include "entity/reflection.h"
 #include "render/handles.h"
 
 namespace erwin
@@ -20,7 +19,5 @@ struct ComponentMesh
 
 	inline bool is_ready() const { return ready; }
 };
-
-template <> [[maybe_unused]] void inspector_GUI<ComponentMesh>(ComponentMesh*);
 
 } // namespace erwin

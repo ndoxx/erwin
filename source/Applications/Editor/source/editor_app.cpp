@@ -2,10 +2,13 @@
 #include "debug/logger_thread.h"
 #include "imgui/font_awesome.h"
 #include "imgui/theme.h"
-#include "layer/layer_scene_view.h"
-#include "layer/layer_scene_editor.h"
-#include "layer/layer_material_editor.h"
 #include "layer/layer_editor_background.h"
+#include "layer/layer_material_editor.h"
+#include "layer/layer_scene_editor.h"
+#include "layer/layer_scene_view.h"
+#include "level/scene_loader.h"
+#include "project/project.h"
+#include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
 
@@ -15,13 +18,12 @@ static void set_gui_behavior()
     io.ConfigWindowsMoveFromTitleBarOnly = true;
 }
 
-void ErwinEditor::on_pre_init() {}
-
 void ErwinEditor::on_client_init()
 {
     filesystem::set_asset_dir("source/Applications/Editor/assets");
     filesystem::set_client_config_dir("source/Applications/Editor/config");
     add_configuration("client.xml");
+    add_configuration("config/settings.xml", "default_settings.xml");
 }
 
 void ErwinEditor::on_load()
@@ -61,8 +63,18 @@ void ErwinEditor::on_load()
 
     EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 
-    create_state(EditorStateIdx::SCENE_EDITION,      {"Scene edition", {scene_view_layer}, scene_editor_layer});
+    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
+
+    // Project settings
+    bool auto_load = cfg::get("settings.project.auto_load"_h, true);
+    fs::path last_project_file = cfg::get("settings.project.last_project"_h);
+    if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
+    {
+        project::load_project(last_project_file);
+        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
+                                     project::get_asset_path(project::DirKey::HDR));
+    }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
@@ -88,8 +100,8 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     // Cycle editor state
     if(Input::match_action(ACTION_EDITOR_CYCLE_MODE, e))
     {
-    	cycle_state();
-    	return true;
+        cycle_state();
+        return true;
     }
 
     return false;
@@ -102,7 +114,20 @@ void ErwinEditor::on_imgui_render()
     {
         if(ImGui::BeginMenu("File"))
         {
-            ImGui::MenuItem("Quit", NULL, &exit_required_);
+            if(ImGui::MenuItem("Load project", nullptr, nullptr))
+                dialog::show_open("ChooseFileDlgKey", "Choose Project File", ".erwin", ".");
+
+            if(ImGui::MenuItem("Save project", nullptr, nullptr))
+                project::save_project();
+
+            if(ImGui::MenuItem("Close project", nullptr, nullptr))
+            {
+                project::close_project();
+                SceneLoader::clear_scene();
+            }
+
+            ImGui::Separator();
+            ImGui::MenuItem("Quit", nullptr, &exit_required_);
             ImGui::EndMenu();
         }
 
@@ -110,13 +135,13 @@ void ErwinEditor::on_imgui_render()
         {
             if(ImGui::BeginMenu("Render"))
             {
-                if(ImGui::MenuItem("VSync", NULL, &vsync_enabled_))
+                if(ImGui::MenuItem("VSync", nullptr, &vsync_enabled_))
                     enable_vsync(vsync_enabled_);
                 ImGui::EndMenu();
             }
 
             ImGui::Separator();
-            ImGui::MenuItem(keybindings_widget_->get_name().c_str(), NULL, &keybindings_widget_->open_);
+            ImGui::MenuItem(keybindings_widget_->get_name().c_str(), nullptr, &keybindings_widget_->open_);
 
             ImGui::Separator();
             const auto& themes = editor::theme::get_list();
@@ -160,7 +185,7 @@ void ErwinEditor::on_imgui_render()
                 EditorStateIdx idx = EditorStateIdx(ii);
                 const auto& state = states_[ii];
                 bool checked = (current_state_idx_ == idx);
-                if(ImGui::MenuItem(state.name.c_str(), NULL, checked))
+                if(ImGui::MenuItem(state.name.c_str(), nullptr, checked))
                     switch_state(idx);
             }
             ImGui::EndMenu();
@@ -168,17 +193,24 @@ void ErwinEditor::on_imgui_render()
 
         if(ImGui::BeginMenu("View"))
         {
-            ImGui::MenuItem(console_->get_name().c_str(), NULL, &console_->open_);
+            ImGui::MenuItem(console_->get_name().c_str(), nullptr, &console_->open_);
             for(Widget* widget : states_[size_t(current_state_idx_)].gui_layer->get_widgets())
-                ImGui::MenuItem(widget->get_name().c_str(), NULL, &widget->open_);
+                ImGui::MenuItem(widget->get_name().c_str(), nullptr, &widget->open_);
 
             ImGui::Separator();
-            ImGui::MenuItem("ImGui Demo", NULL, &s_show_demo_window);
+            ImGui::MenuItem("ImGui Demo", nullptr, &s_show_demo_window);
 
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
+
+    // Dialogs
+    dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
+        project::load_project(filepath);
+        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
+                                     project::get_asset_path(project::DirKey::HDR));
+    });
 
     if(enable_docking_)
         show_dockspace_window(&enable_docking_);
@@ -253,8 +285,8 @@ void ErwinEditor::switch_state(EditorStateIdx idx)
 
 EditorStateIdx ErwinEditor::cycle_state()
 {
-	size_t next = size_t(current_state_idx_);
-	next = (next+1)%size_t(EditorStateIdx::COUNT);
-	switch_state(EditorStateIdx(next));
-	return current_state_idx_;
+    size_t next = size_t(current_state_idx_);
+    next = (next + 1) % size_t(EditorStateIdx::COUNT);
+    switch_state(EditorStateIdx(next));
+    return current_state_idx_;
 }
