@@ -13,7 +13,6 @@ public:
     SceneViewLayer();
     ~SceneViewLayer() = default;
     
-    void load_scene_stub();
     virtual void on_imgui_render() override;
 
 protected:

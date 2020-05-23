@@ -67,7 +67,10 @@ void MaterialViewWidget::reset_material()
 void MaterialViewWidget::on_update(const GameClock& clock)
 {
     camera_controller_.update(clock);
-    Renderer3D::update_frame_data(camera_controller_.get_camera(), directional_light_);
+
+    Renderer3D::update_camera(camera_controller_.get_camera());
+    Renderer3D::update_light(directional_light_);
+    Renderer3D::update_frame_data();
 }
 
 void MaterialViewWidget::on_resize(uint32_t width, uint32_t height)

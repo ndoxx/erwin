@@ -125,11 +125,11 @@ void MaterialAuthoringWidget::pack_textures()
     // Create an ad-hoc framebuffer to render to 3 textures
     FramebufferLayout layout{
         // RGB: Albedo, A: Scaled emissivity
-        {"albedo"_h, ImageFormat::SRGB_ALPHA, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"albedo"_h, ImageFormat::SRGB_ALPHA, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
         // RG: Compressed normal, BA: ?
-        {"normal_depth"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"normal_depth"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
         // R: Metallic, G: AO, B: Roughness, A: ?
-        {"mare"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+        {"mare"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_NEAREST, TextureWrap::REPEAT},
     };
     FramebufferHandle fb =
         Renderer::create_framebuffer(current_composition_->width, current_composition_->height, FB_NONE, layout);
