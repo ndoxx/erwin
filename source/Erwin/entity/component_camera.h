@@ -10,12 +10,12 @@ struct ComponentCamera3D
 {
     struct Frustum3D
     {
-        float left;
-        float right;
-        float bottom;
-        float top;
-        float near;
-        float far;
+        float left = 0.f;
+        float right = 0.f;
+        float bottom = 0.f;
+        float top = 0.f;
+        float near = 0.f;
+        float far = 0.f;
     };
 
     struct FrustumPlanes
