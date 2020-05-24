@@ -127,23 +127,26 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
     }
 }
 
-void RTPeekWidget::on_layer_render()
+void RTPeekWidget::on_update(const erwin::GameClock&)
 {
-    if(!open_ || s_storage.panes_.size() == 0)
-        return;
-
     s_storage.peek_data_.projection_parameters = Scene::camera_controller.get_camera().get_projection_parameters();
-
-    DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
-    TextureHandle current_texture = props.texture;
     
     // Update UBO data
+    DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
     s_storage.peek_data_.texel_size = FramebufferPool::get_texel_size("fb_texture_view"_h);
     s_storage.peek_data_.flags = (s_storage.tone_map_ ? PeekFlags::TONE_MAP : PeekFlags::NONE)
                                | (s_storage.invert_color_ ? PeekFlags::INVERT : PeekFlags::NONE)
                                | (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE)
                                | (props.is_depth ? PeekFlags::DEPTH : PeekFlags::NONE);
     s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
+}
+
+void RTPeekWidget::on_layer_render()
+{
+    if(!open_ || s_storage.panes_.size() == 0)
+        return;
+
+    DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
 
     // Submit draw call
     // WTF: If layer_id is set, command is dispatched at the end of frame like I would want it to,
@@ -154,7 +157,7 @@ void RTPeekWidget::on_layer_render()
     key.set_sequence(0, 0, s_storage.peek_shader_);
     DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
     dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DataOwnership::Copy));
-    dc.set_texture(current_texture);
+    dc.set_texture(props.texture);
     Renderer::submit(key.encode(), dc);
 }
 

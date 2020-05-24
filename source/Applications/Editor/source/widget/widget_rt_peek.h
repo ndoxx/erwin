@@ -18,6 +18,7 @@ public:
 	RTPeekWidget();
 	virtual ~RTPeekWidget() = default;
 
+	virtual void on_update(const erwin::GameClock&) override;
 	virtual void on_layer_render() override;
 
 	size_t new_pane(const std::string& name);

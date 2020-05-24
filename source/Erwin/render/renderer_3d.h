@@ -5,6 +5,8 @@
 #include "asset/handles.h"
 #include "asset/material.h"
 #include "entity/light.h"
+#include "entity/component_camera.h"
+#include "entity/component_transform.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -16,7 +18,8 @@ class Renderer3D
 {
 public:
 	// Setup frame data
-	static void update_camera(const PerspectiveCamera3D& camera);
+	static void update_camera(const ComponentCamera3D& camera, const ComponentTransform3D& transform);
+	static void update_camera(const PerspectiveCamera3D& camera); // Deprec
 	static void update_light(const ComponentDirectionalLight& dir_light);
 	static void update_frame_data();
 	// Set an irradiance cubemap for PBR

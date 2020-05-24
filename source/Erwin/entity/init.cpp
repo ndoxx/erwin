@@ -1,6 +1,7 @@
 #include "entity/init.h"
 #include "entity/reflection.h"
 #include "entity/component_transform.h"
+#include "entity/component_camera.h"
 #include "entity/component_bounding_box.h"
 #include "entity/component_mesh.h"
 #include "entity/component_PBR_material.h"
@@ -16,6 +17,7 @@ namespace entity
 void init_components()
 {
     REFLECT_COMPONENT(ComponentTransform3D);
+    REFLECT_COMPONENT(ComponentCamera3D);
     REFLECT_COMPONENT(ComponentOBB);
     REFLECT_COMPONENT(ComponentMesh);
     REFLECT_COMPONENT(ComponentPBRMaterial);
