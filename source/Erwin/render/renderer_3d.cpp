@@ -1,12 +1,14 @@
 #include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
-#include "render/camera_3d.h"
 #include "asset/material.h"
 #include "asset/asset_manager.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/euler_angles.hpp"
+#include "entity/component_camera.h"
+#include "entity/component_transform.h"
+#include "entity/light.h"
 
 #include <set>
 
@@ -176,30 +178,6 @@ void Renderer3D::update_camera(const ComponentCamera3D& camera, const ComponentT
 	s_storage.frame_data.camera_params = glm::vec4(near,far,0.f,0.f);
 	s_storage.frame_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
 	s_storage.frame_data.proj_params = camera.projection_parameters;
-}
-
-// Deprec
-void Renderer3D::update_camera(const PerspectiveCamera3D& camera)
-{
-	glm::vec2 fb_size = FramebufferPool::get_screen_size();
-	float near = camera.get_frustum().near;
-	float far  = camera.get_frustum().far;
-
-	// Create a view matrix without the translational part, for skybox-type rendering
-	glm::mat4 aa_view = camera.get_view_matrix();
-	aa_view[3][0] = 0.f;
-	aa_view[3][1] = 0.f;
-	aa_view[3][2] = 0.f;
-
-	s_storage.frame_data.view_matrix = camera.get_view_matrix();
-	s_storage.frame_data.transposed_view_matrix = glm::transpose(camera.get_view_matrix());
-	s_storage.frame_data.view_projection_matrix = camera.get_view_projection_matrix();
-	s_storage.frame_data.axis_aligned_view_projection_matrix = camera.get_projection_matrix() * aa_view;
-
-	s_storage.frame_data.eye_position = glm::vec4(camera.get_position(), 1.f);
-	s_storage.frame_data.camera_params = glm::vec4(near,far,0.f,0.f);
-	s_storage.frame_data.framebuffer_size = glm::vec4(fb_size, fb_size.x/fb_size.y, 0.f);
-	s_storage.frame_data.proj_params = camera.get_projection_parameters();
 }
 
 void Renderer3D::update_light(const ComponentDirectionalLight& dir_light)

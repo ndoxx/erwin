@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+
 #include "entity/component_camera.h"
 #include "entity/component_transform.h"
 #include "core/game_clock.h"
@@ -10,7 +11,7 @@
 namespace erwin
 {
 
-class FreeflyCameraSystem
+class TrackerCameraSystem
 {
 public:
 	struct FrustumParameters
@@ -21,9 +22,10 @@ public:
 		float zfar = 100.f;
 	};
 
-	FreeflyCameraSystem();
+	TrackerCameraSystem();
 	void init(ComponentCamera3D& camera, ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
+	void set_position(float radius, float azimuth, float colatitude);
 	void update(const erwin::GameClock& clock);
 
 	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
@@ -33,6 +35,7 @@ public:
 	bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
 	bool on_keyboard_event(const erwin::KeyboardEvent& event);
 
+	inline void set_lookat_target(const glm::vec3& target) { lookat_target_ = target; }
 	inline float get_aspect_ratio() const { return frustum_parameters_.aspect_ratio; }
 	inline float get_fovy() const         { return frustum_parameters_.fovy; }
 	inline float get_znear() const        { return frustum_parameters_.znear; }
@@ -48,10 +51,10 @@ private:
 	std::optional<std::reference_wrapper<ComponentCamera3D>> target_camera_;
 	std::optional<std::reference_wrapper<ComponentTransform3D>> target_transform_;
 
-	float translation_speed_;
 	float rotation_speed_;
-	float yaw_;
-	float pitch_;
+	float azimuth_;
+	float colatitude_;
+	float radius_;
 	float win_width_;
 	float win_height_;
 	float win_x_;
@@ -61,6 +64,7 @@ private:
 	bool inputs_enabled_;
 	bool dirty_frustum_;
 	glm::vec3 position_;
+	glm::vec3 lookat_target_;
 };
 
 

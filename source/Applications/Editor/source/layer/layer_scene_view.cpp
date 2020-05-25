@@ -18,7 +18,10 @@ void SceneViewLayer::on_imgui_render() {}
 
 void SceneViewLayer::setup_camera()
 {
-    camera_controller_.init();
+    ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(Scene::camera);
+
+    camera_controller_.init(camera, transform);
     camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
 }
 

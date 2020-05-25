@@ -4,8 +4,9 @@
 #include "widget/widget.h"
 #include "entity/component_PBR_material.h"
 #include "entity/component_transform.h"
+#include "entity/component_camera.h"
 #include "entity/light.h"
-#include "input/rotate_around_camera_controller.h"
+#include "input/tracker_camera_system.h"
 
 namespace editor
 {
@@ -51,8 +52,9 @@ private:
 	std::shared_ptr<erwin::ComponentPBRMaterial> current_material_;
 	erwin::ComponentTransform3D transform_;
 	erwin::ComponentDirectionalLight directional_light_;
-	erwin::RotateAroundController camera_controller_;
-
+	erwin::ComponentCamera3D camera_;
+	erwin::ComponentTransform3D camera_transform_;
+	erwin::TrackerCameraSystem camera_controller_;
 	erwin::VertexArrayHandle current_mesh_;
 };
 

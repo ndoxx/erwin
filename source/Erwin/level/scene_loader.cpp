@@ -20,8 +20,6 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
 {
     // TMP -> Implement proper scene loading
 
-    // Scene::camera_controller.init(1280.f / 1024.f, 60, 0.1f, 100.f);
-
     // Load resources
     Scene::load_hdr_environment(hdrs_path / "small_cathedral_2k.hdr");
     ComponentPBRMaterial mat_greasy_metal = AssetManager::load_PBR_material(materials_path / "greasyMetal.tom");
@@ -84,9 +82,6 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
 
         Scene::add_entity(ent, "Cube #0");
     }
-
-    // Scene::camera_controller.set_position({-5.8f, 2.3f, -5.8f});
-    // Scene::camera_controller.set_angles(228.f, 5.f);
 }
 
 void SceneLoader::clear_scene()

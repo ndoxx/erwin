@@ -1,4 +1,6 @@
 #include "system/gizmo_system.h"
+#include "entity/component_camera.h"
+#include "entity/component_transform.h"
 #include "asset/bounding.h"
 #include "level/scene.h"
 #include "asset/asset_manager.h"

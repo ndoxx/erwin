@@ -1,9 +1,7 @@
 #include <cmath>
 
-#include "entity/component_transform.h"
 #include "input/freefly_camera_system.h"
 #include "input/input.h"
-#include "level/scene.h"
 
 #include "debug/logger.h"
 
@@ -16,28 +14,17 @@ inline float fovy_znear_to_top(float fovy, float znear)
     return znear * std::tan(0.5f * fovy * (float(M_PI) / 180.f));
 }
 
-// Helper func to find the camera entity
-inline EntityID find_camera_entity()
-{
-    auto view = Scene::registry.view<ComponentCamera3D, ComponentTransform3D>();
-    for(const entt::entity e : view)
-        return e; // Only one camera in scene for now
-
-    return k_invalid_entity_id;
-}
-
 FreeflyCameraSystem::FreeflyCameraSystem()
-    : translation_speed_(2.f), rotation_speed_(2.5f * float(M_PI) / 180.f), yaw_(0.f), pitch_(0.f), win_width_(0.f),
-      win_height_(0.f), win_x_(0.f), win_y_(0.f), prev_mouse_x_(0.f), prev_mouse_y_(0.f), inputs_enabled_(false),
-      dirty_frustum_(true), position_(0.f)
+    : translation_speed_(2.f), rotation_speed_(2.5f * float(M_PI) / 180.f),
+      yaw_(0.f), pitch_(0.f), win_width_(0.f), win_height_(0.f), win_x_(0.f), win_y_(0.f), prev_mouse_x_(0.f),
+      prev_mouse_y_(0.f), inputs_enabled_(false), dirty_frustum_(true), position_(0.f)
 {}
 
-void FreeflyCameraSystem::init()
+void FreeflyCameraSystem::init(ComponentCamera3D& camera, ComponentTransform3D& transform)
 {
-    // Get camera entity and retrieve data
-    EntityID camera_entity = find_camera_entity();
+	target_camera_ = camera;
+	target_transform_ = transform;
 
-    ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(camera_entity);
     position_ = transform.position;
     pitch_ = transform.euler.x;
     yaw_ = transform.euler.y;
@@ -63,20 +50,15 @@ void FreeflyCameraSystem::update_frustum()
 
 void FreeflyCameraSystem::update(const erwin::GameClock& clock)
 {
-    EntityID camera_entity = find_camera_entity();
-
     // Update camera projection
     if(dirty_frustum_)
-    {
-        ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(camera_entity);
-        camera.set_projection(frustum_);
-    }
+        target_camera_->get().set_projection(frustum_);
 
     if(!inputs_enabled_ && !dirty_frustum_)
         return;
 
-    ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(camera_entity);
-    ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(camera_entity);
+    ComponentCamera3D& camera = target_camera_->get();
+    ComponentTransform3D& transform = target_transform_->get();
 
     // Translational magnitude
     float dt = clock.get_frame_duration();
