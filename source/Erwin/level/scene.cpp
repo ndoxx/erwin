@@ -15,8 +15,8 @@ namespace erwin
 
 EntityID Scene::selected_entity = k_invalid_entity_id;
 EntityID Scene::directional_light = k_invalid_entity_id;
+EntityID Scene::camera = k_invalid_entity_id;
 std::vector<EntityID> Scene::entities;
-FreeflyController Scene::camera_controller;
 entt::registry Scene::registry;
 
 static std::queue<std::tuple<EntityID, uint32_t>> s_removed_components;

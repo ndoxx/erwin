@@ -5,6 +5,11 @@
 namespace erwin
 {
 
+/*
+	LEGACY
+	TODO: Move this to a component when we need it
+*/
+
 struct Frustum2D
 {
 	float left;

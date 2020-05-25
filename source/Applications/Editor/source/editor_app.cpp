@@ -53,17 +53,17 @@ void ErwinEditor::on_load()
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
-    auto* scene_view_layer = new SceneViewLayer();
+    scene_view_layer_ = new SceneViewLayer();
     auto* scene_editor_layer = new editor::SceneEditorLayer();
     auto* material_editor_layer = new editor::MaterialEditorLayer();
-    push_layer(scene_view_layer);
+    push_layer(scene_view_layer_);
     push_overlay(scene_editor_layer);
     push_overlay(material_editor_layer, false);
     push_overlay(new editor::EditorBackgroundLayer());
 
     EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 
-    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer}, scene_editor_layer});
+    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
     // Project settings
@@ -74,6 +74,7 @@ void ErwinEditor::on_load()
         project::load_project(last_project_file);
         SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
                                      project::get_asset_path(project::DirKey::HDR));
+        scene_view_layer_->setup_camera();
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -206,10 +207,11 @@ void ErwinEditor::on_imgui_render()
     }
 
     // Dialogs
-    dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
+    dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
         project::load_project(filepath);
         SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
                                      project::get_asset_path(project::DirKey::HDR));
+        scene_view_layer_->setup_camera();
     });
 
     if(enable_docking_)

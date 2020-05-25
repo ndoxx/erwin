@@ -65,6 +65,7 @@ private:
 
 	ConsoleWidget* console_ = nullptr;
 	KeybindingsWidget* keybindings_widget_ = nullptr;
+	SceneViewLayer* scene_view_layer_ = nullptr;
 
 	bool exit_required_ = false;
 	bool enable_docking_ = true;

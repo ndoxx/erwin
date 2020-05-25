@@ -12,7 +12,6 @@
 #include "core/config.h"
 #include "filesystem/filesystem.h"
 #include "input/camera_2d_controller.h"
-#include "input/freefly_camera_controller.h"
 #include "input/input.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"

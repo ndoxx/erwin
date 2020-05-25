@@ -1,6 +1,7 @@
 #pragma once
 
 #include "erwin.h"
+#include "input/freefly_camera_system.h"
 
 namespace editor
 {
@@ -15,6 +16,8 @@ public:
     
     virtual void on_imgui_render() override;
 
+    void setup_camera();
+
 protected:
     virtual void on_attach() override;
     virtual void on_detach() override;
@@ -28,6 +31,9 @@ protected:
     bool on_window_moved_event(const erwin::WindowMovedEvent& event);
     bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
     bool on_keyboard_event(const erwin::KeyboardEvent& event);
+
+private:
+    erwin::FreeflyCameraSystem camera_controller_;
 };
 
 } // namespace editor

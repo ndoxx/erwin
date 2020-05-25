@@ -1,4 +1,6 @@
 #include "system/gizmo_system.h"
+#include "entity/component_camera.h"
+#include "entity/component_transform.h"
 #include "asset/bounding.h"
 #include "level/scene.h"
 #include "asset/asset_manager.h"
@@ -35,7 +37,8 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 
     glm::mat4 parent_model = transform->get_unscaled_model_matrix();
 
-    glm::mat4 VP_inv = glm::inverse(Scene::camera_controller.get_camera().get_view_projection_matrix());
+    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);
 
 	// constexpr float k_cyl_diameter = 0.01f;
@@ -58,7 +61,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
     	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter
     );
 
-    float nearest = Scene::camera_controller.get_zfar();
+    float nearest = camera.frustum.far;
     Ray::CollisionData data;
 
     selected_part_ = -1;

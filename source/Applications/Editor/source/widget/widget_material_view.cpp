@@ -28,9 +28,10 @@ current_index_(0)
 {
 	// flags_ |= ImGuiWindowFlags_MenuBar;
 	// Create scene with a sphere in the middle
-	camera_controller_.init(1280.f/1024.f, 60, 0.1f, 100.f);
+	camera_controller_.init(camera_, camera_transform_);
+	camera_controller_.set_frustum_parameters({1280.f/1024.f, 60.f, 0.1f, 100.f});
 	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
-	camera_controller_.set_target({0.f,0.f,0.f});
+
 
 	current_material_ = std::make_shared<ComponentPBRMaterial>();
 	reset_material();
@@ -68,7 +69,7 @@ void MaterialViewWidget::on_update(const GameClock& clock)
 {
     camera_controller_.update(clock);
 
-    Renderer3D::update_camera(camera_controller_.get_camera());
+    Renderer3D::update_camera(camera_, camera_transform_);
     Renderer3D::update_light(directional_light_);
     Renderer3D::update_frame_data();
 }
