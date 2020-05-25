@@ -2,7 +2,6 @@
 
 #include <filesystem>
 
-#include "input/freefly_camera_controller.h"
 #include "entity/reflection.h"
 #include "render/handles.h"
 
@@ -27,8 +26,8 @@ public:
 
 	static EntityID selected_entity;
 	static EntityID directional_light;
+	static EntityID camera;
 	static std::vector<EntityID> entities;
-	static FreeflyController camera_controller; // TODO: Camera here instead?
 
 	static struct Environment
 	{

@@ -16,6 +16,12 @@ SceneViewLayer::SceneViewLayer() : Layer("SceneViewLayer") {}
 
 void SceneViewLayer::on_imgui_render() {}
 
+void SceneViewLayer::setup_camera()
+{
+    camera_controller_.init();
+    camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
+}
+
 void SceneViewLayer::on_attach()
 {
 
@@ -41,8 +47,11 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    Scene::camera_controller.update(clock);
-    Renderer3D::update_camera(Scene::camera_controller.get_camera());
+    // Scene::camera_controller.update(clock);
+    camera_controller_.update(clock);
+    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    const ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(Scene::camera);
+    Renderer3D::update_camera(camera, transform);
     if(Scene::registry.valid(Scene::directional_light))
         Renderer3D::update_light(Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light));
 
@@ -97,36 +106,36 @@ bool SceneViewLayer::on_mouse_button_event(const erwin::MouseButtonEvent& event)
 {
     if(!enabled_)
         return false;
-    return Scene::camera_controller.on_mouse_button_event(event);
+    return camera_controller_.on_mouse_button_event(event);
 }
 bool SceneViewLayer::on_mouse_moved_event(const erwin::MouseMovedEvent& event)
 {
     if(!enabled_)
         return false;
-    return Scene::camera_controller.on_mouse_moved_event(event);
+    return camera_controller_.on_mouse_moved_event(event);
 }
 bool SceneViewLayer::on_window_resize_event(const erwin::WindowResizeEvent& event)
 {
-    Scene::camera_controller.on_window_resize_event(event);
+    camera_controller_.on_window_resize_event(event);
     return false;
 }
 bool SceneViewLayer::on_window_moved_event(const erwin::WindowMovedEvent& event)
 {
     if(!enabled_)
         return false;
-    return Scene::camera_controller.on_window_moved_event(event);
+    return camera_controller_.on_window_moved_event(event);
 }
 bool SceneViewLayer::on_mouse_scroll_event(const erwin::MouseScrollEvent& event)
 {
     if(!enabled_)
         return false;
-    return Scene::camera_controller.on_mouse_scroll_event(event);
+    return camera_controller_.on_mouse_scroll_event(event);
 }
 bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
     if(!enabled_)
         return false;
-    return Scene::camera_controller.on_keyboard_event(event);
+    return camera_controller_.on_keyboard_event(event);
 }
 
 } // namespace editor

@@ -5,6 +5,8 @@
 #include "input/input.h"
 #include "level/scene.h"
 
+#include "debug/logger.h"
+
 namespace erwin
 {
 
@@ -54,7 +56,7 @@ void FreeflyCameraSystem::update_frustum()
                 frustum_parameters_.aspect_ratio * top,
                 -top,
                 top,
-                frustum_parameters_.znear,
+                frustum_parameters_.znear, // TODO: minus?
                 frustum_parameters_.zfar};
     dirty_frustum_ = true;
 }
@@ -68,10 +70,9 @@ void FreeflyCameraSystem::update(const erwin::GameClock& clock)
     {
         ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(camera_entity);
         camera.set_projection(frustum_);
-        dirty_frustum_ = false;
     }
 
-    if(!inputs_enabled_)
+    if(!inputs_enabled_ && !dirty_frustum_)
         return;
 
     ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(camera_entity);
@@ -105,6 +106,9 @@ void FreeflyCameraSystem::update(const erwin::GameClock& clock)
     transform.position = position_;
     transform.set_rotation({pitch_, yaw_, 0.f});
     camera.update_transform(transform.get_model_matrix());
+
+    if(dirty_frustum_)
+        dirty_frustum_ = false;
 }
 
 bool FreeflyCameraSystem::on_window_resize_event(const WindowResizeEvent& event)

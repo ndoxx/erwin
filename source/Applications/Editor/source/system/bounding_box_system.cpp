@@ -7,12 +7,14 @@ namespace erwin
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    glm::mat4 VP_inv = glm::inverse(Scene::camera_controller.get_camera().get_view_projection_matrix());
+    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+
+    glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);
 
     // Perform a ray scene query
     EntityID selected = Scene::selected_entity;
-    float nearest = Scene::camera_controller.get_zfar();
+    float nearest = camera.frustum.far;
     
     Ray::CollisionData data;
     auto view = Scene::registry.view<ComponentOBB>();

@@ -1,6 +1,7 @@
 #include "widget/widget_rt_peek.h"
 #include "level/scene.h"
 #include "core/intern_string.h"
+#include "entity/component_camera.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"
 #include "render/common_geometry.h"
@@ -129,7 +130,8 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
 
 void RTPeekWidget::on_update(const erwin::GameClock&)
 {
-    s_storage.peek_data_.projection_parameters = Scene::camera_controller.get_camera().get_projection_parameters();
+    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    s_storage.peek_data_.projection_parameters = camera.projection_parameters;
     
     // Update UBO data
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];

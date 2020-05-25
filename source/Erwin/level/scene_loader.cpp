@@ -5,6 +5,7 @@
 #include "entity/component_dirlight_material.h"
 #include "entity/component_mesh.h"
 #include "entity/component_transform.h"
+#include "entity/component_camera.h"
 #include "entity/light.h"
 #include "imgui/font_awesome.h"
 #include "level/scene.h"
@@ -19,7 +20,7 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
 {
     // TMP -> Implement proper scene loading
 
-    Scene::camera_controller.init(1280.f / 1024.f, 60, 0.1f, 100.f);
+    // Scene::camera_controller.init(1280.f / 1024.f, 60, 0.1f, 100.f);
 
     // Load resources
     Scene::load_hdr_environment(hdrs_path / "small_cathedral_2k.hdr");
@@ -32,6 +33,17 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
     mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
     Renderer3D::register_shader(mat_sun.shader);
     Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
+
+    {
+        EntityID ent = Scene::registry.create();
+
+        ComponentTransform3D transform({-5.8f, 2.3f, -5.8f}, {5.f, 228.f, 0.f}, 1.f);
+
+        Scene::registry.assign<ComponentCamera3D>(ent);
+        Scene::registry.assign<ComponentTransform3D>(ent, transform);
+        Scene::camera = ent;
+        Scene::add_entity(ent, "Camera", W_ICON(VIDEO_CAMERA));
+    }
 
     {
         EntityID ent = Scene::registry.create();
@@ -73,8 +85,8 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
         Scene::add_entity(ent, "Cube #0");
     }
 
-    Scene::camera_controller.set_position({-5.8f, 2.3f, -5.8f});
-    Scene::camera_controller.set_angles(228.f, 5.f);
+    // Scene::camera_controller.set_position({-5.8f, 2.3f, -5.8f});
+    // Scene::camera_controller.set_angles(228.f, 5.f);
 }
 
 void SceneLoader::clear_scene()

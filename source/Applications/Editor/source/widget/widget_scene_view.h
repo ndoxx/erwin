@@ -24,7 +24,6 @@ protected:
 
 private:
 	Widget* stats_overlay_;
-	Widget* camera_overlay_;
 
 	struct RenderSurface
 	{

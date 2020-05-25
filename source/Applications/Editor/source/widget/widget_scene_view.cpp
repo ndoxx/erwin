@@ -1,6 +1,5 @@
 #include "widget/widget_scene_view.h"
 #include "widget/overlay_stats.h"
-#include "widget/overlay_camera_tracker.h"
 #include "level/scene.h"
 #include "core/config.h"
 #include "core/application.h"
@@ -34,13 +33,11 @@ render_surface_{0.f,0.f,0.f,0.f,0.f,0.f}
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     stats_overlay_ = new RenderStatsOverlay();
-    camera_overlay_ = new CameraTrackerOverlay();
 }
 
 SceneViewWidget::~SceneViewWidget()
 {
     delete stats_overlay_;
-	delete camera_overlay_;
 }
 
 void SceneViewWidget::on_update(const GameClock& clock)
@@ -113,7 +110,6 @@ void SceneViewWidget::on_imgui_render()
         if(ImGui::BeginMenu("Overlays"))
         {
             ImGui::MenuItem("Render stats", NULL,   &stats_overlay_->open_);
-            ImGui::MenuItem("Camera tracker", NULL, &camera_overlay_->open_);
             ImGui::EndMenu();
         }
         if(ImGui::BeginMenu("Debug"))
@@ -135,15 +131,6 @@ void SceneViewWidget::on_imgui_render()
 		ImGui::SetNextWindowBgAlpha(0.35f);
 	    stats_overlay_->imgui_render();
 	}
-
-    if(camera_overlay_->open_)
-    {
-        ImVec2 overlay_pos(render_surface_.x0 + k_overlay_dist, render_surface_.y0 + k_overlay_dist);
-        ImVec2 overlay_pivot(0.f, 0.f);
-        ImGui::SetNextWindowPos(overlay_pos, ImGuiCond_Always, overlay_pivot);
-        ImGui::SetNextWindowBgAlpha(0.35f);
-        camera_overlay_->imgui_render();
-    }
 
     // * Show game render in window
 	// Retrieve the native framebuffer texture handle
