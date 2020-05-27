@@ -50,7 +50,6 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    // Scene::camera_controller.update(clock);
     camera_controller_.update(clock);
     const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
     const ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(Scene::camera);

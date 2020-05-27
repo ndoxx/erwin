@@ -7,7 +7,6 @@
 #include "render/renderer.h"
 #include "debug/logger.h"
 
-#include <queue>
 #include <tuple>
 
 namespace erwin
@@ -84,6 +83,88 @@ void Scene::cleanup()
 		s_removed_entities.pop();
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+void EdScene::load()
+{
+
+}
+
+void EdScene::unload()
+{
+
+}
+
+void EdScene::cleanup()
+{
+	// Removed marked components
+	while(!removed_components_.empty())
+	{
+		auto&& [entity, reflected_component] = removed_components_.front();
+		invoke(W_METAFUNC_REMOVE_COMPONENT, reflected_component, registry, entity);
+		removed_components_.pop();
+	}
+
+	// Removed marked entities and all their components
+	while(!removed_entities_.empty())
+	{
+		auto entity = removed_entities_.front();
+		registry.destroy(entity);
+		removed_entities_.pop();
+	}
+}
+
+void EdScene::load_hdr_environment(const fs::path& hdr_file)
+{
+	Texture2DDescriptor hdr_desc;
+	TextureHandle hdr_tex = AssetManager::load_image(hdr_file, hdr_desc);
+	environment.environment_map = Renderer3D::generate_cubemap_hdr(hdr_tex, hdr_desc.height);
+	Renderer::destroy(hdr_tex);
+	environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
+	environment.prefiltered_env_map = Renderer3D::generate_prefiltered_map(environment.environment_map, hdr_desc.height);
+	Renderer3D::set_environment(environment.diffuse_irradiance_map, environment.prefiltered_env_map);
+}
+
+
+void EdScene::add_entity(EntityID entity, const std::string& name, const char* _icon)
+{
+	ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
+	registry.assign<ComponentDescription>(entity, desc);
+
+	entities.push_back(entity);
+
+	DLOG("editor",1) << "[Scene] Added entity: " << name << std::endl;
+}
+
+void EdScene::select(EntityID entity)
+{
+	selected_entity = entity;
+}
+
+void EdScene::drop_selection()
+{
+	selected_entity = k_invalid_entity_id;
+}
+
+void EdScene::mark_for_removal(EntityID entity, uint32_t reflected_component)
+{
+	removed_components_.push({entity, reflected_component});
+}
+
+void EdScene::mark_for_removal(EntityID entity)
+{
+	removed_entities_.push(entity);
+}
+
 
 
 } // namespace erwin
