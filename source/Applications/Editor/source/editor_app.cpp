@@ -124,7 +124,7 @@ void ErwinEditor::on_imgui_render()
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
             {
                 project::close_project();
-                SceneLoader::clear_scene();
+                SceneManager::unload_scene("main_scene"_h);
             }
 
             ImGui::Separator();

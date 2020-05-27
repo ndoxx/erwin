@@ -21,7 +21,17 @@ void Scene::load()
 
 void Scene::unload()
 {
-
+    selected_entity = k_invalid_entity_id;
+    directional_light = k_invalid_entity_id;
+    camera = k_invalid_entity_id;
+    Renderer::destroy(environment.environment_map);
+    Renderer::destroy(environment.diffuse_irradiance_map);
+    Renderer::destroy(environment.prefiltered_env_map);
+    environment.environment_map = {};
+    environment.diffuse_irradiance_map = {};
+    environment.prefiltered_env_map = {};
+    registry.clear();
+    entities.clear();
 }
 
 void Scene::cleanup()
@@ -53,7 +63,6 @@ void Scene::load_hdr_environment(const fs::path& hdr_file)
 	environment.prefiltered_env_map = Renderer3D::generate_prefiltered_map(environment.environment_map, hdr_desc.height);
 	Renderer3D::set_environment(environment.diffuse_irradiance_map, environment.prefiltered_env_map);
 }
-
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {

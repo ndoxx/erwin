@@ -8,6 +8,7 @@
 #include "render/framebuffer_pool.h"
 #include "render/common_geometry.h"
 
+#include "level/material_editor_scene.h"
 #include "level/scene.h" // TMP
 
 #include "imgui.h"
@@ -28,23 +29,12 @@ current_index_(0)
 {
 	// flags_ |= ImGuiWindowFlags_MenuBar;
 	// Create scene with a sphere in the middle
-	camera_controller_.init(camera_, camera_transform_);
+    auto& scene = SceneManager::create_scene<MaterialEditorScene>("material_editor_scene"_h);
+	scene.load();
+
+	camera_controller_.init(scene.camera_, scene.camera_transform_);
 	camera_controller_.set_frustum_parameters({1280.f/1024.f, 60.f, 0.1f, 100.f});
 	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
-
-
-	current_material_ = std::make_shared<ComponentPBRMaterial>();
-	reset_material();
-
-	transform_ = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.f};
-
-	directional_light_.set_position(47.626f, 49.027f);
-	directional_light_.color         = {0.95f,0.85f,0.5f};
-	directional_light_.ambient_color = {0.95f,0.85f,0.5f};
-	directional_light_.ambient_strength = 0.1f;
-	directional_light_.brightness = 3.7f;
-
-	current_mesh_ = CommonGeometry::get_vertex_array("icosphere_pbr"_h);
 }
 
 MaterialViewWidget::~MaterialViewWidget()
@@ -52,25 +42,14 @@ MaterialViewWidget::~MaterialViewWidget()
 
 }
 
-void MaterialViewWidget::reset_material()
-{
-	ShaderHandle shader         = AssetManager::load_shader("shaders/deferred_PBR.glsl");
-	UniformBufferHandle ubo     = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
-	Material mat = {"current"_h, {}, shader, ubo, sizeof(ComponentPBRMaterial::MaterialData)};
-
-    current_material_->set_material(mat);
-	current_material_->clear_flags();
-	current_material_->material_data.uniform_metallic = 0.f;
-	current_material_->material_data.uniform_roughness = 0.01f;
-	current_material_->material_data.uniform_albedo = {1.0f,1.0f,1.0f,1.f};
-}
-
 void MaterialViewWidget::on_update(const GameClock& clock)
 {
     camera_controller_.update(clock);
 
-    Renderer3D::update_camera(camera_, camera_transform_);
-    Renderer3D::update_light(directional_light_);
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+
+    Renderer3D::update_camera(scene.camera_, scene.camera_transform_);
+    Renderer3D::update_light(scene.directional_light_);
     Renderer3D::update_frame_data();
 }
 
@@ -101,12 +80,12 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
 
 void MaterialViewWidget::on_layer_render()
 {
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     Renderer3D::begin_deferred_pass();
-    Renderer3D::draw_mesh(current_mesh_, transform_.get_model_matrix(), current_material_->material, &current_material_->material_data);
+    Renderer3D::draw_mesh(scene.current_mesh_, scene.transform_.get_model_matrix(), scene.current_material_.material, &scene.current_material_.material_data);
     Renderer3D::end_deferred_pass();
 
-    // TODO: Use local envmap
-    // BUG: If not used, camera control will bug?!
+    // TODO: Use local envmap?
     Renderer3D::draw_skybox(scn::current<Scene>().environment.environment_map);
 }
 
@@ -132,7 +111,8 @@ void MaterialViewWidget::on_imgui_render()
             if(ImGui::Selectable(s_mesh_names[ii].c_str(), is_selected))
             {
                 current_index_ = ii;
-                current_mesh_ = CommonGeometry::get_vertex_array(s_va_name[ii]);
+    			auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+                scene.current_mesh_ = CommonGeometry::get_vertex_array(s_va_name[ii]);
             }
             if(is_selected)
                 ImGui::SetItemDefaultFocus();

@@ -12,6 +12,7 @@ static struct
 {
 	std::map<hash_t, std::unique_ptr<AbstractScene>> scenes;
 	std::optional<std::reference_wrapper<AbstractScene>> current_scene;
+	hash_t current_scene_name = 0;
 } s_storage;
 
 void SceneManager::add_scene(hash_t name, std::unique_ptr<AbstractScene> scene)
@@ -31,6 +32,15 @@ void SceneManager::load_scene(hash_t name)
 	it->second->load();
 }
 
+void SceneManager::unload_scene(hash_t name)
+{
+	auto it = s_storage.scenes.find(name);
+	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
+	
+	DLOGN("application") << "Unloading scene: " << WCC('n') << istr::resolve(name) << std::endl;
+	it->second->unload();
+}
+
 AbstractScene& SceneManager::get(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);
@@ -43,6 +53,11 @@ AbstractScene& SceneManager::get_current()
 {
 	W_ASSERT(s_storage.current_scene.has_value(), "No current scene is set.");
 	return s_storage.current_scene->get();
+}
+
+hash_t SceneManager::get_current_name()
+{
+	return s_storage.current_scene_name;
 }
 
 void SceneManager::remove_scene(hash_t name)
@@ -61,6 +76,7 @@ void SceneManager::make_current(hash_t name)
 	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 
 	s_storage.current_scene = *it->second;
+	s_storage.current_scene_name = name;
 }
 
 
