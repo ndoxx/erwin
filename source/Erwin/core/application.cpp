@@ -12,7 +12,6 @@
 #include "render/renderer_pp.h"
 #include "asset/asset_manager.h"
 #include "memory/arena.h"
-#include "level/scene.h"
 #include "entity/init.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
@@ -346,9 +345,6 @@ void Application::run()
         		IMGUI_LAYER->end();
             }
         }
-
-        // --- CLEANUP PHASE ---
-        Scene::cleanup();
 
     	// To allow frame by frame update
     	game_clock_.release_flags();

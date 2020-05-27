@@ -20,8 +20,14 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
 {
     // TMP -> Implement proper scene loading
 
+    SceneManager::add_scene("main_scene"_h, std::make_unique<EdScene>());
+    SceneManager::load_scene("main_scene"_h);
+    SceneManager::make_current("main_scene"_h);
+
+    auto& scene = scn::current<EdScene>();
+
     // Load resources
-    Scene::load_hdr_environment(hdrs_path / "small_cathedral_2k.hdr");
+    scene.load_hdr_environment(hdrs_path / "small_cathedral_2k.hdr");
     ComponentPBRMaterial mat_greasy_metal = AssetManager::load_PBR_material(materials_path / "greasyMetal.tom");
 
     Material mat_sun;
@@ -33,18 +39,18 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
     Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
 
     {
-        EntityID ent = Scene::registry.create();
+        EntityID ent = scene.registry.create();
 
         ComponentTransform3D transform({-5.8f, 2.3f, -5.8f}, {5.f, 228.f, 0.f}, 1.f);
 
-        Scene::registry.assign<ComponentCamera3D>(ent);
-        Scene::registry.assign<ComponentTransform3D>(ent, transform);
-        Scene::camera = ent;
-        Scene::add_entity(ent, "Camera", W_ICON(VIDEO_CAMERA));
+        scene.registry.assign<ComponentCamera3D>(ent);
+        scene.registry.assign<ComponentTransform3D>(ent, transform);
+        scene.camera = ent;
+        scene.add_entity(ent, "Camera", W_ICON(VIDEO_CAMERA));
     }
 
     {
-        EntityID ent = Scene::registry.create();
+        EntityID ent = scene.registry.create();
 
         ComponentDirectionalLight cdirlight;
         cdirlight.set_position(47.626f, 49.027f);
@@ -57,15 +63,15 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
         renderable.set_material(mat_sun);
         renderable.material_data.scale = 0.2f;
 
-        Scene::registry.assign<ComponentDirectionalLight>(ent, cdirlight);
-        Scene::registry.assign<ComponentDirectionalLightMaterial>(ent, renderable);
+        scene.registry.assign<ComponentDirectionalLight>(ent, cdirlight);
+        scene.registry.assign<ComponentDirectionalLightMaterial>(ent, renderable);
 
-        Scene::directional_light = ent;
-        Scene::add_entity(ent, "Sun", W_ICON(SUN_O));
+        scene.directional_light = ent;
+        scene.add_entity(ent, "Sun", W_ICON(SUN_O));
     }
 
     {
-        EntityID ent = Scene::registry.create();
+        EntityID ent = scene.registry.create();
 
         ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, 1.8f};
 
@@ -75,27 +81,28 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
         ComponentMesh cmesh;
         cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
 
-        Scene::registry.assign<ComponentTransform3D>(ent, ctransform);
-        Scene::registry.assign<ComponentOBB>(ent, cOBB);
-        Scene::registry.assign<ComponentMesh>(ent, cmesh);
-        Scene::registry.assign<ComponentPBRMaterial>(ent, mat_greasy_metal);
+        scene.registry.assign<ComponentTransform3D>(ent, ctransform);
+        scene.registry.assign<ComponentOBB>(ent, cOBB);
+        scene.registry.assign<ComponentMesh>(ent, cmesh);
+        scene.registry.assign<ComponentPBRMaterial>(ent, mat_greasy_metal);
 
-        Scene::add_entity(ent, "Cube #0");
+        scene.add_entity(ent, "Cube #0");
     }
 }
 
 void SceneLoader::clear_scene()
 {
-    Scene::selected_entity = k_invalid_entity_id;
-    Scene::directional_light = k_invalid_entity_id;
-    Renderer::destroy(Scene::environment.environment_map);
-    Renderer::destroy(Scene::environment.diffuse_irradiance_map);
-    Renderer::destroy(Scene::environment.prefiltered_env_map);
-    Scene::environment.environment_map = {};
-    Scene::environment.diffuse_irradiance_map = {};
-    Scene::environment.prefiltered_env_map = {};
-    Scene::registry.clear();
-    Scene::entities.clear();
+    auto& scene = scn::current<EdScene>();
+    scene.selected_entity = k_invalid_entity_id;
+    scene.directional_light = k_invalid_entity_id;
+    Renderer::destroy(scene.environment.environment_map);
+    Renderer::destroy(scene.environment.diffuse_irradiance_map);
+    Renderer::destroy(scene.environment.prefiltered_env_map);
+    scene.environment.environment_map = {};
+    scene.environment.diffuse_irradiance_map = {};
+    scene.environment.prefiltered_env_map = {};
+    scene.registry.clear();
+    scene.entities.clear();
 }
 
 } // namespace erwin

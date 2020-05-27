@@ -13,36 +13,6 @@ namespace fs = std::filesystem;
 namespace erwin
 {
 
-// Deprec
-class Scene
-{
-public:
-	static void load_hdr_environment(const fs::path& hdr_file);
-
-	static void add_entity(EntityID entity, const std::string& name, const char* icon = nullptr);
-	static void select(EntityID entity);
-	static void drop_selection();
-
-	static void mark_for_removal(EntityID entity, uint32_t reflected_component);
-	static void mark_for_removal(EntityID entity);
-
-	static void cleanup();
-
-	static EntityID selected_entity;
-	static EntityID directional_light;
-	static EntityID camera;
-	static std::vector<EntityID> entities;
-
-	static struct Environment
-	{
-	    CubemapHandle environment_map;
-	    CubemapHandle diffuse_irradiance_map;
-	    CubemapHandle prefiltered_env_map;
-	} environment;
-
-	static entt::registry registry;
-};
-
 class EdScene: public AbstractScene
 {
 public:
@@ -65,9 +35,9 @@ public:
 	void mark_for_removal(EntityID entity, uint32_t reflected_component);
 	void mark_for_removal(EntityID entity);
 
-	EntityID selected_entity;
-	EntityID directional_light;
-	EntityID camera;
+	EntityID selected_entity = k_invalid_entity_id;
+	EntityID directional_light = k_invalid_entity_id;
+	EntityID camera = k_invalid_entity_id;
 	std::vector<EntityID> entities;
 
 	struct Environment

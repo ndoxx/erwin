@@ -20,16 +20,17 @@ Widget("Inspector", true)
 
 void InspectorWidget::entity_tab()
 {
-    if(Scene::selected_entity == k_invalid_entity_id)
+    auto& scene = scn::current<EdScene>();
+    if(scene.selected_entity == k_invalid_entity_id)
         return;
 
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Properties"))
     {
-        ImGui::Text("EntityID: %u", Scene::selected_entity);
+        ImGui::Text("EntityID: %u", scene.selected_entity);
 
         // TODO: Use a resize callback to wire the InputText to the string directly
-        auto& desc = Scene::registry.get<ComponentDescription>(Scene::selected_entity);
+        auto& desc = scene.registry.get<ComponentDescription>(scene.selected_entity);
         static char name_buf[128] = "";
         if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
             desc.name = name_buf;
@@ -41,7 +42,7 @@ void InspectorWidget::entity_tab()
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
     if(ImGui::TreeNode("Components"))
     {
-        erwin::visit_entity(Scene::registry, Scene::selected_entity, [](uint32_t reflected_type, void* data)
+        erwin::visit_entity(scene.registry, scene.selected_entity, [&scene](uint32_t reflected_type, void* data)
         {
             // Don't let special editor components be editable this way
             // TODO: automate this via a component meta data flag
@@ -56,8 +57,8 @@ void InspectorWidget::entity_tab()
                 ImGui::SameLine(ImGui::GetWindowWidth()-50);
                 if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
                 {
-                    Scene::mark_for_removal(Scene::selected_entity, reflected_type);
-                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(Scene::selected_entity) << std::endl;
+                    scene.mark_for_removal(scene.selected_entity, reflected_type);
+                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(scene.selected_entity) << std::endl;
                     return;
                 }
 
@@ -78,14 +79,14 @@ void InspectorWidget::entity_tab()
             for(auto&& [reflected, name]: component_names)
             {
                 // If entity already has component, do not show in combo
-                if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, Scene::registry, Scene::selected_entity).cast<bool>())
+                if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, scene.registry, scene.selected_entity).cast<bool>())
                     continue;
 
                 if(ImGui::Selectable(name.c_str()))
                 {
-                    invoke(W_METAFUNC_CREATE_COMPONENT, reflected, Scene::registry, Scene::selected_entity);
+                    invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.registry, scene.selected_entity);
                     DLOG("editor",1) << "Added " << component_names.at(reflected) 
-                                     << " to entity " << static_cast<unsigned long>(Scene::selected_entity) << std::endl;
+                                     << " to entity " << static_cast<unsigned long>(scene.selected_entity) << std::endl;
                     break;
                 }
             }

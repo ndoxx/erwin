@@ -27,17 +27,18 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    if(Scene::selected_entity == k_invalid_entity_id)
+    auto& scene = scn::current<EdScene>();
+    if(scene.selected_entity == k_invalid_entity_id)
         return false;
 
     // Get selected entity's transform if any
-    auto* transform = Scene::registry.try_get<ComponentTransform3D>(Scene::selected_entity);
+    auto* transform = scene.registry.try_get<ComponentTransform3D>(scene.selected_entity);
     if(transform == nullptr)
     	return false;
 
     glm::mat4 parent_model = transform->get_unscaled_model_matrix();
 
-    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);
 
@@ -84,10 +85,11 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 
 void GizmoSystem::render()
 {
-    if(Scene::selected_entity == k_invalid_entity_id)
+    auto& scene = scn::current<EdScene>();
+    if(scene.selected_entity == k_invalid_entity_id)
         return;
 
-    auto* transform = Scene::registry.try_get<ComponentTransform3D>(Scene::selected_entity);
+    auto* transform = scene.registry.try_get<ComponentTransform3D>(scene.selected_entity);
     if(transform == nullptr)
         return;
 
