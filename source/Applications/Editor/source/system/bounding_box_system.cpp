@@ -4,12 +4,14 @@
 #include "asset/bounding.h"
 #include "level/scene.h"
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
 
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
 
@@ -43,7 +45,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
 
 void BoundingBoxSystem::update(const GameClock&)
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     auto view = scene.registry.view<ComponentOBB,ComponentTransform3D>();
     for(const entt::entity e: view)
     {
@@ -55,7 +57,7 @@ void BoundingBoxSystem::update(const GameClock&)
 
 void BoundingBoxSystem::render()
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     if(scene.selected_entity == k_invalid_entity_id)
         return;
 
@@ -73,4 +75,4 @@ void BoundingBoxSystem::render()
     Renderer3D::end_line_pass();
 }
 
-} // namespace erwin
+} // namespace editor

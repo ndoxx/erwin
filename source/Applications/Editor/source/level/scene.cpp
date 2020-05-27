@@ -9,20 +9,22 @@
 
 #include <tuple>
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
 
-void EdScene::load()
-{
-
-}
-
-void EdScene::unload()
+void Scene::load()
 {
 
 }
 
-void EdScene::cleanup()
+void Scene::unload()
+{
+
+}
+
+void Scene::cleanup()
 {
 	// Removed marked components
 	while(!removed_components_.empty())
@@ -41,7 +43,7 @@ void EdScene::cleanup()
 	}
 }
 
-void EdScene::load_hdr_environment(const fs::path& hdr_file)
+void Scene::load_hdr_environment(const fs::path& hdr_file)
 {
 	Texture2DDescriptor hdr_desc;
 	TextureHandle hdr_tex = AssetManager::load_image(hdr_file, hdr_desc);
@@ -53,7 +55,7 @@ void EdScene::load_hdr_environment(const fs::path& hdr_file)
 }
 
 
-void EdScene::add_entity(EntityID entity, const std::string& name, const char* _icon)
+void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
 	ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
 	registry.assign<ComponentDescription>(entity, desc);
@@ -63,26 +65,26 @@ void EdScene::add_entity(EntityID entity, const std::string& name, const char* _
 	DLOG("editor",1) << "[Scene] Added entity: " << name << std::endl;
 }
 
-void EdScene::select(EntityID entity)
+void Scene::select(EntityID entity)
 {
 	selected_entity = entity;
 }
 
-void EdScene::drop_selection()
+void Scene::drop_selection()
 {
 	selected_entity = k_invalid_entity_id;
 }
 
-void EdScene::mark_for_removal(EntityID entity, uint32_t reflected_component)
+void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 {
 	removed_components_.push({entity, reflected_component});
 }
 
-void EdScene::mark_for_removal(EntityID entity)
+void Scene::mark_for_removal(EntityID entity)
 {
 	removed_entities_.push(entity);
 }
 
 
 
-} // namespace erwin
+} // namespace editor

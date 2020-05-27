@@ -4,7 +4,7 @@
 
 namespace fs = std::filesystem;
 
-namespace erwin
+namespace editor
 {
 
 class SceneLoader
@@ -16,4 +16,4 @@ public:
 };
 
 
-} // namespace erwin
+} // namespace editor

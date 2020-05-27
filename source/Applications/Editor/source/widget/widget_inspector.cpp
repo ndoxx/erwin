@@ -20,7 +20,7 @@ Widget("Inspector", true)
 
 void InspectorWidget::entity_tab()
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     if(scene.selected_entity == k_invalid_entity_id)
         return;
 

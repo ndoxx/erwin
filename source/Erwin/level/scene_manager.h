@@ -31,6 +31,13 @@ public:
 
     template <typename SceneT> static inline SceneT& get_as(hash_t name) { return static_cast<SceneT&>(get(name)); }
     template <typename SceneT> static inline SceneT& get_current_as()    { return static_cast<SceneT&>(get_current()); }
+
+    template <typename SceneT, typename... ArgsT>
+    static inline SceneT& create_scene(hash_t name, ArgsT&&... args)
+    {
+    	add_scene(name, std::make_unique<SceneT>(std::forward<ArgsT>(args)...));
+    	return get_as<SceneT>(name);
+    }
 };
 
 // Shorthand

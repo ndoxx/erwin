@@ -13,18 +13,16 @@
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
 
 void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path& hdrs_path)
 {
     // TMP -> Implement proper scene loading
 
-    SceneManager::add_scene("main_scene"_h, std::make_unique<EdScene>());
-    SceneManager::load_scene("main_scene"_h);
-    SceneManager::make_current("main_scene"_h);
-
-    auto& scene = scn::current<EdScene>();
+    auto& scene = SceneManager::create_scene<Scene>("main_scene"_h);
 
     // Load resources
     scene.load_hdr_environment(hdrs_path / "small_cathedral_2k.hdr");
@@ -88,11 +86,14 @@ void SceneLoader::load_scene_stub(const fs::path& materials_path, const fs::path
 
         scene.add_entity(ent, "Cube #0");
     }
+
+    SceneManager::load_scene("main_scene"_h);
+    SceneManager::make_current("main_scene"_h);
 }
 
 void SceneLoader::clear_scene()
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     scene.selected_entity = k_invalid_entity_id;
     scene.directional_light = k_invalid_entity_id;
     Renderer::destroy(scene.environment.environment_map);
@@ -105,4 +106,4 @@ void SceneLoader::clear_scene()
     scene.entities.clear();
 }
 
-} // namespace erwin
+} // namespace editor

@@ -117,7 +117,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
-        scn::current<EdScene>().drop_selection();
+        scn::current<Scene>().drop_selection();
         return true;
     }
 

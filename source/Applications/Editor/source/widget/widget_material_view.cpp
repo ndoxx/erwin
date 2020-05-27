@@ -107,7 +107,7 @@ void MaterialViewWidget::on_layer_render()
 
     // TODO: Use local envmap
     // BUG: If not used, camera control will bug?!
-    Renderer3D::draw_skybox(scn::current<EdScene>().environment.environment_map);
+    Renderer3D::draw_skybox(scn::current<Scene>().environment.environment_map);
 }
 
 static const std::vector<std::string> s_mesh_names =

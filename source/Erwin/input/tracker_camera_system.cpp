@@ -2,7 +2,6 @@
 
 #include "input/input.h"
 #include "input/tracker_camera_system.h"
-#include "level/scene.h"
 
 #include "debug/logger.h"
 

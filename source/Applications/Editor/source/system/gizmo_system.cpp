@@ -6,7 +6,9 @@
 #include "asset/asset_manager.h"
 #include "render/renderer_3d.h"
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
 
 GizmoSystem::GizmoSystem()
@@ -27,7 +29,7 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     if(scene.selected_entity == k_invalid_entity_id)
         return false;
 
@@ -85,7 +87,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 
 void GizmoSystem::render()
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     if(scene.selected_entity == k_invalid_entity_id)
         return;
 
@@ -104,4 +106,4 @@ void GizmoSystem::render()
     Renderer3D::end_line_pass();
 }
 
-} // namespace erwin
+} // namespace editor

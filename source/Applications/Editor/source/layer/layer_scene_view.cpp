@@ -18,7 +18,7 @@ void SceneViewLayer::on_imgui_render() {}
 
 void SceneViewLayer::setup_camera()
 {
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
 
     ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
@@ -52,7 +52,7 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
     camera_controller_.update(clock);
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     const ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
@@ -61,7 +61,6 @@ void SceneViewLayer::on_update(GameClock& clock)
         Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
 
     Renderer3D::update_frame_data();
-    scene.cleanup();
 }
 
 void SceneViewLayer::on_render()
@@ -69,7 +68,7 @@ void SceneViewLayer::on_render()
     // FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
     // Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
 
-    auto& scene = scn::current<EdScene>();
+    auto& scene = scn::current<Scene>();
 
     // Draw scene geometry
     {
