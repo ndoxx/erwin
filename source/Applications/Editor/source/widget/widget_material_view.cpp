@@ -1,5 +1,4 @@
 #include "widget/widget_material_view.h"
-#include "asset/asset_manager.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "render/handles.h"

@@ -1,18 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Config>
-    <display>
-    	<string name="title"    value="Sandbox"/>
-        <uint name="width"      value="1024"/>
-        <uint name="height"     value="768"/>
-        <bool name="full"       value="false"/>
-        <bool name="topmost"    value="true"/>
-        <bool name="vsync"      value="true"/>
-    </display>
+	<display>
+		<string name="title" value="Sandbox"/>
+		<uint name="width" value="1024"/>
+		<uint name="height" value="768"/>
+		<bool name="full" value="false"/>
+		<bool name="topmost" value="true"/>
+		<bool name="vsync" value="true"/>
+	</display>
 	<memory>
-    	<size name="area" value="32_MB"/>
-	    <!-- Filesystem asset memory -->
-	    <filesystem>
-	    	<size name="assets" value="24_MB"/>
-	    </filesystem>
-    </memory>>
+		<size name="area" value="32_MB"/>
+		<filesystem>
+			<size name="assets" value="24_MB"/>
+		</filesystem>
+	</memory>
+	
+	&gt;
+
+
 </Config>
+

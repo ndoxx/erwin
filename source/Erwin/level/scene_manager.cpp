@@ -60,6 +60,11 @@ hash_t SceneManager::get_current_name()
 	return s_storage.current_scene_name;
 }
 
+bool SceneManager::has_current()
+{
+	return s_storage.current_scene.has_value();
+}
+
 void SceneManager::remove_scene(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);

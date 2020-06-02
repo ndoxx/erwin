@@ -348,7 +348,8 @@ void Application::run()
         }
 
         // --- CLEANUP PHASE ---
-        SceneManager::get_current().cleanup();
+        if(SceneManager::has_current())
+            SceneManager::get_current().cleanup();
 
     	// To allow frame by frame update
     	game_clock_.release_flags();

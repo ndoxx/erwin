@@ -3,7 +3,6 @@
 #include "entity/component_transform.h"
 #include "asset/bounding.h"
 #include "level/scene.h"
-#include "asset/asset_manager.h"
 #include "render/renderer_3d.h"
 
 using namespace erwin;
