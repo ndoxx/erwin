@@ -6,7 +6,6 @@
 #include "debug/logger.h"
 
 #include <cstring>
-#include <fstream>
 #include <numeric>
 
 namespace erwin
@@ -65,11 +64,11 @@ void TOMDescriptor::release()
 
 void read_tom(TOMDescriptor& desc)
 {
-    std::ifstream ifs(desc.filepath, std::ios::binary);
+    auto ifs = wfs::get_istream(desc.filepath, wfs::binary);
 
     // Read header & sanity check
     TOMHeader header;
-    ifs.read(opaque_cast(&header), sizeof(TOMHeader));
+    ifs->read(opaque_cast(&header), sizeof(TOMHeader));
 
     W_ASSERT(header.magic == TOM_MAGIC, "Invalid TOM file: magic number mismatch.");
     W_ASSERT(header.version_major == TOM_VERSION_MAJOR, "Invalid TOM file: version (major) mismatch.");
@@ -86,7 +85,7 @@ void read_tom(TOMDescriptor& desc)
         desc.material_type = MaterialType(header.material_type);
         desc.material_data_size = uint32_t(header.material_data_size);
         desc.material_data = new uint8_t[header.material_data_size];
-        ifs.read(opaque_cast(desc.material_data), long(header.material_data_size));
+        ifs->read(opaque_cast(desc.material_data), long(header.material_data_size));
     }
 
     uint32_t num_maps          = header.num_maps;
@@ -96,7 +95,7 @@ void read_tom(TOMDescriptor& desc)
     // Read block descriptors
 	std::vector<BlockDescriptor> blocks;
     blocks.resize(num_maps);
-    ifs.read(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
+    ifs->read(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
 
     for(auto&& block: blocks)
     {
@@ -119,8 +118,7 @@ void read_tom(TOMDescriptor& desc)
 
     // Read data blob
     uint8_t* blob = new uint8_t[blob_size];
-    ifs.read(opaque_cast(blob), long(blob_size));
-    ifs.close();
+    ifs->read(opaque_cast(blob), long(blob_size));
 
     // Inflate (decompress) blob if needed
     if(desc.compression == LosslessCompression::Deflate)
@@ -205,7 +203,7 @@ void write_tom(TOMDescriptor& desc)
     header.material_data_size = desc.material_data_size;
     header.material_type      = uint8_t(desc.material_type);
 
-    std::ofstream ofs(desc.filepath, std::ios::binary);
+    auto ofs = wfs::get_ostream(desc.filepath, wfs::binary);
 
     // Compress blob if required
     if(desc.compression == LosslessCompression::Deflate)
@@ -222,16 +220,14 @@ void write_tom(TOMDescriptor& desc)
     }
 
     // Write header
-    ofs.write(opaque_cast(&header), sizeof(TOMHeader));
+    ofs->write(opaque_cast(&header), sizeof(TOMHeader));
     // Write material data
     if(desc.material_data)
-        ofs.write(opaque_cast(desc.material_data), long(header.material_data_size));
+        ofs->write(opaque_cast(desc.material_data), long(header.material_data_size));
     // Write block descriptors
-    ofs.write(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
+    ofs->write(opaque_cast(blocks.data()), num_maps*sizeof(BlockDescriptor));
     // Write blob
-    ofs.write(opaque_cast(blob), long(header.blob_size));
-
-    ofs.close();
+    ofs->write(opaque_cast(blob), long(header.blob_size));
 
     // Cleanup
     delete[] blob;

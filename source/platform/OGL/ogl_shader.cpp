@@ -260,7 +260,7 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
         // Load default shader
         DLOGW("shader") << "Loading default red shader as a fallback." << std::endl;
         sources.clear();
-        slang::pre_process_GLSL(filesystem::get_system_asset_dir() / "shaders/red_shader.glsl", sources);
+        slang::pre_process_GLSL(wfs::get_system_asset_dir() / "shaders/red_shader.glsl", sources);
         introspect();
     }
     return success;
@@ -424,9 +424,7 @@ bool OGLShader::build_spirv(const fs::path& filepath)
     std::vector<uint32_t> shader_ids;
 
     auto stages = spv::parse_stages(filepath);
-
-    std::vector<uint8_t> spirv;
-    filesystem::get_file_as_vector(filepath, spirv);
+    auto spirv = wfs::get_file_as_vector(filepath);
 
     for(auto&& stage: stages)
     {

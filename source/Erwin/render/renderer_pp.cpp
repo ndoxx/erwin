@@ -123,10 +123,10 @@ void PostProcessingRenderer::init()
 #endif
 
 	// Create shaders
-	s_storage.passthrough_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
-	s_storage.pp_shader          = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
-	s_storage.lighten_shader     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/post_proc_lighten.glsl", "post_proc_lighten");
-	s_storage.bloom_blur_shader  = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
+	s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
+	s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
+	s_storage.lighten_shader     = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc_lighten.glsl", "post_proc_lighten");
+	s_storage.bloom_blur_shader  = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
 	
 	s_storage.pp_ubo   = Renderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), UsagePattern::Dynamic);
 	s_storage.blur_ubo = Renderer::create_uniform_buffer("blur_data", nullptr, sizeof(BlurUBOData), UsagePattern::Dynamic);

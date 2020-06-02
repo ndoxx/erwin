@@ -112,12 +112,12 @@ void Renderer3D::init()
     W_PROFILE_FUNCTION()
 
     // Init resources
-	s_storage.line_shader                       = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
-	s_storage.dirlight_shader                   = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
-	s_storage.skybox_shader                     = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
-	s_storage.equirectangular_to_cubemap_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/equirectangular_to_cubemap.glsl", "ER2C");
-	s_storage.diffuse_irradiance_shader         = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
-	s_storage.prefilter_env_map_shader          = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/prefilter_env_map.glsl", "prefilter_env_map");
+	s_storage.line_shader                       = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
+	s_storage.dirlight_shader                   = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
+	s_storage.skybox_shader                     = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
+	s_storage.equirectangular_to_cubemap_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/equirectangular_to_cubemap.glsl", "ER2C");
+	s_storage.diffuse_irradiance_shader         = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
+	s_storage.prefilter_env_map_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/prefilter_env_map.glsl", "prefilter_env_map");
 	s_storage.line_ubo                          = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
 	s_storage.frame_ubo                         = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
 	s_storage.transform_ubo                     = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
@@ -137,7 +137,7 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	s_storage.BRDF_integration_map = AssetManager::load_image(filesystem::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
+	s_storage.BRDF_integration_map = AssetManager::load_image(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
 }
 
 void Renderer3D::shutdown()

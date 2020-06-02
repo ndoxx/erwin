@@ -1,8 +1,9 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
-#include <mutex>
+#include <istream>
+#include <ostream>
+#include <memory>
 #include <type_traits>
 #include "core/core.h"
 
@@ -10,8 +11,14 @@ namespace fs = std::filesystem;
 
 namespace erwin
 {
-namespace filesystem
+namespace wfs
 {
+
+enum FileMode: uint8_t
+{
+	ascii,
+	binary,
+};
 
 // Locate executable, and deduce paths
 extern void init();
@@ -38,19 +45,16 @@ void set_client_config_dir(const fs::path& path);
 // Make sure a user config file exists, copy default config to user dir if necessary
 bool ensure_user_config(const fs::path& user_path, const fs::path& default_path);
 
-// Get a stream to an asset in asset directory
-std::ifstream get_asset_stream(const fs::path& path);
-// Get a text file in asset directory as a string
-std::string get_asset_string(const fs::path& path);
-
 // Get a text file as a string
 std::string get_file_as_string(const fs::path& path);
 // Get a binary file as a vector of bytes
-void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec);
-// Get a stream from a binary file
-std::ifstream binary_stream(const fs::path& path);
+std::vector<uint8_t> get_file_as_vector(const fs::path& path);
+// Get an input stream from a file
+std::shared_ptr<std::istream> get_istream(const fs::path& path, uint8_t mode);
+// Get an output stream to a file
+std::shared_ptr<std::ostream> get_ostream(const fs::path& path, uint8_t mode);
 
-} // namespace filesystem
+} // namespace wfs
 
 // Helpers for stream read/write pointer cast
 // Only well defined for PODs

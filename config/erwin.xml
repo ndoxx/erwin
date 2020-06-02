@@ -13,6 +13,7 @@
 		<Channel name="texture"     verbosity="1"/>
 		<Channel name="util"        verbosity="1"/>
 		<Channel name="config"      verbosity="3"/>
+		<Channel name="ios"         verbosity="3"/>
 
 		<Sink name="ConsoleSink"    type="ConsoleSink" channels="all"/>
 		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>

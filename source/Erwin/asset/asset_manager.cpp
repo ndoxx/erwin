@@ -329,10 +329,10 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 
 	// First, check if shader file exists in system assets
 	fs::path fullpath;
-	if(fs::exists(filesystem::get_system_asset_dir() / filepath))
-		fullpath = filesystem::get_system_asset_dir() / filepath;
+	if(fs::exists(wfs::get_system_asset_dir() / filepath))
+		fullpath = wfs::get_system_asset_dir() / filepath;
 	else
-		fullpath = filesystem::get_asset_dir() / filepath;
+		fullpath = wfs::get_asset_dir() / filepath;
 
 	std::string shader_name = name.empty() ? filepath.stem().string() : name;
 	ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);

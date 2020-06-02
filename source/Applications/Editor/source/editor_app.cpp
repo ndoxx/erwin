@@ -20,8 +20,8 @@ static void set_gui_behavior()
 
 void ErwinEditor::on_client_init()
 {
-    filesystem::set_asset_dir("source/Applications/Editor/assets");
-    filesystem::set_client_config_dir("source/Applications/Editor/config");
+    wfs::set_asset_dir("source/Applications/Editor/assets");
+    wfs::set_client_config_dir("source/Applications/Editor/config");
     add_configuration("client.xml");
     add_configuration("config/settings.xml", "default_settings.xml");
 }
@@ -40,7 +40,7 @@ void ErwinEditor::on_load()
     // Merge icon font
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontDefault();
-    auto icon_font_path = filesystem::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
+    auto icon_font_path = wfs::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;

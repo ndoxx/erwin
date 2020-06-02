@@ -111,7 +111,7 @@ MaterialAuthoringWidget::MaterialAuthoringWidget()
 
     checkerboard_tex_ = AssetManager::create_debug_texture("checkerboard"_h, 64);
     PBR_packing_shader_ =
-        Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/PBR_packing.glsl", "PBR_packing");
+        Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/PBR_packing.glsl", "PBR_packing");
     packing_ubo_ =
         Renderer::create_uniform_buffer("parameters", nullptr, sizeof(PBRPackingData), UsagePattern::Dynamic);
     Renderer::shader_attach_uniform_buffer(PBR_packing_shader_, packing_ubo_);

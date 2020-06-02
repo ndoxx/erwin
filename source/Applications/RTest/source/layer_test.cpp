@@ -22,7 +22,7 @@ void LayerTest::on_imgui_render()
 
 void LayerTest::on_attach()
 {
-    filesystem::set_asset_dir("source/Applications/Editor/assets");
+    wfs::set_asset_dir("source/Applications/Editor/assets");
 
     Texture2DDescriptor desc;
     TextureHandle tex = AssetManager::load_image("textures/map/upack/beachSand/albedo.png", desc);

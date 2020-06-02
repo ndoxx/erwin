@@ -78,9 +78,9 @@ bool Input::load_config()
 {
 	DLOGN("config") << "Loading keybindings." << std::endl;
 
-	fs::path user_filepath    = filesystem::get_user_dir() / "config/keybindings.xml";
-	fs::path default_filepath = filesystem::get_root_dir() / s_default_keybindings_path;
-	if(!filesystem::ensure_user_config(user_filepath, default_filepath))
+	fs::path user_filepath    = wfs::get_user_dir() / "config/keybindings.xml";
+	fs::path default_filepath = wfs::get_root_dir() / s_default_keybindings_path;
+	if(!wfs::ensure_user_config(user_filepath, default_filepath))
 		return false;
 
 	// Read file and parse
@@ -93,11 +93,12 @@ bool Input::load_config()
 
 bool Input::save_config()
 {
-	fs::path filepath = filesystem::get_user_dir() / "config/keybindings.xml";
+	fs::path filepath = wfs::get_user_dir() / "config/keybindings.xml";
 	DLOG("config",1) << "Saving key bindings:" << std::endl;
 	DLOGI << WCC('p') << filepath << std::endl;
 	// Direct XML output for now
-	std::ofstream ofs(filepath);
+	auto p_ofs = wfs::get_ostream(filepath, wfs::ascii);
+	auto& ofs = *p_ofs;
 	ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
 	ofs << "<Keymap>" << std::endl;
 

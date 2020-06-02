@@ -43,28 +43,28 @@ minimized_(false)
     W_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
     // Initialize file system
-    filesystem::init();
+    wfs::init();
 }
 
 void Application::add_configuration(const fs::path& filepath)
 {
-    fs::path fullpath = filesystem::get_client_config_dir() / filepath;
+    fs::path fullpath = wfs::get_client_config_dir() / filepath;
     if(fs::exists(fullpath))
         s_storage.configuration_files.push_back(fullpath);
     else
     {
         DLOGW("application") << "Unable to find configuration file:" << std::endl;
-        DLOGI << "client configuration directory: " << WCC('p') << filesystem::get_client_config_dir() << std::endl;
+        DLOGI << "client configuration directory: " << WCC('p') << wfs::get_client_config_dir() << std::endl;
         DLOGI << "file path: " << WCC('p') << fullpath << std::endl;
     }
 }
 
 void Application::add_configuration(const fs::path& user_path, const fs::path& default_path)
 {
-    fs::path fullpath_default_path = filesystem::get_client_config_dir() / default_path;
-    fs::path full_user_path        = filesystem::get_user_dir() / user_path;
+    fs::path fullpath_default_path = wfs::get_client_config_dir() / default_path;
+    fs::path full_user_path        = wfs::get_user_dir() / user_path;
 
-    if(filesystem::ensure_user_config(full_user_path, fullpath_default_path))
+    if(wfs::ensure_user_config(full_user_path, fullpath_default_path))
         s_storage.configuration_files.push_back(full_user_path);
     else
     {
@@ -94,7 +94,7 @@ bool Application::init()
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
-        cfg::load(filesystem::get_config_dir() / "erwin.xml");
+        cfg::load(wfs::get_config_dir() / "erwin.xml");
 
         WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
         WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
@@ -105,9 +105,9 @@ bool Application::init()
 
         // Log basic info
         DLOGN("config") << "[Paths]" << std::endl;
-        DLOGI << "Executable path: " << WCC('p') << filesystem::get_self_dir() << WCC(0) << std::endl;
-        DLOGI << "Root dir:        " << WCC('p') << filesystem::get_root_dir() << WCC(0) << std::endl;
-        DLOGI << "Config dir:      " << WCC('p') << filesystem::get_config_dir() << WCC(0) << std::endl;
+        DLOGI << "Executable path: " << WCC('p') << wfs::get_self_dir() << WCC(0) << std::endl;
+        DLOGI << "Root dir:        " << WCC('p') << wfs::get_root_dir() << WCC(0) << std::endl;
+        DLOGI << "Config dir:      " << WCC('p') << wfs::get_config_dir() << WCC(0) << std::endl;
 
         // Parse intern strings
         istr::init("intern_strings.txt");
