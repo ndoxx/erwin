@@ -56,9 +56,16 @@ int ConsoleWidget::text_edit_callback(void* _data)
 	return 0;
 }
 
+static const std::regex style_regex("\\[!(.)\\]");
 void ConsoleWidget::push(const std::string& message)
 {
-	items_.push_back(message);
+	// Parse style
+	std::smatch match;
+	char style = 0;
+	if(std::regex_search(message, match, style_regex))
+		style = match.str(1)[0];
+
+	items_.push_back({message, style});
     if(items_.size() == queue_max_len_)
        items_.pop_front();
 }
@@ -75,21 +82,19 @@ void ConsoleWidget::on_imgui_render()
 
 	// Display all messages
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4,1)); // Tighten spacing
-	for(const std::string& item: items_)
+	for(const auto& item: items_)
 	{
-		// Parse style
 		bool pop_color = false;
 		uint32_t offset = 0;
-		static std::regex style_regex("\\[!(.)\\]");
-		std::smatch match;
-		if(std::regex_search(item, match, style_regex))
+
+		if(item.style)
 		{
-			char c = match.str(1)[0];
-			ImGui::PushStyleColor(ImGuiCol_Text, s_color_table.at(c));
+			ImGui::PushStyleColor(ImGuiCol_Text, s_color_table.at(item.style));
 			pop_color = true;
 			offset = 4;
 		}
-        ImGui::TextUnformatted(item.c_str() + offset);
+
+        ImGui::TextUnformatted(item.message.c_str() + offset);
 
         if(pop_color)
         	ImGui::PopStyleColor();

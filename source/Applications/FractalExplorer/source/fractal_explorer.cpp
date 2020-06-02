@@ -138,8 +138,8 @@ public:
 
 	virtual void on_client_init() override
 	{
-		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
-		filesystem::set_client_config_dir("source/Applications/FractalExplorer/config");
+		wfs::set_asset_dir("source/Applications/FractalExplorer/assets");
+		wfs::set_client_config_dir("source/Applications/FractalExplorer/config");
 		this->add_configuration("client.xml");
 	}
 

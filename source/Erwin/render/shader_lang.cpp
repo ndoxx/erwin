@@ -57,7 +57,7 @@ static std::string handle_includes(const fs::path& base_dir, const std::string& 
         // DLOG("shader", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
         fs::path inc_path = find_include(base_dir, filename);
         W_ASSERT_FMT(inc_path.string().size()!=0, "Could not find include file: %s", filename.c_str());
-        return "\n" + filesystem::get_file_as_string(inc_path) + "\n";
+        return "\n" + wfs::get_file_as_string(inc_path) + "\n";
     });
 }
 
@@ -66,7 +66,7 @@ void pre_process_GLSL(const fs::path& filepath, std::vector<std::pair<ExecutionM
 	DLOG("shader",1) << "Pre-processing source: " << std::endl;
 	DLOGI << WCC('p') << filepath.filename() << std::endl;
 
-    std::string full_source(filesystem::get_file_as_string(filepath));
+    std::string full_source(wfs::get_file_as_string(filepath));
     fs::path base_directory = filepath.parent_path();
 
     // Look for #type directives to segment shader code

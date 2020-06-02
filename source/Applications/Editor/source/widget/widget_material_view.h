@@ -2,10 +2,6 @@
 
 #include <memory>
 #include "widget/widget.h"
-#include "entity/component_PBR_material.h"
-#include "entity/component_transform.h"
-#include "entity/component_camera.h"
-#include "entity/light.h"
 #include "input/tracker_camera_system.h"
 
 namespace editor
@@ -27,10 +23,6 @@ public:
 	inline bool on_event(const erwin::MouseMovedEvent& event)	{ return camera_controller_.on_mouse_moved_event(event); }
 	inline bool on_event(const erwin::KeyboardEvent& event)		{ return camera_controller_.on_keyboard_event(event); }
 
-	inline void set_material(std::shared_ptr<erwin::ComponentPBRMaterial> mat) { current_material_ = mat; }
-	inline std::shared_ptr<erwin::ComponentPBRMaterial> get_material_shared()  { return current_material_; }
-	void reset_material();
-
 protected:
 	virtual void on_imgui_render() override;
 	virtual void on_resize(uint32_t width, uint32_t height) override;
@@ -49,13 +41,7 @@ private:
 
 	size_t current_index_;
 
-	std::shared_ptr<erwin::ComponentPBRMaterial> current_material_;
-	erwin::ComponentTransform3D transform_;
-	erwin::ComponentDirectionalLight directional_light_;
-	erwin::ComponentCamera3D camera_;
-	erwin::ComponentTransform3D camera_transform_;
 	erwin::TrackerCameraSystem camera_controller_;
-	erwin::VertexArrayHandle current_mesh_;
 };
 
 } // namespace editor

@@ -6,6 +6,7 @@
 #include "event/window_events.h"
 
 #include <iterator>
+#include <fstream>
 
 #ifdef __linux__
     #include <unistd.h>
@@ -18,7 +19,7 @@
 
 namespace erwin
 {
-namespace filesystem
+namespace wfs
 {
 
 static fs::path s_user_dir;
@@ -186,22 +187,6 @@ bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
     return true;
 }
 
-std::ifstream get_asset_stream(const fs::path& path)
-{
-    W_ASSERT(fs::exists(path), "File does not exist.");
-
-	return std::ifstream(s_asset_path / path);
-}
-
-std::string get_asset_string(const fs::path& path)
-{
-    W_ASSERT(fs::exists(path), "File does not exist.");
-
-    std::ifstream ifs(s_asset_path / path);
-    return std::string((std::istreambuf_iterator<char>(ifs)),
-                        std::istreambuf_iterator<char>());
-}
-
 std::string get_file_as_string(const fs::path& path)
 {
     W_ASSERT(fs::exists(path), "File does not exist.");
@@ -211,14 +196,7 @@ std::string get_file_as_string(const fs::path& path)
                         std::istreambuf_iterator<char>());
 }
 
-std::ifstream binary_stream(const fs::path& path)
-{
-    W_ASSERT(fs::exists(path), "File does not exist.");
-    
-    return std::ifstream(path, std::ios::binary);
-}
-
-void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
+std::vector<uint8_t> get_file_as_vector(const fs::path& filepath)
 {
     W_ASSERT(fs::exists(filepath), "File does not exist.");
 
@@ -233,12 +211,60 @@ void get_file_as_vector(const fs::path& filepath, std::vector<uint8_t>& vec)
     ifs.seekg(0, std::ios::beg);
 
     // Allocate & read
+    std::vector<uint8_t> vec;
     vec.reserve(size_t(file_size));
     vec.insert(vec.begin(),
                std::istream_iterator<uint8_t>(ifs),
                std::istream_iterator<uint8_t>());
+    return vec;
+}
+
+std::shared_ptr<std::istream> get_istream(const fs::path& file_path, uint8_t mode)
+{
+    auto std_mode = std::ios::in;
+    if(mode & FileMode::binary)
+        std_mode |= std::ios::binary;
+
+    // Get stream to file
+    std::shared_ptr<std::ifstream> ifs = std::make_shared<std::ifstream>(file_path, std_mode);
+
+    // Sanity check
+    if(!ifs->is_open())
+    {
+        DLOGE("ios") << "Unable to open input file:" << std::endl;
+        DLOGI << WCC('p') << file_path << std::endl;
+        return nullptr;
+    }
+
+    DLOG("ios",0) << "Getting input stream from file:" << std::endl;
+    DLOGI << WCC('p') << file_path << std::endl;
+
+    return ifs;
+}
+
+std::shared_ptr<std::ostream> get_ostream(const fs::path& file_path, uint8_t mode)
+{
+    auto std_mode = std::ios::out;
+    if(mode & FileMode::binary)
+        std_mode |= std::ios::binary;
+
+    // Create stream to file
+    std::shared_ptr<std::ofstream> ofs = std::make_shared<std::ofstream>(file_path, std_mode);
+
+    // Sanity check
+    if(!ofs->is_open())
+    {
+        DLOGE("ios") << "Unable to open output file:" << std::endl;
+        DLOGI << WCC('p') << file_path << std::endl;
+        return nullptr;
+    }
+
+    DLOG("ios",0) << "Getting output stream to file:" << std::endl;
+    DLOGI << WCC('p') << file_path << std::endl;
+
+    return ofs;
 }
 
 
-} // namespace filesystem
+} // namespace wfs
 } // namespace erwin

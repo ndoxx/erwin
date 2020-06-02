@@ -17,8 +17,8 @@
         dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [X] Créer / détruire des entités
         [ ] Undo / Redo
-    [ ] Ajouter / détruire des composants pour chaque entité
-    [ ] Créer / détruire des entités
+    [X] Ajouter / détruire des composants pour chaque entité
+    [X] Créer / détruire des entités
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
@@ -83,11 +83,6 @@
             [ ] 2D batching
         [ ] Common geometry
         [ ] Texture slots & shader macro
-    [ ] Entity component system (ECS)
-        [ ] Definitions
-        [ ] Component pools & predefined macros
-        [ ] Entity manager
-        [ ] Component systems & component filtering
     [ ] Event system overhaul
         [ ] Event queues & event pools
         [ ] Dispatching
@@ -223,6 +218,16 @@ Lorsque l'on a terminé le développement du feature, depuis la feature branch, 
 > git flow feature finish new-feature-name
 
 Ceci va merge la feature branch avec la branche develop localement.
+
+###Remove submodule
+Remove the submodule entry from .git/config
+> git submodule deinit -f path/to/submodule
+
+Remove the submodule directory from the superproject's .git/modules directory
+> rm -rf .git/modules/path/to/submodule
+
+Remove the entry in .gitmodules and remove the submodule directory located at path/to/submodule
+> git rm -f path/to/submodule
 
 #[11-08-19]
 Les trois derniers jours j'ai travaillé intensément au refactor du logger du projet WCore. Un nouvel event system a aussi vu le jour, adapté d'une trouvaille en ligne, bien plus facile d'utilisation que l'ancien, type-safe et single-header.

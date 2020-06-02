@@ -17,22 +17,17 @@ public:
 	inline void add_widget(Widget* widget) { widgets_.push_back(widget); }
 	inline const auto& get_widgets() const { return widgets_; }
 
-	virtual void set_enabled(bool value) override
+	virtual void on_enable() override
 	{
-		enabled_ = value;
-
-		if(value)
-		{
-			for(Widget* widget: widgets_)
-				widget->restore();
-		}
-		else
-		{
-			for(Widget* widget: widgets_)
-				widget->save_state_and_hide();
-		}
+		for(Widget* widget: widgets_)
+			widget->restore();
 	}
 
+	virtual void on_disable() override
+	{
+		for(Widget* widget: widgets_)
+			widget->save_state_and_hide();
+	}
 
 protected:
 	std::vector<Widget*> widgets_;

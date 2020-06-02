@@ -4,7 +4,7 @@
 #include "level/scene.h"
 #include "event/window_events.h"
 
-namespace erwin
+namespace editor
 {
 
 class GizmoSystem
@@ -14,7 +14,7 @@ public:
 	~GizmoSystem();
 
 	void render();
-	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
+	bool on_ray_scene_query_event(const erwin::RaySceneQueryEvent& event);
 
 private:
     erwin::Material gizmo_material_;
@@ -27,4 +27,4 @@ private:
 };
 
 
-} // namespace erwin
+} // namespace editor

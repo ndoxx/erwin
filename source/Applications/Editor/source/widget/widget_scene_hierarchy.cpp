@@ -18,12 +18,16 @@ Widget("Hierarchy", true)
 
 void SceneHierarchyWidget::on_imgui_render()
 {
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+    
     // Basic controls
     if(ImGui::Button("New entity"))
     {
         // For the moment, create an entity with editor description only
-        EntityID ent = Scene::registry.create();
-        Scene::add_entity(ent, "Entity #" + std::to_string(static_cast<unsigned long>(ent)));
+        EntityID ent = scene.registry.create();
+        scene.add_entity(ent, "Entity #" + std::to_string(static_cast<unsigned long>(ent)));
     }
 
     ImGui::Separator();
@@ -36,14 +40,14 @@ void SceneHierarchyWidget::on_imgui_render()
     
     EntityID new_selection = k_invalid_entity_id;
 
-    auto view = Scene::registry.view<ComponentDescription>();
+    auto view = scene.registry.view<ComponentDescription>();
     int ii = 0;
     for(const entt::entity e: view)
     {
         const ComponentDescription& desc = view.get<ComponentDescription>(e);
 
         ImGuiTreeNodeFlags flags = node_flags;
-        if(e == Scene::selected_entity)
+        if(e == scene.selected_entity)
             flags |= ImGuiTreeNodeFlags_Selected;
 
         ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
@@ -56,7 +60,7 @@ void SceneHierarchyWidget::on_imgui_render()
         {
             if(ImGui::Selectable("Remove"))
             {
-                Scene::mark_for_removal(e);
+                scene.mark_for_removal(e);
                 DLOG("editor",1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
             }
             ImGui::EndPopup();
@@ -71,7 +75,7 @@ void SceneHierarchyWidget::on_imgui_render()
     	// Update selection state
 
     	// Update scene selected entity index
-    	Scene::select(new_selection);
+    	scene.select(new_selection);
     }
 }
 

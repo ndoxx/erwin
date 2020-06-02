@@ -13,7 +13,10 @@
 #include "render/renderer.h"
 #include "utils/future.hpp"
 #include "utils/string.h"
-#include "widget/widget_material_view.h"
+
+#include "level/material_editor_scene.h"
+
+#include <optional>
 
 using namespace erwin;
 
@@ -54,7 +57,7 @@ static TextureMapType detect_texture_map(const std::string& name)
 
 struct MaterialAuthoringWidget::MaterialComposition
 {
-    std::shared_ptr<ComponentPBRMaterial> pbr_material;
+    std::optional<std::reference_wrapper<ComponentPBRMaterial>> pbr_material;
     TMEnum texture_maps = TMF_NONE;
     TextureGroup textures_unpacked;
     uint32_t width;
@@ -99,15 +102,16 @@ struct PBRPackingData
     int flags;
 };
 
-MaterialAuthoringWidget::MaterialAuthoringWidget(MaterialViewWidget& material_view)
-    : Widget("Material authoring", true), material_view_(material_view)
+MaterialAuthoringWidget::MaterialAuthoringWidget()
+    : Widget("Material authoring", true)
 {
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     current_composition_ = std::make_unique<MaterialComposition>();
-    current_composition_->pbr_material = material_view_.get_material_shared();
+    current_composition_->pbr_material = scene.current_material_;
 
     checkerboard_tex_ = AssetManager::create_debug_texture("checkerboard"_h, 64);
     PBR_packing_shader_ =
-        Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/PBR_packing.glsl", "PBR_packing");
+        Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/PBR_packing.glsl", "PBR_packing");
     packing_ubo_ =
         Renderer::create_uniform_buffer("parameters", nullptr, sizeof(PBRPackingData), UsagePattern::Dynamic);
     Renderer::shader_attach_uniform_buffer(PBR_packing_shader_, packing_ubo_);
@@ -165,12 +169,13 @@ void MaterialAuthoringWidget::pack_textures()
 
     Renderer::destroy(fb, true); // Destroy FB but keep attachments alive
 
+    auto& current_material = current_composition_->pbr_material->get();
 
-    current_composition_->pbr_material->material.texture_group = tg;
-    current_composition_->pbr_material->ready = true;
+    current_material.material.texture_group = tg;
+    current_material.ready = true;
 
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
-        current_composition_->pbr_material->enable_flag(TextureMapFlag(1 << tm),
+        current_material.enable_flag(TextureMapFlag(1 << tm),
                                                         current_composition_->has_map(TextureMapType(tm)));
 }
 
@@ -221,8 +226,9 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
     if(success)
     {
         // Extract directory name and make it the material name
-        current_composition_->pbr_material->name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_composition_->pbr_material->name << WCC(0)
+        auto& current_material = current_composition_->pbr_material->get();
+        current_material.name = dirpath.stem().string();
+        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_material.name << WCC(0)
                           << "\" as a material name." << std::endl;
     }
 }
@@ -242,19 +248,22 @@ void MaterialAuthoringWidget::clear()
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
         clear_texture_map(TextureMapType(tm));
 
-    current_composition_->pbr_material->name = "";
-    current_composition_->pbr_material->material.texture_group = {};
-    material_view_.reset_material();
+    auto& current_material = current_composition_->pbr_material->get();
+    current_material.name = "";
+    current_material.material.texture_group = {};
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    scene.reset_material();
 }
 
 void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 {
     // * Create an export task that will execute when we receive data
-    auto fut_a = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[0]);
-    auto fut_nd = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[1]);
-    auto fut_mare = Renderer::get_pixel_data(current_composition_->pbr_material->material.texture_group[2]);
+    auto& current_material = current_composition_->pbr_material->get();
+    auto fut_a = Renderer::get_pixel_data(current_material.material.texture_group[0]);
+    auto fut_nd = Renderer::get_pixel_data(current_material.material.texture_group[1]);
+    auto fut_mare = Renderer::get_pixel_data(current_material.material.texture_group[2]);
     tom_export_tasks_.emplace_back(std::move(fut_a), std::move(fut_nd), std::move(fut_mare),
-                                   current_composition_->pbr_material->material_data, current_composition_->width,
+                                   current_material.material_data, current_composition_->width,
                                    current_composition_->height, tom_path);
 }
 
@@ -333,11 +342,12 @@ static constexpr size_t k_image_size = 150;
 void MaterialAuthoringWidget::on_imgui_render()
 {
     // Restrict to opaque PBR materials for now
+    auto& current_material = current_composition_->pbr_material->get();
 
     // * Global interface
     static char name_buf[128] = "";
-    if(ImGui::InputTextWithHint("Name", current_composition_->pbr_material->name.c_str(), name_buf, IM_ARRAYSIZE(name_buf)))
-        current_composition_->pbr_material->name = name_buf;
+    if(ImGui::InputTextWithHint("Name", current_material.name.c_str(), name_buf, IM_ARRAYSIZE(name_buf)))
+        current_material.name = name_buf;
 
     ImVec2 btn_span_size(ImGui::GetContentRegionAvailWidth(), 0.f);
     // Load whole directory
@@ -373,8 +383,8 @@ void MaterialAuthoringWidget::on_imgui_render()
     if(ImGui::Button("Export", btn_span_size))
     {
         // Current material must have been applied
-        if(current_composition_->pbr_material->material.texture_group.texture_count > 0)
-            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::get_asset_path(project::DirKey::MATERIAL), current_composition_->pbr_material->name + ".tom");
+        if(current_material.material.texture_group.texture_count > 0)
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::get_asset_path(project::DirKey::MATERIAL), current_material.name + ".tom");
     }
     ImGui::PopStyleColor(1);
 
@@ -435,42 +445,42 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         load_texture_map(TextureMapType(selected_tm), filepath);
         // Extract parent directory name and make it the material name
-        current_composition_->pbr_material->name = filepath.parent_path().stem().string();
+        current_material.name = filepath.parent_path().stem().string();
     });
 
     ImGui::Separator();
 
     // * Uniform parameters
-    ImGui::ColorEdit3("Tint", static_cast<float*>(&current_composition_->pbr_material->material_data.tint[0]));
-    ImGui::SliderFloatDefault("Tiling", &current_composition_->pbr_material->material_data.tiling_factor, 0.1f, 10.f,
+    ImGui::ColorEdit3("Tint", static_cast<float*>(&current_material.material_data.tint[0]));
+    ImGui::SliderFloatDefault("Tiling", &current_material.material_data.tiling_factor, 0.1f, 10.f,
                               1.f);
 
-    bool enable_emissivity = current_composition_->pbr_material->is_emissive();
+    bool enable_emissivity = current_material.is_emissive();
     if(ImGui::Checkbox("Emissive", &enable_emissivity))
-        current_composition_->pbr_material->enable_emissivity(enable_emissivity);
-    if(current_composition_->pbr_material->is_emissive())
+        current_material.enable_emissivity(enable_emissivity);
+    if(current_material.is_emissive())
     {
         ImGui::SameLine();
-        ImGui::SliderFloatDefault("##Emissivity", &current_composition_->pbr_material->material_data.emissive_scale,
+        ImGui::SliderFloatDefault("##Emissivity", &current_material.material_data.emissive_scale,
                                   0.1f, 10.f, 1.f);
     }
 
-    bool enable_parallax = current_composition_->pbr_material->has_parallax();
+    bool enable_parallax = current_material.has_parallax();
     if(ImGui::Checkbox("Parallax", &enable_parallax))
-        current_composition_->pbr_material->enable_parallax(enable_parallax);
-    if(current_composition_->pbr_material->has_parallax())
+        current_material.enable_parallax(enable_parallax);
+    if(current_material.has_parallax())
     {
         ImGui::SameLine();
         ImGui::SliderFloatDefault("##Parallax",
-                                  &current_composition_->pbr_material->material_data.parallax_height_scale, 0.005f,
+                                  &current_material.material_data.parallax_height_scale, 0.005f,
                                   0.05f, 0.03f);
     }
 
     // Uniform parameters
     ImGui::ColorEdit3("Unif. albedo",
-                      static_cast<float*>(&current_composition_->pbr_material->material_data.uniform_albedo[0]));
-    ImGui::SliderFloat("Unif. metal", &current_composition_->pbr_material->material_data.uniform_metallic, 0.f, 1.f);
-    ImGui::SliderFloat("Unif. rough", &current_composition_->pbr_material->material_data.uniform_roughness, 0.f, 1.f);
+                      static_cast<float*>(&current_material.material_data.uniform_albedo[0]));
+    ImGui::SliderFloat("Unif. metal", &current_material.material_data.uniform_metallic, 0.f, 1.f);
+    ImGui::SliderFloat("Unif. rough", &current_material.material_data.uniform_roughness, 0.f, 1.f);
 }
 
 } // namespace editor

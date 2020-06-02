@@ -3,16 +3,16 @@
 #include "erwin.h"
 #include "event/window_events.h"
 
-namespace erwin
+namespace editor
 {
 
 class BoundingBoxSystem
 {
 public:
-	void update(const GameClock& clock);
+	void update(const erwin::GameClock& clock);
 	void render();
-	bool on_ray_scene_query_event(const RaySceneQueryEvent& event);
+	bool on_ray_scene_query_event(const erwin::RaySceneQueryEvent& event);
 };
 
 
-} // namespace erwin
+} // namespace editor

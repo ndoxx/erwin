@@ -75,8 +75,8 @@ Widget("Framebuffers", true)
     };
     FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
-    // s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
-    s_storage.peek_shader_ = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
+    // s_storage.peek_shader_ = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
+    s_storage.peek_shader_ = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
     s_storage.pass_ubo_ = Renderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), UsagePattern::Dynamic);
     Renderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
 
@@ -130,7 +130,11 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
 
 void RTPeekWidget::on_update(const erwin::GameClock&)
 {
-    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+    
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     s_storage.peek_data_.projection_parameters = camera.projection_parameters;
     
     // Update UBO data

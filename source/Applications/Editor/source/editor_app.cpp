@@ -6,7 +6,7 @@
 #include "layer/layer_material_editor.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_scene_view.h"
-#include "level/scene_loader.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
@@ -20,8 +20,8 @@ static void set_gui_behavior()
 
 void ErwinEditor::on_client_init()
 {
-    filesystem::set_asset_dir("source/Applications/Editor/assets");
-    filesystem::set_client_config_dir("source/Applications/Editor/config");
+    wfs::set_asset_dir("source/Applications/Editor/assets");
+    wfs::set_client_config_dir("source/Applications/Editor/config");
     add_configuration("client.xml");
     add_configuration("config/settings.xml", "default_settings.xml");
 }
@@ -40,7 +40,7 @@ void ErwinEditor::on_load()
     // Merge icon font
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontDefault();
-    auto icon_font_path = filesystem::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
+    auto icon_font_path = wfs::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;
@@ -66,14 +66,15 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
+    SceneManager::create_scene<Scene>("main_scene"_h);
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
     {
         project::load_project(last_project_file);
-        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
-                                     project::get_asset_path(project::DirKey::HDR));
+        SceneManager::load_scene("main_scene"_h);
+        SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();
     }
 
@@ -124,7 +125,7 @@ void ErwinEditor::on_imgui_render()
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
             {
                 project::close_project();
-                SceneLoader::clear_scene();
+                SceneManager::unload_scene("main_scene"_h);
             }
 
             ImGui::Separator();
@@ -209,8 +210,8 @@ void ErwinEditor::on_imgui_render()
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
         project::load_project(filepath);
-        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
-                                     project::get_asset_path(project::DirKey::HDR));
+        SceneManager::load_scene("main_scene"_h);
+        SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();
     });
 

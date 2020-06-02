@@ -29,8 +29,8 @@ protected:
     bool on_key_typed_event(const erwin::KeyTypedEvent& event);
 
 private:
-    erwin::GizmoSystem gizmo_system_;
-    erwin::BoundingBoxSystem bounding_box_system_;
+    GizmoSystem gizmo_system_;
+    BoundingBoxSystem bounding_box_system_;
 
     SceneViewWidget* scene_view_widget_ = nullptr;
 };

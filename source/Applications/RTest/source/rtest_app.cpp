@@ -2,8 +2,8 @@
 
 void RTest::on_client_init()
 {
-	filesystem::set_asset_dir("source/Applications/RTest/assets");
-	filesystem::set_client_config_dir("source/Applications/RTest/config");
+	wfs::set_asset_dir("source/Applications/RTest/assets");
+	wfs::set_client_config_dir("source/Applications/RTest/config");
 	this->add_configuration("client.xml");
 }
 

@@ -13,11 +13,10 @@ namespace fs = std::filesystem;
 namespace editor
 {
 
-class MaterialViewWidget;
 class MaterialAuthoringWidget: public Widget
 {
 public:
-	MaterialAuthoringWidget(MaterialViewWidget& material_view);
+	MaterialAuthoringWidget();
 	virtual ~MaterialAuthoringWidget();
 	virtual void on_update(const erwin::GameClock& clock) override;
 
@@ -42,8 +41,6 @@ private:
 	std::unique_ptr<MaterialComposition> current_composition_;
 
 	std::vector<TOMExportTask> tom_export_tasks_;
-
-	MaterialViewWidget& material_view_;
 };
 
 } // namespace editor

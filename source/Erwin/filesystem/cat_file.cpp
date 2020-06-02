@@ -1,6 +1,4 @@
-#include <fstream>
 #include <cstring>
-#include <iostream>
 
 #include "filesystem/cat_file.h"
 #include "filesystem/filesystem.h"
@@ -36,11 +34,11 @@ struct CATHeader
 
 void read_cat(CATDescriptor& desc)
 {
-    std::ifstream ifs(desc.filepath, std::ios::binary);
+    auto ifs = wfs::get_istream(desc.filepath, wfs::binary);
 
     // Read header & sanity check
     CATHeader header;
-    ifs.read(opaque_cast(&header), sizeof(CATHeader));
+    ifs->read(opaque_cast(&header), sizeof(CATHeader));
 
     W_ASSERT(header.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
     W_ASSERT(header.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
@@ -56,7 +54,7 @@ void read_cat(CATDescriptor& desc)
 
     // Read data blobs
     uint8_t* texture_blob = new uint8_t[desc.texture_blob_size];
-    ifs.read(opaque_cast(texture_blob), desc.texture_blob_size);
+    ifs->read(opaque_cast(texture_blob), desc.texture_blob_size);
     // Inflate (decompress) blob if needed
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
@@ -72,9 +70,7 @@ void read_cat(CATDescriptor& desc)
     }
 
     desc.remapping_blob = static_cast<void*>(new uint8_t[desc.remapping_blob_size]);
-    ifs.read(static_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
-
-    ifs.close();
+    ifs->read(static_cast<char*>(desc.remapping_blob), desc.remapping_blob_size);
 }
 
 void CATDescriptor::release()
@@ -96,7 +92,7 @@ void write_cat(const CATDescriptor& desc)
     header.lossless_compression = uint16_t(desc.lossless_compression);
     header.remapping_type       = uint16_t(desc.remapping_type);
 
-    std::ofstream ofs(desc.filepath, std::ios::binary);
+    auto ofs = wfs::get_ostream(desc.filepath, wfs::binary);
 
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {
@@ -107,8 +103,8 @@ void write_cat(const CATDescriptor& desc)
         header.texture_blob_size = comp_size;
         header.blob_inflate_size = desc.texture_blob_size;
 
-        ofs.write(opaque_cast(&header), sizeof(CATHeader));
-        ofs.write(opaque_cast(deflated), comp_size);
+        ofs->write(opaque_cast(&header), sizeof(CATHeader));
+        ofs->write(opaque_cast(deflated), comp_size);
         delete[] deflated;
     }
     else
@@ -116,12 +112,11 @@ void write_cat(const CATDescriptor& desc)
         header.texture_blob_size = desc.texture_blob_size;
         header.blob_inflate_size = desc.texture_blob_size;
 
-        ofs.write(opaque_cast(&header), sizeof(CATHeader));
-        ofs.write(static_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
+        ofs->write(opaque_cast(&header), sizeof(CATHeader));
+        ofs->write(static_cast<const char*>(desc.texture_blob), desc.texture_blob_size);
     }
 
-    ofs.write(static_cast<const char*>(desc.remapping_blob), desc.remapping_blob_size);
-    ofs.close();
+    ofs->write(static_cast<const char*>(desc.remapping_blob), desc.remapping_blob_size);
 }
 
 void traverse_texture_remapping(const CATDescriptor& desc, std::function<void(const CATAtlasRemapElement&)> visit)

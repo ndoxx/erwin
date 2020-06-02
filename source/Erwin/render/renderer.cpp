@@ -1,6 +1,5 @@
 #include "render/renderer.h"
 
-#include <fstream>
 #include <map>
 #include <memory>
 
@@ -12,6 +11,7 @@
 #include "memory/handle_pool.h"
 #include "render/backend.h"
 #include "render/query_timer.h"
+#include "filesystem/filesystem.h"
 
 namespace erwin
 {
@@ -170,7 +170,8 @@ void FrameDrawCallData::export_json()
     DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
     DLOGI << WCC('p') << json_path << std::endl;
 
-    std::ofstream ofs(json_path);
+    auto p_ofs = wfs::get_ostream(json_path, wfs::ascii);
+    auto& ofs = *p_ofs;
 
     ofs << "{"
         << "\"draw_calls\":[" << std::endl;
@@ -195,7 +196,6 @@ void FrameDrawCallData::export_json()
 
     ofs << "]}" << std::endl;
 
-    ofs.close();
     reset();
 
     DLOG("render", 1) << "done" << std::endl;

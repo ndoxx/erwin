@@ -6,12 +6,14 @@
 #include "asset/asset_manager.h"
 #include "render/renderer_3d.h"
 
-namespace erwin
+using namespace erwin;
+
+namespace editor
 {
 
 GizmoSystem::GizmoSystem()
 {
-    auto gizmo_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
+    auto gizmo_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     auto gizmo_ubo    = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
     gizmo_material_   = {"gizmo"_h, {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData)};
     Renderer3D::register_shader(gizmo_shader);
@@ -27,17 +29,20 @@ GizmoSystem::~GizmoSystem()
 
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    if(Scene::selected_entity == k_invalid_entity_id)
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return false;
+    if(scene.selected_entity == k_invalid_entity_id)
         return false;
 
     // Get selected entity's transform if any
-    auto* transform = Scene::registry.try_get<ComponentTransform3D>(Scene::selected_entity);
+    auto* transform = scene.registry.try_get<ComponentTransform3D>(scene.selected_entity);
     if(transform == nullptr)
     	return false;
 
     glm::mat4 parent_model = transform->get_unscaled_model_matrix();
 
-    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);
 
@@ -84,10 +89,13 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 
 void GizmoSystem::render()
 {
-    if(Scene::selected_entity == k_invalid_entity_id)
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+    if(scene.selected_entity == k_invalid_entity_id)
         return;
 
-    auto* transform = Scene::registry.try_get<ComponentTransform3D>(Scene::selected_entity);
+    auto* transform = scene.registry.try_get<ComponentTransform3D>(scene.selected_entity);
     if(transform == nullptr)
         return;
 
@@ -102,4 +110,4 @@ void GizmoSystem::render()
     Renderer3D::end_line_pass();
 }
 
-} // namespace erwin
+} // namespace editor

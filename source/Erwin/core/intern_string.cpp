@@ -1,8 +1,8 @@
-#include <fstream>
 #include <iostream>
 #include <map>
 
 #include "intern_string.h"
+#include "filesystem/filesystem.h"
 #include "debug/logger.h"
 
 namespace erwin
@@ -29,8 +29,8 @@ static void parse(std::istream& stream)
 void init(const fs::path& filepath)
 {
     DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
-    std::ifstream ifs(filesystem::get_config_dir() / filepath);
-    parse(ifs);
+    auto ifs = wfs::get_istream(wfs::get_config_dir() / filepath, wfs::ascii);
+    parse(*ifs);
 }
 
 std::string resolve(hash_t hname)

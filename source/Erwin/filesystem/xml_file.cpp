@@ -1,6 +1,5 @@
-#include <fstream>
-
 #include "filesystem/xml_file.h"
+#include "filesystem/filesystem.h"
 #include "debug/logger.h"
 #include "rapidxml/rapidxml_print.hpp"
 
@@ -132,15 +131,8 @@ bool XMLFile::read()
         return false;
     }
 
-    // Read the xml file into a vector
-    std::ifstream ifs(filepath);
-    if(!ifs.is_open())
-    {
-        DLOGE("core") << "Unable to open file." << std::endl;
-        return false;
-    }
-    buffer = std::string((std::istreambuf_iterator<char>(ifs)),
-                          std::istreambuf_iterator<char>());
+    // Read the xml file into buffer
+    buffer = wfs::get_file_as_string(filepath);
 
     // Parse the buffer using the xml file parsing library into doc
     try
@@ -172,9 +164,8 @@ bool XMLFile::read()
 
 void XMLFile::write()
 {
-    std::ofstream file(filepath);
-    file << doc;
-    file.close();
+    auto ofs = wfs::get_ostream(filepath, wfs::ascii);
+    (*ofs) << doc;
 }
 
 template <>

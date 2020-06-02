@@ -23,8 +23,15 @@ public:
 	inline bool is_enabled() const              { return enabled_; }
 	inline void update(GameClock& clock)        { if(enabled_) on_update(clock); }
 	inline void render()                        { if(enabled_) on_render(); }
+	inline void set_enabled(bool value)
+	{
+		enabled_ = value;
+		if(enabled_)
+			on_enable();
+		else
+			on_disable();
+	}
 
-	virtual void set_enabled(bool value) { enabled_ = value; }
 	virtual void on_imgui_render() { }
 
 protected:
@@ -33,6 +40,8 @@ protected:
 	virtual void on_detach() { }
 	virtual void on_update(GameClock&) { }
 	virtual void on_render() { }
+	virtual void on_enable() { }
+	virtual void on_disable() { }
 
 	template <typename ClassT, typename EventT>
 	inline void add_listener(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint8_t system_id = 0u)

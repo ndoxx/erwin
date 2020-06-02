@@ -18,8 +18,10 @@ void SceneViewLayer::on_imgui_render() {}
 
 void SceneViewLayer::setup_camera()
 {
-    ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
-    ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(Scene::camera);
+    auto& scene = scn::current<Scene>();
+
+    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
 
     camera_controller_.init(camera, transform);
     camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
@@ -50,26 +52,30 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    // Scene::camera_controller.update(clock);
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+
     camera_controller_.update(clock);
-    const ComponentCamera3D& camera = Scene::registry.get<ComponentCamera3D>(Scene::camera);
-    const ComponentTransform3D& transform = Scene::registry.get<ComponentTransform3D>(Scene::camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    const ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
     Renderer3D::update_camera(camera, transform);
-    if(Scene::registry.valid(Scene::directional_light))
-        Renderer3D::update_light(Scene::registry.get<ComponentDirectionalLight>(Scene::directional_light));
+    if(scene.registry.valid(scene.directional_light))
+        Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
 
     Renderer3D::update_frame_data();
 }
 
 void SceneViewLayer::on_render()
 {
-    // FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
-    // Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
+    auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
 
     // Draw scene geometry
     {
         Renderer3D::begin_deferred_pass();
-        auto view = Scene::registry.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
+        auto view = scene.registry.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
         for(const entt::entity e : view)
         {
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
@@ -82,13 +88,13 @@ void SceneViewLayer::on_render()
         Renderer3D::end_deferred_pass();
     }
 
-    Renderer3D::draw_skybox(Scene::environment.environment_map);
+    Renderer3D::draw_skybox(scene.environment.environment_map);
 
     {
         VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 
         Renderer3D::begin_forward_pass(BlendState::Light);
-        auto view = Scene::registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
+        auto view = scene.registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
         for(const entt::entity e : view)
         {
             const ComponentDirectionalLight& dirlight = view.get<ComponentDirectionalLight>(e);
