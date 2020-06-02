@@ -21,8 +21,14 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
+	struct MessageItem
+	{
+		std::string message;
+		char style;
+	};
+
     char input_buffer_[256];
-    std::deque<std::string> items_;
+    std::deque<MessageItem> items_;
     uint32_t queue_max_len_;
 
     bool auto_scroll_;

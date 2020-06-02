@@ -9,7 +9,7 @@ using namespace erwin;
 namespace editor
 {
 
-RenderStatsOverlay::RenderStatsOverlay() : Widget("Statistics", true)
+RenderStatsOverlay::RenderStatsOverlay() : Widget("Statistics", false)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav;

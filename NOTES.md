@@ -17,8 +17,8 @@
         dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [X] Créer / détruire des entités
         [ ] Undo / Redo
-    [ ] Ajouter / détruire des composants pour chaque entité
-    [ ] Créer / détruire des entités
+    [X] Ajouter / détruire des composants pour chaque entité
+    [X] Créer / détruire des entités
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
@@ -83,11 +83,6 @@
             [ ] 2D batching
         [ ] Common geometry
         [ ] Texture slots & shader macro
-    [ ] Entity component system (ECS)
-        [ ] Definitions
-        [ ] Component pools & predefined macros
-        [ ] Entity manager
-        [ ] Component systems & component filtering
     [ ] Event system overhaul
         [ ] Event queues & event pools
         [ ] Dispatching
