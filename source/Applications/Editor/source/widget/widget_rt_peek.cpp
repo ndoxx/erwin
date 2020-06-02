@@ -131,6 +131,9 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
 void RTPeekWidget::on_update(const erwin::GameClock&)
 {
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+    
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     s_storage.peek_data_.projection_parameters = camera.projection_parameters;
     

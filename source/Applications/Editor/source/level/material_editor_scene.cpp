@@ -7,7 +7,7 @@ using namespace erwin;
 namespace editor
 {
 
-void MaterialEditorScene::load()
+bool MaterialEditorScene::on_load()
 {
 	reset_material();
 
@@ -20,6 +20,13 @@ void MaterialEditorScene::load()
 	directional_light_.brightness = 3.7f;
 
 	current_mesh_ = CommonGeometry::get_vertex_array("icosphere_pbr"_h);
+
+	return true;
+}
+
+void MaterialEditorScene::on_unload()
+{
+
 }
 
 void MaterialEditorScene::reset_material()

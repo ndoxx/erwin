@@ -53,6 +53,9 @@ void SceneViewLayer::on_update(GameClock& clock)
         tt = 0.f;
 
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+
     camera_controller_.update(clock);
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     const ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
@@ -65,10 +68,9 @@ void SceneViewLayer::on_update(GameClock& clock)
 
 void SceneViewLayer::on_render()
 {
-    // FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
-    // Renderer::clear(1, fb, ClearFlags::CLEAR_COLOR_FLAG, {1.0f,0.f,0.f,1.f});
-
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
 
     // Draw scene geometry
     {

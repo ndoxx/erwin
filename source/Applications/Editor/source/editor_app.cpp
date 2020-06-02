@@ -6,7 +6,7 @@
 #include "layer/layer_material_editor.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_scene_view.h"
-#include "level/scene_loader.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
@@ -66,14 +66,15 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
+    SceneManager::create_scene<Scene>("main_scene"_h);
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
     {
         project::load_project(last_project_file);
-        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
-                                     project::get_asset_path(project::DirKey::HDR));
+        SceneManager::load_scene("main_scene"_h);
+        SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();
     }
 
@@ -209,8 +210,8 @@ void ErwinEditor::on_imgui_render()
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
         project::load_project(filepath);
-        SceneLoader::load_scene_stub(project::get_asset_path(project::DirKey::MATERIAL),
-                                     project::get_asset_path(project::DirKey::HDR));
+        SceneManager::load_scene("main_scene"_h);
+        SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();
     });
 

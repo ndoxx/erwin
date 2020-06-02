@@ -19,13 +19,15 @@ namespace editor
 
 class MaterialEditorScene: public erwin::AbstractScene
 {
+protected:
+    // Load all needed data in graphics memory
+    virtual bool on_load() override;
+    // Unload all graphics resources
+    virtual void on_unload() override;
+
 public:
     virtual ~MaterialEditorScene() override = default;
 
-    // Load all needed data in graphics memory
-    virtual void load() override;
-    // Unload all graphics resources
-    virtual void unload() override {}
     // Cleanup all dead components and entities
     virtual void cleanup() override {}
 

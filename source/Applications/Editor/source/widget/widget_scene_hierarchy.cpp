@@ -19,6 +19,9 @@ Widget("Hierarchy", true)
 void SceneHierarchyWidget::on_imgui_render()
 {
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
+    
     // Basic controls
     if(ImGui::Button("New entity"))
     {

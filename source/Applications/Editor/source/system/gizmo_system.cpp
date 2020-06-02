@@ -30,6 +30,8 @@ GizmoSystem::~GizmoSystem()
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return false;
     if(scene.selected_entity == k_invalid_entity_id)
         return false;
 
@@ -88,6 +90,8 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 void GizmoSystem::render()
 {
     auto& scene = scn::current<Scene>();
+    if(!scene.is_loaded())
+        return;
     if(scene.selected_entity == k_invalid_entity_id)
         return;
 

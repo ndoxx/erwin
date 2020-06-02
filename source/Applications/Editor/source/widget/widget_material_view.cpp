@@ -86,6 +86,8 @@ void MaterialViewWidget::on_layer_render()
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap?
+    if(!scn::current<Scene>().is_loaded())
+        return;
     Renderer3D::draw_skybox(scn::current<Scene>().environment.environment_map);
 }
 

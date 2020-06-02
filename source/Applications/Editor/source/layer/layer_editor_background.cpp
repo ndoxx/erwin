@@ -1,5 +1,6 @@
 #include "layer/layer_editor_background.h"
 #include "asset/asset_manager.h"
+#include "level/scene_manager.h"
 
 using namespace erwin;
 
@@ -24,10 +25,18 @@ void EditorBackgroundLayer::on_detach()
 
 void EditorBackgroundLayer::on_render()
 {
-	// Background is the last layer, perform post processing here
-    PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
-    PostProcessingRenderer::combine("LBuffer"_h, 0, true);
-	// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
+	if(scn::current_is_loaded())
+	{
+		// Background is the last layer, perform post processing here
+	    PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
+	    PostProcessingRenderer::combine("LBuffer"_h, 0, true);
+		// PostProcessingRenderer::combine("SpriteBuffer"_h, 0, false);
+	}
+	else
+	{
+        FramebufferHandle fb = FramebufferPool::get_framebuffer("host"_h);
+        Renderer::clear(0, fb, ClearFlags::CLEAR_COLOR_FLAG, {0.1f,0.1f,0.1f,1.f});
+	}
 
 	// WTF: we must draw something to the default framebuffer or else, whole screen is blank
 	RenderState state;
