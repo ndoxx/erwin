@@ -247,7 +247,7 @@ TextureHandle AssetManager::load_image(const fs::path& filepath, Texture2DDescri
 {
 	W_PROFILE_FUNCTION()
 
-	DLOGN("asset") << "[AssetManager] Loading HDR file:" << std::endl;
+	DLOGN("asset") << "[AssetManager] Loading image file:" << std::endl;
 	DLOGI << WCC('p') << filepath << WCC(0) << std::endl;
 	 
 	// Sanity check
