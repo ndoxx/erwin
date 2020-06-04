@@ -14,9 +14,6 @@
 #include "entity/component_camera.h"
 #include "entity/light.h"
 
-// TMP
-#include "asset/asset_manager.h"
-
 using namespace erwin;
 
 namespace rtest
@@ -24,6 +21,7 @@ namespace rtest
 
 bool Scene::on_load()
 {
+    // * Create entities with no async dependency
     {
         EntityID ent = create_entity();
 
@@ -37,8 +35,8 @@ bool Scene::on_load()
     {
         Material mat_sun;
         mat_sun.archetype = "Sun"_h;
-        mat_sun.shader = AssetManager::load_shader("shaders/forward_sun.glsl");
-        mat_sun.ubo = AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
+        mat_sun.shader = experimental::AssetManager::load_shader("shaders/forward_sun.glsl");
+        mat_sun.ubo = experimental::AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
         mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
         Renderer3D::register_shader(mat_sun.shader);
         Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
@@ -63,30 +61,38 @@ bool Scene::on_load()
         add_entity(ent);
     }
 
-
     // * Load all resources asynchronously
-    auto future_mat_0 = AssetManagerE::load_material_async(wfs::get_asset_dir() / "materials/greasyMetal.tom");
-
-    // * Declare entities dependencies on future resources
+    std::vector<hash_t> future_materials =
     {
-        EntityID ent = create_entity();
+        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/greasyMetal.tom"),
+        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/scuffedPlastic.tom"),
+        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/paintPeelingConcrete.tom"),
+        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/dirtyWickerWeave.tom"),
+    };
 
-        ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, 1.8f};
-        ComponentMesh cmesh;
-        cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
-
-        registry.assign<ComponentTransform3D>(ent, ctransform);
-        registry.assign<ComponentMesh>(ent, cmesh);
-
-        AssetManagerE::on_material_ready(future_mat_0, [this, ent=ent](const ComponentPBRMaterial& mat)
+    // * Declare entities dependencies on future resources during entity creation
+    for(size_t ii=0; ii<future_materials.size(); ++ii)
+    {
+        for(size_t jj=0; jj<2; ++jj)
         {
-            registry.assign<ComponentPBRMaterial>(ent, mat);
-            DLOGW("application") << "Material ready. Adding component." << std::endl;
-        });
+            EntityID ent = create_entity();
+
+            ComponentTransform3D ctransform = {{-4.f + ii*2.f, -1.f + jj*2.f, 0.f}, {0.f, 0.f, 0.f}, 1.5f};
+            ComponentMesh cmesh;
+            cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+
+            registry.assign<ComponentTransform3D>(ent, ctransform);
+            registry.assign<ComponentMesh>(ent, cmesh);
+
+            experimental::AssetManager::on_material_ready(future_materials[ii], [this, ent=ent](const ComponentPBRMaterial& mat)
+            {
+                registry.assign<ComponentPBRMaterial>(ent, mat);
+            });
+        }
     }
 
     // * Launch async loading operations
-    AssetManagerE::launch_async_tasks();
+    experimental::AssetManager::launch_async_tasks();
 
 	return true;
 }

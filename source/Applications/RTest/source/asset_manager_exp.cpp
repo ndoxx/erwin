@@ -1,20 +1,19 @@
 #include "asset_manager_exp.h"
-#include "core/core.h"
 #include "entity/component_PBR_material.h"
 #include "filesystem/tom_file.h"
 #include "utils/future.hpp"
 #include "utils/promise_storage.hpp"
+#include "core/intern_string.h"
 
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
-
-//TMP
-#include "asset/asset_manager.h"
 
 #include <chrono>
 #include <thread>
 
 namespace erwin
+{
+namespace experimental
 {
 
 struct AssetMetaData
@@ -32,36 +31,133 @@ struct AssetMetaData
     AssetType type;
 };
 
-struct MaterialFileLoadingTask
+class MaterialFactory
 {
-    uint64_t token;
-    AssetMetaData meta_data;
+public:
+	struct MaterialFileLoadingTask
+	{
+	    uint64_t token;
+	    AssetMetaData meta_data;
+	};
+
+	struct MaterialCreationTask
+	{
+	    uint64_t token;
+	    AssetMetaData meta_data;
+	    std::future<tom::TOMDescriptor> future_tom;
+	};
+
+	struct MaterialInitTask
+	{
+	    hash_t name;
+	    std::function<void(const ComponentPBRMaterial&)> init;
+	};
+
+	const ComponentPBRMaterial& load_material(const fs::path& file_path);
+	hash_t load_material_async(const fs::path& file_path);
+	void on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then);
+	void launch_async_tasks();
+	void update();
+	ComponentPBRMaterial create_material(const tom::TOMDescriptor& descriptor);
+
+	void release(hash_t material_name);
+
+private:
+	static ImageFormat select_image_format(uint8_t channels, TextureCompression compression, bool srgb);
+
+private:
+	// PBR Material data
+    PromiseStorage<tom::TOMDescriptor> tom_promises_;
+    std::map<hash_t, ComponentPBRMaterial> pbr_materials_;
+    std::vector<MaterialFileLoadingTask> material_file_loading_tasks_;
+    std::vector<MaterialCreationTask> material_creation_tasks_;
+    std::vector<MaterialInitTask> material_init_tasks_;
 };
 
-struct MaterialCreationTask
+hash_t MaterialFactory::load_material_async(const fs::path& file_path)
 {
-    uint64_t token;
-    AssetMetaData meta_data;
-    std::future<tom::TOMDescriptor> future_tom;
-};
+	W_PROFILE_FUNCTION()
+	hash_t hname = H_(file_path.string().c_str());
 
-struct MaterialInitTask
+	// * Sanity check
+	W_ASSERT(fs::exists(file_path), "[AssetManager] File does not exist.");
+	W_ASSERT(!file_path.extension().string().compare(".tom"), "[AssetManager] Invalid input file.");
+
+	// * Check cache first
+	if(pbr_materials_.find(hname) == pbr_materials_.end())
+	{
+	    auto&& [token, fut] = tom_promises_.future_operation();
+	    AssetMetaData meta_data{file_path, AssetMetaData::AssetType::MaterialTOM};
+	    material_file_loading_tasks_.push_back(MaterialFileLoadingTask{token, meta_data});
+	    material_creation_tasks_.push_back(MaterialCreationTask{token, meta_data, std::move(fut)});
+	}
+
+    return hname;
+}
+
+void MaterialFactory::on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
 {
-    hash_t name;
-    std::function<void(const ComponentPBRMaterial&)> init;
-};
+    material_init_tasks_.push_back(MaterialInitTask{future_mat, then});
+}
 
-static struct
+void MaterialFactory::launch_async_tasks()
 {
-    PromiseStorage<tom::TOMDescriptor> tom_promises;
-    std::map<hash_t, ComponentPBRMaterial> pbr_materials;
-    std::map<uint64_t, hash_t> token_to_material_name;
-    std::vector<MaterialFileLoadingTask> material_file_loading_tasks;
-    std::vector<MaterialCreationTask> material_creation_tasks;
-    std::vector<MaterialInitTask> material_init_tasks;
-} s_storage;
+    // TMP: single thread loading all resources
+    std::thread task([&]() {
+        for(auto&& task : material_file_loading_tasks_)
+        {
+#if 0
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1s);
+#endif
 
-static ImageFormat select_image_format(uint8_t channels, TextureCompression compression, bool srgb)
+			DLOGN("asset") << "[AssetManager] Loading PBR material (async):" << std::endl;
+			DLOG("asset",1) << WCC('p') << task.meta_data.file_path << WCC(0) << std::endl;
+
+            tom::TOMDescriptor descriptor;
+            descriptor.filepath = task.meta_data.file_path;
+            tom::read_tom(descriptor);
+
+            tom_promises_.fulfill(task.token, std::move(descriptor));
+        }
+        material_file_loading_tasks_.clear();
+    });
+    task.detach();
+}
+
+void MaterialFactory::update()
+{
+    for(auto it = material_creation_tasks_.begin(); it != material_creation_tasks_.end();)
+    {
+        auto&& task = *it;
+        if(is_ready(task.future_tom))
+        {
+            auto&& descriptor = task.future_tom.get();
+
+            hash_t hname = H_(task.meta_data.file_path.string().c_str());
+            pbr_materials_[hname] = create_material(descriptor);
+            material_creation_tasks_.erase(it);
+        }
+        else
+            ++it;
+    }
+
+    for(auto it = material_init_tasks_.begin(); it != material_init_tasks_.end();)
+    {
+        auto&& task = *it;
+        auto findit = pbr_materials_.find(task.name);
+        if(findit != pbr_materials_.end())
+        {
+            const ComponentPBRMaterial& pbr_mat = findit->second;
+            task.init(pbr_mat);
+            material_init_tasks_.erase(it);
+        }
+        else
+            ++it;
+    }
+}
+
+ImageFormat MaterialFactory::select_image_format(uint8_t channels, TextureCompression compression, bool srgb)
 {
     if(channels == 4)
     {
@@ -97,7 +193,7 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
     }
 }
 
-static ComponentPBRMaterial create_material(const tom::TOMDescriptor& descriptor)
+ComponentPBRMaterial MaterialFactory::create_material(const tom::TOMDescriptor& descriptor)
 {
     TextureGroup tg;
     // Create and register all texture maps
@@ -122,7 +218,6 @@ static ComponentPBRMaterial create_material(const tom::TOMDescriptor& descriptor
 	W_ASSERT(descriptor.material_type == tom::MaterialType::PBR, "[AssetManager] Material is not PBR.");
 	W_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData), "[AssetManager] Invalid material data size.");
 	
-	// TMP
 	ShaderHandle shader     = AssetManager::load_shader("shaders/deferred_PBR.glsl");
 	UniformBufferHandle ubo = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
 	
@@ -140,77 +235,129 @@ static ComponentPBRMaterial create_material(const tom::TOMDescriptor& descriptor
 	return pbr_mat;
 }
 
-
-
-uint64_t AssetManagerE::load_material_async(const fs::path& file_path)
+const ComponentPBRMaterial& MaterialFactory::load_material(const fs::path& file_path)
 {
-    auto&& [token, fut] = s_storage.tom_promises.future_operation();
-    AssetMetaData meta_data{file_path, AssetMetaData::AssetType::MaterialTOM};
-    s_storage.material_file_loading_tasks.push_back(MaterialFileLoadingTask{token, meta_data});
-    s_storage.material_creation_tasks.push_back(MaterialCreationTask{token, meta_data, std::move(fut)});
-    s_storage.token_to_material_name[token] = H_(file_path.string().c_str());
+	W_PROFILE_FUNCTION()
+	hash_t hname = H_(file_path.string().c_str());
 
-    return token;
+	// * Sanity check
+	W_ASSERT(fs::exists(file_path), "[AssetManager] File does not exist.");
+	W_ASSERT(!file_path.extension().string().compare(".tom"), "[AssetManager] Invalid input file.");
+
+
+	// * Check cache first
+	auto findit = pbr_materials_.find(hname);
+	if(findit != pbr_materials_.end())
+	{
+		DLOG("asset",1) << "[AssetManager] Getting PBR material " << WCC('i') << "from cache" << WCC(0) << ":" << std::endl;
+		DLOG("asset",1) << WCC('p') << file_path << WCC(0) << std::endl;
+
+		return findit->second;
+	}
+	else
+	{
+		DLOGN("asset") << "[AssetManager] Loading PBR material:" << std::endl;
+		DLOG("asset",1) << WCC('p') << file_path << WCC(0) << std::endl;
+
+	    tom::TOMDescriptor descriptor;
+	    descriptor.filepath = file_path;
+	    tom::read_tom(descriptor);
+
+	    pbr_materials_[hname] = create_material(descriptor);
+
+	    return pbr_materials_[hname];
+	}
 }
 
-void AssetManagerE::on_material_ready(uint64_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
+void MaterialFactory::release(hash_t hname)
 {
-    hash_t mat_name = s_storage.token_to_material_name.at(future_mat);
-    s_storage.material_init_tasks.push_back(MaterialInitTask{mat_name, then});
+	auto it = pbr_materials_.find(hname);
+	if(it!=pbr_materials_.end())
+	{
+		auto& mat = it->second;
+		for(size_t ii=0; ii<mat.material.texture_group.texture_count; ++ii)
+			Renderer::destroy(mat.material.texture_group[ii]);
+	}
+	pbr_materials_.erase(it);
 }
 
-void AssetManagerE::launch_async_tasks()
+
+static struct
 {
-    // TMP: single thread loading all resources
-    std::thread task([&]() {
-        for(auto&& task : s_storage.material_file_loading_tasks)
-        {
-#if 1
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(1s);
-#endif
+	MaterialFactory material_factory;
 
-            tom::TOMDescriptor descriptor;
-            descriptor.filepath = task.meta_data.file_path;
-            tom::read_tom(descriptor);
+	std::map<hash_t, ShaderHandle> shader_cache;
+	std::map<uint64_t, UniformBufferHandle> ubo_cache;
+} s_storage;
 
-            s_storage.tom_promises.fulfill(task.token, std::move(descriptor));
-        }
-        s_storage.material_file_loading_tasks.clear();
-    });
-    task.detach();
+UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
+{
+	W_PROFILE_FUNCTION()
+
+	auto it = s_storage.ubo_cache.find(component_id);
+	if(it!=s_storage.ubo_cache.end())
+		return it->second;
+
+	auto handle = Renderer::create_uniform_buffer("material_data", nullptr, size, UsagePattern::Dynamic);
+	s_storage.ubo_cache.insert({component_id, handle});
+	return handle;
 }
 
-void AssetManagerE::update()
+ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
 {
-    for(auto it = s_storage.material_creation_tasks.begin(); it != s_storage.material_creation_tasks.end();)
-    {
-        auto&& task = *it;
-        if(is_ready(task.future_tom))
-        {
-            auto&& descriptor = task.future_tom.get();
+	W_PROFILE_FUNCTION()
 
-            hash_t hname = H_(task.meta_data.file_path.string().c_str());
-            s_storage.pbr_materials[hname] = create_material(descriptor);
-            s_storage.material_creation_tasks.erase(it);
-        }
-        else
-            ++it;
-    }
+	hash_t hname = H_(filepath.string().c_str());
+	auto it = s_storage.shader_cache.find(hname);
+	if(it!=s_storage.shader_cache.end())
+		return it->second;
 
-    for(auto it = s_storage.material_init_tasks.begin(); it != s_storage.material_init_tasks.end();)
-    {
-        auto&& task = *it;
-        auto findit = s_storage.pbr_materials.find(task.name);
-        if(findit != s_storage.pbr_materials.end())
-        {
-            const ComponentPBRMaterial& pbr_mat = findit->second;
-            task.init(pbr_mat);
-            s_storage.material_init_tasks.erase(it);
-        }
-        else
-            ++it;
-    }
+	DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
+
+	// First, check if shader file exists in system assets
+	fs::path fullpath;
+	if(fs::exists(wfs::get_system_asset_dir() / filepath))
+		fullpath = wfs::get_system_asset_dir() / filepath;
+	else
+		fullpath = wfs::get_asset_dir() / filepath;
+
+	std::string shader_name = name.empty() ? filepath.stem().string() : name;
+	ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
+	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
+	s_storage.shader_cache.insert({hname, handle});
+
+	return handle;
 }
 
+const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
+{
+	return s_storage.material_factory.load_material(file_path);
+}
+
+void AssetManager::release_material(hash_t hname)
+{
+	s_storage.material_factory.release(hname);
+}
+
+hash_t AssetManager::load_material_async(const fs::path& file_path)
+{
+	return s_storage.material_factory.load_material_async(file_path);
+}
+
+void AssetManager::on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
+{
+	s_storage.material_factory.on_material_ready(future_mat, then);
+}
+
+void AssetManager::launch_async_tasks()
+{
+	s_storage.material_factory.launch_async_tasks();
+}
+
+void AssetManager::update()
+{
+	s_storage.material_factory.update();
+}
+
+} // namespace experimental
 } // namespace erwin

@@ -80,7 +80,7 @@ void LayerTest::on_update(GameClock& clock)
     float b = 0.5f*sin(2*M_PI*tt*0.09f + 4.f) + 0.5f;
     bkg_color_ = {r,g,b,1.f};
 
-    AssetManagerE::update();
+    experimental::AssetManager::update();
 
 
     auto& scene = scn::current<Scene>();
