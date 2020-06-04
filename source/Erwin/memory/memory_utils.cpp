@@ -26,7 +26,7 @@ std::string human_size(std::size_t bytes)
 	}
 
 	static char output[200];
-	sprintf(output, "%.02lf %s", dblBytes, suffix[i].c_str());
+	snprintf(output, 200, "%.02lf %s", dblBytes, suffix[i].c_str());
 	return output;
 }
 

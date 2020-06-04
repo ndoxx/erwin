@@ -127,7 +127,7 @@ bool SliderFloatDefault(const char* label, float* v, float v_min, float v_max, f
     if(ImGui::BeginPopupContextItem(label))
     {
         char buf[64];
-        sprintf(buf, "Reset to %f", double(v_default));
+        snprintf(buf, 64, "Reset to %f", double(v_default));
         if(ImGui::MenuItem(buf))
         {
             *v = v_default;

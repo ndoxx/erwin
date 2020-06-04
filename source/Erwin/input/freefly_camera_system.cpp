@@ -20,11 +20,8 @@ FreeflyCameraSystem::FreeflyCameraSystem()
       prev_mouse_y_(0.f), inputs_enabled_(false), dirty_frustum_(true), position_(0.f)
 {}
 
-void FreeflyCameraSystem::init(ComponentCamera3D& camera, ComponentTransform3D& transform)
+void FreeflyCameraSystem::init(ComponentTransform3D& transform)
 {
-	target_camera_ = camera;
-	target_transform_ = transform;
-
     position_ = transform.position;
     pitch_ = transform.euler.x;
     yaw_ = transform.euler.y;
@@ -48,17 +45,14 @@ void FreeflyCameraSystem::update_frustum()
     dirty_frustum_ = true;
 }
 
-void FreeflyCameraSystem::update(const erwin::GameClock& clock)
+void FreeflyCameraSystem::update(const erwin::GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform)
 {
     // Update camera projection
     if(dirty_frustum_)
-        target_camera_->get().set_projection(frustum_);
+        camera.set_projection(frustum_);
 
     if(!inputs_enabled_ && !dirty_frustum_)
         return;
-
-    ComponentCamera3D& camera = target_camera_->get();
-    ComponentTransform3D& transform = target_transform_->get();
 
     // Translational magnitude
     float dt = clock.get_frame_duration();

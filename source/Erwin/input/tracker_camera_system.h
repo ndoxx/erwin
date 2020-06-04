@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "entity/component_camera.h"
 #include "entity/component_transform.h"
 #include "core/game_clock.h"
@@ -23,10 +21,10 @@ public:
 	};
 
 	TrackerCameraSystem();
-	void init(ComponentCamera3D& camera, ComponentTransform3D& transform);
+	void init(ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
 	void set_position(float radius, float azimuth, float colatitude);
-	void update(const erwin::GameClock& clock);
+	void update(const erwin::GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 
 	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
 	bool on_window_moved_event(const erwin::WindowMovedEvent& event);
@@ -47,9 +45,6 @@ private:
 private:
 	FrustumParameters frustum_parameters_;
 	ComponentCamera3D::Frustum3D frustum_;
-
-	std::optional<std::reference_wrapper<ComponentCamera3D>> target_camera_;
-	std::optional<std::reference_wrapper<ComponentTransform3D>> target_transform_;
 
 	float rotation_speed_;
 	float azimuth_;
