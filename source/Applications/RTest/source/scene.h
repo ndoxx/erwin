@@ -39,6 +39,13 @@ public:
 	erwin::EntityID directional_light = erwin::k_invalid_entity_id;
 	std::vector<erwin::EntityID> entities;
 
+	struct Environment
+	{
+	    erwin::CubemapHandle environment_map;
+	    erwin::CubemapHandle diffuse_irradiance_map;
+	    erwin::CubemapHandle prefiltered_env_map;
+	} environment;
+
 	entt::registry registry;
 };
 

@@ -1,6 +1,7 @@
 #include "asset_manager_exp.h"
 #include "entity/component_PBR_material.h"
 #include "filesystem/tom_file.h"
+#include "filesystem/image_file.h"
 #include "utils/future.hpp"
 #include "utils/promise_storage.hpp"
 #include "core/intern_string.h"
@@ -21,8 +22,8 @@ struct AssetMetaData
     enum class AssetType : uint8_t
     {
         None,
-        ImagePNG,
-        ImageHDR,
+        ImageFilePNG,
+        ImageFileHDR,
         MaterialTOM,
         Mesh
     };
@@ -40,7 +41,7 @@ public:
 	    AssetMetaData meta_data;
 	};
 
-	struct MaterialCreationTask
+	struct MaterialUploadTask
 	{
 	    uint64_t token;
 	    AssetMetaData meta_data;
@@ -56,7 +57,7 @@ public:
 	const ComponentPBRMaterial& load_material(const fs::path& file_path);
 	hash_t load_material_async(const fs::path& file_path);
 	void on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then);
-	ComponentPBRMaterial create_material(const tom::TOMDescriptor& descriptor);
+	ComponentPBRMaterial upload_material(const tom::TOMDescriptor& descriptor);
 	void release(hash_t material_name);
 	
 	void launch_async_tasks();
@@ -70,7 +71,7 @@ private:
     PromiseStorage<tom::TOMDescriptor> tom_promises_;
     std::map<hash_t, ComponentPBRMaterial> pbr_materials_;
     std::vector<MaterialFileLoadingTask> material_file_loading_tasks_;
-    std::vector<MaterialCreationTask> material_creation_tasks_;
+    std::vector<MaterialUploadTask> material_upload_tasks_;
     std::vector<MaterialInitTask> material_init_tasks_;
 };
 
@@ -90,7 +91,7 @@ hash_t MaterialFactory::load_material_async(const fs::path& file_path)
 	    auto&& [token, fut] = tom_promises_.future_operation();
 	    AssetMetaData meta_data{file_path, AssetMetaData::AssetType::MaterialTOM};
 	    material_file_loading_tasks_.push_back(MaterialFileLoadingTask{token, meta_data});
-	    material_creation_tasks_.push_back(MaterialCreationTask{token, meta_data, std::move(fut)});
+	    material_upload_tasks_.push_back(MaterialUploadTask{token, meta_data, std::move(fut)});
 	}
 
     return hname;
@@ -137,7 +138,7 @@ ImageFormat MaterialFactory::select_image_format(uint8_t channels, TextureCompre
     }
 }
 
-ComponentPBRMaterial MaterialFactory::create_material(const tom::TOMDescriptor& descriptor)
+ComponentPBRMaterial MaterialFactory::upload_material(const tom::TOMDescriptor& descriptor)
 {
 	W_PROFILE_FUNCTION()
 
@@ -210,7 +211,7 @@ const ComponentPBRMaterial& MaterialFactory::load_material(const fs::path& file_
 	    descriptor.filepath = file_path;
 	    tom::read_tom(descriptor);
 
-	    pbr_materials_[hname] = create_material(descriptor);
+	    pbr_materials_[hname] = upload_material(descriptor);
 
 	    return pbr_materials_[hname];
 	}
@@ -236,11 +237,6 @@ void MaterialFactory::launch_async_tasks()
     std::thread task([&]() {
         for(auto&& task : material_file_loading_tasks_)
         {
-#if 0
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(1s);
-#endif
-
 			DLOGN("asset") << "[AssetManager] Loading PBR material (async):" << std::endl;
 			DLOG("asset",1) << WCC('p') << task.meta_data.file_path << WCC(0) << std::endl;
 
@@ -259,7 +255,7 @@ void MaterialFactory::update()
 {
 	W_PROFILE_FUNCTION()
 
-    for(auto it = material_creation_tasks_.begin(); it != material_creation_tasks_.end();)
+    for(auto it = material_upload_tasks_.begin(); it != material_upload_tasks_.end();)
     {
         auto&& task = *it;
         if(is_ready(task.future_tom))
@@ -267,8 +263,8 @@ void MaterialFactory::update()
             auto&& descriptor = task.future_tom.get();
 
             hash_t hname = H_(task.meta_data.file_path.string().c_str());
-            pbr_materials_[hname] = create_material(descriptor);
-            material_creation_tasks_.erase(it);
+            pbr_materials_[hname] = upload_material(descriptor);
+            material_upload_tasks_.erase(it);
         }
         else
             ++it;
@@ -293,41 +289,210 @@ void MaterialFactory::update()
 class TextureFactory
 {
 public:
-	std::pair<TextureHandle, Texture2DDescriptor> load_texture(const fs::path& filepath);
-	hash_t load_texture_async(const fs::path& filepath);
+	struct TextureFileLoadingTask
+	{
+	    uint64_t token;
+	    AssetMetaData meta_data;
+	};
+
+	struct TextureUploadTask
+	{
+	    uint64_t token;
+	    AssetMetaData meta_data;
+	    std::future<Texture2DDescriptor> future_desc;
+	};
+
+	struct TextureInitTask
+	{
+	    hash_t name;
+	    std::function<void(TextureHandle, const Texture2DDescriptor&)> init;
+	};
+
+	std::pair<TextureHandle, Texture2DDescriptor> load_texture(const fs::path& file_path);
+	hash_t load_texture_async(const fs::path& file_path);
 	void on_texture_ready(hash_t future_texture, std::function<void(TextureHandle, const Texture2DDescriptor&)> then);
 
 	void launch_async_tasks();
 	void update();
 
 private:
+	static Texture2DDescriptor load_from_file(const AssetMetaData& meta_data);
+	static TextureHandle upload_texture(const Texture2DDescriptor& descriptor);
+
+private:
+    std::map<hash_t, std::pair<TextureHandle,Texture2DDescriptor>> textures_;
+    PromiseStorage<Texture2DDescriptor> desc_promises_;
+    std::vector<TextureFileLoadingTask> texture_file_loading_tasks_;
+    std::vector<TextureUploadTask> texture_upload_tasks_;
+    std::vector<TextureInitTask> texture_init_tasks_;
 };
 
-std::pair<TextureHandle, Texture2DDescriptor> TextureFactory::load_texture(const fs::path& filepath)
+std::pair<TextureHandle, Texture2DDescriptor> TextureFactory::load_texture(const fs::path& file_path)
 {
+	W_PROFILE_FUNCTION()
 
-	return {};
+	hash_t hname = H_(file_path.string().c_str());
+
+	// * Sanity check
+	W_ASSERT(fs::exists(file_path), "[AssetManager] File does not exist.");
+	hash_t hextension = H_(file_path.extension().string().c_str());
+	bool compatible = (hextension == ".hdr"_h) || (hextension == ".png"_h);
+	W_ASSERT_FMT(compatible, "[AssetManager] Incompatible file type: %s", file_path.extension().string().c_str());
+
+    AssetMetaData::AssetType asset_type;
+    switch(hextension)
+    {
+    	case ".png"_h: asset_type = AssetMetaData::AssetType::ImageFilePNG; break;
+    	case ".hdr"_h: asset_type = AssetMetaData::AssetType::ImageFileHDR; break;
+    }
+    AssetMetaData meta_data{file_path, asset_type};
+
+	// * Check cache first
+	auto findit = textures_.find(hname);
+	if(findit == textures_.end())
+	{
+		auto descriptor = load_from_file(meta_data);
+		auto handle = upload_texture(descriptor);
+		textures_[hname] = {handle, descriptor};
+		return {handle, descriptor};
+	}
+	else
+		return findit->second;
 }
 
-hash_t TextureFactory::load_texture_async(const fs::path& filepath)
+hash_t TextureFactory::load_texture_async(const fs::path& file_path)
 {
+	W_PROFILE_FUNCTION()
 
-	return 0;
+	hash_t hname = H_(file_path.string().c_str());
+
+	// * Sanity check
+	W_ASSERT(fs::exists(file_path), "[AssetManager] File does not exist.");
+	hash_t hextension = H_(file_path.extension().string().c_str());
+	bool compatible = (hextension == ".hdr"_h) || (hextension == ".png"_h);
+	W_ASSERT_FMT(compatible, "[AssetManager] Incompatible file type: %s", file_path.extension().string().c_str());
+
+	// * Check cache first
+	if(textures_.find(hname) == textures_.end())
+	{
+	    auto&& [token, fut] = desc_promises_.future_operation();
+	    AssetMetaData::AssetType asset_type;
+	    switch(hextension)
+	    {
+	    	case ".png"_h: asset_type = AssetMetaData::AssetType::ImageFilePNG; break;
+	    	case ".hdr"_h: asset_type = AssetMetaData::AssetType::ImageFileHDR; break;
+	    }
+	    AssetMetaData meta_data{file_path, asset_type};
+	    texture_file_loading_tasks_.push_back(TextureFileLoadingTask{token, meta_data});
+	    texture_upload_tasks_.push_back(TextureUploadTask{token, meta_data, std::move(fut)});
+	}
+
+    return hname;
 }
 
 void TextureFactory::on_texture_ready(hash_t future_texture, std::function<void(TextureHandle, const Texture2DDescriptor&)> then)
 {
-
+    texture_init_tasks_.push_back(TextureInitTask{future_texture, then});
 }
 
 void TextureFactory::launch_async_tasks()
 {
-
+    // TMP: single thread loading all resources
+    std::thread task([&]() {
+        for(auto&& task : texture_file_loading_tasks_)
+        {
+			Texture2DDescriptor descriptor = load_from_file(task.meta_data);
+            desc_promises_.fulfill(task.token, std::move(descriptor));
+        }
+        texture_file_loading_tasks_.clear();
+    });
+    task.detach();
 }
 
 void TextureFactory::update()
 {
+	W_PROFILE_FUNCTION()
 
+    for(auto it = texture_upload_tasks_.begin(); it != texture_upload_tasks_.end();)
+    {
+        auto&& task = *it;
+        if(is_ready(task.future_desc))
+        {
+            auto&& descriptor = task.future_desc.get();
+
+            hash_t hname = H_(task.meta_data.file_path.string().c_str());
+            textures_[hname] = {upload_texture(descriptor), descriptor};
+            texture_upload_tasks_.erase(it);
+        }
+        else
+            ++it;
+    }
+
+    for(auto it = texture_init_tasks_.begin(); it != texture_init_tasks_.end();)
+    {
+        auto&& task = *it;
+        auto findit = textures_.find(task.name);
+        if(findit != textures_.end())
+        {
+            task.init(findit->second.first, findit->second.second);
+            texture_init_tasks_.erase(it);
+        }
+        else
+            ++it;
+    }
+}
+
+Texture2DDescriptor TextureFactory::load_from_file(const AssetMetaData& meta_data)
+{
+		DLOGN("asset") << "[AssetManager] Loading texture (async):" << std::endl;
+		DLOG("asset",1) << WCC('p') << meta_data.file_path << WCC(0) << std::endl;
+
+	Texture2DDescriptor descriptor;
+	if(meta_data.type == AssetMetaData::AssetType::ImageFileHDR)
+	{
+		// Load HDR file
+		img::HDRDescriptor hdrfile { meta_data.file_path };
+		img::read_hdr(hdrfile);
+
+		DLOGI << "Width:    " << WCC('v') << hdrfile.width << std::endl;
+		DLOGI << "Height:   " << WCC('v') << hdrfile.height << std::endl;
+		DLOGI << "Channels: " << WCC('v') << hdrfile.channels << std::endl;
+
+		if(2*hdrfile.height != hdrfile.width)
+		{
+			DLOGW("asset") << "[AssetManager] HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
+		}
+
+		descriptor.width  = hdrfile.width;
+		descriptor.height = hdrfile.height;
+		descriptor.mips = 0;
+		descriptor.data = hdrfile.data;
+		descriptor.image_format = ImageFormat::RGB32F;
+		descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+	}
+	else if(meta_data.type == AssetMetaData::AssetType::ImageFilePNG)
+	{
+		// Load PNG file
+		img::PNGDescriptor pngfile { meta_data.file_path };
+		// Force 4 channels
+		pngfile.channels = 4;
+		img::read_png(pngfile);
+
+		DLOGI << "Width:    " << WCC('v') << pngfile.width << std::endl;
+		DLOGI << "Height:   " << WCC('v') << pngfile.height << std::endl;
+		DLOGI << "Channels: " << WCC('v') << pngfile.channels << std::endl;
+
+		descriptor.width  = pngfile.width;
+		descriptor.height = pngfile.height;
+		descriptor.data = pngfile.data;
+		descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
+	}
+	return descriptor;
+}
+
+TextureHandle TextureFactory::upload_texture(const Texture2DDescriptor& descriptor)
+{
+	return Renderer::create_texture_2D(descriptor); 
 }
 
 
@@ -353,11 +518,11 @@ UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component
 	return handle;
 }
 
-ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::string& name)
+ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::string& name)
 {
 	W_PROFILE_FUNCTION()
 
-	hash_t hname = H_(filepath.string().c_str());
+	hash_t hname = H_(file_path.string().c_str());
 	auto it = s_storage.shader_cache.find(hname);
 	if(it!=s_storage.shader_cache.end())
 		return it->second;
@@ -366,12 +531,12 @@ ShaderHandle AssetManager::load_shader(const fs::path& filepath, const std::stri
 
 	// First, check if shader file exists in system assets
 	fs::path fullpath;
-	if(fs::exists(wfs::get_system_asset_dir() / filepath))
-		fullpath = wfs::get_system_asset_dir() / filepath;
+	if(fs::exists(wfs::get_system_asset_dir() / file_path))
+		fullpath = wfs::get_system_asset_dir() / file_path;
 	else
-		fullpath = wfs::get_asset_dir() / filepath;
+		fullpath = wfs::get_asset_dir() / file_path;
 
-	std::string shader_name = name.empty() ? filepath.stem().string() : name;
+	std::string shader_name = name.empty() ? file_path.stem().string() : name;
 	ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
 	DLOG("asset",1) << "ShaderHandle: " << WCC('v') << handle.index << std::endl;
 	s_storage.shader_cache.insert({hname, handle});
@@ -389,9 +554,9 @@ void AssetManager::release_material(hash_t hname)
 	s_storage.material_factory.release(hname);
 }
 
-std::pair<TextureHandle, Texture2DDescriptor> AssetManager::load_texture(const fs::path& filepath)
+std::pair<TextureHandle, Texture2DDescriptor> AssetManager::load_texture(const fs::path& file_path)
 {
-	return s_storage.texture_factory.load_texture(filepath);
+	return s_storage.texture_factory.load_texture(file_path);
 }
 
 hash_t AssetManager::load_material_async(const fs::path& file_path)
@@ -404,9 +569,9 @@ void AssetManager::on_material_ready(hash_t future_mat, std::function<void(const
 	s_storage.material_factory.on_material_ready(future_mat, then);
 }
 
-hash_t AssetManager::load_texture_async(const fs::path& filepath)
+hash_t AssetManager::load_texture_async(const fs::path& file_path)
 {
-	return s_storage.texture_factory.load_texture_async(filepath);
+	return s_storage.texture_factory.load_texture_async(file_path);
 }
 
 void AssetManager::on_texture_ready(hash_t future_texture, std::function<void(TextureHandle, const Texture2DDescriptor&)> then)

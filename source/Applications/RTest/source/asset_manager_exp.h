@@ -21,7 +21,7 @@ class AssetManager
 public:
 	// * Synchronous operations
 	// Load a shader from file, by default, name is extracted from file path
-	static ShaderHandle load_shader(const fs::path& filepath, const std::string& name="");
+	static ShaderHandle load_shader(const fs::path& file_path, const std::string& name="");
 	// Create (or get) a UBO to be associated to a material data type 
 	template <typename ComponentT>
 	static inline UniformBufferHandle create_material_data_buffer()
@@ -34,7 +34,7 @@ public:
 	// Free GPU resources associated to a material and remove from cache
 	static void release_material(hash_t hname);
 	// Load an image from file (or get from cache) and return a render handle to a texture created from image data
-	static std::pair<TextureHandle, Texture2DDescriptor> load_texture(const fs::path& filepath);
+	static std::pair<TextureHandle, Texture2DDescriptor> load_texture(const fs::path& file_path);
 
 	// * Asynchronous operations
 	// Generate an async material loading task if material not in cache, return path string hash as a token
@@ -42,7 +42,7 @@ public:
 	// Execute a callback when a material is ready
     static void on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then);
     // Generate an async texture loading task if texture not in cache, return path string hash as a token
-    static hash_t load_texture_async(const fs::path& filepath);
+    static hash_t load_texture_async(const fs::path& file_path);
     // Execute a callback when a texture is ready
     static void on_texture_ready(hash_t future_texture, std::function<void(TextureHandle, const Texture2DDescriptor&)> then);
 

@@ -70,6 +70,19 @@ bool Scene::on_load()
         experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/dirtyWickerWeave.tom"),
     };
 
+    {
+        hash_t future_tex = experimental::AssetManager::load_texture_async(wfs::get_asset_dir() / "hdr/small_cathedral_2k.hdr");
+        experimental::AssetManager::on_texture_ready(future_tex, [this](TextureHandle handle, const Texture2DDescriptor& desc)
+        {
+            environment.environment_map = Renderer3D::generate_cubemap_hdr(handle, desc.height);
+            Renderer::destroy(handle);
+            environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
+            environment.prefiltered_env_map = Renderer3D::generate_prefiltered_map(environment.environment_map, desc.height);
+            Renderer3D::set_environment(environment.diffuse_irradiance_map, environment.prefiltered_env_map);
+            Renderer3D::enable_IBL(true);
+        });
+    }
+
     // * Declare entities dependencies on future resources during entity creation
     for(size_t ii=0; ii<future_materials.size(); ++ii)
     {
@@ -101,6 +114,12 @@ void Scene::on_unload()
 {
     camera = k_invalid_entity_id;
     directional_light = k_invalid_entity_id;
+    Renderer::destroy(environment.environment_map);
+    Renderer::destroy(environment.diffuse_irradiance_map);
+    Renderer::destroy(environment.prefiltered_env_map);
+    environment.environment_map = {};
+    environment.diffuse_irradiance_map = {};
+    environment.prefiltered_env_map = {};
     registry.clear();
     entities.clear();
 }

@@ -35,10 +35,9 @@ void LayerTest::setup_camera()
 {
     auto& scene = scn::current<Scene>();
 
-    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
 
-    camera_controller_.init(camera, transform);
+    camera_controller_.init(transform);
     camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
 }
 
@@ -87,9 +86,9 @@ void LayerTest::on_update(GameClock& clock)
     if(!scene.is_loaded())
         return;
 
-    camera_controller_.update(clock);
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
-    const ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform);
     if(scene.registry.valid(scene.directional_light))
         Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
@@ -121,6 +120,7 @@ void LayerTest::on_render()
         Renderer3D::end_deferred_pass();
     }
 
+    Renderer3D::draw_skybox(scene.environment.environment_map);
 
     PostProcessingRenderer::bloom_pass("LBuffer"_h, 1);
     PostProcessingRenderer::combine("LBuffer"_h, 0, true);
