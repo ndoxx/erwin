@@ -1,8 +1,9 @@
 #include "material_loader.h"
-#include "entity/component_PBR_material.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 #include "utils/future.hpp"
+#include "filesystem/tom_file.h"
+#include "entity/component_PBR_material.h"
 
 #include "asset_manager_exp.h"
 
@@ -109,123 +110,15 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     return pbr_mat;
 }
 
-const ComponentPBRMaterial& MaterialLoader::load(const fs::path& file_path)
+void MaterialLoader::destroy(ComponentPBRMaterial& resource)
 {
-    W_PROFILE_FUNCTION()
-
-    // Check cache first
-    hash_t hname = H_(file_path.string().c_str());
-    auto findit = managed_resources_.find(hname);
-    if(findit == managed_resources_.end())
-    {
-        DLOG("asset", 1) << "Loading PBR material:" << std::endl;
-        DLOG("asset", 1) << WCC('p') << file_path << WCC(0) << std::endl;
-
-        AssetMetaData meta_data = build_meta_data(file_path);
-        auto descriptor = load_from_file(meta_data);
-        managed_resources_[hname] = upload(descriptor);
-        return managed_resources_[hname];
-    }
-    else
-    {
-        DLOG("asset", 1) << "Getting PBR material " << WCC('i') << "from cache" << WCC(0) << ":" << std::endl;
-        DLOG("asset", 1) << WCC('p') << file_path << WCC(0) << std::endl;
-
-        return findit->second;
-    }
+    for(size_t ii = 0; ii < resource.material.texture_group.texture_count; ++ii)
+        Renderer::destroy(resource.material.texture_group[ii]);
 }
 
-hash_t MaterialLoader::load_async(const fs::path& file_path)
+ComponentPBRMaterial MaterialLoader::managed_resource(const ComponentPBRMaterial& resource, const tom::TOMDescriptor&)
 {
-    W_PROFILE_FUNCTION()
-
-    // Check cache first
-    hash_t hname = H_(file_path.string().c_str());
-    if(managed_resources_.find(hname) == managed_resources_.end())
-    {
-        DLOG("asset", 1) << "Loading PBR material (async):" << std::endl;
-        DLOG("asset", 1) << WCC('p') << file_path << WCC(0) << std::endl;
-
-        auto&& [token, fut] = promises_.future_operation();
-        AssetMetaData meta_data = build_meta_data(file_path);
-        file_loading_tasks_.push_back(FileLoadingTask{token, meta_data});
-        upload_tasks_.push_back(UploadTask{token, meta_data, std::move(fut)});
-    }
-
-    return hname;
-}
-
-void MaterialLoader::on_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
-{
-    after_upload_tasks_.push_back(AfterUploadTask{future_mat, then});
-}
-
-void MaterialLoader::release(hash_t hname)
-{
-    W_PROFILE_FUNCTION()
-
-    auto it = managed_resources_.find(hname);
-    if(it != managed_resources_.end())
-    {
-        auto& mat = it->second;
-        for(size_t ii = 0; ii < mat.material.texture_group.texture_count; ++ii)
-            Renderer::destroy(mat.material.texture_group[ii]);
-    }
-    managed_resources_.erase(it);
-}
-
-void MaterialLoader::launch_async_tasks()
-{
-    // TMP: single thread loading all resources
-    std::thread task([&]() {
-        for(auto&& task : file_loading_tasks_)
-        {
-            DLOGN("asset") << "Loading PBR material (async):" << std::endl;
-            DLOG("asset", 1) << WCC('p') << task.meta_data.file_path << WCC(0) << std::endl;
-
-            tom::TOMDescriptor descriptor;
-            descriptor.filepath = task.meta_data.file_path;
-            tom::read_tom(descriptor);
-
-            promises_.fulfill(task.token, std::move(descriptor));
-        }
-        file_loading_tasks_.clear();
-    });
-    task.detach();
-}
-
-void MaterialLoader::update()
-{
-    W_PROFILE_FUNCTION()
-
-    for(auto it = upload_tasks_.begin(); it != upload_tasks_.end();)
-    {
-        auto&& task = *it;
-        if(is_ready(task.future_tom))
-        {
-            auto&& descriptor = task.future_tom.get();
-
-            hash_t hname = H_(task.meta_data.file_path.string().c_str());
-            managed_resources_[hname] = upload(descriptor);
-            upload_tasks_.erase(it);
-        }
-        else
-            ++it;
-    }
-
-    for(auto it = after_upload_tasks_.begin(); it != after_upload_tasks_.end();)
-    {
-        auto&& task = *it;
-        auto findit = managed_resources_.find(task.name);
-        if(findit != managed_resources_.end())
-        {
-            const ComponentPBRMaterial& pbr_mat = findit->second;
-            task.init(pbr_mat);
-            after_upload_tasks_.erase(it);
-        }
-        else
-            ++it;
-    }
+	return resource;
 }
 
 } // namespace experimental

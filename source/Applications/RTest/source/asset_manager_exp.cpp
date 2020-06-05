@@ -6,6 +6,7 @@
 
 #include "material_loader.h"
 #include "texture_loader.h"
+#include "resource_manager.hpp"
 
 #include <chrono>
 #include <thread>
@@ -17,8 +18,9 @@ namespace experimental
 
 static struct
 {
-    MaterialLoader material_loader;
-    TextureLoader texture_loader;
+    ResourceManager<MaterialLoader> material_manager;
+    ResourceManager<TextureLoader> texture_manager;
+    // TextureManager texture_manager;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -65,47 +67,47 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
 
 const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
 {
-    return s_storage.material_loader.load(file_path);
+    return s_storage.material_manager.load(file_path);
 }
 
-void AssetManager::release_material(hash_t hname) { s_storage.material_loader.release(hname); }
+void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
 
 std::pair<TextureHandle, Texture2DDescriptor> AssetManager::load_texture(const fs::path& file_path)
 {
-    return s_storage.texture_loader.load(file_path);
+    return s_storage.texture_manager.load(file_path);
 }
 
 hash_t AssetManager::load_material_async(const fs::path& file_path)
 {
-    return s_storage.material_loader.load_async(file_path);
+    return s_storage.material_manager.load_async(file_path);
 }
 
 void AssetManager::on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
 {
-    s_storage.material_loader.on_ready(future_mat, then);
+    s_storage.material_manager.on_ready(future_mat, then);
 }
 
 hash_t AssetManager::load_texture_async(const fs::path& file_path)
 {
-    return s_storage.texture_loader.load_async(file_path);
+    return s_storage.texture_manager.load_async(file_path);
 }
 
 void AssetManager::on_texture_ready(hash_t future_texture,
-                                    std::function<void(TextureHandle, const Texture2DDescriptor&)> then)
+                                    std::function<void(const std::pair<TextureHandle, Texture2DDescriptor>&)> then)
 {
-    s_storage.texture_loader.on_ready(future_texture, then);
+    s_storage.texture_manager.on_ready(future_texture, then);
 }
 
 void AssetManager::launch_async_tasks()
 {
-    s_storage.texture_loader.launch_async_tasks();
-    s_storage.material_loader.launch_async_tasks();
+    s_storage.texture_manager.launch_async_tasks();
+    s_storage.material_manager.launch_async_tasks();
 }
 
 void AssetManager::update()
 {
-    s_storage.texture_loader.update();
-    s_storage.material_loader.update();
+    s_storage.texture_manager.update();
+    s_storage.material_manager.update();
 }
 
 } // namespace experimental

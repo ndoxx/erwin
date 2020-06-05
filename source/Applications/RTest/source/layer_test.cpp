@@ -79,9 +79,6 @@ void LayerTest::on_update(GameClock& clock)
     float b = 0.5f*sin(2*M_PI*tt*0.09f + 4.f) + 0.5f;
     bkg_color_ = {r,g,b,1.f};
 
-    experimental::AssetManager::update();
-
-
     auto& scene = scn::current<Scene>();
     if(!scene.is_loaded())
         return;
@@ -103,6 +100,8 @@ void LayerTest::on_render()
     auto& scene = scn::current<Scene>();
     if(!scene.is_loaded())
         return;
+
+    experimental::AssetManager::update();
 
     // Draw scene geometry
     {

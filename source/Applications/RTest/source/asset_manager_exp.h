@@ -44,7 +44,7 @@ public:
     static hash_t load_texture_async(const fs::path& file_path);
     // Execute a callback when a texture is ready
     static void on_texture_ready(hash_t future_texture,
-                                 std::function<void(TextureHandle, const Texture2DDescriptor&)> then);
+                                 std::function<void(const std::pair<TextureHandle, Texture2DDescriptor>&)> then);
 
     // Execute async tasks independently
     static void launch_async_tasks();
