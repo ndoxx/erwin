@@ -20,11 +20,8 @@ TrackerCameraSystem::TrackerCameraSystem()
       prev_mouse_y_(0.f), inputs_enabled_(false), dirty_frustum_(true), position_(0.f), lookat_target_(0.f)
 {}
 
-void TrackerCameraSystem::init(ComponentCamera3D& camera, ComponentTransform3D& transform)
+void TrackerCameraSystem::init(ComponentTransform3D& transform)
 {
-    target_camera_ = camera;
-    target_transform_ = transform;
-
     position_ = transform.position;
     set_position(radius_, azimuth_, colatitude_);
 }
@@ -63,17 +60,14 @@ void TrackerCameraSystem::set_position(float radius, float azimuth, float colati
                  radius_ * std::sin(glm::radians(colatitude_)) * std::sin(glm::radians(azimuth_))};
 }
 
-void TrackerCameraSystem::update(const erwin::GameClock& /*clock*/)
+void TrackerCameraSystem::update(const erwin::GameClock& /*clock*/, ComponentCamera3D& camera, ComponentTransform3D& transform)
 {
     // Update camera projection
     if(dirty_frustum_)
-        target_camera_->get().set_projection(frustum_);
+        camera.set_projection(frustum_);
 
     if(!inputs_enabled_ && !dirty_frustum_)
         return;
-
-    ComponentCamera3D& camera = target_camera_->get();
-    ComponentTransform3D& transform = target_transform_->get();
 
     transform.position = position_;
     camera.view_matrix = glm::lookAt(position_, lookat_target_, glm::vec3(0.0f, 1.0f, 0.0f));

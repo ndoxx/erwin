@@ -1,6 +1,7 @@
 #pragma once
 
 #include "erwin.h"
+#include "input/freefly_camera_system.h"
 
 using namespace erwin;
 
@@ -12,17 +13,24 @@ public:
 	LayerTest();
 	~LayerTest() = default;
 
+	void setup_camera();
 	virtual void on_imgui_render() override;
-	virtual void on_attach() override;
-	virtual void on_detach() override;
 
 protected:
-	virtual void on_update(GameClock& clock) override;
-	virtual void on_render() override;
-	virtual bool on_event(const MouseButtonEvent& event) override;
-	virtual bool on_event(const WindowResizeEvent& event) override;
-	virtual bool on_event(const MouseScrollEvent& event) override;
+    virtual void on_attach() override;
+    virtual void on_detach() override;
+    virtual void on_update(erwin::GameClock& clock) override;
+    virtual void on_render() override;
+    virtual void on_commit() override;
+
+    bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
+    bool on_mouse_moved_event(const erwin::MouseMovedEvent& event);
+    bool on_window_resize_event(const erwin::WindowResizeEvent& event);
+    bool on_window_moved_event(const erwin::WindowMovedEvent& event);
+    bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
+    bool on_keyboard_event(const erwin::KeyboardEvent& event);
 
 private:
-	std::vector<std::future<erwin::PixelData>> futures_;
+	glm::vec4 bkg_color_;
+    erwin::FreeflyCameraSystem camera_controller_;
 };

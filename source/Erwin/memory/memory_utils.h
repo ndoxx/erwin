@@ -36,9 +36,9 @@ namespace debug
 struct AreaItem
 {
 	std::string name;
-	void* begin;
-	void* end;
-	std::size_t size;
+	void* begin = nullptr;
+	void* end = nullptr;
+	std::size_t size = 0;
 };
 
 } // namespace debug

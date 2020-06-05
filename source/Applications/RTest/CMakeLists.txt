@@ -1,8 +1,10 @@
 add_executable(rtest)
+
+file(GLOB_RECURSE SRC_RTEST "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+
 target_sources(rtest
     PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}/source/rtest_app.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/source/layer_test.cpp"
+      ${SRC_RTEST}
     )
 target_include_directories(rtest
     PRIVATE

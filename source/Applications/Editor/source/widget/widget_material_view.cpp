@@ -1,5 +1,4 @@
 #include "widget/widget_material_view.h"
-#include "asset/asset_manager.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "render/handles.h"
@@ -32,7 +31,7 @@ current_index_(0)
     auto& scene = SceneManager::create_scene<MaterialEditorScene>("material_editor_scene"_h);
 	scene.load();
 
-	camera_controller_.init(scene.camera_, scene.camera_transform_);
+	camera_controller_.init(scene.camera_transform_);
 	camera_controller_.set_frustum_parameters({1280.f/1024.f, 60.f, 0.1f, 100.f});
 	camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
 }
@@ -44,9 +43,8 @@ MaterialViewWidget::~MaterialViewWidget()
 
 void MaterialViewWidget::on_update(const GameClock& clock)
 {
-    camera_controller_.update(clock);
-
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    camera_controller_.update(clock, scene.camera_, scene.camera_transform_);
 
     Renderer3D::update_camera(scene.camera_, scene.camera_transform_);
     Renderer3D::update_light(scene.directional_light_);

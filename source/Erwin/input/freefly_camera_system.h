@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include "entity/component_camera.h"
 #include "entity/component_transform.h"
 #include "core/game_clock.h"
@@ -22,16 +21,16 @@ public:
 	};
 
 	FreeflyCameraSystem();
-	void init(ComponentCamera3D& camera, ComponentTransform3D& transform);
+	void init(ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
-	void update(const erwin::GameClock& clock);
+	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 
-	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
-	bool on_window_moved_event(const erwin::WindowMovedEvent& event);
-	bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
-	bool on_mouse_moved_event(const erwin::MouseMovedEvent& event);
-	bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
-	bool on_keyboard_event(const erwin::KeyboardEvent& event);
+	bool on_window_resize_event(const WindowResizeEvent& event);
+	bool on_window_moved_event(const WindowMovedEvent& event);
+	bool on_mouse_scroll_event(const MouseScrollEvent& event);
+	bool on_mouse_moved_event(const MouseMovedEvent& event);
+	bool on_mouse_button_event(const MouseButtonEvent& event);
+	bool on_keyboard_event(const KeyboardEvent& event);
 
 	inline float get_aspect_ratio() const { return frustum_parameters_.aspect_ratio; }
 	inline float get_fovy() const         { return frustum_parameters_.fovy; }
@@ -44,9 +43,6 @@ private:
 private:
 	FrustumParameters frustum_parameters_;
 	ComponentCamera3D::Frustum3D frustum_;
-
-	std::optional<std::reference_wrapper<ComponentCamera3D>> target_camera_;
-	std::optional<std::reference_wrapper<ComponentTransform3D>> target_transform_;
 
 	float translation_speed_;
 	float rotation_speed_;
