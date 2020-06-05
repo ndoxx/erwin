@@ -20,7 +20,6 @@ static struct
 {
     ResourceManager<MaterialLoader> material_manager;
     ResourceManager<TextureLoader> texture_manager;
-    // TextureManager texture_manager;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
