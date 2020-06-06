@@ -5,8 +5,6 @@ namespace fs = std::filesystem;
 
 namespace erwin
 {
-namespace experimental
-{
 
 struct AssetMetaData
 {
@@ -23,5 +21,4 @@ struct AssetMetaData
     AssetType type;
 };
 
-} // namespace experimental
 } // namespace erwin

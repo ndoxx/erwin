@@ -15,8 +15,6 @@ namespace fs = std::filesystem;
 
 namespace erwin
 {
-namespace experimental
-{
 
 template <typename LoaderT>
 class ResourceManager
@@ -158,5 +156,4 @@ void ResourceManager<LoaderT>::sync_work()
     }
 }
 
-} // namespace experimental
 } // namespace erwin

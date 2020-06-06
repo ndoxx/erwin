@@ -182,7 +182,7 @@ static void flush_batch(Batch2D& batch)
 	}
 }
 
-void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas_handle, hash_t tile, const glm::vec4& tint)
+/*void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas_handle, hash_t tile, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;
@@ -202,7 +202,7 @@ void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHa
 	glm::vec4 uvs = atlas.get_uv(tile);
 	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale), {}};
 	++batch.count;
-}
+}*/
 
 void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint)
 {
@@ -224,7 +224,7 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 	++batch.count;
 }
 
-void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle, float x, float y, float scale, const glm::vec4& tint)
+/*void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle, float x, float y, float scale, const glm::vec4& tint)
 {
 	// Ad hoc rescaling of character advance parameter
 	constexpr float k_adv_factor = 1.05f;
@@ -273,7 +273,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
 	}
-}
+}*/
 
 
 void Renderer2D::flush()

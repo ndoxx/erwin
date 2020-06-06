@@ -35,8 +35,8 @@ bool Scene::on_load()
     {
         Material mat_sun;
         mat_sun.archetype = "Sun"_h;
-        mat_sun.shader = experimental::AssetManager::load_shader("shaders/forward_sun.glsl");
-        mat_sun.ubo = experimental::AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
+        mat_sun.shader = AssetManager::load_shader("shaders/forward_sun.glsl");
+        mat_sun.ubo = AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
         mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
         Renderer3D::register_shader(mat_sun.shader);
         Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
@@ -64,12 +64,12 @@ bool Scene::on_load()
     // * Load all resources asynchronously
     std::vector<hash_t> future_materials =
     {
-        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/greasyMetal.tom"),
-        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/scuffedPlastic.tom"),
-        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/paintPeelingConcrete.tom"),
-        experimental::AssetManager::load_material_async(wfs::get_asset_dir() / "materials/dirtyWickerWeave.tom"),
+        AssetManager::load_material_async(wfs::get_asset_dir() / "materials/greasyMetal.tom"),
+        AssetManager::load_material_async(wfs::get_asset_dir() / "materials/scuffedPlastic.tom"),
+        AssetManager::load_material_async(wfs::get_asset_dir() / "materials/paintPeelingConcrete.tom"),
+        AssetManager::load_material_async(wfs::get_asset_dir() / "materials/dirtyWickerWeave.tom"),
     };
-    hash_t future_hdr_tex = experimental::AssetManager::load_texture_async(wfs::get_asset_dir() / "hdr/small_cathedral_2k.hdr");
+    hash_t future_hdr_tex = AssetManager::load_texture_async(wfs::get_asset_dir() / "hdr/small_cathedral_2k.hdr");
 
     // * Declare entities dependencies on future resources during entity creation
     for(size_t ii=0; ii<future_materials.size(); ++ii)
@@ -85,14 +85,14 @@ bool Scene::on_load()
             registry.assign<ComponentTransform3D>(ent, ctransform);
             registry.assign<ComponentMesh>(ent, cmesh);
 
-            experimental::AssetManager::on_material_ready(future_materials[ii], [this, ent=ent](const ComponentPBRMaterial& mat)
+            AssetManager::on_material_ready(future_materials[ii], [this, ent=ent](const ComponentPBRMaterial& mat)
             {
                 registry.assign<ComponentPBRMaterial>(ent, mat);
             });
         }
     }
     {
-        experimental::AssetManager::on_texture_ready(future_hdr_tex, [this](const auto& res)
+        AssetManager::on_texture_ready(future_hdr_tex, [this](const auto& res)
         {
             TextureHandle handle = res.first;
             const Texture2DDescriptor& desc = res.second;
@@ -107,7 +107,7 @@ bool Scene::on_load()
 
 
     // * Launch async loading operations
-    experimental::AssetManager::launch_async_tasks();
+    AssetManager::launch_async_tasks();
 
 	return true;
 }

@@ -5,11 +5,9 @@
 #include "filesystem/tom_file.h"
 #include "entity/component_PBR_material.h"
 
-#include "asset/asset_manager_exp.h"
+#include "asset/asset_manager.h"
 
 namespace erwin
-{
-namespace experimental
 {
 
 // Helper func to choose the internal format as a function of color channels, compression options and srgb
@@ -51,7 +49,7 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
 
 AssetMetaData MaterialLoader::build_meta_data(const fs::path& file_path)
 {
-    W_ASSERT(fs::exists(file_path), "File does not exist.");
+    W_ASSERT_FMT(fs::exists(file_path), "File does not exist: %s", file_path.string().c_str());
     W_ASSERT(!file_path.extension().string().compare(".tom"), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::MaterialTOM};
@@ -59,6 +57,9 @@ AssetMetaData MaterialLoader::build_meta_data(const fs::path& file_path)
 
 tom::TOMDescriptor MaterialLoader::load_from_file(const AssetMetaData& meta_data)
 {
+    DLOG("asset",1) << "Loading TOM file:" << std::endl;
+    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+
     tom::TOMDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
     tom::read_tom(descriptor);
@@ -121,5 +122,4 @@ ComponentPBRMaterial MaterialLoader::managed_resource(const ComponentPBRMaterial
 	return resource;
 }
 
-} // namespace experimental
 } // namespace erwin

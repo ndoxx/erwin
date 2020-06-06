@@ -5,8 +5,6 @@
 
 namespace erwin
 {
-namespace experimental
-{
 
 AssetMetaData TextureLoader::build_meta_data(const fs::path& file_path)
 {
@@ -89,5 +87,4 @@ TextureLoader::Resource TextureLoader::managed_resource(TextureHandle handle, co
 	return {handle, descriptor};
 }
 
-} // namespace experimental
 } // namespace erwin

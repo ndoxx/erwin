@@ -11,9 +11,6 @@ namespace tom
 struct  TOMDescriptor;
 }
 
-namespace experimental
-{
-
 class MaterialLoader
 {
 public:
@@ -27,5 +24,4 @@ public:
     static ComponentPBRMaterial managed_resource(const ComponentPBRMaterial&, const tom::TOMDescriptor&);
 };
 
-} // namespace experimental
 } // namespace erwin

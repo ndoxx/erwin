@@ -8,9 +8,6 @@
 namespace erwin
 {
 
-namespace experimental
-{
-
 class TextureLoader
 {
 public:
@@ -24,5 +21,4 @@ public:
     static Resource managed_resource(TextureHandle, const Texture2DDescriptor&);
 };
 
-} // namespace experimental
 } // namespace erwin

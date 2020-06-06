@@ -190,9 +190,6 @@ bool Application::init()
         Renderer2D::init();
         Renderer3D::init();
         PostProcessingRenderer::init();
-
-        // Initialize asset manager
-        AssetManager::init(s_storage.client_area);
     }
 
     {
@@ -235,10 +232,6 @@ void Application::shutdown()
     {
         W_PROFILE_SCOPE("Application unloading")
         on_unload();
-    }
-    {
-        W_PROFILE_SCOPE("Asset Manager shutdown")
-        AssetManager::shutdown();
     }
     {
         W_PROFILE_SCOPE("Renderer shutdown")
@@ -322,6 +315,9 @@ void Application::run()
 
         // Frame config
         Renderer::set_host_window_size(window_->get_width(), window_->get_height());
+
+        // Asset manager sync work
+        AssetManager::update();
 
         // --- RENDER PHASE ---
         // For each layer, render

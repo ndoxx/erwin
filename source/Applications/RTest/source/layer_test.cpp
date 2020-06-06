@@ -7,7 +7,6 @@
 #include "erwin.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
-#include "asset/asset_manager_exp.h"
 #include "scene.h"
 
 
@@ -100,8 +99,6 @@ void LayerTest::on_render()
     auto& scene = scn::current<Scene>();
     if(!scene.is_loaded())
         return;
-
-    experimental::AssetManager::update();
 
     // Draw scene geometry
     {
