@@ -4,10 +4,11 @@
 #include "render/renderer.h"
 #include "utils/future.hpp"
 
+#include "asset/atlas_loader.h"
 #include "asset/material_loader.h"
-#include "asset/texture_loader.h"
 #include "asset/resource_manager.hpp"
 #include "asset/special_texture_factory.h"
+#include "asset/texture_loader.h"
 
 #include <chrono>
 #include <thread>
@@ -19,6 +20,8 @@ static struct
 {
     ResourceManager<MaterialLoader> material_manager;
     ResourceManager<TextureLoader> texture_manager;
+    ResourceManager<FontAtlasLoader> font_atlas_manager;
+    ResourceManager<TextureAtlasLoader> texture_atlas_manager;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -64,18 +67,6 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
     return handle;
 }
 
-const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
-{
-    return s_storage.material_manager.load(file_path);
-}
-
-void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
-
-std::pair<TextureHandle, Texture2DDescriptor> AssetManager::load_texture(const fs::path& file_path)
-{
-    return s_storage.texture_manager.load(file_path);
-}
-
 TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
 {
     W_PROFILE_FUNCTION()
@@ -87,19 +78,32 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
         return it->second;
 
     // Create checkerboard pattern
-    uint8_t* buffer = new uint8_t[size_px*size_px*3];
+    uint8_t* buffer = new uint8_t[size_px * size_px * 3];
     switch(type)
     {
-        case "dashed"_h:       spf::dashed_texture(buffer, size_px); break;
-        case "grid"_h:         spf::grid_texture(buffer, size_px); break;
-        case "checkerboard"_h: spf::checkerboard_texture(buffer, size_px); break;
-        case "white"_h:        spf::colored_texture(buffer, size_px, 255, 255, 255); break;
-        case "red"_h:          spf::colored_texture(buffer, size_px, 255, 0, 0); break;
-        default:               spf::checkerboard_texture(buffer, size_px); hname = "checkerboard"_h; break;
+    case "dashed"_h:
+        spf::dashed_texture(buffer, size_px);
+        break;
+    case "grid"_h:
+        spf::grid_texture(buffer, size_px);
+        break;
+    case "checkerboard"_h:
+        spf::checkerboard_texture(buffer, size_px);
+        break;
+    case "white"_h:
+        spf::colored_texture(buffer, size_px, 255, 255, 255);
+        break;
+    case "red"_h:
+        spf::colored_texture(buffer, size_px, 255, 0, 0);
+        break;
+    default:
+        spf::checkerboard_texture(buffer, size_px);
+        hname = "checkerboard"_h;
+        break;
     }
 
     Texture2DDescriptor descriptor;
-    descriptor.width  = size_px;
+    descriptor.width = size_px;
     descriptor.height = size_px;
     descriptor.mips = 0;
     descriptor.data = buffer;
@@ -112,14 +116,39 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
     return tex;
 }
 
+
+const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
+{
+    return s_storage.material_manager.load(file_path);
+}
+
+const std::pair<TextureHandle, Texture2DDescriptor>& AssetManager::load_texture(const fs::path& file_path)
+{
+    return s_storage.texture_manager.load(file_path);
+}
+
+const TextureAtlas& AssetManager::load_texture_atlas(const fs::path& file_path)
+{
+    return s_storage.texture_atlas_manager.load(file_path);
+}
+
+const FontAtlas& AssetManager::load_font_atlas(const fs::path& file_path)
+{
+    return s_storage.font_atlas_manager.load(file_path);
+}
+
+void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
+
+void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.release(hname); }
+
+void AssetManager::release_texture_atlas(hash_t hname) { s_storage.texture_atlas_manager.release(hname); }
+
+void AssetManager::release_font_atlas(hash_t hname) { s_storage.font_atlas_manager.release(hname); }
+
+
 hash_t AssetManager::load_material_async(const fs::path& file_path)
 {
     return s_storage.material_manager.load_async(file_path);
-}
-
-void AssetManager::on_material_ready(hash_t future_mat, std::function<void(const ComponentPBRMaterial&)> then)
-{
-    s_storage.material_manager.on_ready(future_mat, then);
 }
 
 hash_t AssetManager::load_texture_async(const fs::path& file_path)
@@ -127,78 +156,58 @@ hash_t AssetManager::load_texture_async(const fs::path& file_path)
     return s_storage.texture_manager.load_async(file_path);
 }
 
-void AssetManager::on_texture_ready(hash_t future_texture,
+hash_t AssetManager::load_texture_atlas_async(const fs::path& file_path)
+{
+    return s_storage.texture_atlas_manager.load_async(file_path);
+}
+
+hash_t AssetManager::load_font_atlas_async(const fs::path& file_path)
+{
+    return s_storage.font_atlas_manager.load_async(file_path);
+}
+
+
+void AssetManager::on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then)
+{
+    s_storage.material_manager.on_ready(future_res, then);
+}
+
+void AssetManager::on_texture_ready(hash_t future_res,
                                     std::function<void(const std::pair<TextureHandle, Texture2DDescriptor>&)> then)
 {
-    s_storage.texture_manager.on_ready(future_texture, then);
+    s_storage.texture_manager.on_ready(future_res, then);
 }
+
+void AssetManager::on_texture_atlas_ready(hash_t future_res, std::function<void(const TextureAtlas&)> then)
+{
+    s_storage.texture_atlas_manager.on_ready(future_res, then);
+}
+
+void AssetManager::on_font_atlas_ready(hash_t future_res, std::function<void(const FontAtlas&)> then)
+{
+    s_storage.font_atlas_manager.on_ready(future_res, then);
+}
+
 
 void AssetManager::launch_async_tasks()
 {
     // TMP: single thread loading all resources
     std::thread task([&]() {
-	    s_storage.material_manager.async_work();
-	    s_storage.texture_manager.async_work();
+        s_storage.font_atlas_manager.async_work();
+        s_storage.material_manager.async_work();
+        s_storage.texture_manager.async_work();
     });
     task.detach();
 }
 
 void AssetManager::update()
 {
+    s_storage.font_atlas_manager.sync_work();
     s_storage.texture_manager.sync_work();
     s_storage.material_manager.sync_work();
 }
 
 /*
-
-TextureAtlasHandle AssetManager::load_texture_atlas(const fs::path& filepath)
-{
-    W_PROFILE_FUNCTION()
-
-    hash_t hname = H_(filepath.string().c_str());
-    auto it = s_storage.atlas_cache_.find(hname);
-    if(it!=s_storage.atlas_cache_.end())
-        return it->second;
-
-    TextureAtlasHandle handle = TextureAtlasHandle::acquire();
-    DLOGN("asset") << "[AssetManager] Creating new texture atlas:" << std::endl;
-    DLOG("asset",1) << "TextureAtlasHandle: " << WCC('v') << handle.index << std::endl;
-    DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
-
-    TextureAtlas* atlas = W_NEW(TextureAtlas, s_storage.texture_atlas_pool_);
-    atlas->load(filepath);
-
-    // Register atlas
-    Renderer2D::create_batch(atlas->texture); // TODO: this should be conditional
-    s_storage.texture_atlases_[handle.index] = atlas;
-    s_storage.atlas_cache_.insert({hname, handle});
-
-    return handle;
-}
-
-FontAtlasHandle AssetManager::load_font_atlas(const fs::path& filepath)
-{
-    W_PROFILE_FUNCTION()
-
-    hash_t hname = H_(filepath.string().c_str());
-    auto it = s_storage.font_cache_.find(hname);
-    if(it!=s_storage.font_cache_.end())
-        return it->second;
-
-    FontAtlasHandle handle = FontAtlasHandle::acquire();
-    DLOGN("asset") << "[AssetManager] Creating new font atlas:" << std::endl;
-    DLOG("asset",1) << "FontAtlasHandle: " << WCC('v') << handle.index << std::endl;
-    DLOG("asset",1) << WCC('p') << filepath << WCC(0) << std::endl;
-
-    FontAtlas* atlas = W_NEW(FontAtlas, s_storage.font_atlas_pool_);
-    atlas->load(filepath);
-
-    // Register atlas
-    s_storage.font_atlases_[handle.index] = atlas;
-    s_storage.font_cache_.insert({hname, handle});
-
-    return handle;
-}
 
 template <typename KeyT, typename HandleT>
 static void erase_by_value(std::map<KeyT, HandleT>& cache, HandleT handle)

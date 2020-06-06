@@ -14,6 +14,8 @@ struct AssetMetaData
         ImageFilePNG,
         ImageFileHDR,
         MaterialTOM,
+        TextureAtlasCAT,
+        FontAtlasCAT,
         Mesh
     };
 

@@ -2,7 +2,6 @@
 
 #include "render/handles.h"
 #include "render/render_state.h"
-#include "asset/handles.h"
 #include "asset/material.h"
 #include "glm/glm.hpp"
 
