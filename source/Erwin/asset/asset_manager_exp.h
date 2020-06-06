@@ -34,6 +34,9 @@ public:
     static void release_material(hash_t hname);
     // Load an image from file (or get from cache) and return a render handle to a texture created from image data
     static std::pair<TextureHandle, Texture2DDescriptor> load_texture(const fs::path& file_path);
+    // Proceduraly generated assets for the editor and debug purposes
+    // type can be "dashed"_h, "grid"_h, "checkerboard"_h, "white"_h or "red"_h
+    static TextureHandle create_debug_texture(hash_t type, uint32_t size_px);
 
     // * Asynchronous operations
     // Generate an async material loading task if material not in cache, return path string hash as a token

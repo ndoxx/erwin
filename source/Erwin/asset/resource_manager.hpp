@@ -9,7 +9,7 @@
 #include "filesystem/tom_file.h"
 #include "utils/promise_storage.hpp"
 #include "utils/future.hpp"
-#include "loader_common.h"
+#include "asset/loader_common.h"
 
 namespace fs = std::filesystem;
 
@@ -30,8 +30,8 @@ public:
     void on_ready(hash_t hname, std::function<void(const ManagedResource&)> then);
     void release(hash_t hname);
 
-    void launch_async_tasks();
-    void update();
+    void async_work();
+    void sync_work();
 
 private:
     struct FileLoadingTask
@@ -114,22 +114,18 @@ void ResourceManager<LoaderT>::release(hash_t hname)
 }
 
 template <typename LoaderT>
-void ResourceManager<LoaderT>::launch_async_tasks()
+void ResourceManager<LoaderT>::async_work()
 {
-    // TMP: single thread loading all resources
-    std::thread task([&]() {
-        for(auto&& task : file_loading_tasks_)
-        {
-            auto descriptor = LoaderT::load_from_file(task.meta_data);
-            promises_.fulfill(task.token, std::move(descriptor));
-        }
-        file_loading_tasks_.clear();
-    });
-    task.detach();
+    for(auto&& task : file_loading_tasks_)
+    {
+        auto descriptor = LoaderT::load_from_file(task.meta_data);
+        promises_.fulfill(task.token, std::move(descriptor));
+    }
+    file_loading_tasks_.clear();
 }
 
 template <typename LoaderT>
-void ResourceManager<LoaderT>::update()
+void ResourceManager<LoaderT>::sync_work()
 {
     W_PROFILE_FUNCTION()
 

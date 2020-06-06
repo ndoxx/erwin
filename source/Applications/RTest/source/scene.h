@@ -6,7 +6,7 @@
 #include "entity/reflection.h"
 
 #include "level/scene_manager.h"
-#include "asset_manager_exp.h"
+#include "asset/asset_manager_exp.h"
 
 namespace fs = std::filesystem;
 

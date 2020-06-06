@@ -5,7 +5,7 @@
 #include "filesystem/tom_file.h"
 #include "entity/component_PBR_material.h"
 
-#include "asset_manager_exp.h"
+#include "asset/asset_manager_exp.h"
 
 namespace erwin
 {
@@ -112,7 +112,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
 
 void MaterialLoader::destroy(ComponentPBRMaterial& resource)
 {
-    for(size_t ii = 0; ii < resource.material.texture_group.texture_count; ++ii)
+    for(uint32_t ii = 0; ii < resource.material.texture_group.texture_count; ++ii)
         Renderer::destroy(resource.material.texture_group[ii]);
 }
 

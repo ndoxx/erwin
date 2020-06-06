@@ -1,4 +1,4 @@
-#include "texture_loader.h"
+#include "asset/texture_loader.h"
 #include "filesystem/image_file.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"

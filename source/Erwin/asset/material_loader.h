@@ -1,6 +1,6 @@
 #pragma once
 
-#include "loader_common.h"
+#include "asset/loader_common.h"
 
 namespace erwin
 {

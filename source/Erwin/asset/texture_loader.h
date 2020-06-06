@@ -3,7 +3,7 @@
 #include "render/handles.h"
 #include "render/texture_common.h"
 
-#include "loader_common.h"
+#include "asset/loader_common.h"
 
 namespace erwin
 {
