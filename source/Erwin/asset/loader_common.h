@@ -5,8 +5,6 @@ namespace fs = std::filesystem;
 
 namespace erwin
 {
-namespace experimental
-{
 
 struct AssetMetaData
 {
@@ -15,7 +13,10 @@ struct AssetMetaData
         None,
         ImageFilePNG,
         ImageFileHDR,
+        EnvironmentHDR,
         MaterialTOM,
+        TextureAtlasCAT,
+        FontAtlasCAT,
         Mesh
     };
 
@@ -23,5 +24,4 @@ struct AssetMetaData
     AssetType type;
 };
 
-} // namespace experimental
 } // namespace erwin

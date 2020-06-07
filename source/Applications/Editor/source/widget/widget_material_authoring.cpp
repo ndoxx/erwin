@@ -188,8 +188,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
     if(current_composition_->has_map(tm_type))
         clear_texture_map(tm_type);
 
-    Texture2DDescriptor desc;
-    TextureHandle tex = AssetManager::load_image(filepath, desc);
+    auto&& [tex, desc] = AssetManager::load_texture(filepath);
     current_composition_->set_map(tm_type, tex);
     current_composition_->width = desc.width;
     current_composition_->height = desc.height;

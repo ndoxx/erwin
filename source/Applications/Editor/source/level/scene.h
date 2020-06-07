@@ -4,7 +4,7 @@
 #include <queue>
 
 #include "entity/reflection.h"
-#include "render/handles.h"
+#include "asset/environment.h"
 
 #include "level/scene_manager.h"
 
@@ -31,6 +31,13 @@ public:
 	void load_hdr_environment(const fs::path& hdr_file);
 
 	void add_entity(erwin::EntityID entity, const std::string& name, const char* icon = nullptr);
+	inline erwin::EntityID create_entity(const std::string& name, const char* icon = nullptr)
+	{
+		auto ent = registry.create();
+		add_entity(ent, name, icon);
+		return ent;
+	}
+
 	void select(erwin::EntityID entity);
 	void drop_selection();
 
@@ -42,12 +49,7 @@ public:
 	erwin::EntityID camera = erwin::k_invalid_entity_id;
 	std::vector<erwin::EntityID> entities;
 
-	struct Environment
-	{
-	    erwin::CubemapHandle environment_map;
-	    erwin::CubemapHandle diffuse_irradiance_map;
-	    erwin::CubemapHandle prefiltered_env_map;
-	} environment;
+	erwin::Environment environment;
 
 	entt::registry registry;
 

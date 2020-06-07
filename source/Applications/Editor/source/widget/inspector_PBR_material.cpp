@@ -20,7 +20,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 
     editor::dialog::on_open("ChooseTomDlgKey", [&cmp](const fs::path& filepath)
     {
-        const ComponentPBRMaterial& other = AssetManager::load_PBR_material(filepath);
+        const ComponentPBRMaterial& other = AssetManager::load_material(filepath);
         // Copy material
         cmp->material = other.material;
         cmp->material_data = other.material_data;

@@ -2,7 +2,6 @@
 
 #include "render/handles.h"
 #include "render/render_state.h"
-#include "asset/handles.h"
 #include "asset/material.h"
 #include "glm/glm.hpp"
 
@@ -12,6 +11,7 @@ namespace erwin
 struct ComponentCamera3D;
 struct ComponentTransform3D;
 struct ComponentDirectionalLight;
+struct Environment;
 
 // 3D renderer front-end, handles forward and deferred rendering
 class Renderer3D
@@ -22,7 +22,7 @@ public:
 	static void update_light(const ComponentDirectionalLight& dir_light);
 	static void update_frame_data();
 	// Set an irradiance cubemap for PBR
-	static void set_environment(CubemapHandle irradiance, CubemapHandle prefiltered);
+	static void set_environment(const Environment& environment);
 	// Enable/Disable IBL
 	static void enable_IBL(bool value);
 	// Set IBL ambient strength

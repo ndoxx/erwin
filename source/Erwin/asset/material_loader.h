@@ -1,6 +1,6 @@
 #pragma once
 
-#include "loader_common.h"
+#include "asset/loader_common.h"
 
 namespace erwin
 {
@@ -10,9 +10,6 @@ namespace tom
 {
 struct  TOMDescriptor;
 }
-
-namespace experimental
-{
 
 class MaterialLoader
 {
@@ -27,5 +24,4 @@ public:
     static ComponentPBRMaterial managed_resource(const ComponentPBRMaterial&, const tom::TOMDescriptor&);
 };
 
-} // namespace experimental
 } // namespace erwin
