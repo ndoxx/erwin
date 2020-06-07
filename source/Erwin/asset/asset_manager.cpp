@@ -5,11 +5,11 @@
 #include "utils/future.hpp"
 
 #include "asset/atlas_loader.h"
+#include "asset/environment_loader.h"
 #include "asset/material_loader.h"
 #include "asset/resource_manager.hpp"
-#include "asset/texture_loader.h"
-#include "asset/environment_loader.h"
 #include "asset/special_texture_factory.h"
+#include "asset/texture_loader.h"
 
 #include <chrono>
 #include <thread>
@@ -118,13 +118,12 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
     return tex;
 }
 
-
 const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
 {
     return s_storage.material_manager.load(file_path);
 }
 
-const std::pair<TextureHandle, Texture2DDescriptor>& AssetManager::load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options)
+const FreeTexture& AssetManager::load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options)
 {
     return s_storage.texture_manager.load(file_path, options);
 }
@@ -144,7 +143,6 @@ const Environment& AssetManager::load_environment(const fs::path& file_path)
     return s_storage.environment_manager.load(file_path);
 }
 
-
 void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
 
 void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.release(hname); }
@@ -154,7 +152,6 @@ void AssetManager::release_texture_atlas(hash_t hname) { s_storage.texture_atlas
 void AssetManager::release_font_atlas(hash_t hname) { s_storage.font_atlas_manager.release(hname); }
 
 void AssetManager::release_environment(hash_t hname) { s_storage.environment_manager.release(hname); }
-
 
 hash_t AssetManager::load_material_async(const fs::path& file_path)
 {
@@ -181,14 +178,12 @@ hash_t AssetManager::load_environment_async(const fs::path& file_path)
     return s_storage.environment_manager.load_async(file_path);
 }
 
-
 void AssetManager::on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then)
 {
     s_storage.material_manager.on_ready(future_res, then);
 }
 
-void AssetManager::on_texture_ready(hash_t future_res,
-                                    std::function<void(const std::pair<TextureHandle, Texture2DDescriptor>&)> then)
+void AssetManager::on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then)
 {
     s_storage.texture_manager.on_ready(future_res, then);
 }
@@ -207,7 +202,6 @@ void AssetManager::on_environment_ready(hash_t future_res, std::function<void(co
 {
     s_storage.environment_manager.on_ready(future_res, then);
 }
-
 
 void AssetManager::launch_async_tasks()
 {

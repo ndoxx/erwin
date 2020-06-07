@@ -4,27 +4,25 @@
 #include <functional>
 #include <future>
 
+#include "asset/loader_common.h"
 #include "core/core.h"
 #include "filesystem/image_file.h"
 #include "filesystem/tom_file.h"
-#include "utils/promise_storage.hpp"
 #include "utils/future.hpp"
-#include "asset/loader_common.h"
+#include "utils/promise_storage.hpp"
 
 namespace fs = std::filesystem;
 
 namespace erwin
 {
 
-template <typename LoaderT>
-class ResourceManager
+template <typename LoaderT> class ResourceManager
 {
 public:
-	using ManagedResource = typename LoaderT::Resource;
-	using DataDescriptor  = typename LoaderT::DataDescriptor;
+    using ManagedResource = typename LoaderT::Resource;
+    using DataDescriptor = typename LoaderT::DataDescriptor;
 
-    template <typename... ArgsT>
-    const ManagedResource& load(const fs::path& file_path, ArgsT&&... args)
+    template <typename... ArgsT> const ManagedResource& load(const fs::path& file_path, ArgsT&&... args)
     {
         W_PROFILE_FUNCTION()
 
@@ -37,7 +35,7 @@ public:
             // Parameter pack allows to pass loading options to the loader, this is only useful for pure image loading
             // as image files don't encapsulate the relevant engine data
             auto descriptor = LoaderT::load_from_file(meta_data, std::forward<ArgsT>(args)...);
-            managed_resources_[hname] = std::move(LoaderT::managed_resource(LoaderT::upload(descriptor), descriptor));
+            managed_resources_[hname] = std::move(LoaderT::upload(descriptor));
             return managed_resources_[hname];
         }
         else
@@ -79,8 +77,7 @@ private:
     std::vector<AfterUploadTask> after_upload_tasks_;
 };
 
-template <typename LoaderT>
-hash_t ResourceManager<LoaderT>::load_async(const fs::path& file_path)
+template <typename LoaderT> hash_t ResourceManager<LoaderT>::load_async(const fs::path& file_path)
 {
     W_PROFILE_FUNCTION()
 
@@ -103,18 +100,16 @@ void ResourceManager<LoaderT>::on_ready(hash_t hname, std::function<void(const M
     after_upload_tasks_.push_back(AfterUploadTask{hname, then});
 }
 
-template <typename LoaderT>
-void ResourceManager<LoaderT>::release(hash_t hname)
+template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
 {
     W_PROFILE_FUNCTION()
 
     auto findit = managed_resources_.find(hname);
     if(findit != managed_resources_.end())
-	    LoaderT::destroy(findit->second);
+        LoaderT::destroy(findit->second);
 }
 
-template <typename LoaderT>
-void ResourceManager<LoaderT>::async_work()
+template <typename LoaderT> void ResourceManager<LoaderT>::async_work()
 {
     for(auto&& task : file_loading_tasks_)
     {
@@ -124,8 +119,7 @@ void ResourceManager<LoaderT>::async_work()
     file_loading_tasks_.clear();
 }
 
-template <typename LoaderT>
-void ResourceManager<LoaderT>::sync_work()
+template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
 {
     W_PROFILE_FUNCTION()
 
@@ -137,7 +131,7 @@ void ResourceManager<LoaderT>::sync_work()
             auto&& descriptor = task.future_desc.get();
 
             hash_t hname = H_(task.meta_data.file_path.string().c_str());
-            managed_resources_[hname] = std::move(LoaderT::managed_resource(LoaderT::upload(descriptor), descriptor));
+            managed_resources_[hname] = std::move(LoaderT::upload(descriptor));
             upload_tasks_.erase(it);
         }
         else

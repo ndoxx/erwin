@@ -17,8 +17,12 @@ AssetMetaData TextureLoader::build_meta_data(const fs::path& file_path)
     return {file_path, AssetMetaData::AssetType::ImageFilePNG};
 }
 
-Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data, std::optional<Texture2DDescriptor> options)
+Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data,
+                                                  std::optional<Texture2DDescriptor> options)
 {
+    DLOG("asset", 1) << "Loading image file:" << std::endl;
+    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+
     Texture2DDescriptor descriptor;
 
     if(options.has_value())
@@ -38,23 +42,15 @@ Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data
     descriptor.height = pngfile.height;
     descriptor.data = pngfile.data;
     descriptor.flags = TF_MUST_FREE; // Let the renderer free the resources once the texture is loaded
-        
+
     return descriptor;
 }
 
-TextureHandle TextureLoader::upload(const Texture2DDescriptor& descriptor)
+FreeTexture TextureLoader::upload(const Texture2DDescriptor& descriptor)
 {
-    return Renderer::create_texture_2D(descriptor);
+    return {Renderer::create_texture_2D(descriptor), descriptor.width, descriptor.height};
 }
 
-void TextureLoader::destroy(Resource& resource)
-{
-	Renderer::destroy(resource.first);
-}
-
-TextureLoader::Resource TextureLoader::managed_resource(TextureHandle handle, const Texture2DDescriptor& descriptor)
-{
-	return {handle, descriptor};
-}
+void TextureLoader::destroy(Resource& resource) { Renderer::destroy(resource.handle); }
 
 } // namespace erwin

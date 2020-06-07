@@ -80,11 +80,6 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor)
 
 void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(resource.texture); }
 
-TextureAtlas TextureAtlasLoader::managed_resource(const TextureAtlas& resource, const cat::CATDescriptor&)
-{
-    return resource;
-}
-
 AssetMetaData FontAtlasLoader::build_meta_data(const fs::path& file_path)
 {
     W_ASSERT_FMT(fs::exists(file_path), "File does not exist: %s", file_path.string().c_str());
@@ -159,7 +154,5 @@ FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor)
 }
 
 void FontAtlasLoader::destroy(FontAtlas& resource) { Renderer::destroy(resource.texture); }
-
-FontAtlas FontAtlasLoader::managed_resource(const FontAtlas& resource, const cat::CATDescriptor&) { return resource; }
 
 } // namespace erwin

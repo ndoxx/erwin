@@ -3,6 +3,7 @@
 #include "render/renderer.h"
 #include "asset/material.h"
 #include "asset/environment.h"
+#include "asset/texture.h"
 #include "asset/asset_manager.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
@@ -129,8 +130,8 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	auto&& [handle, desc] = AssetManager::load_texture(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
-	s_storage.BRDF_integration_map = handle;
+	const auto& freetex = AssetManager::load_texture(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
+	s_storage.BRDF_integration_map = freetex.handle;
 }
 
 void Renderer3D::shutdown()

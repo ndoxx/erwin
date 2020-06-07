@@ -1,9 +1,9 @@
 #include "material_loader.h"
+#include "entity/component_PBR_material.h"
+#include "filesystem/tom_file.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 #include "utils/future.hpp"
-#include "filesystem/tom_file.h"
-#include "entity/component_PBR_material.h"
 
 #include "asset/asset_manager.h"
 
@@ -57,7 +57,7 @@ AssetMetaData MaterialLoader::build_meta_data(const fs::path& file_path)
 
 tom::TOMDescriptor MaterialLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset",1) << "Loading TOM file:" << std::endl;
+    DLOG("asset", 1) << "Loading TOM file:" << std::endl;
     DLOGI << WCC('p') << meta_data.file_path << std::endl;
 
     tom::TOMDescriptor descriptor;
@@ -115,11 +115,6 @@ void MaterialLoader::destroy(ComponentPBRMaterial& resource)
 {
     for(uint32_t ii = 0; ii < resource.material.texture_group.texture_count; ++ii)
         Renderer::destroy(resource.material.texture_group[ii]);
-}
-
-ComponentPBRMaterial MaterialLoader::managed_resource(const ComponentPBRMaterial& resource, const tom::TOMDescriptor&)
-{
-	return resource;
 }
 
 } // namespace erwin

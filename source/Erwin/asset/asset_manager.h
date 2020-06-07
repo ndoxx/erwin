@@ -17,6 +17,7 @@ struct ComponentPBRMaterial;
 struct TextureAtlas;
 struct FontAtlas;
 struct Environment;
+struct FreeTexture;
 class AssetManager
 {
 public:
@@ -36,7 +37,7 @@ public:
     // Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
     static const ComponentPBRMaterial& load_material(const fs::path& file_path);
     // Load an image from file (or get from cache) and return a render handle to a texture created from image data
-    static const std::pair<TextureHandle, Texture2DDescriptor>& load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options = {});
+    static const FreeTexture& load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options = {});
     // Load a font as a texture atlas from file (or get from cache)
     static const TextureAtlas& load_texture_atlas(const fs::path& file_path);
     // Load a font as a texture atlas from file (or get from cache)
@@ -70,8 +71,7 @@ public:
     // Execute a callback when a material is ready
     static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
     // Execute a callback when a texture is ready
-    static void on_texture_ready(hash_t future_res,
-                                 std::function<void(const std::pair<TextureHandle, Texture2DDescriptor>&)> then);
+    static void on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then);
     // Execute a callback when a font atlas is ready
     static void on_texture_atlas_ready(hash_t future_res, std::function<void(const TextureAtlas&)> then);
     // Execute a callback when a font atlas is ready

@@ -17,9 +17,12 @@ AssetMetaData EnvironmentLoader::build_meta_data(const fs::path& file_path)
     return {file_path, AssetMetaData::AssetType::EnvironmentHDR};
 }
 
-EnvironmentLoader::DataDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_data)
+Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DataDescriptor descriptor;
+    DLOG("asset", 1) << "Loading environment:" << std::endl;
+    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+
+    Texture2DDescriptor descriptor;
 
     // Load HDR file
     img::HDRDescriptor hdrfile{meta_data.file_path};
@@ -44,9 +47,9 @@ EnvironmentLoader::DataDescriptor EnvironmentLoader::load_from_file(const AssetM
     return descriptor;
 }
 
-EnvironmentLoader::Resource EnvironmentLoader::upload(const DataDescriptor& descriptor)
+Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor)
 {
-	Environment environment;
+    Environment environment;
     TextureHandle handle = Renderer::create_texture_2D(descriptor);
     environment.size = descriptor.height;
     environment.environment_map = Renderer3D::generate_cubemap_hdr(handle, environment.size);
@@ -57,17 +60,11 @@ EnvironmentLoader::Resource EnvironmentLoader::upload(const DataDescriptor& desc
     return environment;
 }
 
-void EnvironmentLoader::destroy(Resource& environment)
+void EnvironmentLoader::destroy(Environment& environment)
 {
     Renderer::destroy(environment.environment_map);
     Renderer::destroy(environment.diffuse_irradiance_map);
     Renderer::destroy(environment.prefiltered_map);
 }
 
-EnvironmentLoader::Resource EnvironmentLoader::managed_resource(const Resource& resource, const DataDescriptor&)
-{
-	return resource;
-}
-
-
-}
+} // namespace erwin
