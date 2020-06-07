@@ -2,6 +2,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "asset/material.h"
+#include "asset/environment.h"
 #include "asset/asset_manager.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
@@ -69,15 +70,6 @@ struct PrefilterEnvmapData
 	glm::vec2 viewport_size;
 	float roughness;
 	float source_resolution;
-};
-
-struct Environment
-{
-	CubemapHandle irradiance;
-	CubemapHandle prefiltered_map;
-
-	bool IBL_enabled = true;
-	float ambient_strength = 0.15f;
 };
 
 static struct
@@ -205,10 +197,9 @@ void Renderer3D::update_frame_data()
 	Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
 }
 
-void Renderer3D::set_environment(CubemapHandle irradiance, CubemapHandle prefiltered)
+void Renderer3D::set_environment(const Environment& environment)
 {
-	s_storage.environment.irradiance = irradiance;
-	s_storage.environment.prefiltered_map = prefiltered;
+	s_storage.environment = environment;
 }
 
 void Renderer3D::enable_IBL(bool value)
@@ -432,10 +423,10 @@ void Renderer3D::end_deferred_pass()
 	for(uint32_t ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
 	// IBL
-	if(s_storage.environment.irradiance.is_valid())
+	if(s_storage.environment.diffuse_irradiance_map.is_valid())
 	{
 		dc.set_texture(s_storage.BRDF_integration_map, 4);
-		dc.set_cubemap(s_storage.environment.irradiance, 0);
+		dc.set_cubemap(s_storage.environment.diffuse_irradiance_map, 0);
 		dc.set_cubemap(s_storage.environment.prefiltered_map, 1);
 	}
 

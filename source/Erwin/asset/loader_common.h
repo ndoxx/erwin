@@ -13,6 +13,7 @@ struct AssetMetaData
         None,
         ImageFilePNG,
         ImageFileHDR,
+        EnvironmentHDR,
         MaterialTOM,
         TextureAtlasCAT,
         FontAtlasCAT,

@@ -126,12 +126,6 @@ void Scene::on_unload()
     selected_entity = k_invalid_entity_id;
     directional_light = k_invalid_entity_id;
     camera = k_invalid_entity_id;
-    Renderer::destroy(environment.environment_map);
-    Renderer::destroy(environment.diffuse_irradiance_map);
-    Renderer::destroy(environment.prefiltered_env_map);
-    environment.environment_map = {};
-    environment.diffuse_irradiance_map = {};
-    environment.prefiltered_env_map = {};
     registry.clear();
     entities.clear();
 }
@@ -157,16 +151,11 @@ void Scene::cleanup()
 
 void Scene::load_hdr_environment(const fs::path& hdr_file)
 {
-    hash_t future_hdr_tex = AssetManager::load_texture_async(hdr_file);
-    AssetManager::on_texture_ready(future_hdr_tex, [this](const auto& res)
+    hash_t future_env = AssetManager::load_environment_async(hdr_file);
+    AssetManager::on_environment_ready(future_env, [this](const Environment& env)
     {
-        TextureHandle handle = res.first;
-        const Texture2DDescriptor& desc = res.second;
-        environment.environment_map = Renderer3D::generate_cubemap_hdr(handle, desc.height);
-        Renderer::destroy(handle);
-        environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
-        environment.prefiltered_env_map = Renderer3D::generate_prefiltered_map(environment.environment_map, desc.height);
-        Renderer3D::set_environment(environment.diffuse_irradiance_map, environment.prefiltered_env_map);
+        environment = env;
+        Renderer3D::set_environment(environment);
         Renderer3D::enable_IBL(true);
     });
 }

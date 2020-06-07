@@ -7,8 +7,9 @@
 #include "asset/atlas_loader.h"
 #include "asset/material_loader.h"
 #include "asset/resource_manager.hpp"
-#include "asset/special_texture_factory.h"
 #include "asset/texture_loader.h"
+#include "asset/environment_loader.h"
+#include "asset/special_texture_factory.h"
 
 #include <chrono>
 #include <thread>
@@ -22,6 +23,7 @@ static struct
     ResourceManager<TextureLoader> texture_manager;
     ResourceManager<FontAtlasLoader> font_atlas_manager;
     ResourceManager<TextureAtlasLoader> texture_atlas_manager;
+    ResourceManager<EnvironmentLoader> environment_manager;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -137,6 +139,12 @@ const FontAtlas& AssetManager::load_font_atlas(const fs::path& file_path)
     return s_storage.font_atlas_manager.load(file_path);
 }
 
+const Environment& AssetManager::load_environment(const fs::path& file_path)
+{
+    return s_storage.environment_manager.load(file_path);
+}
+
+
 void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
 
 void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.release(hname); }
@@ -144,6 +152,8 @@ void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.rel
 void AssetManager::release_texture_atlas(hash_t hname) { s_storage.texture_atlas_manager.release(hname); }
 
 void AssetManager::release_font_atlas(hash_t hname) { s_storage.font_atlas_manager.release(hname); }
+
+void AssetManager::release_environment(hash_t hname) { s_storage.environment_manager.release(hname); }
 
 
 hash_t AssetManager::load_material_async(const fs::path& file_path)
@@ -164,6 +174,11 @@ hash_t AssetManager::load_texture_atlas_async(const fs::path& file_path)
 hash_t AssetManager::load_font_atlas_async(const fs::path& file_path)
 {
     return s_storage.font_atlas_manager.load_async(file_path);
+}
+
+hash_t AssetManager::load_environment_async(const fs::path& file_path)
+{
+    return s_storage.environment_manager.load_async(file_path);
 }
 
 
@@ -188,6 +203,11 @@ void AssetManager::on_font_atlas_ready(hash_t future_res, std::function<void(con
     s_storage.font_atlas_manager.on_ready(future_res, then);
 }
 
+void AssetManager::on_environment_ready(hash_t future_res, std::function<void(const Environment&)> then)
+{
+    s_storage.environment_manager.on_ready(future_res, then);
+}
+
 
 void AssetManager::launch_async_tasks()
 {
@@ -197,6 +217,7 @@ void AssetManager::launch_async_tasks()
         s_storage.font_atlas_manager.async_work();
         s_storage.material_manager.async_work();
         s_storage.texture_manager.async_work();
+        s_storage.environment_manager.async_work();
     });
     task.detach();
 }
@@ -206,6 +227,7 @@ void AssetManager::update()
     s_storage.texture_atlas_manager.sync_work();
     s_storage.font_atlas_manager.sync_work();
     s_storage.texture_manager.sync_work();
+    s_storage.environment_manager.sync_work();
     s_storage.material_manager.sync_work();
 }
 
