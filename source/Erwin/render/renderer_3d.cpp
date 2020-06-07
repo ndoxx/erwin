@@ -133,12 +133,11 @@ void Renderer3D::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.prefilter_env_map_shader, s_storage.prefilter_env_map_ubo);
 
 	// Load BRDF integration map
-	// TODO: Input desc was omitted after AssetManager rewrite. Restore this.
 	Texture2DDescriptor brdf_lut_desc;
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	auto&& [handle, desc] = AssetManager::load_texture(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png"/*, brdf_lut_desc*/);
+	auto&& [handle, desc] = AssetManager::load_texture(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
 	s_storage.BRDF_integration_map = handle;
 }
 

@@ -27,9 +27,13 @@ AssetMetaData TextureLoader::build_meta_data(const fs::path& file_path)
     return {file_path, asset_type};
 }
 
-Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data)
+Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data, std::optional<Texture2DDescriptor> options)
 {
     Texture2DDescriptor descriptor;
+
+    if(options.has_value())
+        descriptor = options.value();
+
     if(meta_data.type == AssetMetaData::AssetType::ImageFileHDR)
     {
         // Load HDR file

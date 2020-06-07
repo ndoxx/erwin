@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <future>
+#include <optional>
 
 namespace fs = std::filesystem;
 
@@ -34,7 +35,7 @@ public:
     // Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
     static const ComponentPBRMaterial& load_material(const fs::path& file_path);
     // Load an image from file (or get from cache) and return a render handle to a texture created from image data
-    static const std::pair<TextureHandle, Texture2DDescriptor>& load_texture(const fs::path& file_path);
+    static const std::pair<TextureHandle, Texture2DDescriptor>& load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options = {});
     // Load a font as a texture atlas from file (or get from cache)
     static const TextureAtlas& load_texture_atlas(const fs::path& file_path);
     // Load a font as a texture atlas from file (or get from cache)

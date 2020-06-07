@@ -23,8 +23,29 @@ public:
 	using ManagedResource = typename LoaderT::Resource;
 	using DataDescriptor  = typename LoaderT::DataDescriptor;
 
-    const ManagedResource& load(const fs::path& file_path);
+    template <typename... ArgsT>
+    const ManagedResource& load(const fs::path& file_path, ArgsT&&... args)
+    {
+        W_PROFILE_FUNCTION()
+
+        // Check cache first
+        hash_t hname = H_(file_path.string().c_str());
+        auto findit = managed_resources_.find(hname);
+        if(findit == managed_resources_.end())
+        {
+            AssetMetaData meta_data = LoaderT::build_meta_data(file_path);
+            // Parameter pack allows to pass loading options to the loader, this is only useful for pure image loading
+            // as image files don't encapsulate the relevant engine data
+            auto descriptor = LoaderT::load_from_file(meta_data, std::forward<ArgsT>(args)...);
+            managed_resources_[hname] = std::move(LoaderT::managed_resource(LoaderT::upload(descriptor), descriptor));
+            return managed_resources_[hname];
+        }
+        else
+            return findit->second;
+    }
+
     hash_t load_async(const fs::path& file_path);
+
     void on_ready(hash_t hname, std::function<void(const ManagedResource&)> then);
     void release(hash_t hname);
 
@@ -57,25 +78,6 @@ private:
     std::vector<UploadTask> upload_tasks_;
     std::vector<AfterUploadTask> after_upload_tasks_;
 };
-
-template <typename LoaderT>
-const typename ResourceManager<LoaderT>::ManagedResource& ResourceManager<LoaderT>::load(const fs::path& file_path)
-{
-    W_PROFILE_FUNCTION()
-
-    // Check cache first
-    hash_t hname = H_(file_path.string().c_str());
-    auto findit = managed_resources_.find(hname);
-    if(findit == managed_resources_.end())
-    {
-        AssetMetaData meta_data = LoaderT::build_meta_data(file_path);
-        auto descriptor = LoaderT::load_from_file(meta_data);
-        managed_resources_[hname] = std::move(LoaderT::managed_resource(LoaderT::upload(descriptor), descriptor));
-        return managed_resources_[hname];
-    }
-    else
-        return findit->second;
-}
 
 template <typename LoaderT>
 hash_t ResourceManager<LoaderT>::load_async(const fs::path& file_path)

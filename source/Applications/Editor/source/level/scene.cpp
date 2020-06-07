@@ -86,22 +86,26 @@ bool Scene::on_load()
             EntityID ent = create_entity(obj_name);
 
             ComponentMesh cmesh;
+            ComponentOBB cobb;
 
             float scale = 1.f;
             if(jj==0)
             {
                 cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+                cobb.init(CommonGeometry::get_extent("cube_pbr"_h));
                 scale = 1.5f;
             }
             else
             {
                 cmesh.set_vertex_array(CommonGeometry::get_vertex_array("icosphere_pbr"_h));
+                cobb.init(CommonGeometry::get_extent("icosphere_pbr"_h));
             }
 
             ComponentTransform3D ctransform = {{-4.f + float(ii)*2.5f, -1.f + float(jj)*2.f, 0.f}, {0.f, 0.f, 0.f}, scale};
 
             registry.assign<ComponentTransform3D>(ent, ctransform);
             registry.assign<ComponentMesh>(ent, cmesh);
+            registry.assign<ComponentOBB>(ent, cobb);
 
             AssetManager::on_material_ready(future_materials[ii], [this, ent=ent](const ComponentPBRMaterial& mat)
             {

@@ -122,9 +122,9 @@ const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_pat
     return s_storage.material_manager.load(file_path);
 }
 
-const std::pair<TextureHandle, Texture2DDescriptor>& AssetManager::load_texture(const fs::path& file_path)
+const std::pair<TextureHandle, Texture2DDescriptor>& AssetManager::load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options)
 {
-    return s_storage.texture_manager.load(file_path);
+    return s_storage.texture_manager.load(file_path, options);
 }
 
 const TextureAtlas& AssetManager::load_texture_atlas(const fs::path& file_path)
@@ -193,6 +193,7 @@ void AssetManager::launch_async_tasks()
 {
     // TMP: single thread loading all resources
     std::thread task([&]() {
+        s_storage.texture_atlas_manager.async_work();
         s_storage.font_atlas_manager.async_work();
         s_storage.material_manager.async_work();
         s_storage.texture_manager.async_work();
@@ -202,6 +203,7 @@ void AssetManager::launch_async_tasks()
 
 void AssetManager::update()
 {
+    s_storage.texture_atlas_manager.sync_work();
     s_storage.font_atlas_manager.sync_work();
     s_storage.texture_manager.sync_work();
     s_storage.material_manager.sync_work();
