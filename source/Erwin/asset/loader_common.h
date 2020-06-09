@@ -17,7 +17,7 @@ struct AssetMetaData
         MaterialTOM,
         TextureAtlasCAT,
         FontAtlasCAT,
-        Mesh
+        MeshWESH
     };
 
     fs::path file_path;

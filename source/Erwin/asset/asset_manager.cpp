@@ -7,6 +7,7 @@
 #include "asset/atlas_loader.h"
 #include "asset/environment_loader.h"
 #include "asset/material_loader.h"
+#include "asset/mesh_loader.h"
 #include "asset/resource_manager.hpp"
 #include "asset/special_texture_factory.h"
 #include "asset/texture_loader.h"
@@ -24,6 +25,7 @@ static struct
     ResourceManager<FontAtlasLoader> font_atlas_manager;
     ResourceManager<TextureAtlasLoader> texture_atlas_manager;
     ResourceManager<EnvironmentLoader> environment_manager;
+    ResourceManager<MeshLoader> mesh_manager;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -123,6 +125,11 @@ const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_pat
     return s_storage.material_manager.load(file_path);
 }
 
+const Mesh& AssetManager::load_mesh(const fs::path& file_path)
+{
+    return s_storage.mesh_manager.load(file_path);
+}
+
 const FreeTexture& AssetManager::load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options)
 {
     return s_storage.texture_manager.load(file_path, options);
@@ -145,6 +152,8 @@ const Environment& AssetManager::load_environment(const fs::path& file_path)
 
 void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
 
+void AssetManager::release_mesh(hash_t hname) { s_storage.mesh_manager.release(hname); }
+
 void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.release(hname); }
 
 void AssetManager::release_texture_atlas(hash_t hname) { s_storage.texture_atlas_manager.release(hname); }
@@ -156,6 +165,11 @@ void AssetManager::release_environment(hash_t hname) { s_storage.environment_man
 hash_t AssetManager::load_material_async(const fs::path& file_path)
 {
     return s_storage.material_manager.load_async(file_path);
+}
+
+hash_t AssetManager::load_mesh_async(const fs::path& file_path)
+{
+    return s_storage.mesh_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_texture_async(const fs::path& file_path)
@@ -181,6 +195,11 @@ hash_t AssetManager::load_environment_async(const fs::path& file_path)
 void AssetManager::on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then)
 {
     s_storage.material_manager.on_ready(future_res, then);
+}
+
+void AssetManager::on_mesh_ready(hash_t future_res, std::function<void(const Mesh&)> then)
+{
+    s_storage.mesh_manager.on_ready(future_res, then);
 }
 
 void AssetManager::on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then)
@@ -209,6 +228,7 @@ void AssetManager::launch_async_tasks()
     std::thread task([&]() {
         s_storage.texture_atlas_manager.async_work();
         s_storage.font_atlas_manager.async_work();
+        s_storage.mesh_manager.async_work();
         s_storage.material_manager.async_work();
         s_storage.texture_manager.async_work();
         s_storage.environment_manager.async_work();
@@ -220,9 +240,10 @@ void AssetManager::update()
 {
     s_storage.texture_atlas_manager.sync_work();
     s_storage.font_atlas_manager.sync_work();
+    s_storage.mesh_manager.sync_work();
+    s_storage.material_manager.sync_work();
     s_storage.texture_manager.sync_work();
     s_storage.environment_manager.sync_work();
-    s_storage.material_manager.sync_work();
 }
 
 /*

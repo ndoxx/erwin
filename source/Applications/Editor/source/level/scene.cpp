@@ -28,6 +28,9 @@ bool Scene::on_load()
 {
     // TMP stub -> Implement proper scene loading
 
+    AssetManager::load_shader("shaders/deferred_PBR.glsl");
+    AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
+
     // * Create entities with no async dependency
     {
         EntityID ent = create_entity("Camera", W_ICON(VIDEO_CAMERA));
@@ -71,10 +74,11 @@ bool Scene::on_load()
     std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
-        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) /
-                                          "paintPeelingConcrete.tom"),
+        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
     };
+
+    hash_t future_mesh = AssetManager::load_mesh_async(project::get_asset_path(project::DirKey::MESH) / "cube.wesh");
 
     // * Declare entities dependencies on future resources during entity creation
     size_t cnt = 0;
@@ -102,7 +106,7 @@ bool Scene::on_load()
             }
 
             ComponentTransform3D ctransform = {
-                {-4.f + float(ii) * 2.5f, -1.f + float(jj) * 2.f, 0.f}, {0.f, 0.f, 0.f}, scale};
+                {-4.f + float(ii) * 2.5f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
 
             registry.assign<ComponentTransform3D>(ent, ctransform);
             registry.assign<ComponentMesh>(ent, cmesh);
@@ -113,6 +117,28 @@ bool Scene::on_load()
             });
         }
     }
+
+    {
+        std::string obj_name = "Some Object";
+        EntityID ent = create_entity(obj_name);
+
+        ComponentTransform3D ctransform = {{0.f, 0.f, 4.f}, {0.f, 0.f, 0.f}, 1.f};
+        registry.assign<ComponentTransform3D>(ent, ctransform);
+
+        AssetManager::on_mesh_ready(future_mesh, [this, ent = ent](const Mesh& mesh) {
+            ComponentMesh cmesh;
+            ComponentOBB cobb;
+            cmesh.set_vertex_array(mesh.VAO);
+            cobb.init(mesh.extent);
+            registry.assign<ComponentMesh>(ent, cmesh);
+            registry.assign<ComponentOBB>(ent, cobb);
+        });
+
+        AssetManager::on_material_ready(future_materials[0], [this, ent = ent](const ComponentPBRMaterial& mat) {
+            registry.assign<ComponentPBRMaterial>(ent, mat);
+        });
+    }
+
     load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
 
     // * Launch async loading operations

@@ -13,7 +13,7 @@ namespace erwin
 
 struct CommonGeometryStorage
 {
-	std::map<hash_t, MeshStub> meshes_;
+	std::map<hash_t, Mesh> meshes_;
 };
 static CommonGeometryStorage s_storage;
 
@@ -31,7 +31,7 @@ static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayo
 	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), uint32_t(vdata.size()), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-	MeshStub mesh {VAO, layout_handle, dims, {}};
+	Mesh mesh {VAO, layout_handle, dims, {}};
 	snprintf(mesh.name, 32, "%s", name.c_str());
 
 	s_storage.meshes_.insert({hname, mesh});

@@ -14,6 +14,7 @@ namespace erwin
 {
 
 struct ComponentPBRMaterial;
+struct Mesh;
 struct TextureAtlas;
 struct FontAtlas;
 struct Environment;
@@ -36,6 +37,8 @@ public:
 
     // Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
     static const ComponentPBRMaterial& load_material(const fs::path& file_path);
+    // Load a mesh from a WESH file (or get from cache)
+    static const Mesh& load_mesh(const fs::path& file_path);
     // Load an image from file (or get from cache) and return a render handle to a texture created from image data
     static const FreeTexture& load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options = {});
     // Load a font as a texture atlas from file (or get from cache)
@@ -47,6 +50,8 @@ public:
 
     // Free GPU resources associated to a material and remove from cache
     static void release_material(hash_t hname);
+    // Free GPU resources associated to a mesh
+    static void release_mesh(hash_t hname);
     // Free GPU resource associated to texture
     static void release_texture(hash_t hname);
     // Free GPU resource associated to texture atlas
@@ -59,6 +64,8 @@ public:
     // * Asynchronous operations
     // Generate an async material loading task if material not in cache, return path string hash as a token
     static hash_t load_material_async(const fs::path& file_path);
+    // Generate an async mesh loading task if mesh not in cache, return path string hash as a token
+    static hash_t load_mesh_async(const fs::path& file_path);
     // Generate an async texture loading task if texture not in cache, return path string hash as a token
     static hash_t load_texture_async(const fs::path& file_path);
     // Generate an async texture atlas loading task if not in cache, return path string hash as a token
@@ -70,6 +77,8 @@ public:
 
     // Execute a callback when a material is ready
     static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
+    // Execute a callback when a mesh is ready
+    static void on_mesh_ready(hash_t future_res, std::function<void(const Mesh&)> then);
     // Execute a callback when a texture is ready
     static void on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then);
     // Execute a callback when a font atlas is ready

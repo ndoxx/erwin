@@ -16,7 +16,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
 
     if(ImGui::BeginPopup("popup_select_mesh"))
     {
-        CommonGeometry::visit_meshes([&cmp](const MeshStub& mesh)
+        CommonGeometry::visit_meshes([&cmp](const Mesh& mesh)
         {
             // Skip mesh if not compatible with shader, allow any mesh if material is not set
             //if(!cmp->is_material_ready() || Renderer3D::is_compatible(mesh.layout, cmp->material))
