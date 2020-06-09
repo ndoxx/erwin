@@ -33,13 +33,13 @@ extern const std::map<uint32_t, std::string>& get_component_names();
 template <typename... Args>
 static inline auto invoke(uint32_t func_name, uint32_t reflected_type, Args&&... args)
 {
-	return entt::resolve(reflected_type).func(func_name).invoke({}, std::forward<Args>(args)...);
+	return entt::resolve_id(reflected_type).func(func_name).invoke({}, std::forward<Args>(args)...);
 }
 // ASSUME: registry is always the first meta-function argument
 template <typename... Args>
 static inline auto invoke(uint32_t func_name, uint32_t reflected_type, entt::registry& reg, Args&&... args)
 {
-	return entt::resolve(reflected_type).func(func_name).invoke({}, std::ref(reg), std::forward<Args>(args)...);
+	return entt::resolve_id(reflected_type).func(func_name).invoke({}, std::ref(reg), std::forward<Args>(args)...);
 }
 
 // For each component in an entity, invoke a function or any callable type taking
@@ -103,7 +103,7 @@ namespace metafunc
 	template <typename ComponentType>
 	static inline void create_component(entt::registry& reg, entt::entity e)
 	{
-	    reg.assign<ComponentType>(e);
+	    reg.emplace<ComponentType>(e);
 	}
 
 	// Remove a component given its associated meta-object
@@ -138,7 +138,7 @@ namespace metafunc
 	entt::meta< CTYPE >() \
 		.type( #CTYPE ##_hs) \
 		.prop("name"_hs, #CTYPE ) \
-		.func<&erwin::metafunc::get_component< CTYPE >, entt::as_alias_t>(W_METAFUNC_GET_COMPONENT) \
+		.func<&erwin::metafunc::get_component< CTYPE >, entt::as_ref_t>(W_METAFUNC_GET_COMPONENT) \
 		.func<&erwin::metafunc::has_component< CTYPE >>(W_METAFUNC_HAS_COMPONENT) \
 		.func<&erwin::metafunc::create_component< CTYPE >, entt::as_void_t>(W_METAFUNC_CREATE_COMPONENT) \
 		.func<&erwin::metafunc::remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_REMOVE_COMPONENT) \
