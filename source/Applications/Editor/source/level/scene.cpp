@@ -28,17 +28,14 @@ bool Scene::on_load()
 {
     // TMP stub -> Implement proper scene loading
 
-    AssetManager::load_shader("shaders/deferred_PBR.glsl");
-    AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
-
     // * Create entities with no async dependency
     {
         EntityID ent = create_entity("Camera", W_ICON(VIDEO_CAMERA));
 
         ComponentTransform3D transform({-5.8f, 2.3f, -5.8f}, {5.f, 228.f, 0.f}, 1.f);
 
-        registry.assign<ComponentCamera3D>(ent);
-        registry.assign<ComponentTransform3D>(ent, transform);
+        registry.emplace<ComponentCamera3D>(ent);
+        registry.emplace<ComponentTransform3D>(ent, transform);
         camera = ent;
     }
 
@@ -64,8 +61,8 @@ bool Scene::on_load()
         renderable.set_material(mat_sun);
         renderable.material_data.scale = 0.2f;
 
-        registry.assign<ComponentDirectionalLight>(ent, cdirlight);
-        registry.assign<ComponentDirectionalLightMaterial>(ent, renderable);
+        registry.emplace<ComponentDirectionalLight>(ent, cdirlight);
+        registry.emplace<ComponentDirectionalLightMaterial>(ent, renderable);
 
         directional_light = ent;
     }
@@ -108,12 +105,12 @@ bool Scene::on_load()
             ComponentTransform3D ctransform = {
                 {-4.f + float(ii) * 2.5f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
 
-            registry.assign<ComponentTransform3D>(ent, ctransform);
-            registry.assign<ComponentMesh>(ent, cmesh);
-            registry.assign<ComponentOBB>(ent, cobb);
+            registry.emplace<ComponentTransform3D>(ent, ctransform);
+            registry.emplace<ComponentMesh>(ent, cmesh);
+            registry.emplace<ComponentOBB>(ent, cobb);
 
             AssetManager::on_material_ready(future_materials[ii], [this, ent = ent](const ComponentPBRMaterial& mat) {
-                registry.assign<ComponentPBRMaterial>(ent, mat);
+                registry.emplace<ComponentPBRMaterial>(ent, mat);
             });
         }
     }
@@ -123,19 +120,19 @@ bool Scene::on_load()
         EntityID ent = create_entity(obj_name);
 
         ComponentTransform3D ctransform = {{0.f, 0.f, 4.f}, {0.f, 0.f, 0.f}, 1.f};
-        registry.assign<ComponentTransform3D>(ent, ctransform);
+        registry.emplace<ComponentTransform3D>(ent, ctransform);
 
         AssetManager::on_mesh_ready(future_mesh, [this, ent = ent](const Mesh& mesh) {
             ComponentMesh cmesh;
             ComponentOBB cobb;
             cmesh.set_vertex_array(mesh.VAO);
             cobb.init(mesh.extent);
-            registry.assign<ComponentMesh>(ent, cmesh);
-            registry.assign<ComponentOBB>(ent, cobb);
+            registry.emplace<ComponentMesh>(ent, cmesh);
+            registry.emplace<ComponentOBB>(ent, cobb);
         });
 
         AssetManager::on_material_ready(future_materials[0], [this, ent = ent](const ComponentPBRMaterial& mat) {
-            registry.assign<ComponentPBRMaterial>(ent, mat);
+            registry.emplace<ComponentPBRMaterial>(ent, mat);
         });
     }
 
@@ -188,7 +185,7 @@ void Scene::load_hdr_environment(const fs::path& hdr_file)
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
 {
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
-    registry.assign<ComponentDescription>(entity, desc);
+    registry.emplace<ComponentDescription>(entity, desc);
 
     entities.push_back(entity);
 

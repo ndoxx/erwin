@@ -94,7 +94,6 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     W_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData),
              "Invalid material data size.");
 
-    // BUG: CANNOT be exectuted asynchronously
     ShaderHandle shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");
     UniformBufferHandle ubo = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
 

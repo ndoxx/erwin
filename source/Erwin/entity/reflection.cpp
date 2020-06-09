@@ -11,7 +11,7 @@ static std::map<uint32_t, std::string> s_component_names;
 void add_reflection(uint64_t type_id, uint32_t reflected_type)
 {
 	s_reflection_map.insert({type_id, reflected_type});
-	s_component_names.insert({reflected_type, entt::resolve(reflected_type).prop("name"_hs).value().cast<const char*>()});
+	s_component_names.insert({reflected_type, entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>()});
 }
 
 uint32_t reflect(uint64_t type_id)

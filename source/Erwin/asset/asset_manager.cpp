@@ -228,7 +228,7 @@ void AssetManager::launch_async_tasks()
     std::thread task([&]() {
         s_storage.texture_atlas_manager.async_work();
         s_storage.font_atlas_manager.async_work();
-        s_storage.mesh_manager.async_work();
+        s_storage.mesh_manager.async_work(); // BUG: Must be called before material manager tasks or viewport appears cut in half (WTF?!)
         s_storage.material_manager.async_work();
         s_storage.texture_manager.async_work();
         s_storage.environment_manager.async_work();

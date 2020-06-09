@@ -51,7 +51,7 @@ void InspectorWidget::entity_tab()
             if(reflected_type == "ComponentDescription"_hs)
                 return;
             
-            const char* component_name = entt::resolve(reflected_type).prop("name"_hs).value().cast<const char*>();
+            const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
             if(ImGui::TreeNode(component_name))
             {
