@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <vector>
+#include "asset/bounding.h"
 
 namespace fs = std::filesystem;
 
@@ -16,6 +17,7 @@ namespace wesh
 
 struct WeshDescriptor
 {
+    Extent extent;
     std::vector<float> vertex_data;
     std::vector<uint32_t> index_data;
 };

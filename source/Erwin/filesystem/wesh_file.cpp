@@ -24,7 +24,7 @@ struct WESHHeader
 
 #define WESH_MAGIC 0x48534557 // ASCII(WESH)
 #define WESH_VERSION_MAJOR 0
-#define WESH_VERSION_MINOR 1
+#define WESH_VERSION_MINOR 2
 
 
 WeshDescriptor read(const fs::path& path)
@@ -39,13 +39,25 @@ WeshDescriptor read(const fs::path& path)
     W_ASSERT(header.version_major == WESH_VERSION_MAJOR, "Invalid WESH file: version (major) mismatch.");
     W_ASSERT(header.version_minor == WESH_VERSION_MINOR, "Invalid WESH file: version (minor) mismatch.");
 
-    DLOG("asset",1) << "WESH Header:" << std::endl;
+    DLOG("asset",0) << "WESH Header:" << std::endl;
     DLOGI << "Version:   " << WCC('v') << int(header.version_major) << "." << int(header.version_minor) << std::endl;
     DLOGI << "Vtx size:  " << WCC('v') << header.vertex_size << std::endl;
     DLOGI << "Vtx count: " << WCC('v') << header.vertex_count << std::endl;
     DLOGI << "Idx count: " << WCC('v') << header.index_count << std::endl;
 
     WeshDescriptor descriptor;
+    // Read mesh extent
+    ifs->read(opaque_cast(&descriptor.extent.value), long(6*sizeof(float)));
+
+    DLOG("asset",0) << "Extent:" << std::endl;
+    DLOGI << "xmin: " << descriptor.extent.xmin() << std::endl;
+    DLOGI << "xmax: " << descriptor.extent.xmax() << std::endl;
+    DLOGI << "ymin: " << descriptor.extent.ymin() << std::endl;
+    DLOGI << "ymax: " << descriptor.extent.ymax() << std::endl;
+    DLOGI << "zmin: " << descriptor.extent.zmin() << std::endl;
+    DLOGI << "zmax: " << descriptor.extent.zmax() << std::endl;
+
+    // Read vertex and indes data
     size_t vdata_float_count = header.vertex_count * header.vertex_size;
 	descriptor.vertex_data.resize(vdata_float_count);
 	descriptor.index_data.resize(header.index_count);

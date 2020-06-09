@@ -56,7 +56,7 @@ struct Extent
 	inline float& operator[](size_t index)      { return value[index]; }
 	inline float operator[](size_t index) const { return value[index]; }
 	inline float& xmin() { return value[0]; }
-	inline float& xmaw() { return value[1]; }
+	inline float& xmax() { return value[1]; }
 	inline float& ymin() { return value[2]; }
 	inline float& ymax() { return value[3]; }
 	inline float& zmin() { return value[4]; }

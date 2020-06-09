@@ -2,7 +2,7 @@ bl_info = {
     "name": "Wesh Format Exporter",
     "description": "Writes a .wesh geometry file format to disk",
     "author": "ndoxx (ErwinEngine)",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 83, 0),
     "location": "File > Export > Wesh",
     "warning": "",
@@ -33,9 +33,9 @@ def triangulateObject(obj):
     
 class VertexInterleaved:
     position = None
-    uv       = None
     normal   = None
     tangent  = None
+    uv       = None
 
 def different(a, b):
     return bool(abs(a-b) > max(1e-09 * max(abs(a), abs(b)), 0.0))
@@ -61,6 +61,24 @@ def findVertex(thisVertex, vertBuff):
         return (True, i)
     return (False, 0)
 
+
+class Extent:
+    def __init__(self):
+        self.xmin = float("inf")
+        self.xmax = float("-inf")
+        self.ymin = float("inf")
+        self.ymax = float("-inf")
+        self.zmin = float("inf")
+        self.zmax = float("-inf")
+
+    def update(self, position):
+        self.xmin = min(self.xmin, position.x)
+        self.xmax = max(self.xmax, position.x)
+        self.ymin = min(self.ymin, position.y)
+        self.ymax = max(self.ymax, position.y)
+        self.zmin = min(self.zmin, position.z)
+        self.zmax = max(self.zmax, position.z)
+
 class WeshHeader:
     def __init__(self, versionMajor, versionMinor, vertSize, vertCount, idxCount):
         self.magic = 0x48534557 # ASCII(WESH)
@@ -82,6 +100,9 @@ def writeObject(self, context):
     # side effect on active UV layer
     uv_layer = me.uv_layers.active.data
 
+    # Mesh spatial extent
+    extent = Extent()
+
     # rebuild vertex, uv and face indices excluding duplicates
     # loop faces
     for face in me.polygons:
@@ -90,9 +111,9 @@ def writeObject(self, context):
             vert_index = meshloop.vertex_index
             thisVertex = VertexInterleaved()
             thisVertex.position = me.vertices[vert_index].co
-            thisVertex.uv       = uv_layer[meshloop.index].uv
             thisVertex.normal   = meshloop.normal
             thisVertex.tangent  = meshloop.tangent
+            thisVertex.uv       = uv_layer[meshloop.index].uv
 
             # if vertex already in list add its index to faceBuff, otherwise stash a new vertex
             inList, idx = findVertex(thisVertex, vertBuff)
@@ -101,6 +122,7 @@ def writeObject(self, context):
             else:
                 faceBuff.append(len(vertBuff)) #index
                 vertBuff.append(thisVertex)
+                extent.update(thisVertex.position)
 
     # write to file
     if(self.format == "OPT_A"):
@@ -110,9 +132,9 @@ def writeObject(self, context):
             ofile.write("\n")
             for v in vertBuff:
                 ofile.write("%f %f %f " % v.position[:])
-                ofile.write("%f %f " % v.uv[:])
                 ofile.write("%f %f %f " % v.normal[:])
                 ofile.write("%f %f %f " % v.tangent[:])
+                ofile.write("%f %f " % v.uv[:])
                 ofile.write("\n")
             for p in faceBuff:
                 ofile.write("%d " % p)
@@ -124,12 +146,13 @@ def writeObject(self, context):
         hh = WeshHeader(bl_info["version"][0], bl_info["version"][1], 11, len(vertBuff), len(faceBuff))
 
         with open(self.filepath, 'wb') as ofile:
-            ofile.write(struct.pack('IHHIII', hh.magic, hh.versionMajor, hh.versionMinor, hh.vertSize, hh.vertCount, hh.idxCount)) 
+            ofile.write(struct.pack('IHHIII', hh.magic, hh.versionMajor, hh.versionMinor, hh.vertSize, hh.vertCount, hh.idxCount))
+            ofile.write(struct.pack('6f', extent.xmin, extent.xmax, extent.ymin, extent.ymax, extent.zmin, extent.zmax))
             for v in vertBuff:
                 ofile.write(struct.pack('3f', v.position.x, v.position.y, v.position.z))
-                ofile.write(struct.pack('2f', v.uv.x, v.uv.y))
                 ofile.write(struct.pack('3f', v.normal.x, v.normal.y, v.normal.z))
                 ofile.write(struct.pack('3f', v.tangent.x, v.tangent.y, v.tangent.z))
+                ofile.write(struct.pack('2f', v.uv.x, v.uv.y))
             for p in faceBuff:
                 ofile.write(struct.pack('I', p))
             ofile.close()
