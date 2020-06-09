@@ -67,6 +67,7 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
     SceneManager::create_scene<Scene>("main_scene"_h);
+    SceneManager::make_current("main_scene"_h);
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
@@ -74,7 +75,6 @@ void ErwinEditor::on_load()
     {
         project::load_project(last_project_file);
         SceneManager::load_scene("main_scene"_h);
-        SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();
     }
 

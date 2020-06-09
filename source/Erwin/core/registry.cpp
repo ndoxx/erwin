@@ -268,10 +268,13 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
             bool is_absolute = false;
             xml::parse_attribute(xnode, "absolute", is_absolute);
             fs::path out_path;
-            if(is_absolute)
-                out_path = fs::absolute(it->second);
-            else
-                out_path = fs::relative(it->second, parent_dir);
+            if(!it->second.empty())
+            {
+                if(is_absolute)
+                    out_path = fs::absolute(it->second);
+                else
+                    out_path = fs::relative(it->second, parent_dir);
+            }
             xml::set_attribute(doc, xnode, "value", out_path.string());
         }
         break;
