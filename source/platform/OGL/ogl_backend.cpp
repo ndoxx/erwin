@@ -49,6 +49,11 @@ static struct RenderDeviceStorage
         default_framebuffer_ = FramebufferHandle::acquire();
         current_framebuffer_ = default_framebuffer_;
         host_window_size_ = {0, 0};
+
+        invalidate_texture_cache();
+        invalidate_cubemap_cache();
+        invalidate_VAO_cache();
+        invalidate_shader_cache();
     }
 
     void release()
@@ -69,6 +74,26 @@ static struct RenderDeviceStorage
         std::fill(std::begin(vertex_buffer_layouts), std::end(vertex_buffer_layouts), nullptr);
         std::fill(std::begin(shaders), std::end(shaders), nullptr);
         std::fill(std::begin(framebuffers), std::end(framebuffers), nullptr);
+    }
+
+    inline void invalidate_texture_cache()
+    {
+        std::fill(last_texture_index, last_texture_index + k_max_texture_slots, k_invalid_handle);
+    }
+
+    inline void invalidate_cubemap_cache()
+    {
+        std::fill(last_cubemap_index, last_cubemap_index + k_max_cubemap_slots, k_invalid_handle);
+    }
+
+    inline void invalidate_VAO_cache()
+    {
+        last_VAO_index = k_invalid_handle;
+    }
+
+    inline void invalidate_shader_cache()
+    {
+        last_shader_index = k_invalid_handle;
     }
 
     FramebufferHandle default_framebuffer_ = {};
@@ -92,8 +117,8 @@ static struct RenderDeviceStorage
     // ShaderCompatibility shader_compat[k_max_handles<ShaderHandle>];
     PromiseStorage<PixelData> texture_data_promises_;
     uint64_t state_cache_;
-    uint16_t last_shader_index = k_invalid_handle;
-    uint16_t last_VAO_index = k_invalid_handle;
+    uint16_t last_shader_index;
+    uint16_t last_VAO_index;
     uint16_t last_texture_index[k_max_texture_slots];
     uint16_t last_cubemap_index[k_max_cubemap_slots];
 } s_storage;
@@ -404,7 +429,16 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&mode);
     buf.read(&auxiliary);
 
+    // Unbind currently bound VAO to avoid leaking state of newly created IBO
+    GLint current_vao;
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current_vao);
+    glBindVertexArray(0);
+
     s_storage.index_buffers[handle.index].init(auxiliary, count, primitive, mode);
+
+    // Restore VAO
+    glBindVertexArray(current_vao);
+
     GL_END_DBG()
 }
 
@@ -424,8 +458,17 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
     buf.read(&mode);
     buf.read(&auxiliary);
 
+    // Unbind currently bound VAO to avoid leaking state of newly created VBO
+    GLint current_vao;
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current_vao);
+    glBindVertexArray(0);
+
     const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
     s_storage.vertex_buffers[handle.index].init(auxiliary, count, layout, mode);
+
+    // Restore VAO
+    glBindVertexArray(current_vao);
+
     GL_END_DBG()
 }
 
@@ -450,8 +493,9 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
         s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
 
+
     // VAO binding state has changed, invalidate last bound VAO
-    s_storage.last_VAO_index = k_invalid_handle;
+    s_storage.invalidate_VAO_cache();
 
     GL_END_DBG()
 }
@@ -483,6 +527,10 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
         s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
+
+    // VAO binding state has changed, invalidate last bound VAO
+    s_storage.invalidate_VAO_cache();
+
     GL_END_DBG()
 }
 
@@ -542,6 +590,10 @@ void create_shader(memory::LinearBuffer<>& buf)
     ref->init(name, filepath);
     s_storage.shaders[handle.index] = ref;
     // s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
+
+    // Shader state has changed, invalidate last bound shader
+    s_storage.invalidate_shader_cache();
+
     GL_END_DBG()
 }
 
@@ -558,6 +610,10 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
     s_storage.textures[handle.index].init(descriptor);
     // Free resources if needed
     descriptor.release();
+
+    // Texture state has changed, invalidate last bound textures
+    s_storage.invalidate_texture_cache();
+
     GL_END_DBG()
 }
 
@@ -572,6 +628,10 @@ void create_cubemap(memory::LinearBuffer<>& buf)
     buf.read(&descriptor);
 
     s_storage.cubemaps[handle.index].init(descriptor);
+
+    // Cubemap state has changed, invalidate last bound cubemaps
+    s_storage.invalidate_cubemap_cache();
+
     GL_END_DBG()
 }
 
@@ -1035,8 +1095,8 @@ void draw(memory::LinearBuffer<>& buf)
         {
             shader.bind();
             s_storage.last_shader_index = data.shader.index;
-            std::fill(s_storage.last_texture_index, s_storage.last_texture_index + k_max_texture_slots, k_invalid_handle);
-            std::fill(s_storage.last_cubemap_index, s_storage.last_cubemap_index + k_max_cubemap_slots, k_invalid_handle);
+            s_storage.invalidate_texture_cache();
+            s_storage.invalidate_cubemap_cache();
         }
     }
     else
@@ -1110,17 +1170,13 @@ void draw(memory::LinearBuffer<>& buf)
     switch(type)
     {
     case DrawCall::Indexed:
-        GL_ASSERT_ON_ERROR()
         glDrawElements(OGLPrimitive.at(va.get_index_buffer().get_primitive()),
                        (bool(data.count) ? data.count : va.get_index_buffer().get_count()), GL_UNSIGNED_INT,
                        reinterpret_cast<void*>(data.offset * sizeof(GLuint)));
-        GL_ASSERT_ON_ERROR()
         break;
     case DrawCall::Array:
-        GL_ASSERT_ON_ERROR()
         glDrawArrays(OGLPrimitive.at(va.get_index_buffer().get_primitive()), data.offset,
                      (bool(data.count) ? data.count : va.get_vertex_buffer().get_count()));
-        GL_ASSERT_ON_ERROR()
         break;
     case DrawCall::IndexedInstanced: {
         // Read additional data needed for instanced rendering
@@ -1136,6 +1192,7 @@ void draw(memory::LinearBuffer<>& buf)
         W_ASSERT(false, "Specified draw call type is unsupported at the moment.");
         break;
     }
+
     GL_END_DBG()
 }
 

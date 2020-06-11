@@ -336,7 +336,7 @@ void OGLVertexArray::set_index_buffer(std::reference_wrapper<OGLIndexBuffer> r_i
     glBindVertexArray(rd_handle_);
 	ib.bind();
     glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
-	
+
     index_buffer_ = r_ib;
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["
