@@ -123,7 +123,7 @@ bool Scene::on_load()
         std::string obj_name = "Chest";
         EntityID ent = create_entity(obj_name);
 
-        ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {-90.f, 180.f, 0.f}, 1.f};
+        ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, 1.f};
         registry.emplace<ComponentTransform3D>(ent, ctransform);
 
         AssetManager::on_mesh_ready(future_mesh, [this, ent = ent](const Mesh& mesh) {

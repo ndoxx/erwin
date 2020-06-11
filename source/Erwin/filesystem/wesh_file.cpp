@@ -24,7 +24,7 @@ struct WESHHeader
 
 #define WESH_MAGIC 0x48534557 // ASCII(WESH)
 #define WESH_VERSION_MAJOR 0
-#define WESH_VERSION_MINOR 2
+#define WESH_VERSION_MINOR 3
 
 
 WeshDescriptor read(const fs::path& path)
