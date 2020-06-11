@@ -99,8 +99,15 @@ bool SceneEditorLayer::on_mouse_scroll_event(const MouseScrollEvent&)
 {
     if(!enabled_)
         return false;
-    ImGuiIO& io = ImGui::GetIO();
-    return io.WantCaptureMouse;
+    // If scene view is not hovered, let ImGui consume input events
+    if(!scene_view_widget_->is_hovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if(io.WantCaptureMouse)
+            return true;
+    }
+    
+    return false;
 }
 
 bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
