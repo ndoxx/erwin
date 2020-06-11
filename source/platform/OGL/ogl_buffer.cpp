@@ -222,6 +222,7 @@ void OGLUniformBuffer::init(const std::string& name, void* data, uint32_t struct
         init_base(GL_UNIFORM_BUFFER, data, struct_size_, mode);
         DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
         DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
+        DLOGI << "Name:          " << name << std::endl;
     }
 }
 

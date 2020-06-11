@@ -19,7 +19,7 @@
 
 #include <tuple>
 
-#define ASYNC false
+#define ASYNC true
 
 using namespace erwin;
 
@@ -141,7 +141,7 @@ bool Scene::on_load()
     }
 #else
     const auto& mat  = AssetManager::load_material(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
-    // const auto& mesh = AssetManager::load_mesh(project::get_asset_path(project::DirKey::MESH) / "chest.wesh");
+    const auto& mesh = AssetManager::load_mesh(project::get_asset_path(project::DirKey::MESH) / "chest.wesh");
     {
         std::string obj_name = "Chest";
         EntityID ent = create_entity(obj_name);
@@ -151,10 +151,8 @@ bool Scene::on_load()
 
         ComponentMesh cmesh;
         ComponentOBB cobb;
-        // cmesh.set_vertex_array(mesh.VAO);
-        // cobb.init(mesh.extent);
-        cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
-        cobb.init(CommonGeometry::get_extent("cube_pbr"_h));
+        cmesh.set_vertex_array(mesh.VAO);
+        cobb.init(mesh.extent);
 
         registry.emplace<ComponentMesh>(ent, cmesh);
         registry.emplace<ComponentOBB>(ent, cobb);

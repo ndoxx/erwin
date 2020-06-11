@@ -61,8 +61,6 @@ void SceneViewLayer::on_update(GameClock& clock)
     Renderer3D::update_camera(camera, transform);
     if(scene.registry.valid(scene.directional_light))
         Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
-
-    Renderer3D::update_frame_data();
 }
 
 void SceneViewLayer::on_render()
@@ -71,6 +69,7 @@ void SceneViewLayer::on_render()
     if(!scene.is_loaded())
         return;
 
+    Renderer3D::update_frame_data();
     // Draw scene geometry
     {
         Renderer3D::begin_deferred_pass();

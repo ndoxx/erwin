@@ -9,6 +9,7 @@
 #include "platform/OGL/ogl_framebuffer.h"
 #include "platform/OGL/ogl_shader.h"
 #include "platform/OGL/ogl_texture.h"
+#include "platform/OGL/ogl_debug.h"
 #include "render/commands.h"
 #include "render/renderer_config.h"
 #include "utils/promise_storage.hpp"
@@ -385,6 +386,7 @@ namespace render_dispatch
 void create_index_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     IndexBufferHandle handle;
     uint32_t count;
@@ -399,11 +401,13 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.index_buffers[handle.index].init(auxiliary, count, primitive, mode);
+    GL_END_DBG()
 }
 
 void create_vertex_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexBufferHandle handle;
     VertexBufferLayoutHandle layout_hnd;
@@ -418,11 +422,13 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
 
     const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
     s_storage.vertex_buffers[handle.index].init(auxiliary, count, layout, mode);
+    GL_END_DBG()
 }
 
 void create_vertex_array(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexArrayHandle handle;
     IndexBufferHandle ib;
@@ -439,11 +445,13 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
         s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
+    GL_END_DBG()
 }
 
 void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexArrayHandle handle;
     IndexBufferHandle ib;
@@ -467,11 +475,13 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
         s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
+    GL_END_DBG()
 }
 
 void create_uniform_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     UniformBufferHandle handle;
     uint32_t size;
@@ -485,11 +495,13 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.uniform_buffers[handle.index].init(name, auxiliary, size, mode);
+    GL_END_DBG()
 }
 
 void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderStorageBufferHandle handle;
     uint32_t size;
@@ -503,11 +515,13 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.shader_storage_buffers[handle.index].init(name, auxiliary, size, mode);
+    GL_END_DBG()
 }
 
 void create_shader(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderHandle handle;
     std::string filepath;
@@ -520,11 +534,13 @@ void create_shader(memory::LinearBuffer<>& buf)
     ref->init(name, filepath);
     s_storage.shaders[handle.index] = ref;
     // s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
+    GL_END_DBG()
 }
 
 void create_texture_2D(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     TextureHandle handle;
     Texture2DDescriptor descriptor;
@@ -534,11 +550,13 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
     s_storage.textures[handle.index].init(descriptor);
     // Free resources if needed
     descriptor.release();
+    GL_END_DBG()
 }
 
 void create_cubemap(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     CubemapHandle handle;
     CubemapDescriptor descriptor;
@@ -546,11 +564,13 @@ void create_cubemap(memory::LinearBuffer<>& buf)
     buf.read(&descriptor);
 
     s_storage.cubemaps[handle.index].init(descriptor);
+    GL_END_DBG()
 }
 
 void create_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     uint32_t width;
     uint32_t height;
@@ -568,11 +588,13 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
     FramebufferLayout layout(auxiliary, count);
     const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
     s_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
+    GL_END_DBG()
 }
 
 void update_index_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     IndexBufferHandle handle;
     uint32_t count;
@@ -582,11 +604,13 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.index_buffers[handle.index].map(auxiliary, count * sizeof(uint32_t));
+    GL_END_DBG()
 }
 
 void update_vertex_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexBufferHandle handle;
     uint32_t size;
@@ -596,11 +620,13 @@ void update_vertex_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.vertex_buffers[handle.index].map(auxiliary, size);
+    GL_END_DBG()
 }
 
 void update_uniform_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     UniformBufferHandle handle;
     uint32_t size;
@@ -611,11 +637,13 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 
     auto& UBO = s_storage.uniform_buffers[handle.index];
     UBO.map(auxiliary, size ? size : UBO.get_size());
+    GL_END_DBG()
 }
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderStorageBufferHandle handle;
     uint32_t size;
@@ -625,11 +653,13 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     s_storage.shader_storage_buffers[handle.index].map(auxiliary, size);
+    GL_END_DBG()
 }
 
 void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderHandle shader_handle;
     UniformBufferHandle ubo_handle;
@@ -638,11 +668,13 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
 
     auto& shader = *s_storage.shaders[shader_handle.index];
     shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
+    GL_END_DBG()
 }
 
 void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderHandle shader_handle;
     ShaderStorageBufferHandle ssbo_handle;
@@ -651,11 +683,13 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
 
     auto& shader = *s_storage.shaders[shader_handle.index];
     shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
+    GL_END_DBG()
 }
 
 void update_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     FramebufferHandle fb_handle;
     uint32_t width;
@@ -669,6 +703,7 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
     auto layout = s_storage.framebuffers[fb_handle.index]->get_layout();
     auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
     s_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
+    GL_END_DBG()
 }
 
 void clear_framebuffers(memory::LinearBuffer<>&)
@@ -695,6 +730,7 @@ void nop(memory::LinearBuffer<>&) {}
 
 void get_pixel_data(memory::LinearBuffer<>& buf)
 {
+    GL_BEGIN_DBG()
     TextureHandle handle;
     size_t promise_token;
 
@@ -703,19 +739,23 @@ void get_pixel_data(memory::LinearBuffer<>& buf)
 
     auto&& [data, size] = s_storage.textures[handle.index].read_pixels();
     s_storage.texture_data_promises_.fulfill(promise_token, PixelData{data, size});
+    GL_END_DBG()
 }
 
 void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
 {
+    GL_BEGIN_DBG()
     CubemapHandle handle;
     buf.read(&handle);
 
     s_storage.cubemaps[handle.index].generate_mipmaps();
+    GL_END_DBG()
 }
 
 void framebuffer_screenshot(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     FramebufferHandle handle;
     std::string filepath;
@@ -723,103 +763,123 @@ void framebuffer_screenshot(memory::LinearBuffer<>& buf)
     buf.read_str(filepath);
 
     s_storage.framebuffers[handle.index]->screenshot(filepath);
+    GL_END_DBG()
 }
 
 void destroy_index_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     IndexBufferHandle handle;
     buf.read(&handle);
     s_storage.index_buffers[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexBufferLayoutHandle handle;
     buf.read(&handle);
     s_storage.vertex_buffer_layouts[handle.index] = nullptr;
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexBufferHandle handle;
     buf.read(&handle);
     s_storage.vertex_buffers[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_vertex_array(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     VertexArrayHandle handle;
     buf.read(&handle);
     s_storage.vertex_arrays[handle.index].release();
     s_storage.vertex_array_dependencies[handle.index].release(); // Release VBOs/IBO handles
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     UniformBufferHandle handle;
     buf.read(&handle);
     s_storage.uniform_buffers[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderStorageBufferHandle handle;
     buf.read(&handle);
     s_storage.shader_storage_buffers[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_shader(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     ShaderHandle handle;
     buf.read(&handle);
     s_storage.shaders[handle.index] = nullptr;
     // s_storage.shader_compat[handle.index].clear();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_texture_2D(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     TextureHandle handle;
     buf.read(&handle);
     s_storage.textures[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_cubemap(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     CubemapHandle handle;
     buf.read(&handle);
     s_storage.cubemaps[handle.index].release();
     handle.release();
+    GL_END_DBG()
 }
 
 void destroy_framebuffer(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     FramebufferHandle handle;
     bool detach_textures;
@@ -852,6 +912,7 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 
     s_storage.framebuffer_textures_.erase(handle.index);
     handle.release();
+    GL_END_DBG()
 }
 
 } // namespace render_dispatch
@@ -948,6 +1009,7 @@ namespace draw_dispatch
 void draw(memory::LinearBuffer<>& buf)
 {
     W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
 
     DrawCall::DrawCallType type;
     DrawCall::Data data;
@@ -1017,13 +1079,17 @@ void draw(memory::LinearBuffer<>& buf)
     switch(type)
     {
     case DrawCall::Indexed:
+        GL_ASSERT_ON_ERROR()
         glDrawElements(OGLPrimitive.at(va.get_index_buffer().get_primitive()),
                        (bool(data.count) ? data.count : va.get_index_buffer().get_count()), GL_UNSIGNED_INT,
                        reinterpret_cast<void*>(data.offset * sizeof(GLuint)));
+        GL_ASSERT_ON_ERROR()
         break;
     case DrawCall::Array:
+        GL_ASSERT_ON_ERROR()
         glDrawArrays(OGLPrimitive.at(va.get_index_buffer().get_primitive()), data.offset,
                      (bool(data.count) ? data.count : va.get_vertex_buffer().get_count()));
+        GL_ASSERT_ON_ERROR()
         break;
     case DrawCall::IndexedInstanced: {
         // Read additional data needed for instanced rendering
@@ -1039,10 +1105,14 @@ void draw(memory::LinearBuffer<>& buf)
         W_ASSERT(false, "Specified draw call type is unsupported at the moment.");
         break;
     }
+    GL_END_DBG()
 }
 
 void clear(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
+
     FramebufferHandle target;
     uint32_t flags;
     uint32_t clear_color;
@@ -1083,20 +1153,28 @@ void clear(memory::LinearBuffer<>& buf)
         }
     }
     gfx::backend->set_clear_color(0.f, 0.f, 0.f, 0.f);
+    GL_END_DBG()
 }
 
 void blit_depth(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
+
     FramebufferHandle source;
     FramebufferHandle target;
     buf.read(&source);
     buf.read(&target);
 
     s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
+    GL_END_DBG()
 }
 
 void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
+
     ShaderStorageBufferHandle ssbo_handle;
     uint32_t size;
     void* data;
@@ -1113,10 +1191,14 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
         else
             ssbo.map_persistent(data, size, 0);
     */
+    GL_END_DBG()
 }
 
 void update_uniform_buffer(memory::LinearBuffer<>& buf)
 {
+    W_PROFILE_RENDER_FUNCTION()
+    GL_BEGIN_DBG()
+    
     UniformBufferHandle ubo_handle;
     uint32_t size;
     void* data;
@@ -1127,6 +1209,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
 
     auto& ubo = s_storage.uniform_buffers[ubo_handle.index];
     ubo.stream(data, size ? size : ubo.get_size(), 0);
+    GL_END_DBG()
 }
 
 } // namespace draw_dispatch
