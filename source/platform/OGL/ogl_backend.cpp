@@ -92,6 +92,10 @@ static struct RenderDeviceStorage
     // ShaderCompatibility shader_compat[k_max_handles<ShaderHandle>];
     PromiseStorage<PixelData> texture_data_promises_;
     uint64_t state_cache_;
+    uint16_t last_shader_index = k_invalid_handle;
+    uint16_t last_VAO_index = k_invalid_handle;
+    uint16_t last_texture_index[k_max_texture_slots];
+    uint16_t last_cubemap_index[k_max_cubemap_slots];
 } s_storage;
 
 OGLBackend::OGLBackend()
@@ -445,6 +449,10 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
         s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
         s_storage.vertex_array_dependencies[handle.index].ibo = ib;
     }
+
+    // VAO binding state has changed, invalidate last bound VAO
+    s_storage.last_VAO_index = k_invalid_handle;
+
     GL_END_DBG()
 }
 
@@ -1019,17 +1027,20 @@ void draw(memory::LinearBuffer<>& buf)
     handle_state(data.state_flags);
 
     // * Detect if a new shader needs to be used, update and bind shader resources
-    static uint16_t last_shader_index = k_invalid_handle;
-    static uint16_t last_texture_index[k_max_texture_slots];
-    static uint16_t last_cubemap_index[k_max_cubemap_slots];
     auto& shader = *s_storage.shaders[data.shader.index];
-    if(data.shader.index != last_shader_index)
+
+    if constexpr (k_enable_state_cache)
     {
-        shader.bind();
-        last_shader_index = data.shader.index;
-        std::fill(last_texture_index, last_texture_index + k_max_texture_slots, k_invalid_handle);
-        std::fill(last_cubemap_index, last_cubemap_index + k_max_cubemap_slots, k_invalid_handle);
+        if(data.shader.index != s_storage.last_shader_index)
+        {
+            shader.bind();
+            s_storage.last_shader_index = data.shader.index;
+            std::fill(s_storage.last_texture_index, s_storage.last_texture_index + k_max_texture_slots, k_invalid_handle);
+            std::fill(s_storage.last_cubemap_index, s_storage.last_cubemap_index + k_max_cubemap_slots, k_invalid_handle);
+        }
     }
+    else
+        shader.bind();
 
     uint8_t texture_count;
     buf.read(&texture_count);
@@ -1042,11 +1053,19 @@ void draw(memory::LinearBuffer<>& buf)
             continue;
 
         // Avoid texture switching if not necessary
-        if(hnd.index != last_texture_index[ii])
+        if constexpr (k_enable_state_cache)
+        {
+            if(hnd.index != s_storage.last_texture_index[ii])
+            {
+                const auto& texture = s_storage.textures[hnd.index];
+                shader.attach_texture_2D(texture, ii);
+                s_storage.last_texture_index[ii] = hnd.index;
+            }
+        }
+        else
         {
             const auto& texture = s_storage.textures[hnd.index];
             shader.attach_texture_2D(texture, ii);
-            last_texture_index[ii] = hnd.index;
         }
     }
 
@@ -1058,23 +1077,35 @@ void draw(memory::LinearBuffer<>& buf)
         buf.read(&hnd);
 
         // Avoid texture switching if not necessary
-        if(hnd.index != last_cubemap_index[ii])
+        if constexpr (k_enable_state_cache)
+        {
+            if(hnd.index != s_storage.last_cubemap_index[ii])
+            {
+                const auto& cubemap = s_storage.cubemaps[hnd.index];
+                shader.attach_cubemap(cubemap, ii + texture_count); // Cubemap samplers after 2d samplers (this is awkward)
+                s_storage.last_cubemap_index[ii] = hnd.index;
+            }
+        }
+        else
         {
             const auto& cubemap = s_storage.cubemaps[hnd.index];
             shader.attach_cubemap(cubemap, ii + texture_count); // Cubemap samplers after 2d samplers (this is awkward)
-            last_cubemap_index[ii] = hnd.index;
         }
     }
 
     // * Execute draw call
-    static uint16_t last_VAO_index = k_invalid_handle;
     auto& va = s_storage.vertex_arrays[data.VAO.index];
     // Avoid switching vertex array when possible
-    if(data.VAO.index != last_VAO_index)
+    if constexpr (k_enable_state_cache)
     {
-        va.bind();
-        last_VAO_index = data.VAO.index;
+        if(data.VAO.index != s_storage.last_VAO_index)
+        {
+            va.bind();
+            s_storage.last_VAO_index = data.VAO.index;
+        }
     }
+    else
+        va.bind();
 
     switch(type)
     {

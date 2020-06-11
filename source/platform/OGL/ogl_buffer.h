@@ -15,7 +15,7 @@ public:
     void release_base();
     void bind() const;
     void unbind() const;
-    void stream(void* data, uint32_t size, uint32_t offset);
+    void stream(void* data, uint32_t size, uint32_t offset=0);
     void map(void* data, uint32_t size, uint32_t offset=0);
     void map_persistent(void* data, uint32_t size, uint32_t offset=0);
 
