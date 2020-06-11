@@ -43,6 +43,6 @@ static constexpr uint32_t k_max_framebuffers = 256;
 // DEBUG
 static constexpr bool k_enable_state_cache = true;
 
-#define W_RC_BREAK_ON_API_ERROR true
+#define W_RC_BREAK_ON_API_ERROR false
 
 } // namespace erwin
