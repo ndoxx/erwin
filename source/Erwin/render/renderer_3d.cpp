@@ -446,6 +446,7 @@ void Renderer3D::begin_forward_pass(BlendState blend_state)
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
 	state.rasterizer_state.cull_mode = CullMode::Back;
+	state.rasterizer_state.clear_flags = CLEAR_DEPTH_FLAG;
 	state.blend_state = blend_state;
 	state.depth_stencil_state.depth_test_enabled = true;
 

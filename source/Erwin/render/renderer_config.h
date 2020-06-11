@@ -41,6 +41,6 @@ static constexpr uint32_t k_max_shaders = 256;
 static constexpr uint32_t k_max_framebuffers = 256;
 
 // DEBUG
-static constexpr bool k_enable_state_cache = true;
+static constexpr bool k_enable_state_cache = false;
 
 } // namespace erwin
