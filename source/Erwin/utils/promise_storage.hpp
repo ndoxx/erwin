@@ -14,14 +14,14 @@ template <typename T> class PromiseStorage
 private:
     std::map<size_t, std::promise<T>> promises_;
     size_t current_token_ = 0;
-    std::mutex mutex_;
+    // std::mutex mutex_;
 
 public:
     // Get a token and a new future. A promise will be stored internally
     // that will be referenced by the token.
     inline auto future_operation()
     {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        // const std::lock_guard<std::mutex> lock(mutex_);
         std::promise<T> prom;
         auto fut = prom.get_future();
         promises_.emplace(std::pair(current_token_, std::move(prom)));
@@ -32,14 +32,14 @@ public:
     // future will be notified.
     inline void fulfill(size_t token, const T& value)
     {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        // const std::lock_guard<std::mutex> lock(mutex_);
         promises_.at(token).set_value(value);
         promises_.erase(token);
     }
 
     inline void fulfill(size_t token, T&& value)
     {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        // const std::lock_guard<std::mutex> lock(mutex_);
         promises_.at(token).set_value(std::forward<T>(value));
         promises_.erase(token);
     }
@@ -51,12 +51,12 @@ template <> class PromiseStorage<void>
 private:
     std::map<size_t, std::promise<void>> promises_;
     size_t current_token_ = 0;
-    std::mutex mutex_;
+    // std::mutex mutex_;
 
 public:
     inline auto future_operation()
     {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        // const std::lock_guard<std::mutex> lock(mutex_);
         std::promise<void> prom;
         auto fut = prom.get_future();
         promises_.emplace(std::pair(current_token_, std::move(prom)));
@@ -65,7 +65,7 @@ public:
 
     inline void fulfill(size_t token)
     {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        // const std::lock_guard<std::mutex> lock(mutex_);
         promises_.at(token).set_value();
         promises_.erase(token);
     }

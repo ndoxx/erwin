@@ -222,6 +222,7 @@ void OGLUniformBuffer::init(const std::string& name, void* data, uint32_t struct
         init_base(GL_UNIFORM_BUFFER, data, struct_size_, mode);
         DLOG("render",1) << "OpenGL " << WCC('i') << "Uniform Buffer" << WCC(0) << " created. id=" << rd_handle_ << std::endl;
         DLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
+        DLOGI << "Name:          " << name << std::endl;
     }
 }
 
@@ -335,7 +336,7 @@ void OGLVertexArray::set_index_buffer(std::reference_wrapper<OGLIndexBuffer> r_i
     glBindVertexArray(rd_handle_);
 	ib.bind();
     glBindVertexArray(0); // Very important, state leak here can lead to segfault during draw calls
-	
+
     index_buffer_ = r_ib;
 
 	DLOG("render",1) << "Vertex array [" << rd_handle_ << "]: set index buffer ["

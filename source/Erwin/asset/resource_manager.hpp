@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <future>
+#include <mutex>
 
 #include "asset/loader_common.h"
 #include "core/core.h"
@@ -75,6 +76,7 @@ private:
     std::vector<FileLoadingTask> file_loading_tasks_;
     std::vector<UploadTask> upload_tasks_;
     std::vector<AfterUploadTask> after_upload_tasks_;
+    std::mutex mutex_;
 };
 
 template <typename LoaderT> hash_t ResourceManager<LoaderT>::load_async(const fs::path& file_path)
@@ -111,11 +113,12 @@ template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
 
 template <typename LoaderT> void ResourceManager<LoaderT>::async_work()
 {
-    for(auto&& task : file_loading_tasks_)
+    for(const auto& task : file_loading_tasks_)
     {
-        auto descriptor = LoaderT::load_from_file(task.meta_data);
-        promises_.fulfill(task.token, std::move(descriptor));
+        const std::lock_guard<std::mutex> lock(mutex_);
+        promises_.fulfill(task.token, LoaderT::load_from_file(task.meta_data));
     }
+    const std::lock_guard<std::mutex> lock(mutex_);
     file_loading_tasks_.clear();
 }
 
@@ -125,6 +128,7 @@ template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
 
     for(auto it = upload_tasks_.begin(); it != upload_tasks_.end();)
     {
+        const std::lock_guard<std::mutex> lock(mutex_);
         auto&& task = *it;
         if(is_ready(task.future_desc))
         {
