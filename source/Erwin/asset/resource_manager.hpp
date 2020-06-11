@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <future>
+#include <map>
 #include <mutex>
 
 #include "asset/loader_common.h"
@@ -65,17 +66,12 @@ private:
         std::future<DataDescriptor> future_desc;
     };
 
-    struct AfterUploadTask
-    {
-        hash_t name;
-        std::function<void(const ManagedResource&)> init;
-    };
-
     std::map<hash_t, ManagedResource> managed_resources_;
     PromiseStorage<DataDescriptor> promises_;
     std::vector<FileLoadingTask> file_loading_tasks_;
     std::vector<UploadTask> upload_tasks_;
-    std::vector<AfterUploadTask> after_upload_tasks_;
+    std::multimap<hash_t, std::function<void(const ManagedResource&)>> on_ready_callbacks_;
+
     std::mutex mutex_;
 };
 
@@ -99,7 +95,7 @@ template <typename LoaderT> hash_t ResourceManager<LoaderT>::load_async(const fs
 template <typename LoaderT>
 void ResourceManager<LoaderT>::on_ready(hash_t hname, std::function<void(const ManagedResource&)> then)
 {
-    after_upload_tasks_.push_back(AfterUploadTask{hname, then});
+    on_ready_callbacks_.emplace(hname, then);
 }
 
 template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
@@ -137,19 +133,13 @@ template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
             hash_t hname = H_(task.meta_data.file_path.string().c_str());
             managed_resources_[hname] = std::move(LoaderT::upload(descriptor));
             upload_tasks_.erase(it);
-        }
-        else
-            ++it;
-    }
 
-    for(auto it = after_upload_tasks_.begin(); it != after_upload_tasks_.end();)
-    {
-        auto&& task = *it;
-        auto findit = managed_resources_.find(task.name);
-        if(findit != managed_resources_.end())
-        {
-            task.init(findit->second);
-            after_upload_tasks_.erase(it);
+            // Call user callbacks
+            auto range = on_ready_callbacks_.equal_range(hname);
+            for(auto callback_it = range.first; callback_it != range.second; ++callback_it)
+                callback_it->second(managed_resources_.at(hname));
+
+            on_ready_callbacks_.erase(hname);
         }
         else
             ++it;

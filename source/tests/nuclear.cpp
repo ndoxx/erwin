@@ -9,6 +9,7 @@
 #include <iostream>
 #include <numeric>
 #include <queue>
+#include <map>
 #include <random>
 #include <sstream>
 #include <type_traits>
@@ -47,25 +48,6 @@ void init_logger()
 int main(int argc, char** argv)
 {
     init_logger();
-
-    auto descriptor = wesh::read("/home/ndx/erwin_workspace/test_scene/assets/mesh/cube.wesh");
-
-    int cnt = 0;
-    for(float ff: descriptor.vertex_data)
-    {
-        DLOGR("asset") << ff << " ";
-        if(++cnt == 11)
-        {
-            cnt = 0;
-            DLOGR("asset") << std::endl;
-        }
-    }
-
-    for(uint32_t idx: descriptor.index_data)
-    {
-        DLOGR("asset") << idx << " ";
-    }
-    DLOGR("asset") << std::endl;
 
     return 0;
 }
