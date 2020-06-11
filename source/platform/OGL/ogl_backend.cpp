@@ -10,6 +10,7 @@
 #include "platform/OGL/ogl_shader.h"
 #include "platform/OGL/ogl_texture.h"
 #include "render/commands.h"
+#include "render/renderer_config.h"
 #include "utils/promise_storage.hpp"
 
 namespace erwin
@@ -858,7 +859,15 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
 // Helper function to identify which part of the pass state has changed
 static inline bool has_mutated(uint64_t state, uint64_t old_state, uint64_t mask)
 {
-    return ((state ^ old_state) & mask) > 0;
+    if constexpr (k_enable_state_cache)
+        return ((state ^ old_state) & mask) > 0;
+    else
+    {
+        (void)state;
+        (void)old_state;
+        (void)mask;
+        return true;
+    }
 }
 
 static void handle_state(uint64_t state_flags)

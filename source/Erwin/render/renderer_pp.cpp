@@ -123,8 +123,10 @@ void PostProcessingRenderer::init()
 #endif
 
 	// Create shaders
-	s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
-	s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
+	// s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
+	s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.glsl", "passthrough");
+	// s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
+	s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.glsl", "post_processing");
 	s_storage.lighten_shader     = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc_lighten.glsl", "post_proc_lighten");
 	s_storage.bloom_blur_shader  = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
 	

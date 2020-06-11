@@ -380,10 +380,11 @@ bool OGLShader::build(const std::vector<std::pair<slang::ExecutionModel, std::st
 	// * Compile each shader
 	for(auto&& [type, source]: sources)
 	{
-		DLOGI << "Compiling " << to_string(type) << "." << std::endl;
+        // Compile shader from source
+        GLuint shader_id = glCreateShader(to_gl_shader_type(type));
 		
-		// Compile shader from source
-    	GLuint shader_id = glCreateShader(to_gl_shader_type(type));
+        DLOGI << "Compiling " << to_string(type) << " [" << shader_id << "]" << std::endl;
+		
     	const char* char_src = source.c_str();
 		glShaderSource(shader_id, 1, &char_src, nullptr);
 		glCompileShader(shader_id);
@@ -429,11 +430,11 @@ bool OGLShader::build_spirv(const fs::path& filepath)
     for(auto&& stage: stages)
     {
         slang::ExecutionModel type = slang::ExecutionModel(stage.execution_model);
+        GLuint shader_id = glCreateShader(to_gl_shader_type(type));
         
-        DLOG("shader",1) << "Specializing " << to_string(type) << "." << std::endl;
+        DLOG("shader",1) << "Specializing " << to_string(type) << " [" << shader_id << "]" << std::endl;
         DLOGI << "Entry point: " << stage.entry_point << std::endl;
 
-        GLuint shader_id = glCreateShader(to_gl_shader_type(type));
         glShaderBinary(1, &shader_id, GL_SHADER_BINARY_FORMAT_SPIR_V, spirv.data(), spirv.size());
         glSpecializeShader(shader_id, static_cast<const GLchar*>(stage.entry_point.c_str()), 0, nullptr, nullptr);
 
@@ -470,8 +471,8 @@ bool OGLShader::link(const std::vector<GLuint>& shader_ids)
     W_PROFILE_FUNCTION()
 
     // * Link program
-    DLOGI << "Linking program." << std::endl;
     rd_handle_ = glCreateProgram();
+    DLOGI << "Linking program [" << rd_handle_ << "]" << std::endl;
     for(auto&& shader_id: shader_ids)
         glAttachShader(rd_handle_, shader_id);
 
