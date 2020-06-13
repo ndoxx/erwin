@@ -1,7 +1,8 @@
 #include "system/bounding_box_system.h"
+#include "asset/bounding.h"
 #include "entity/component_camera.h"
 #include "entity/component_transform.h"
-#include "asset/bounding.h"
+#include "entity/component_mesh.h"
 #include "level/scene.h"
 
 using namespace erwin;
@@ -23,10 +24,10 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     // Perform a ray scene query
     EntityID selected = scene.selected_entity;
     float nearest = camera.frustum.far;
-    
+
     Ray::CollisionData data;
     auto view = scene.registry.view<ComponentOBB>();
-    for(const entt::entity e: view)
+    for(const entt::entity e : view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
         if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.scale, data))
@@ -40,9 +41,9 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     }
 
     if(selected != k_invalid_entity_id)
-	   scene.select(selected);
+        scene.select(selected);
 
-	return true;
+    return true;
 }
 
 void BoundingBoxSystem::update(const GameClock&)
@@ -51,12 +52,24 @@ void BoundingBoxSystem::update(const GameClock&)
     if(!scene.is_loaded())
         return;
 
-    auto view = scene.registry.view<ComponentOBB,ComponentTransform3D>();
-    for(const entt::entity e: view)
     {
-        const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
-        ComponentOBB& OBB = view.get<ComponentOBB>(e);
-        OBB.update(transform.get_model_matrix(), transform.uniform_scale);
+        auto view = scene.registry.view<ComponentOBB, ComponentTransform3D>();
+        for(const entt::entity e : view)
+        {
+            const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
+            ComponentOBB& OBB = view.get<ComponentOBB>(e);
+            OBB.update(transform.get_model_matrix(), transform.uniform_scale);
+        }
+    }
+
+    {
+        auto view = scene.registry.view<ComponentOBB, ComponentMesh>();
+        for(const entt::entity e : view)
+        {
+            const ComponentMesh& mesh = view.get<ComponentMesh>(e);
+            ComponentOBB& OBB = view.get<ComponentOBB>(e);
+            OBB.init(mesh.extent);
+        }
     }
 }
 
@@ -70,14 +83,17 @@ void BoundingBoxSystem::render()
 
     Renderer3D::begin_line_pass();
     auto view = scene.registry.view<ComponentOBB>();
-    for(const entt::entity e: view)
+    for(const entt::entity e : view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
 
+        glm::vec3 scale = {OBB.extent_m.xmax() - OBB.extent_m.xmin(), OBB.extent_m.ymax() - OBB.extent_m.ymin(),
+                           OBB.extent_m.zmax() - OBB.extent_m.zmin()};
+
         if(e == scene.selected_entity)
-            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, glm::vec3(1.001f)), {1.f,0.5f,0.f});
+            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, scale), {1.f, 0.5f, 0.f});
         else if(OBB.display) // TODO: || editor_show_OBBs
-            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, glm::vec3(1.001f)), {0.f,0.5f,1.f});
+            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, scale), {0.f, 0.5f, 1.f});
     }
     Renderer3D::end_line_pass();
 }

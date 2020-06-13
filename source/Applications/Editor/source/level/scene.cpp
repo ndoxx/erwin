@@ -19,8 +19,6 @@
 
 #include <tuple>
 
-#define ASYNC true
-
 using namespace erwin;
 
 namespace editor
@@ -69,7 +67,7 @@ bool Scene::on_load()
         directional_light = ent;
     }
 
-    /*std::vector<hash_t> future_materials = {
+    std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
@@ -91,12 +89,14 @@ bool Scene::on_load()
             if(jj == 0)
             {
                 cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
+                cmesh.extent = CommonGeometry::get_extent("cube_pbr"_h);
                 cobb.init(CommonGeometry::get_extent("cube_pbr"_h));
                 scale = 1.5f;
             }
             else
             {
                 cmesh.set_vertex_array(CommonGeometry::get_vertex_array("icosphere_pbr"_h));
+                cmesh.extent = CommonGeometry::get_extent("icosphere_pbr"_h);
                 cobb.init(CommonGeometry::get_extent("icosphere_pbr"_h));
             }
 
@@ -111,11 +111,10 @@ bool Scene::on_load()
                 registry.emplace<ComponentPBRMaterial>(ent, mat);
             });
         }
-    }*/
+    }
 
-#if ASYNC
     // * Load all resources asynchronously
-    hash_t future_mat  = AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
+    /*hash_t future_mat  = AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
     hash_t future_mesh = AssetManager::load_mesh_async(project::get_asset_path(project::DirKey::MESH) / "chest.wesh");
     
     // * Declare entities dependencies on future resources during entity creation
@@ -130,6 +129,7 @@ bool Scene::on_load()
             ComponentMesh cmesh;
             ComponentOBB cobb;
             cmesh.set_vertex_array(mesh.VAO);
+            cmesh.extent = mesh.extent;
             cobb.init(mesh.extent);
             registry.emplace<ComponentMesh>(ent, cmesh);
             registry.emplace<ComponentOBB>(ent, cobb);
@@ -138,27 +138,7 @@ bool Scene::on_load()
         AssetManager::on_material_ready(future_mat, [this, ent = ent](const ComponentPBRMaterial& mat) {
             registry.emplace<ComponentPBRMaterial>(ent, mat);
         });
-    }
-#else
-    const auto& mat  = AssetManager::load_material(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
-    const auto& mesh = AssetManager::load_mesh(project::get_asset_path(project::DirKey::MESH) / "chest.wesh");
-    {
-        std::string obj_name = "Chest";
-        EntityID ent = create_entity(obj_name);
-
-        ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {-90.f, 180.f, 0.f}, 1.f};
-        registry.emplace<ComponentTransform3D>(ent, ctransform);
-
-        ComponentMesh cmesh;
-        ComponentOBB cobb;
-        cmesh.set_vertex_array(mesh.VAO);
-        cobb.init(mesh.extent);
-
-        registry.emplace<ComponentMesh>(ent, cmesh);
-        registry.emplace<ComponentOBB>(ent, cobb);
-        registry.emplace<ComponentPBRMaterial>(ent, mat);
-    }
-#endif
+    }*/
 
     load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
 
@@ -198,18 +178,12 @@ void Scene::cleanup()
 
 void Scene::load_hdr_environment(const fs::path& hdr_file)
 {
-#if ASYNC
     hash_t future_env = AssetManager::load_environment_async(hdr_file);
     AssetManager::on_environment_ready(future_env, [this](const Environment& env) {
         environment = env;
         Renderer3D::set_environment(environment);
         Renderer3D::enable_IBL(true);
     });
-#else
-    environment = AssetManager::load_environment(hdr_file);
-    Renderer3D::set_environment(environment);
-    Renderer3D::enable_IBL(true);
-#endif
 }
 
 void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)

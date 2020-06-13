@@ -61,6 +61,12 @@ struct Extent
 	inline float& ymax() { return value[3]; }
 	inline float& zmin() { return value[4]; }
 	inline float& zmax() { return value[5]; }
+	inline float xmin() const { return value[0]; }
+	inline float xmax() const { return value[1]; }
+	inline float ymin() const { return value[2]; }
+	inline float ymax() const { return value[3]; }
+	inline float zmin() const { return value[4]; }
+	inline float zmax() const { return value[5]; }
 
 #ifdef W_DEBUG
 	friend std::ostream& operator <<(std::ostream& stream, const Extent& extent);

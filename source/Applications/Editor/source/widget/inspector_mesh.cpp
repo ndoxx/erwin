@@ -1,6 +1,9 @@
 #include "entity/component_mesh.h"
 #include "entity/reflection.h"
 #include "render/common_geometry.h"
+#include "asset/asset_manager.h"
+#include "widget/dialog_open.h"
+#include "project/project.h"
 #include "imgui.h"
 
 namespace erwin
@@ -9,9 +12,8 @@ namespace erwin
 template <>
 void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
 {
-    // Select mesh
-    // TMP: Only common geometry meshes for now
-    if(ImGui::Button("Mesh"))
+    // Select mesh from pre-built primitives
+    if(ImGui::Button("Primitive"))
         ImGui::OpenPopup("popup_select_mesh");
 
     if(ImGui::BeginPopup("popup_select_mesh"))
@@ -24,6 +26,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
                 if(ImGui::Selectable(mesh.name))
                 {
                     cmp->set_vertex_array(mesh.VAO);
+                    cmp->extent = mesh.extent;
                     // TODO: Update OBB if any (send event?)
                     return true;
                 }
@@ -32,6 +35,19 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
         });
         ImGui::EndPopup();
     }
+
+    // Load mesh from file
+    ImGui::SameLine();
+    if(ImGui::Button("Load"))
+        editor::dialog::show_open("ChooseWeshDlgKey", "Choose mesh file", ".wesh", editor::project::get_asset_path(editor::project::DirKey::MESH));
+
+    editor::dialog::on_open("ChooseWeshDlgKey", [&cmp](const fs::path& filepath)
+    {
+        const auto& mesh = AssetManager::load_mesh(filepath);
+        // Copy data
+        cmp->set_vertex_array(mesh.VAO);
+        cmp->extent = mesh.extent;
+    });
 }
 
 } // namespace erwin
