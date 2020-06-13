@@ -89,7 +89,7 @@ void SceneViewLayer::on_render()
     Renderer3D::draw_skybox(scene.environment.environment_map);
 
     {
-        VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+        VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 
         Renderer3D::begin_forward_pass(BlendState::Light);
         auto view = scene.registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();

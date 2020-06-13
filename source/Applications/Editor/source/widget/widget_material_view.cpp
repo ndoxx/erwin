@@ -112,7 +112,7 @@ void MaterialViewWidget::on_imgui_render()
             {
                 current_index_ = ii;
     			auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
-                scene.current_mesh_ = CommonGeometry::get_vertex_array(s_va_name[ii]);
+                scene.current_mesh_ = CommonGeometry::get_mesh(s_va_name[ii]).VAO;
             }
             if(is_selected)
                 ImGui::SetItemDefaultFocus();

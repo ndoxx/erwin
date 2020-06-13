@@ -153,7 +153,7 @@ void MaterialAuthoringWidget::pack_textures()
     SortKey key;
     key.set_sequence(0, 0, PBR_packing_shader_);
 
-    VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+    VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
     DrawCall dc(DrawCall::Indexed, state_flags, PBR_packing_shader_, quad);
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
         dc.set_texture(current_composition_->textures_unpacked[uint32_t(tm)], uint32_t(tm));

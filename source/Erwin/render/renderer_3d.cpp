@@ -271,7 +271,7 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
 	SortKey key;
 	key.set_sequence(0, 0, s_storage.equirectangular_to_cubemap_shader);
 
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader, quad);
 	dc.set_texture(hdr_tex);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo, static_cast<void*>(&data), sizeof(EquirectangularConversionData), DataOwnership::Copy));
@@ -314,7 +314,7 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 	SortKey key;
 	key.set_sequence(1, 0, s_storage.diffuse_irradiance_shader);
 
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.diffuse_irradiance_shader, quad);
 	dc.set_cubemap(env_map);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.diffuse_irradiance_ubo, static_cast<void*>(&data), sizeof(DiffuseIrradianceData), DataOwnership::Copy));
@@ -363,7 +363,7 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
 		SortKey key;
 		key.set_sequence(uint32_t(2+mip_level), 0, s_storage.prefilter_env_map_shader);
 
-		VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+		VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 		DrawCall dc(DrawCall::Indexed, state_flags, s_storage.prefilter_env_map_shader, quad);
 		dc.set_cubemap(env_map);
 		dc.add_dependency(Renderer::update_uniform_buffer(s_storage.prefilter_env_map_ubo, static_cast<void*>(&data), sizeof(PrefilterEnvmapData), DataOwnership::Copy));
@@ -419,7 +419,7 @@ void Renderer3D::end_deferred_pass()
 	SortKey key;
 	key.set_sequence(0, layer_id, s_storage.dirlight_shader);
 
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 	DrawCall dc(DrawCall::Indexed, state_flags, s_storage.dirlight_shader, quad);
 	for(uint32_t ii=0; ii<4; ++ii)
 		dc.set_texture(Renderer::get_framebuffer_texture(GBuffer, ii), ii);
@@ -477,9 +477,7 @@ void Renderer3D::end_line_pass()
 
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, 
-						   ShaderHandle shader, const TextureGroup& texture_group, 
-						   UniformBufferHandle ubo, void* material_data, uint32_t data_size)
+void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data)
 {
 	// Compute matrices
 	TransformData transform_data;
@@ -491,26 +489,21 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	glm::vec4 clip = glm::column(transform_data.mvp, 3);
 	float depth = clip.z/clip.w;
 	SortKey key;
-	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, shader);
+	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, material.shader);
 
-	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, shader, VAO);
+	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
-	if(ubo.index != k_invalid_handle && material_data)
-		dc.add_dependency(Renderer::update_uniform_buffer(ubo, material_data, data_size, DataOwnership::Copy));
-	for(uint32_t ii=0; ii<texture_group.texture_count; ++ii)
-		dc.set_texture(texture_group.textures[ii], ii);
+	if(material.ubo.index != k_invalid_handle && material_data)
+		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
+	for(uint32_t ii=0; ii<material.texture_group.texture_count; ++ii)
+		dc.set_texture(material.texture_group.textures[ii], ii);
 
 	Renderer::submit(key.encode(), dc);
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data)
-{
-	draw_mesh(VAO, model_matrix, material.shader, material.texture_group, material.ubo, material_data, material.data_size);
-}
-
 void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
 {
-	VertexArrayHandle VAO = CommonGeometry::get_vertex_array("cube_lines"_h);
+	VertexArrayHandle VAO = CommonGeometry::get_mesh("cube_lines"_h).VAO;
 
 	// Compute matrices
 	LineInstanceData instance_data;
@@ -533,7 +526,7 @@ void Renderer3D::draw_skybox(CubemapHandle cubemap)
 	if(!cubemap.is_valid())
 		return;
 
-	VertexArrayHandle cube = CommonGeometry::get_vertex_array("cube"_h);
+	VertexArrayHandle cube = CommonGeometry::get_mesh("cube"_h).VAO;
 
 	RenderState state;
 	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);

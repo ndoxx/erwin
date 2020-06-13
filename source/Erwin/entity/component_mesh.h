@@ -2,6 +2,7 @@
 
 #include "render/handles.h"
 #include "asset/bounding.h"
+#include "asset/mesh.h"
 
 namespace erwin
 {
@@ -12,9 +13,10 @@ struct ComponentMesh
 	Extent extent = {-0.5f,0.5f,-0.5f,0.5f,-0.5f,0.5f};
 	bool ready = false;
 
-	inline void set_vertex_array(VertexArrayHandle vao)
+	inline void init(const Mesh& mesh)
 	{
-		vertex_array = vao;
+		vertex_array = mesh.VAO;
+		extent = mesh.extent;
 		if(vertex_array.is_valid())
 			ready = true;
 	}

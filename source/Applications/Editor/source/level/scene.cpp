@@ -88,16 +88,14 @@ bool Scene::on_load()
             float scale = 1.f;
             if(jj == 0)
             {
-                cmesh.set_vertex_array(CommonGeometry::get_vertex_array("cube_pbr"_h));
-                cmesh.extent = CommonGeometry::get_extent("cube_pbr"_h);
-                cobb.init(CommonGeometry::get_extent("cube_pbr"_h));
+                cmesh.init(CommonGeometry::get_mesh("cube_pbr"_h));
+                cobb.init(cmesh.extent);
                 scale = 1.5f;
             }
             else
             {
-                cmesh.set_vertex_array(CommonGeometry::get_vertex_array("icosphere_pbr"_h));
-                cmesh.extent = CommonGeometry::get_extent("icosphere_pbr"_h);
-                cobb.init(CommonGeometry::get_extent("icosphere_pbr"_h));
+                cmesh.init(CommonGeometry::get_mesh("icosphere_pbr"_h));
+                cobb.init(cmesh.extent);
             }
 
             ComponentTransform3D ctransform = {
@@ -128,8 +126,7 @@ bool Scene::on_load()
         AssetManager::on_mesh_ready(future_mesh, [this, ent = ent](const Mesh& mesh) {
             ComponentMesh cmesh;
             ComponentOBB cobb;
-            cmesh.set_vertex_array(mesh.VAO);
-            cmesh.extent = mesh.extent;
+            cmesh.init(mesh);
             cobb.init(mesh.extent);
             registry.emplace<ComponentMesh>(ent, cmesh);
             registry.emplace<ComponentOBB>(ent, cobb);

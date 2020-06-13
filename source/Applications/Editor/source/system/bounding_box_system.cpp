@@ -30,7 +30,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     for(const entt::entity e : view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
-        if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.scale, data))
+        if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
         {
             if(data.near < nearest)
             {
@@ -87,13 +87,10 @@ void BoundingBoxSystem::render()
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
 
-        glm::vec3 scale = {OBB.extent_m.xmax() - OBB.extent_m.xmin(), OBB.extent_m.ymax() - OBB.extent_m.ymin(),
-                           OBB.extent_m.zmax() - OBB.extent_m.zmin()};
-
         if(e == scene.selected_entity)
-            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, scale), {1.f, 0.5f, 0.f});
+            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {1.f, 0.5f, 0.f});
         else if(OBB.display) // TODO: || editor_show_OBBs
-            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, scale), {0.f, 0.5f, 1.f});
+            Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {0.f, 0.5f, 1.f});
     }
     Renderer3D::end_line_pass();
 }

@@ -176,7 +176,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 {
 	FramebufferHandle source_fb_handle = FramebufferPool::get_framebuffer(source_fb);
 
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
+	VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
 
 	BlurUBOData blur_data;
 #if !BLOOM_RETAIL
@@ -249,7 +249,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, bool us
 	state.depth_stencil_state.depth_test_enabled = false;
 
 	key.set_sequence(s_storage.sequence++, view_id, s_storage.pp_shader);
-	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_vertex_array("quad"_h));
+	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.pp_shader, CommonGeometry::get_mesh("quad"_h).VAO);
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	if(use_bloom)
 		dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer("BloomCombine"_h), 0), 1);
@@ -271,7 +271,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	state.depth_stencil_state.depth_test_enabled = false;
 
 	key.set_sequence(s_storage.sequence++, view_id, s_storage.lighten_shader);
-	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_vertex_array("quad"_h));
+	DrawCall dc(DrawCall::Indexed, state.encode(), s_storage.lighten_shader, CommonGeometry::get_mesh("quad"_h).VAO);
 	dc.set_texture(Renderer::get_framebuffer_texture(FramebufferPool::get_framebuffer(framebuffer), index));
 	Renderer::submit(key.encode(), dc);
 }

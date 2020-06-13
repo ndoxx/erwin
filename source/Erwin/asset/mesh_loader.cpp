@@ -38,7 +38,7 @@ Mesh MeshLoader::upload(const wesh::WeshDescriptor& descriptor)
         PBR_VBL, descriptor.vertex_data.data(), uint32_t(descriptor.vertex_data.size()), UsagePattern::Static);
     VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-    return {VAO, PBR_VBL, descriptor.extent, {}};
+    return {VAO, PBR_VBL, descriptor.extent};
 }
 
 void MeshLoader::destroy(Mesh& mesh) { Renderer::destroy(mesh.VAO); }

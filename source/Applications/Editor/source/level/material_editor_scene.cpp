@@ -19,7 +19,7 @@ bool MaterialEditorScene::on_load()
 	directional_light_.ambient_strength = 0.1f;
 	directional_light_.brightness = 3.7f;
 
-	current_mesh_ = CommonGeometry::get_vertex_array("icosphere_pbr"_h);
+	current_mesh_ = CommonGeometry::get_mesh("icosphere_pbr"_h).VAO;
 
 	return true;
 }

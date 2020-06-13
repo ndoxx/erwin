@@ -11,7 +11,6 @@ struct Mesh
 	VertexArrayHandle VAO;
 	VertexBufferLayoutHandle layout;
 	Extent extent;
-	char name[32];
 };
 
 } // namespace erwin

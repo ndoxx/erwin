@@ -45,10 +45,9 @@ void EditorBackgroundLayer::on_render()
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 
-	VertexArrayHandle quad = CommonGeometry::get_vertex_array("quad"_h);
 	SortKey key;
 	key.set_sequence(0, Renderer::next_layer_id(), background_shader_);
-	DrawCall dc(DrawCall::Indexed, state.encode(), background_shader_, quad);
+	DrawCall dc(DrawCall::Indexed, state.encode(), background_shader_, CommonGeometry::get_mesh("quad"_h).VAO);
 	Renderer::submit(key.encode(), dc);
 }
 

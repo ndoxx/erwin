@@ -161,7 +161,7 @@ void RTPeekWidget::on_layer_render()
     // frame textures.
     SortKey key;
     key.set_sequence(0, 0, s_storage.peek_shader_);
-    DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_vertex_array("quad"_h));
+    DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_mesh("quad"_h).VAO);
     dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DataOwnership::Copy));
     dc.set_texture(props.texture);
     Renderer::submit(key.encode(), dc);
