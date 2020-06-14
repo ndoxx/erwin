@@ -107,10 +107,10 @@ void LayerTest::on_render()
         for(const entt::entity e : view)
         {
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
-            ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
-            ComponentMesh& cmesh = view.get<ComponentMesh>(e);
+            const ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
+            const ComponentMesh& cmesh = view.get<ComponentMesh>(e);
             if(cmaterial.is_ready() && cmesh.is_ready())
-                Renderer3D::draw_mesh(cmesh.vertex_array, ctransform.get_model_matrix(), cmaterial.material,
+                Renderer3D::draw_mesh(cmesh.mesh, ctransform.get_model_matrix(), cmaterial.material,
                                       &cmaterial.material_data);
         }
         Renderer3D::end_deferred_pass();

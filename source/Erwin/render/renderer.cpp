@@ -716,7 +716,7 @@ VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHa
     return handle;
 }
 
-UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, void* data, uint32_t size,
+UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, const void* data, uint32_t size,
                                                     UsagePattern mode)
 {
     UniformBufferHandle handle = UniformBufferHandle::acquire();
@@ -744,7 +744,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, voi
     return handle;
 }
 
-ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, void* data, uint32_t size,
+ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, const void* data, uint32_t size,
                                                                  UsagePattern mode)
 {
     ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
@@ -865,7 +865,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
     return handle;
 }
 
-void Renderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count)
+void Renderer::update_index_buffer(IndexBufferHandle handle, const uint32_t* data, uint32_t count)
 {
     W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
     W_ASSERT(data, "No data!");
@@ -880,7 +880,7 @@ void Renderer::update_index_buffer(IndexBufferHandle handle, uint32_t* data, uin
     cw.submit();
 }
 
-void Renderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_vertex_buffer(VertexBufferHandle handle, const void* data, uint32_t size)
 {
     W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
     W_ASSERT(data, "No data!");
@@ -895,7 +895,7 @@ void Renderer::update_vertex_buffer(VertexBufferHandle handle, void* data, uint3
     cw.submit();
 }
 
-void Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size)
 {
     W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
     W_ASSERT(data, "No data!");
@@ -910,7 +910,7 @@ void Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uin
     cw.submit();
 }
 
-void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size)
+void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size)
 {
     W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
     W_ASSERT(data, "No data!");
@@ -1156,7 +1156,7 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
     cw.submit(key);
 }
 
-uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size,
+uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size,
                                                 DataOwnership copy)
 {
     W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index);
@@ -1178,7 +1178,7 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
     return cw.submit(SortKey::k_skip);
 }
 
-uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size, DataOwnership copy)
+uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size, DataOwnership copy)
 {
     W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index);
     W_ASSERT(data, "Data is null.");

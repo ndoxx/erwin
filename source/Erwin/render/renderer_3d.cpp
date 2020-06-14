@@ -477,7 +477,7 @@ void Renderer3D::end_line_pass()
 
 }
 
-void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data)
+void Renderer3D::draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, const Material& material, const void* material_data)
 {
 	// Compute matrices
 	TransformData transform_data;
@@ -491,7 +491,7 @@ void Renderer3D::draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix,
 	SortKey key;
 	key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, material.shader);
 
-	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, VAO);
+	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, mesh.VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
 	if(material.ubo.index != k_invalid_handle && material_data)
 		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));

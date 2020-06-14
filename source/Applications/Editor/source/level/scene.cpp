@@ -89,13 +89,13 @@ bool Scene::on_load()
             if(jj == 0)
             {
                 cmesh.init(CommonGeometry::get_mesh("cube_pbr"_h));
-                cobb.init(cmesh.extent);
+                cobb.init(cmesh.mesh.extent);
                 scale = 1.5f;
             }
             else
             {
                 cmesh.init(CommonGeometry::get_mesh("icosphere_pbr"_h));
-                cobb.init(cmesh.extent);
+                cobb.init(cmesh.mesh.extent);
             }
 
             ComponentTransform3D ctransform = {

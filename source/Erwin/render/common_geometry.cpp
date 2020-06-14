@@ -11,10 +11,15 @@
 namespace erwin
 {
 
+struct NamedMesh
+{
+	Mesh mesh;
+	std::string name;
+};
+
 struct CommonGeometryStorage
 {
-	std::map<hash_t, Mesh> meshes_;
-	std::map<hash_t, std::string> mesh_names_;
+	std::map<hash_t, NamedMesh> meshes_;
 };
 static CommonGeometryStorage s_storage;
 
@@ -32,8 +37,7 @@ static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayo
 	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), uint32_t(vdata.size()), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-	s_storage.meshes_.insert({hname, {VAO, layout_handle, dims}});
-	s_storage.mesh_names_.insert({hname, name});
+	s_storage.meshes_.insert({hname, {{VAO, layout_handle, dims}, name}});
 	return VAO;
 }
 
@@ -78,8 +82,8 @@ void CommonGeometry::init()
 
 void CommonGeometry::shutdown()
 {
-	for(auto&& [hname, mesh]: s_storage.meshes_)
-		Renderer::destroy(mesh.VAO);
+	for(auto&& [hname, nmesh]: s_storage.meshes_)
+		Renderer::destroy(nmesh.mesh.VAO);
 	s_storage.meshes_.clear();
 }
 
@@ -87,14 +91,14 @@ const Mesh& CommonGeometry::get_mesh(hash_t name)
 {
 	auto it = s_storage.meshes_.find(name);
 	W_ASSERT(it!=s_storage.meshes_.end(), "[CommonGeometry] Cannot find mesh at that name.");
-	return it->second;
+	return it->second.mesh;
 }
 
 void CommonGeometry::visit_meshes(MeshVisitor visit)
 {
-	for(auto&& [hname, mesh]: s_storage.meshes_)
+	for(auto&& [hname, nmesh]: s_storage.meshes_)
 	{
-		if(visit(mesh, s_storage.mesh_names_.at(hname)))
+		if(visit(nmesh.mesh, nmesh.name))
 			break;
 	}
 }

@@ -3,6 +3,7 @@
 #include "render/handles.h"
 #include "render/render_state.h"
 #include "asset/material.h"
+#include "asset/mesh.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -56,7 +57,7 @@ public:
 	static void end_line_pass();
 
 	// Draw a textured mesh
-	static void draw_mesh(VertexArrayHandle VAO, const glm::mat4& model_matrix, const Material& material, void* material_data=nullptr);
+	static void draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, const Material& material, const void* material_data=nullptr);
 	// Render a cubemap as a skybox (whole pass)
 	static void draw_skybox(CubemapHandle cubemap);
 	// Draw a debug cube

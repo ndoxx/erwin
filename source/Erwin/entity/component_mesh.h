@@ -1,7 +1,5 @@
 #pragma once
 
-#include "render/handles.h"
-#include "asset/bounding.h"
 #include "asset/mesh.h"
 
 namespace erwin
@@ -9,15 +7,13 @@ namespace erwin
 
 struct ComponentMesh
 {
-	VertexArrayHandle vertex_array;
-	Extent extent = {-0.5f,0.5f,-0.5f,0.5f,-0.5f,0.5f};
+	Mesh mesh;
 	bool ready = false;
 
-	inline void init(const Mesh& mesh)
+	inline void init(const Mesh& mesh_)
 	{
-		vertex_array = mesh.VAO;
-		extent = mesh.extent;
-		if(vertex_array.is_valid())
+		mesh = mesh_;
+		if(mesh.VAO.is_valid())
 			ready = true;
 	}
 

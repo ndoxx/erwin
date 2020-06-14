@@ -102,7 +102,7 @@ void GizmoSystem::render()
     gizmo_data_.selected = selected_part_;
 
     Renderer3D::begin_line_pass(false);
-    Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h).VAO, 
+    Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), 
     						   transform->get_unscaled_model_matrix(), 
     						   gizmo_material_,
                                &gizmo_data_);

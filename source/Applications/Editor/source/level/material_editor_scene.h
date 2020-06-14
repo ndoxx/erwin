@@ -7,8 +7,8 @@
 #include "entity/component_PBR_material.h"
 #include "entity/component_transform.h"
 #include "entity/component_camera.h"
+#include "entity/component_mesh.h"
 #include "entity/light.h"
-#include "render/handles.h"
 
 #include "level/scene_manager.h"
 
@@ -38,7 +38,7 @@ public:
 	erwin::ComponentDirectionalLight directional_light_;
 	erwin::ComponentCamera3D camera_;
 	erwin::ComponentTransform3D camera_transform_;
-	erwin::VertexArrayHandle current_mesh_;
+	erwin::ComponentMesh current_mesh_;
 
 	struct Environment
 	{

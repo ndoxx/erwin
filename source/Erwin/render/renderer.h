@@ -82,9 +82,9 @@ public:
 	static void blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target);
 	// * Draw call dependencies
 	// Update an SSBO's data
-	static uint32_t update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
+	static uint32_t update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size, DataOwnership copy);
 	// Update an UBO's data
-	static uint32_t update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size, DataOwnership copy);
+	static uint32_t update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size, DataOwnership copy);
 
 	// Force renderer to dispatch all render/draw commands
 	static void flush();
@@ -95,16 +95,16 @@ public:
 	static VertexBufferHandle        create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data, uint32_t count, UsagePattern mode = UsagePattern::Static);
 	static VertexArrayHandle         create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib);
 	static VertexArrayHandle         create_vertex_array(const std::vector<VertexBufferHandle>& vbs, IndexBufferHandle ib);
-	static UniformBufferHandle       create_uniform_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
-	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
+	static UniformBufferHandle       create_uniform_buffer(const std::string& name, const void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
+	static ShaderStorageBufferHandle create_shader_storage_buffer(const std::string& name, const void* data, uint32_t size, UsagePattern mode = UsagePattern::Dynamic);
 	static ShaderHandle 			 create_shader(const fs::path& filepath, const std::string& name);
 	static TextureHandle 			 create_texture_2D(const Texture2DDescriptor& desc);
 	static CubemapHandle 			 create_cubemap(const CubemapDescriptor& desc);
 	static FramebufferHandle 		 create_framebuffer(uint32_t width, uint32_t height, uint8_t flags, const FramebufferLayout& layout);
-	static void 					 update_index_buffer(IndexBufferHandle handle, uint32_t* data, uint32_t count);
-	static void 					 update_vertex_buffer(VertexBufferHandle handle, void* data, uint32_t size);
-	static void 					 update_uniform_buffer(UniformBufferHandle handle, void* data, uint32_t size);
-	static void 					 update_shader_storage_buffer(ShaderStorageBufferHandle handle, void* data, uint32_t size);
+	static void 					 update_index_buffer(IndexBufferHandle handle, const uint32_t* data, uint32_t count);
+	static void 					 update_vertex_buffer(VertexBufferHandle handle, const void* data, uint32_t size);
+	static void 					 update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size);
+	static void 					 update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size);
 	static void 					 shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo);
 	static void 					 shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo);
 	static void 					 update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height);

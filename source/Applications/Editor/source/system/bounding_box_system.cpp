@@ -66,9 +66,9 @@ void BoundingBoxSystem::update(const GameClock&)
         auto view = scene.registry.view<ComponentOBB, ComponentMesh>();
         for(const entt::entity e : view)
         {
-            const ComponentMesh& mesh = view.get<ComponentMesh>(e);
+            const ComponentMesh& cmesh = view.get<ComponentMesh>(e);
             ComponentOBB& OBB = view.get<ComponentOBB>(e);
-            OBB.init(mesh.extent);
+            OBB.init(cmesh.mesh.extent);
         }
     }
 }

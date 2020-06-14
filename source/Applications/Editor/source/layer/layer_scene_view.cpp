@@ -77,10 +77,10 @@ void SceneViewLayer::on_render()
         for(const entt::entity e : view)
         {
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
-            ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
-            ComponentMesh& cmesh = view.get<ComponentMesh>(e);
+            const ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
+            const ComponentMesh& cmesh = view.get<ComponentMesh>(e);
             if(cmaterial.is_ready() && cmesh.is_ready())
-                Renderer3D::draw_mesh(cmesh.vertex_array, ctransform.get_model_matrix(), cmaterial.material,
+                Renderer3D::draw_mesh(cmesh.mesh, ctransform.get_model_matrix(), cmaterial.material,
                                       &cmaterial.material_data);
         }
         Renderer3D::end_deferred_pass();
@@ -89,8 +89,6 @@ void SceneViewLayer::on_render()
     Renderer3D::draw_skybox(scene.environment.environment_map);
 
     {
-        VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
-
         Renderer3D::begin_forward_pass(BlendState::Light);
         auto view = scene.registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
         for(const entt::entity e : view)
@@ -103,7 +101,7 @@ void SceneViewLayer::on_render()
             renderable.material_data.color = glm::vec4(dirlight.color, 1.f);
             renderable.material_data.brightness = dirlight.brightness;
 
-            Renderer3D::draw_mesh(quad, glm::mat4(1.f), renderable.material, &renderable.material_data);
+            Renderer3D::draw_mesh(CommonGeometry::get_mesh("quad"_h), glm::mat4(1.f), renderable.material, &renderable.material_data);
         }
         Renderer3D::end_forward_pass();
     }

@@ -80,7 +80,7 @@ void MaterialViewWidget::on_layer_render()
 {
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     Renderer3D::begin_deferred_pass();
-    Renderer3D::draw_mesh(scene.current_mesh_, scene.transform_.get_model_matrix(), scene.current_material_.material, &scene.current_material_.material_data);
+    Renderer3D::draw_mesh(scene.current_mesh_.mesh, scene.transform_.get_model_matrix(), scene.current_material_.material, &scene.current_material_.material_data);
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap?
@@ -112,7 +112,7 @@ void MaterialViewWidget::on_imgui_render()
             {
                 current_index_ = ii;
     			auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
-                scene.current_mesh_ = CommonGeometry::get_mesh(s_va_name[ii]).VAO;
+                scene.current_mesh_.init(CommonGeometry::get_mesh(s_va_name[ii]));
             }
             if(is_selected)
                 ImGui::SetItemDefaultFocus();
