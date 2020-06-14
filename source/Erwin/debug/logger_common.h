@@ -1,10 +1,16 @@
 #pragma once
 
-#include <map>
+#include <array>
 #include <sstream>
 
 #include "core/core.h"
 #include "core/time_base.h"
+
+#if LOGGING_ANSI_3 == 1
+    #define ANSI_3 true
+#else
+    #define ANSI_3 false
+#endif
 
 namespace erwin
 {
@@ -15,6 +21,7 @@ struct WCC
 {
     WCC() = default;
     explicit WCC(char cc);
+    explicit WCC(const std::string&);
     WCC(uint8_t R, uint8_t G, uint8_t B);
 
     friend std::ostream& operator <<(std::ostream& stream, const WCC& wcc);
@@ -28,6 +35,7 @@ struct WCB
 {
     WCB() = default;
     explicit WCB(int cc);
+    explicit WCB(const std::string&);
     WCB(uint8_t R, uint8_t G, uint8_t B);
 
     friend std::ostream& operator <<(std::ostream& stream, const WCB& wcc);
@@ -44,7 +52,6 @@ enum class MsgType: std::uint8_t
     NORMAL,     // No effect white message
     ITEM,       // Item in list
     EVENT,      // For event tracking
-    TRACK,      // Relative to data/system being tracked NO PARSING
     NOTIFY,     // Relative to an event which should be notified to the user
     WARNING,    // Relative to an event which could impact the flow badly
     ERROR,      // Relative to a serious but recoverable error
@@ -53,6 +60,8 @@ enum class MsgType: std::uint8_t
     BANG,       // For code flow analysis
     GOOD,       // For test success
     BAD,        // For test fail
+
+    COUNT
 };
 
 struct LogStatement
@@ -73,32 +82,11 @@ struct LogChannel
 	std::string tag;
 };
 
-static const std::map<MsgType, WCC> STYLES =
+class Style
 {
-    {MsgType::NORMAL,    WCC(255,255,255)},
-    {MsgType::ITEM,      WCC(255,255,255)},
-    {MsgType::EVENT,     WCC(255,255,255)},
-    {MsgType::NOTIFY,    WCC(150,130,255)},
-    {MsgType::WARNING,   WCC(255,175,0)},
-    {MsgType::ERROR,     WCC(255,90, 90)},
-    {MsgType::FATAL,     WCC(255,0,  0)},
-    {MsgType::BANG,      WCC(255,100,0)},
-    {MsgType::GOOD,      WCC(0,  255,0)},
-    {MsgType::BAD,       WCC(255,0,  0)},
-};
-
-static const std::map<MsgType, std::string> ICON =
-{
-    {MsgType::NORMAL,    "    "},
-    {MsgType::ITEM,      "     \u21B3 "},
-    {MsgType::EVENT,     " \u2107 "},
-    {MsgType::NOTIFY,    "\033[1;48;2;20;10;50m \u2055 \033[1;49m "},
-    {MsgType::WARNING,   "\033[1;48;2;50;40;10m \u203C \033[1;49m "},
-    {MsgType::ERROR,     "\033[1;48;2;50;10;10m \u2020 \033[1;49m "},
-    {MsgType::FATAL,     "\033[1;48;2;50;10;10m \u2021 \033[1;49m "},
-    {MsgType::BANG,      "\033[1;48;2;50;40;10m \u0489 \033[1;49m "},
-    {MsgType::GOOD,      "\033[1;48;2;10;50;10m \u203F \033[1;49m "},
-    {MsgType::BAD,       "\033[1;48;2;50;10;10m \u2054 \033[1;49m "},
+public:
+    static const std::array<WCC, size_t(MsgType::COUNT)> s_colors;
+    static const std::array<std::string, size_t(MsgType::COUNT)> s_icons;
 };
 
 } // namespace dbg

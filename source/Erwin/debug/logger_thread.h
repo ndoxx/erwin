@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <thread>
 #include <atomic>
 #include <condition_variable>

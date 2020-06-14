@@ -32,6 +32,11 @@ add_definitions(-DW_DEBUG)
 add_definitions(-DW_ENABLE_ASSERT)
 add_definitions(-DLOGGING_ENABLED=1)
 
+option(SIMPLE_ANSI "Use ANSI3 colors in console" OFF)
+if (SIMPLE_ANSI)
+	add_definitions(-DLOGGING_ANSI_3=1)
+endif()
+
 
 # I can't link EASTL statically in liberwin (I tried hard building it with -fPIC but
 # it does not seem to work). As a result, for now, each client applications

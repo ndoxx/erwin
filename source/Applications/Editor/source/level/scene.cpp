@@ -99,7 +99,7 @@ bool Scene::on_load()
             }
 
             ComponentTransform3D ctransform = {
-                {-4.f + float(ii) * 2.5f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
+                {-4.f + float(ii) * 2.6f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
 
             registry.emplace<ComponentTransform3D>(ent, ctransform);
             registry.emplace<ComponentMesh>(ent, cmesh);

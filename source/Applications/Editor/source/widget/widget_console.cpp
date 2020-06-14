@@ -141,7 +141,6 @@ static std::string message_type_to_style_tag(erwin::dbg::MsgType type)
 	    case erwin::dbg::MsgType::NORMAL:  return "";
 	    case erwin::dbg::MsgType::ITEM:    return "";
 	    case erwin::dbg::MsgType::EVENT:   return "";
-	    case erwin::dbg::MsgType::TRACK:   return "";
 	    case erwin::dbg::MsgType::NOTIFY:  return "[!N]";
 	    case erwin::dbg::MsgType::WARNING: return "[!W]";
 	    case erwin::dbg::MsgType::ERROR:   return "[!E]";
@@ -149,6 +148,7 @@ static std::string message_type_to_style_tag(erwin::dbg::MsgType type)
 	    case erwin::dbg::MsgType::BANG:    return "";
 	    case erwin::dbg::MsgType::GOOD:    return "[!G]";
 	    case erwin::dbg::MsgType::BAD:     return "[!B]";
+	    default:                           return "";
 	}
 }
 

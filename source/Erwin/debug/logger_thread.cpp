@@ -168,7 +168,7 @@ void LoggerThread::dispatch(const LogStatement& stmt)
 {
 	if(stmt.msg_type == MsgType::BANG)
 	{
-		std::cout << "  " << STYLES.at(MsgType::BANG) << ICON.at(MsgType::BANG) << stmt.message;
+		std::cout << "  " << Style::s_colors[size_t(MsgType::BANG)] << Style::s_icons[size_t(MsgType::BANG)] << stmt.message;
 		return;
 	}
 
