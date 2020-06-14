@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(erwin VERSION 1.0.0 DESCRIPTION "Erwin engine")
 
-# set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_BUILD_TYPE MinSizeRel)
-# set(CMAKE_BUILD_TYPE RelWithDebInfo)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # set(CMAKE_CXX_EXTENSIONS OFF)
@@ -27,10 +22,17 @@ add_library(project_options INTERFACE)
 target_compile_features(project_options INTERFACE cxx_std_17)
 enable_sanitizers(project_options)
 
-# Global definitions
-add_definitions(-DW_DEBUG)
-add_definitions(-DW_ENABLE_ASSERT)
-add_definitions(-DLOGGING_ENABLED=1)
+# Global definitions & options
+option(ENABLE_LOGGING "Log stuff" ON)
+if (ENABLE_LOGGING)
+	add_definitions(-DLOGGING_ENABLED=1)
+endif()
+
+if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+	add_definitions(-DW_DEBUG)
+	add_definitions(-DW_ENABLE_ASSERT)
+	add_definitions(-DLOGGING_ENABLED=1)
+endif()
 
 option(SIMPLE_ANSI "Use ANSI3 colors in console" OFF)
 if (SIMPLE_ANSI)

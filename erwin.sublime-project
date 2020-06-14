@@ -9,19 +9,38 @@
 	"build_systems":
     [
     	{
-    		"name": "make build",
+    		"name": "editor build",
     		"shell_cmd": "cd ${project_path}/build && make editor -j4",
-    		"file_regex": "/([^/:]+):(\\d+):(\\d+): ",
+    		"working_dir": "/",
+    		"file_regex": "^(/.+):(\\d+):(\\d+): ",
             "target": "ansi_color_build",
             "syntax": "Packages/ANSIescape/ANSI.sublime-syntax",
     		"variants": [
     			{
-    				"name": "make build & run",
+    				"name": "run",
+    				"shell_cmd": "cd ${project_path}/build && ../bin/editor",
+    				// Enables navigation to XML files from log
+    				"file_regex": "\"(/.+\\.xml)\""
+    			},
+    			{
+    				"name": "make & run",
     				"shell_cmd": "cd ${project_path}/build && make editor -j4 && ../bin/editor"
     			},
     			{
-    				"name": "cmake build",
-    				"shell_cmd": "cd ${project_path}/build && cmake -DSIMPLE_ANSI=ON .. && make editor -j4"
+    				"name": "cmake & make [DEBUG]",
+    				"shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=Debug -DSIMPLE_ANSI=ON .. && make editor -j4"
+    			},
+    			{
+    				"name": "cmake & make fancy colors [DEBUG]",
+    				"shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=Debug -DSIMPLE_ANSI=OFF .. && make editor -j4"
+    			},
+    			{
+    				"name": "cmake & make [RELEASE]",
+    				"shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_LOGGING=ON -DSIMPLE_ANSI=OFF .. && make editor -j4"
+    			},
+    			{
+    				"name": "cmake & make [RELEASE W/ DEBUG INFO]",
+    				"shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_LOGGING=ON -DSIMPLE_ANSI=OFF .. && make editor -j4"
     			},
     			{
     				"name": "clean",

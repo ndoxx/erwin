@@ -157,7 +157,9 @@ public:
     template <typename EventT> static void fire(const EventT& event)
     {
         try_get<EventT>([&event](auto* q_ptr) {
+#ifdef W_DEBUG
             log_event(event);
+#endif
             q_ptr->fire(event);
         });
     }
@@ -166,7 +168,9 @@ public:
     template <typename EventT> static void enqueue(const EventT& event)
     {
         try_get<EventT>([&event](auto* q_ptr) {
+#ifdef W_DEBUG
             log_event(event);
+#endif
             q_ptr->submit(event);
         });
     }
@@ -174,7 +178,9 @@ public:
     template <typename EventT> static void enqueue(EventT&& event)
     {
         try_get<EventT>([&event](auto* q_ptr) {
+#ifdef W_DEBUG
             log_event(event);
+#endif
             q_ptr->submit(std::forward<EventT>(event));
         });
     }

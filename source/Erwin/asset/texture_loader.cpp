@@ -10,9 +10,7 @@ AssetMetaData TextureLoader::build_meta_data(const fs::path& file_path)
 {
     // Sanity check
     W_ASSERT(fs::exists(file_path), "File does not exist.");
-    hash_t hextension = H_(file_path.extension().string().c_str());
-    bool compatible = (hextension == ".png"_h);
-    W_ASSERT_FMT(compatible, "Incompatible file type: %s", file_path.extension().string().c_str());
+    W_ASSERT_FMT(H_(file_path.extension().string().c_str()) == ".png"_h, "Incompatible file type: %s", file_path.extension().string().c_str());
 
     return {file_path, AssetMetaData::AssetType::ImageFilePNG};
 }
