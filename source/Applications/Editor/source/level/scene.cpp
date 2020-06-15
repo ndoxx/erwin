@@ -82,28 +82,30 @@ bool Scene::on_load()
             std::string obj_name = "Obj #" + std::to_string(cnt++);
             EntityID ent = create_entity(obj_name);
 
-            ComponentMesh cmesh;
-            ComponentOBB cobb;
 
             float scale = 1.f;
             if(jj == 0)
             {
-                cmesh.init(CommonGeometry::get_mesh("cube_pbr"_h));
+                ComponentMesh cmesh(CommonGeometry::get_mesh("cube_pbr"_h));
+                ComponentOBB cobb;
                 cobb.init(cmesh.mesh.extent);
                 scale = 1.5f;
+                registry.emplace<ComponentMesh>(ent, cmesh);
+                registry.emplace<ComponentOBB>(ent, cobb);
             }
             else
             {
-                cmesh.init(CommonGeometry::get_mesh("icosphere_pbr"_h));
+                ComponentMesh cmesh(CommonGeometry::get_mesh("icosphere_pbr"_h));
+                ComponentOBB cobb;
                 cobb.init(cmesh.mesh.extent);
+                registry.emplace<ComponentMesh>(ent, cmesh);
+                registry.emplace<ComponentOBB>(ent, cobb);
             }
 
             ComponentTransform3D ctransform = {
                 {-4.f + float(ii) * 2.6f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
 
             registry.emplace<ComponentTransform3D>(ent, ctransform);
-            registry.emplace<ComponentMesh>(ent, cmesh);
-            registry.emplace<ComponentOBB>(ent, cobb);
 
             AssetManager::on_material_ready(future_materials[ii], [this, ent = ent](const ComponentPBRMaterial& mat) {
                 registry.emplace<ComponentPBRMaterial>(ent, mat);

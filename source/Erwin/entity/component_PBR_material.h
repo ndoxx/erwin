@@ -2,6 +2,7 @@
 
 #include "asset/material.h"
 #include "render/texture_common.h"
+#include "asset/asset_manager.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -25,13 +26,33 @@ struct ComponentPBRMaterial
 		float uniform_roughness  = 0.5f;
 	} material_data;
 
-	bool ready = false;
 	std::string name;
 
-	inline void set_material(const Material& mat)
+	ComponentPBRMaterial()
 	{
-		material = mat;
-		ready = true;
+		material.shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");
+		material.ubo    = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
+		material.data_size = sizeof(MaterialData);
+	}
+
+	explicit ComponentPBRMaterial(const Material& mat):
+	material(mat)
+	{
+		material.data_size = sizeof(MaterialData);
+	}
+
+	ComponentPBRMaterial(const Material& mat, const MaterialData& data):
+	material(mat),
+	material_data(data)
+	{
+		material.data_size = sizeof(MaterialData);
+	}
+
+	ComponentPBRMaterial(const Material& mat, const void* p_material_data):
+	material(mat)
+	{
+    	memcpy(&material_data, p_material_data, sizeof(MaterialData));
+		material.data_size = sizeof(MaterialData);
 	}
 
 	inline void enable_flag(TextureMapFlag flag, bool enabled = true)
@@ -56,7 +77,6 @@ struct ComponentPBRMaterial
 	inline void enable_emissivity(bool enabled = true)    { enable_flag(TextureMapFlag::TMF_EMISSIVITY, enabled); }
 	inline bool is_emissive() const       				  { return bool(material_data.flags & TextureMapFlag::TMF_EMISSIVITY); }
 	inline bool has_parallax() const      				  { return bool(material_data.flags & TextureMapFlag::TMF_DEPTH); }
-	inline bool is_ready() const          				  { return ready; }
 };
 
 } // namespace erwin

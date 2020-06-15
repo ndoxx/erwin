@@ -20,20 +20,10 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
 
     editor::dialog::on_open("ChooseTomDlgKey", [&cmp](const fs::path& filepath)
     {
-        const ComponentPBRMaterial& other = AssetManager::load_material(filepath);
-        // Copy material
-        cmp->material = other.material;
-        cmp->material_data = other.material_data;
-        cmp->ready = other.ready;
-        cmp->name = other.name;
+        (*cmp) = AssetManager::load_material(filepath); // // Copy material
     });
     
-    ImGui::SameLine();
-    if(cmp->is_ready())
-        ImGui::TextUnformatted(cmp->name.c_str());
-    else
-        ImGui::TextUnformatted("None");
-
+    ImGui::TextUnformatted(cmp->name.c_str());
 
     // PBR parameters
     ImGui::ColorEdit3("Tint", static_cast<float*>(&cmp->material_data.tint[0]));

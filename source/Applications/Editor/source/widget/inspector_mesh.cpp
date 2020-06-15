@@ -18,9 +18,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
 
     editor::dialog::on_open("ChooseWeshDlgKey", [&cmp](const fs::path& filepath)
     {
-        const auto& mesh = AssetManager::load_mesh(filepath);
-        // Copy data
-        cmp->init(mesh);
+        cmp->mesh = AssetManager::load_mesh(filepath);
     });
     
     // Select mesh from pre-built primitives
@@ -33,11 +31,11 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
         CommonGeometry::visit_meshes([&cmp](const Mesh& mesh, const std::string& name)
         {
             // Skip mesh if not compatible with shader, allow any mesh if material is not set
-            //if(!cmp->is_material_ready() || Renderer3D::is_compatible(mesh.layout, cmp->material))
+            //if(Renderer3D::is_compatible(mesh.layout, cmp->material))
             {
                 if(ImGui::Selectable(name.c_str()))
                 {
-                    cmp->init(mesh);
+                    cmp->mesh = mesh;
                     return true;
                 }
             }

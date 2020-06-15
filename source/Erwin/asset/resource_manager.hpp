@@ -104,7 +104,10 @@ template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
 
     auto findit = managed_resources_.find(hname);
     if(findit != managed_resources_.end())
+    {
         LoaderT::destroy(findit->second);
+        managed_resources_.erase(findit);
+    }
 }
 
 template <typename LoaderT> void ResourceManager<LoaderT>::async_work()

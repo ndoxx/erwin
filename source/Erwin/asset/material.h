@@ -27,6 +27,11 @@ struct TextureGroup
 		W_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
 		return textures[index];
 	}
+	inline const TextureHandle& operator[](uint32_t index) const
+	{
+		W_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
+		return textures[index];
+	}
 };
 
 // Associates a shader with all uniform and sampler data needed for it to perform

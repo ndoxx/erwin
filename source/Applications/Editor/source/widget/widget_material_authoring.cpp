@@ -58,9 +58,9 @@ static TextureMapType detect_texture_map(const std::string& name)
 
 struct MaterialAuthoringWidget::MaterialComposition
 {
-    std::optional<std::reference_wrapper<ComponentPBRMaterial>> pbr_material;
     TMEnum texture_maps = TMF_NONE;
     TextureGroup textures_unpacked;
+    std::array<hash_t, k_max_texture_slots> texture_names;
     uint32_t width;
     uint32_t height;
 
@@ -105,9 +105,7 @@ struct PBRPackingData
 
 MaterialAuthoringWidget::MaterialAuthoringWidget() : Widget("Material authoring", true)
 {
-    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     current_composition_ = std::make_unique<MaterialComposition>();
-    current_composition_->pbr_material = scene.current_material_;
 
     checkerboard_tex_ = AssetManager::create_debug_texture("checkerboard"_h, 64);
     PBR_packing_shader_ =
@@ -169,13 +167,11 @@ void MaterialAuthoringWidget::pack_textures()
 
     Renderer::destroy(fb, true); // Destroy FB but keep attachments alive
 
-    auto& current_material = current_composition_->pbr_material->get();
-
-    current_material.material.texture_group = tg;
-    current_material.ready = true;
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    scene.current_material_.material.texture_group = tg;
 
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
-        current_material.enable_flag(TextureMapFlag(1 << tm), current_composition_->has_map(TextureMapType(tm)));
+        scene.current_material_.enable_flag(TextureMapFlag(1 << tm), current_composition_->has_map(TextureMapType(tm)));
 }
 
 void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs::path& filepath)
@@ -189,8 +185,20 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
 
     const auto& freetex = AssetManager::load_texture(filepath);
     current_composition_->set_map(tm_type, freetex.handle);
+    current_composition_->texture_names[uint32_t(tm_type)] = H_(filepath.string().c_str());
     current_composition_->width = freetex.width;
     current_composition_->height = freetex.height;
+}
+
+void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
+{
+    TextureHandle tex = current_composition_->textures_unpacked[uint32_t(tm_type)];
+    if(tex.is_valid())
+    {
+        AssetManager::release_texture(current_composition_->texture_names[uint32_t(tm_type)]);
+        current_composition_->texture_names[uint32_t(tm_type)] = 0;
+        current_composition_->clear_map(tm_type);
+    }
 }
 
 // Load all textures in a folder, try to recognize file names to assign texture maps correctly
@@ -224,20 +232,10 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
     if(success)
     {
         // Extract directory name and make it the material name
-        auto& current_material = current_composition_->pbr_material->get();
-        current_material.name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_material.name << WCC(0) << "\" as a material name."
+        auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+        scene.current_material_.name = dirpath.stem().string();
+        DLOG("editor", 1) << "Selected \"" << WCC('n') << scene.current_material_.name << WCC(0) << "\" as a material name."
                           << std::endl;
-    }
-}
-
-void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
-{
-    TextureHandle tex = current_composition_->textures_unpacked[uint32_t(tm_type)];
-    if(tex.is_valid())
-    {
-        Renderer::destroy(tex);
-        current_composition_->clear_map(tm_type);
     }
 }
 
@@ -246,22 +244,24 @@ void MaterialAuthoringWidget::clear()
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
         clear_texture_map(TextureMapType(tm));
 
-    auto& current_material = current_composition_->pbr_material->get();
-    current_material.name = "";
-    current_material.material.texture_group = {};
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    const auto& tg = scene.current_material_.material.texture_group;
+    for(uint32_t ii=0; ii<tg.texture_count; ++ii)
+        if(tg[ii].is_valid())
+            Renderer::destroy(tg[ii]);
+
     scene.reset_material();
 }
 
 void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 {
     // * Create an export task that will execute when we receive data
-    auto& current_material = current_composition_->pbr_material->get();
-    auto fut_a = Renderer::get_pixel_data(current_material.material.texture_group[0]);
-    auto fut_nd = Renderer::get_pixel_data(current_material.material.texture_group[1]);
-    auto fut_mare = Renderer::get_pixel_data(current_material.material.texture_group[2]);
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    auto fut_a = Renderer::get_pixel_data(scene.current_material_.material.texture_group[0]);
+    auto fut_nd = Renderer::get_pixel_data(scene.current_material_.material.texture_group[1]);
+    auto fut_mare = Renderer::get_pixel_data(scene.current_material_.material.texture_group[2]);
     tom_export_tasks_.emplace_back(std::move(fut_a), std::move(fut_nd), std::move(fut_mare),
-                                   current_material.material_data, current_composition_->width,
+                                   scene.current_material_.material_data, current_composition_->width,
                                    current_composition_->height, tom_path);
 }
 
@@ -340,7 +340,8 @@ static constexpr size_t k_image_size = 150;
 void MaterialAuthoringWidget::on_imgui_render()
 {
     // Restrict to opaque PBR materials for now
-    auto& current_material = current_composition_->pbr_material->get();
+    auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
+    auto& current_material = scene.current_material_;
 
     // * Global interface
     static char name_buf[128] = "";

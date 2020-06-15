@@ -103,9 +103,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     Renderer3D::register_shader(shader);
     Renderer::shader_attach_uniform_buffer(shader, ubo);
 
-    ComponentPBRMaterial pbr_mat;
-    pbr_mat.set_material(mat);
-    memcpy(&pbr_mat.material_data, descriptor.material_data, descriptor.material_data_size);
+    ComponentPBRMaterial pbr_mat(mat, descriptor.material_data);
     delete[] descriptor.material_data;
 
     return pbr_mat;

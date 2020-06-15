@@ -1,6 +1,7 @@
 #pragma once
 
 #include "asset/mesh.h"
+#include "render/common_geometry.h"
 
 namespace erwin
 {
@@ -8,16 +9,15 @@ namespace erwin
 struct ComponentMesh
 {
 	Mesh mesh;
-	bool ready = false;
 
-	inline void init(const Mesh& mesh_)
+	ComponentMesh()
 	{
-		mesh = mesh_;
-		if(mesh.VAO.is_valid())
-			ready = true;
+		mesh = CommonGeometry::get_mesh("cube_pbr"_h); // TMP: Can't really default init with a PBR-layout type mesh
 	}
 
-	inline bool is_ready() const { return ready; }
+	explicit ComponentMesh(const Mesh& me):
+	mesh(me)
+	{}
 };
 
 } // namespace erwin
