@@ -2,6 +2,7 @@
 #include "level/scene.h"
 #include "core/intern_string.h"
 #include "entity/component_camera.h"
+#include "filesystem/filesystem.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"
 #include "render/common_geometry.h"

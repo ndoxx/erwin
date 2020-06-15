@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 #include "glm/glm.hpp"
 #include "core/core.h"
-#include "filesystem/filesystem.h"
+
+namespace fs = std::filesystem;
 
 namespace erwin
 {

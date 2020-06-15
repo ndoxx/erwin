@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 
-#include "filesystem/filesystem.h"
+namespace fs = std::filesystem;
 
 namespace erwin
 {

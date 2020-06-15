@@ -1,7 +1,6 @@
 #include "filesystem/tom_file.h"
 #include "filesystem/filesystem.h"
 #include "asset/dxt_compressor.h"
-#include "core/core.h"
 #include "core/z_wrapper.h"
 #include "debug/logger.h"
 

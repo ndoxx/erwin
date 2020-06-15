@@ -1,13 +1,18 @@
 #pragma once
 
 #include "entity/component_camera.h"
-#include "entity/component_transform.h"
-#include "core/game_clock.h"
-#include "event/window_events.h"
-#include "entity/reflection.h"
 
 namespace erwin
 {
+
+class GameClock;
+struct ComponentTransform3D;
+struct WindowResizeEvent;
+struct WindowMovedEvent;
+struct MouseScrollEvent;
+struct MouseMovedEvent;
+struct MouseButtonEvent;
+struct KeyboardEvent;
 
 class TrackerCameraSystem
 {
@@ -24,14 +29,14 @@ public:
 	void init(ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
 	void set_position(float radius, float azimuth, float colatitude);
-	void update(const erwin::GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
+	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 
-	bool on_window_resize_event(const erwin::WindowResizeEvent& event);
-	bool on_window_moved_event(const erwin::WindowMovedEvent& event);
-	bool on_mouse_scroll_event(const erwin::MouseScrollEvent& event);
-	bool on_mouse_moved_event(const erwin::MouseMovedEvent& event);
-	bool on_mouse_button_event(const erwin::MouseButtonEvent& event);
-	bool on_keyboard_event(const erwin::KeyboardEvent& event);
+	bool on_window_resize_event(const WindowResizeEvent& event);
+	bool on_window_moved_event(const WindowMovedEvent& event);
+	bool on_mouse_scroll_event(const MouseScrollEvent& event);
+	bool on_mouse_moved_event(const MouseMovedEvent& event);
+	bool on_mouse_button_event(const MouseButtonEvent& event);
+	bool on_keyboard_event(const KeyboardEvent& event);
 
 	inline void set_lookat_target(const glm::vec3& target) { lookat_target_ = target; }
 	inline float get_aspect_ratio() const { return frustum_parameters_.aspect_ratio; }

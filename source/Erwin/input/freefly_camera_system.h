@@ -1,13 +1,18 @@
 #pragma once
 
 #include "entity/component_camera.h"
-#include "entity/component_transform.h"
-#include "core/game_clock.h"
-#include "event/window_events.h"
-#include "entity/reflection.h"
 
 namespace erwin
 {
+
+class GameClock;
+struct ComponentTransform3D;
+struct WindowResizeEvent;
+struct WindowMovedEvent;
+struct MouseScrollEvent;
+struct MouseMovedEvent;
+struct MouseButtonEvent;
+struct KeyboardEvent;
 
 class FreeflyCameraSystem
 {

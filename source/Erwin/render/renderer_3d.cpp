@@ -1,16 +1,18 @@
 #include "render/renderer_3d.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
-#include "asset/material.h"
 #include "asset/environment.h"
 #include "asset/texture.h"
 #include "asset/asset_manager.h"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/matrix_access.hpp"
-#include "glm/gtx/euler_angles.hpp"
+#include "asset/material.h"
+#include "asset/mesh.h"
+#include "filesystem/filesystem.h"
 #include "entity/component_camera.h"
 #include "entity/component_transform.h"
 #include "entity/light.h"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/matrix_access.hpp"
+#include "glm/gtx/euler_angles.hpp"
 
 #include <set>
 

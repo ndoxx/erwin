@@ -1,13 +1,15 @@
 #pragma once
 
 #include "core/core.h"
-#include "render/camera_2d.h"
 #include "render/handles.h"
-#include "entity/component_transform.h"
+
+#include "glm/glm.hpp"
 
 namespace erwin
 {
 
+class OrthographicCamera2D;
+struct ComponentTransform2D;
 struct TextureAtlas;
 struct FontAtlas;
 

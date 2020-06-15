@@ -1,14 +1,14 @@
 #pragma once
 
-#include "render/handles.h"
 #include "render/render_state.h"
-#include "asset/material.h"
-#include "asset/mesh.h"
+#include "render/handles.h"
 #include "glm/glm.hpp"
 
 namespace erwin
 {
 
+struct Material;
+struct Mesh;
 struct ComponentCamera3D;
 struct ComponentTransform3D;
 struct ComponentDirectionalLight;

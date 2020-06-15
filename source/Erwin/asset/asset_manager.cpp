@@ -3,6 +3,7 @@
 #include "entity/component_PBR_material.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
+#include "filesystem/filesystem.h"
 
 #include "asset/atlas_loader.h"
 #include "asset/environment_loader.h"

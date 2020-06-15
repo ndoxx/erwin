@@ -14,6 +14,10 @@
 			"file_exclude_patterns": ["*.spv"],
 			"binary_file_patterns": ["*.spv"],
 			"folder_exclude_patterns": ["textures"]
+		},
+		{
+			"name": "Platform",
+			"path": "source/platform"
 		}
 	],
 
@@ -56,6 +60,12 @@
     			{
     				"name": "clean",
     				"shell_cmd": "cd ${project_path}/build && make clean"
+    			},
+    			{
+    				"name": "Engine - cppclean",
+    				"shell_cmd": "cd ${project_path}/scripts && ./cppclean.sh",
+    				"working_dir": "${project_path}/source/Erwin",
+    				"file_regex": "^\\./(.+):(\\d+): "
     			}
     		]
     	}

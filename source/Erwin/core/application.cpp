@@ -11,6 +11,7 @@
 #include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
 #include "asset/asset_manager.h"
+#include "event/window_events.h"
 #include "memory/arena.h"
 #include "level/scene_manager.h"
 #include "entity/init.h"

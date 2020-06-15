@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include "filesystem/filesystem.h"
 #include "render/handles.h"
 #include "render/renderer_config.h"
 

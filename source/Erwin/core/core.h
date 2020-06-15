@@ -48,7 +48,7 @@
 	#define W_ASSERT(CND, STR)
 #endif
 
-inline void fatal() { exit(-1); }
+[[maybe_unused]] static inline void fatal() { exit(-1); }
 
 // Instrumentation timer
 #ifdef W_PROFILE

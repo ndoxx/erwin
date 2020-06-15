@@ -6,7 +6,6 @@
 #include "core/core.h"
 #include "render/framebuffer_layout.h"
 #include "render/handles.h"
-#include "event/window_events.h"
 #include "math/utils.h"
 #include "glm/glm.hpp"
 

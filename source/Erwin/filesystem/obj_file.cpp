@@ -1,6 +1,5 @@
 #include "filesystem/obj_file.h"
 #include "debug/logger.h"
-#include "glm/glm.hpp"
 
 #include <string_view>
 #include <cstdio>

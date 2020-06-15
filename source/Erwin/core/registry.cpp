@@ -1,6 +1,5 @@
 #include "core/registry.h"
 #include "filesystem/filesystem.h"
-#include "filesystem/xml_file.h"
 #include "utils/string.h"
 
 namespace erwin

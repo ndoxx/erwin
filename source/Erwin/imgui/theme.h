@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include "core/core.h"
 
 namespace fs = std::filesystem;
 

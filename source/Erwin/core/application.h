@@ -14,6 +14,8 @@ namespace fs = std::filesystem;
 namespace erwin
 {
 
+struct WindowCloseEvent;
+
 class W_API Application
 {
 public:

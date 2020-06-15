@@ -1,5 +1,4 @@
 #include "core/config.h"
-#include "core/core.h"
 #include "utils/string.h"
 #include "core/registry.h"
 #include "debug/logger.h"

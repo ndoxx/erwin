@@ -3,6 +3,7 @@
 #include "core/intern_string.h"
 #include "debug/logger.h"
 #include "event/event_bus.h"
+#include "event/window_events.h"
 
 namespace erwin
 {

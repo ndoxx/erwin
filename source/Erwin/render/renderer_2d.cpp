@@ -3,9 +3,12 @@
 #include "render/renderer_2d.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/camera_2d.h"
+#include "core/config.h"
+#include "filesystem/filesystem.h"
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
-#include "core/config.h"
+#include "entity/component_transform.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/vec_swizzle.hpp"
 

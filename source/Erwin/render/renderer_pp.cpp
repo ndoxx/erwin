@@ -1,7 +1,9 @@
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "filesystem/filesystem.h"
 #include "event/event_bus.h"
+#include "event/window_events.h"
 #include "math/convolution.h"
 #include "imgui.h"
 
