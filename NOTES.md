@@ -2474,12 +2474,6 @@ Par ailleurs, le projet de Turner vient livré avec des fichiers de config .clan
 
 ```json
 {
-    "folders":
-    [
-        {
-            "path": "source"
-        }
-    ],
     "settings":
     {
         // NOTE(ndx): finding information on EasyClangComplete configuration was tedious to say the least.
@@ -2529,3 +2523,131 @@ clang-format permet lui, de définir formellement un style d'écriture en C++, a
     [2] https://github.com/lefticus/cpp_starter_project
     [3] https://www.youtube.com/watch?v=y7ndUhdQuU8
     [4] https://www.youtube.com/watch?v=y9kSr5enrSk
+
+
+#[15-06-20]
+##CMake build types
+Le CMakeLists.txt à la racine du projet redéfinit les règles de construction en debug / release. Le build par défaut est Debug (spécifié dans standard_settings.cmake). Il n'est plus souhaitable de modifier ce fichier pour changer de build. Le type de build est maintenant uniquement déterminé par l'argument camke -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel]. Comme je l'expliquerai plus loin, j'ai configuré ST3 pour pouvoir compiler et exécuter l'éditeur sous tous les types de build possibles, et il n'est plus nécessaire d'utiliser un terminal externe. Donc ajouter un ou plusieurs argument à cmake n'est plus un souci.
+En mode debug uniquement, les symboles activés par __W_DEBUG__ sont générés, les assertions sont activées ainsi que le logging. Les autres builds sont tous des variantes de Release et se rapprochent donc d'un retail build, et n'ont pas vocation à générer ces symboles. Le logging peut toutefois être activé via l'option -DENABLE_LOGGING=ON dans tous les builds.
+
+```
+    option(ENABLE_LOGGING "Log stuff" ON)
+    if (ENABLE_LOGGING)
+        add_definitions(-DLOGGING_ENABLED=1)
+    endif()
+
+    if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+        add_definitions(-DW_DEBUG)
+        add_definitions(-DW_ENABLE_ASSERT)
+        add_definitions(-DLOGGING_ENABLED=1)
+    endif()
+
+    option(SIMPLE_ANSI "Use ANSI3 colors in console" OFF)
+    if (SIMPLE_ANSI)
+        add_definitions(-DLOGGING_ANSI_3=1)
+    endif()
+```
+L'option __SIMPLE_ANSI__ sera expliquée plus loin.
+
+##Sublime Text
+###Project folders
+Les dossiers affichés dans la side-bar sont configurables via le tableau *folders*. On peut spécifier une surcharge du nom affiché dans la side-bar via *name*. Je me sers du champ *binary_file_patterns* pour exclure les fichiers .spv de la fonction de recherche (sinon j'ai des hits assez fréquents pour les recherches les plus courtes). Le reste s'explique tout seul :
+
+```json
+    "folders":
+    [
+        {
+            "name": "Editor",
+            "path": "source/Applications/Editor/source",
+            "file_exclude_patterns": ["*.spv"],
+            "binary_file_patterns": ["*.spv"],
+            "folder_exclude_patterns": ["fonts"],
+        },
+        {
+            "name": "Engine",
+            "path": "source/Erwin",
+            "file_exclude_patterns": ["*.spv"],
+            "binary_file_patterns": ["*.spv"],
+            "folder_exclude_patterns": ["textures"]
+        }
+    ],
+```
+
+###Build system
+Je me suis enfin décidé à scripter un build system pour l'éditeur sous ST3. Ce système réalise l'intégration de cmake à ST3 et en fait un genre d'IDE. Voici ma structure build_systems dans erwin.sublime-project :
+
+```json
+    "build_systems":
+    [
+        {
+            "name": "editor build",
+            "shell_cmd": "cd ${project_path}/build && make editor -j4",
+            "working_dir": "/",
+            "file_regex": "^(/.+):(\\d+):(\\d+): ",
+            "target": "ansi_color_build",
+            "syntax": "Packages/ANSIescape/ANSI.sublime-syntax",
+            "variants": [
+                {
+                    "name": "run",
+                    "shell_cmd": "cd ${project_path}/build && ../bin/editor",
+                    // Enables navigation to XML files from log
+                    "file_regex": "\"(/.+\\.xml)\""
+                },
+                {
+                    "name": "build & run",
+                    "shell_cmd": "cd ${project_path}/build && make editor -j4 && ../bin/editor"
+                },
+                {
+                    "name": "rebuild & run - external [DEBUG]",
+                    "shell_cmd": "cd ${project_path}/build && gnome-terminal -- /bin/zsh -c 'cmake -DCMAKE_BUILD_TYPE=Debug -DSIMPLE_ANSI=OFF .. && make editor -j4 && ../bin/editor && exec zsh'"
+                },
+                {
+                    "name": "rebuild [DEBUG]",
+                    "shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=Debug -DSIMPLE_ANSI=ON .. && make editor -j4"
+                },
+                {
+                    "name": "rebuild [RELEASE]",
+                    "shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_LOGGING=ON -DSIMPLE_ANSI=OFF .. && make editor -j4"
+                },
+                {
+                    "name": "rebuild [RELEASE W/ DEBUG INFO]",
+                    "shell_cmd": "cd ${project_path}/build && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_LOGGING=ON -DSIMPLE_ANSI=OFF .. && make editor -j4"
+                },
+                {
+                    "name": "clean",
+                    "shell_cmd": "cd ${project_path}/build && make clean"
+                }
+            ]
+        }
+    ],
+```
+
+Termino :
+- Build = make
+- Build & run = make && exec
+- Rebuild = cmake && make
+- Rebuild & run = cmake && make && exec
+
+Il est possible de créer plusieurs actions accessibles par Ctrl+Shift+B via le tableau *variants*. Pour itérer le build ainsi sélectionné, un Ctrl+B suffit.
+
+Quand la compilation échoue, on voudrait pouvoir naviguer vers le fichier en un double click sur le chemin d'accès spécifié dans le message d'erreur dans la console. C'est possible en spécifiant le champ *file_regex* qui permet d'extraire un nom de fichier, et des numéros de ligne et colonne. J'ai surchargé le regex dans la variante *run*, ce qui me permet de matcher plutôt les chemins d'accès vers des fichiers XML crachés par mon logger, afin de les rendre navigables !
+
+Lors d'une navigation, ST3 génère le chemin d'accès *working_dir*/captured_path avec captured_path le match[1] de *file_regex*. Si ce fichier n'existe pas, ST3 va joyeusement l'ouvrir en nouveau fichier. J'ai un peu galéré en travaillant depuis le dossier local, donc j'ai spécifié un *working_dir* à la racine, pour garantir que tous les fichiers capturés en chemin d'accès absolu seront navigables.
+
+J'utilise le plugin ANSIescape pour permettre l'affichage des couleurs dans la console de ST3. Par défaut les séquences d'échappement sont non échappées, ce qui perturbe la lecture. Pour que la console utilise ce plugin, il faut spécifier les champ *target* et *syntax* comme je l'ai fait. Une limitation du plugin est qu'il ignore les séquences ANSI RGB que tout mon logger utilise. J'ai donc ajouté une option de build __SIMPLE_ANSI__ qui permet de compiler le logger avec un style ANSI 3bits affichable dans la console de ST3 avec ANSIescape.
+
+L'action "rebuild & run - external [DEBUG]" permet de lancer un rebuild dans un terminal externe. Anatomie *shell_cmd* :
+Lancer un nouveau terminal :
+> gnome-terminal
+
+Lancer un nouveau terminal et y exécuter une commande :
+> gnome-terminal [--OPTIONS] -- [COMMAND]
+
+Lancer une nouveau terminal et y exécuter *plusieurs* commandes :
+> gnome-terminal [--OPTIONS] -- /bin/zsh -c '[COMMAND_1] && [COMMAND_2]'
+
+Lancer un nouveau terminal, y exécuter plusieurs commandes et garder le terminal ouvert (en relançant un shell)
+> gnome-terminal [--OPTIONS] -- /bin/zsh -c '[COMMAND_1] && [COMMAND_2] && exec zsh'
+
+Lancer un nouveau terminal en spécifiant le working dir, y exécuter plusieurs commandes et garder le terminal ouvert (en relançant un shell)
+> cd [WD] && gnome-terminal [--OPTIONS] -- /bin/zsh -c '[COMMAND_1] && [COMMAND_2] && exec zsh'
