@@ -590,6 +590,10 @@ void Renderer::flush()
     flush_command_buffer(s_storage.post_buffer_);
     // Reset auxiliary memory arena for next frame
     s_storage.auxiliary_arena_.reset();
+    // BUGFIX: Avoids a nasty bug where multiple framebuffers will have garbage size
+    // if nothing gets drawn to the default framebuffer when using ImGui::Docking / OpenGL
+    // This solves the problem, but I'm still not completely sure why.
+    gfx::backend->bind_default_framebuffer();
 
 #if W_RC_PROFILE_DRAW_CALLS
     if(s_storage.draw_call_data.tracking)

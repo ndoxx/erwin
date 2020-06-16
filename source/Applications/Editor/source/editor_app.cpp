@@ -2,10 +2,10 @@
 #include "debug/logger_thread.h"
 #include "imgui/font_awesome.h"
 #include "imgui/theme.h"
-#include "layer/layer_editor_background.h"
 #include "layer/layer_material_editor.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_scene_view.h"
+#include "layer/layer_post_processing.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
@@ -59,7 +59,7 @@ void ErwinEditor::on_load()
     push_layer(scene_view_layer_);
     push_overlay(scene_editor_layer);
     push_overlay(material_editor_layer, false);
-    push_overlay(new editor::EditorBackgroundLayer());
+    push_overlay(new editor::PostProcessingLayer());
 
     EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 

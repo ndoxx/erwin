@@ -179,6 +179,9 @@ bool Application::init()
             cfg::get<bool>("client.display.vsync"_h,        true),
             cfg::get<bool>("client.display.host"_h,         true)
         };
+#ifdef W_DEBUG
+        props.title += " [DEBUG]";
+#endif
         window_ = Window::create(props);
         vsync_enabled_ = props.vsync;
     }
