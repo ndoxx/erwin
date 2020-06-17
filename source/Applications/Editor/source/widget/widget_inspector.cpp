@@ -3,6 +3,7 @@
 #include "imgui/font_awesome.h"
 #include "entity/reflection.h"
 #include "entity/component_description.h"
+#include "entity/tag_components.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_3d.h"
 #include "imgui.h"
@@ -23,78 +24,84 @@ void InspectorWidget::entity_tab()
     auto& scene = scn::current<Scene>();
     if(!scene.is_loaded())
         return;
-    if(scene.selected_entity == k_invalid_entity_id)
-        return;
 
-    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-    if(ImGui::TreeNode("Properties"))
+    auto view = scene.registry.view<SelectedTag, ComponentDescription>();
+    for(const entt::entity e : view)
     {
-        ImGui::Text("EntityID: %u", scene.selected_entity);
 
-        // TODO: Use a resize callback to wire the InputText to the string directly
-        auto& desc = scene.registry.get<ComponentDescription>(scene.selected_entity);
-        static char name_buf[128] = "";
-        if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
-            desc.name = name_buf;
 
-        ImGui::TreePop();
-        ImGui::Separator();
-    }
-
-    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-    if(ImGui::TreeNode("Components"))
-    {
-        erwin::visit_entity(scene.registry, scene.selected_entity, [&scene](uint32_t reflected_type, void* data)
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Properties"))
         {
-            // Don't let special editor components be editable this way
-            if(is_hidden_from_inspector(reflected_type))
-                return;
-            
-            const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
-            ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
-            if(ImGui::TreeNode(component_name))
-            {
-                // Basic controls over this component
-                ImGui::SameLine(ImGui::GetWindowWidth()-50);
-                if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
-                {
-                    scene.mark_for_removal(scene.selected_entity, reflected_type);
-                    DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(scene.selected_entity) << std::endl;
-                    return;
-                }
+            ImGui::Text("EntityID: %u", e);
 
-                // Invoke GUI for this component
-                invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data);
-                ImGui::TreePop();
-            }
+            // TODO: Use a resize callback to wire the InputText to the string directly
+            ComponentDescription& desc = view.get<ComponentDescription>(e);
+            static char name_buf[128] = "";
+            if(ImGui::InputTextWithHint("Name", "rename entity", name_buf, IM_ARRAYSIZE(name_buf)))
+                desc.name = name_buf;
+
+            ImGui::TreePop();
             ImGui::Separator();
-        });
-
-        // Interface to add a new component
-        if(ImGui::Button("Add component"))
-            ImGui::OpenPopup("popup_select_component");
-
-        if(ImGui::BeginPopup("popup_select_component"))
-        {
-            const auto& component_names = get_component_names();
-            for(auto&& [reflected, name]: component_names)
-            {
-                // If entity already has component, do not show in combo
-                if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, scene.registry, scene.selected_entity).cast<bool>())
-                    continue;
-
-                if(ImGui::Selectable(name.c_str()))
-                {
-                    invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.registry, scene.selected_entity);
-                    DLOG("editor",1) << "Added " << component_names.at(reflected) 
-                                     << " to entity " << static_cast<unsigned long>(scene.selected_entity) << std::endl;
-                    break;
-                }
-            }
-            ImGui::EndPopup();
         }
 
-        ImGui::TreePop();
+        ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+        if(ImGui::TreeNode("Components"))
+        {
+            erwin::visit_entity(scene.registry, e, [&scene,e](uint32_t reflected_type, void* data)
+            {
+                // Don't let special editor components be editable this way
+                if(is_hidden_from_inspector(reflected_type))
+                    return;
+                
+                const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
+                ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+                if(ImGui::TreeNode(component_name))
+                {
+                    // Basic controls over this component
+                    ImGui::SameLine(ImGui::GetWindowWidth()-50);
+                    if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
+                    {
+                        scene.mark_for_removal(e, reflected_type);
+                        DLOG("editor",1) << "Removed component " << component_name << " from entity " << static_cast<unsigned long>(e) << std::endl;
+                        return;
+                    }
+
+                    // Invoke GUI for this component
+                    invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data);
+                    ImGui::TreePop();
+                }
+                ImGui::Separator();
+            });
+
+            // Interface to add a new component
+            if(ImGui::Button("Add component"))
+                ImGui::OpenPopup("popup_select_component");
+
+            if(ImGui::BeginPopup("popup_select_component"))
+            {
+                const auto& component_names = get_component_names();
+                for(auto&& [reflected, name]: component_names)
+                {
+                    // If entity already has component, do not show in combo
+                    if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, scene.registry, e).cast<bool>())
+                        continue;
+
+                    if(ImGui::Selectable(name.c_str()))
+                    {
+                        invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.registry, e);
+                        DLOG("editor",1) << "Added " << component_names.at(reflected) 
+                                         << " to entity " << static_cast<unsigned long>(e) << std::endl;
+                        break;
+                    }
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::TreePop();
+        }
+
+        break; // TMP: Only one entity selectable for now
     }
 }
 

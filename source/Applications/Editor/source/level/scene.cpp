@@ -15,6 +15,7 @@
 #include "entity/component_mesh.h"
 #include "entity/component_transform.h"
 #include "entity/light.h"
+#include "entity/tag_components.h"
 #include "project/project.h"
 
 #include <tuple>
@@ -149,7 +150,6 @@ bool Scene::on_load()
 
 void Scene::on_unload()
 {
-    selected_entity = k_invalid_entity_id;
     directional_light = k_invalid_entity_id;
     camera = k_invalid_entity_id;
     registry.clear();
@@ -195,9 +195,16 @@ void Scene::add_entity(EntityID entity, const std::string& name, const char* _ic
     DLOG("editor", 1) << "[Scene] Added entity: " << name << std::endl;
 }
 
-void Scene::select(EntityID entity) { selected_entity = entity; }
+void Scene::select(EntityID entity)
+{
+    registry.clear<SelectedTag>();
+    registry.emplace<SelectedTag>(entity);
+}
 
-void Scene::drop_selection() { selected_entity = k_invalid_entity_id; }
+void Scene::drop_selection()
+{
+    registry.clear<SelectedTag>();
+}
 
 void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 {

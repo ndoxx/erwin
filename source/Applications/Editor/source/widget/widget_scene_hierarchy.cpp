@@ -2,6 +2,7 @@
 #include "level/scene.h"
 #include "entity/reflection.h"
 #include "entity/component_description.h"
+#include "entity/tag_components.h"
 #include "imgui/font_awesome.h"
 #include "imgui.h"
 
@@ -47,7 +48,7 @@ void SceneHierarchyWidget::on_imgui_render()
         const ComponentDescription& desc = view.get<ComponentDescription>(e);
 
         ImGuiTreeNodeFlags flags = node_flags;
-        if(e == scene.selected_entity)
+        if(scene.registry.has<SelectedTag>(e))
             flags |= ImGuiTreeNodeFlags_Selected;
 
         ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
