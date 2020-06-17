@@ -47,8 +47,7 @@ void InspectorWidget::entity_tab()
         erwin::visit_entity(scene.registry, scene.selected_entity, [&scene](uint32_t reflected_type, void* data)
         {
             // Don't let special editor components be editable this way
-            // TODO: automate this via a component meta data flag
-            if(reflected_type == "ComponentDescription"_hs)
+            if(is_hidden_from_inspector(reflected_type))
                 return;
             
             const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();

@@ -168,7 +168,11 @@ void OGLBackend::add_framebuffer_texture_vector(FramebufferHandle handle, const 
     s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, ftv));
 }
 
-void OGLBackend::bind_default_framebuffer() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+void OGLBackend::bind_default_framebuffer()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    s_storage.current_framebuffer_ = s_storage.default_framebuffer_;
+}
 
 void OGLBackend::read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels)
 {

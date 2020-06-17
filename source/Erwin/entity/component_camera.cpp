@@ -21,7 +21,7 @@ void ComponentCamera3D::update_transform(const glm::mat4& to_world_space)
 {
     W_PROFILE_FUNCTION()
 
-    // TODO: cache transform and skip computations if it has not changed
+    // OPT: cache transform and skip computations if it has not changed
 
     // * Update frustum planes
     // Compute frustum corners in world space

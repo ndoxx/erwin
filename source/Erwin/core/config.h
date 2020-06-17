@@ -28,6 +28,9 @@ template <> const glm::vec2&   get(hash_t hname, const glm::vec2& def);
 template <> const glm::vec3&   get(hash_t hname, const glm::vec3& def);
 template <> const glm::vec4&   get(hash_t hname, const glm::vec4& def);
 const fs::path& get(hash_t hname);
+hash_t get_hash(hash_t hname, const std::string& def);
+hash_t get_hash_lower(hash_t hname, const std::string& def);
+hash_t get_hash_upper(hash_t hname, const std::string& def);
 
 template <typename T> bool set(hash_t hname, const T& val);
 template <> bool set(hash_t hname, const size_t& val);

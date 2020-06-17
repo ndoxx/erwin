@@ -23,6 +23,12 @@ namespace traits
 // Associate a component type ID to a reflection hash string
 extern void add_reflection(uint64_t type_id, uint32_t reflected_type);
 
+// Hide a component type from inspector
+extern void hide_from_inspector(uint32_t reflected_type);
+
+// Check if a component type is hidden from inspection
+extern bool is_hidden_from_inspector(uint32_t reflected_type);
+
 // Obtain reflection hash string from type ID
 extern uint32_t reflect(uint64_t type_id);
 
@@ -80,7 +86,7 @@ template <typename ComponentType>
 extern void inspector_GUI(ComponentType*) {}
 
 using EntityID = entt::entity;
-constexpr EntityID k_invalid_entity_id = entt::null;
+[[maybe_unused]] static constexpr EntityID k_invalid_entity_id = entt::null;
 
 
 namespace metafunc
@@ -136,7 +142,7 @@ namespace metafunc
 // Create a reflection meta-object for an input component type
 #define REFLECT_COMPONENT( CTYPE ) \
 	entt::meta< CTYPE >() \
-		.type( #CTYPE ##_hs) \
+		.type( #CTYPE ##_hs ) \
 		.prop("name"_hs, #CTYPE ) \
 		.func<&erwin::metafunc::get_component< CTYPE >, entt::as_ref_t>(W_METAFUNC_GET_COMPONENT) \
 		.func<&erwin::metafunc::has_component< CTYPE >>(W_METAFUNC_HAS_COMPONENT) \
@@ -145,3 +151,5 @@ namespace metafunc
 		.func<&erwin::metafunc::try_remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
 		.func<&erwin::metafunc::inspector_GUI_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
 	erwin::add_reflection(entt::type_info< CTYPE >::id(), #CTYPE ##_hs)
+
+#define HIDE_FROM_INSPECTOR( CTYPE ) erwin::hide_from_inspector( #CTYPE ##_hs )

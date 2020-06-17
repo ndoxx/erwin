@@ -12,7 +12,7 @@ direction(glm::normalize(end-origin))
 	
 }
 
-// TODO: test another version which leverages glm::unProject()
+// OPT: test another version which leverages glm::unProject()
 Ray::Ray(const glm::vec2& screen_coords, const glm::mat4& VP_inverse)
 {
     // Convert to NDC coordinates
@@ -54,7 +54,7 @@ bool inverse_affine(const mat4& m, mat4& Inverse)
 
 Ray Ray::to_model_space(const glm::mat4& model_matrix) const
 {
-    glm::mat4 model_inv = glm::inverse(model_matrix); // TODO: use a faster affine inversion
+    glm::mat4 model_inv = glm::inverse(model_matrix); // OPT: use a faster affine inversion
     glm::vec3 origin_m  = model_inv*glm::vec4(origin, 1.f);
     glm::vec3 end_m     = model_inv*glm::vec4(end, 1.f);
 

@@ -167,6 +167,24 @@ const fs::path& get(hash_t hname)
 	return registry.get(hname);
 }
 
+hash_t get_hash(hash_t hname, const std::string& def)
+{
+	return H_(registry.get(hname, def).c_str());
+}
+
+hash_t get_hash_lower(hash_t hname, const std::string& def)
+{
+	std::string str(registry.get(hname, def));
+    su::to_lower(str);
+    return H_(str.c_str());
+}
+
+hash_t get_hash_upper(hash_t hname, const std::string& def)
+{
+	std::string str(registry.get(hname, def));
+    su::to_upper(str);
+    return H_(str.c_str());
+}
 
 template <> bool set(hash_t hname, const size_t& val)
 {

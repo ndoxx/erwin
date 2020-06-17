@@ -1,17 +1,16 @@
 #include "render/renderer.h"
 
 #include <map>
-#include <memory>
 
 #include "core/clock.hpp"
 #include "core/config.h"
 #include "debug/logger.h"
+#include "filesystem/filesystem.h"
 #include "math/color.h"
 #include "memory/arena.h"
 #include "memory/handle_pool.h"
 #include "render/backend.h"
 #include "render/query_timer.h"
-#include "filesystem/filesystem.h"
 
 namespace erwin
 {
@@ -402,8 +401,19 @@ void Renderer::init(memory::HeapArea& area)
     // Create and initialize storage object
     s_storage.init(&area);
 
-    // TODO: Use config
-    gfx::set_backend(GfxAPI::OpenGL);
+    // Detect backend string in configuration, default to OpenGL
+    hash_t hbackend = cfg::get_hash_lower("erwin.renderer.backend"_h, "OpenGL");
+    switch(hbackend)
+    {
+    case "opengl"_h:
+        gfx::set_backend(GfxAPI::OpenGL);
+        break;
+    default: {
+        DLOGF("render") << "Non recognized renderer backend string: "
+                        << cfg::get<std::string>("erwin.renderer.backend"_h, "OpenGL") << std::endl;
+        fatal();
+    }
+    }
 
     s_storage.query_timer = QueryTimer::create();
 
@@ -748,8 +758,8 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, con
     return handle;
 }
 
-ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, const void* data, uint32_t size,
-                                                                 UsagePattern mode)
+ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::string& name, const void* data,
+                                                                 uint32_t size, UsagePattern mode)
 {
     ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
     W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
@@ -980,7 +990,6 @@ std::future<PixelData> Renderer::get_pixel_data(TextureHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
 
-    // TODO: acquire from render device
     auto&& [token, fut] = gfx::backend->future_texture_data();
     RenderCommandWriter cw(RenderCommand::GetPixelData);
     cw.write(&handle);
@@ -1182,7 +1191,8 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
     return cw.submit(SortKey::k_skip);
 }
 
-uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size, DataOwnership copy)
+uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size,
+                                         DataOwnership copy)
 {
     W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index);
     W_ASSERT(data, "Data is null.");

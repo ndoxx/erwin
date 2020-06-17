@@ -18,6 +18,7 @@ void SceneEditorLayer::on_attach()
 {
     // Reflect editor components
     REFLECT_COMPONENT(ComponentDescription);
+    HIDE_FROM_INSPECTOR(ComponentDescription);
 
     // Build UI
 #ifdef W_DEBUG
