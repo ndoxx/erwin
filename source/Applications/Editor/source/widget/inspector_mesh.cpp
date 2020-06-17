@@ -30,14 +30,10 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp)
     {
         CommonGeometry::visit_meshes([&cmp](const Mesh& mesh, const std::string& name)
         {
-            // Skip mesh if not compatible with shader, allow any mesh if material is not set
-            //if(Renderer3D::is_compatible(mesh.layout, cmp->material))
+            if(ImGui::Selectable(name.c_str()))
             {
-                if(ImGui::Selectable(name.c_str()))
-                {
-                    cmp->mesh = mesh;
-                    return true;
-                }
+                cmp->mesh = mesh;
+                return true;
             }
             return false;
         });

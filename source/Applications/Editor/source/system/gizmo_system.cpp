@@ -27,11 +27,37 @@ GizmoSystem::~GizmoSystem()
 
 }
 
+// constexpr float k_cyl_diameter = 0.01f;
+constexpr float k_cyl_length = 2.f;
+constexpr float k_arrow_diameter = 0.1f;
+constexpr float k_arrow_length = 0.3f;
+constexpr float k_offset = k_cyl_length+0.5f*k_arrow_length;
+constexpr float k_OBB_scale = 1.5f;
+
+constexpr glm::vec3 offsets[] =
+{
+    {0.f,   0.f,    0.f},
+    {k_offset, 0.f, 0.f},
+    {0.f, k_offset, 0.f},
+    {0.f, 0.f, k_offset},
+};
+static const Extent OBB_extent
+(
+    -k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter,
+    -k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter,
+    -k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter
+);
+
 bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
     auto& scene = scn::current<Scene>();
     if(!scene.is_loaded())
         return false;
+
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    float nearest = camera.frustum.far;
+    glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
+    Ray ray(event.coords, VP_inv);
 
     bool event_handled = false;
     auto view = scene.registry.view<SelectedTag, ComponentTransform3D>();
@@ -40,33 +66,7 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
         const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
         glm::mat4 parent_model = transform.get_unscaled_model_matrix();
 
-        const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
-        glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
-        Ray ray(event.coords, VP_inv);
-
-    	// constexpr float k_cyl_diameter = 0.01f;
-    	constexpr float k_cyl_length = 2.f;
-    	constexpr float k_arrow_diameter = 0.1f;
-    	constexpr float k_arrow_length = 0.3f;
-    	constexpr float k_offset = k_cyl_length+0.5f*k_arrow_length;
-    	constexpr float k_OBB_scale = 1.5f;
-        static glm::vec3 offsets[] =
-        {
-        	{0.f,   0.f,    0.f},
-        	{k_offset, 0.f, 0.f},
-        	{0.f, k_offset, 0.f},
-        	{0.f, 0.f, k_offset},
-        };
-        static Extent OBB_extent
-        (
-        	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter,
-        	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter,
-        	-k_OBB_scale * k_arrow_diameter, k_OBB_scale * k_arrow_diameter
-        );
-
-        float nearest = camera.frustum.far;
         Ray::CollisionData data;
-
         selected_part_ = -1;
     	for(int ii=0; ii<4; ++ii)
     	{
@@ -78,26 +78,21 @@ bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
                 {
                     nearest = data.near;
                     selected_part_ = ii;
+                    event_handled = true;
                 }
             }
     	}
-
-    	event_handled |= (selected_part_ != -1);
     }
     return event_handled;
 }
 
-void GizmoSystem::render()
+void GizmoSystem::render(const Scene& scene)
 {
-    auto& scene = scn::current<Scene>();
-    if(!scene.is_loaded())
-        return;
-
-    auto view = scene.registry.view<SelectedTag, ComponentTransform3D>();
+    auto view = scene.registry.view<const SelectedTag, const ComponentTransform3D>();
     for(const entt::entity e : view)
     {
         // Draw gizmo
-        const ComponentTransform3D& transform = view.get<ComponentTransform3D>(e);
+        const ComponentTransform3D& transform = view.get<const ComponentTransform3D>(e);
         gizmo_data_.selected = selected_part_;
 
         Renderer3D::begin_line_pass(false);

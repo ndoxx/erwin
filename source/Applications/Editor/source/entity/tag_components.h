@@ -5,5 +5,4 @@ namespace editor
 
 struct SelectedTag {};
 
-
 } // namespace editor

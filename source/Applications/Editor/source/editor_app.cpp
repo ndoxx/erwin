@@ -7,6 +7,7 @@
 #include "layer/layer_scene_view.h"
 #include "layer/layer_post_processing.h"
 #include "level/scene_manager.h"
+#include "level/scene.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"

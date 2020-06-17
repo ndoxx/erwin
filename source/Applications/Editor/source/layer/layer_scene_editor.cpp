@@ -60,7 +60,9 @@ void SceneEditorLayer::on_detach()
 
 void SceneEditorLayer::on_update(GameClock& clock)
 {
-    bounding_box_system_.update(clock);
+    auto& scene = scn::current<Scene>();
+    if(scene.is_loaded())
+        bounding_box_system_.update(clock, scene);
 
     for(Widget* widget : widgets_)
         widget->on_update(clock);
@@ -68,8 +70,12 @@ void SceneEditorLayer::on_update(GameClock& clock)
 
 void SceneEditorLayer::on_render()
 {
-    bounding_box_system_.render();
-    gizmo_system_.render();
+    auto& scene = scn::current<Scene>();
+    if(scene.is_loaded())
+    {
+        bounding_box_system_.render(scene);
+        gizmo_system_.render(scene);
+    }
 
     for(Widget* widget : widgets_)
         widget->on_layer_render();

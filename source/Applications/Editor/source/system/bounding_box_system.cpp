@@ -46,12 +46,8 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     return true;
 }
 
-void BoundingBoxSystem::update(const GameClock&)
+void BoundingBoxSystem::update(const GameClock&, Scene& scene)
 {
-    auto& scene = scn::current<Scene>();
-    if(!scene.is_loaded())
-        return;
-
     {
         auto view = scene.registry.view<ComponentOBB, ComponentTransform3D>();
         for(const entt::entity e : view)
@@ -62,6 +58,8 @@ void BoundingBoxSystem::update(const GameClock&)
         }
     }
 
+    // TODO: instead of doing this in update, make BoundingBoxSystem respond to
+    // a MeshChangedEvent of some sort...
     {
         auto view = scene.registry.view<ComponentOBB, ComponentMesh>();
         for(const entt::entity e : view)
@@ -73,26 +71,25 @@ void BoundingBoxSystem::update(const GameClock&)
     }
 }
 
-void BoundingBoxSystem::render()
+void BoundingBoxSystem::render(const Scene& scene)
 {
-    auto& scene = scn::current<Scene>();
-    if(!scene.is_loaded())
-        return;
-
     Renderer3D::begin_line_pass();
     {
-        auto view = scene.registry.view<SelectedTag, ComponentOBB>();
+        auto view = scene.registry.view<const SelectedTag, const ComponentOBB>();
         for(const entt::entity e : view)
         {
-            const ComponentOBB& OBB = view.get<ComponentOBB>(e);
+            const ComponentOBB& OBB = view.get<const ComponentOBB>(e);
             Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {1.f, 0.5f, 0.f});
         }
     }
     {
-        auto view = scene.registry.view<ComponentOBB>(entt::exclude<SelectedTag>);
+        // TMP: Fails to compile with exclude and a const view. Cant exclude<const SelectedTag> because
+        // component type must equal decay type. Waiting for a future fix.
+        // https://github.com/skypjack/entt/issues/507
+        auto view = scene.registry.view<const ComponentOBB>(/*entt::exclude<SelectedTag>*/);
         for(const entt::entity e : view)
         {
-            const ComponentOBB& OBB = view.get<ComponentOBB>(e);
+            const ComponentOBB& OBB = view.get<const ComponentOBB>(e);
             if(OBB.display) // TODO: || editor_show_OBBs
                 Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {0.f, 0.5f, 1.f});
         }
