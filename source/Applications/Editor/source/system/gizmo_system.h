@@ -17,7 +17,6 @@ public:
 
     void update(const erwin::GameClock& clock, Scene& scene);
 	void render(const Scene& scene);
-	bool on_ray_scene_query_event(const erwin::RaySceneQueryEvent& event);
 
 private:
     erwin::Material gizmo_material_;

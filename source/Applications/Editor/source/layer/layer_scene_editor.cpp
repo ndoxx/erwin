@@ -48,8 +48,7 @@ void SceneEditorLayer::on_commit()
     add_listener(this, &SceneEditorLayer::on_keyboard_event);
     add_listener(this, &SceneEditorLayer::on_key_typed_event);
 
-    add_listener(&bounding_box_system_, &BoundingBoxSystem::on_ray_scene_query_event, 0);
-    add_listener(&gizmo_system_, &GizmoSystem::on_ray_scene_query_event, 1);
+    add_listener(&bounding_box_system_, &BoundingBoxSystem::on_ray_scene_query_event);
 }
 
 void SceneEditorLayer::on_detach()
@@ -73,6 +72,7 @@ void SceneEditorLayer::on_update(GameClock& clock)
     if(scene.is_loaded())
     {
         bounding_box_system_.update(clock, scene);
+        selection_system_.update(clock, scene);
         gizmo_system_.update(clock, scene);
     }
 

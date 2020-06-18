@@ -20,28 +20,17 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
 
     glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
-    float nearest = camera.frustum.far;
     Ray ray(event.coords, VP_inv);
 
-    // Perform a ray scene query
-    EntityID selected = k_invalid_entity_id;
+    // Perform a ray scene query, tag all entities whose OBBs are hit by the ray
     Ray::CollisionData data;
     auto view = scene.registry.view<ComponentOBB>();
     for(const entt::entity e : view)
     {
         const ComponentOBB& OBB = view.get<ComponentOBB>(e);
         if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
-        {
-            if(data.near < nearest)
-            {
-                nearest = data.near;
-                selected = e;
-            }
-        }
+            scene.registry.emplace<RayHitTag>(e, RayHitTag{data.near});
     }
-
-    if(selected != k_invalid_entity_id)
-        scene.select(selected);
 
     return true;
 }
@@ -59,7 +48,7 @@ void BoundingBoxSystem::update(const GameClock&, Scene& scene)
     }
 
     // TODO: instead of doing this in update, make BoundingBoxSystem respond to
-    // a MeshChangedEvent of some sort...
+    // a MeshChangedEvent of some sort, or a tag component...
     {
         auto view = scene.registry.view<ComponentOBB, ComponentMesh>();
         for(const entt::entity e : view)

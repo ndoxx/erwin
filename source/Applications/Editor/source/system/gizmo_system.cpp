@@ -12,11 +12,6 @@ using namespace erwin;
 namespace editor
 {
 
-struct GizmoHandleComponent
-{
-    int handle_id = -1;
-};
-
 // constexpr float k_cyl_diameter = 0.01f;
 constexpr float k_cyl_length = 2.f;
 constexpr float k_arrow_diameter = 0.1f;
@@ -45,8 +40,6 @@ GizmoSystem::GizmoSystem()
     gizmo_material_   = {"gizmo"_h, {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData)};
     Renderer3D::register_shader(gizmo_shader);
     Renderer::shader_attach_uniform_buffer(gizmo_shader, gizmo_ubo);
-
-    selected_part_ = -1;
 }
 
 GizmoSystem::~GizmoSystem()
@@ -60,7 +53,7 @@ void GizmoSystem::setup_editor_entities(Scene& scene)
     std::array ents = { scene.registry.create(), scene.registry.create(), scene.registry.create(), scene.registry.create() };
     for(size_t ii=0; ii<ents.size(); ++ii)
     {
-        scene.registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii)});
+        scene.registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
         scene.registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
         scene.registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
     }
@@ -70,58 +63,35 @@ void GizmoSystem::update(const erwin::GameClock& /*clock*/, Scene& scene)
 {
     // Make the gizmo's entities children of the selected entity
     // TMP: impl subject to change when we have a proper hierarchy system
-    auto selection_view = scene.registry.view<SelectedTag, ComponentTransform3D>();
-    for(const entt::entity e : selection_view)
+
     {
-        const ComponentTransform3D& parent_transform = selection_view.get<ComponentTransform3D>(e);
-
-        auto gizmo_view = scene.registry.view<GizmoHandleComponent, ComponentOBB, ComponentTransform3D>();
-        for(const entt::entity g : gizmo_view)
+        auto selection_view = scene.registry.view<SelectedTag, ComponentTransform3D>();
+        for(const entt::entity e : selection_view)
         {
-            ComponentTransform3D& transform = gizmo_view.get<ComponentTransform3D>(g);
-            const GizmoHandleComponent& GH = gizmo_view.get<GizmoHandleComponent>(g);
-            transform.init(parent_transform.position + offsets[size_t(GH.handle_id)], parent_transform.euler, 1.f);
-        }
-        break;
-    }
-}
+            const ComponentTransform3D& parent_transform = selection_view.get<ComponentTransform3D>(e);
 
-bool GizmoSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
-{
-    auto& scene = scn::current<Scene>();
-    if(!scene.is_loaded())
-        return false;
-
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
-    float nearest = camera.frustum.far;
-    glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
-    Ray ray(event.coords, VP_inv);
-
-    bool event_handled = false;
-    auto view = scene.registry.view<SelectedTag, ComponentTransform3D>();
-    for(const entt::entity e : view)
-    {
-        (void)e;
-        Ray::CollisionData data;
-        selected_part_ = -1;
-        auto gizmo_view = scene.registry.view<GizmoHandleComponent, ComponentOBB, ComponentTransform3D>();
-        for(const entt::entity g : gizmo_view)
-        {
-            const ComponentOBB& OBB = gizmo_view.get<ComponentOBB>(g);
-            const GizmoHandleComponent& GH = gizmo_view.get<GizmoHandleComponent>(g);
-            if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
+            auto gizmo_view = scene.registry.view<GizmoHandleComponent, ComponentOBB, ComponentTransform3D>();
+            for(const entt::entity g : gizmo_view)
             {
-                if(data.near < nearest)
-                {
-                    nearest = data.near;
-                    selected_part_ = GH.handle_id;
-                    event_handled = true;
-                }
+                ComponentTransform3D& transform = gizmo_view.get<ComponentTransform3D>(g);
+                GizmoHandleComponent& GH = gizmo_view.get<GizmoHandleComponent>(g);
+                GH.parent = e;
+                transform.init(parent_transform.position + offsets[size_t(GH.handle_id)], parent_transform.euler, 1.f);
             }
+            break;
         }
     }
 
-    return event_handled;
+    {
+        selected_part_ = -1;
+        auto view = scene.registry.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>();
+        for(const entt::entity e : view)
+        {
+            const GizmoHandleComponent GH = view.get<const GizmoHandleComponent>(e);
+            selected_part_ = GH.handle_id;
+            break;
+        }
+    }
 }
 
 void GizmoSystem::render(const Scene& scene)
