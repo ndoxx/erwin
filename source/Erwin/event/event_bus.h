@@ -13,7 +13,7 @@
 // [ ] Event pooling if deemed necessary
 
 #pragma once
-#include <list>
+#include <vector>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -89,13 +89,13 @@ public:
         delegates_.push_back({priority, std::make_unique<MemberDelegate<ClassT, EventT>>(instance, memberFunction)});
         // greater_equal generates the desired behavior: for equal priority range of subscribers,
         // latest subscriber handles the event first
-        delegates_.sort(std::greater_equal<PriorityDelegate>());
+        std::sort(delegates_.begin(), delegates_.end(), std::greater_equal<PriorityDelegate>());
     }
 
     inline void subscribe(bool (*freeFunction)(const EventT&), uint32_t priority)
     {
         delegates_.push_back({priority, std::make_unique<FreeDelegate<EventT>>(freeFunction)});
-        delegates_.sort(std::greater_equal<PriorityDelegate>());
+        std::sort(delegates_.begin(), delegates_.end(), std::greater_equal<PriorityDelegate>());
     }
 
     inline void submit(const EventT& event) { queue_.push(event); }
@@ -126,7 +126,7 @@ public:
 
 private:
     using PriorityDelegate = std::pair<uint32_t, std::unique_ptr<AbstractDelegate<EventT>>>;
-    using DelegateList = std::list<PriorityDelegate>;
+    using DelegateList = std::vector<PriorityDelegate>;
     using Queue = std::queue<EventT>;
     DelegateList delegates_;
     Queue queue_;

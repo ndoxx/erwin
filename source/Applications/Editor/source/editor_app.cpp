@@ -77,6 +77,7 @@ void ErwinEditor::on_load()
         project::load_project(last_project_file);
         SceneManager::load_scene("main_scene"_h);
         scene_view_layer_->setup_camera();
+        scene_editor_layer->setup_editor_entities();
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;

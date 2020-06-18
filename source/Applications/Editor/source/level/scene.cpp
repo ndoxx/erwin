@@ -88,19 +88,15 @@ bool Scene::on_load()
             if(jj == 0)
             {
                 ComponentMesh cmesh(CommonGeometry::get_mesh("cube_pbr"_h));
-                ComponentOBB cobb;
-                cobb.init(cmesh.mesh.extent);
                 scale = 1.5f;
                 registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cobb);
+                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
             }
             else
             {
                 ComponentMesh cmesh(CommonGeometry::get_mesh("icosphere_pbr"_h));
-                ComponentOBB cobb;
-                cobb.init(cmesh.mesh.extent);
                 registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cobb);
+                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
             }
 
             ComponentTransform3D ctransform = {
@@ -113,32 +109,6 @@ bool Scene::on_load()
             });
         }
     }
-
-    // * Load all resources asynchronously
-    /*hash_t future_mat  = AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom");
-    hash_t future_mesh = AssetManager::load_mesh_async(project::get_asset_path(project::DirKey::MESH) / "chest.wesh");
-    
-    // * Declare entities dependencies on future resources during entity creation
-    {
-        std::string obj_name = "Chest";
-        EntityID ent = create_entity(obj_name);
-
-        ComponentTransform3D ctransform = {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, 1.f};
-        registry.emplace<ComponentTransform3D>(ent, ctransform);
-
-        AssetManager::on_mesh_ready(future_mesh, [this, ent = ent](const Mesh& mesh) {
-            ComponentMesh cmesh;
-            ComponentOBB cobb;
-            cmesh.init(mesh);
-            cobb.init(mesh.extent);
-            registry.emplace<ComponentMesh>(ent, cmesh);
-            registry.emplace<ComponentOBB>(ent, cobb);
-        });
-
-        AssetManager::on_material_ready(future_mat, [this, ent = ent](const ComponentPBRMaterial& mat) {
-            registry.emplace<ComponentPBRMaterial>(ent, mat);
-        });
-    }*/
 
     load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
 

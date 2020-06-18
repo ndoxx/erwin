@@ -58,11 +58,23 @@ void SceneEditorLayer::on_detach()
         delete widget;
 }
 
+void SceneEditorLayer::setup_editor_entities()
+{
+    auto& scene = scn::current<Scene>();
+    if(scene.is_loaded())
+    {
+        gizmo_system_.setup_editor_entities(scene);
+    }
+}
+
 void SceneEditorLayer::on_update(GameClock& clock)
 {
     auto& scene = scn::current<Scene>();
     if(scene.is_loaded())
+    {
         bounding_box_system_.update(clock, scene);
+        gizmo_system_.update(clock, scene);
+    }
 
     for(Widget* widget : widgets_)
         widget->on_update(clock);
