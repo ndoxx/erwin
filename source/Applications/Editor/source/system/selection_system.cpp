@@ -18,6 +18,9 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     EntityID selected = k_invalid_entity_id;
 
     // Check gizmo handles selection first, then other entities
+    // BUG: When (for example) camera is selected via hierarchy widget,
+    // gizmo OBBs are still around previously selected object and
+    // will respond to ray hit first, possibly blocking a legit entity selection query.
     scene.registry.view<RayHitTag, GizmoHandleComponent>().each(
         [&nearest, &selected](auto e, const auto& data, const auto& /*gh*/) {
             if(data.near < nearest)
@@ -29,8 +32,8 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
 
     if(selected != k_invalid_entity_id)
     {
+        scene.registry.clear<RayHitTag, GizmoHandleSelectedTag>();
         scene.registry.emplace<GizmoHandleSelectedTag>(selected);
-        scene.registry.clear<RayHitTag>();
         return;
     }
 
@@ -45,9 +48,9 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
 
     if(selected != k_invalid_entity_id)
     {
-        scene.select(selected);
         // Drop gizmo handle selection
-        scene.registry.clear<GizmoHandleSelectedTag>();
+        scene.registry.clear<GizmoHandleSelectedTag, SelectedTag>();
+        scene.registry.emplace<SelectedTag>(selected);
     }
 
     // Clear tags

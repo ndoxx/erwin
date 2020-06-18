@@ -23,8 +23,9 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     Ray ray(event.coords, VP_inv);
 
     // Perform a ray scene query, tag all entities whose OBBs are hit by the ray
+    // TODO: Maybe avoid tagging entity if camera position is inside OBB
     Ray::CollisionData data;
-    scene.registry.view<ComponentOBB>().each([&ray, &data, &scene](auto e, const auto& OBB) {
+    scene.registry.view<ComponentOBB>().each([&ray, &data, &scene](auto e, const auto& OBB) {        
         if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
             scene.registry.emplace<RayHitTag>(e, RayHitTag{data.near});
     });

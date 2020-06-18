@@ -57,7 +57,10 @@ void GizmoSystem::update(const erwin::GameClock& /*clock*/, Scene& scene)
 {
     // Make the gizmo's entities children of the selected entity
     // TMP: impl subject to change when we have a proper hierarchy system
-    scene.registry.view<ComponentTransform3D, SelectedTag>().each([&scene](auto e, const auto& parent_transform) {
+    // EXPECT this to FAIL if camera is given a ComponentOBB for some reason,
+    // as when selected via Hierarchy widget, gizmo center handle OBB will surround 
+    // camera position and will always hit in selection system, preventing proper selection
+    scene.registry.view<ComponentTransform3D, ComponentOBB, SelectedTag>().each([&scene](auto e, const auto& parent_transform, const auto&) {
         scene.registry.view<ComponentTransform3D, GizmoHandleComponent, ComponentOBB>().each(
             [e, &parent_transform](auto /*g*/, auto& transform, auto& GH, const auto&) {
                 GH.parent = e;
