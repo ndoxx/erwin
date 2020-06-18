@@ -1,8 +1,8 @@
 #include "system/selection_system.h"
 #include "asset/bounding.h"
 #include "entity/component_camera.h"
-#include "entity/component_transform.h"
 #include "entity/component_mesh.h"
+#include "entity/component_transform.h"
 #include "entity/tag_components.h"
 #include "level/scene.h"
 
@@ -18,44 +18,36 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     EntityID selected = k_invalid_entity_id;
 
     // Check gizmo handles selection first, then other entities
-    {
-        auto view = scene.registry.view<RayHitTag, GizmoHandleComponent>();
-        for(const entt::entity e : view)
-        {
-            const auto& data = view.get<RayHitTag>(e);
+    scene.registry.view<RayHitTag, GizmoHandleComponent>().each(
+        [&nearest, &selected](auto e, const auto& data, const auto& /*gh*/) {
             if(data.near < nearest)
             {
                 nearest = data.near;
                 selected = e;
             }
-        }
+        });
 
-        if(selected != k_invalid_entity_id)
-        {
-            scene.registry.emplace<GizmoHandleSelectedTag>(selected);
-            scene.registry.clear<RayHitTag>();
-            return;
-        }
+    if(selected != k_invalid_entity_id)
+    {
+        scene.registry.emplace<GizmoHandleSelectedTag>(selected);
+        scene.registry.clear<RayHitTag>();
+        return;
     }
 
-    {
-        auto view = scene.registry.view<RayHitTag>(entt::exclude<GizmoHandleComponent>);
-        for(const entt::entity e : view)
-        {
-            const auto& data = view.get<RayHitTag>(e);
+    scene.registry.view<RayHitTag>(entt::exclude<GizmoHandleComponent>)
+        .each([&nearest, &selected](auto e, const auto& data) {
             if(data.near < nearest)
             {
                 nearest = data.near;
                 selected = e;
             }
-        }
+        });
 
-        if(selected != k_invalid_entity_id)
-        {
-            scene.select(selected);
-            // Drop gizmo handle selection
-            scene.registry.clear<GizmoHandleSelectedTag>();
-        }
+    if(selected != k_invalid_entity_id)
+    {
+        scene.select(selected);
+        // Drop gizmo handle selection
+        scene.registry.clear<GizmoHandleSelectedTag>();
     }
 
     // Clear tags

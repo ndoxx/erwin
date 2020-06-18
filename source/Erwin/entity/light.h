@@ -23,6 +23,4 @@ struct ComponentDirectionalLight
 	float brightness        = 1.f;
 };
 
-template <> [[maybe_unused]] void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight*);
-
 } // namespace erwin

@@ -28,8 +28,6 @@ void InspectorWidget::entity_tab()
     auto view = scene.registry.view<SelectedTag, ComponentDescription>();
     for(const entt::entity e : view)
     {
-
-
         ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
         if(ImGui::TreeNode("Properties"))
         {
