@@ -73,10 +73,10 @@ void SceneHierarchyWidget::on_imgui_render()
 
     if(new_selection != k_invalid_entity_id)
     {
-    	// Update selection state
-
     	// Update scene selected entity index
     	scene.select(new_selection);
+        // Drop gizmo handle selection
+        scene.registry.clear<GizmoHandleSelectedTag>();
     }
 }
 

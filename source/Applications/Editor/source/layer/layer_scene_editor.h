@@ -4,6 +4,7 @@
 #include "layer/gui_layer.h"
 #include "system/bounding_box_system.h"
 #include "system/gizmo_system.h"
+#include "system/selection_system.h"
 
 namespace editor
 {
@@ -14,6 +15,8 @@ class SceneEditorLayer : public GuiLayer
 public:
     SceneEditorLayer();
     
+    void setup_editor_entities();
+
     virtual void on_imgui_render() override;
 
 protected:
@@ -31,6 +34,7 @@ protected:
 private:
     GizmoSystem gizmo_system_;
     BoundingBoxSystem bounding_box_system_;
+    SelectionSystem selection_system_;
 
     SceneViewWidget* scene_view_widget_ = nullptr;
 };
