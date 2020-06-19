@@ -6,6 +6,7 @@ namespace editor
 {
 
 struct SelectedTag {};
+struct NoGizmoTag {};
 struct GizmoHandleSelectedTag {};
 struct GizmoHandleComponent
 {

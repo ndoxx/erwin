@@ -37,6 +37,7 @@ bool Scene::on_load()
 
         registry.emplace<ComponentCamera3D>(ent);
         registry.emplace<ComponentTransform3D>(ent, transform);
+        registry.emplace<NoGizmoTag>(ent);
         camera = ent;
     }
 
