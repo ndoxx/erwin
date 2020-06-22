@@ -68,21 +68,16 @@ struct NameComponent
     std::string name;
 };
 
-void print_hierarchy(EntityID node, size_t depth, entt::registry& registry)
+void print_hierarchy(EntityID node, entt::registry& registry)
 {
-    const auto& hier = registry.get<HierarchyComponent>(node);
-    const auto& cname = registry.get<NameComponent>(node);
-    std::string indent(4*depth, ' ');
-    DLOGN("nuclear") << indent << cname.name << " [" << size_t(node) << "]" << std::endl;
-    DLOG("nuclear", 1) << indent << hier << std::endl << std::endl;
-
-    auto curr = hier.first_child;
-
-    while(curr != entt::null)
+    entity::depth_first(node, registry, [&registry](EntityID ent, const auto& hier, size_t depth)
     {
-        print_hierarchy(curr, depth + 1, registry);
-        curr = registry.get<HierarchyComponent>(curr).next_sibling;
-    }
+        const auto& cname = registry.get<NameComponent>(ent);
+        std::string indent(4*depth, ' ');
+        DLOGN("nuclear") << indent << cname.name << " [" << size_t(ent) << "]" << std::endl;
+        DLOG("nuclear", 1) << indent << hier << std::endl;
+        return false;
+    });
 }
 
 int main(int argc, char** argv)
@@ -117,12 +112,12 @@ int main(int argc, char** argv)
     //     DLOGN("nuclear") << cname.name << std::endl;
     // });
 
-    print_hierarchy(A, 0, registry);
+    print_hierarchy(A, registry);
 
     DLOG("nuclear", 1) << "---------------------------" << std::endl;
 
     entity::attach(C, D, registry);
-    print_hierarchy(A, 0, registry);
+    print_hierarchy(A, registry);
 
 
     return 0;
