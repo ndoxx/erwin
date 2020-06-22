@@ -17,17 +17,15 @@
         dans un registre secondaire pour conserver les données au chaud pour un futur redo.
     [X] Créer / détruire des entités
         [ ] Undo / Redo
-    [X] Ajouter / détruire des composants pour chaque entité
-    [X] Créer / détruire des entités
     [ ] (Dé)sérialization de la scène
 
     --[ASSET PIPELINE]--
-    [ ] Importation de modèles
-        [ ] Définir / implémenter un format custom
-            [ ] Non-rigged / rigged
-        [ ] Coder un exporteur Python pour blender, vers ce format
+    [/] Importation de modèles
+        [X] Définir / implémenter un format custom
+            [/] Non-rigged / rigged
+        [X] Coder un exporteur Python pour blender, vers ce format
         [ ] Coder un exporteur Python pour les matériaux (?)
-        [ ] Coder un loader Erwin-side raccordé à l'AssetManager
+        [X] Coder un loader Erwin-side raccordé à l'AssetManager
     [ ] Générer les mipmaps d'atlas manuellement (pour éviter le bleeding). Voir :
     https://computergraphics.stackexchange.com/questions/4793/how-can-i-generate-mipmaps-manually
         [ ] Cela suppose pour chaque asset de fabriquer les mipmaps dans Fudge et de toutes les
@@ -104,6 +102,12 @@ Donc j'ai codé ce petit script pour parser toutes mes sources qui contiennent d
 > valgrind --tool=callgrind ../bin/editor
 > gprof2dot --format=callgrind -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
 > gprof2dot --format=callgrind -zerwin::\* -lerwin::\* -n0.1 -s --skew=0.1 ./callgrind.out.XXXXX | dot -Tsvg -o callgrind.svg
+
+###Cache profiling
+> valgrind --tool=cachegrind ../bin/editor
+
+Simuler également la prédiction de branches :
+> valgrind --tool=cachegrind --branch-sim=yes ../bin/editor
 
 ###Apitrace usage
 > apitrace trace --api=gl --output=editor.trace ../bin/editor
