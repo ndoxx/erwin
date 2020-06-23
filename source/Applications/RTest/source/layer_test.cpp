@@ -10,13 +10,13 @@
 #include "scene.h"
 
 
-#include "entity/component_PBR_material.h"
-#include "entity/component_bounding_box.h"
-#include "entity/component_dirlight_material.h"
-#include "entity/component_mesh.h"
-#include "entity/component_transform.h"
-#include "entity/component_camera.h"
-#include "entity/light.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/bounding_box.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/mesh.h"
+#include "entity/component/transform.h"
+#include "entity/component/camera.h"
+#include "entity/component/light.h"
 
 using namespace erwin;
 using namespace rtest;

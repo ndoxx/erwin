@@ -3,7 +3,7 @@
 #include "input/tracker_camera_system.h"
 #include "core/game_clock.h"
 #include "input/input.h"
-#include "entity/component_transform.h"
+#include "entity/component/transform.h"
 #include "entity/reflection.h"
 #include "event/window_events.h"
 

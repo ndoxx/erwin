@@ -4,7 +4,7 @@
 #include "input/input.h"
 #include "core/game_clock.h"
 #include "event/window_events.h"
-#include "entity/component_transform.h"
+#include "entity/component/transform.h"
 #include "entity/reflection.h"
 
 #include "debug/logger.h"

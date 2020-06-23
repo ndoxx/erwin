@@ -1,4 +1,4 @@
-#include "entity/component_transform.h"
+#include "entity/component/transform.h"
 #include "entity/reflection.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

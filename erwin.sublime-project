@@ -18,6 +18,10 @@
 		{
 			"name": "Platform",
 			"path": "source/platform"
+		},
+		{
+			"name": "Tests",
+			"path": "source/tests"
 		}
 	],
 

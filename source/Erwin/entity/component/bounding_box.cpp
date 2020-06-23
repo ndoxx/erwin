@@ -1,4 +1,4 @@
-#include "entity/component_bounding_box.h"
+#include "entity/component/bounding_box.h"
 
 namespace erwin
 {

@@ -1,8 +1,8 @@
 #include "system/bounding_box_system.h"
 #include "asset/bounding.h"
-#include "entity/component_camera.h"
-#include "entity/component_mesh.h"
-#include "entity/component_transform.h"
+#include "entity/component/camera.h"
+#include "entity/component/mesh.h"
+#include "entity/component/transform.h"
 #include "entity/tag_components.h"
 #include "level/scene.h"
 

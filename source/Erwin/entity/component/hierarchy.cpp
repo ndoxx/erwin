@@ -1,4 +1,4 @@
-#include "entity/hierarchy.h"
+#include "entity/component/hierarchy.h"
 
 namespace erwin
 {

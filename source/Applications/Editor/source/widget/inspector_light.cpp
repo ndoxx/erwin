@@ -1,4 +1,4 @@
-#include "entity/light.h"
+#include "entity/component/light.h"
 #include "imgui.h"
 
 namespace erwin
