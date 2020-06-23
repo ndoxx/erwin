@@ -32,6 +32,10 @@ void sort_hierarchy(entt::registry& registry);
 void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit);
 // Check if subtree of root 'root' contains the node 'node'
 bool subtree_contains(EntityID root, EntityID node, entt::registry& registry); 
+// Check if node 'node' is a direct child of node 'parent'
+bool is_child(EntityID parent, EntityID node, entt::registry& registry);
+// Check if two nodes are siblings
+bool is_sibling(EntityID first, EntityID second, entt::registry& registry);
 
 } // namespace entity
 } // namespace erwin

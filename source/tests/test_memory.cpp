@@ -336,10 +336,10 @@ typedef memory::MemoryArena<memory::PoolAllocator,
 
 
 
-HANDLE_DECLARATION( FooHandle );
-HANDLE_DEFINITION( FooHandle, 128 );
-HANDLE_DECLARATION( BarHandle );
-HANDLE_DEFINITION( BarHandle, 128 );
+HANDLE_DECLARATION( FooHandle , 128 );
+HANDLE_DEFINITION( FooHandle );
+HANDLE_DECLARATION( BarHandle , 128 );
+HANDLE_DEFINITION( BarHandle );
 
 class HandleFixture
 {
@@ -433,7 +433,7 @@ TEST_CASE_METHOD(HandleFixture, "Checking that handle indices are reused", "[hnd
 }
 
 
-
+/*
 ROBUST_HANDLE_DECLARATION( BazHandle );
 ROBUST_HANDLE_DEFINITION( BazHandle, 8 );
 ROBUST_HANDLE_DECLARATION( QuxHandle );
@@ -526,3 +526,4 @@ TEST_CASE_METHOD(RobustHandleFixture, "RobustHandle: Acquiring a single handle o
 	REQUIRE(qux.index == 0);
 	REQUIRE(qux.counter == 0);
 }
+*/

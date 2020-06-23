@@ -106,5 +106,41 @@ bool subtree_contains(EntityID root, EntityID node, entt::registry& registry)
     return found;
 }
 
+bool is_child(EntityID parent, EntityID node, entt::registry& registry)
+{
+    const auto& parent_hierarchy = registry.get<HierarchyComponent>(parent);
+
+    auto curr = parent_hierarchy.first_child;
+    while(curr != entt::null)
+    {
+    	if(node == curr)
+    		return true;
+        curr = registry.get<HierarchyComponent>(curr).next_sibling;
+    }
+    return false;
+}
+
+bool is_sibling(EntityID first, EntityID second, entt::registry& registry)
+{
+    const auto& hierarchy_1 = registry.get<HierarchyComponent>(first);
+    const auto& hierarchy_2 = registry.get<HierarchyComponent>(second);
+    if(hierarchy_1.parent == k_invalid_entity_id ||
+       hierarchy_2.parent == k_invalid_entity_id ||
+       hierarchy_1.parent != hierarchy_2.parent)
+    	return false;
+
+    const auto& parent_hierarchy = registry.get<HierarchyComponent>(hierarchy_1.parent);
+
+    auto curr = parent_hierarchy.first_child;
+    while(curr != entt::null)
+    {
+    	if(second == curr)
+    		return true;
+        curr = registry.get<HierarchyComponent>(curr).next_sibling;
+    }
+    return false;
+}
+
+
 } // namespace entity
 } // namespace erwin
