@@ -15,6 +15,7 @@
 #include "entity/component/mesh.h"
 #include "entity/component/transform.h"
 #include "entity/component/light.h"
+#include "entity/component/hierarchy.h"
 #include "entity/tag_components.h"
 #include "project/project.h"
 
@@ -76,40 +77,36 @@ bool Scene::on_load()
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
     };
 
-    size_t cnt = 0;
-    for(size_t ii = 0; ii < future_materials.size(); ++ii)
-    {
-        for(size_t jj = 0; jj < 2; ++jj)
-        {
-            std::string obj_name = "Obj #" + std::to_string(cnt++);
-            EntityID ent = create_entity(obj_name);
+    EntityID cube0 = create_entity("Cube #0");
+    registry.emplace<ComponentMesh>(cube0, CommonGeometry::get_mesh("cube_pbr"_h));
+    registry.emplace<ComponentOBB>(cube0, CommonGeometry::get_mesh("cube_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(cube0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
+    AssetManager::on_material_ready(future_materials[0], [this, cube0 = cube0](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(cube0, mat);
+    });
 
-            float scale = 1.f;
-            if(jj == 0)
-            {
-                ComponentMesh cmesh(CommonGeometry::get_mesh("cube_pbr"_h));
-                scale = 1.5f;
-                registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
-            }
-            else
-            {
-                ComponentMesh cmesh(CommonGeometry::get_mesh("icosphere_pbr"_h));
-                registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
-            }
+    EntityID sphere0 = create_entity("Sphere #0");
+    registry.emplace<ComponentMesh>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h));
+    registry.emplace<ComponentOBB>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f), 0.5f);
 
-            ComponentTransform3D ctransform = {
-                {-4.f + float(ii) * 2.6f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
+    AssetManager::on_material_ready(future_materials[1], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(sphere0, mat);
+    });
 
-            registry.emplace<ComponentTransform3D>(ent, ctransform);
+    EntityID cube1 = create_entity("Cube #1");
+    registry.emplace<ComponentMesh>(cube1, CommonGeometry::get_mesh("cube_pbr"_h));
+    registry.emplace<ComponentOBB>(cube1, CommonGeometry::get_mesh("cube_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(cube1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 1.f);
 
-            AssetManager::on_material_ready(future_materials[ii], [this, ent = ent](const ComponentPBRMaterial& mat) {
-                registry.emplace<ComponentPBRMaterial>(ent, mat);
-            });
-        }
-    }
+    AssetManager::on_material_ready(future_materials[2], [this, cube1 = cube1](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(cube1, mat);
+    });
+
+    entity::attach(cube0, sphere0, registry);
+    entity::attach(sphere0, cube1, registry);
+    entity::sort_hierarchy(registry);
 
     load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
 

@@ -57,17 +57,6 @@ struct Transform3D
 		return glm::translate(glm::mat4(1.f), position) 
 			 * glm::toMat4(rotation);
 	}
-
-	Transform3D& operator +=(const Transform3D& rhs)
-	{
-		init(position + rhs.position, euler + rhs.euler, uniform_scale * rhs.uniform_scale);
-		return *this;
-	}
-
-	friend Transform3D operator +(const Transform3D& lhs, const Transform3D& rhs)
-	{
-		return Transform3D(lhs.position + rhs.position, lhs.euler + rhs.euler, lhs.uniform_scale * rhs.uniform_scale);
-	}
 };
 
 
