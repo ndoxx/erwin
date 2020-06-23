@@ -19,11 +19,13 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching one node to another", "[hier]")
     const auto& A_h = registry.get<HierarchyComponent>(A);
     const auto& B_h = registry.get<HierarchyComponent>(B);
 
+    REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == B);
 
+    REQUIRE(B_h.children == 0);
     REQUIRE(B_h.parent == A);
     REQUIRE(B_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
@@ -45,21 +47,25 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching a subtree to a node", "[hier]")
     const auto& C_h = registry.get<HierarchyComponent>(C);
     const auto& D_h = registry.get<HierarchyComponent>(D);
 
+    REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == B);
 
+    REQUIRE(B_h.children == 2);
     REQUIRE(B_h.parent == A);
     REQUIRE(B_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
     REQUIRE(B_h.first_child == D);
 
+    REQUIRE(C_h.children == 0);
     REQUIRE(C_h.parent == B);
     REQUIRE(C_h.previous_sibling == D);
     REQUIRE(C_h.next_sibling == k_invalid_entity_id);
     REQUIRE(C_h.first_child == k_invalid_entity_id);
 
+    REQUIRE(D_h.children == 0);
     REQUIRE(D_h.parent == B);
     REQUIRE(D_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(D_h.next_sibling == C);
@@ -78,16 +84,19 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching one node to another with a child
     const auto& B_h = registry.get<HierarchyComponent>(B);
     const auto& C_h = registry.get<HierarchyComponent>(C);
 
+    REQUIRE(A_h.children == 2);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == C);
 
+    REQUIRE(B_h.children == 0);
     REQUIRE(B_h.parent == A);
     REQUIRE(B_h.previous_sibling == C);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
     REQUIRE(B_h.first_child == k_invalid_entity_id);
 
+    REQUIRE(C_h.children == 0);
     REQUIRE(C_h.parent == A);
     REQUIRE(C_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(C_h.next_sibling == B);
@@ -107,16 +116,19 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching first child", "[hier]")
     const auto& B_h = registry.get<HierarchyComponent>(B);
     const auto& C_h = registry.get<HierarchyComponent>(C);
 
+    REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == B);
 
+    REQUIRE(B_h.children == 0);
     REQUIRE(B_h.parent == A);
     REQUIRE(B_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
     REQUIRE(B_h.first_child == k_invalid_entity_id);
 
+    REQUIRE(C_h.children == 0);
     REQUIRE(C_h.parent == k_invalid_entity_id);
     REQUIRE(C_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(C_h.next_sibling == k_invalid_entity_id);
@@ -138,16 +150,19 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching middle child", "[hier]")
     const auto& B_h = registry.get<HierarchyComponent>(B);
     const auto& D_h = registry.get<HierarchyComponent>(D);
 
+    REQUIRE(A_h.children == 2);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == D);
 
+    REQUIRE(B_h.children == 0);
     REQUIRE(B_h.parent == A);
     REQUIRE(B_h.previous_sibling == D);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
     REQUIRE(B_h.first_child == k_invalid_entity_id);
 
+    REQUIRE(D_h.children == 0);
     REQUIRE(D_h.parent == A);
     REQUIRE(D_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(D_h.next_sibling == B);
@@ -167,20 +182,64 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching last child", "[hier]")
     const auto& B_h = registry.get<HierarchyComponent>(B);
     const auto& C_h = registry.get<HierarchyComponent>(C);
 
+    REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
     REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(A_h.next_sibling == k_invalid_entity_id);
     REQUIRE(A_h.first_child == C);
 
+    REQUIRE(B_h.children == 0);
     REQUIRE(B_h.parent == k_invalid_entity_id);
     REQUIRE(B_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(B_h.next_sibling == k_invalid_entity_id);
     REQUIRE(B_h.first_child == k_invalid_entity_id);
 
+    REQUIRE(C_h.children == 0);
     REQUIRE(C_h.parent == A);
     REQUIRE(C_h.previous_sibling == k_invalid_entity_id);
     REQUIRE(C_h.next_sibling == k_invalid_entity_id);
     REQUIRE(C_h.first_child == k_invalid_entity_id);
+}
+
+TEST_CASE_METHOD(HierarchyFixture00, "Detaching subtree from a node", "[hier]")
+{
+    auto A = registry.create();
+    auto B = registry.create();
+    auto C = registry.create();
+    auto D = registry.create();
+    entity::attach(A, B, registry);
+    entity::attach(B, C, registry);
+    entity::attach(B, D, registry);
+    entity::detach(B, registry);
+
+    const auto& A_h = registry.get<HierarchyComponent>(A);
+    const auto& B_h = registry.get<HierarchyComponent>(B);
+    const auto& C_h = registry.get<HierarchyComponent>(C);
+    const auto& D_h = registry.get<HierarchyComponent>(D);
+
+    REQUIRE(A_h.children == 0);
+    REQUIRE(A_h.parent == k_invalid_entity_id);
+    REQUIRE(A_h.previous_sibling == k_invalid_entity_id);
+    REQUIRE(A_h.next_sibling == k_invalid_entity_id);
+    REQUIRE(A_h.first_child == k_invalid_entity_id);
+
+    REQUIRE(B_h.children == 2);
+    REQUIRE(B_h.parent == k_invalid_entity_id);
+    REQUIRE(B_h.previous_sibling == k_invalid_entity_id);
+    REQUIRE(B_h.next_sibling == k_invalid_entity_id);
+    REQUIRE(B_h.first_child == D);
+
+    REQUIRE(C_h.children == 0);
+    REQUIRE(C_h.parent == B);
+    REQUIRE(C_h.previous_sibling == D);
+    REQUIRE(C_h.next_sibling == k_invalid_entity_id);
+    REQUIRE(C_h.first_child == k_invalid_entity_id);
+
+    REQUIRE(D_h.children == 0);
+    REQUIRE(D_h.parent == B);
+    REQUIRE(D_h.previous_sibling == k_invalid_entity_id);
+    REQUIRE(D_h.next_sibling == C);
+    REQUIRE(D_h.first_child == k_invalid_entity_id);
 }
 
 TEST_CASE_METHOD(HierarchyFixture00, "Child check", "[hier]")
@@ -245,6 +304,60 @@ TEST_CASE_METHOD(HierarchyFixture00, "Sibling check, split trees", "[hier]")
 
     REQUIRE(!C_is_sibling_D);
     REQUIRE(!D_is_sibling_C);
+}
+
+TEST_CASE_METHOD(HierarchyFixture00, "Subtree check", "[hier]")
+{
+    auto A = registry.create();
+    auto B = registry.create();
+    auto C = registry.create();
+    auto D = registry.create();
+    entity::attach(A, B, registry);
+    entity::attach(A, C, registry);
+    entity::attach(C, D, registry);
+
+    REQUIRE(entity::subtree_contains(A, A, registry));
+    REQUIRE(entity::subtree_contains(A, B, registry));
+    REQUIRE(entity::subtree_contains(A, C, registry));
+    REQUIRE(entity::subtree_contains(A, D, registry));
+    REQUIRE(entity::subtree_contains(C, C, registry));
+    REQUIRE(entity::subtree_contains(C, D, registry));
+    REQUIRE(!entity::subtree_contains(C, A, registry));
+    REQUIRE(!entity::subtree_contains(C, B, registry));
+}
+
+TEST_CASE_METHOD(HierarchyFixture00, "Hierarchy sort, strict order check", "[hier]")
+{
+    auto A = registry.create();
+    auto B = registry.create();
+    auto C = registry.create();
+    entity::attach(A, B, registry);
+    entity::attach(B, C, registry);
+    entity::sort_hierarchy(registry);
+
+    std::vector<EntityID> order;
+    registry.view<HierarchyComponent>().each([&order](auto ent, const auto&) { order.push_back(ent); });
+
+    REQUIRE(order == std::vector<EntityID>{A, B, C});
+}
+
+TEST_CASE_METHOD(HierarchyFixture00, "Hierarchy sort, weak order check", "[hier]")
+{
+    auto A = registry.create();
+    auto B = registry.create();
+    auto C = registry.create();
+    auto D = registry.create();
+    entity::attach(A, B, registry);
+    entity::attach(A, C, registry);
+    entity::attach(B, D, registry);
+    entity::sort_hierarchy(registry);
+
+    std::vector<EntityID> order;
+    registry.view<HierarchyComponent>().each([&order](auto ent, const auto&) { order.push_back(ent); });
+
+    auto order_1_req = std::vector<EntityID>{A, B, C, D};
+    auto order_2_req = std::vector<EntityID>{A, C, B, D};
+    REQUIRE(((order == order_1_req) || (order == order_2_req)));
 }
 
 struct NameComponent
@@ -314,7 +427,6 @@ protected:
 
 TEST_CASE_METHOD(HierarchyFixture01, "Base case requirements", "[hier]")
 {
-    // entity::sort_hierarchy(registry);
     // print_hierarchy(A, registry);
 
     REQUIRE(entity::is_child(A, B, registry));
@@ -369,4 +481,75 @@ TEST_CASE_METHOD(HierarchyFixture01, "Reattaching subtree", "[hier]")
     REQUIRE(entity::subtree_contains(A, F, registry));
 
     REQUIRE(!entity::is_sibling(C, D, registry));
+}
+
+struct MockTransform
+{
+	MockTransform(int Value): value(Value) {}
+
+	MockTransform& operator +=(const MockTransform& rhs)
+	{
+		value += rhs.value;
+		return *this;
+	}
+
+	int value = 0;
+};
+
+class HierarchyFixture02
+{
+public:
+    HierarchyFixture02()
+    {
+        A = registry.create();
+        B = registry.create();
+        C = registry.create();
+        D = registry.create();
+
+        registry.emplace<MockTransform>(A, 0);
+        registry.emplace<MockTransform>(B, 1);
+        registry.emplace<MockTransform>(C, -1);
+        registry.emplace<MockTransform>(D, 2);
+
+        entity::attach(A, B, registry);
+        entity::attach(A, C, registry);
+        entity::attach(C, D, registry);
+
+        entity::sort_hierarchy(registry);
+    }
+
+    void update()
+    {
+    	registry.view<HierarchyComponent, MockTransform>().each([this](auto ent, const auto& hier, auto& transform)
+    	{
+    		if(hier.parent != k_invalid_entity_id)
+    			transform += registry.get<MockTransform>(hier.parent);
+    	});
+    }
+
+protected:
+    entt::registry registry;
+    EntityID A;
+    EntityID B;
+    EntityID C;
+    EntityID D;
+};
+
+TEST_CASE_METHOD(HierarchyFixture02, "Transform update", "[hier]")
+{
+	{
+		auto& tA = registry.get<MockTransform>(A);
+		tA.value = 10;
+		update();
+	}
+
+	const auto& tA = registry.get<MockTransform>(A);
+	const auto& tB = registry.get<MockTransform>(B);
+	const auto& tC = registry.get<MockTransform>(C);
+	const auto& tD = registry.get<MockTransform>(D);
+
+	REQUIRE(tA.value == 10);
+	REQUIRE(tB.value == 10+1);
+	REQUIRE(tC.value == 10-1);
+	REQUIRE(tD.value == 10-1+2);
 }
