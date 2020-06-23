@@ -55,7 +55,7 @@ void SceneViewLayer::on_update(GameClock& clock)
     ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
     camera_controller_.update(clock, camera, transform);
-    Renderer3D::update_camera(camera, transform);
+    Renderer3D::update_camera(camera, transform.local);
     if(scene.registry.valid(scene.directional_light))
         Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
 }
@@ -76,7 +76,8 @@ void SceneViewLayer::on_render()
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
             const ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
             const ComponentMesh& cmesh = view.get<ComponentMesh>(e);
-            Renderer3D::draw_mesh(cmesh.mesh, ctransform.get_model_matrix(), cmaterial.material,
+            // TMP: use global transform when we have a system to update it
+            Renderer3D::draw_mesh(cmesh.mesh, ctransform.local.get_model_matrix(), cmaterial.material,
                                   &cmaterial.material_data);
         }
         Renderer3D::end_deferred_pass();

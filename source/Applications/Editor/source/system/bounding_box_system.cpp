@@ -36,7 +36,8 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
 void BoundingBoxSystem::update(const GameClock&, Scene& scene)
 {
     scene.registry.view<ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
-        OBB.update(transform.get_model_matrix(), transform.uniform_scale);
+        // TMP: use global transform
+        OBB.update(transform.local.get_model_matrix(), transform.local.uniform_scale);
     });
 
     // TODO: instead of doing this in update, make BoundingBoxSystem respond to

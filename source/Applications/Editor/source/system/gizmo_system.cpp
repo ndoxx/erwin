@@ -61,7 +61,7 @@ void GizmoSystem::update(const erwin::GameClock& /*clock*/, Scene& scene)
         scene.registry.view<ComponentTransform3D, GizmoHandleComponent, ComponentOBB>().each(
             [e, &parent_transform](auto /*g*/, auto& transform, auto& GH, const auto&) {
                 GH.parent = e;
-                transform.init(parent_transform.position + offsets[size_t(GH.handle_id)], parent_transform.euler, 1.f);
+                transform.local.init(parent_transform.local.position + offsets[size_t(GH.handle_id)], parent_transform.local.euler, 1.f);
             });
     });
 
@@ -78,7 +78,8 @@ void GizmoSystem::render(const Scene& scene)
             gizmo_data_.selected = selected_part_;
 
             Renderer3D::begin_line_pass(false);
-            Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.get_unscaled_model_matrix(),
+            // TMP: use global transform
+            Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.local.get_unscaled_model_matrix(),
                                   gizmo_material_, &gizmo_data_);
             Renderer3D::end_line_pass();
         });
