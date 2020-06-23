@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "entity/hierarchy.h"
+#include "entity/component/hierarchy.h"
 #include "entt/entt.hpp"
 
 using namespace erwin;
