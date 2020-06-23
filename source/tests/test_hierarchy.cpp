@@ -485,15 +485,28 @@ TEST_CASE_METHOD(HierarchyFixture01, "Reattaching subtree", "[hier]")
 
 struct MockTransform
 {
-	MockTransform(int Value): value(Value) {}
+    MockTransform(int Value) : value(Value) {}
 
-	MockTransform& operator +=(const MockTransform& rhs)
-	{
-		value += rhs.value;
-		return *this;
-	}
+    MockTransform& operator +=(const MockTransform& rhs)
+    {
+    	value += rhs.value;
+    	return *this;
+    }
 
-	int value = 0;
+    friend MockTransform operator +(const MockTransform& lhs, const MockTransform& rhs)
+    {
+    	return { lhs.value + rhs.value };
+    }
+
+    int value = 0;
+};
+
+struct TransformComponent
+{
+    TransformComponent(int local_value) : local(local_value), global(0) {}
+
+    MockTransform local;
+    MockTransform global;
 };
 
 class HierarchyFixture02
@@ -506,10 +519,10 @@ public:
         C = registry.create();
         D = registry.create();
 
-        registry.emplace<MockTransform>(A, 0);
-        registry.emplace<MockTransform>(B, 1);
-        registry.emplace<MockTransform>(C, -1);
-        registry.emplace<MockTransform>(D, 2);
+        registry.emplace<TransformComponent>(A, 0);
+        registry.emplace<TransformComponent>(B, 1);
+        registry.emplace<TransformComponent>(C, -1);
+        registry.emplace<TransformComponent>(D, 2);
 
         entity::attach(A, B, registry);
         entity::attach(A, C, registry);
@@ -520,11 +533,12 @@ public:
 
     void update()
     {
-    	registry.view<HierarchyComponent, MockTransform>().each([this](auto ent, const auto& hier, auto& transform)
-    	{
-    		if(hier.parent != k_invalid_entity_id)
-    			transform += registry.get<MockTransform>(hier.parent);
-    	});
+        registry.view<HierarchyComponent, TransformComponent>().each(
+            [this](auto ent, const auto& hier, auto& transform) {
+            	transform.global = transform.local;
+                if(hier.parent != k_invalid_entity_id)
+                    transform.global += registry.get<TransformComponent>(hier.parent).global;
+            });
     }
 
 protected:
@@ -535,21 +549,62 @@ protected:
     EntityID D;
 };
 
-TEST_CASE_METHOD(HierarchyFixture02, "Transform update", "[hier]")
+TEST_CASE_METHOD(HierarchyFixture02, "Single local change, single global transform update", "[hier]")
 {
 	{
-		auto& tA = registry.get<MockTransform>(A);
-		tA.value = 10;
-		update();
+	    auto& tA = registry.get<TransformComponent>(A);
+	    tA.local.value = 10;
+	    update();
 	}
 
-	const auto& tA = registry.get<MockTransform>(A);
-	const auto& tB = registry.get<MockTransform>(B);
-	const auto& tC = registry.get<MockTransform>(C);
-	const auto& tD = registry.get<MockTransform>(D);
+    const auto& tA = registry.get<TransformComponent>(A);
+    const auto& tB = registry.get<TransformComponent>(B);
+    const auto& tC = registry.get<TransformComponent>(C);
+    const auto& tD = registry.get<TransformComponent>(D);
 
-	REQUIRE(tA.value == 10);
-	REQUIRE(tB.value == 10+1);
-	REQUIRE(tC.value == 10-1);
-	REQUIRE(tD.value == 10-1+2);
+    REQUIRE(tA.global.value == 10);
+    REQUIRE(tB.global.value == 10 + 1);
+    REQUIRE(tC.global.value == 10 - 1);
+    REQUIRE(tD.global.value == 10 - 1 + 2);
+}
+
+TEST_CASE_METHOD(HierarchyFixture02, "Single local change, global transform update twice", "[hier]")
+{
+	{
+	    auto& tA = registry.get<TransformComponent>(A);
+	    tA.local.value = 10;
+	    update();
+	    update();
+	}
+
+    const auto& tA = registry.get<TransformComponent>(A);
+    const auto& tB = registry.get<TransformComponent>(B);
+    const auto& tC = registry.get<TransformComponent>(C);
+    const auto& tD = registry.get<TransformComponent>(D);
+
+    REQUIRE(tA.global.value == 10);
+    REQUIRE(tB.global.value == 10 + 1);
+    REQUIRE(tC.global.value == 10 - 1);
+    REQUIRE(tD.global.value == 10 - 1 + 2);
+}
+
+TEST_CASE_METHOD(HierarchyFixture02, "Local change and global update twice", "[hier]")
+{
+	{
+	    auto& tA = registry.get<TransformComponent>(A);
+	    tA.local.value = 10;
+	    update();
+	    tA.local.value = 42;
+	    update();
+	}
+
+    const auto& tA = registry.get<TransformComponent>(A);
+    const auto& tB = registry.get<TransformComponent>(B);
+    const auto& tC = registry.get<TransformComponent>(C);
+    const auto& tD = registry.get<TransformComponent>(D);
+
+    REQUIRE(tA.global.value == 42);
+    REQUIRE(tB.global.value == 42 + 1);
+    REQUIRE(tC.global.value == 42 - 1);
+    REQUIRE(tD.global.value == 42 - 1 + 2);
 }
