@@ -89,7 +89,7 @@ bool Scene::on_load()
     EntityID sphere1 = create_entity("Sphere #1");
     registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
     registry.emplace<ComponentOBB>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
-    registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 3.f, 0.f), glm::vec3(0.f), 1.f);
+    registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
     AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
         registry.emplace<ComponentPBRMaterial>(sphere1, mat);
