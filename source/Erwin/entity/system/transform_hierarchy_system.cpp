@@ -8,7 +8,7 @@ namespace erwin
 
 void TransformSystem::update(const GameClock& /*clock*/, entt::registry& registry)
 {
-    // OPT: only touch the global transforms of entities for which the local transform has changed
+    // OPT: only touch the global transforms of entities for which the local transform has changed (also its children)
     // -> Use a DirtyTransform tag component to signal this
     // see: https://skypjack.github.io/2019-08-20-ecs-baf-part-4-insights/
     registry.view<HierarchyComponent, ComponentTransform3D>().each(

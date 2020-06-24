@@ -22,6 +22,10 @@
 		{
 			"name": "Tests",
 			"path": "source/tests"
+		},
+		{
+			"name": "Dev",
+			"path": "source/dev/source"
 		}
 	],
 
