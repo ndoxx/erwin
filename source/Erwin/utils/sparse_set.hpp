@@ -2,6 +2,7 @@
 #include <cassert>
 #include <type_traits>
 #include <vector>
+#include <numeric>
 
 template <typename T, size_t SIZE> class SparseSet
 {
@@ -141,8 +142,7 @@ public:
     void clear()
     {
         size_ = 0;
-        for(T ii{}; ii < T(SIZE); ++ii)
-            dense[ii] = ii;
+        std::iota(dense.begin(), dense.end(), 0);
     }
 
     T acquire()
