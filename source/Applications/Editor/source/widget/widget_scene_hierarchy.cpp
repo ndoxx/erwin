@@ -2,6 +2,7 @@
 #include "level/scene.h"
 #include "entity/reflection.h"
 #include "entity/component/description.h"
+#include "entity/component/hierarchy.h"
 #include "entity/tag_components.h"
 #include "imgui/font_awesome.h"
 #include "imgui.h"
@@ -17,9 +18,9 @@ Widget("Hierarchy", true)
 
 }
 
-static void entity_context_menu(Scene& scene, EntityID e, int index)
+static void entity_context_menu(Scene& scene, EntityID e)
 {
-    ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(index)))));
+    ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(e)))));
     if(ImGui::BeginPopupContextItem("Entity context menu"))
     {
         if(ImGui::Selectable("Remove"))
@@ -31,6 +32,9 @@ static void entity_context_menu(Scene& scene, EntityID e, int index)
     }
     ImGui::PopID();
 }
+
+static ImGuiTreeNodeFlags s_base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+static ImGuiTreeNodeFlags s_leaf_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 void SceneHierarchyWidget::on_imgui_render()
 {
@@ -48,33 +52,59 @@ void SceneHierarchyWidget::on_imgui_render()
 
     ImGui::Separator();
 
-    // Display hierarchy
-    static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-    ImGuiTreeNodeFlags node_flags = base_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
+    // * Display hierarchy
+    // Display free entities first
 
     ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
-    
     EntityID new_selection = k_invalid_entity_id;
-
-    auto view = scene.registry.view<ComponentDescription>();
-    int ii = 0;
-    for(const entt::entity e: view)
+    scene.registry.view<ComponentDescription>(entt::exclude<HierarchyComponent>).each([&new_selection, &scene](auto e, const auto& desc)
     {
-        const ComponentDescription& desc = view.get<ComponentDescription>(e);
-
-        ImGuiTreeNodeFlags flags = node_flags;
+        ImGuiTreeNodeFlags flags = s_base_flags | s_leaf_flags;
         if(scene.registry.has<SelectedTag>(e))
             flags |= ImGuiTreeNodeFlags_Selected;
 
-        ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(ii)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+        ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(e)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
         if(ImGui::IsItemClicked())
             new_selection = e;
 
         // Context menu for entities
-        entity_context_menu(scene, e, ii);
+        entity_context_menu(scene, e);
+    });
 
-        ++ii;
-    }
+    // Display entities with hierarchy
+    // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame
+    scene.registry.view<HierarchyComponent>().each([&new_selection, &scene, this](auto e, auto& hier)
+    {
+        // Root nodes only -> depth-first traversal
+        if(hier.parent == k_invalid_entity_id)
+        {
+            entity::depth_first(e, scene.registry, [&new_selection, &scene, this](auto curr, const auto& curr_hier, size_t depth)
+            {
+                ImGuiTreeNodeFlags flags = s_base_flags;
+                if(scene.registry.has<SelectedTag>(curr))
+                    flags |= ImGuiTreeNodeFlags_Selected;
+                if(curr_hier.children == 0)
+                    flags |= s_leaf_flags;
+
+                ImGui::Indent(float(depth) * indentation_);
+
+                const auto& desc = scene.registry.get<ComponentDescription>(curr);
+                bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+                
+                if(ImGui::IsItemClicked())
+                    new_selection = curr;
+
+                // Context menu for entities
+                entity_context_menu(scene, curr);
+
+                if(node_open && curr_hier.children != 0)
+                    ImGui::TreePop();
+
+                return !node_open;
+            });
+        }
+    });
+
 
     if(new_selection != k_invalid_entity_id)
     {

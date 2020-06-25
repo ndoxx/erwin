@@ -143,6 +143,9 @@ void Scene::cleanup()
         // ALT: or moved up?
         if(auto* p_hier = registry.try_get<HierarchyComponent>(entity))
         {
+            if(p_hier->parent != k_invalid_entity_id)
+                entity::detach(entity, registry);
+
             std::vector<EntityID> subtree;
             entity::depth_first(entity, registry, [&subtree](EntityID child, const HierarchyComponent&, size_t) {
                 DLOG("editor",1) << "Removing subtree node: " << size_t(child) << std::endl;

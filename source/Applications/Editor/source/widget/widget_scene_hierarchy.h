@@ -18,6 +18,9 @@ public:
 
 protected:
 	virtual void on_imgui_render() override;
+
+private:
+	float indentation_ = 5.f;
 };
 
 } // namespace editor
