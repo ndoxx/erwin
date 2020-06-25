@@ -73,7 +73,8 @@ bool Scene::on_load()
     std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
-        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
+        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) /
+                                          "paintPeelingConcrete.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
     };
 
@@ -121,7 +122,6 @@ void Scene::on_unload()
     directional_light = k_invalid_entity_id;
     camera = k_invalid_entity_id;
     registry.clear();
-    entities.clear();
 }
 
 void Scene::cleanup()
@@ -138,7 +138,22 @@ void Scene::cleanup()
     while(!removed_entities_.empty())
     {
         auto entity = removed_entities_.front();
-        registry.destroy(entity);
+
+        // Check if entity has children, if so, the whole subtree must be destroyed
+        // ALT: or moved up?
+        if(auto* p_hier = registry.try_get<HierarchyComponent>(entity))
+        {
+            std::vector<EntityID> subtree;
+            entity::depth_first(entity, registry, [&subtree](EntityID child, const HierarchyComponent&, size_t) {
+                DLOG("editor",1) << "Removing subtree node: " << size_t(child) << std::endl;
+                subtree.push_back(child);
+                return false;
+            });
+            registry.destroy(subtree.begin(), subtree.end());
+        }
+        else
+            registry.destroy(entity);
+
         removed_entities_.pop();
     }
 }
@@ -157,8 +172,6 @@ void Scene::add_entity(EntityID entity, const std::string& name, const char* _ic
 {
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
     registry.emplace<ComponentDescription>(entity, desc);
-
-    entities.push_back(entity);
 
     DLOG("editor", 1) << "[Scene] Added entity: " << name << std::endl;
 }

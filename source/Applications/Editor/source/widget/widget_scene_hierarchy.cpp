@@ -17,6 +17,21 @@ Widget("Hierarchy", true)
 
 }
 
+static void entity_context_menu(Scene& scene, EntityID e, int index)
+{
+    ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(index)))));
+    if(ImGui::BeginPopupContextItem("Entity context menu"))
+    {
+        if(ImGui::Selectable("Remove"))
+        {
+            scene.mark_for_removal(e);
+            DLOG("editor",1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
+}
+
 void SceneHierarchyWidget::on_imgui_render()
 {
     auto& scene = scn::current<Scene>();
@@ -56,17 +71,7 @@ void SceneHierarchyWidget::on_imgui_render()
             new_selection = e;
 
         // Context menu for entities
-        ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(ii)))));
-        if(ImGui::BeginPopupContextItem("Entity context menu"))
-        {
-            if(ImGui::Selectable("Remove"))
-            {
-                scene.mark_for_removal(e);
-                DLOG("editor",1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
-            }
-            ImGui::EndPopup();
-        }
-        ImGui::PopID();
+        entity_context_menu(scene, e, ii);
 
         ++ii;
     }
