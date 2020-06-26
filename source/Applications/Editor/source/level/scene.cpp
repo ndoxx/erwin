@@ -1,20 +1,21 @@
 #include "level/scene.h"
 #include "asset/asset_manager.h"
 #include "debug/logger.h"
-#include "entity/component_description.h"
+#include "entity/component/description.h"
 #include "entity/reflection.h"
 #include "imgui/font_awesome.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 
-#include "entity/component_PBR_material.h"
-#include "entity/component_bounding_box.h"
-#include "entity/component_camera.h"
-#include "entity/component_dirlight_material.h"
-#include "entity/component_mesh.h"
-#include "entity/component_transform.h"
-#include "entity/light.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/bounding_box.h"
+#include "entity/component/camera.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/hierarchy.h"
+#include "entity/component/light.h"
+#include "entity/component/mesh.h"
+#include "entity/component/transform.h"
 #include "entity/tag_components.h"
 #include "project/project.h"
 
@@ -38,6 +39,7 @@ bool Scene::on_load()
         registry.emplace<ComponentCamera3D>(ent);
         registry.emplace<ComponentTransform3D>(ent, transform);
         registry.emplace<NoGizmoTag>(ent);
+        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
         camera = ent;
     }
 
@@ -65,6 +67,7 @@ bool Scene::on_load()
 
         registry.emplace<ComponentDirectionalLight>(ent, cdirlight);
         registry.emplace<ComponentDirectionalLightMaterial>(ent, renderable);
+        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
 
         directional_light = ent;
     }
@@ -72,44 +75,41 @@ bool Scene::on_load()
     std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
-        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
+        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) /
+                                          "paintPeelingConcrete.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
     };
 
-    size_t cnt = 0;
-    for(size_t ii = 0; ii < future_materials.size(); ++ii)
-    {
-        for(size_t jj = 0; jj < 2; ++jj)
-        {
-            std::string obj_name = "Obj #" + std::to_string(cnt++);
-            EntityID ent = create_entity(obj_name);
+    EntityID sphere0 = create_entity("Sphere #0");
+    registry.emplace<ComponentMesh>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h));
+    registry.emplace<ComponentOBB>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
+    AssetManager::on_material_ready(future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(sphere0, mat);
+    });
 
-            float scale = 1.f;
-            if(jj == 0)
-            {
-                ComponentMesh cmesh(CommonGeometry::get_mesh("cube_pbr"_h));
-                scale = 1.5f;
-                registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
-            }
-            else
-            {
-                ComponentMesh cmesh(CommonGeometry::get_mesh("icosphere_pbr"_h));
-                registry.emplace<ComponentMesh>(ent, cmesh);
-                registry.emplace<ComponentOBB>(ent, cmesh.mesh.extent);
-            }
+    EntityID sphere1 = create_entity("Sphere #1");
+    registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
+    registry.emplace<ComponentOBB>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-            ComponentTransform3D ctransform = {
-                {-4.f + float(ii) * 2.6f, 0.f, -1.f + float(jj) * 2.5f}, {0.f, 0.f, 0.f}, scale};
+    AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(sphere1, mat);
+    });
 
-            registry.emplace<ComponentTransform3D>(ent, ctransform);
+    EntityID sphere2 = create_entity("Sphere #2");
+    registry.emplace<ComponentMesh>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h));
+    registry.emplace<ComponentOBB>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-            AssetManager::on_material_ready(future_materials[ii], [this, ent = ent](const ComponentPBRMaterial& mat) {
-                registry.emplace<ComponentPBRMaterial>(ent, mat);
-            });
-        }
-    }
+    AssetManager::on_material_ready(future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
+        registry.emplace<ComponentPBRMaterial>(sphere2, mat);
+    });
+
+    entity::attach(sphere0, sphere1, registry);
+    entity::attach(sphere1, sphere2, registry);
+    entity::sort_hierarchy(registry);
 
     load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
 
@@ -124,7 +124,6 @@ void Scene::on_unload()
     directional_light = k_invalid_entity_id;
     camera = k_invalid_entity_id;
     registry.clear();
-    entities.clear();
 }
 
 void Scene::cleanup()
@@ -141,7 +140,25 @@ void Scene::cleanup()
     while(!removed_entities_.empty())
     {
         auto entity = removed_entities_.front();
-        registry.destroy(entity);
+
+        // Check if entity has children, if so, the whole subtree must be destroyed
+        // ALT: or moved up?
+        if(auto* p_hier = registry.try_get<HierarchyComponent>(entity))
+        {
+            if(p_hier->parent != k_invalid_entity_id)
+                entity::detach(entity, registry);
+
+            std::vector<EntityID> subtree;
+            entity::depth_first(entity, registry, [&subtree](EntityID child, const HierarchyComponent&, size_t) {
+                DLOG("editor",1) << "Removing subtree node: " << size_t(child) << std::endl;
+                subtree.push_back(child);
+                return false;
+            });
+            registry.destroy(subtree.begin(), subtree.end());
+        }
+        else
+            registry.destroy(entity);
+
         removed_entities_.pop();
     }
 }
@@ -161,8 +178,6 @@ void Scene::add_entity(EntityID entity, const std::string& name, const char* _ic
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
     registry.emplace<ComponentDescription>(entity, desc);
 
-    entities.push_back(entity);
-
     DLOG("editor", 1) << "[Scene] Added entity: " << name << std::endl;
 }
 
@@ -172,10 +187,7 @@ void Scene::select(EntityID entity)
     registry.emplace<SelectedTag>(entity);
 }
 
-void Scene::drop_selection()
-{
-    registry.clear<SelectedTag>();
-}
+void Scene::drop_selection() { registry.clear<SelectedTag>(); }
 
 void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 {

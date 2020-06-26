@@ -1,4 +1,4 @@
-#include "entity/component_camera.h"
+#include "entity/component/camera.h"
 #include "entity/reflection.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"

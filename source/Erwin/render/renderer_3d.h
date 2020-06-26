@@ -10,7 +10,7 @@ namespace erwin
 struct Material;
 struct Mesh;
 struct ComponentCamera3D;
-struct ComponentTransform3D;
+struct Transform3D;
 struct ComponentDirectionalLight;
 struct Environment;
 
@@ -19,7 +19,7 @@ class Renderer3D
 {
 public:
 	// Setup frame data
-	static void update_camera(const ComponentCamera3D& camera, const ComponentTransform3D& transform);
+	static void update_camera(const ComponentCamera3D& camera, const Transform3D& transform);
 	static void update_light(const ComponentDirectionalLight& dir_light);
 	static void update_frame_data();
 	// Set an irradiance cubemap for PBR

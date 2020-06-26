@@ -7,9 +7,9 @@
 #include "asset/material.h"
 #include "asset/mesh.h"
 #include "filesystem/filesystem.h"
-#include "entity/component_camera.h"
-#include "entity/component_transform.h"
-#include "entity/light.h"
+#include "entity/component/camera.h"
+#include "entity/component/light.h"
+#include "math/transform.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/euler_angles.hpp"
@@ -153,7 +153,7 @@ void Renderer3D::shutdown()
 	Renderer::destroy(s_storage.line_shader);
 }
 
-void Renderer3D::update_camera(const ComponentCamera3D& camera, const ComponentTransform3D& transform)
+void Renderer3D::update_camera(const ComponentCamera3D& camera, const Transform3D& transform)
 {
 	glm::vec2 fb_size = FramebufferPool::get_screen_size();
 	float near = camera.frustum.near;

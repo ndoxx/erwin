@@ -1,4 +1,4 @@
-#include "entity/component_dirlight_material.h"
+#include "entity/component/dirlight_material.h"
 #include "entity/reflection.h"
 #include "imgui.h"
 

@@ -1,4 +1,4 @@
-#include "entity/component_mesh.h"
+#include "entity/component/mesh.h"
 #include "entity/reflection.h"
 #include "render/common_geometry.h"
 #include "asset/asset_manager.h"

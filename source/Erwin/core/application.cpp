@@ -332,7 +332,12 @@ void Application::run()
                 layer->render();
         }
 
-        Renderer::flush();
+        {
+#ifndef W_PROFILE_RENDER
+            W_PROFILE_SCOPE("Renderer flush")
+#endif
+            Renderer::flush();
+        }
 
 		// TODO: move this to renderer
         {

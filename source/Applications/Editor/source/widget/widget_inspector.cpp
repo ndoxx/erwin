@@ -2,7 +2,7 @@
 #include "level/scene.h"
 #include "imgui/font_awesome.h"
 #include "entity/reflection.h"
-#include "entity/component_description.h"
+#include "entity/component/description.h"
 #include "entity/tag_components.h"
 #include "render/renderer_pp.h"
 #include "render/renderer_3d.h"

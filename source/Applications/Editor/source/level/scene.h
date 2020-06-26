@@ -46,7 +46,6 @@ public:
 
 	erwin::EntityID directional_light = erwin::k_invalid_entity_id;
 	erwin::EntityID camera = erwin::k_invalid_entity_id;
-	std::vector<erwin::EntityID> entities;
 
 	erwin::Environment environment;
 

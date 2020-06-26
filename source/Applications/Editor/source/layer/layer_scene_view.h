@@ -2,6 +2,7 @@
 
 #include "erwin.h"
 #include "input/freefly_camera_system.h"
+#include "entity/system/transform_hierarchy_system.h"
 
 namespace editor
 {
@@ -34,6 +35,8 @@ protected:
 
 private:
     erwin::FreeflyCameraSystem camera_controller_;
+
+    erwin::TransformSystem transform_system_;
 };
 
 } // namespace editor

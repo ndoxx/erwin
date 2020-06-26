@@ -1,4 +1,4 @@
-#include "entity/component_PBR_material.h"
+#include "entity/component/PBR_material.h"
 #include "entity/reflection.h"
 #include "asset/asset_manager.h"
 #include "filesystem/filesystem.h"

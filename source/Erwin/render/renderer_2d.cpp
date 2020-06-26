@@ -8,7 +8,7 @@
 #include "filesystem/filesystem.h"
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
-#include "entity/component_transform.h"
+#include "math/transform.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/vec_swizzle.hpp"
 
@@ -185,7 +185,7 @@ static void flush_batch(Batch2D& batch)
 	}
 }
 
-void Renderer2D::draw_quad(const ComponentTransform2D& transform, const TextureAtlas& atlas, hash_t tile, const glm::vec4& tint)
+void Renderer2D::draw_quad(const Transform2D& transform, const TextureAtlas& atlas, hash_t tile, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;
@@ -206,7 +206,7 @@ void Renderer2D::draw_quad(const ComponentTransform2D& transform, const TextureA
 	++batch.count;
 }
 
-void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint)
+void Renderer2D::draw_colored_quad(const Transform2D& transform, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;

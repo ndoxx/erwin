@@ -1,7 +1,7 @@
 #include "widget/widget_rt_peek.h"
 #include "level/scene.h"
 #include "core/intern_string.h"
-#include "entity/component_camera.h"
+#include "entity/component/camera.h"
 #include "filesystem/filesystem.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"

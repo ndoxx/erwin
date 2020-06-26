@@ -3,7 +3,7 @@
 #include "input/tracker_camera_system.h"
 #include "core/game_clock.h"
 #include "input/input.h"
-#include "entity/component_transform.h"
+#include "entity/component/transform.h"
 #include "entity/reflection.h"
 #include "event/window_events.h"
 
@@ -26,7 +26,7 @@ TrackerCameraSystem::TrackerCameraSystem()
 
 void TrackerCameraSystem::init(ComponentTransform3D& transform)
 {
-    position_ = transform.position;
+    position_ = transform.local.position;
     set_position(radius_, azimuth_, colatitude_);
 }
 
@@ -73,7 +73,7 @@ void TrackerCameraSystem::update(const erwin::GameClock& /*clock*/, ComponentCam
     if(!inputs_enabled_ && !dirty_frustum_)
         return;
 
-    transform.position = position_;
+    transform.local.position = position_;
     camera.view_matrix = glm::lookAt(position_, lookat_target_, glm::vec3(0.0f, 1.0f, 0.0f));
     camera.view_projection_matrix = camera.projection_matrix * camera.view_matrix;
     // TMP: camera.update_transform() not called, so world frustum and directions stay uninit, also transform angles are uninit

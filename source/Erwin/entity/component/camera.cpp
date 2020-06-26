@@ -1,4 +1,4 @@
-#include "entity/component_camera.h"
+#include "entity/component/camera.h"
 #include "core/core.h"
 
 #include "glm/gtc/matrix_access.hpp"

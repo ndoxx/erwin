@@ -1,6 +1,6 @@
 #include "asset/asset_manager.h"
 #include "core/intern_string.h"
-#include "entity/component_PBR_material.h"
+#include "entity/component/PBR_material.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
 #include "filesystem/filesystem.h"

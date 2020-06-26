@@ -46,7 +46,7 @@ void MaterialViewWidget::on_update(const GameClock& clock)
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     camera_controller_.update(clock, scene.camera_, scene.camera_transform_);
 
-    Renderer3D::update_camera(scene.camera_, scene.camera_transform_);
+    Renderer3D::update_camera(scene.camera_, scene.camera_transform_.local);
     Renderer3D::update_light(scene.directional_light_);
     Renderer3D::update_frame_data();
 }
@@ -80,7 +80,7 @@ void MaterialViewWidget::on_layer_render()
 {
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     Renderer3D::begin_deferred_pass();
-    Renderer3D::draw_mesh(scene.current_mesh_.mesh, scene.transform_.get_model_matrix(), scene.current_material_.material, &scene.current_material_.material_data);
+    Renderer3D::draw_mesh(scene.current_mesh_.mesh, scene.transform_.local.get_model_matrix(), scene.current_material_.material, &scene.current_material_.material_data);
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap?

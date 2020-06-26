@@ -1,5 +1,5 @@
 #include "material_loader.h"
-#include "entity/component_PBR_material.h"
+#include "entity/component/PBR_material.h"
 #include "filesystem/tom_file.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"

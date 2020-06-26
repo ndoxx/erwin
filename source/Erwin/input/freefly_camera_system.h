@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entity/component_camera.h"
+#include "entity/component/camera.h"
 
 namespace erwin
 {

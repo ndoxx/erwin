@@ -17,17 +17,17 @@ HANDLE_DECLARATION(CubemapHandle, k_max_cubemaps);
 HANDLE_DECLARATION(ShaderHandle, k_max_shaders);
 HANDLE_DECLARATION(FramebufferHandle, k_max_framebuffers);
 
-static constexpr std::size_t k_render_handle_alloc_size =
-    HandlePoolT<k_max_handles<IndexBufferHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<VertexBufferLayoutHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<VertexBufferHandle>>::k_size_bytes + 
-    HandlePoolT<k_max_handles<VertexArrayHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<UniformBufferHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<ShaderStorageBufferHandle>>::k_size_bytes + 
-    HandlePoolT<k_max_handles<TextureHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<CubemapHandle>>::k_size_bytes + 
-    HandlePoolT<k_max_handles<ShaderHandle>>::k_size_bytes +
-    HandlePoolT<k_max_handles<FramebufferHandle>>::k_size_bytes +
+[[maybe_unused]] static constexpr std::size_t k_render_handle_alloc_size =
+    sizeof(HandlePoolT<k_max_handles<IndexBufferHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<VertexBufferLayoutHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<VertexBufferHandle>>) + 
+    sizeof(HandlePoolT<k_max_handles<VertexArrayHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<UniformBufferHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<ShaderStorageBufferHandle>>) + 
+    sizeof(HandlePoolT<k_max_handles<TextureHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<CubemapHandle>>) + 
+    sizeof(HandlePoolT<k_max_handles<ShaderHandle>>) +
+    sizeof(HandlePoolT<k_max_handles<FramebufferHandle>>) +
     1_kB;
 
 } // namespace erwin

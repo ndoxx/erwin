@@ -4,7 +4,7 @@
 #include "input/input.h"
 #include "core/game_clock.h"
 #include "event/window_events.h"
-#include "entity/component_transform.h"
+#include "entity/component/transform.h"
 #include "entity/reflection.h"
 
 #include "debug/logger.h"
@@ -26,9 +26,9 @@ FreeflyCameraSystem::FreeflyCameraSystem()
 
 void FreeflyCameraSystem::init(ComponentTransform3D& transform)
 {
-    position_ = transform.position;
-    pitch_ = transform.euler.x;
-    yaw_ = transform.euler.y;
+    position_ = transform.local.position;
+    pitch_ = transform.local.euler.x;
+    yaw_ = transform.local.euler.y;
 }
 
 void FreeflyCameraSystem::set_frustum_parameters(const FrustumParameters& params)
@@ -83,9 +83,9 @@ void FreeflyCameraSystem::update(const erwin::GameClock& clock, ComponentCamera3
         position_ -= translation * glm::vec3(0.f, 1.f, 0.f);
 
     // Update components
-    transform.position = position_;
-    transform.set_rotation({pitch_, yaw_, 0.f});
-    camera.update_transform(transform.get_model_matrix());
+    transform.local.position = position_;
+    transform.local.set_rotation({pitch_, yaw_, 0.f});
+    camera.update_transform(transform.local.get_model_matrix());
 
     if(dirty_frustum_)
         dirty_frustum_ = false;
