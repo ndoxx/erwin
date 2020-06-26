@@ -88,58 +88,49 @@ void SceneHierarchyWidget::on_imgui_render()
     ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
 
     // Display entities with hierarchy
+    // Entities with hierarchy must be in the subtree of the scene root node in order to appear here
     // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame. Fine for now.
-    scene.registry.view<HierarchyComponent>().each([&new_selection, &scene, this](auto e, auto& hier)
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+    auto pos_x = ImGui::GetCursorPosX();
+    entity::depth_first(scene.root, scene.registry, [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth)
     {
-        // Root nodes only -> depth-first traversal
-        auto pos_x = ImGui::GetCursorPosX();
-        if(hier.parent == k_invalid_entity_id)
+        ImGuiTreeNodeFlags flags = s_base_flags;
+        if(scene.registry.has<SelectedTag>(curr))
+            flags |= ImGuiTreeNodeFlags_Selected;
+        if(curr_hier.children == 0)
+            flags |= s_leaf_flags;
+
+        // Cant seem to use Indent() properly, so here I go
+        ImGui::SetCursorPosX(pos_x + float(depth) * indent_space_);
+
+        const auto& desc = scene.registry.get<ComponentDescription>(curr);
+        bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+        
+        if(ImGui::IsItemClicked())
+            new_selection = curr;
+
+        if(!scene.registry.has<FixedHierarchyTag>(curr) && ImGui::BeginDragDropSource())
         {
-            entity::depth_first(e, scene.registry, [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth)
-            {
-                ImGuiTreeNodeFlags flags = s_base_flags;
-                if(scene.registry.has<SelectedTag>(curr))
-                    flags |= ImGuiTreeNodeFlags_Selected;
-                if(curr_hier.children == 0)
-                    flags |= s_leaf_flags;
-
-                // Cant seem to use Indent() properly, so here I go
-                ImGui::SetCursorPosX(pos_x + float(depth) * indent_space_);
-
-                const auto& desc = scene.registry.get<ComponentDescription>(curr);
-                bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
-                
-                if(ImGui::IsItemClicked())
-                    new_selection = curr;
-
-                if(ImGui::BeginDragDropSource())
-                {
-                    ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
-                    ImGui::Text("%s", W_ICON(CHILD));
-                    ImGui::EndDragDropSource();
-                }
-
-                if(ImGui::BeginDragDropTarget())
-                {
-                    ImGuiDragDropFlags target_flags = 0;
-                    if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_HIER_TREE", target_flags))
-                    {
-                        auto dnd_source = *static_cast<EntityID*>(payload->Data);
-                        set_hierarchy_commands_.push_back({dnd_source, curr});
-                        DLOG("editor",1) << "Setting entity " << size_t(dnd_source) << " as a child of " << size_t(curr) << std::endl;
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-
-                // Context menu for entities
-                entity_context_menu(scene, curr);
-
-                if(node_open && curr_hier.children != 0)
-                    ImGui::TreePop();
-
-                return !node_open;
-            });
+            ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
+            ImGui::Text("%s", W_ICON(CHILD));
+            ImGui::EndDragDropSource();
         }
+
+        if(ImGui::BeginDragDropTarget())
+        {
+            ImGuiDragDropFlags target_flags = 0;
+            if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_HIER_TREE", target_flags))
+                set_hierarchy_commands_.push_back({*static_cast<EntityID*>(payload->Data), curr});
+            ImGui::EndDragDropTarget();
+        }
+
+        // Context menu for entities
+        entity_context_menu(scene, curr);
+
+        if(node_open && curr_hier.children != 0)
+            ImGui::TreePop();
+
+        return !node_open;
     });
 
     if(new_selection != k_invalid_entity_id)
@@ -154,7 +145,19 @@ void SceneHierarchyWidget::on_imgui_render()
     if(!set_hierarchy_commands_.empty())
     {
         for(auto&& cmd: set_hierarchy_commands_)
-            entity::attach(cmd.target, cmd.source, scene.registry);
+        {
+            // TODO: For the moment, prevent swapping a parent with its child, maybe allow
+            // it later on. Anyway, this situation must be detected.
+            if(!entity::subtree_contains(cmd.source, cmd.target, scene.registry))
+            {
+                DLOG("editor",1) << "Setting entity #" << size_t(cmd.source) << " as a child of #" << size_t(cmd.target) << std::endl;
+                entity::attach(cmd.target, cmd.source, scene.registry);
+            }
+            else
+            {
+                DLOGW("editor") << "Swapping a parent with one of its children is not implemented yet." << std::endl;
+            }
+        }
 
         entity::sort_hierarchy(scene.registry);
         set_hierarchy_commands_.clear();

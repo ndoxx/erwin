@@ -25,7 +25,7 @@ void InspectorWidget::entity_tab()
     if(!scene.is_loaded())
         return;
 
-    auto view = scene.registry.view<SelectedTag, ComponentDescription>();
+    auto view = scene.registry.view<SelectedTag, ComponentDescription>(entt::exclude<NonEditableTag>);
     for(const entt::entity e : view)
     {
         ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);

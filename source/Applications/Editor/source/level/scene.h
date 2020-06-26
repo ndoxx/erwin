@@ -22,6 +22,7 @@ protected:
     virtual void on_unload() override;
 	
 public:
+	Scene();
     virtual ~Scene() override = default;
 
     // Cleanup all dead components and entities
@@ -44,6 +45,7 @@ public:
 	void mark_for_removal(erwin::EntityID entity, uint32_t reflected_component);
 	void mark_for_removal(erwin::EntityID entity);
 
+	erwin::EntityID root = erwin::k_invalid_entity_id;
 	erwin::EntityID directional_light = erwin::k_invalid_entity_id;
 	erwin::EntityID camera = erwin::k_invalid_entity_id;
 

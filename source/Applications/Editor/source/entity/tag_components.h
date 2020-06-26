@@ -7,6 +7,7 @@ namespace editor
 
 struct SelectedTag {};
 struct FixedHierarchyTag {};
+struct NonEditableTag {};
 struct NoGizmoTag {};
 struct GizmoHandleSelectedTag {};
 struct GizmoHandleComponent

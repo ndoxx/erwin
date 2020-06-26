@@ -26,6 +26,15 @@ using namespace erwin;
 namespace editor
 {
 
+Scene::Scene()
+{
+    // Create root node
+    root = create_entity("__root__", W_ICON(CODE_FORK));
+    registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
+    registry.emplace<FixedHierarchyTag>(root);
+    registry.emplace<NonEditableTag>(root);
+}
+
 bool Scene::on_load()
 {
     // TMP stub -> Implement proper scene loading
@@ -107,6 +116,7 @@ bool Scene::on_load()
         registry.emplace<ComponentPBRMaterial>(sphere2, mat);
     });
 
+    entity::attach(root, sphere0, registry);
     entity::attach(sphere0, sphere1, registry);
     entity::attach(sphere1, sphere2, registry);
     entity::sort_hierarchy(registry);
