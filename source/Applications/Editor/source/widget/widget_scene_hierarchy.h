@@ -20,7 +20,9 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
-	float indentation_ = 5.f;
+	struct SetHierarchyCommand;
+	float indent_space_ = 8.f;
+	std::vector<SetHierarchyCommand> set_hierarchy_commands_;
 };
 
 } // namespace editor

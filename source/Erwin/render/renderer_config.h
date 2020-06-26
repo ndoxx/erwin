@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-// #define W_PROFILE_RENDER
+#define W_PROFILE_RENDER
 
 namespace erwin
 {

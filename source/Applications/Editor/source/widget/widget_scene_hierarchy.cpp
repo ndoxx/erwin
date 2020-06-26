@@ -12,6 +12,12 @@ using namespace erwin;
 namespace editor
 {
 
+struct SceneHierarchyWidget::SetHierarchyCommand
+{
+    EntityID source = k_invalid_entity_id;
+    EntityID target = k_invalid_entity_id;
+};
+
 SceneHierarchyWidget::SceneHierarchyWidget():
 Widget("Hierarchy", true)
 {
@@ -64,21 +70,32 @@ void SceneHierarchyWidget::on_imgui_render()
             flags |= ImGuiTreeNodeFlags_Selected;
 
         ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(e)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
+
         if(ImGui::IsItemClicked())
             new_selection = e;
+
+        // Disable drag and drop for entities with FixedHierarchyTag
+        if(!scene.registry.has<FixedHierarchyTag>(e) && ImGui::BeginDragDropSource())
+        {
+            ImGui::SetDragDropPayload("DND_HIER_TREE", &e, sizeof(EntityID));
+            ImGui::Text("%s", W_ICON(CHILD));
+            ImGui::EndDragDropSource();
+        }
 
         // Context menu for entities
         entity_context_menu(scene, e);
     });
+    ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
 
     // Display entities with hierarchy
-    // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame
+    // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame. Fine for now.
     scene.registry.view<HierarchyComponent>().each([&new_selection, &scene, this](auto e, auto& hier)
     {
         // Root nodes only -> depth-first traversal
+        auto pos_x = ImGui::GetCursorPosX();
         if(hier.parent == k_invalid_entity_id)
         {
-            entity::depth_first(e, scene.registry, [&new_selection, &scene, this](auto curr, const auto& curr_hier, size_t depth)
+            entity::depth_first(e, scene.registry, [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth)
             {
                 ImGuiTreeNodeFlags flags = s_base_flags;
                 if(scene.registry.has<SelectedTag>(curr))
@@ -86,13 +103,33 @@ void SceneHierarchyWidget::on_imgui_render()
                 if(curr_hier.children == 0)
                     flags |= s_leaf_flags;
 
-                ImGui::Indent(float(depth) * indentation_);
+                // Cant seem to use Indent() properly, so here I go
+                ImGui::SetCursorPosX(pos_x + float(depth) * indent_space_);
 
                 const auto& desc = scene.registry.get<ComponentDescription>(curr);
                 bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s", desc.icon.c_str(), desc.name.c_str());
                 
                 if(ImGui::IsItemClicked())
                     new_selection = curr;
+
+                if(ImGui::BeginDragDropSource())
+                {
+                    ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
+                    ImGui::Text("%s", W_ICON(CHILD));
+                    ImGui::EndDragDropSource();
+                }
+
+                if(ImGui::BeginDragDropTarget())
+                {
+                    ImGuiDragDropFlags target_flags = 0;
+                    if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_HIER_TREE", target_flags))
+                    {
+                        auto dnd_source = *static_cast<EntityID*>(payload->Data);
+                        set_hierarchy_commands_.push_back({dnd_source, curr});
+                        DLOG("editor",1) << "Setting entity " << size_t(dnd_source) << " as a child of " << size_t(curr) << std::endl;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
 
                 // Context menu for entities
                 entity_context_menu(scene, curr);
@@ -105,13 +142,22 @@ void SceneHierarchyWidget::on_imgui_render()
         }
     });
 
-
     if(new_selection != k_invalid_entity_id)
     {
     	// Update scene selected entity index
     	scene.select(new_selection);
         // Drop gizmo handle selection
         scene.registry.clear<GizmoHandleSelectedTag>();
+    }
+
+    // Hierarchy movements
+    if(!set_hierarchy_commands_.empty())
+    {
+        for(auto&& cmd: set_hierarchy_commands_)
+            entity::attach(cmd.target, cmd.source, scene.registry);
+
+        entity::sort_hierarchy(scene.registry);
+        set_hierarchy_commands_.clear();
     }
 }
 

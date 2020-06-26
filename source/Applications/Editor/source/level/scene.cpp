@@ -39,6 +39,7 @@ bool Scene::on_load()
         registry.emplace<ComponentCamera3D>(ent);
         registry.emplace<ComponentTransform3D>(ent, transform);
         registry.emplace<NoGizmoTag>(ent);
+        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
         camera = ent;
     }
 
@@ -66,6 +67,7 @@ bool Scene::on_load()
 
         registry.emplace<ComponentDirectionalLight>(ent, cdirlight);
         registry.emplace<ComponentDirectionalLightMaterial>(ent, renderable);
+        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
 
         directional_light = ent;
     }
