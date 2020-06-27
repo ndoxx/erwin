@@ -85,7 +85,7 @@ using Snapshot = std::pair<EntityID, size_t>; // Store entity along its depth
 
 void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
 {
-    DynamicSparseSet<size_t> visited;
+    // DynamicSparseSet<size_t> visited;
     std::stack<Snapshot> candidates;
 
     // Push the current source node.
@@ -99,12 +99,12 @@ void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor 
         const auto& hier = registry.get<HierarchyComponent>(ent);
 
         // Stack may contain same node twice.
-        if(!visited.has(size_t(ent)))
-        {
+        // if(!visited.has(size_t(ent)))
+        // {
             if(visit(ent, hier, depth))
                 break;
-            visited.insert(size_t(ent));
-        }
+        //     visited.insert(size_t(ent));
+        // }
 
         // Push all children to the stack
         auto child = hier.first_child;
@@ -112,7 +112,7 @@ void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor 
         std::vector<Snapshot> children;
         while(child != entt::null)
         {
-            if(!visited.has(size_t(child)))
+            // if(!visited.has(size_t(child)))
                 children.push_back({child, depth+1});
             child = registry.get<HierarchyComponent>(child).next_sibling;
         }
@@ -172,27 +172,18 @@ int main(int argc, char** argv)
 
     entt::registry registry;
 
-    GenParams gen_params{42, 500, 5, 5000, 0.5f};
+    GenParams gen_params{42, 20, 5, 100, 0.5f};
 
     size_t seed = 42;
     auto root = registry.create();
     create_random_hierarchy(gen_params, root, registry);
     entity::sort_hierarchy(registry);
 
-#if 0
+#if 1
     print_hierarchy(root, registry);
-
-    DLOG("nuclear", 1) << "---------------------------" << std::endl;
-
-    iterative_depth_first(root, registry, [&registry](EntityID ent, const auto& hier, size_t depth) {
-        std::string indent(4 * depth, ' ');
-        DLOGN("nuclear") << indent << "[" << size_t(ent) << "]" << std::endl;
-        DLOG("nuclear", 1) << indent << hier << std::endl;
-        return false;
-    });
 #endif
 
-#if 1
+#if 0
     size_t n_iter = 1000;
 
     // Ground duration
