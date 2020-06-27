@@ -154,13 +154,13 @@ void Scene::cleanup()
 
         // Check if entity has children, if so, the whole subtree must be destroyed
         // ALT: or moved up?
-        if(auto* p_hier = registry.try_get<HierarchyComponent>(entity))
+        if(auto* p_hier = registry.try_get<ComponentHierarchy>(entity))
         {
             if(p_hier->parent != k_invalid_entity_id)
                 entity::detach(entity, registry);
 
             std::vector<EntityID> subtree;
-            entity::depth_first(entity, registry, [&subtree](EntityID child, const HierarchyComponent&, size_t) {
+            entity::depth_first(entity, registry, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
                 DLOG("editor",1) << "Removing subtree node: " << size_t(child) << std::endl;
                 subtree.push_back(child);
                 return false;

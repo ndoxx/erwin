@@ -57,7 +57,7 @@ inline std::string to_string(EntityID entity)
     return (entity != k_invalid_entity_id) ? std::to_string(size_t(entity)) : "NULL";
 }
 
-std::ostream& operator<<(std::ostream& stream, const HierarchyComponent& rhs)
+std::ostream& operator<<(std::ostream& stream, const ComponentHierarchy& rhs)
 {
     stream << "nc: " << rhs.children << " pa: " << to_string(rhs.parent) << " pr: " << to_string(rhs.previous_sibling)
            << " ne: " << to_string(rhs.next_sibling) << " fc: " << to_string(rhs.first_child);
@@ -80,7 +80,7 @@ void print_hierarchy(EntityID node, entt::registry& registry)
     });
 }
 
-using NodeVisitor = std::function<bool(EntityID, const HierarchyComponent&, size_t)>;
+using NodeVisitor = std::function<bool(EntityID, const ComponentHierarchy&, size_t)>;
 using Snapshot = std::pair<EntityID, size_t>; // Store entity along its depth
 
 void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
@@ -96,7 +96,7 @@ void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor 
         auto& [ent, depth] = candidates.top();
         candidates.pop();
 
-        const auto& hier = registry.get<HierarchyComponent>(ent);
+        const auto& hier = registry.get<ComponentHierarchy>(ent);
 
         // Stack may contain same node twice.
         // if(!visited.has(size_t(ent)))
@@ -114,7 +114,7 @@ void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor 
         {
             // if(!visited.has(size_t(child)))
                 children.push_back({child, depth+1});
-            child = registry.get<HierarchyComponent>(child).next_sibling;
+            child = registry.get<ComponentHierarchy>(child).next_sibling;
         }
         for(auto it=children.rbegin(); it!=children.rend(); ++it)
             candidates.push(*it);
@@ -141,7 +141,7 @@ void create_random_hierarchy(const GenParams& gp, EntityID root, entt::registry&
     std::uniform_real_distribution<float> dis(0.f, 1.f);
 
     registry.emplace<Dummy>(root);
-    registry.emplace<HierarchyComponent>(root);
+    registry.emplace<ComponentHierarchy>(root);
     std::vector<EntityID> nodes;
     nodes.push_back(root);
 
@@ -150,7 +150,7 @@ void create_random_hierarchy(const GenParams& gp, EntityID root, entt::registry&
     {
         // Select random node
         auto rnode = *random_select(nodes.begin(), nodes.end(), gen);
-        const auto& r_hier = registry.get<HierarchyComponent>(rnode);
+        const auto& r_hier = registry.get<ComponentHierarchy>(rnode);
 
         // If test passed, create child
         if(r_hier.children < gp.max_children && dis(gen) > gp.prob_create_child)
@@ -207,7 +207,7 @@ int main(int argc, char** argv)
             nanoClock clk;
 
             {
-                entity::depth_first(root, registry, [&registry](EntityID ent, const HierarchyComponent&, size_t)
+                entity::depth_first(root, registry, [&registry](EntityID ent, const ComponentHierarchy&, size_t)
                 {
                     auto& dummy = registry.get<Dummy>(ent);
                     ++dummy.value;
@@ -274,7 +274,7 @@ int main(int argc, char** argv)
     entity::attach(D, F, registry);
 
     entity::sort_hierarchy(registry);
-    // registry.view<HierarchyComponent, NameComponent>().each([](auto e, const auto& hier, const auto& cname) {
+    // registry.view<ComponentHierarchy, NameComponent>().each([](auto e, const auto& hier, const auto& cname) {
     //     DLOGN("nuclear") << cname.name << std::endl;
     // });
 

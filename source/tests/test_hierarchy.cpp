@@ -16,8 +16,8 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching one node to another", "[hier]")
     auto B = registry.create();
     entity::attach(A, B, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
 
     REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -42,10 +42,10 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching a subtree to a node", "[hier]")
     entity::attach(B, D, registry);
     entity::attach(A, B, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& C_h = registry.get<HierarchyComponent>(C);
-    const auto& D_h = registry.get<HierarchyComponent>(D);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& C_h = registry.get<ComponentHierarchy>(C);
+    const auto& D_h = registry.get<ComponentHierarchy>(D);
 
     REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -80,9 +80,9 @@ TEST_CASE_METHOD(HierarchyFixture00, "Attaching one node to another with a child
     entity::attach(A, B, registry);
     entity::attach(A, C, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& C_h = registry.get<HierarchyComponent>(C);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& C_h = registry.get<ComponentHierarchy>(C);
 
     REQUIRE(A_h.children == 2);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -112,9 +112,9 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching first child", "[hier]")
     entity::attach(A, C, registry);
     entity::detach(C, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& C_h = registry.get<HierarchyComponent>(C);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& C_h = registry.get<ComponentHierarchy>(C);
 
     REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -146,9 +146,9 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching middle child", "[hier]")
     entity::attach(A, D, registry);
     entity::detach(C, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& D_h = registry.get<HierarchyComponent>(D);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& D_h = registry.get<ComponentHierarchy>(D);
 
     REQUIRE(A_h.children == 2);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -178,9 +178,9 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching last child", "[hier]")
     entity::attach(A, C, registry);
     entity::detach(B, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& C_h = registry.get<HierarchyComponent>(C);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& C_h = registry.get<ComponentHierarchy>(C);
 
     REQUIRE(A_h.children == 1);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -212,10 +212,10 @@ TEST_CASE_METHOD(HierarchyFixture00, "Detaching subtree from a node", "[hier]")
     entity::attach(B, D, registry);
     entity::detach(B, registry);
 
-    const auto& A_h = registry.get<HierarchyComponent>(A);
-    const auto& B_h = registry.get<HierarchyComponent>(B);
-    const auto& C_h = registry.get<HierarchyComponent>(C);
-    const auto& D_h = registry.get<HierarchyComponent>(D);
+    const auto& A_h = registry.get<ComponentHierarchy>(A);
+    const auto& B_h = registry.get<ComponentHierarchy>(B);
+    const auto& C_h = registry.get<ComponentHierarchy>(C);
+    const auto& D_h = registry.get<ComponentHierarchy>(D);
 
     REQUIRE(A_h.children == 0);
     REQUIRE(A_h.parent == k_invalid_entity_id);
@@ -336,7 +336,7 @@ TEST_CASE_METHOD(HierarchyFixture00, "Hierarchy sort, strict order check", "[hie
     entity::sort_hierarchy(registry);
 
     std::vector<EntityID> order;
-    registry.view<HierarchyComponent>().each([&order](auto ent, const auto&) { order.push_back(ent); });
+    registry.view<ComponentHierarchy>().each([&order](auto ent, const auto&) { order.push_back(ent); });
 
     REQUIRE(order == std::vector<EntityID>{A, B, C});
 }
@@ -353,7 +353,7 @@ TEST_CASE_METHOD(HierarchyFixture00, "Hierarchy sort, weak order check", "[hier]
     entity::sort_hierarchy(registry);
 
     std::vector<EntityID> order;
-    registry.view<HierarchyComponent>().each([&order](auto ent, const auto&) { order.push_back(ent); });
+    registry.view<ComponentHierarchy>().each([&order](auto ent, const auto&) { order.push_back(ent); });
 
     auto order_1_req = std::vector<EntityID>{A, B, C, D};
     auto order_2_req = std::vector<EntityID>{A, C, B, D};
@@ -371,7 +371,7 @@ inline std::string to_string(EntityID entity)
     return (entity != k_invalid_entity_id) ? std::to_string(size_t(entity)) : "NULL";
 }
 
-std::ostream& operator<<(std::ostream& stream, const HierarchyComponent& rhs)
+std::ostream& operator<<(std::ostream& stream, const ComponentHierarchy& rhs)
 {
     stream << "nc: " << rhs.children << " pa: " << to_string(rhs.parent) << " pr: " << to_string(rhs.previous_sibling)
            << " ne: " << to_string(rhs.next_sibling) << " fc: " << to_string(rhs.first_child);
@@ -533,7 +533,7 @@ public:
 
     void update()
     {
-        registry.view<HierarchyComponent, TransformComponent>().each(
+        registry.view<ComponentHierarchy, TransformComponent>().each(
             [this](auto ent, const auto& hier, auto& transform) {
             	transform.global = transform.local;
                 if(hier.parent != k_invalid_entity_id)
