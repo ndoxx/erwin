@@ -28,8 +28,10 @@ void attach(EntityID parent, EntityID child, entt::registry& registry);
 void detach(EntityID node, entt::registry& registry);
 // Sort HierarchyComponent pool such that parents are always visited before their children
 void sort_hierarchy(entt::registry& registry);
-// Traverse hierarchy using a depth first algorithm and visit each node
+// Traverse hierarchy using a depth first algorithm and visit each node, till the visitor returns true
 void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit);
+// Traverse hierarchy using a breadth first algorithm and visit each node, till the visitor returns true
+void breadth_first(EntityID node, entt::registry& registry, NodeVisitor visit);
 // Check if subtree of root 'root' contains the node 'node'
 bool subtree_contains(EntityID root, EntityID node, entt::registry& registry); 
 // Check if node 'node' is a direct child of node 'parent'

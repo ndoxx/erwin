@@ -29,7 +29,7 @@ static void entity_context_menu(Scene& scene, EntityID e)
     ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(e)))));
     if(ImGui::BeginPopupContextItem("Entity context menu"))
     {
-        if(ImGui::Selectable("Remove"))
+        if(!scene.registry.has<NonRemovableTag>(e) && ImGui::Selectable("Remove"))
         {
             scene.mark_for_removal(e);
             DLOG("editor",1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;

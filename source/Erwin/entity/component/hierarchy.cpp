@@ -1,4 +1,8 @@
 #include "entity/component/hierarchy.h"
+#include "utils/sparse_set.hpp"
+
+#include <stack>
+#include <queue>
 
 namespace erwin
 {
@@ -75,29 +79,86 @@ void sort_hierarchy(entt::registry& registry)
     });
 }
 
-void depth_first_recurse(size_t depth, EntityID node, entt::registry& registry, NodeVisitor visit)
-{
-    const auto& hier = registry.get<HierarchyComponent>(node);
-    if(visit(node, hier, depth))
-        return;
-
-    auto curr = hier.first_child;
-    while(curr != entt::null)
-    {
-        depth_first_recurse(depth + 1, curr, registry, visit);
-        curr = registry.get<HierarchyComponent>(curr).next_sibling;
-    }
-}
+using Snapshot = std::pair<EntityID, size_t>; // Store entity along its depth
 
 void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
 {
-    depth_first_recurse(0, node, registry, visit);
+    DynamicSparseSet<size_t> visited; // O(1) search, ideal for this job!
+    std::stack<Snapshot> candidates;
+
+    // Push the current source node.
+    candidates.push({node, 0});
+
+    while (!candidates.empty())
+    {
+        auto& [ent, depth] = candidates.top();
+        candidates.pop();
+
+        const auto& hier = registry.get<HierarchyComponent>(ent);
+
+        // Stack may contain same node twice.
+        if(!visited.has(size_t(ent)))
+        {
+            if(visit(ent, hier, depth))
+                break;
+            visited.insert(size_t(ent));
+        }
+
+        // Push all children to the stack
+        // They must however be pushed in the reverse order they appear for
+        // the first child to be visited first during the next iteration
+        // std::vector was measured to be faster here than std::stack
+        auto child = hier.first_child;
+        std::vector<Snapshot> children;
+        while(child != entt::null)
+        {
+            if(!visited.has(size_t(child)))
+                children.push_back({child, depth+1});
+            child = registry.get<HierarchyComponent>(child).next_sibling;
+        }
+        for(auto it=children.rbegin(); it!=children.rend(); ++it)
+            candidates.push(*it);
+    }
+}
+
+void breadth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
+{
+    DynamicSparseSet<size_t> visited;
+    std::queue<Snapshot> candidates;
+
+    // Push the current source node.
+    candidates.push({node, 0});
+
+    while (!candidates.empty())
+    {
+        auto& [ent, depth] = candidates.front();
+        candidates.pop();
+
+        const auto& hier = registry.get<HierarchyComponent>(ent);
+
+        // Queue may contain same node twice.
+        if(!visited.has(size_t(ent)))
+        {
+            if(visit(ent, hier, depth))
+                break;
+            visited.insert(size_t(ent));
+        }
+
+        // Push all children to the queue
+        auto child = hier.first_child;
+        while(child != entt::null)
+        {
+            if(!visited.has(size_t(child)))
+                candidates.push({child, depth+1});
+            child = registry.get<HierarchyComponent>(child).next_sibling;
+        }
+    }
 }
 
 bool subtree_contains(EntityID root, EntityID node, entt::registry& registry)
 {
 	bool found = false;
-    depth_first_recurse(0, root, registry, [&found, node](EntityID ent, const auto&, size_t)
+    depth_first(root, registry, [&found, node](EntityID ent, const auto&, size_t)
     {
     	found |= (ent == node);
     	return found;

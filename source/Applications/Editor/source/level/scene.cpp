@@ -33,6 +33,7 @@ Scene::Scene()
     registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
     registry.emplace<FixedHierarchyTag>(root);
     registry.emplace<NonEditableTag>(root);
+    registry.emplace<NonRemovableTag>(root);
 }
 
 bool Scene::on_load()
