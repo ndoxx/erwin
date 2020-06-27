@@ -94,7 +94,7 @@ void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
 
     while(!candidates.empty())
     {
-        auto& [ent, depth] = candidates.top();
+        auto [ent, depth] = candidates.top();
         candidates.pop();
 
         const auto& hier = registry.get<ComponentHierarchy>(ent);
@@ -108,6 +108,35 @@ void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
         // }
 
         // Push all children to the stack
+        auto child = hier.first_child;
+        while(child != entt::null)
+        {
+            // if(!visited.has(size_t(child)))
+            candidates.push({child, depth+1});
+            child = registry.get<ComponentHierarchy>(child).next_sibling;
+        }
+    }
+}
+
+// ASSUME: hierarchy is a tree.
+//         -> nodes are always visited once, no need to check if that's the case
+void depth_first_ordered(EntityID node, entt::registry& registry, NodeVisitor visit)
+{
+    std::stack<Snapshot> candidates;
+
+    // Push the current source node.
+    candidates.push({node, 0});
+
+    while(!candidates.empty())
+    {
+        auto [ent, depth] = candidates.top();
+        candidates.pop();
+
+        const auto& hier = registry.get<ComponentHierarchy>(ent);
+        if(visit(ent, hier, depth))
+            break;
+
+        // Push all children to the stack
         // They must however be pushed in the reverse order they appear for
         // the first child to be visited first during the next iteration
         // std::vector was measured to be faster here than std::stack
@@ -115,7 +144,6 @@ void depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
         std::vector<Snapshot> children;
         while(child != entt::null)
         {
-            // if(!visited.has(size_t(child)))
             children.push_back({child, depth + 1});
             child = registry.get<ComponentHierarchy>(child).next_sibling;
         }
@@ -136,24 +164,17 @@ void breadth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
 
     while(!candidates.empty())
     {
-        auto& [ent, depth] = candidates.front();
+        auto [ent, depth] = candidates.front();
         candidates.pop();
 
         const auto& hier = registry.get<ComponentHierarchy>(ent);
-
-        // Queue may contain same node twice.
-        // if(!visited.has(size_t(ent)))
-        // {
         if(visit(ent, hier, depth))
             break;
-        //     visited.insert(size_t(ent));
-        // }
 
         // Push all children to the queue
         auto child = hier.first_child;
         while(child != entt::null)
         {
-            // if(!visited.has(size_t(child)))
             candidates.push({child, depth + 1});
             child = registry.get<ComponentHierarchy>(child).next_sibling;
         }

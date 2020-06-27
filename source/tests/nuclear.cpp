@@ -70,22 +70,11 @@ struct NameComponent
     std::string name;
 };
 
-void print_hierarchy(EntityID node, entt::registry& registry)
-{
-    entity::depth_first(node, registry, [&registry](EntityID ent, const auto& hier, size_t depth) {
-        std::string indent(4 * depth, ' ');
-        DLOGN("nuclear") << indent << "[" << size_t(ent) << "]" << std::endl;
-        DLOG("nuclear", 1) << indent << hier << std::endl;
-        return false;
-    });
-}
-
 using NodeVisitor = std::function<bool(EntityID, const ComponentHierarchy&, size_t)>;
 using Snapshot = std::pair<EntityID, size_t>; // Store entity along its depth
 
 void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor visit)
 {
-    // DynamicSparseSet<size_t> visited;
     std::stack<Snapshot> candidates;
 
     // Push the current source node.
@@ -93,32 +82,46 @@ void iterative_depth_first(EntityID node, entt::registry& registry, NodeVisitor 
 
     while (!candidates.empty())
     {
-        auto& [ent, depth] = candidates.top();
+        auto [ent, depth] = candidates.top();
         candidates.pop();
 
         const auto& hier = registry.get<ComponentHierarchy>(ent);
-
-        // Stack may contain same node twice.
-        // if(!visited.has(size_t(ent)))
-        // {
-            if(visit(ent, hier, depth))
-                break;
-        //     visited.insert(size_t(ent));
-        // }
+        if(visit(ent, hier, depth))
+            break;
 
         // Push all children to the stack
         auto child = hier.first_child;
 
-        std::vector<Snapshot> children;
         while(child != entt::null)
         {
-            // if(!visited.has(size_t(child)))
-                children.push_back({child, depth+1});
+            candidates.push({child, depth+1});
             child = registry.get<ComponentHierarchy>(child).next_sibling;
         }
-        for(auto it=children.rbegin(); it!=children.rend(); ++it)
-            candidates.push(*it);
     }
+}
+
+void recursive_depth_first(size_t depth, EntityID node, entt::registry& registry, NodeVisitor visit)
+{
+    const auto& hier = registry.get<ComponentHierarchy>(node);
+    if(visit(node, hier, depth))
+        return;
+
+    auto curr = hier.first_child;
+    while(curr != entt::null)
+    {
+        recursive_depth_first(depth + 1, curr, registry, visit);
+        curr = registry.get<ComponentHierarchy>(curr).next_sibling;
+    }
+}
+
+void print_hierarchy(EntityID node, entt::registry& registry)
+{
+    entity::depth_first(node, registry, [&registry](EntityID ent, const auto& hier, size_t depth) {
+        std::string indent(4 * depth, ' ');
+        DLOGN("nuclear") << indent << "[" << size_t(ent) << "] @" << depth << std::endl;
+        DLOG("nuclear", 1) << indent << hier << std::endl;
+        return false;
+    });
 }
 
 struct GenParams
@@ -172,18 +175,19 @@ int main(int argc, char** argv)
 
     entt::registry registry;
 
-    GenParams gen_params{42, 20, 5, 100, 0.5f};
+    // GenParams gen_params{42, 20, 5, 100, 0.5f};
+    GenParams gen_params{42, 1000, 8, 50000, 0.5f};
 
     size_t seed = 42;
     auto root = registry.create();
     create_random_hierarchy(gen_params, root, registry);
     entity::sort_hierarchy(registry);
 
-#if 1
+#if 0
     print_hierarchy(root, registry);
 #endif
 
-#if 0
+#if 1
     size_t n_iter = 1000;
 
     // Ground duration
@@ -207,7 +211,7 @@ int main(int argc, char** argv)
             nanoClock clk;
 
             {
-                entity::depth_first(root, registry, [&registry](EntityID ent, const ComponentHierarchy&, size_t)
+                recursive_depth_first(0, root, registry, [&registry](EntityID ent, const ComponentHierarchy&, size_t)
                 {
                     auto& dummy = registry.get<Dummy>(ent);
                     ++dummy.value;
@@ -248,42 +252,6 @@ int main(int argc, char** argv)
         DLOG("nuclear", 1) << "---------------------------" << std::endl;
     }
 #endif
-
-
-
-
-    /*auto A = registry.create();
-    auto B = registry.create();
-    auto C = registry.create();
-    auto D = registry.create();
-    auto E = registry.create();
-    auto F = registry.create();
-
-    registry.emplace<NameComponent>(A, "A");
-    registry.emplace<NameComponent>(B, "B");
-    registry.emplace<NameComponent>(C, "C");
-    registry.emplace<NameComponent>(D, "D");
-    registry.emplace<NameComponent>(E, "E");
-    registry.emplace<NameComponent>(F, "F");
-
-    entity::attach(A, B, registry);
-    entity::attach(A, C, registry);
-    entity::attach(A, D, registry);
-
-    entity::attach(D, E, registry);
-    entity::attach(D, F, registry);
-
-    entity::sort_hierarchy(registry);
-    // registry.view<ComponentHierarchy, NameComponent>().each([](auto e, const auto& hier, const auto& cname) {
-    //     DLOGN("nuclear") << cname.name << std::endl;
-    // });
-
-    print_hierarchy(A, registry);
-
-    DLOG("nuclear", 1) << "---------------------------" << std::endl;
-
-    entity::attach(C, D, registry);
-    print_hierarchy(A, registry);*/
 
     return 0;
 }
