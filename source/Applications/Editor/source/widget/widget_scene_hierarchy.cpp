@@ -3,6 +3,7 @@
 #include "entity/reflection.h"
 #include "entity/component/description.h"
 #include "entity/component/hierarchy.h"
+#include "entity/component/tags.h"
 #include "entity/tag_components.h"
 #include "imgui/font_awesome.h"
 #include "imgui.h"
@@ -130,7 +131,7 @@ void SceneHierarchyWidget::on_imgui_render()
         if(node_open && curr_hier.children != 0)
             ImGui::TreePop();
 
-        return !node_open;
+        return false;
     });
 
     if(new_selection != k_invalid_entity_id)
@@ -148,10 +149,14 @@ void SceneHierarchyWidget::on_imgui_render()
         {
             // TODO: For the moment, prevent swapping a parent with its child, maybe allow
             // it later on. Anyway, this situation must be detected.
+            if(!scene.registry.has<ComponentHierarchy>(cmd.source))
+                scene.registry.emplace<ComponentHierarchy>(cmd.source);
             if(!entity::subtree_contains(cmd.source, cmd.target, scene.registry))
             {
                 DLOG("editor",1) << "Setting entity #" << size_t(cmd.source) << " as a child of #" << size_t(cmd.target) << std::endl;
                 entity::attach(cmd.target, cmd.source, scene.registry);
+                scene.registry.emplace_or_replace<DirtyTransformTag>(cmd.source);
+                scene.registry.emplace_or_replace<DirtyOBBTag>(cmd.source);
             }
             else
             {

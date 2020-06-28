@@ -11,7 +11,9 @@ void TransformSystem::update(const GameClock& /*clock*/, entt::registry& registr
 {
     // Update the whole subtree of entities for which the local transform has changed
     // OPT: Still room for improvement: multiple members of the same subtree may be updated during
-    // the same frame and marked dirty, but it is useless to perform subtree traversal for each of them
+    // the same frame and marked dirty, but it is useless to perform subtree traversal for each of them.
+    // OPT: Breadth-first traversal should be cache-friendlier considering the pool ordering, however
+    // my tests with cachegrind aren't conclusive. 
     registry.view<ComponentHierarchy, ComponentTransform3D, DirtyTransformTag>().each(
         [&registry](auto e, const auto&, const auto&) {
             entity::depth_first(e, registry, [&registry](EntityID child, const auto& child_hier, size_t) {
@@ -21,6 +23,7 @@ void TransformSystem::update(const GameClock& /*clock*/, entt::registry& registr
                         ? Transform3D::compose(child_transform.local,
                                                registry.get<ComponentTransform3D>(child_hier.parent).global)
                         : child_transform.local;
+                registry.emplace_or_replace<DirtyOBBTag>(child);
                 return false;
             });
         });

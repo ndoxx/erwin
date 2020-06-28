@@ -36,7 +36,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
 
 void BoundingBoxSystem::update(const GameClock&, entt::registry& registry)
 {
-    registry.view<ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
+    registry.view<DirtyOBBTag, ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
         OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
     });
 
