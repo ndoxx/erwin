@@ -7,7 +7,7 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentCamera3D>(ComponentCamera3D* cmp)
+void inspector_GUI<ComponentCamera3D>(ComponentCamera3D* cmp, EntityID, entt::registry&)
 {
     float fovy = (360.f / float(M_PI)) * std::atan(cmp->frustum.top / cmp->frustum.near);
 

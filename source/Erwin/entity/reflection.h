@@ -81,13 +81,12 @@ static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& 
 	});
 }
 
-// Any component that needs to be editable in an inspector should specialize this function.
-template <typename ComponentType>
-extern void inspector_GUI(ComponentType*) {}
-
 using EntityID = entt::entity;
 [[maybe_unused]] static constexpr EntityID k_invalid_entity_id = entt::null;
 
+// Any component that needs to be editable in an inspector should specialize this function.
+template <typename ComponentType>
+extern void inspector_GUI(ComponentType*, EntityID, entt::registry&) {}
 
 namespace metafunc
 {
@@ -131,9 +130,9 @@ namespace metafunc
 	// This way, the invocation code can pass a void*, whereas the GUI implementation takes
 	// an actual component pointer.
 	template <typename ComponentType>
-	inline void inspector_GUI_typecast(void* data)
+	inline void inspector_GUI_typecast(void* data, EntityID e, entt::registry* r)
 	{
-		inspector_GUI<ComponentType>(static_cast<ComponentType*>(data));
+		inspector_GUI<ComponentType>(static_cast<ComponentType*>(data), e, *r);
 	}
 } // namespace metafunc
 

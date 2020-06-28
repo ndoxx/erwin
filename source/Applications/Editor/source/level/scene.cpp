@@ -34,6 +34,9 @@ Scene::Scene()
     registry.emplace<FixedHierarchyTag>(root);
     registry.emplace<NonEditableTag>(root);
     registry.emplace<NonRemovableTag>(root);
+
+    // Setup registry signal handling
+    registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
 }
 
 bool Scene::on_load()
@@ -44,10 +47,8 @@ bool Scene::on_load()
     {
         EntityID ent = create_entity("Camera", W_ICON(VIDEO_CAMERA));
 
-        ComponentTransform3D transform({-5.8f, 2.3f, -5.8f}, {5.f, 228.f, 0.f}, 1.f);
-
         registry.emplace<ComponentCamera3D>(ent);
-        registry.emplace<ComponentTransform3D>(ent, transform);
+        registry.emplace<ComponentTransform3D>(ent, glm::vec3(-5.8f, 2.3f, -5.8f), glm::vec3(5.f, 228.f, 0.f), 1.f);
         registry.emplace<NoGizmoTag>(ent);
         registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
         camera = ent;
@@ -85,14 +86,13 @@ bool Scene::on_load()
     std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
-        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) /
-                                          "paintPeelingConcrete.tom"),
+        AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
         AssetManager::load_material_async(project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
     };
 
     EntityID sphere0 = create_entity("Sphere #0");
     registry.emplace<ComponentMesh>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentOBB>(sphere0/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
     registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
     AssetManager::on_material_ready(future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
@@ -101,7 +101,7 @@ bool Scene::on_load()
 
     EntityID sphere1 = create_entity("Sphere #1");
     registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentOBB>(sphere1/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
     registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
     AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
@@ -110,7 +110,7 @@ bool Scene::on_load()
 
     EntityID sphere2 = create_entity("Sphere #2");
     registry.emplace<ComponentMesh>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h).extent);
+    registry.emplace<ComponentOBB>(sphere2/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
     registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
     AssetManager::on_material_ready(future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {

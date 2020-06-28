@@ -12,7 +12,7 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp)
+void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial* cmp, EntityID, entt::registry&)
 {
     // Load material from file
     if(ImGui::Button("Load"))

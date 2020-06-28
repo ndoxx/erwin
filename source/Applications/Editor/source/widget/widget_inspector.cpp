@@ -66,7 +66,7 @@ void InspectorWidget::entity_tab()
                     }
 
                     // Invoke GUI for this component
-                    invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data);
+                    invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data, e, &scene.registry);
                     ImGui::TreePop();
                 }
                 ImGui::Separator();

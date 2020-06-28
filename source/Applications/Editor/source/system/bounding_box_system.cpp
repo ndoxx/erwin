@@ -39,10 +39,10 @@ void BoundingBoxSystem::update(const GameClock&, Scene& scene)
         OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
     });
 
-    // TODO: instead of doing this in update, make BoundingBoxSystem respond to
-    // a MeshChangedEvent of some sort, or a tag component...
-    scene.registry.view<ComponentOBB, ComponentMesh>().each(
+    scene.registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
         [](auto /*e*/, auto& OBB, const auto& cmesh) { OBB.init(cmesh.mesh.extent); });
+
+    scene.registry.clear<DirtyOBBTag>();
 }
 
 void BoundingBoxSystem::render(const Scene& scene)

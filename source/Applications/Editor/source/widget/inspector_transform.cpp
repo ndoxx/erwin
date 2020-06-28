@@ -7,7 +7,7 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentTransform3D>(ComponentTransform3D* cmp)
+void inspector_GUI<ComponentTransform3D>(ComponentTransform3D* cmp, EntityID, entt::registry&)
 {
 	static constexpr float k_step = 0.1f;
 	static constexpr float k_step_fast = 0.5f;
