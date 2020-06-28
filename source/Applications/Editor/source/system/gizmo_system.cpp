@@ -4,7 +4,6 @@
 #include "entity/component/camera.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
-#include "level/scene.h"
 #include "render/renderer_3d.h"
 
 using namespace erwin;
@@ -40,48 +39,48 @@ GizmoSystem::GizmoSystem()
 
 GizmoSystem::~GizmoSystem() {}
 
-void GizmoSystem::setup_editor_entities(Scene& scene)
+void GizmoSystem::setup_editor_entities(entt::registry& registry)
 {
     // Create 4 entities with OBBs and transforms that will represent the gizmo's interactive zones
-    std::array ents = {scene.registry.create(), scene.registry.create(), scene.registry.create(),
-                       scene.registry.create()};
+    std::array ents = {registry.create(), registry.create(), registry.create(), registry.create()};
     for(size_t ii = 0; ii < ents.size(); ++ii)
     {
-        scene.registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
-        scene.registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
-        scene.registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
+        registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
+        registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
+        registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
     }
 }
 
-void GizmoSystem::update(const erwin::GameClock& /*clock*/, Scene& scene)
+void GizmoSystem::update(const erwin::GameClock& /*clock*/, entt::registry& registry)
 {
     // Make the gizmo's entities children of the selected entity
     // TMP: impl subject to change when we have a proper hierarchy system
-    scene.registry.view<ComponentTransform3D, SelectedTag>(entt::exclude<NoGizmoTag>).each([&scene](auto e, const auto& parent_transform) {
-        scene.registry.view<ComponentTransform3D, GizmoHandleComponent, ComponentOBB>().each(
-            [e, &parent_transform](auto /*g*/, auto& transform, auto& GH, const auto&) {
-                GH.parent = e;
-                transform.local.init(parent_transform.global.position + offsets[size_t(GH.handle_id)], parent_transform.global.euler, 1.f);
-            });
-    });
+    registry.view<ComponentTransform3D, SelectedTag>(entt::exclude<NoGizmoTag>)
+        .each([&registry](auto e, const auto& parent_transform) {
+            registry.view<ComponentTransform3D, GizmoHandleComponent, ComponentOBB>().each(
+                [e, &parent_transform](auto /*g*/, auto& transform, auto& GH, const auto&) {
+                    GH.parent = e;
+                    transform.local.init(parent_transform.global.position + offsets[size_t(GH.handle_id)],
+                                         parent_transform.global.euler, 1.f);
+                });
+        });
 
     selected_part_ = -1;
-    scene.registry.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
+    registry.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
         [this](auto /*e*/, const auto& GH) { selected_part_ = GH.handle_id; });
 }
 
-void GizmoSystem::render(const Scene& scene)
+void GizmoSystem::render(const entt::registry& registry)
 {
-    scene.registry.view<const ComponentTransform3D, const SelectedTag>().each(
-        [this](auto /*e*/, const auto& transform) {
-            // Draw gizmo
-            gizmo_data_.selected = selected_part_;
+    registry.view<const ComponentTransform3D, const SelectedTag>().each([this](auto /*e*/, const auto& transform) {
+        // Draw gizmo
+        gizmo_data_.selected = selected_part_;
 
-            Renderer3D::begin_line_pass(false);
-            Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.global.get_unscaled_model_matrix(),
-                                  gizmo_material_, &gizmo_data_);
-            Renderer3D::end_line_pass();
-        });
+        Renderer3D::begin_line_pass(false);
+        Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.global.get_unscaled_model_matrix(),
+                              gizmo_material_, &gizmo_data_);
+        Renderer3D::end_line_pass();
+    });
 }
 
 } // namespace editor

@@ -4,6 +4,7 @@
 #include "entity/component/mesh.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
+#include "entity/component/tags.h"
 #include "level/scene.h"
 
 using namespace erwin;
@@ -33,28 +34,28 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     return true;
 }
 
-void BoundingBoxSystem::update(const GameClock&, Scene& scene)
+void BoundingBoxSystem::update(const GameClock&, entt::registry& registry)
 {
-    scene.registry.view<ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
+    registry.view<ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
         OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
     });
 
-    scene.registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
+    registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
         [](auto /*e*/, auto& OBB, const auto& cmesh) { OBB.init(cmesh.mesh.extent); });
 
-    scene.registry.clear<DirtyOBBTag>();
+    registry.clear<DirtyOBBTag>();
 }
 
-void BoundingBoxSystem::render(const Scene& scene)
+void BoundingBoxSystem::render(const entt::registry& registry)
 {
     Renderer3D::begin_line_pass();
-    scene.registry.view<const ComponentOBB, const SelectedTag>().each([](auto /*e*/, const auto& OBB) {
+    registry.view<const ComponentOBB, const SelectedTag>().each([](auto /*e*/, const auto& OBB) {
         Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {1.f, 0.5f, 0.f});
     });
     // TMP: Fails to compile with exclude and a const view. Cant exclude<const SelectedTag> because
     // component type must equal decay type. Waiting for a future fix.
     // https://github.com/skypjack/entt/issues/507
-    scene.registry.view<const ComponentOBB>(/*entt::exclude<SelectedTag>*/).each([](auto /*e*/, const auto& OBB) {
+    registry.view<const ComponentOBB>(/*entt::exclude<SelectedTag>*/).each([](auto /*e*/, const auto& OBB) {
         if(OBB.display) // TODO: || editor_show_OBBs
             Renderer3D::draw_cube(glm::scale(OBB.model_matrix, OBB.scale), {0.f, 0.5f, 1.f});
     });

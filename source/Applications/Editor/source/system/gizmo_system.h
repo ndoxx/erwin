@@ -6,17 +6,16 @@
 namespace editor
 {
 
-class Scene;
 class GizmoSystem
 {
 public:
 	GizmoSystem();
 	~GizmoSystem();
 
-    void setup_editor_entities(Scene& scene);
+    void setup_editor_entities(entt::registry& registry);
 
-    void update(const erwin::GameClock& clock, Scene& scene);
-	void render(const Scene& scene);
+    void update(const erwin::GameClock& clock, entt::registry& registry);
+	void render(const entt::registry& registry);
 
 private:
     erwin::Material gizmo_material_;

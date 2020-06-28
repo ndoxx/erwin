@@ -1,5 +1,5 @@
 #include "entity/component/mesh.h"
-#include "entity/tag_components.h"
+#include "entity/component/tags.h"
 #include "entity/reflection.h"
 #include "render/common_geometry.h"
 #include "asset/asset_manager.h"
@@ -20,7 +20,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp, EntityID e, entt::registry
     editor::dialog::on_open("ChooseWeshDlgKey", [&cmp,&registry,e](const fs::path& filepath)
     {
         cmp->mesh = AssetManager::load_mesh(filepath);
-        registry.emplace_or_replace<editor::DirtyOBBTag>(e);
+        registry.emplace_or_replace<DirtyOBBTag>(e);
     });
     
     // Select mesh from pre-built primitives
@@ -35,7 +35,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp, EntityID e, entt::registry
             if(ImGui::Selectable(name.c_str()))
             {
                 cmp->mesh = mesh;
-                registry.emplace_or_replace<editor::DirtyOBBTag>(e);
+                registry.emplace_or_replace<DirtyOBBTag>(e);
                 return true;
             }
             return false;

@@ -60,7 +60,7 @@ void SceneEditorLayer::setup_editor_entities()
     auto& scene = scn::current<Scene>();
     if(scene.is_loaded())
     {
-        gizmo_system_.setup_editor_entities(scene);
+        gizmo_system_.setup_editor_entities(scene.registry);
     }
 }
 
@@ -69,9 +69,9 @@ void SceneEditorLayer::on_update(GameClock& clock)
     auto& scene = scn::current<Scene>();
     if(scene.is_loaded())
     {
-        bounding_box_system_.update(clock, scene);
+        bounding_box_system_.update(clock, scene.registry);
         selection_system_.update(clock, scene);
-        gizmo_system_.update(clock, scene);
+        gizmo_system_.update(clock, scene.registry);
     }
 
     for(Widget* widget : widgets_)
@@ -83,8 +83,8 @@ void SceneEditorLayer::on_render()
     auto& scene = scn::current<Scene>();
     if(scene.is_loaded())
     {
-        bounding_box_system_.render(scene);
-        gizmo_system_.render(scene);
+        bounding_box_system_.render(scene.registry);
+        gizmo_system_.render(scene.registry);
     }
 
     for(Widget* widget : widgets_)

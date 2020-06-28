@@ -10,8 +10,8 @@ class Scene;
 class BoundingBoxSystem
 {
 public:
-	void update(const erwin::GameClock& clock, Scene& scene);
-	void render(const Scene& scene);
+	void update(const erwin::GameClock& clock, entt::registry& registry);
+	void render(const entt::registry& registry);
 	bool on_ray_scene_query_event(const erwin::RaySceneQueryEvent& event);
 };
 

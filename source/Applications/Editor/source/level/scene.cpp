@@ -16,6 +16,7 @@
 #include "entity/component/light.h"
 #include "entity/component/mesh.h"
 #include "entity/component/transform.h"
+#include "entity/component/tags.h"
 #include "entity/tag_components.h"
 #include "project/project.h"
 
@@ -37,6 +38,7 @@ Scene::Scene()
 
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
+    registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
 }
 
 bool Scene::on_load()

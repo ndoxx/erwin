@@ -4,9 +4,7 @@
 
 namespace editor
 {
-
-struct DirtyOBBTag {};
-
+	
 struct SelectedTag {};
 struct FixedHierarchyTag {};
 struct NonEditableTag {};
