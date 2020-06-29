@@ -37,6 +37,7 @@ Scene::Scene()
     registry.emplace<FixedHierarchyTag>(root);
     registry.emplace<NonEditableTag>(root);
     registry.emplace<NonRemovableTag>(root);
+    registry.emplace<NonSerializableTag>(root);
 
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
@@ -131,9 +132,6 @@ bool Scene::on_load()
     // * Launch async loading operations
     AssetManager::launch_async_tasks();
 
-    // TMP
-    serialize_xml(project::get_asset_path(project::DirKey::SCENE) /"test_scene.scn");
-
     return true;
 }
 
@@ -183,6 +181,9 @@ void Scene::cleanup()
 
 void Scene::serialize_xml(const fs::path& file_path)
 {
+    DLOGN("editor") << "Serializing scene: " << std::endl;
+    DLOGI << WCC('p') << file_path << std::endl;
+
     // Open XML file
     xml::XMLFile scene_f(file_path);
     scene_f.create_root("Scene");
@@ -190,6 +191,9 @@ void Scene::serialize_xml(const fs::path& file_path)
     // Visit each entity, for each component invoke serialization method
     registry.each([this, &scene_f](const EntityID e)
     {
+        if(registry.has<NonSerializableTag>(e))
+            return;
+        
         auto* enode = scene_f.add_node(scene_f.root, "Entity");
         scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());
 
@@ -202,6 +206,8 @@ void Scene::serialize_xml(const fs::path& file_path)
 
     // Write file
     scene_f.write();
+
+    DLOGI << "done." << std::endl;
 }
 
 void Scene::load_hdr_environment(const fs::path& hdr_file)

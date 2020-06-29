@@ -21,9 +21,9 @@ public:
 	void clear();
 
 	template <typename T>
-	const T& get(hash_t hname, const T& def);
-	const fs::path& get(hash_t hname);
-	bool is(hash_t name);
+	const T& get(hash_t hname, const T& def) const;
+	const fs::path& get(hash_t hname) const;
+	bool is(hash_t name) const;
 	template <typename T>
 	bool set(hash_t hname, const T& value);
 
@@ -46,15 +46,15 @@ private:
 	std::map<hash_t, fs::path>    paths_;
 };
 
-template <> const size_t&      Registry::get(hash_t hname, const size_t& def);
-template <> const uint32_t&    Registry::get(hash_t hname, const uint32_t& def);
-template <> const int32_t&     Registry::get(hash_t hname, const int32_t& def);
-template <> const float&       Registry::get(hash_t hname, const float& def);
-template <> const bool&        Registry::get(hash_t hname, const bool& def);
-template <> const std::string& Registry::get(hash_t hname, const std::string& def);
-template <> const glm::vec2&   Registry::get(hash_t hname, const glm::vec2& def);
-template <> const glm::vec3&   Registry::get(hash_t hname, const glm::vec3& def);
-template <> const glm::vec4&   Registry::get(hash_t hname, const glm::vec4& def);
+template <> const size_t&      Registry::get(hash_t hname, const size_t& def) const;
+template <> const uint32_t&    Registry::get(hash_t hname, const uint32_t& def) const;
+template <> const int32_t&     Registry::get(hash_t hname, const int32_t& def) const;
+template <> const float&       Registry::get(hash_t hname, const float& def) const;
+template <> const bool&        Registry::get(hash_t hname, const bool& def) const;
+template <> const std::string& Registry::get(hash_t hname, const std::string& def) const;
+template <> const glm::vec2&   Registry::get(hash_t hname, const glm::vec2& def) const;
+template <> const glm::vec3&   Registry::get(hash_t hname, const glm::vec3& def) const;
+template <> const glm::vec4&   Registry::get(hash_t hname, const glm::vec4& def) const;
 
 template <> bool Registry::set(hash_t hname, const size_t& val);
 template <> bool Registry::set(hash_t hname, const uint32_t& val);

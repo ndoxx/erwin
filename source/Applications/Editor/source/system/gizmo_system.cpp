@@ -48,6 +48,7 @@ void GizmoSystem::setup_editor_entities(entt::registry& registry)
         registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
         registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
         registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
+        registry.emplace<NonSerializableTag>(ents[ii]);
     }
 }
 

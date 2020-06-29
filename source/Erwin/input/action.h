@@ -1,7 +1,5 @@
 #pragma once
-
 #include "core/core.h"
-
 namespace erwin
 {
 
@@ -24,6 +22,7 @@ enum Action: uint32_t
 	ACTION_DROP_SELECTION,
 	ACTION_EDITOR_CYCLE_MODE,
 	ACTION_EDITOR_QUIT,
+	ACTION_EDITOR_SAVE_SCENE,
 	ACTION_COUNT,
 };
 
@@ -43,6 +42,7 @@ enum Action: uint32_t
 		case "ACTION_DROP_SELECTION"_h: return ACTION_DROP_SELECTION;
 		case "ACTION_EDITOR_CYCLE_MODE"_h: return ACTION_EDITOR_CYCLE_MODE;
 		case "ACTION_EDITOR_QUIT"_h: return ACTION_EDITOR_QUIT;
+		case "ACTION_EDITOR_SAVE_SCENE"_h: return ACTION_EDITOR_SAVE_SCENE;
 	}
 	return ACTION_NONE;
 }

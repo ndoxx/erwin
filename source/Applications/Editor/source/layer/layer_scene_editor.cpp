@@ -6,6 +6,7 @@
 #include "widget/widget_rt_peek.h"
 #include "widget/widget_scene_hierarchy.h"
 #include "widget/widget_scene_view.h"
+#include "project/project.h"
 
 using namespace erwin;
 
@@ -144,6 +145,14 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
         scn::current<Scene>().drop_selection();
+        return true;
+    }
+
+    if(Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
+    {
+        // TMP
+        const auto& ps = project::get_project_settings();
+        scn::current<Scene>().serialize_xml(ps.registry.get("project.scene.start"_h));
         return true;
     }
 

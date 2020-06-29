@@ -287,68 +287,68 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
     }
 }
 
-template <> const size_t& Registry::get(hash_t hname, const size_t& def)
+template <> const size_t& Registry::get(hash_t hname, const size_t& def) const
 {
     auto it = sizes_.find(hname);
     return (it != sizes_.end()) ? it->second : def;
 }
 
-template <> const uint32_t& Registry::get(hash_t hname, const uint32_t& def)
+template <> const uint32_t& Registry::get(hash_t hname, const uint32_t& def) const
 {
     auto it = uints_.find(hname);
     return (it != uints_.end()) ? it->second : def;
 }
 
-template <> const int32_t& Registry::get(hash_t hname, const int32_t& def)
+template <> const int32_t& Registry::get(hash_t hname, const int32_t& def) const
 {
     auto it = ints_.find(hname);
     return (it != ints_.end()) ? it->second : def;
 }
 
-template <> const float& Registry::get(hash_t hname, const float& def)
+template <> const float& Registry::get(hash_t hname, const float& def) const
 {
     auto it = floats_.find(hname);
     return (it != floats_.end()) ? it->second : def;
 }
 
-template <> const bool& Registry::get(hash_t hname, const bool& def)
+template <> const bool& Registry::get(hash_t hname, const bool& def) const
 {
     auto it = bools_.find(hname);
     return (it != bools_.end()) ? it->second : def;
 }
 
-template <> const std::string& Registry::get(hash_t hname, const std::string& def)
+template <> const std::string& Registry::get(hash_t hname, const std::string& def) const
 {
     auto it = strings_.find(hname);
     return (it != strings_.end()) ? it->second : def;
 }
 
-template <> const glm::vec2& Registry::get(hash_t hname, const glm::vec2& def)
+template <> const glm::vec2& Registry::get(hash_t hname, const glm::vec2& def) const
 {
     auto it = vec2s_.find(hname);
     return (it != vec2s_.end()) ? it->second : def;
 }
 
-template <> const glm::vec3& Registry::get(hash_t hname, const glm::vec3& def)
+template <> const glm::vec3& Registry::get(hash_t hname, const glm::vec3& def) const
 {
     auto it = vec3s_.find(hname);
     return (it != vec3s_.end()) ? it->second : def;
 }
 
-template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def)
+template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def) const
 {
     auto it = vec4s_.find(hname);
     return (it != vec4s_.end()) ? it->second : def;
 }
 
 static fs::path empty_path;
-const fs::path& Registry::get(hash_t hname)
+const fs::path& Registry::get(hash_t hname) const
 {
     auto it = paths_.find(hname);
     return (it != paths_.end()) ? it->second : empty_path;
 }
 
-bool Registry::is(hash_t name)
+bool Registry::is(hash_t name) const
 {
     auto it = bools_.find(name);
     return (it != bools_.end()) ? it->second : false;
