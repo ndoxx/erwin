@@ -59,7 +59,7 @@ struct XMLFile
 {
     fs::path filepath;
     rapidxml::xml_document<> doc;
-    rapidxml::xml_node<>* root;
+    rapidxml::xml_node<>* root = nullptr;
     std::string buffer;
 
     XMLFile() = default;
@@ -72,6 +72,7 @@ struct XMLFile
     void write();
 
     void release();
+    void create_root(const char* root_name, bool write_declaration = true);
     rapidxml::xml_node<>* add_node(rapidxml::xml_node<>* parent, const char* node_name, const char* node_value = nullptr);
     rapidxml::xml_attribute<>* add_attribute(rapidxml::xml_node<>* node, const char* attr_name, const char* attr_val);
     void set_value(rapidxml::xml_node<>* node, const char* value);

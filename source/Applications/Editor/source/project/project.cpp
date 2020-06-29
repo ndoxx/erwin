@@ -36,6 +36,7 @@ bool load_project(const fs::path& filepath)
           << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
+    DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
     DLOG("editor", 0) << "Export paths:" << std::endl;
     DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
     DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
@@ -43,6 +44,7 @@ bool load_project(const fs::path& filepath)
           << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
+    DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
     cfg::set("settings.project.last_project"_h, s_current_project.project_file);
@@ -96,6 +98,9 @@ fs::path get_asset_path(DirKey dir_key)
     case DirKey::MESH:
         dirpath = s_current_project.registry.get("project.content.export.mesh"_h);
         break;
+    case DirKey::SCENE:
+        dirpath = s_current_project.registry.get("project.content.export.scene"_h);
+        break;
 
     case DirKey::WORK_ATLAS:
         dirpath = s_current_project.registry.get("project.content.import.atlas"_h);
@@ -111,6 +116,9 @@ fs::path get_asset_path(DirKey dir_key)
         break;
     case DirKey::WORK_MESH:
         dirpath = s_current_project.registry.get("project.content.import.mesh"_h);
+        break;
+    case DirKey::WORK_SCENE:
+        dirpath = s_current_project.registry.get("project.content.import.scene"_h);
         break;
     }
 

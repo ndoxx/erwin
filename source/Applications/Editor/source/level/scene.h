@@ -28,6 +28,7 @@ public:
     // Cleanup all dead components and entities
     virtual void cleanup() override;
 
+    void serialize_xml(const fs::path& file_path);
 
 	void load_hdr_environment(const fs::path& hdr_file);
 

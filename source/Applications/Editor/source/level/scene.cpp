@@ -20,6 +20,8 @@
 #include "entity/tag_components.h"
 #include "project/project.h"
 
+#include "filesystem/xml_file.h"
+
 #include <tuple>
 
 using namespace erwin;
@@ -129,6 +131,9 @@ bool Scene::on_load()
     // * Launch async loading operations
     AssetManager::launch_async_tasks();
 
+    // TMP
+    serialize_xml(project::get_asset_path(project::DirKey::SCENE) /"test_scene.scn");
+
     return true;
 }
 
@@ -174,6 +179,29 @@ void Scene::cleanup()
 
         removed_entities_.pop();
     }
+}
+
+void Scene::serialize_xml(const fs::path& file_path)
+{
+    // Open XML file
+    xml::XMLFile scene_f(file_path);
+    scene_f.create_root("Scene");
+
+    // Visit each entity, for each component invoke serialization method
+    registry.each([this, &scene_f](const EntityID e)
+    {
+        auto* enode = scene_f.add_node(scene_f.root, "Entity");
+        scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());
+
+        erwin::visit_entity(registry, e, [&scene_f,enode](uint32_t reflected_type, void* data) {
+            const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
+            auto* cmp_node = scene_f.add_node(enode, component_name);
+            invoke(W_METAFUNC_SERIALIZE_XML, reflected_type, std::as_const(data), &scene_f, static_cast<void*>(cmp_node));
+        });
+    });
+
+    // Write file
+    scene_f.write();
 }
 
 void Scene::load_hdr_environment(const fs::path& hdr_file)

@@ -24,12 +24,14 @@ enum class DirKey: uint8_t
 	MATERIAL,
 	FONT,
 	MESH,
+	SCENE,
 
 	WORK_ATLAS,
 	WORK_HDR,
 	WORK_MATERIAL,
 	WORK_FONT,
-	WORK_MESH
+	WORK_MESH,
+	WORK_SCENE
 };
 
 extern bool load_project(const fs::path& filepath);

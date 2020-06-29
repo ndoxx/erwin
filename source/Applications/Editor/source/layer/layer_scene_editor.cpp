@@ -17,6 +17,8 @@ SceneEditorLayer::SceneEditorLayer() : GuiLayer("SceneEditorLayer") {}
 void SceneEditorLayer::on_attach()
 {
     // Reflect editor components here if any
+    REFLECT_COMPONENT(ComponentDescription);
+    HIDE_FROM_INSPECTOR(ComponentDescription);
 
     // Build UI
 #ifdef W_DEBUG
