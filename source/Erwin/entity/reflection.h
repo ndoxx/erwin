@@ -86,7 +86,7 @@ using EntityID = entt::entity;
 
 // Any component that needs to be editable in an inspector should specialize this function.
 template <typename ComponentType>
-extern void inspector_GUI(ComponentType*, EntityID, entt::registry&) {}
+extern void inspector_GUI(ComponentType&, EntityID, entt::registry&) {}
 
 namespace metafunc
 {
@@ -132,7 +132,7 @@ namespace metafunc
 	template <typename ComponentType>
 	inline void inspector_GUI_typecast(void* data, EntityID e, entt::registry* r)
 	{
-		inspector_GUI<ComponentType>(static_cast<ComponentType*>(data), e, *r);
+		inspector_GUI<ComponentType>(*static_cast<ComponentType*>(data), e, *r);
 	}
 } // namespace metafunc
 

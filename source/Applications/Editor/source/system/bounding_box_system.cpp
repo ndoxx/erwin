@@ -36,12 +36,12 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
 
 void BoundingBoxSystem::update(const GameClock&, entt::registry& registry)
 {
+    registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
+        [](auto /*e*/, auto& OBB, const auto& cmesh) { OBB.init(cmesh.mesh.extent); });
+    
     registry.view<DirtyOBBTag, ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
         OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
     });
-
-    registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
-        [](auto /*e*/, auto& OBB, const auto& cmesh) { OBB.init(cmesh.mesh.extent); });
 
     registry.clear<DirtyOBBTag>();
 }

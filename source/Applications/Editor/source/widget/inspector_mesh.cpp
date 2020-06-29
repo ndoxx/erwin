@@ -11,7 +11,7 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentMesh>(ComponentMesh* cmp, EntityID e, entt::registry& registry)
+void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, entt::registry& registry)
 {
     // Load mesh from file
     if(ImGui::Button("Load"))
@@ -19,7 +19,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp, EntityID e, entt::registry
 
     editor::dialog::on_open("ChooseWeshDlgKey", [&cmp,&registry,e](const fs::path& filepath)
     {
-        cmp->mesh = AssetManager::load_mesh(filepath);
+        cmp.mesh = AssetManager::load_mesh(filepath);
         registry.emplace_or_replace<DirtyOBBTag>(e);
     });
     
@@ -34,7 +34,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh* cmp, EntityID e, entt::registry
         {
             if(ImGui::Selectable(name.c_str()))
             {
-                cmp->mesh = mesh;
+                cmp.mesh = mesh;
                 registry.emplace_or_replace<DirtyOBBTag>(e);
                 return true;
             }

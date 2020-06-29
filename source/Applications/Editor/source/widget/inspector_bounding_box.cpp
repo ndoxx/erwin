@@ -12,12 +12,12 @@ static const char* s_vertex_name[8] =
 };
 
 template <> 
-void inspector_GUI<ComponentOBB>(ComponentOBB* cmp, EntityID, entt::registry&)
+void inspector_GUI<ComponentOBB>(ComponentOBB& cmp, EntityID, entt::registry&)
 {
-    ImGui::Checkbox("Display", &cmp->display);
+    ImGui::Checkbox("Display", &cmp.display);
 
     for(size_t ii=0; ii<8; ++ii)
-    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], double(cmp->vertices_w[ii].x), double(cmp->vertices_w[ii].y), double(cmp->vertices_w[ii].z));
+    	ImGui::Text("%s: (%f, %f, %f)", s_vertex_name[ii], double(cmp.vertices_w[ii].x), double(cmp.vertices_w[ii].y), double(cmp.vertices_w[ii].z));
 }
 
 
