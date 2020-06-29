@@ -7,6 +7,7 @@
 #include "entity/component/PBR_material.h"
 #include "entity/component/dirlight_material.h"
 #include "entity/component/light.h"
+#include "entity/component/description.h"
 
 namespace erwin
 {
@@ -23,6 +24,9 @@ void init_components()
     REFLECT_COMPONENT(ComponentPBRMaterial);
     REFLECT_COMPONENT(ComponentDirectionalLightMaterial);
     REFLECT_COMPONENT(ComponentDirectionalLight);
+
+    REFLECT_COMPONENT(ComponentDescription);
+    HIDE_FROM_INSPECTOR(ComponentDescription);
 }
 
 } // namespace entity

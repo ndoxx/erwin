@@ -181,15 +181,6 @@ namespace metafunc
 		deserialize_bin<ComponentType>(stream, e, *r);
 	}
 } // namespace metafunc
-
-/*
-#define EXPORT_SERIAL( CTYPE ) \
-	template <> void serialize_xml< CTYPE >(const CTYPE&, xml::XMLFile&, rapidxml::xml_node<>*); \
-	template <> void serialize_bin< CTYPE >(const CTYPE&, std::ostream&); \
-	template <> void deserialize_xml< CTYPE >(rapidxml::xml_node<>*, EntityID, entt::registry&); \
-	template <> void deserialize_bin< CTYPE >(std::istream&, EntityID, entt::registry&)
-*/
-
 } // namespace erwin
 
 // Create a reflection meta-object for an input component type
