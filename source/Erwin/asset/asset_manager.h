@@ -77,17 +77,17 @@ public:
     static hash_t load_environment_async(size_t reg, const fs::path& file_path);
 
     // Execute a callback when a material is ready
-    static void on_material_ready(size_t reg, hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
+    static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
     // Execute a callback when a mesh is ready
-    static void on_mesh_ready(size_t reg, hash_t future_res, std::function<void(const Mesh&)> then);
+    static void on_mesh_ready(hash_t future_res, std::function<void(const Mesh&)> then);
     // Execute a callback when a texture is ready
-    static void on_texture_ready(size_t reg, hash_t future_res, std::function<void(const FreeTexture&)> then);
+    static void on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then);
     // Execute a callback when a font atlas is ready
-    static void on_texture_atlas_ready(size_t reg, hash_t future_res, std::function<void(const TextureAtlas&)> then);
+    static void on_texture_atlas_ready(hash_t future_res, std::function<void(const TextureAtlas&)> then);
     // Execute a callback when a font atlas is ready
-    static void on_font_atlas_ready(size_t reg, hash_t future_res, std::function<void(const FontAtlas&)> then);
+    static void on_font_atlas_ready(hash_t future_res, std::function<void(const FontAtlas&)> then);
     // Execute a callback when a font atlas is ready
-    static void on_environment_ready(size_t reg, hash_t future_res, std::function<void(const Environment&)> then);
+    static void on_environment_ready(hash_t future_res, std::function<void(const Environment&)> then);
 
     // Execute async tasks independently
     static void launch_async_tasks();

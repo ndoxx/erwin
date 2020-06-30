@@ -102,7 +102,7 @@ bool Scene::on_load()
     registry.emplace<ComponentOBB>(sphere0);
     registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
-    AssetManager::on_material_ready(asset_registry_, future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
+    AssetManager::on_material_ready(future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
         registry.emplace<ComponentPBRMaterial>(sphere0, mat);
     });
 
@@ -111,7 +111,7 @@ bool Scene::on_load()
     registry.emplace<ComponentOBB>(sphere1);
     registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-    AssetManager::on_material_ready(asset_registry_, future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
+    AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
         registry.emplace<ComponentPBRMaterial>(sphere1, mat);
     });
 
@@ -120,7 +120,7 @@ bool Scene::on_load()
     registry.emplace<ComponentOBB>(sphere2);
     registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-    AssetManager::on_material_ready(asset_registry_, future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
+    AssetManager::on_material_ready(future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
         registry.emplace<ComponentPBRMaterial>(sphere2, mat);
     });
 
@@ -233,7 +233,7 @@ void Scene::serialize_xml(const fs::path& file_path)
 void Scene::load_hdr_environment(const fs::path& hdr_file)
 {
     hash_t future_env = AssetManager::load_environment_async(asset_registry_, hdr_file);
-    AssetManager::on_environment_ready(asset_registry_, future_env, [this](const Environment& env) {
+    AssetManager::on_environment_ready(future_env, [this](const Environment& env) {
         environment = env;
         Renderer3D::set_environment(environment);
         Renderer3D::enable_IBL(true);
