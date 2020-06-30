@@ -97,7 +97,7 @@ bool Scene::on_load()
 
     EntityID sphere0 = create_entity("Sphere #0");
     registry.emplace<ComponentMesh>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere0/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
+    registry.emplace<ComponentOBB>(sphere0);
     registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
     AssetManager::on_material_ready(future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
@@ -106,7 +106,7 @@ bool Scene::on_load()
 
     EntityID sphere1 = create_entity("Sphere #1");
     registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere1/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
+    registry.emplace<ComponentOBB>(sphere1);
     registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
     AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
@@ -115,7 +115,7 @@ bool Scene::on_load()
 
     EntityID sphere2 = create_entity("Sphere #2");
     registry.emplace<ComponentMesh>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere2/*, CommonGeometry::get_mesh("icosphere_pbr"_h).extent*/);
+    registry.emplace<ComponentOBB>(sphere2);
     registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
     AssetManager::on_material_ready(future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
@@ -196,6 +196,9 @@ void Scene::serialize_xml(const fs::path& file_path)
         
         auto* enode = scene_f.add_node(scene_f.root, "Entity");
         scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());
+
+        if(auto* p_hier = registry.try_get<ComponentHierarchy>(e))
+            scene_f.add_attribute(enode, "parent", std::to_string(size_t(p_hier->parent)).c_str());
 
         erwin::visit_entity(registry, e, [&scene_f,enode](uint32_t reflected_type, void* data) {
             const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();

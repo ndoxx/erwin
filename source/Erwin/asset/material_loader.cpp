@@ -66,7 +66,7 @@ tom::TOMDescriptor MaterialLoader::load_from_file(const AssetMetaData& meta_data
     return descriptor;
 }
 
-ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor)
+ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor, hash_t resource_id)
 {
     W_PROFILE_FUNCTION()
 
@@ -99,7 +99,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
 
     std::string name = descriptor.filepath.stem().string();
 
-    Material mat = {H_(name.c_str()), tg, shader, ubo, sizeof(ComponentPBRMaterial::MaterialData)};
+    Material mat = {H_(name.c_str()), tg, shader, ubo, sizeof(ComponentPBRMaterial::MaterialData), resource_id};
     Renderer3D::register_shader(shader);
     Renderer::shader_attach_uniform_buffer(shader, ubo);
 

@@ -30,7 +30,7 @@ cat::CATDescriptor TextureAtlasLoader::load_from_file(const AssetMetaData& meta_
     return descriptor;
 }
 
-TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor)
+TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /*resource_id*/)
 {
     TextureAtlas atlas;
 
@@ -103,7 +103,7 @@ cat::CATDescriptor FontAtlasLoader::load_from_file(const AssetMetaData& meta_dat
     return descriptor;
 }
 
-FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor)
+FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /*resource_id*/)
 {
     FontAtlas atlas;
 

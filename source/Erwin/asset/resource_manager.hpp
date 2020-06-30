@@ -37,7 +37,7 @@ public:
             // Parameter pack allows to pass loading options to the loader, this is only useful for pure image loading
             // as image files don't encapsulate the relevant engine data
             auto descriptor = LoaderT::load_from_file(meta_data, std::forward<ArgsT>(args)...);
-            managed_resources_[hname] = std::move(LoaderT::upload(descriptor));
+            managed_resources_[hname] = std::move(LoaderT::upload(descriptor, hname));
             return managed_resources_[hname];
         }
         else
@@ -134,7 +134,7 @@ template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
             auto&& descriptor = task.future_desc.get();
 
             hash_t hname = H_(task.meta_data.file_path.string().c_str());
-            managed_resources_[hname] = std::move(LoaderT::upload(descriptor));
+            managed_resources_[hname] = std::move(LoaderT::upload(descriptor, hname));
             upload_tasks_.erase(it);
 
             // Call user callbacks

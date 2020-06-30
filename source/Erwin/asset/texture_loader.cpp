@@ -44,7 +44,7 @@ Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data
     return descriptor;
 }
 
-FreeTexture TextureLoader::upload(const Texture2DDescriptor& descriptor)
+FreeTexture TextureLoader::upload(const Texture2DDescriptor& descriptor, hash_t /*resource_id*/)
 {
     return {Renderer::create_texture_2D(descriptor), descriptor.width, descriptor.height};
 }

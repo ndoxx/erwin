@@ -45,7 +45,7 @@ Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_
     return descriptor;
 }
 
-Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor)
+Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, hash_t /*resource_id*/)
 {
     Environment environment;
     TextureHandle handle = Renderer::create_texture_2D(descriptor);
