@@ -31,7 +31,15 @@ static struct
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
     std::map<hash_t, TextureHandle> special_textures_cache_;
+
+    std::map<hash_t, fs::path> resource_paths_;
 } s_storage;
+
+static void save_path(const fs::path& path)
+{
+    hash_t hname = H_(path.string().c_str());
+    s_storage.resource_paths_[hname] = path;
+}
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
 {
@@ -123,73 +131,109 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
 
 const ComponentPBRMaterial& AssetManager::load_material(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.material_manager.load(file_path);
 }
 
 const Mesh& AssetManager::load_mesh(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.mesh_manager.load(file_path);
 }
 
 const FreeTexture& AssetManager::load_texture(const fs::path& file_path, std::optional<Texture2DDescriptor> options)
 {
+    save_path(file_path);
     return s_storage.texture_manager.load(file_path, options);
 }
 
 const TextureAtlas& AssetManager::load_texture_atlas(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.texture_atlas_manager.load(file_path);
 }
 
 const FontAtlas& AssetManager::load_font_atlas(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.font_atlas_manager.load(file_path);
 }
 
 const Environment& AssetManager::load_environment(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.environment_manager.load(file_path);
 }
 
-void AssetManager::release_material(hash_t hname) { s_storage.material_manager.release(hname); }
+void AssetManager::release_material(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.material_manager.release(hname);
+}
 
-void AssetManager::release_mesh(hash_t hname) { s_storage.mesh_manager.release(hname); }
+void AssetManager::release_mesh(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.mesh_manager.release(hname);
+}
 
-void AssetManager::release_texture(hash_t hname) { s_storage.texture_manager.release(hname); }
+void AssetManager::release_texture(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.texture_manager.release(hname);
+}
 
-void AssetManager::release_texture_atlas(hash_t hname) { s_storage.texture_atlas_manager.release(hname); }
+void AssetManager::release_texture_atlas(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.texture_atlas_manager.release(hname);
+}
 
-void AssetManager::release_font_atlas(hash_t hname) { s_storage.font_atlas_manager.release(hname); }
+void AssetManager::release_font_atlas(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.font_atlas_manager.release(hname);
+}
 
-void AssetManager::release_environment(hash_t hname) { s_storage.environment_manager.release(hname); }
+void AssetManager::release_environment(hash_t hname)
+{
+    s_storage.resource_paths_.erase(hname);
+    s_storage.environment_manager.release(hname);
+}
 
 hash_t AssetManager::load_material_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.material_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_mesh_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.mesh_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_texture_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.texture_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_texture_atlas_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.texture_atlas_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_font_atlas_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.font_atlas_manager.load_async(file_path);
 }
 
 hash_t AssetManager::load_environment_async(const fs::path& file_path)
 {
+    save_path(file_path);
     return s_storage.environment_manager.load_async(file_path);
 }
 
@@ -246,6 +290,12 @@ void AssetManager::update()
     s_storage.font_atlas_manager.sync_work();
     s_storage.texture_manager.sync_work();
 }
+
+const std::map<hash_t, fs::path>& AssetManager::get_resource_paths()
+{
+    return s_storage.resource_paths_;
+}
+
 
 /*
 

@@ -15,6 +15,7 @@ struct Environment
     uint32_t size;
 	bool IBL_enabled = true;
 	float ambient_strength = 0.15f;
+	hash_t resource_id = 0;
 };
 
 

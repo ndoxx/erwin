@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <future>
 #include <optional>
+#include <map>
 
 namespace fs = std::filesystem;
 
@@ -92,6 +93,9 @@ public:
     static void launch_async_tasks();
     // Execute synchronous tasks if any
     static void update();
+
+    // Get resource paths table
+    static const std::map<hash_t, fs::path>& get_resource_paths();
 
 private:
     static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);

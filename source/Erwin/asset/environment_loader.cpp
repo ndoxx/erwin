@@ -45,7 +45,7 @@ Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_
     return descriptor;
 }
 
-Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, hash_t /*resource_id*/)
+Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, hash_t resource_id)
 {
     Environment environment;
     TextureHandle handle = Renderer::create_texture_2D(descriptor);
@@ -54,6 +54,7 @@ Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, has
     Renderer::destroy(handle);
     environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
     environment.prefiltered_map = Renderer3D::generate_prefiltered_map(environment.environment_map, environment.size);
+    environment.resource_id = resource_id;
 
     return environment;
 }

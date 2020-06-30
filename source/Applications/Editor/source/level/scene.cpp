@@ -188,13 +188,29 @@ void Scene::serialize_xml(const fs::path& file_path)
     xml::XMLFile scene_f(file_path);
     scene_f.create_root("Scene");
 
+    // Write resource table
+    // TODO: filter out resources allocated by other systems
+    auto* assets_node = scene_f.add_node(scene_f.root, "Assets");
+    const auto& paths = AssetManager::get_resource_paths();
+    for(auto&& [hname, path]: paths)
+    {
+        auto* anode = scene_f.add_node(assets_node, "Asset");
+        scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
+        scene_f.add_attribute(anode, "path", path.filename().string().c_str());
+    }
+
+    // Write environment
+    auto* env_node = scene_f.add_node(scene_f.root, "Environment");
+    scene_f.add_attribute(env_node, "id", std::to_string(environment.resource_id).c_str());
+
     // Visit each entity, for each component invoke serialization method
-    registry.each([this, &scene_f](const EntityID e)
+    auto* entities_node = scene_f.add_node(scene_f.root, "Entities");
+    registry.each([this, &scene_f, entities_node](const EntityID e)
     {
         if(registry.has<NonSerializableTag>(e))
             return;
         
-        auto* enode = scene_f.add_node(scene_f.root, "Entity");
+        auto* enode = scene_f.add_node(entities_node, "Entity");
         scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());
 
         if(auto* p_hier = registry.try_get<ComponentHierarchy>(e))
