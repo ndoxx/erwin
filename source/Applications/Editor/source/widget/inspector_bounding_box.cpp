@@ -12,7 +12,7 @@ static const char* s_vertex_name[8] =
 };
 
 template <> 
-void inspector_GUI<ComponentOBB>(ComponentOBB& cmp, EntityID, entt::registry&)
+void inspector_GUI<ComponentOBB>(ComponentOBB& cmp, EntityID, entt::registry&, size_t)
 {
     ImGui::Checkbox("Display", &cmp.display);
 

@@ -46,6 +46,8 @@ public:
 	    erwin::CubemapHandle diffuse_irradiance_map;
 	    erwin::CubemapHandle prefiltered_env_map;
 	} environment;
+	
+	size_t asset_registry_;
 };
 
 } // namespace editor

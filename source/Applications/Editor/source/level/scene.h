@@ -46,6 +46,8 @@ public:
 	void mark_for_removal(erwin::EntityID entity, uint32_t reflected_component);
 	void mark_for_removal(erwin::EntityID entity);
 
+	inline size_t get_asset_registry() const { return asset_registry_; }
+
 	erwin::EntityID root = erwin::k_invalid_entity_id;
 	erwin::EntityID directional_light = erwin::k_invalid_entity_id;
 	erwin::EntityID camera = erwin::k_invalid_entity_id;
@@ -57,6 +59,7 @@ public:
 private:
 	std::queue<std::tuple<erwin::EntityID, uint32_t>> removed_components_;
 	std::queue<erwin::EntityID> removed_entities_;
+	size_t asset_registry_;
 };
 
 } // namespace editor

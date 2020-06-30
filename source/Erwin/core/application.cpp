@@ -190,6 +190,7 @@ bool Application::init()
         W_PROFILE_SCOPE("Renderer startup")
         FramebufferPool::init(window_->get_width(), window_->get_height());
         Renderer::init(s_storage.render_area);
+        AssetManager::create_asset_registry(); // Create engine asset registry (index 0)
         CommonGeometry::init();
         Renderer2D::init();
         Renderer3D::init();

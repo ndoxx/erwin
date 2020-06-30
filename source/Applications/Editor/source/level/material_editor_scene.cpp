@@ -9,6 +9,8 @@ namespace editor
 
 bool MaterialEditorScene::on_load()
 {
+	asset_registry_ = AssetManager::create_asset_registry();
+
 	reset_material();
 
 	transform_ = {{0.f,0.f,0.f}, {0.f,0.f,0.f}, 1.f};

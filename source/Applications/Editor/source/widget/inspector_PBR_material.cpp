@@ -12,15 +12,15 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, entt::registry&)
+void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, entt::registry&, size_t asset_registry)
 {
     // Load material from file
     if(ImGui::Button("Load"))
         editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::get_asset_path(editor::project::DirKey::MATERIAL));
 
-    editor::dialog::on_open("ChooseTomDlgKey", [&cmp](const fs::path& filepath)
+    editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
     {
-        cmp = AssetManager::load_material(filepath); // // Copy material
+        cmp = AssetManager::load_material(asset_registry, filepath); // // Copy material
     });
     
     // ImGui::TextUnformatted(cmp.name.c_str()); // Name unused atm
