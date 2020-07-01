@@ -142,6 +142,12 @@ void Scene::on_unload()
     directional_light = k_invalid_entity_id;
     camera = k_invalid_entity_id;
     registry.clear();
+
+    const auto& metas = AssetManager::get_resource_meta(asset_registry_);
+    for(auto&& [hname, meta]: metas)
+    {
+        AssetManager::release(asset_registry_, hname, meta.type);
+    }
 }
 
 void Scene::cleanup()
@@ -192,12 +198,12 @@ void Scene::serialize_xml(const fs::path& file_path)
 
     // Write resource table
     auto* assets_node = scene_f.add_node(scene_f.root, "Assets");
-    const auto& paths = AssetManager::get_resource_paths(asset_registry_);
-    for(auto&& [hname, path]: paths)
+    const auto& metas = AssetManager::get_resource_meta(asset_registry_);
+    for(auto&& [hname, meta]: metas)
     {
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
-        scene_f.add_attribute(anode, "path", path.filename().string().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.filename().string().c_str());
     }
 
     // Write environment

@@ -3,6 +3,7 @@
 #include "core/core.h"
 #include "render/handles.h"
 #include "render/texture_common.h"
+#include "asset/loader_common.h"
 #include <cstdint>
 #include <filesystem>
 #include <future>
@@ -61,6 +62,8 @@ public:
     static void release_font_atlas(size_t reg, hash_t hname);
     // Free GPU resources associated to environment
     static void release_environment(size_t reg, hash_t hname);
+    // Free GPU resource by type
+    static void release(size_t reg, hash_t hname, AssetMetaData::AssetType type);
 
     // * Asynchronous operations
     // Generate an async material loading task if material not in cache, return path string hash as a token
@@ -95,7 +98,7 @@ public:
     static void update();
 
     // Get resource paths table
-    static const std::map<hash_t, fs::path>& get_resource_paths(size_t reg);
+    static const std::map<hash_t, AssetMetaData>& get_resource_meta(size_t reg);
 
     static size_t create_asset_registry();
 

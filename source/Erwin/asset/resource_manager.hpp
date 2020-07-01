@@ -24,7 +24,7 @@ public:
     using ManagedResource = typename LoaderT::Resource;
     using DataDescriptor = typename LoaderT::DataDescriptor;
 
-    template <typename... ArgsT> const ManagedResource& load(const fs::path& file_path, ArgsT&&... args)
+    template <typename... ArgsT> std::pair<const ManagedResource&, const AssetMetaData&> load(const fs::path& file_path, ArgsT&&... args)
     {
         W_PROFILE_FUNCTION()
 
@@ -38,19 +38,22 @@ public:
             // as image files don't encapsulate the relevant engine data
             auto descriptor = LoaderT::load_from_file(meta_data, std::forward<ArgsT>(args)...);
             managed_resources_[hname] = std::move(LoaderT::upload(descriptor, hname));
-            return managed_resources_[hname];
+            meta_data_[hname] = std::move(meta_data);
+            return {managed_resources_[hname], meta_data_[hname]};
         }
         else
-            return findit->second;
+            return {findit->second, meta_data_[hname]};
     }
 
-    hash_t load_async(const fs::path& file_path);
+    std::pair<hash_t, const AssetMetaData&> load_async(const fs::path& file_path);
 
     void on_ready(hash_t hname, std::function<void(const ManagedResource&)> then);
     void release(hash_t hname);
 
     void async_work();
     void sync_work();
+
+    inline const AssetMetaData& get_meta_data(hash_t hname) const { return meta_data_.at(hname); }
 
 private:
     struct FileLoadingTask
@@ -67,6 +70,7 @@ private:
     };
 
     std::map<hash_t, ManagedResource> managed_resources_;
+    std::map<hash_t, AssetMetaData> meta_data_;
     PromiseStorage<DataDescriptor> promises_;
     std::vector<FileLoadingTask> file_loading_tasks_;
     std::vector<UploadTask> upload_tasks_;
@@ -75,21 +79,22 @@ private:
     std::mutex mutex_;
 };
 
-template <typename LoaderT> hash_t ResourceManager<LoaderT>::load_async(const fs::path& file_path)
+template <typename LoaderT> std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const fs::path& file_path)
 {
     W_PROFILE_FUNCTION()
 
     // Check cache first
     hash_t hname = H_(file_path.string().c_str());
-    if(managed_resources_.find(hname) == managed_resources_.end())
+    if(meta_data_.find(hname) == meta_data_.end())
     {
         auto&& [token, fut] = promises_.future_operation();
         AssetMetaData meta_data = LoaderT::build_meta_data(file_path);
         file_loading_tasks_.push_back(FileLoadingTask{token, meta_data});
         upload_tasks_.push_back(UploadTask{token, meta_data, std::move(fut)});
+        meta_data_[hname] = std::move(meta_data);
     }
 
-    return hname;
+    return {hname, meta_data_[hname]};
 }
 
 template <typename LoaderT>
@@ -107,6 +112,7 @@ template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
     {
         LoaderT::destroy(findit->second);
         managed_resources_.erase(findit);
+        meta_data_.erase(hname);
     }
 }
 

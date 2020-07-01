@@ -21,13 +21,17 @@ namespace erwin
 
 struct AssetRegistry
 {
-    std::map<hash_t, fs::path> resource_paths_;
+    std::map<hash_t, AssetMetaData> asset_meta_;
 
-    void save_path(const fs::path& path)
+    inline void insert(const AssetMetaData& meta_data)
     {
-        hash_t hname = H_(path.string().c_str());
-        resource_paths_[hname] = path;
+        hash_t hname = H_(meta_data.file_path.string().c_str());
+        asset_meta_[hname] = meta_data;
     }
+
+    inline void erase(hash_t hname) { asset_meta_.erase(hname); }
+
+    inline bool has(hash_t hname) { return (asset_meta_.find(hname) != asset_meta_.end()); }
 };
 
 static struct
@@ -39,7 +43,7 @@ static struct
     ResourceManager<EnvironmentLoader> environment_manager;
     ResourceManager<MeshLoader> mesh_manager;
 
-    std::vector<std::unique_ptr<AssetRegistry>> registry;
+    std::vector<AssetRegistry> registry;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -47,7 +51,27 @@ static struct
 
 } s_storage;
 
+template <typename ManagerT>
+static void release_if_not_shared(size_t reg, hash_t handle, ManagerT& manager)
+{
+    s_storage.registry[reg].erase(handle);
 
+    bool shared = false;
+    for(auto&& registry: s_storage.registry)
+    {
+        if(registry.has(handle))
+        {
+            shared = true;
+            break;
+        }
+    }
+
+    if(!shared)
+    {
+        BANG();
+        manager.release(handle);
+    }
+}
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
 {
@@ -139,110 +163,131 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
 
 const ComponentPBRMaterial& AssetManager::load_material(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.material_manager.load(file_path);
+    auto&& [res, meta] = s_storage.material_manager.load(file_path);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 const Mesh& AssetManager::load_mesh(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.mesh_manager.load(file_path);
+    auto&& [res, meta] = s_storage.mesh_manager.load(file_path);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 const FreeTexture& AssetManager::load_texture(size_t reg, const fs::path& file_path, std::optional<Texture2DDescriptor> options)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.texture_manager.load(file_path, options);
+    auto&& [res, meta] = s_storage.texture_manager.load(file_path, options);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 const TextureAtlas& AssetManager::load_texture_atlas(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.texture_atlas_manager.load(file_path);
+    auto&& [res, meta] = s_storage.texture_atlas_manager.load(file_path);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 const FontAtlas& AssetManager::load_font_atlas(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.font_atlas_manager.load(file_path);
+    auto&& [res, meta] = s_storage.font_atlas_manager.load(file_path);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 const Environment& AssetManager::load_environment(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.environment_manager.load(file_path);
+    auto&& [res, meta] = s_storage.environment_manager.load(file_path);
+    s_storage.registry[reg].insert(meta);
+    return res;
 }
 
 void AssetManager::release_material(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.material_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.material_manager);
 }
 
 void AssetManager::release_mesh(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.mesh_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.mesh_manager);
 }
 
 void AssetManager::release_texture(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.texture_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.texture_manager);
 }
 
 void AssetManager::release_texture_atlas(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.texture_atlas_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.texture_atlas_manager);
 }
 
 void AssetManager::release_font_atlas(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.font_atlas_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.font_atlas_manager);
 }
 
 void AssetManager::release_environment(size_t reg, hash_t hname)
 {
-    s_storage.registry[reg]->resource_paths_.erase(hname);
-    s_storage.environment_manager.release(hname);
+    release_if_not_shared(reg, hname, s_storage.environment_manager);
+}
+
+void AssetManager::release(size_t reg, hash_t hname, AssetMetaData::AssetType type)
+{
+    switch(type)
+    {
+        case AssetMetaData::AssetType::ImageFilePNG:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
+        case AssetMetaData::AssetType::ImageFileHDR:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
+        case AssetMetaData::AssetType::EnvironmentHDR:   release_if_not_shared(reg, hname, s_storage.environment_manager); break;
+        case AssetMetaData::AssetType::MaterialTOM:      release_if_not_shared(reg, hname, s_storage.material_manager); break;
+        case AssetMetaData::AssetType::TextureAtlasCAT:  release_if_not_shared(reg, hname, s_storage.texture_atlas_manager); break;
+        case AssetMetaData::AssetType::FontAtlasCAT:     release_if_not_shared(reg, hname, s_storage.font_atlas_manager); break;
+        case AssetMetaData::AssetType::MeshWESH:         release_if_not_shared(reg, hname, s_storage.mesh_manager); break;
+        default: break;
+    }
 }
 
 hash_t AssetManager::load_material_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.material_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.material_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 hash_t AssetManager::load_mesh_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.mesh_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.mesh_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 hash_t AssetManager::load_texture_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.texture_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.texture_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 hash_t AssetManager::load_texture_atlas_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.texture_atlas_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.texture_atlas_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 hash_t AssetManager::load_font_atlas_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.font_atlas_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.font_atlas_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 hash_t AssetManager::load_environment_async(size_t reg, const fs::path& file_path)
 {
-    s_storage.registry[reg]->save_path(file_path);
-    return s_storage.environment_manager.load_async(file_path);
+    auto&& [handle, meta] = s_storage.environment_manager.load_async(file_path);
+    s_storage.registry[reg].insert(meta);
+    return handle;
 }
 
 void AssetManager::on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then)
@@ -299,15 +344,15 @@ void AssetManager::update()
     s_storage.texture_manager.sync_work();
 }
 
-const std::map<hash_t, fs::path>& AssetManager::get_resource_paths(size_t reg)
+const std::map<hash_t, AssetMetaData>& AssetManager::get_resource_meta(size_t reg)
 {
-    return s_storage.registry[reg]->resource_paths_;
+    return s_storage.registry[reg].asset_meta_;
 }
 
 size_t AssetManager::create_asset_registry()
 {
     size_t ret = s_storage.registry.size();
-    s_storage.registry.emplace_back(new AssetRegistry());
+    s_storage.registry.emplace_back();
     return ret;
 }
 
