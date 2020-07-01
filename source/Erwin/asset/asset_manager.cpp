@@ -13,11 +13,15 @@
 #include "asset/special_texture_factory.h"
 #include "asset/texture_loader.h"
 
+#include "utils/sparse_set.hpp"
+
 #include <chrono>
 #include <thread>
 
 namespace erwin
 {
+
+static constexpr size_t k_max_asset_registries = 8;
 
 struct AssetRegistry
 {
@@ -32,6 +36,8 @@ struct AssetRegistry
     inline void erase(hash_t hname) { asset_meta_.erase(hname); }
 
     inline bool has(hash_t hname) { return (asset_meta_.find(hname) != asset_meta_.end()); }
+
+    inline void clear() { asset_meta_.clear(); }
 };
 
 static struct
@@ -43,7 +49,8 @@ static struct
     ResourceManager<EnvironmentLoader> environment_manager;
     ResourceManager<MeshLoader> mesh_manager;
 
-    std::vector<AssetRegistry> registry;
+    SparsePool<size_t, k_max_asset_registries> registry_handle_pool;
+    std::array<AssetRegistry, k_max_asset_registries> registry;
 
     std::map<hash_t, ShaderHandle> shader_cache;
     std::map<uint64_t, UniformBufferHandle> ubo_cache;
@@ -54,12 +61,11 @@ static struct
 template <typename ManagerT>
 static void release_if_not_shared(size_t reg, hash_t handle, ManagerT& manager)
 {
-    s_storage.registry[reg].erase(handle);
-
     bool shared = false;
-    for(auto&& registry: s_storage.registry)
+    for(auto it = s_storage.registry_handle_pool.begin(); it != s_storage.registry_handle_pool.end(); ++it)
     {
-        if(registry.has(handle))
+        auto oreg = *it;
+        if(oreg!=reg && s_storage.registry[oreg].has(handle))
         {
             shared = true;
             break;
@@ -67,10 +73,7 @@ static void release_if_not_shared(size_t reg, hash_t handle, ManagerT& manager)
     }
 
     if(!shared)
-    {
-        BANG();
         manager.release(handle);
-    }
 }
 
 UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
@@ -206,46 +209,37 @@ const Environment& AssetManager::load_environment(size_t reg, const fs::path& fi
 void AssetManager::release_material(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.material_manager);
+    s_storage.registry[reg].erase(hname);
 }
 
 void AssetManager::release_mesh(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.mesh_manager);
+    s_storage.registry[reg].erase(hname);
 }
 
 void AssetManager::release_texture(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.texture_manager);
+    s_storage.registry[reg].erase(hname);
 }
 
 void AssetManager::release_texture_atlas(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.texture_atlas_manager);
+    s_storage.registry[reg].erase(hname);
 }
 
 void AssetManager::release_font_atlas(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.font_atlas_manager);
+    s_storage.registry[reg].erase(hname);
 }
 
 void AssetManager::release_environment(size_t reg, hash_t hname)
 {
     release_if_not_shared(reg, hname, s_storage.environment_manager);
-}
-
-void AssetManager::release(size_t reg, hash_t hname, AssetMetaData::AssetType type)
-{
-    switch(type)
-    {
-        case AssetMetaData::AssetType::ImageFilePNG:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
-        case AssetMetaData::AssetType::ImageFileHDR:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
-        case AssetMetaData::AssetType::EnvironmentHDR:   release_if_not_shared(reg, hname, s_storage.environment_manager); break;
-        case AssetMetaData::AssetType::MaterialTOM:      release_if_not_shared(reg, hname, s_storage.material_manager); break;
-        case AssetMetaData::AssetType::TextureAtlasCAT:  release_if_not_shared(reg, hname, s_storage.texture_atlas_manager); break;
-        case AssetMetaData::AssetType::FontAtlasCAT:     release_if_not_shared(reg, hname, s_storage.font_atlas_manager); break;
-        case AssetMetaData::AssetType::MeshWESH:         release_if_not_shared(reg, hname, s_storage.mesh_manager); break;
-        default: break;
-    }
+    s_storage.registry[reg].erase(hname);
 }
 
 hash_t AssetManager::load_material_async(size_t reg, const fs::path& file_path)
@@ -351,9 +345,31 @@ const std::map<hash_t, AssetMetaData>& AssetManager::get_resource_meta(size_t re
 
 size_t AssetManager::create_asset_registry()
 {
-    size_t ret = s_storage.registry.size();
-    s_storage.registry.emplace_back();
-    return ret;
+    return s_storage.registry_handle_pool.acquire();
+}
+
+static void release(size_t reg, hash_t hname, AssetMetaData::AssetType type)
+{
+    switch(type)
+    {
+        case AssetMetaData::AssetType::ImageFilePNG:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
+        case AssetMetaData::AssetType::ImageFileHDR:     release_if_not_shared(reg, hname, s_storage.texture_manager); break;
+        case AssetMetaData::AssetType::EnvironmentHDR:   release_if_not_shared(reg, hname, s_storage.environment_manager); break;
+        case AssetMetaData::AssetType::MaterialTOM:      release_if_not_shared(reg, hname, s_storage.material_manager); break;
+        case AssetMetaData::AssetType::TextureAtlasCAT:  release_if_not_shared(reg, hname, s_storage.texture_atlas_manager); break;
+        case AssetMetaData::AssetType::FontAtlasCAT:     release_if_not_shared(reg, hname, s_storage.font_atlas_manager); break;
+        case AssetMetaData::AssetType::MeshWESH:         release_if_not_shared(reg, hname, s_storage.mesh_manager); break;
+        default: break;
+    }
+}
+
+void AssetManager::release_registry(size_t reg)
+{
+    for(auto&& [hname, meta]: s_storage.registry[reg].asset_meta_)
+        release(reg, hname, meta.type);
+
+    s_storage.registry[reg].clear();
+    s_storage.registry_handle_pool.release(reg);
 }
 
 

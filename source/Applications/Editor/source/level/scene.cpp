@@ -31,16 +31,6 @@ namespace editor
 
 Scene::Scene()
 {
-    asset_registry_ = AssetManager::create_asset_registry();
-
-    // Create root node
-    root = create_entity("__root__", W_ICON(CODE_FORK));
-    registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
-    registry.emplace<FixedHierarchyTag>(root);
-    registry.emplace<NonEditableTag>(root);
-    registry.emplace<NonRemovableTag>(root);
-    registry.emplace<NonSerializableTag>(root);
-
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
@@ -51,6 +41,16 @@ bool Scene::on_load()
     // TMP stub -> Implement proper scene loading
 
     // * Create entities with no async dependency
+    asset_registry_ = AssetManager::create_asset_registry();
+
+    // Create root node
+    root = create_entity("__root__", W_ICON(CODE_FORK));
+    registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
+    registry.emplace<FixedHierarchyTag>(root);
+    registry.emplace<NonEditableTag>(root);
+    registry.emplace<NonRemovableTag>(root);
+    registry.emplace<NonSerializableTag>(root);
+
     {
         EntityID ent = create_entity("Camera", W_ICON(VIDEO_CAMERA));
 
@@ -143,11 +143,7 @@ void Scene::on_unload()
     camera = k_invalid_entity_id;
     registry.clear();
 
-    const auto& metas = AssetManager::get_resource_meta(asset_registry_);
-    for(auto&& [hname, meta]: metas)
-    {
-        AssetManager::release(asset_registry_, hname, meta.type);
-    }
+    AssetManager::release_registry(asset_registry_);
 }
 
 void Scene::cleanup()
