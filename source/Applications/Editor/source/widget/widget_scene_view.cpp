@@ -13,6 +13,7 @@
 #include "entity/component/transform.h"
 #include "asset/material.h"
 #include "asset/bounding.h"
+#include "project/project.h"
 #include "imgui.h"
 
 using namespace erwin;
@@ -102,6 +103,29 @@ void SceneViewWidget::on_imgui_render()
 {
     if(ImGui::BeginMenuBar())
     {
+        if(ImGui::BeginMenu("File"))
+        {
+            if(ImGui::BeginMenu("Load"))
+            {
+                auto scene_dir = project::asset_dir(DK::SCENE);
+                for(auto& entry : fs::directory_iterator(scene_dir.full_path()))
+                {
+                    if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
+                    {
+                        if(ImGui::MenuItem(entry.path().filename().c_str()))
+                        {
+                            // TMP
+                            auto& scene = scn::current<Scene>();
+                            scene.deserialize_xml(FilePath(entry.path()));
+                        }
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenu();
+        }
 	    if(ImGui::BeginMenu("Profiling"))
 	    {
 	        ImGui::MenuItem("Frame profiler", NULL, &s_show_frame_profiler);

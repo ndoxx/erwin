@@ -236,8 +236,8 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
         // Extract directory name and make it the material name
         auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
         scene.current_material_.name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << scene.current_material_.name << WCC(0) << "\" as a material name."
-                          << std::endl;
+        DLOG("editor", 1) << "Selected \"" << WCC('n') << scene.current_material_.name << WCC(0)
+                          << "\" as a material name." << std::endl;
     }
 }
 
@@ -248,7 +248,7 @@ void MaterialAuthoringWidget::clear()
 
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
     const auto& tg = scene.current_material_.material.texture_group;
-    for(uint32_t ii=0; ii<tg.texture_count; ++ii)
+    for(uint32_t ii = 0; ii < tg.texture_count; ++ii)
         if(tg[ii].is_valid())
             Renderer::destroy(tg[ii]);
 
@@ -355,7 +355,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
         dialog::show_open_directory("ChooseDirectoryDlgKey", "Choose Directory",
-                                    project::asset_dir(project::DirKey::WORK_MATERIAL).full_path());
+                                    project::asset_dir(DK::WORK_MATERIAL).full_path());
 
     ImGui::PopStyleColor(1);
 
@@ -383,7 +383,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         // Current material must have been applied
         if(current_material.material.texture_group.texture_count > 0)
-            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::asset_dir(project::DirKey::MATERIAL).full_path(),
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::asset_dir(DK::MATERIAL).full_path(),
                               current_material.name + ".tom");
     }
     ImGui::PopStyleColor(1);
@@ -436,8 +436,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::Columns(1);
 
     if(show_file_open_dialog)
-        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png",
-                          project::asset_dir(project::DirKey::WORK_MATERIAL).full_path());
+        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png", project::asset_dir(DK::WORK_MATERIAL).full_path());
 
     dialog::on_open("ChoosePngDlgKey", [&](const fs::path& filepath) {
         load_texture_map(TextureMapType(selected_tm), filepath);

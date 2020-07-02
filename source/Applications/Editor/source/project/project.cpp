@@ -77,57 +77,57 @@ void close_project()
 
 const ProjectSettings& get_project_settings() { return s_current_project; }
 
-FilePath asset_dir(DirKey dir_key)
+FilePath asset_dir(DK dir_key)
 {
     FilePath dirpath;
     switch(dir_key)
     {
-    case DirKey::ATLAS:
+    case DK::ATLAS:
         dirpath = s_current_project.registry.get("project.content.export.atlas"_h);
         break;
-    case DirKey::HDR:
+    case DK::HDR:
         dirpath = s_current_project.registry.get("project.content.export.hdr"_h);
         break;
-    case DirKey::MATERIAL:
+    case DK::MATERIAL:
         dirpath = s_current_project.registry.get("project.content.export.material"_h);
         break;
-    case DirKey::FONT:
+    case DK::FONT:
         dirpath = s_current_project.registry.get("project.content.export.font"_h);
         break;
-    case DirKey::MESH:
+    case DK::MESH:
         dirpath = s_current_project.registry.get("project.content.export.mesh"_h);
         break;
-    case DirKey::SCENE:
+    case DK::SCENE:
         dirpath = s_current_project.registry.get("project.content.export.scene"_h);
         break;
 
-    case DirKey::WORK_ATLAS:
+    case DK::WORK_ATLAS:
         dirpath = s_current_project.registry.get("project.content.import.atlas"_h);
         break;
-    case DirKey::WORK_HDR:
+    case DK::WORK_HDR:
         dirpath = s_current_project.registry.get("project.content.import.hdr"_h);
         break;
-    case DirKey::WORK_MATERIAL:
+    case DK::WORK_MATERIAL:
         dirpath = s_current_project.registry.get("project.content.import.material"_h);
         break;
-    case DirKey::WORK_FONT:
+    case DK::WORK_FONT:
         dirpath = s_current_project.registry.get("project.content.import.font"_h);
         break;
-    case DirKey::WORK_MESH:
+    case DK::WORK_MESH:
         dirpath = s_current_project.registry.get("project.content.import.mesh"_h);
         break;
-    case DirKey::WORK_SCENE:
+    case DK::WORK_SCENE:
         dirpath = s_current_project.registry.get("project.content.import.scene"_h);
         break;
     }
 
     if(dirpath.empty())
-        return FilePath(fs::path("."));
+        return FilePath(s_current_project.root_folder);
 
     return dirpath;
 }
 
-FilePath asset_path(DirKey dir_key, const fs::path& file_path)
+FilePath asset_path(DK dir_key, const fs::path& file_path)
 {
     auto dirpath = asset_dir(dir_key);
     return FilePath(dirpath.base_path(), dirpath.file_path() / file_path);

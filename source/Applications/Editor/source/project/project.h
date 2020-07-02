@@ -5,17 +5,8 @@
 
 namespace editor
 {
-namespace project
-{
 
-struct ProjectSettings
-{
-    fs::path project_file;
-    fs::path root_folder;
-    erwin::Registry registry;
-};
-
-enum class DirKey: uint8_t
+enum class DK: uint8_t
 {
 	ATLAS,
 	HDR,
@@ -32,13 +23,23 @@ enum class DirKey: uint8_t
 	WORK_SCENE
 };
 
+namespace project
+{
+
+struct ProjectSettings
+{
+    fs::path project_file;
+    fs::path root_folder;
+    erwin::Registry registry;
+};
+
 bool load_project(const erwin::FilePath& filepath);
 bool save_project();
 void close_project();
 const ProjectSettings& get_project_settings();
 
-erwin::FilePath asset_dir(DirKey dir_key);
-erwin::FilePath asset_path(DirKey dir_key, const fs::path& file_path);
+erwin::FilePath asset_dir(DK dir_key);
+erwin::FilePath asset_path(DK dir_key, const fs::path& file_path);
 
 } // namespace project
 } // namespace editor

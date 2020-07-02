@@ -74,6 +74,8 @@ public:
     static hash_t load_font_atlas_async(size_t reg, const FilePath& file_path);
     // Generate an async environment loading task if environment not in cache, return path string hash as a token
     static hash_t load_environment_async(size_t reg, const FilePath& file_path);
+    // Load any resource asynchronously by type
+    static hash_t load_resource_async(size_t reg, AssetMetaData::AssetType type, const FilePath& file_path);
 
     // Execute a callback when a material is ready
     static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);

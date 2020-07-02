@@ -284,6 +284,21 @@ hash_t AssetManager::load_environment_async(size_t reg, const FilePath& file_pat
     return handle;
 }
 
+hash_t AssetManager::load_resource_async(size_t reg, AssetMetaData::AssetType type, const FilePath& file_path)
+{
+    switch(type)
+    {
+        case AssetMetaData::AssetType::ImageFilePNG:    return load_texture_async(reg, file_path);
+        case AssetMetaData::AssetType::ImageFileHDR:    return load_texture_async(reg, file_path);
+        case AssetMetaData::AssetType::EnvironmentHDR:  return load_environment_async(reg, file_path);
+        case AssetMetaData::AssetType::MaterialTOM:     return load_material_async(reg, file_path);
+        case AssetMetaData::AssetType::TextureAtlasCAT: return load_texture_atlas_async(reg, file_path);
+        case AssetMetaData::AssetType::FontAtlasCAT:    return load_font_atlas_async(reg, file_path);
+        case AssetMetaData::AssetType::MeshWESH:        return load_mesh_async(reg, file_path);
+        default: return 0;
+    }
+}
+
 void AssetManager::on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then)
 {
     s_storage.material_manager.on_ready(future_res, then);

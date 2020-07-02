@@ -15,8 +15,8 @@
 #include "entity/component/hierarchy.h"
 #include "entity/component/light.h"
 #include "entity/component/mesh.h"
-#include "entity/component/transform.h"
 #include "entity/component/tags.h"
+#include "entity/component/transform.h"
 #include "entity/tag_components.h"
 #include "project/project.h"
 
@@ -93,10 +93,11 @@ bool Scene::on_load()
 
     // MOCK: load asset registry
     std::vector<hash_t> future_materials = {
-        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "greasyMetal.tom")),
-        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "scuffedPlastic.tom")),
-        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "paintPeelingConcrete.tom")),
-        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "dirtyWickerWeave.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "greasyMetal.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "scuffedPlastic.tom")),
+        AssetManager::load_material_async(asset_registry_,
+                                          project::asset_path(DK::MATERIAL, "paintPeelingConcrete.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "dirtyWickerWeave.tom")),
     };
 
     EntityID sphere0 = create_entity("Sphere #0");
@@ -131,7 +132,7 @@ bool Scene::on_load()
     entity::attach(sphere1, sphere2, registry);
     entity::sort_hierarchy(registry);
 
-    load_hdr_environment(project::asset_path(project::DirKey::HDR, "small_cathedral_2k.hdr"));
+    load_hdr_environment(project::asset_path(DK::HDR, "small_cathedral_2k.hdr"));
 
     // * Launch async loading operations
     AssetManager::launch_async_tasks();
@@ -172,7 +173,7 @@ void Scene::cleanup()
 
             std::vector<EntityID> subtree;
             entity::depth_first(entity, registry, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
-                DLOG("editor",1) << "Removing subtree node: " << size_t(child) << std::endl;
+                DLOG("editor", 1) << "Removing subtree node: " << size_t(child) << std::endl;
                 subtree.push_back(child);
                 return false;
             });
@@ -197,12 +198,12 @@ void Scene::serialize_xml(const FilePath& file_path)
     // Write resource table
     auto* assets_node = scene_f.add_node(scene_f.root, "Assets");
     const auto& metas = AssetManager::get_resource_meta(asset_registry_);
-    for(auto&& [hname, meta]: metas)
+    for(auto&& [hname, meta] : metas)
     {
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
         scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
-        scene_f.add_attribute(anode, "path", meta.file_path.file_path().filename().string().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.file_path().c_str());
     }
 
     // Write environment
@@ -211,21 +212,21 @@ void Scene::serialize_xml(const FilePath& file_path)
 
     // Visit each entity, for each component invoke serialization method
     auto* entities_node = scene_f.add_node(scene_f.root, "Entities");
-    registry.each([this, &scene_f, entities_node](const EntityID e)
-    {
+    registry.each([this, &scene_f, entities_node](const EntityID e) {
         if(registry.has<NonSerializableTag>(e))
             return;
-        
+
         auto* enode = scene_f.add_node(entities_node, "Entity");
         scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());
 
         if(auto* p_hier = registry.try_get<ComponentHierarchy>(e))
             scene_f.add_attribute(enode, "parent", std::to_string(size_t(p_hier->parent)).c_str());
 
-        erwin::visit_entity(registry, e, [&scene_f,enode](uint32_t reflected_type, void* data) {
+        erwin::visit_entity(registry, e, [&scene_f, enode](uint32_t reflected_type, void* data) {
             const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
             auto* cmp_node = scene_f.add_node(enode, component_name);
-            invoke(W_METAFUNC_SERIALIZE_XML, reflected_type, std::as_const(data), &scene_f, static_cast<void*>(cmp_node));
+            invoke(W_METAFUNC_SERIALIZE_XML, reflected_type, std::as_const(data), &scene_f,
+                   static_cast<void*>(cmp_node));
         });
     });
 
@@ -233,6 +234,95 @@ void Scene::serialize_xml(const FilePath& file_path)
     scene_f.write();
 
     DLOGI << "done." << std::endl;
+}
+
+void Scene::deserialize_xml(const erwin::FilePath& file_path)
+{
+    DLOGN("editor") << "Deserializing scene: " << std::endl;
+    DLOGI << WCC('p') << file_path << std::endl;
+
+    // TMP
+    {
+        on_unload();
+        asset_registry_ = AssetManager::create_asset_registry();
+    }
+
+    // Parse XML file
+    xml::XMLFile scene_f(file_path);
+    if(!scene_f.read())
+    {
+        DLOGE("editor") << "Cannot parse scene file." << std::endl;
+        return;
+    }
+
+    // Create root node
+    root = create_entity("__root__", W_ICON(CODE_FORK));
+    registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
+    registry.emplace<FixedHierarchyTag>(root);
+    registry.emplace<NonEditableTag>(root);
+    registry.emplace<NonRemovableTag>(root);
+    registry.emplace<NonSerializableTag>(root);
+
+    // Read resource table and load each asset
+    const auto& ps = project::get_project_settings();
+    auto* assets_node = scene_f.root->first_node("Assets");
+    W_ASSERT(assets_node, "No <Assets> node.");
+
+    for(auto* asset_node = assets_node->first_node("Asset"); asset_node; asset_node = asset_node->next_sibling("Asset"))
+    {
+        size_t sz_asset_type;
+        xml::parse_attribute(asset_node, "type", sz_asset_type);
+        std::string asset_rel_path;
+        xml::parse_attribute(asset_node, "path", asset_rel_path);
+        FilePath asset_path(ps.root_folder, asset_rel_path);
+        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), asset_path);
+    }
+
+    // Load environment
+    {
+        auto* env_node = scene_f.root->first_node("Environment");
+        W_ASSERT(env_node, "No <Environment> node.");
+        hash_t id;
+        xml::parse_attribute(env_node, "id", id);
+        AssetManager::on_environment_ready(id, [this](const Environment& env) {
+            environment = env;
+            Renderer3D::set_environment(environment);
+            Renderer3D::enable_IBL(true);
+        });
+    }
+
+    // Load entities
+    std::map<size_t, EntityID> id_to_ent_id;
+    id_to_ent_id[0] = root;
+    std::map<EntityID, size_t> parent_map;
+    {
+        auto* entities_node = scene_f.root->first_node("Entities");
+        W_ASSERT(entities_node, "No <Entities> node.");
+        for(auto* entity_node = entities_node->first_node("Entity"); entity_node; entity_node = entity_node->next_sibling("Entity"))
+        {
+            size_t id;
+            xml::parse_attribute(entity_node, "id", id);
+            auto e = registry.create();
+            id_to_ent_id[id] = e;
+            size_t parent = 0;
+            xml::parse_attribute(entity_node, "parent", parent);
+            parent_map[e] = parent;
+
+            // Deserialize components
+            for(auto* cmp_node = entity_node->first_node(); cmp_node; cmp_node = cmp_node->next_sibling())
+            {
+                const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
+                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), e, &registry);
+            }
+        }
+    }
+
+    // Setup hierarchy
+    for(auto&& [e, parent_index]: parent_map)
+        entity::attach(id_to_ent_id.at(parent_index), e, registry);
+    entity::sort_hierarchy(registry);
+
+    AssetManager::launch_async_tasks();
 }
 
 void Scene::load_hdr_environment(const FilePath& hdr_file)

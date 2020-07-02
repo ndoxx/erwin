@@ -27,6 +27,7 @@ public:
     virtual void cleanup() override;
 
     void serialize_xml(const erwin::FilePath& file_path);
+    void deserialize_xml(const erwin::FilePath& file_path);
 
 	void load_hdr_environment(const erwin::FilePath& hdr_file);
 
