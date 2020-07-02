@@ -71,10 +71,10 @@ void ErwinEditor::on_load()
     SceneManager::make_current("main_scene"_h);
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
-    fs::path last_project_file = cfg::get("settings.project.last_project"_h);
-    if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
+    const auto& last_project_file = cfg::get("settings.project.last_project"_h);
+    if(auto_load && !last_project_file.empty() && last_project_file.exists())
     {
-        project::load_project(FilePath(last_project_file));
+        project::load_project(last_project_file);
         SceneManager::load_scene("main_scene"_h);
         scene_view_layer_->setup_camera();
         scene_editor_layer->setup_editor_entities();

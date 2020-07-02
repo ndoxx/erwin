@@ -125,12 +125,10 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, c
             return 0;
         bool is_absolute = false;
         xml::parse_attribute(xnode, "absolute", is_absolute);
-        fs::path the_path;
         if(!is_absolute)
-            the_path = parent_dir / value;
+            paths_[full_name_hash] = FilePath(parent_dir, value);
         else
-            the_path = value;
-        paths_[full_name_hash] = the_path;
+            paths_[full_name_hash] = FilePath(value);
         break;
     }
     case "size"_h: {
@@ -195,7 +193,7 @@ void Registry::clear()
     paths_.clear();
 }
 
-void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
+void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& /*parent_dir*/)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -266,15 +264,13 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         {
             bool is_absolute = false;
             xml::parse_attribute(xnode, "absolute", is_absolute);
-            fs::path out_path;
-            if(!it->second.empty())
+            if(!it->second.full_path().empty())
             {
                 if(is_absolute)
-                    out_path = fs::absolute(it->second);
+                    xml::set_attribute(doc, xnode, "value", it->second.string());
                 else
-                    out_path = fs::relative(it->second, parent_dir);
+                    xml::set_attribute(doc, xnode, "value", it->second.file_path().string());
             }
-            xml::set_attribute(doc, xnode, "value", out_path.string());
         }
         break;
     }
@@ -341,8 +337,8 @@ template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def) c
     return (it != vec4s_.end()) ? it->second : def;
 }
 
-static fs::path empty_path;
-const fs::path& Registry::get(hash_t hname) const
+static FilePath empty_path;
+const FilePath& Registry::get(hash_t hname) const
 {
     auto it = paths_.find(hname);
     return (it != paths_.end()) ? it->second : empty_path;
@@ -408,7 +404,7 @@ template <> bool Registry::set(hash_t hname, const std::string& val)
     return true;
 }
 
-template <> bool Registry::set(hash_t hname, const fs::path& val)
+template <> bool Registry::set(hash_t hname, const FilePath& val)
 {
     auto it = paths_.find(hname);
     if(it == paths_.end())

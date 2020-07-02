@@ -20,6 +20,7 @@ public:
     FilePath(const fs::path& base_dir, const fs::path& file_path);
 
     inline bool exists() const { return fs::exists(full_path_); }
+    inline bool empty() const { return full_path_.empty(); }
     inline const fs::path& full_path() const { return full_path_; }
     inline const fs::path& file_path() const { return file_path_; }
     inline const fs::path& base_path() const { return base_dir_; }

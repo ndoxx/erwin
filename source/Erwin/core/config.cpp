@@ -162,7 +162,7 @@ template <> const glm::vec4& get(hash_t hname, const glm::vec4& def)
 	return registry.get(hname, def);
 }
 
-const fs::path& get(hash_t hname)
+const FilePath& get(hash_t hname)
 {
 	return registry.get(hname);
 }
@@ -216,7 +216,7 @@ template <> bool set(hash_t hname, const std::string& val)
 	return registry.set(hname, val);
 }
 
-template <> bool set(hash_t hname, const fs::path& val)
+template <> bool set(hash_t hname, const FilePath& val)
 {
 	return registry.set(hname, val);
 }

@@ -29,7 +29,7 @@ extension_id_(H_(file_path_.extension().c_str()))
 
 std::ostream& operator <<(std::ostream& stream, const FilePath& rhs)
 {
-	stream << rhs.full_path();
+	stream << rhs.file_path();
 	return stream;
 }
 

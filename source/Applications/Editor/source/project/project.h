@@ -32,12 +32,13 @@ enum class DirKey: uint8_t
 	WORK_SCENE
 };
 
-extern bool load_project(const erwin::FilePath& filepath);
-extern bool save_project();
-extern void close_project();
-extern const ProjectSettings& get_project_settings();
+bool load_project(const erwin::FilePath& filepath);
+bool save_project();
+void close_project();
+const ProjectSettings& get_project_settings();
 
-extern fs::path get_asset_path(DirKey dir_key);
+erwin::FilePath asset_dir(DirKey dir_key);
+erwin::FilePath asset_path(DirKey dir_key, const fs::path& file_path);
 
 } // namespace project
 } // namespace editor

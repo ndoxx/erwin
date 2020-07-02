@@ -2,13 +2,12 @@
 
 #include <map>
 #include <string>
-#include <filesystem>
 
 #include "glm/glm.hpp"
 #include "core/core.h"
 #include "filesystem/xml_file.h"
+#include "filesystem/file_path.h"
 
-namespace fs = std::filesystem;
 
 namespace erwin
 {
@@ -22,7 +21,7 @@ public:
 
 	template <typename T>
 	const T& get(hash_t hname, const T& def) const;
-	const fs::path& get(hash_t hname) const;
+	const FilePath& get(hash_t hname) const;
 	bool is(hash_t name) const;
 	template <typename T>
 	bool set(hash_t hname, const T& value);
@@ -43,7 +42,7 @@ private:
 	std::map<hash_t, glm::vec2>   vec2s_;
 	std::map<hash_t, glm::vec3>   vec3s_;
 	std::map<hash_t, glm::vec4>   vec4s_;
-	std::map<hash_t, fs::path>    paths_;
+	std::map<hash_t, FilePath>    paths_;
 };
 
 template <> const size_t&      Registry::get(hash_t hname, const size_t& def) const;
@@ -62,7 +61,7 @@ template <> bool Registry::set(hash_t hname, const int32_t& val);
 template <> bool Registry::set(hash_t hname, const float& val);
 template <> bool Registry::set(hash_t hname, const bool& val);
 template <> bool Registry::set(hash_t hname, const std::string& val);
-template <> bool Registry::set(hash_t hname, const fs::path& val);
+template <> bool Registry::set(hash_t hname, const FilePath& val);
 template <> bool Registry::set(hash_t hname, const glm::vec2& val);
 template <> bool Registry::set(hash_t hname, const glm::vec3& val);
 template <> bool Registry::set(hash_t hname, const glm::vec4& val);

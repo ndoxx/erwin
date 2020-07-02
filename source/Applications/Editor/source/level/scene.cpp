@@ -93,10 +93,10 @@ bool Scene::on_load()
 
     // MOCK: load asset registry
     std::vector<hash_t> future_materials = {
-        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "greasyMetal.tom")),
-        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "scuffedPlastic.tom")),
-        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "paintPeelingConcrete.tom")),
-        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "dirtyWickerWeave.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "greasyMetal.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "scuffedPlastic.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "paintPeelingConcrete.tom")),
+        AssetManager::load_material_async(asset_registry_, project::asset_path(project::DirKey::MATERIAL, "dirtyWickerWeave.tom")),
     };
 
     EntityID sphere0 = create_entity("Sphere #0");
@@ -131,7 +131,7 @@ bool Scene::on_load()
     entity::attach(sphere1, sphere2, registry);
     entity::sort_hierarchy(registry);
 
-    load_hdr_environment(FilePath(project::get_asset_path(project::DirKey::HDR), "small_cathedral_2k.hdr"));
+    load_hdr_environment(project::asset_path(project::DirKey::HDR, "small_cathedral_2k.hdr"));
 
     // * Launch async loading operations
     AssetManager::launch_async_tasks();

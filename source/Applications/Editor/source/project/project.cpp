@@ -47,7 +47,7 @@ bool load_project(const FilePath& filepath)
     DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
-    cfg::set("settings.project.last_project"_h, s_current_project.project_file);
+    cfg::set("settings.project.last_project"_h, filepath);
 
     return true;
 }
@@ -77,10 +77,9 @@ void close_project()
 
 const ProjectSettings& get_project_settings() { return s_current_project; }
 
-static const fs::path s_current_path = ".";
-fs::path get_asset_path(DirKey dir_key)
+FilePath asset_dir(DirKey dir_key)
 {
-    fs::path dirpath;
+    FilePath dirpath;
     switch(dir_key)
     {
     case DirKey::ATLAS:
@@ -123,8 +122,15 @@ fs::path get_asset_path(DirKey dir_key)
     }
 
     if(dirpath.empty())
-        return s_current_path;
+        return FilePath(fs::path("."));
+
     return dirpath;
+}
+
+FilePath asset_path(DirKey dir_key, const fs::path& file_path)
+{
+    auto dirpath = asset_dir(dir_key);
+    return FilePath(dirpath.base_path(), dirpath.file_path() / file_path);
 }
 
 } // namespace project

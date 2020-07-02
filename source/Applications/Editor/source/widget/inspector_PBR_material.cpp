@@ -16,7 +16,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, en
 {
     // Load material from file
     if(ImGui::Button("Load"))
-        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::get_asset_path(editor::project::DirKey::MATERIAL));
+        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::project::DirKey::MATERIAL).full_path());
 
     editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
     {

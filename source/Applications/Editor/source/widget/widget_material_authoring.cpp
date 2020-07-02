@@ -355,7 +355,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
         dialog::show_open_directory("ChooseDirectoryDlgKey", "Choose Directory",
-                                    project::get_asset_path(project::DirKey::WORK_MATERIAL));
+                                    project::asset_dir(project::DirKey::WORK_MATERIAL).full_path());
 
     ImGui::PopStyleColor(1);
 
@@ -383,7 +383,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         // Current material must have been applied
         if(current_material.material.texture_group.texture_count > 0)
-            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::get_asset_path(project::DirKey::MATERIAL),
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::asset_dir(project::DirKey::MATERIAL).full_path(),
                               current_material.name + ".tom");
     }
     ImGui::PopStyleColor(1);
@@ -437,7 +437,7 @@ void MaterialAuthoringWidget::on_imgui_render()
 
     if(show_file_open_dialog)
         dialog::show_open("ChoosePngDlgKey", "Choose File", ".png",
-                          project::get_asset_path(project::DirKey::WORK_MATERIAL));
+                          project::asset_dir(project::DirKey::WORK_MATERIAL).full_path());
 
     dialog::on_open("ChoosePngDlgKey", [&](const fs::path& filepath) {
         load_texture_map(TextureMapType(selected_tm), filepath);
