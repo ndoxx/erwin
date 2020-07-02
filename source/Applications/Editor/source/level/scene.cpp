@@ -93,11 +93,14 @@ bool Scene::on_load()
 
     // MOCK: load asset registry
     std::vector<hash_t> future_materials = {
-        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "greasyMetal.tom")),
-        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "scuffedPlastic.tom")),
-        AssetManager::load_material_async(asset_registry_,
-                                          project::asset_path(DK::MATERIAL, "paintPeelingConcrete.tom")),
-        AssetManager::load_material_async(asset_registry_, project::asset_path(DK::MATERIAL, "dirtyWickerWeave.tom")),
+        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
+                                                       project::asset_path(DK::MATERIAL, "greasyMetal.tom")),
+        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
+                                                       project::asset_path(DK::MATERIAL, "scuffedPlastic.tom")),
+        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
+                                                       project::asset_path(DK::MATERIAL, "paintPeelingConcrete.tom")),
+        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
+                                                       project::asset_path(DK::MATERIAL, "dirtyWickerWeave.tom")),
     };
 
     EntityID sphere0 = create_entity("Sphere #0");
@@ -105,27 +108,30 @@ bool Scene::on_load()
     registry.emplace<ComponentOBB>(sphere0);
     registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
 
-    AssetManager::on_material_ready(future_materials[0], [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
-        registry.emplace<ComponentPBRMaterial>(sphere0, mat);
-    });
+    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[0],
+                                                 [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
+                                                     registry.emplace<ComponentPBRMaterial>(sphere0, mat);
+                                                 });
 
     EntityID sphere1 = create_entity("Sphere #1");
     registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
     registry.emplace<ComponentOBB>(sphere1);
     registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-    AssetManager::on_material_ready(future_materials[1], [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
-        registry.emplace<ComponentPBRMaterial>(sphere1, mat);
-    });
+    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[1],
+                                                 [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
+                                                     registry.emplace<ComponentPBRMaterial>(sphere1, mat);
+                                                 });
 
     EntityID sphere2 = create_entity("Sphere #2");
     registry.emplace<ComponentMesh>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h));
     registry.emplace<ComponentOBB>(sphere2);
     registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
 
-    AssetManager::on_material_ready(future_materials[2], [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
-        registry.emplace<ComponentPBRMaterial>(sphere2, mat);
-    });
+    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[2],
+                                                 [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
+                                                     registry.emplace<ComponentPBRMaterial>(sphere2, mat);
+                                                 });
 
     entity::attach(root, sphere0, registry);
     entity::attach(sphere0, sphere1, registry);
@@ -284,7 +290,7 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         W_ASSERT(env_node, "No <Environment> node.");
         hash_t id;
         xml::parse_attribute(env_node, "id", id);
-        AssetManager::on_environment_ready(id, [this](const Environment& env) {
+        AssetManager::on_ready<Environment>(id, [this](const Environment& env) {
             environment = env;
             Renderer3D::set_environment(environment);
             Renderer3D::enable_IBL(true);
@@ -298,7 +304,8 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     {
         auto* entities_node = scene_f.root->first_node("Entities");
         W_ASSERT(entities_node, "No <Entities> node.");
-        for(auto* entity_node = entities_node->first_node("Entity"); entity_node; entity_node = entity_node->next_sibling("Entity"))
+        for(auto* entity_node = entities_node->first_node("Entity"); entity_node;
+            entity_node = entity_node->next_sibling("Entity"))
         {
             size_t id;
             xml::parse_attribute(entity_node, "id", id);
@@ -318,7 +325,7 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     }
 
     // Setup hierarchy
-    for(auto&& [e, parent_index]: parent_map)
+    for(auto&& [e, parent_index] : parent_map)
         entity::attach(id_to_ent_id.at(parent_index), e, registry);
     entity::sort_hierarchy(registry);
 
@@ -327,8 +334,8 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
 
 void Scene::load_hdr_environment(const FilePath& hdr_file)
 {
-    hash_t future_env = AssetManager::load_environment_async(asset_registry_, hdr_file);
-    AssetManager::on_environment_ready(future_env, [this](const Environment& env) {
+    hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
+    AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {
         environment = env;
         Renderer3D::set_environment(environment);
         Renderer3D::enable_IBL(true);

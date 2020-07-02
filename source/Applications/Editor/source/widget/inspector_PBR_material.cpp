@@ -20,7 +20,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, en
 
     editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
     {
-        cmp = AssetManager::load_material(asset_registry, FilePath(filepath)); // // Copy material
+        cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, FilePath(filepath)); // // Copy material
     });
     
     // ImGui::TextUnformatted(cmp.name.c_str()); // Name unused atm

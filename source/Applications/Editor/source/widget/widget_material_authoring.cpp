@@ -184,7 +184,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
         clear_texture_map(tm_type);
 
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
-    const auto& freetex = AssetManager::load_texture(scene.asset_registry_, FilePath(filepath));
+    const auto& freetex = AssetManager::load<FreeTexture>(scene.asset_registry_, FilePath(filepath));
     current_composition_->set_map(tm_type, freetex.handle);
     current_composition_->texture_names[uint32_t(tm_type)] = H_(filepath.c_str());
     current_composition_->width = freetex.width;
@@ -197,7 +197,7 @@ void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
     if(tex.is_valid())
     {
         auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
-        AssetManager::release_texture(scene.asset_registry_, current_composition_->texture_names[uint32_t(tm_type)]);
+        AssetManager::release<FreeTexture>(scene.asset_registry_, current_composition_->texture_names[uint32_t(tm_type)]);
         current_composition_->texture_names[uint32_t(tm_type)] = 0;
         current_composition_->clear_map(tm_type);
     }

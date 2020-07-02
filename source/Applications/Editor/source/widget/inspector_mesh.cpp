@@ -19,7 +19,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, entt::registry
 
     editor::dialog::on_open("ChooseWeshDlgKey", [&cmp,&registry,e,asset_registry](const fs::path& filepath)
     {
-        cmp.mesh = AssetManager::load_mesh(asset_registry, FilePath(filepath));
+        cmp.mesh = AssetManager::load<Mesh>(asset_registry, FilePath(filepath));
         registry.emplace_or_replace<DirtyOBBTag>(e);
     });
     

@@ -35,60 +35,19 @@ public:
     // type can be "dashed"_h, "grid"_h, "checkerboard"_h, "white"_h or "red"_h
     static TextureHandle create_debug_texture(hash_t type, uint32_t size_px);
 
-    // Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
-    static const ComponentPBRMaterial& load_material(size_t reg, const FilePath& file_path);
-    // Load a mesh from a WESH file (or get from cache)
-    static const Mesh& load_mesh(size_t reg, const FilePath& file_path);
-    // Load an image from file (or get from cache) and return a render handle to a texture created from image data
-    static const FreeTexture& load_texture(size_t reg, const FilePath& file_path, std::optional<Texture2DDescriptor> options = {});
-    // Load a font as a texture atlas from file (or get from cache)
-    static const TextureAtlas& load_texture_atlas(size_t reg, const FilePath& file_path);
-    // Load a font as a texture atlas from file (or get from cache)
-    static const FontAtlas& load_font_atlas(size_t reg, const FilePath& file_path);
-    // Load an environment map from file (or get from cache)
-    static const Environment& load_environment(size_t reg, const FilePath& file_path);
-
-    // Free GPU resources associated to a material and remove from cache
-    static void release_material(size_t reg, hash_t hname);
-    // Free GPU resources associated to a mesh
-    static void release_mesh(size_t reg, hash_t hname);
-    // Free GPU resource associated to texture
-    static void release_texture(size_t reg, hash_t hname);
-    // Free GPU resource associated to texture atlas
-    static void release_texture_atlas(size_t reg, hash_t hname);
-    // Free GPU resource associated to font atlas
-    static void release_font_atlas(size_t reg, hash_t hname);
-    // Free GPU resources associated to environment
-    static void release_environment(size_t reg, hash_t hname);
+    // Load any resource
+    template <typename ResT> static const ResT& load(size_t reg, const FilePath& file_path);
+    template <typename ResT, typename OptT> static const ResT& load(size_t reg, const FilePath& file_path, const OptT& options);
+    // Release any resource
+    template <typename ResT> static void release(size_t reg, hash_t hname);
 
     // * Asynchronous operations
-    // Generate an async material loading task if material not in cache, return path string hash as a token
-    static hash_t load_material_async(size_t reg, const FilePath& file_path);
-    // Generate an async mesh loading task if mesh not in cache, return path string hash as a token
-    static hash_t load_mesh_async(size_t reg, const FilePath& file_path);
-    // Generate an async texture loading task if texture not in cache, return path string hash as a token
-    static hash_t load_texture_async(size_t reg, const FilePath& file_path);
-    // Generate an async texture atlas loading task if not in cache, return path string hash as a token
-    static hash_t load_texture_atlas_async(size_t reg, const FilePath& file_path);
-    // Generate an async font atlas loading task if not in cache, return path string hash as a token
-    static hash_t load_font_atlas_async(size_t reg, const FilePath& file_path);
-    // Generate an async environment loading task if environment not in cache, return path string hash as a token
-    static hash_t load_environment_async(size_t reg, const FilePath& file_path);
-    // Load any resource asynchronously by type
+    // Load any resource by type
     static hash_t load_resource_async(size_t reg, AssetMetaData::AssetType type, const FilePath& file_path);
-
-    // Execute a callback when a material is ready
-    static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
-    // Execute a callback when a mesh is ready
-    static void on_mesh_ready(hash_t future_res, std::function<void(const Mesh&)> then);
-    // Execute a callback when a texture is ready
-    static void on_texture_ready(hash_t future_res, std::function<void(const FreeTexture&)> then);
-    // Execute a callback when a font atlas is ready
-    static void on_texture_atlas_ready(hash_t future_res, std::function<void(const TextureAtlas&)> then);
-    // Execute a callback when a font atlas is ready
-    static void on_font_atlas_ready(hash_t future_res, std::function<void(const FontAtlas&)> then);
-    // Execute a callback when a font atlas is ready
-    static void on_environment_ready(hash_t future_res, std::function<void(const Environment&)> then);
+    // Load any resource asynchronously
+    template <typename ResT> static hash_t load_async(size_t reg, const FilePath& file_path);
+    // Execute a callback when a resource is ready
+    template <typename ResT> static void on_ready(hash_t future_res, std::function<void(const ResT&)> then);
 
     // Execute async tasks independently
     static void launch_async_tasks();
@@ -97,12 +56,68 @@ public:
 
     // Get resource paths table
     static const std::map<hash_t, AssetMetaData>& get_resource_meta(size_t reg);
-
+    // Asset registry creation / destruction
     static size_t create_asset_registry();
     static void release_registry(size_t reg);
 
 private:
     static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);
 };
+
+
+// Specializations
+// Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
+template<> const ComponentPBRMaterial& AssetManager::load<ComponentPBRMaterial>(size_t reg, const FilePath& file_path);
+// Load a mesh from a WESH file (or get from cache)
+template<> const Mesh& AssetManager::load<Mesh>(size_t reg, const FilePath& file_path);
+// Load an image from file (or get from cache) and return a render handle to a texture created from image data
+template<> const FreeTexture& AssetManager::load<FreeTexture>(size_t reg, const FilePath& file_path);
+// Same as before, but enforce some texture properties via a descriptor
+template<> const FreeTexture& AssetManager::load<FreeTexture,Texture2DDescriptor>(size_t reg, const FilePath& file_path, const Texture2DDescriptor& options);
+// Load a font as a texture atlas from file (or get from cache)
+template<> const TextureAtlas& AssetManager::load<TextureAtlas>(size_t reg, const FilePath& file_path);
+// Load a font as a texture atlas from file (or get from cache)
+template<> const FontAtlas& AssetManager::load<FontAtlas>(size_t reg, const FilePath& file_path);
+// Load an environment map from file (or get from cache)
+template<> const Environment& AssetManager::load<Environment>(size_t reg, const FilePath& file_path);
+
+// Free GPU resources associated to a material and remove from cache
+template<> void AssetManager::release<ComponentPBRMaterial>(size_t reg, hash_t hname);
+// Free GPU resources associated to a mesh
+template<> void AssetManager::release<Mesh>(size_t reg, hash_t hname);
+// Free GPU resource associated to texture
+template<> void AssetManager::release<FreeTexture>(size_t reg, hash_t hname);
+// Free GPU resource associated to texture atlas
+template<> void AssetManager::release<TextureAtlas>(size_t reg, hash_t hname);
+// Free GPU resource associated to font atlas
+template<> void AssetManager::release<FontAtlas>(size_t reg, hash_t hname);
+// Free GPU resources associated to environment
+template<> void AssetManager::release<Environment>(size_t reg, hash_t hname);
+
+// Generate an async material loading task if material not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<ComponentPBRMaterial>(size_t reg, const FilePath& file_path);
+// Generate an async mesh loading task if mesh not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<Mesh>(size_t reg, const FilePath& file_path);
+// Generate an async texture loading task if texture not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<FreeTexture>(size_t reg, const FilePath& file_path);
+// Generate an async texture atlas loading task if not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<TextureAtlas>(size_t reg, const FilePath& file_path);
+// Generate an async font atlas loading task if not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<FontAtlas>(size_t reg, const FilePath& file_path);
+// Generate an async environment loading task if environment not in cache, return path string hash as a token
+template<> hash_t AssetManager::load_async<Environment>(size_t reg, const FilePath& file_path);
+
+// Execute a callback when a material is ready
+template<> void AssetManager::on_ready<ComponentPBRMaterial>(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);
+// Execute a callback when a mesh is ready
+template<> void AssetManager::on_ready<Mesh>(hash_t future_res, std::function<void(const Mesh&)> then);
+// Execute a callback when a texture is ready
+template<> void AssetManager::on_ready<FreeTexture>(hash_t future_res, std::function<void(const FreeTexture&)> then);
+// Execute a callback when a font atlas is ready
+template<> void AssetManager::on_ready<TextureAtlas>(hash_t future_res, std::function<void(const TextureAtlas&)> then);
+// Execute a callback when a font atlas is ready
+template<> void AssetManager::on_ready<FontAtlas>(hash_t future_res, std::function<void(const FontAtlas&)> then);
+// Execute a callback when a font atlas is ready
+template<> void AssetManager::on_ready<Environment>(hash_t future_res, std::function<void(const Environment&)> then);
 
 } // namespace erwin
