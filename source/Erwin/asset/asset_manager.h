@@ -12,6 +12,13 @@
 
 namespace fs = std::filesystem;
 
+/*
+    FIXME:
+        [ ] Resource ids are computed from ABSOLUTE file path hashes. Surely this is a bad idea?
+            -> Yes because I cannot detect potential user-side hash collisions, one lucky bastard could
+            have an impossibly hard to reproduce bug because of this.
+*/
+
 namespace erwin
 {
 

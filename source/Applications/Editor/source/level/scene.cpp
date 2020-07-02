@@ -40,9 +40,10 @@ bool Scene::on_load()
 {
     // TMP stub -> Implement proper scene loading
 
-    // * Create entities with no async dependency
+    // Reserve a new asset registry for this scene
     asset_registry_ = AssetManager::create_asset_registry();
 
+    // * Create entities with no async dependency
     // Create root node
     root = create_entity("__root__", W_ICON(CODE_FORK));
     registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
@@ -90,6 +91,7 @@ bool Scene::on_load()
         directional_light = ent;
     }
 
+    // MOCK: load asset registry
     std::vector<hash_t> future_materials = {
         AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
         AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
@@ -199,6 +201,7 @@ void Scene::serialize_xml(const fs::path& file_path)
     {
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
+        scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
         scene_f.add_attribute(anode, "path", meta.file_path.filename().string().c_str());
     }
 

@@ -19,6 +19,24 @@
 
 namespace erwin
 {
+
+FilePath::FilePath(const fs::path& full_path):
+base_dir_(full_path.parent_path()),
+file_path_(full_path.filename()),
+full_path_(full_path),
+resource_id_(H_(file_path_.string().c_str())),
+extension_id_(H_(file_path_.extension().string().c_str()))
+{}
+
+FilePath::FilePath(const fs::path& base_dir, const fs::path& file_path):
+base_dir_(base_dir),
+file_path_(file_path),
+full_path_(base_dir_ / file_path_),
+resource_id_(H_(file_path_.string().c_str())),
+extension_id_(H_(file_path_.extension().string().c_str()))
+{}
+
+
 namespace wfs
 {
 
