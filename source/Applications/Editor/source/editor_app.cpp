@@ -45,7 +45,7 @@ void ErwinEditor::on_load()
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;
-    io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
+    io.Fonts->AddFontFromFileTTF(icon_font_path.c_str(), 16.0f, &config, ranges);
 
     console_ = new editor::ConsoleWidget();
     WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
@@ -74,7 +74,7 @@ void ErwinEditor::on_load()
     fs::path last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
     {
-        project::load_project(last_project_file);
+        project::load_project(FilePath(last_project_file));
         SceneManager::load_scene("main_scene"_h);
         scene_view_layer_->setup_camera();
         scene_editor_layer->setup_editor_entities();
@@ -211,7 +211,7 @@ void ErwinEditor::on_imgui_render()
 
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
-        project::load_project(filepath);
+        project::load_project(FilePath(filepath));
         SceneManager::load_scene("main_scene"_h);
         SceneManager::make_current("main_scene"_h);
         scene_view_layer_->setup_camera();

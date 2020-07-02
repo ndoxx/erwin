@@ -10,10 +10,10 @@ void Registry::deserialize(const xml::XMLFile& xml, const std::string& root_name
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem().string();
+        root = xml.filepath.full_path().stem().string();
 
     if(xml.root)
-        parse_properties(xml.root, root, xml.filepath.parent_path());
+        parse_properties(xml.root, root, xml.filepath.full_path().parent_path());
 }
 
 // Recursive parser
@@ -150,10 +150,10 @@ void Registry::serialize(xml::XMLFile& xml, const std::string& root_name)
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem().string();
+        root = xml.filepath.full_path().stem().string();
 
     if(xml.root)
-        serialize_properties(&xml.doc, xml.root, root, xml.filepath.parent_path());
+        serialize_properties(&xml.doc, xml.root, root, xml.filepath.full_path().parent_path());
 }
 
 void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)

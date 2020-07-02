@@ -1,6 +1,7 @@
 #include "imgui/theme.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
+#include "filesystem/file_path.h"
 #include "imgui.h"
 #include "debug/logger.h"
 
@@ -108,7 +109,7 @@ void init()
         if(entry.path().extension().string().compare(".xml"))
             continue;
 
-        xml::XMLFile theme_f(entry.path());
+        xml::XMLFile theme_f(FilePath(entry.path()));
         if(!theme_f.read())
             continue;
         auto* root = theme_f.root;
@@ -147,7 +148,7 @@ const std::vector<ThemeEntry>& get_list()
 
 bool load(const ThemeEntry& entry)
 {
-    const auto& xml_path = entry.path;
+    FilePath xml_path(entry.path);
 
 	DLOGN("editor") << "Loading theme: " << entry.name << std::endl;
 

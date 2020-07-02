@@ -29,7 +29,7 @@ struct AssetRegistry
 
     inline void insert(const AssetMetaData& meta_data)
     {
-        hash_t hname = H_(meta_data.file_path.string().c_str());
+        hash_t hname = meta_data.file_path.resource_id();
         asset_meta_[hname] = meta_data;
     }
 
@@ -93,7 +93,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
 {
     W_PROFILE_FUNCTION()
 
-    hash_t hname = H_(file_path.string().c_str());
+    hash_t hname = H_(file_path.c_str());
     auto it = s_storage.shader_cache.find(hname);
     if(it != s_storage.shader_cache.end())
         return it->second;
@@ -164,42 +164,42 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
     return tex;
 }
 
-const ComponentPBRMaterial& AssetManager::load_material(size_t reg, const fs::path& file_path)
+const ComponentPBRMaterial& AssetManager::load_material(size_t reg, const FilePath& file_path)
 {
     auto&& [res, meta] = s_storage.material_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-const Mesh& AssetManager::load_mesh(size_t reg, const fs::path& file_path)
+const Mesh& AssetManager::load_mesh(size_t reg, const FilePath& file_path)
 {
     auto&& [res, meta] = s_storage.mesh_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-const FreeTexture& AssetManager::load_texture(size_t reg, const fs::path& file_path, std::optional<Texture2DDescriptor> options)
+const FreeTexture& AssetManager::load_texture(size_t reg, const FilePath& file_path, std::optional<Texture2DDescriptor> options)
 {
     auto&& [res, meta] = s_storage.texture_manager.load(file_path, options);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-const TextureAtlas& AssetManager::load_texture_atlas(size_t reg, const fs::path& file_path)
+const TextureAtlas& AssetManager::load_texture_atlas(size_t reg, const FilePath& file_path)
 {
     auto&& [res, meta] = s_storage.texture_atlas_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-const FontAtlas& AssetManager::load_font_atlas(size_t reg, const fs::path& file_path)
+const FontAtlas& AssetManager::load_font_atlas(size_t reg, const FilePath& file_path)
 {
     auto&& [res, meta] = s_storage.font_atlas_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-const Environment& AssetManager::load_environment(size_t reg, const fs::path& file_path)
+const Environment& AssetManager::load_environment(size_t reg, const FilePath& file_path)
 {
     auto&& [res, meta] = s_storage.environment_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
@@ -242,42 +242,42 @@ void AssetManager::release_environment(size_t reg, hash_t hname)
     s_storage.registry[reg].erase(hname);
 }
 
-hash_t AssetManager::load_material_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_material_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.material_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_mesh_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_mesh_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.mesh_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_texture_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_texture_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.texture_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_texture_atlas_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_texture_atlas_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.texture_atlas_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_font_atlas_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_font_atlas_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.font_atlas_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_environment_async(size_t reg, const fs::path& file_path)
+hash_t AssetManager::load_environment_async(size_t reg, const FilePath& file_path)
 {
     auto&& [handle, meta] = s_storage.environment_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);

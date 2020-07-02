@@ -89,7 +89,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     }
 }
 
-bool load(const fs::path& filepath)
+bool load(const FilePath& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())
@@ -105,7 +105,7 @@ bool load(const fs::path& filepath)
 	return true;
 }
 
-bool save(const fs::path& filepath)
+bool save(const FilePath& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())

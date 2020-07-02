@@ -93,10 +93,10 @@ bool Scene::on_load()
 
     // MOCK: load asset registry
     std::vector<hash_t> future_materials = {
-        AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "greasyMetal.tom"),
-        AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "scuffedPlastic.tom"),
-        AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "paintPeelingConcrete.tom"),
-        AssetManager::load_material_async(asset_registry_, project::get_asset_path(project::DirKey::MATERIAL) / "dirtyWickerWeave.tom"),
+        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "greasyMetal.tom")),
+        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "scuffedPlastic.tom")),
+        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "paintPeelingConcrete.tom")),
+        AssetManager::load_material_async(asset_registry_, FilePath(project::get_asset_path(project::DirKey::MATERIAL), "dirtyWickerWeave.tom")),
     };
 
     EntityID sphere0 = create_entity("Sphere #0");
@@ -131,7 +131,7 @@ bool Scene::on_load()
     entity::attach(sphere1, sphere2, registry);
     entity::sort_hierarchy(registry);
 
-    load_hdr_environment(project::get_asset_path(project::DirKey::HDR) / "small_cathedral_2k.hdr");
+    load_hdr_environment(FilePath(project::get_asset_path(project::DirKey::HDR), "small_cathedral_2k.hdr"));
 
     // * Launch async loading operations
     AssetManager::launch_async_tasks();
@@ -185,7 +185,7 @@ void Scene::cleanup()
     }
 }
 
-void Scene::serialize_xml(const fs::path& file_path)
+void Scene::serialize_xml(const FilePath& file_path)
 {
     DLOGN("editor") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
@@ -202,7 +202,7 @@ void Scene::serialize_xml(const fs::path& file_path)
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
         scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
-        scene_f.add_attribute(anode, "path", meta.file_path.filename().string().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.file_path().filename().string().c_str());
     }
 
     // Write environment
@@ -235,7 +235,7 @@ void Scene::serialize_xml(const fs::path& file_path)
     DLOGI << "done." << std::endl;
 }
 
-void Scene::load_hdr_environment(const fs::path& hdr_file)
+void Scene::load_hdr_environment(const FilePath& hdr_file)
 {
     hash_t future_env = AssetManager::load_environment_async(asset_registry_, hdr_file);
     AssetManager::on_environment_ready(future_env, [this](const Environment& env) {

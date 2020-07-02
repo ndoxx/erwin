@@ -27,7 +27,7 @@ struct WESHHeader
 #define WESH_VERSION_MINOR 3
 
 
-WeshDescriptor read(const fs::path& path)
+WeshDescriptor read(const FilePath& path)
 {
     auto ifs = wfs::get_istream(path, wfs::binary);
 

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <filesystem>
 #include "core/registry.h"
-
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace editor
 {
@@ -34,7 +32,7 @@ enum class DirKey: uint8_t
 	WORK_SCENE
 };
 
-extern bool load_project(const fs::path& filepath);
+extern bool load_project(const erwin::FilePath& filepath);
 extern bool save_project();
 extern void close_project();
 extern const ProjectSettings& get_project_settings();

@@ -6,11 +6,11 @@
 namespace erwin
 {
 
-AssetMetaData EnvironmentLoader::build_meta_data(const fs::path& file_path)
+AssetMetaData EnvironmentLoader::build_meta_data(const FilePath& file_path)
 {
     // Sanity check
-    W_ASSERT(fs::exists(file_path), "File does not exist.");
-    W_ASSERT_FMT(H_(file_path.extension().string().c_str()) == ".hdr"_h, "Incompatible file type: %s", file_path.extension().string().c_str());
+    W_ASSERT(file_path.exists(), "File does not exist.");
+    W_ASSERT_FMT(file_path.check_extension(".hdr"_h), "Incompatible file type: %s", file_path.file_path().extension().string().c_str());
 
     return {file_path, AssetMetaData::AssetType::EnvironmentHDR};
 }

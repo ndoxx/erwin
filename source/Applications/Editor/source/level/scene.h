@@ -1,14 +1,12 @@
 #pragma once
 
-#include <filesystem>
 #include <queue>
 
 #include "entity/reflection.h"
 #include "asset/environment.h"
-
+#include "filesystem/file_path.h"
 #include "level/scene_manager.h"
 
-namespace fs = std::filesystem;
 
 namespace editor
 {
@@ -28,9 +26,9 @@ public:
     // Cleanup all dead components and entities
     virtual void cleanup() override;
 
-    void serialize_xml(const fs::path& file_path);
+    void serialize_xml(const erwin::FilePath& file_path);
 
-	void load_hdr_environment(const fs::path& hdr_file);
+	void load_hdr_environment(const erwin::FilePath& hdr_file);
 
 	void add_entity(erwin::EntityID entity, const std::string& name, const char* icon = nullptr);
 	inline erwin::EntityID create_entity(const std::string& name, const char* icon = nullptr)

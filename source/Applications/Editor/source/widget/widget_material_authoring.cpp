@@ -184,9 +184,9 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
         clear_texture_map(tm_type);
 
     auto& scene = SceneManager::get_as<MaterialEditorScene>("material_editor_scene"_h);
-    const auto& freetex = AssetManager::load_texture(scene.asset_registry_, filepath);
+    const auto& freetex = AssetManager::load_texture(scene.asset_registry_, FilePath(filepath));
     current_composition_->set_map(tm_type, freetex.handle);
-    current_composition_->texture_names[uint32_t(tm_type)] = H_(filepath.string().c_str());
+    current_composition_->texture_names[uint32_t(tm_type)] = H_(filepath.c_str());
     current_composition_->width = freetex.width;
     current_composition_->height = freetex.height;
 }
@@ -270,7 +270,7 @@ void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::MaterialData& material_data,
                               size_t width, size_t height, uint8_t* albedo, uint8_t* normal_depth, uint8_t* mare)
 {
-    tom::TOMDescriptor tom_desc{path, uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
+    tom::TOMDescriptor tom_desc{FilePath(path), uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
                                 TextureWrap::REPEAT};
 
     // Copy material data

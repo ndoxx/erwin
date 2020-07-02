@@ -19,24 +19,6 @@
 
 namespace erwin
 {
-
-FilePath::FilePath(const fs::path& full_path):
-base_dir_(full_path.parent_path()),
-file_path_(full_path.filename()),
-full_path_(full_path),
-resource_id_(H_(file_path_.string().c_str())),
-extension_id_(H_(file_path_.extension().string().c_str()))
-{}
-
-FilePath::FilePath(const fs::path& base_dir, const fs::path& file_path):
-base_dir_(base_dir),
-file_path_(file_path),
-full_path_(base_dir_ / file_path_),
-resource_id_(H_(file_path_.string().c_str())),
-extension_id_(H_(file_path_.extension().string().c_str()))
-{}
-
-
 namespace wfs
 {
 
@@ -205,20 +187,20 @@ bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
     return true;
 }
 
-std::string get_file_as_string(const fs::path& path)
+std::string get_file_as_string(const FilePath& path)
 {
-    W_ASSERT(fs::exists(path), "File does not exist.");
+    W_ASSERT(path.exists(), "File does not exist.");
 
-    std::ifstream ifs(path);
+    std::ifstream ifs(path.full_path());
     return std::string((std::istreambuf_iterator<char>(ifs)),
                         std::istreambuf_iterator<char>());
 }
 
-std::vector<uint8_t> get_file_as_vector(const fs::path& filepath)
+std::vector<uint8_t> get_file_as_vector(const FilePath& filepath)
 {
-    W_ASSERT(fs::exists(filepath), "File does not exist.");
+    W_ASSERT(filepath.exists(), "File does not exist.");
 
-    std::ifstream ifs(filepath, std::ios::binary);
+    std::ifstream ifs(filepath.full_path(), std::ios::binary);
     ifs.unsetf(std::ios::skipws);
 
     std::streampos file_size;
@@ -237,14 +219,14 @@ std::vector<uint8_t> get_file_as_vector(const fs::path& filepath)
     return vec;
 }
 
-std::shared_ptr<std::istream> get_istream(const fs::path& file_path, uint8_t mode)
+std::shared_ptr<std::istream> get_istream(const FilePath& file_path, uint8_t mode)
 {
     auto std_mode = std::ios::in;
     if(mode & FileMode::binary)
         std_mode |= std::ios::binary;
 
     // Get stream to file
-    std::shared_ptr<std::ifstream> ifs = std::make_shared<std::ifstream>(file_path, std_mode);
+    std::shared_ptr<std::ifstream> ifs = std::make_shared<std::ifstream>(file_path.full_path(), std_mode);
 
     // Sanity check
     if(!ifs->is_open())
@@ -260,14 +242,14 @@ std::shared_ptr<std::istream> get_istream(const fs::path& file_path, uint8_t mod
     return ifs;
 }
 
-std::shared_ptr<std::ostream> get_ostream(const fs::path& file_path, uint8_t mode)
+std::shared_ptr<std::ostream> get_ostream(const FilePath& file_path, uint8_t mode)
 {
     auto std_mode = std::ios::out;
     if(mode & FileMode::binary)
         std_mode |= std::ios::binary;
 
     // Create stream to file
-    std::shared_ptr<std::ofstream> ofs = std::make_shared<std::ofstream>(file_path, std_mode);
+    std::shared_ptr<std::ofstream> ofs = std::make_shared<std::ofstream>(file_path.full_path(), std_mode);
 
     // Sanity check
     if(!ofs->is_open())

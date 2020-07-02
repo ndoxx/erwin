@@ -14,7 +14,7 @@ void read_hdr(HDRDescriptor& desc)
 	stbi_set_flip_vertically_on_load(true);
 
 	int x, y, n;
-	float* data = stbi_loadf(desc.filepath.string().c_str(), &x, &y, &n, int(desc.channels));
+	float* data = stbi_loadf(desc.filepath.c_str(), &x, &y, &n, int(desc.channels));
 
 	// TMP: I need to perform deallocation myself in the renderer
 	// so data is copied
@@ -35,7 +35,7 @@ void read_png(PNGDescriptor& desc)
 	stbi_set_flip_vertically_on_load(true);
 
 	int x, y, n;
-	unsigned char* data = stbi_load(desc.filepath.string().c_str(), &x, &y, &n, int(desc.channels));
+	unsigned char* data = stbi_load(desc.filepath.c_str(), &x, &y, &n, int(desc.channels));
 
 	// TMP: I need to perform deallocation myself in the renderer
 	// so data is copied

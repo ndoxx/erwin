@@ -150,7 +150,8 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
     {
         // TMP
         const auto& ps = project::get_project_settings();
-        scn::current<Scene>().serialize_xml(ps.registry.get("project.scene.start"_h));
+        FilePath fp(ps.registry.get("project.scene.start"_h));
+        scn::current<Scene>().serialize_xml(fp);
         return true;
     }
 

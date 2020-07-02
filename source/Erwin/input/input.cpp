@@ -78,9 +78,9 @@ bool Input::load_config()
 {
 	DLOGN("config") << "Loading keybindings." << std::endl;
 
-	fs::path user_filepath    = wfs::get_user_dir() / "config/keybindings.xml";
-	fs::path default_filepath = wfs::get_root_dir() / s_default_keybindings_path;
-	if(!wfs::ensure_user_config(user_filepath, default_filepath))
+	FilePath user_filepath(wfs::get_user_dir(), "config/keybindings.xml");
+	FilePath default_filepath(wfs::get_root_dir(), s_default_keybindings_path);
+	if(!wfs::ensure_user_config(user_filepath.full_path(), default_filepath.full_path()))
 		return false;
 
 	// Read file and parse
@@ -93,7 +93,7 @@ bool Input::load_config()
 
 bool Input::save_config()
 {
-	fs::path filepath = wfs::get_user_dir() / "config/keybindings.xml";
+	FilePath filepath(wfs::get_user_dir(), "config/keybindings.xml");
 	DLOG("config",1) << "Saving key bindings:" << std::endl;
 	DLOGI << WCC('p') << filepath << std::endl;
 	// Direct XML output for now

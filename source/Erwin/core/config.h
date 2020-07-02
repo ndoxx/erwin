@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "glm/glm.hpp"
 #include "core/core.h"
+#include "filesystem/file_path.h"
 
 namespace fs = std::filesystem;
 
@@ -13,9 +14,9 @@ namespace cfg
 {
 
 // Load a config file
-extern bool load(const fs::path& filepath);
+extern bool load(const FilePath& filepath);
 // Save relevant properties to config file
-extern bool save(const fs::path& filepath);
+extern bool save(const FilePath& filepath);
 
 template <typename T> const T& get(hash_t hname, const T& def);
 template <> const size_t&      get(hash_t hname, const size_t& def);

@@ -95,7 +95,7 @@ bool Application::init()
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
-        cfg::load(wfs::get_config_dir() / "erwin.xml");
+        cfg::load(FilePath(wfs::get_config_dir(), "erwin.xml"));
 
         WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
         WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
@@ -145,7 +145,7 @@ bool Application::init()
         DLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file: s_storage.configuration_files)
-            cfg::load(cfg_file);
+            cfg::load(FilePath(cfg_file));
     }
 
     // Initialize client memory
@@ -376,7 +376,7 @@ void Application::run()
     {
         DLOGN("application") << "Saving config file:" << std::endl;
         DLOGI << WCC('p') << cfg_file << std::endl;
-        cfg::save(cfg_file);
+        cfg::save(FilePath(cfg_file));
     }
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;

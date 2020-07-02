@@ -141,7 +141,7 @@ bool XMLFile::read()
     DLOG("core",0) << "Parsing XML file:" << std::endl;
     DLOGI << WCC('p') << filepath << std::endl;
 
-    if(!fs::exists(filepath))
+    if(!filepath.exists())
     {
         DLOGE("core") << "File does not exist." << std::endl;
         return false;

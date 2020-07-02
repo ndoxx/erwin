@@ -1,23 +1,14 @@
 #pragma once
 
 #include "core/core.h"
+#include "filesystem/file_path.h"
 #include "render/handles.h"
 #include "render/texture_common.h"
 #include "asset/loader_common.h"
 #include <cstdint>
-#include <filesystem>
 #include <future>
 #include <optional>
 #include <map>
-
-namespace fs = std::filesystem;
-
-/*
-    FIXME:
-        [ ] Resource ids are computed from ABSOLUTE file path hashes. Surely this is a bad idea?
-            -> Yes because I cannot detect potential user-side hash collisions, one lucky bastard could
-            have an impossibly hard to reproduce bug because of this.
-*/
 
 namespace erwin
 {
@@ -45,17 +36,17 @@ public:
     static TextureHandle create_debug_texture(hash_t type, uint32_t size_px);
 
     // Load a material from a TOM file (or get from cache) and return a ref to an internally stored material component
-    static const ComponentPBRMaterial& load_material(size_t reg, const fs::path& file_path);
+    static const ComponentPBRMaterial& load_material(size_t reg, const FilePath& file_path);
     // Load a mesh from a WESH file (or get from cache)
-    static const Mesh& load_mesh(size_t reg, const fs::path& file_path);
+    static const Mesh& load_mesh(size_t reg, const FilePath& file_path);
     // Load an image from file (or get from cache) and return a render handle to a texture created from image data
-    static const FreeTexture& load_texture(size_t reg, const fs::path& file_path, std::optional<Texture2DDescriptor> options = {});
+    static const FreeTexture& load_texture(size_t reg, const FilePath& file_path, std::optional<Texture2DDescriptor> options = {});
     // Load a font as a texture atlas from file (or get from cache)
-    static const TextureAtlas& load_texture_atlas(size_t reg, const fs::path& file_path);
+    static const TextureAtlas& load_texture_atlas(size_t reg, const FilePath& file_path);
     // Load a font as a texture atlas from file (or get from cache)
-    static const FontAtlas& load_font_atlas(size_t reg, const fs::path& file_path);
+    static const FontAtlas& load_font_atlas(size_t reg, const FilePath& file_path);
     // Load an environment map from file (or get from cache)
-    static const Environment& load_environment(size_t reg, const fs::path& file_path);
+    static const Environment& load_environment(size_t reg, const FilePath& file_path);
 
     // Free GPU resources associated to a material and remove from cache
     static void release_material(size_t reg, hash_t hname);
@@ -72,17 +63,17 @@ public:
 
     // * Asynchronous operations
     // Generate an async material loading task if material not in cache, return path string hash as a token
-    static hash_t load_material_async(size_t reg, const fs::path& file_path);
+    static hash_t load_material_async(size_t reg, const FilePath& file_path);
     // Generate an async mesh loading task if mesh not in cache, return path string hash as a token
-    static hash_t load_mesh_async(size_t reg, const fs::path& file_path);
+    static hash_t load_mesh_async(size_t reg, const FilePath& file_path);
     // Generate an async texture loading task if texture not in cache, return path string hash as a token
-    static hash_t load_texture_async(size_t reg, const fs::path& file_path);
+    static hash_t load_texture_async(size_t reg, const FilePath& file_path);
     // Generate an async texture atlas loading task if not in cache, return path string hash as a token
-    static hash_t load_texture_atlas_async(size_t reg, const fs::path& file_path);
+    static hash_t load_texture_atlas_async(size_t reg, const FilePath& file_path);
     // Generate an async font atlas loading task if not in cache, return path string hash as a token
-    static hash_t load_font_atlas_async(size_t reg, const fs::path& file_path);
+    static hash_t load_font_atlas_async(size_t reg, const FilePath& file_path);
     // Generate an async environment loading task if environment not in cache, return path string hash as a token
-    static hash_t load_environment_async(size_t reg, const fs::path& file_path);
+    static hash_t load_environment_async(size_t reg, const FilePath& file_path);
 
     // Execute a callback when a material is ready
     static void on_material_ready(hash_t future_res, std::function<void(const ComponentPBRMaterial&)> then);

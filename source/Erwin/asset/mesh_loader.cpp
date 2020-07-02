@@ -4,10 +4,10 @@
 namespace erwin
 {
 
-AssetMetaData MeshLoader::build_meta_data(const fs::path& file_path)
+AssetMetaData MeshLoader::build_meta_data(const FilePath& file_path)
 {
-    W_ASSERT_FMT(fs::exists(file_path), "File does not exist: %s", file_path.string().c_str());
-    W_ASSERT(!file_path.extension().string().compare(".wesh"), "Invalid input file.");
+    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    W_ASSERT(file_path.check_extension(".wesh"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::MeshWESH};
 }
