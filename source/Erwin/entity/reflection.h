@@ -105,7 +105,7 @@ extern void serialize_bin(const ComponentType&, std::ostream&) {}
 
 // Deserialization
 template <typename ComponentType>
-extern void deserialize_xml(rapidxml::xml_node<>*, EntityID, entt::registry&) {}
+extern void deserialize_xml(rapidxml::xml_node<>*, entt::registry&, EntityID, size_t) {}
 
 template <typename ComponentType>
 extern void deserialize_bin(std::istream&, EntityID, entt::registry&) {}
@@ -170,9 +170,9 @@ namespace metafunc
 	}
 
 	template <typename ComponentType>
-	inline void deserialize_xml_typecast(void* node, EntityID e, entt::registry* r)
+	inline void deserialize_xml_typecast(void* node, void* reg, EntityID e, size_t resource_id)
 	{
-		deserialize_xml<ComponentType>(static_cast<rapidxml::xml_node<>*>(node), e, *r);
+		deserialize_xml<ComponentType>(static_cast<rapidxml::xml_node<>*>(node), *static_cast<entt::registry*>(reg), e, resource_id);
 	}
 
 	template <typename ComponentType>

@@ -309,17 +309,21 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         {
             size_t id;
             xml::parse_attribute(entity_node, "id", id);
-            auto e = registry.create();
+            EntityID e = registry.create();
             id_to_ent_id[id] = e;
             size_t parent = 0;
             xml::parse_attribute(entity_node, "parent", parent);
             parent_map[e] = parent;
 
+            // DLOGW("editor") << "Entity #" << size_t(e) << std::endl;
             // Deserialize components
             for(auto* cmp_node = entity_node->first_node(); cmp_node; cmp_node = cmp_node->next_sibling())
             {
+                // DLOGW("editor") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
-                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), e, &registry);
+                size_t resource_id = 0;
+                xml::parse_attribute(cmp_node, "id", resource_id);
+                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), static_cast<void*>(&registry), e, resource_id);
             }
         }
     }
