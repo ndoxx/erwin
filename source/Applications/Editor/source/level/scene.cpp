@@ -218,6 +218,8 @@ void Scene::serialize_xml(const FilePath& file_path)
 
     // Visit each entity, for each component invoke serialization method
     auto* entities_node = scene_f.add_node(scene_f.root, "Entities");
+    scene_f.add_attribute(entities_node, "root", std::to_string(size_t(root)).c_str());
+
     registry.each([this, &scene_f, entities_node](const EntityID e) {
         if(registry.has<NonSerializableTag>(e))
             return;
@@ -299,10 +301,12 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
 
     // Load entities
     std::map<size_t, EntityID> id_to_ent_id;
-    id_to_ent_id[0] = root;
     std::map<EntityID, size_t> parent_map;
     {
         auto* entities_node = scene_f.root->first_node("Entities");
+        size_t root_id = 0;
+        xml::parse_attribute(entities_node, "root", root_id);
+        id_to_ent_id[root_id] = root;
         W_ASSERT(entities_node, "No <Entities> node.");
         for(auto* entity_node = entities_node->first_node("Entity"); entity_node;
             entity_node = entity_node->next_sibling("Entity"))
@@ -312,8 +316,8 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
             EntityID e = registry.create();
             id_to_ent_id[id] = e;
             size_t parent = 0;
-            xml::parse_attribute(entity_node, "parent", parent);
-            parent_map[e] = parent;
+            if(xml::parse_attribute(entity_node, "parent", parent))
+                parent_map[e] = parent;
 
             // DLOGW("editor") << "Entity #" << size_t(e) << std::endl;
             // Deserialize components
@@ -321,10 +325,26 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
             {
                 // DLOGW("editor") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
-                size_t resource_id = 0;
-                xml::parse_attribute(cmp_node, "id", resource_id);
-                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), static_cast<void*>(&registry), e, resource_id);
+                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), static_cast<void*>(&registry), e);
             }
+        }
+    }
+
+    // TMP: find camera and dirlight
+    {
+        auto view = registry.view<ComponentCamera3D, ComponentTransform3D>();
+        for(auto e: view)
+        {
+            camera = e;
+            break;
+        }
+    }
+    {
+        auto view = registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
+        for(auto e: view)
+        {
+            directional_light = e;
+            break;
         }
     }
 
