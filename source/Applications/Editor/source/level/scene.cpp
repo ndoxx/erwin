@@ -66,6 +66,11 @@ void Scene::cleanup()
     {
         auto entity = removed_entities_.front();
 
+        // If entity is named, must remove it from the named entities map
+        if(registry.has<NamedEntityTag>(entity))
+            if(auto* p_desc = registry.try_get<ComponentDescription>(entity))
+                named_entities_.erase(H_(p_desc->name.c_str()));
+
         // Check if entity has children, if so, the whole subtree must be destroyed
         // ALT: or moved up?
         if(auto* p_hier = registry.try_get<ComponentHierarchy>(entity))

@@ -55,13 +55,15 @@ void SceneViewLayer::on_update(GameClock& clock)
     transform_system_.update(clock, scene.registry);
 
     auto e_camera = scene.get_named("Camera"_h);
-    auto e_dirlight = scene.get_named("Sun"_h);
     ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(e_camera);
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(e_camera);
     camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform.global);
-    if(scene.registry.valid(e_dirlight))
+    if(scene.has_named("Sun"_h))
+    {
+        auto e_dirlight = scene.get_named("Sun"_h);
         Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(e_dirlight));
+    }
 }
 
 void SceneViewLayer::on_render()

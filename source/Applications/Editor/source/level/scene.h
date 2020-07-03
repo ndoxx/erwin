@@ -50,6 +50,7 @@ public:
 
 	void set_named(erwin::EntityID ent, erwin::hash_t hname);
 	inline erwin::EntityID get_named(erwin::hash_t hname) const { return named_entities_.at(hname); }
+	inline bool has_named(erwin::hash_t hname) const { return (named_entities_.find(hname) != named_entities_.end()); }
 	inline const erwin::Environment& get_environment() const { return environment_; }
 
 	entt::registry registry;
