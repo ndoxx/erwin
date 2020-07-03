@@ -116,6 +116,8 @@ void SceneViewWidget::on_imgui_render()
                         {
                             // TMP
                             auto& scene = scn::current<Scene>();
+                            scene.unload();
+                            scene.load();
                             scene.deserialize_xml(FilePath(entry.path()));
                         }
                     }

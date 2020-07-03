@@ -86,7 +86,7 @@ void MaterialViewWidget::on_layer_render()
     // TODO: Use local envmap?
     if(!scn::current<Scene>().is_loaded())
         return;
-    Renderer3D::draw_skybox(scn::current<Scene>().environment.environment_map);
+    Renderer3D::draw_skybox(scn::current<Scene>().get_environment().environment_map);
 }
 
 static const std::vector<std::string> s_mesh_names =

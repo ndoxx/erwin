@@ -55,16 +55,16 @@ void ErwinEditor::on_load()
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
     scene_view_layer_ = new SceneViewLayer();
-    auto* scene_editor_layer = new editor::SceneEditorLayer();
+    scene_editor_layer_ = new editor::SceneEditorLayer();
     auto* material_editor_layer = new editor::MaterialEditorLayer();
     push_layer(scene_view_layer_);
-    push_overlay(scene_editor_layer);
+    push_overlay(scene_editor_layer_);
     push_overlay(material_editor_layer, false);
     push_overlay(new editor::PostProcessingLayer());
 
     EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 
-    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer});
+    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer_});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
     SceneManager::create_scene<Scene>("main_scene"_h);
@@ -74,10 +74,12 @@ void ErwinEditor::on_load()
     const auto& last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && last_project_file.exists())
     {
-        project::load_project(last_project_file);
         SceneManager::load_scene("main_scene"_h);
+        project::load_project(last_project_file);
+        const auto& ps = project::get_project_settings();
+        scn::current<Scene>().deserialize_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
-        scene_editor_layer->setup_editor_entities();
+        scene_editor_layer_->setup_editor_entities();
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -214,7 +216,10 @@ void ErwinEditor::on_imgui_render()
         project::load_project(FilePath(filepath));
         SceneManager::load_scene("main_scene"_h);
         SceneManager::make_current("main_scene"_h);
+        const auto& ps = project::get_project_settings();
+        scn::current<Scene>().deserialize_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
+        scene_editor_layer_->setup_editor_entities();
     });
 
     if(enable_docking_)

@@ -135,7 +135,7 @@ void RTPeekWidget::on_update(const erwin::GameClock&)
     if(!scene.is_loaded())
         return;
     
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.get_named("Camera"_h));
     s_storage.peek_data_.projection_parameters = camera.projection_parameters;
     
     // Update UBO data

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <queue>
+#include <map>
 
 #include "entity/reflection.h"
 #include "asset/environment.h"
@@ -47,17 +48,17 @@ public:
 
 	inline size_t get_asset_registry() const { return asset_registry_; }
 
-	erwin::EntityID root = erwin::k_invalid_entity_id;
-	erwin::EntityID directional_light = erwin::k_invalid_entity_id;
-	erwin::EntityID camera = erwin::k_invalid_entity_id;
-
-	erwin::Environment environment;
+	void set_named(erwin::EntityID ent, erwin::hash_t hname);
+	inline erwin::EntityID get_named(erwin::hash_t hname) const { return named_entities_.at(hname); }
+	inline const erwin::Environment& get_environment() const { return environment_; }
 
 	entt::registry registry;
 
 private:
 	std::queue<std::tuple<erwin::EntityID, uint32_t>> removed_components_;
 	std::queue<erwin::EntityID> removed_entities_;
+	std::map<erwin::hash_t, erwin::EntityID> named_entities_;
+	erwin::Environment environment_;
 	size_t asset_registry_;
 };
 

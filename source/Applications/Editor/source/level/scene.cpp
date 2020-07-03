@@ -38,118 +38,14 @@ Scene::Scene()
 
 bool Scene::on_load()
 {
-    // TMP stub -> Implement proper scene loading
-
-    // Reserve a new asset registry for this scene
     asset_registry_ = AssetManager::create_asset_registry();
-
-    // * Create entities with no async dependency
-    // Create root node
-    root = create_entity("__root__", W_ICON(CODE_FORK));
-    registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
-    registry.emplace<FixedHierarchyTag>(root);
-    registry.emplace<NonEditableTag>(root);
-    registry.emplace<NonRemovableTag>(root);
-    registry.emplace<NonSerializableTag>(root);
-
-    {
-        EntityID ent = create_entity("Camera", W_ICON(VIDEO_CAMERA));
-
-        registry.emplace<ComponentCamera3D>(ent);
-        registry.emplace<ComponentTransform3D>(ent, glm::vec3(-5.8f, 2.3f, -5.8f), glm::vec3(5.f, 228.f, 0.f), 1.f);
-        registry.emplace<NoGizmoTag>(ent);
-        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
-        camera = ent;
-    }
-
-    {
-        EntityID ent = create_entity("Sun", W_ICON(SUN_O));
-
-        Material mat_sun;
-        mat_sun.archetype = "Sun"_h;
-        mat_sun.shader = AssetManager::load_shader("shaders/forward_sun.glsl");
-        mat_sun.ubo = AssetManager::create_material_data_buffer<ComponentDirectionalLightMaterial>();
-        mat_sun.data_size = sizeof(ComponentDirectionalLightMaterial::MaterialData);
-        Renderer3D::register_shader(mat_sun.shader);
-        Renderer::shader_attach_uniform_buffer(mat_sun.shader, mat_sun.ubo);
-
-        ComponentDirectionalLight cdirlight;
-        cdirlight.set_position(47.626f, 49.027f);
-        cdirlight.color = {0.95f, 0.85f, 0.5f};
-        cdirlight.ambient_color = {0.95f, 0.85f, 0.5f};
-        cdirlight.ambient_strength = 0.3f;
-        cdirlight.brightness = 3.7f;
-
-        ComponentDirectionalLightMaterial renderable;
-        renderable.set_material(mat_sun);
-        renderable.material_data.scale = 0.2f;
-
-        registry.emplace<ComponentDirectionalLight>(ent, cdirlight);
-        registry.emplace<ComponentDirectionalLightMaterial>(ent, renderable);
-        registry.emplace<FixedHierarchyTag>(ent); // This entity should not be moved in the hierarchy
-
-        directional_light = ent;
-    }
-
-    // MOCK: load asset registry
-    std::vector<hash_t> future_materials = {
-        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
-                                                       project::asset_path(DK::MATERIAL, "greasyMetal.tom")),
-        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
-                                                       project::asset_path(DK::MATERIAL, "scuffedPlastic.tom")),
-        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
-                                                       project::asset_path(DK::MATERIAL, "paintPeelingConcrete.tom")),
-        AssetManager::load_async<ComponentPBRMaterial>(asset_registry_,
-                                                       project::asset_path(DK::MATERIAL, "dirtyWickerWeave.tom")),
-    };
-
-    EntityID sphere0 = create_entity("Sphere #0");
-    registry.emplace<ComponentMesh>(sphere0, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere0);
-    registry.emplace<ComponentTransform3D>(sphere0, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), 2.f);
-
-    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[0],
-                                                 [this, sphere0 = sphere0](const ComponentPBRMaterial& mat) {
-                                                     registry.emplace<ComponentPBRMaterial>(sphere0, mat);
-                                                 });
-
-    EntityID sphere1 = create_entity("Sphere #1");
-    registry.emplace<ComponentMesh>(sphere1, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere1);
-    registry.emplace<ComponentTransform3D>(sphere1, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
-
-    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[1],
-                                                 [this, sphere1 = sphere1](const ComponentPBRMaterial& mat) {
-                                                     registry.emplace<ComponentPBRMaterial>(sphere1, mat);
-                                                 });
-
-    EntityID sphere2 = create_entity("Sphere #2");
-    registry.emplace<ComponentMesh>(sphere2, CommonGeometry::get_mesh("icosphere_pbr"_h));
-    registry.emplace<ComponentOBB>(sphere2);
-    registry.emplace<ComponentTransform3D>(sphere2, glm::vec3(0.f, 1.5f, 0.f), glm::vec3(0.f), 0.5f);
-
-    AssetManager::on_ready<ComponentPBRMaterial>(future_materials[2],
-                                                 [this, sphere2 = sphere2](const ComponentPBRMaterial& mat) {
-                                                     registry.emplace<ComponentPBRMaterial>(sphere2, mat);
-                                                 });
-
-    entity::attach(root, sphere0, registry);
-    entity::attach(sphere0, sphere1, registry);
-    entity::attach(sphere1, sphere2, registry);
-    entity::sort_hierarchy(registry);
-
-    load_hdr_environment(project::asset_path(DK::HDR, "small_cathedral_2k.hdr"));
-
-    // * Launch async loading operations
-    AssetManager::launch_async_tasks();
 
     return true;
 }
 
 void Scene::on_unload()
 {
-    directional_light = k_invalid_entity_id;
-    camera = k_invalid_entity_id;
+    named_entities_.clear();
     registry.clear();
 
     AssetManager::release_registry(asset_registry_);
@@ -214,11 +110,11 @@ void Scene::serialize_xml(const FilePath& file_path)
 
     // Write environment
     auto* env_node = scene_f.add_node(scene_f.root, "Environment");
-    scene_f.add_attribute(env_node, "id", std::to_string(environment.resource_id).c_str());
+    scene_f.add_attribute(env_node, "id", std::to_string(environment_.resource_id).c_str());
 
     // Visit each entity, for each component invoke serialization method
     auto* entities_node = scene_f.add_node(scene_f.root, "Entities");
-    scene_f.add_attribute(entities_node, "root", std::to_string(size_t(root)).c_str());
+    scene_f.add_attribute(entities_node, "root", std::to_string(size_t(get_named("root"_h))).c_str());
 
     registry.each([this, &scene_f, entities_node](const EntityID e) {
         if(registry.has<NonSerializableTag>(e))
@@ -229,6 +125,9 @@ void Scene::serialize_xml(const FilePath& file_path)
 
         if(auto* p_hier = registry.try_get<ComponentHierarchy>(e))
             scene_f.add_attribute(enode, "parent", std::to_string(size_t(p_hier->parent)).c_str());
+
+        if(registry.has<NamedEntityTag>(e))
+            scene_f.add_attribute(enode, "named", "true");
 
         erwin::visit_entity(registry, e, [&scene_f, enode](uint32_t reflected_type, void* data) {
             const char* component_name = entt::resolve_id(reflected_type).prop("name"_hs).value().cast<const char*>();
@@ -246,14 +145,8 @@ void Scene::serialize_xml(const FilePath& file_path)
 
 void Scene::deserialize_xml(const erwin::FilePath& file_path)
 {
-    DLOGN("editor") << "Deserializing scene: " << std::endl;
+    DLOGN("editor") << "Loading scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
-
-    // TMP
-    {
-        on_unload();
-        asset_registry_ = AssetManager::create_asset_registry();
-    }
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);
@@ -264,7 +157,8 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     }
 
     // Create root node
-    root = create_entity("__root__", W_ICON(CODE_FORK));
+    auto root = create_entity("__root__", W_ICON(CODE_FORK));
+    set_named(root, "root"_h);
     registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
     registry.emplace<FixedHierarchyTag>(root);
     registry.emplace<NonEditableTag>(root);
@@ -275,7 +169,6 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     const auto& ps = project::get_project_settings();
     auto* assets_node = scene_f.root->first_node("Assets");
     W_ASSERT(assets_node, "No <Assets> node.");
-
     for(auto* asset_node = assets_node->first_node("Asset"); asset_node; asset_node = asset_node->next_sibling("Asset"))
     {
         size_t sz_asset_type;
@@ -293,8 +186,8 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         hash_t id;
         xml::parse_attribute(env_node, "id", id);
         AssetManager::on_ready<Environment>(id, [this](const Environment& env) {
-            environment = env;
-            Renderer3D::set_environment(environment);
+            environment_ = env;
+            Renderer3D::set_environment(environment_);
             Renderer3D::enable_IBL(true);
         });
     }
@@ -319,6 +212,12 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
             if(xml::parse_attribute(entity_node, "parent", parent))
                 parent_map[e] = parent;
 
+            // Is entity named?
+            bool is_named = false;
+            if(xml::parse_attribute(entity_node, "named", is_named))
+                if(is_named)
+                    registry.emplace<NamedEntityTag>(e);
+
             // DLOGW("editor") << "Entity #" << size_t(e) << std::endl;
             // Deserialize components
             for(auto* cmp_node = entity_node->first_node(); cmp_node; cmp_node = cmp_node->next_sibling())
@@ -330,23 +229,12 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         }
     }
 
-    // TMP: find camera and dirlight
+    // Register all named entities
+    registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc)
     {
-        auto view = registry.view<ComponentCamera3D, ComponentTransform3D>();
-        for(auto e: view)
-        {
-            camera = e;
-            break;
-        }
-    }
-    {
-        auto view = registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
-        for(auto e: view)
-        {
-            directional_light = e;
-            break;
-        }
-    }
+        set_named(e, H_(desc.name.c_str()));
+        DLOG("editor",1) << "Registered named entity [" << size_t(e) << "] as " << WCC('n') << desc.name << std::endl;
+    });
 
     // Setup hierarchy
     for(auto&& [e, parent_index] : parent_map)
@@ -360,8 +248,8 @@ void Scene::load_hdr_environment(const FilePath& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
     AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {
-        environment = env;
-        Renderer3D::set_environment(environment);
+        environment_ = env;
+        Renderer3D::set_environment(environment_);
         Renderer3D::enable_IBL(true);
     });
 }
@@ -388,5 +276,12 @@ void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 }
 
 void Scene::mark_for_removal(EntityID entity) { removed_entities_.push(entity); }
+
+void Scene::set_named(erwin::EntityID ent, erwin::hash_t hname)
+{
+    W_ASSERT(registry.valid(ent), "[Scene] Invalid entity.");
+    named_entities_.insert({hname, ent});
+}
+
 
 } // namespace editor

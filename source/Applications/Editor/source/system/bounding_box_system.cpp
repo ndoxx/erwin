@@ -18,7 +18,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     if(!scene.is_loaded())
         return false;
 
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.get_named("Camera"_h));
 
     glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);

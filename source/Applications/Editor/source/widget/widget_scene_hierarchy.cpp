@@ -93,7 +93,7 @@ void SceneHierarchyWidget::on_imgui_render()
     // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame. Fine for now.
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     auto pos_x = ImGui::GetCursorPosX();
-    entity::depth_first(scene.root, scene.registry, [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth)
+    entity::depth_first(scene.get_named("root"_h), scene.registry, [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth)
     {
         ImGuiTreeNodeFlags flags = s_base_flags;
         if(scene.registry.has<SelectedTag>(curr))
