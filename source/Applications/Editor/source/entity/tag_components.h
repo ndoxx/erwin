@@ -4,7 +4,7 @@
 
 namespace editor
 {
-	
+
 struct SelectedTag {};
 struct FixedHierarchyTag {};
 struct NonEditableTag {};

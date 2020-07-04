@@ -24,7 +24,7 @@ TrackerCameraSystem::TrackerCameraSystem()
       prev_mouse_y_(0.f), inputs_enabled_(false), dirty_frustum_(true), position_(0.f), lookat_target_(0.f)
 {}
 
-void TrackerCameraSystem::init(ComponentTransform3D& transform)
+void TrackerCameraSystem::init(const ComponentTransform3D& transform)
 {
     position_ = transform.local.position;
     set_position(radius_, azimuth_, colatitude_);

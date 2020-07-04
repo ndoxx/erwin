@@ -1,8 +1,6 @@
 #pragma once
 
-#include <filesystem>
-
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace erwin
 {
@@ -11,7 +9,7 @@ namespace img
 
 struct HDRDescriptor
 {
-    fs::path filepath;
+    FilePath filepath;
     uint32_t channels = 0;
     uint32_t width = 0;
     uint32_t height = 0;
@@ -20,7 +18,7 @@ struct HDRDescriptor
 
 struct PNGDescriptor
 {
-    fs::path filepath;
+    FilePath filepath;
     uint32_t channels = 0;
     uint32_t width = 0;
     uint32_t height = 0;

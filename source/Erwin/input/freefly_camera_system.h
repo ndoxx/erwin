@@ -26,8 +26,9 @@ public:
 	};
 
 	FreeflyCameraSystem();
-	void init(ComponentTransform3D& transform);
+	void init(const ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
+	void update_frustum();
 	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 
 	bool on_window_resize_event(const WindowResizeEvent& event);
@@ -41,9 +42,6 @@ public:
 	inline float get_fovy() const         { return frustum_parameters_.fovy; }
 	inline float get_znear() const        { return frustum_parameters_.znear; }
 	inline float get_zfar() const         { return frustum_parameters_.zfar; }
-
-private:
-	void update_frustum();
 
 private:
 	FrustumParameters frustum_parameters_;

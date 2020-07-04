@@ -232,18 +232,17 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
-bool OGLShader::init(const std::string& name, const fs::path& filepath)
+bool OGLShader::init(const std::string& name, const FilePath& filepath)
 {
-    std::string extension(filepath.extension().string());
-    if(!extension.compare(".glsl"))
+    if(filepath.check_extension(".glsl"_h))
         return init_glsl(name, filepath);
-    else if(!extension.compare(".spv"))
+    else if(filepath.check_extension(".spv"_h))
         return init_spirv(name, filepath);
     return false;
 }
 
 // Initialize shader from packed GLSL source
-bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
+bool OGLShader::init_glsl(const std::string& name, const FilePath& glsl_file)
 {
     W_PROFILE_FUNCTION()
 
@@ -251,7 +250,7 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
     filepath_ = glsl_file;
 
     std::vector<std::pair<slang::ExecutionModel, std::string>> sources;
-    slang::pre_process_GLSL(glsl_file, sources);
+    slang::pre_process_GLSL(glsl_file.full_path(), sources);
     bool success = build(sources);
     if(success)
         introspect();
@@ -266,7 +265,7 @@ bool OGLShader::init_glsl(const std::string& name, const fs::path& glsl_file)
     return success;
 }
 // Initialize shader from SPIR-V file
-bool OGLShader::init_spirv(const std::string& name, const fs::path& spv_file)
+bool OGLShader::init_spirv(const std::string& name, const FilePath& spv_file)
 {
     W_PROFILE_FUNCTION()
 
@@ -417,7 +416,7 @@ bool OGLShader::build(const std::vector<std::pair<slang::ExecutionModel, std::st
     return false;
 }
 
-bool OGLShader::build_spirv(const fs::path& filepath)
+bool OGLShader::build_spirv(const FilePath& filepath)
 {
     W_PROFILE_FUNCTION()
 

@@ -591,7 +591,7 @@ void create_shader(memory::LinearBuffer<>& buf)
     buf.read_str(name);
 
     auto ref = make_ref<OGLShader>();
-    ref->init(name, filepath);
+    ref->init(name, FilePath(filepath));
     s_storage.shaders[handle.index] = ref;
     // s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
 

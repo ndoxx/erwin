@@ -6,12 +6,10 @@
 */
 
 #include <vector>
-#include <filesystem>
 
 #include "core/core.h"
 #include "render/shader_lang.h"
-
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace erwin
 {
@@ -24,7 +22,7 @@ struct ShaderStageDescriptor
 	std::string entry_point;
 };
 
-extern std::vector<ShaderStageDescriptor> parse_stages(const fs::path& path);
+extern std::vector<ShaderStageDescriptor> parse_stages(const FilePath& path);
 
 } // namespace spv
 } // namespace erwin

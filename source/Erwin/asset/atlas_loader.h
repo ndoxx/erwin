@@ -13,9 +13,9 @@ public:
     using Resource = TextureAtlas;
     using DataDescriptor = cat::CATDescriptor;
 
-    static AssetMetaData build_meta_data(const fs::path& file_path);
+    static AssetMetaData build_meta_data(const FilePath& file_path);
     static DataDescriptor load_from_file(const AssetMetaData& meta_data);
-    static Resource upload(const DataDescriptor& descriptor);
+    static Resource upload(const DataDescriptor& descriptor, hash_t resource_id);
     static void destroy(Resource& resource);
 };
 
@@ -25,9 +25,9 @@ public:
     using Resource = FontAtlas;
     using DataDescriptor = cat::CATDescriptor;
 
-    static AssetMetaData build_meta_data(const fs::path& file_path);
+    static AssetMetaData build_meta_data(const FilePath& file_path);
     static DataDescriptor load_from_file(const AssetMetaData& meta_data);
-    static Resource upload(const DataDescriptor& descriptor);
+    static Resource upload(const DataDescriptor& descriptor, hash_t resource_id);
     static void destroy(Resource& resource);
 };
 

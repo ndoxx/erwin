@@ -24,7 +24,7 @@ FreeflyCameraSystem::FreeflyCameraSystem()
       prev_mouse_y_(0.f), inputs_enabled_(false), dirty_frustum_(true), position_(0.f)
 {}
 
-void FreeflyCameraSystem::init(ComponentTransform3D& transform)
+void FreeflyCameraSystem::init(const ComponentTransform3D& transform)
 {
     position_ = transform.local.position;
     pitch_ = transform.local.euler.x;

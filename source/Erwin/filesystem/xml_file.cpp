@@ -97,6 +97,22 @@ void XMLFile::release()
     buffer.clear();
 }
 
+void XMLFile::create_root(const char* root_name, bool write_declaration)
+{
+    W_ASSERT(root == nullptr, "XML file already has a root");
+
+    if(write_declaration)
+    {
+        xml_node<>* decl = doc.allocate_node(node_declaration);
+        decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+        decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+        doc.append_node(decl);
+    }
+
+    root = doc.allocate_node(node_element, doc.allocate_string(root_name));
+    doc.append_node(root);
+}
+
 xml_node<>* XMLFile::add_node(xml_node<>* parent, const char* node_name, const char* node_value)
 {
     xml_node<>* node = doc.allocate_node(node_element, doc.allocate_string(node_name));
@@ -125,7 +141,7 @@ bool XMLFile::read()
     DLOG("core",0) << "Parsing XML file:" << std::endl;
     DLOGI << WCC('p') << filepath << std::endl;
 
-    if(!fs::exists(filepath))
+    if(!filepath.exists())
     {
         DLOGE("core") << "File does not exist." << std::endl;
         return false;

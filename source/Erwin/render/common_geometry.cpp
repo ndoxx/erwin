@@ -37,7 +37,7 @@ static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayo
 	VertexBufferHandle VBO = Renderer::create_vertex_buffer(layout_handle, vdata.data(), uint32_t(vdata.size()), UsagePattern::Static);
 	VertexArrayHandle VAO = Renderer::create_vertex_array(VBO, IBO);
 
-	s_storage.meshes_.insert({hname, {{VAO, layout_handle, dims}, name}});
+	s_storage.meshes_.insert({hname, {{VAO, layout_handle, dims, hname, true}, name}});
 	return VAO;
 }
 

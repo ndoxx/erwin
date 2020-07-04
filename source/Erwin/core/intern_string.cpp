@@ -29,7 +29,7 @@ static void parse(std::istream& stream)
 void init(const fs::path& filepath)
 {
     DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
-    auto ifs = wfs::get_istream(wfs::get_config_dir() / filepath, wfs::ascii);
+    auto ifs = wfs::get_istream(FilePath(wfs::get_config_dir(), filepath), wfs::ascii);
     parse(*ifs);
 }
 

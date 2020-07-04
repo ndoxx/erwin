@@ -1,7 +1,6 @@
 #pragma once
 
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace erwin
 {
@@ -20,7 +19,7 @@ struct AssetMetaData
         MeshWESH
     };
 
-    fs::path file_path;
+    FilePath file_path;
     AssetType type;
 };
 

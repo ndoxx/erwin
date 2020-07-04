@@ -4,6 +4,7 @@
 #include "entity/component/camera.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
+#include "entity/component/tags.h"
 #include "render/renderer_3d.h"
 
 using namespace erwin;
@@ -32,7 +33,7 @@ GizmoSystem::GizmoSystem()
 {
     auto gizmo_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/gizmo.glsl", "gizmo");
     auto gizmo_ubo = Renderer::create_uniform_buffer("gizmo_data", nullptr, sizeof(GizmoData), UsagePattern::Dynamic);
-    gizmo_material_ = {"gizmo"_h, {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData)};
+    gizmo_material_ = {"gizmo"_h, {}, gizmo_shader, gizmo_ubo, sizeof(GizmoData), 0};
     Renderer3D::register_shader(gizmo_shader);
     Renderer::shader_attach_uniform_buffer(gizmo_shader, gizmo_ubo);
 }
@@ -48,6 +49,7 @@ void GizmoSystem::setup_editor_entities(entt::registry& registry)
         registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
         registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
         registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
+        registry.emplace<NonSerializableTag>(ents[ii]);
     }
 }
 

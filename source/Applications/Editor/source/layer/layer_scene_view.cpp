@@ -1,6 +1,6 @@
-#include "layer_scene_view.h"
+#include "layer/layer_scene_view.h"
 #include "imgui/font_awesome.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 
 #include <bitset>
@@ -16,14 +16,12 @@ SceneViewLayer::SceneViewLayer() : Layer("SceneViewLayer") {}
 
 void SceneViewLayer::on_imgui_render() {}
 
-void SceneViewLayer::setup_camera()
+void SceneViewLayer::setup_camera(Scene& scene)
 {
-    auto& scene = scn::current<Scene>();
-
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.get_named("Camera"_h));
 
     camera_controller_.init(transform);
-    camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
+    camera_controller_.update_frustum();
 }
 
 void SceneViewLayer::on_attach() {}
@@ -48,23 +46,27 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
     transform_system_.update(clock, scene.registry);
 
-    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    auto e_camera = scene.get_named("Camera"_h);
+    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(e_camera);
+    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(e_camera);
     camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform.global);
-    if(scene.registry.valid(scene.directional_light))
-        Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
+    if(scene.has_named("Sun"_h))
+    {
+        auto e_dirlight = scene.get_named("Sun"_h);
+        Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(e_dirlight));
+    }
 }
 
 void SceneViewLayer::on_render()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
@@ -84,7 +86,7 @@ void SceneViewLayer::on_render()
         Renderer3D::end_deferred_pass();
     }
 
-    Renderer3D::draw_skybox(scene.environment.environment_map);
+    Renderer3D::draw_skybox(scene.get_environment().environment_map);
 
     {
         Renderer3D::begin_forward_pass(BlendState::Light);

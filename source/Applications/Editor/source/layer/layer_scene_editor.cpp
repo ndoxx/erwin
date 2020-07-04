@@ -1,6 +1,7 @@
 #include "layer/layer_scene_editor.h"
 #include "input/input.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
+#include "entity/tag_components.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
@@ -55,18 +56,14 @@ void SceneEditorLayer::on_detach()
         delete widget;
 }
 
-void SceneEditorLayer::setup_editor_entities()
+void SceneEditorLayer::setup_editor_entities(entt::registry& registry)
 {
-    auto& scene = scn::current<Scene>();
-    if(scene.is_loaded())
-    {
-        gizmo_system_.setup_editor_entities(scene.registry);
-    }
+    gizmo_system_.setup_editor_entities(registry);
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(scene.is_loaded())
     {
         bounding_box_system_.update(clock, scene.registry);
@@ -80,7 +77,7 @@ void SceneEditorLayer::on_update(GameClock& clock)
 
 void SceneEditorLayer::on_render()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(scene.is_loaded())
     {
         bounding_box_system_.render(scene.registry);
@@ -141,7 +138,13 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
-        scn::current<Scene>().drop_selection();
+        scn::current().registry.clear<SelectedTag>();
+        return true;
+    }
+
+    if(Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
+    {
+        scn::current().save();
         return true;
     }
 

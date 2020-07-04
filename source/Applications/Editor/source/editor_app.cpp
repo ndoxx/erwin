@@ -12,6 +12,7 @@
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
+#include "entity/tag_components.h"
 
 static void set_gui_behavior()
 {
@@ -45,39 +46,56 @@ void ErwinEditor::on_load()
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;
-    io.Fonts->AddFontFromFileTTF(icon_font_path.string().c_str(), 16.0f, &config, ranges);
+    io.Fonts->AddFontFromFileTTF(icon_font_path.c_str(), 16.0f, &config, ranges);
 
     console_ = new editor::ConsoleWidget();
     WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
-                   {"editor"_h, "application"_h, "entity"_h}));
+                   {"editor"_h, "application"_h, "entity"_h, "scene"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
     scene_view_layer_ = new SceneViewLayer();
-    auto* scene_editor_layer = new editor::SceneEditorLayer();
+    scene_editor_layer_ = new editor::SceneEditorLayer();
     auto* material_editor_layer = new editor::MaterialEditorLayer();
     push_layer(scene_view_layer_);
-    push_overlay(scene_editor_layer);
+    push_overlay(scene_editor_layer_);
     push_overlay(material_editor_layer, false);
     push_overlay(new editor::PostProcessingLayer());
 
     EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
 
-    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer});
+    create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer_});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
-    SceneManager::create_scene<Scene>("main_scene"_h);
+    SceneManager::create_scene("main_scene"_h);
     SceneManager::make_current("main_scene"_h);
+
+    // Setup scene injection
+    scn::current().set_injector_callback([this](Scene& scene)
+    {
+        auto root = scene.get_named("root"_h);
+        scene.registry.emplace<FixedHierarchyTag>(root);
+        scene.registry.emplace<NonEditableTag>(root);
+        scene.registry.emplace<NonRemovableTag>(root);
+
+        scene_editor_layer_->setup_editor_entities(scene.registry);
+    });
+
+    // Setup scene finisher callback
+    scn::current().set_finisher_callback([this](Scene& scene)
+    {
+        scene_view_layer_->setup_camera(scene);
+    });
+
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
-    fs::path last_project_file = cfg::get("settings.project.last_project"_h);
-    if(auto_load && !last_project_file.empty() && fs::exists(last_project_file))
+    const auto& last_project_file = cfg::get("settings.project.last_project"_h);
+    if(auto_load && !last_project_file.empty() && last_project_file.exists())
     {
         project::load_project(last_project_file);
-        SceneManager::load_scene("main_scene"_h);
-        scene_view_layer_->setup_camera();
-        scene_editor_layer->setup_editor_entities();
+        const auto& ps = project::get_project_settings();
+        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -122,7 +140,17 @@ void ErwinEditor::on_imgui_render()
                 dialog::show_open("ChooseFileDlgKey", "Choose Project File", ".erwin", ".");
 
             if(ImGui::MenuItem("Save project", nullptr, nullptr))
+            {
                 project::save_project();
+                auto& scene = scn::current();
+                if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                    scene.save();
+                else
+                {
+                    // TODO: Save as dialog must appear here
+                    DLOGW("editor") << "Scene was not saved, create a scene file from scene view file menu." << std::endl;
+                }
+            }
 
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
             {
@@ -210,11 +238,11 @@ void ErwinEditor::on_imgui_render()
     }
 
     // Dialogs
-    dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
-        project::load_project(filepath);
-        SceneManager::load_scene("main_scene"_h);
+    dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
+        project::load_project(FilePath(filepath));
         SceneManager::make_current("main_scene"_h);
-        scene_view_layer_->setup_camera();
+        const auto& ps = project::get_project_settings();
+        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
     });
 
     if(enable_docking_)

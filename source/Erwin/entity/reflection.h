@@ -2,8 +2,12 @@
 
 #include <type_traits>
 #include <map>
+#include <istream>
+#include <ostream>
 #include "entt/entt.hpp"
 #include "debug/logger.h"
+
+#include "filesystem/xml_file.h"
 
 #define W_METAFUNC_GET_COMPONENT "get_component"_hs
 #define W_METAFUNC_HAS_COMPONENT "has_component"_hs
@@ -11,6 +15,10 @@
 #define W_METAFUNC_REMOVE_COMPONENT "remove_component"_hs
 #define W_METAFUNC_TRY_REMOVE_COMPONENT "try_remove_component"_hs
 #define W_METAFUNC_INSPECTOR_GUI "inspector_GUI"_hs
+#define W_METAFUNC_SERIALIZE_XML "serialize_xml"_hs
+#define W_METAFUNC_SERIALIZE_BIN "serialize_bin"_hs
+#define W_METAFUNC_DESERIALIZE_XML "deserialize_xml"_hs
+#define W_METAFUNC_DESERIALIZE_BIN "deserialize_bin"_hs
 
 namespace erwin
 {
@@ -86,7 +94,21 @@ using EntityID = entt::entity;
 
 // Any component that needs to be editable in an inspector should specialize this function.
 template <typename ComponentType>
-extern void inspector_GUI(ComponentType*, EntityID, entt::registry&) {}
+extern void inspector_GUI(ComponentType&, EntityID, entt::registry&, size_t) {}
+
+// Serialization
+template <typename ComponentType>
+extern void serialize_xml(const ComponentType&, xml::XMLFile&, rapidxml::xml_node<>*) {}
+
+template <typename ComponentType>
+extern void serialize_bin(const ComponentType&, std::ostream&) {}
+
+// Deserialization
+template <typename ComponentType>
+extern void deserialize_xml(rapidxml::xml_node<>*, entt::registry&, EntityID) {}
+
+template <typename ComponentType>
+extern void deserialize_bin(std::istream&, EntityID, entt::registry&) {}
 
 namespace metafunc
 {
@@ -128,14 +150,37 @@ namespace metafunc
 	// Helper function to cast a component opaque pointer to the correct type
 	// before calling the actual implementation.
 	// This way, the invocation code can pass a void*, whereas the GUI implementation takes
-	// an actual component pointer.
+	// a concrete component reference.
 	template <typename ComponentType>
-	inline void inspector_GUI_typecast(void* data, EntityID e, entt::registry* r)
+	inline void inspector_GUI_typecast(void* cmp, EntityID e, entt::registry* r, size_t asset_reg)
 	{
-		inspector_GUI<ComponentType>(static_cast<ComponentType*>(data), e, *r);
+		inspector_GUI<ComponentType>(*static_cast<ComponentType*>(cmp), e, *r, asset_reg);
+	}
+
+	template <typename ComponentType>
+	inline void serialize_xml_typecast(void* cmp, xml::XMLFile* file, void* cmp_node)
+	{
+		serialize_xml<ComponentType>(*static_cast<const ComponentType*>(cmp), *file, static_cast<rapidxml::xml_node<>*>(cmp_node));
+	}
+
+	template <typename ComponentType>
+	inline void serialize_bin_typecast(void* cmp, std::ostream& stream)
+	{
+		serialize_bin<ComponentType>(*static_cast<const ComponentType*>(cmp), stream);
+	}
+
+	template <typename ComponentType>
+	inline void deserialize_xml_typecast(void* node, void* reg, EntityID e)
+	{
+		deserialize_xml<ComponentType>(static_cast<rapidxml::xml_node<>*>(node), *static_cast<entt::registry*>(reg), e);
+	}
+
+	template <typename ComponentType>
+	inline void deserialize_bin_typecast(std::istream& stream, EntityID e, entt::registry* r)
+	{
+		deserialize_bin<ComponentType>(stream, e, *r);
 	}
 } // namespace metafunc
-
 } // namespace erwin
 
 // Create a reflection meta-object for an input component type
@@ -148,7 +193,11 @@ namespace metafunc
 		.func<&erwin::metafunc::create_component< CTYPE >, entt::as_void_t>(W_METAFUNC_CREATE_COMPONENT) \
 		.func<&erwin::metafunc::remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_REMOVE_COMPONENT) \
 		.func<&erwin::metafunc::try_remove_component< CTYPE >, entt::as_void_t>(W_METAFUNC_TRY_REMOVE_COMPONENT) \
-		.func<&erwin::metafunc::inspector_GUI_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI); \
+		.func<&erwin::metafunc::inspector_GUI_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_INSPECTOR_GUI) \
+		.func<&erwin::metafunc::serialize_xml_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_SERIALIZE_XML) \
+		.func<&erwin::metafunc::serialize_bin_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_SERIALIZE_BIN) \
+		.func<&erwin::metafunc::deserialize_xml_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_DESERIALIZE_XML) \
+		.func<&erwin::metafunc::deserialize_bin_typecast< CTYPE >, entt::as_void_t>(W_METAFUNC_DESERIALIZE_BIN); \
 	erwin::add_reflection(entt::type_info< CTYPE >::id(), #CTYPE ##_hs)
 
 #define HIDE_FROM_INSPECTOR( CTYPE ) erwin::hide_from_inspector( #CTYPE ##_hs )

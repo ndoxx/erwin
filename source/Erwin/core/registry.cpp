@@ -10,10 +10,10 @@ void Registry::deserialize(const xml::XMLFile& xml, const std::string& root_name
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem().string();
+        root = xml.filepath.full_path().stem().string();
 
     if(xml.root)
-        parse_properties(xml.root, root, xml.filepath.parent_path());
+        parse_properties(xml.root, root, xml.filepath.full_path().parent_path());
 }
 
 // Recursive parser
@@ -125,12 +125,10 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, c
             return 0;
         bool is_absolute = false;
         xml::parse_attribute(xnode, "absolute", is_absolute);
-        fs::path the_path;
         if(!is_absolute)
-            the_path = parent_dir / value;
+            paths_[full_name_hash] = FilePath(parent_dir, value);
         else
-            the_path = value;
-        paths_[full_name_hash] = the_path;
+            paths_[full_name_hash] = FilePath(value);
         break;
     }
     case "size"_h: {
@@ -150,10 +148,10 @@ void Registry::serialize(xml::XMLFile& xml, const std::string& root_name)
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem().string();
+        root = xml.filepath.full_path().stem().string();
 
     if(xml.root)
-        serialize_properties(&xml.doc, xml.root, root, xml.filepath.parent_path());
+        serialize_properties(&xml.doc, xml.root, root, xml.filepath.full_path().parent_path());
 }
 
 void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
@@ -195,7 +193,7 @@ void Registry::clear()
     paths_.clear();
 }
 
-void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
+void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& /*parent_dir*/)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -266,15 +264,13 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         {
             bool is_absolute = false;
             xml::parse_attribute(xnode, "absolute", is_absolute);
-            fs::path out_path;
-            if(!it->second.empty())
+            if(!it->second.full_path().empty())
             {
                 if(is_absolute)
-                    out_path = fs::absolute(it->second);
+                    xml::set_attribute(doc, xnode, "value", it->second.string());
                 else
-                    out_path = fs::relative(it->second, parent_dir);
+                    xml::set_attribute(doc, xnode, "value", it->second.file_path().string());
             }
-            xml::set_attribute(doc, xnode, "value", out_path.string());
         }
         break;
     }
@@ -287,68 +283,68 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
     }
 }
 
-template <> const size_t& Registry::get(hash_t hname, const size_t& def)
+template <> const size_t& Registry::get(hash_t hname, const size_t& def) const
 {
     auto it = sizes_.find(hname);
     return (it != sizes_.end()) ? it->second : def;
 }
 
-template <> const uint32_t& Registry::get(hash_t hname, const uint32_t& def)
+template <> const uint32_t& Registry::get(hash_t hname, const uint32_t& def) const
 {
     auto it = uints_.find(hname);
     return (it != uints_.end()) ? it->second : def;
 }
 
-template <> const int32_t& Registry::get(hash_t hname, const int32_t& def)
+template <> const int32_t& Registry::get(hash_t hname, const int32_t& def) const
 {
     auto it = ints_.find(hname);
     return (it != ints_.end()) ? it->second : def;
 }
 
-template <> const float& Registry::get(hash_t hname, const float& def)
+template <> const float& Registry::get(hash_t hname, const float& def) const
 {
     auto it = floats_.find(hname);
     return (it != floats_.end()) ? it->second : def;
 }
 
-template <> const bool& Registry::get(hash_t hname, const bool& def)
+template <> const bool& Registry::get(hash_t hname, const bool& def) const
 {
     auto it = bools_.find(hname);
     return (it != bools_.end()) ? it->second : def;
 }
 
-template <> const std::string& Registry::get(hash_t hname, const std::string& def)
+template <> const std::string& Registry::get(hash_t hname, const std::string& def) const
 {
     auto it = strings_.find(hname);
     return (it != strings_.end()) ? it->second : def;
 }
 
-template <> const glm::vec2& Registry::get(hash_t hname, const glm::vec2& def)
+template <> const glm::vec2& Registry::get(hash_t hname, const glm::vec2& def) const
 {
     auto it = vec2s_.find(hname);
     return (it != vec2s_.end()) ? it->second : def;
 }
 
-template <> const glm::vec3& Registry::get(hash_t hname, const glm::vec3& def)
+template <> const glm::vec3& Registry::get(hash_t hname, const glm::vec3& def) const
 {
     auto it = vec3s_.find(hname);
     return (it != vec3s_.end()) ? it->second : def;
 }
 
-template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def)
+template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def) const
 {
     auto it = vec4s_.find(hname);
     return (it != vec4s_.end()) ? it->second : def;
 }
 
-static fs::path empty_path;
-const fs::path& Registry::get(hash_t hname)
+static FilePath empty_path;
+const FilePath& Registry::get(hash_t hname) const
 {
     auto it = paths_.find(hname);
     return (it != paths_.end()) ? it->second : empty_path;
 }
 
-bool Registry::is(hash_t name)
+bool Registry::is(hash_t name) const
 {
     auto it = bools_.find(name);
     return (it != bools_.end()) ? it->second : false;
@@ -408,7 +404,7 @@ template <> bool Registry::set(hash_t hname, const std::string& val)
     return true;
 }
 
-template <> bool Registry::set(hash_t hname, const fs::path& val)
+template <> bool Registry::set(hash_t hname, const FilePath& val)
 {
     auto it = paths_.find(hname);
     if(it == paths_.end())

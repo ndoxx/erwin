@@ -13,7 +13,7 @@ namespace editor
 
 void SelectionSystem::update(const GameClock&, Scene& scene)
 {
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
+    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.get_named("Camera"_h));
     float nearest = camera.frustum.far;
     EntityID selected = k_invalid_entity_id;
 

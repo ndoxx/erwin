@@ -27,6 +27,7 @@ struct ComponentPBRMaterial
 	} material_data;
 
 	std::string name;
+	bool override = false;
 
 	ComponentPBRMaterial()
 	{

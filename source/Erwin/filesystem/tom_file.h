@@ -6,12 +6,10 @@
 
 #include <vector>
 #include <string>
-#include <filesystem>
 
 #include "core/core.h"
+#include "filesystem/file_path.h"
 #include "render/texture_common.h"
-
-namespace fs = std::filesystem;
 
 namespace erwin
 {
@@ -45,7 +43,7 @@ struct TextureMapDescriptor
 
 struct TOMDescriptor
 {
-    fs::path filepath;
+    FilePath filepath;
     uint16_t width;
     uint16_t height;
     LosslessCompression compression;

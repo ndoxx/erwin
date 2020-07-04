@@ -89,7 +89,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     }
 }
 
-bool load(const fs::path& filepath)
+bool load(const FilePath& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())
@@ -105,7 +105,7 @@ bool load(const fs::path& filepath)
 	return true;
 }
 
-bool save(const fs::path& filepath)
+bool save(const FilePath& filepath)
 {
 	xml::XMLFile cfg_f(filepath);
 	if(!cfg_f.read())
@@ -162,7 +162,7 @@ template <> const glm::vec4& get(hash_t hname, const glm::vec4& def)
 	return registry.get(hname, def);
 }
 
-const fs::path& get(hash_t hname)
+const FilePath& get(hash_t hname)
 {
 	return registry.get(hname);
 }
@@ -216,7 +216,7 @@ template <> bool set(hash_t hname, const std::string& val)
 	return registry.set(hname, val);
 }
 
-template <> bool set(hash_t hname, const fs::path& val)
+template <> bool set(hash_t hname, const FilePath& val)
 {
 	return registry.set(hname, val);
 }

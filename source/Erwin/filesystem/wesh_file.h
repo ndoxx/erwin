@@ -4,11 +4,9 @@
     erWin mESH format for geometry storage
 */
 
-#include <filesystem>
 #include <vector>
 #include "asset/bounding.h"
-
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace erwin
 {
@@ -23,7 +21,7 @@ struct WeshDescriptor
 };
 
 
-WeshDescriptor read(const fs::path& path);
+WeshDescriptor read(const FilePath& path);
 
 
 } // namespace wesh

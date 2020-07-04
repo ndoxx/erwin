@@ -1,12 +1,28 @@
 #pragma once
 
-#include <filesystem>
 #include "core/registry.h"
-
-namespace fs = std::filesystem;
+#include "filesystem/file_path.h"
 
 namespace editor
 {
+
+enum class DK: uint8_t
+{
+	ATLAS,
+	HDR,
+	MATERIAL,
+	FONT,
+	MESH,
+	SCENE,
+
+	WORK_ATLAS,
+	WORK_HDR,
+	WORK_MATERIAL,
+	WORK_FONT,
+	WORK_MESH,
+	WORK_SCENE
+};
+
 namespace project
 {
 
@@ -15,29 +31,17 @@ struct ProjectSettings
     fs::path project_file;
     fs::path root_folder;
     erwin::Registry registry;
+    bool loaded = false;
 };
 
-enum class DirKey: uint8_t
-{
-	ATLAS,
-	HDR,
-	MATERIAL,
-	FONT,
-	MESH,
+bool load_project(const erwin::FilePath& filepath);
+bool save_project();
+bool is_loaded();
+void close_project();
+const ProjectSettings& get_project_settings();
 
-	WORK_ATLAS,
-	WORK_HDR,
-	WORK_MATERIAL,
-	WORK_FONT,
-	WORK_MESH
-};
-
-extern bool load_project(const fs::path& filepath);
-extern bool save_project();
-extern void close_project();
-extern const ProjectSettings& get_project_settings();
-
-extern fs::path get_asset_path(DirKey dir_key);
+erwin::FilePath asset_dir(DK dir_key);
+erwin::FilePath asset_path(DK dir_key, const fs::path& file_path);
 
 } // namespace project
 } // namespace editor

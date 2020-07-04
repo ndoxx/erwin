@@ -6,10 +6,10 @@
 namespace erwin
 {
 
-AssetMetaData TextureAtlasLoader::build_meta_data(const fs::path& file_path)
+AssetMetaData TextureAtlasLoader::build_meta_data(const FilePath& file_path)
 {
-    W_ASSERT_FMT(fs::exists(file_path), "File does not exist: %s", file_path.string().c_str());
-    W_ASSERT(!file_path.extension().string().compare(".cat"), "Invalid input file.");
+    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::TextureAtlasCAT};
 }
@@ -30,7 +30,7 @@ cat::CATDescriptor TextureAtlasLoader::load_from_file(const AssetMetaData& meta_
     return descriptor;
 }
 
-TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor)
+TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /*resource_id*/)
 {
     TextureAtlas atlas;
 
@@ -80,10 +80,10 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor)
 
 void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(resource.texture); }
 
-AssetMetaData FontAtlasLoader::build_meta_data(const fs::path& file_path)
+AssetMetaData FontAtlasLoader::build_meta_data(const FilePath& file_path)
 {
-    W_ASSERT_FMT(fs::exists(file_path), "File does not exist: %s", file_path.string().c_str());
-    W_ASSERT(!file_path.extension().string().compare(".cat"), "Invalid input file.");
+    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::FontAtlasCAT};
 }
@@ -103,7 +103,7 @@ cat::CATDescriptor FontAtlasLoader::load_from_file(const AssetMetaData& meta_dat
     return descriptor;
 }
 
-FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor)
+FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /*resource_id*/)
 {
     FontAtlas atlas;
 

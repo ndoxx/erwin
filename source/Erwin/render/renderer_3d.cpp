@@ -132,7 +132,7 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	const auto& freetex = AssetManager::load_texture(wfs::get_system_asset_dir() / "textures/ibl_brdf_integration.png", brdf_lut_desc);
+	const auto& freetex = AssetManager::load<FreeTexture,Texture2DDescriptor>(0, FilePath(wfs::get_system_asset_dir(), "textures/ibl_brdf_integration.png"), brdf_lut_desc);
 	s_storage.BRDF_integration_map = freetex.handle;
 }
 

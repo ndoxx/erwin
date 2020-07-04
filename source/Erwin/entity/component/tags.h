@@ -7,5 +7,7 @@ namespace erwin
 
 struct DirtyOBBTag {};
 struct DirtyTransformTag {};
+struct NamedEntityTag {};
+struct NonSerializableTag {};
 
 } // namespace erwin

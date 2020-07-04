@@ -6,11 +6,11 @@
 namespace erwin
 {
 
-AssetMetaData EnvironmentLoader::build_meta_data(const fs::path& file_path)
+AssetMetaData EnvironmentLoader::build_meta_data(const FilePath& file_path)
 {
     // Sanity check
-    W_ASSERT(fs::exists(file_path), "File does not exist.");
-    W_ASSERT_FMT(H_(file_path.extension().string().c_str()) == ".hdr"_h, "Incompatible file type: %s", file_path.extension().string().c_str());
+    W_ASSERT(file_path.exists(), "File does not exist.");
+    W_ASSERT_FMT(file_path.check_extension(".hdr"_h), "Incompatible file type: %s", file_path.file_path().extension().string().c_str());
 
     return {file_path, AssetMetaData::AssetType::EnvironmentHDR};
 }
@@ -45,7 +45,7 @@ Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_
     return descriptor;
 }
 
-Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor)
+Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, hash_t resource_id)
 {
     Environment environment;
     TextureHandle handle = Renderer::create_texture_2D(descriptor);
@@ -54,6 +54,7 @@ Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor)
     Renderer::destroy(handle);
     environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
     environment.prefiltered_map = Renderer3D::generate_prefiltered_map(environment.environment_map, environment.size);
+    environment.resource_id = resource_id;
 
     return environment;
 }

@@ -41,6 +41,7 @@ struct Material
 	ShaderHandle shader;
 	UniformBufferHandle ubo;
 	uint32_t data_size = 0;
+	hash_t resource_id;
 };
 
 } // namespace erwin
