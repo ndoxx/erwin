@@ -13,7 +13,7 @@ namespace erwin
 class Scene
 {
 public:
-	using SceneInjector = std::function<void(Scene&)>;
+	using SceneVisitor = std::function<void(Scene&)>;
 
 	Scene();
     ~Scene() = default;
@@ -30,8 +30,10 @@ public:
     inline const FilePath& get_file_location() const { return scene_file_path_; } 
     // Check if scene is loaded
     inline bool is_loaded() const { return loaded_; }
-    // Setup a callback run during deserialization to inject additional entities / components in this scene
-	inline void set_injector(SceneInjector injector) { inject_ = injector; }
+    // Setup a callback to run during deserialization to inject additional entities / components in this scene
+	inline void set_injector_callback(SceneVisitor injector) { inject_ = injector; }
+	// Setup a callback to run after deserialization is complete
+	inline void set_finisher_callback(SceneVisitor finisher) { finish_ = finisher; }
 
     // Create an entity and assign it a description component
 	EntityID create_entity(const std::string& name, const char* icon = nullptr);
@@ -62,7 +64,8 @@ private:
 	std::queue<EntityID> removed_entities_;
 	std::map<hash_t, EntityID> named_entities_;
 	Environment environment_;
-	SceneInjector inject_ = [](auto&){};
+	SceneVisitor inject_ = [](auto&){};
+	SceneVisitor finish_ = [](auto&){};
 	size_t asset_registry_;
     bool loaded_ = false;
 

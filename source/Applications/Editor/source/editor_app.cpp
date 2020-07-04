@@ -72,7 +72,7 @@ void ErwinEditor::on_load()
     SceneManager::make_current("main_scene"_h);
 
     // Setup scene injection
-    scn::current().set_injector([this](Scene& scene)
+    scn::current().set_injector_callback([this](Scene& scene)
     {
         auto root = scene.get_named("root"_h);
         scene.registry.emplace<FixedHierarchyTag>(root);
@@ -80,6 +80,12 @@ void ErwinEditor::on_load()
         scene.registry.emplace<NonRemovableTag>(root);
 
         scene_editor_layer_->setup_editor_entities(scene.registry);
+    });
+
+    // Setup scene finisher callback
+    scn::current().set_finisher_callback([this](Scene& scene)
+    {
+        scene_view_layer_->setup_camera(scene);
     });
 
     // Project settings
@@ -90,7 +96,6 @@ void ErwinEditor::on_load()
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
-        scene_view_layer_->setup_camera();
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -233,12 +238,11 @@ void ErwinEditor::on_imgui_render()
     }
 
     // Dialogs
-    dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
+    dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
         project::load_project(FilePath(filepath));
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
-        scene_view_layer_->setup_camera();
     });
 
     if(enable_docking_)

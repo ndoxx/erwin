@@ -16,14 +16,12 @@ SceneViewLayer::SceneViewLayer() : Layer("SceneViewLayer") {}
 
 void SceneViewLayer::on_imgui_render() {}
 
-void SceneViewLayer::setup_camera()
+void SceneViewLayer::setup_camera(Scene& scene)
 {
-    auto& scene = scn::current();
-
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.get_named("Camera"_h));
 
     camera_controller_.init(transform);
-    camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
+    camera_controller_.update_frustum();
 }
 
 void SceneViewLayer::on_attach() {}

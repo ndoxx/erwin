@@ -4,6 +4,11 @@
 #include "input/freefly_camera_system.h"
 #include "entity/system/transform_hierarchy_system.h"
 
+namespace erwin
+{
+class Scene;
+}
+
 namespace editor
 {
 
@@ -17,7 +22,7 @@ public:
     
     virtual void on_imgui_render() override;
 
-    void setup_camera();
+    void setup_camera(erwin::Scene& scene);
 
 protected:
     virtual void on_attach() override;

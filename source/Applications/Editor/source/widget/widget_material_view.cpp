@@ -38,7 +38,7 @@ MaterialViewWidget::MaterialViewWidget()
     scene.set_named(e_cam, "Camera"_h);
 
     camera_controller_.init(ctrans);
-    camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60.f, 0.1f, 100.f});
+    camera_controller_.update_frustum();
     camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
 
     // Create light

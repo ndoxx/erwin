@@ -28,6 +28,7 @@ public:
 	TrackerCameraSystem();
 	void init(const ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
+	void update_frustum();
 	void set_position(float radius, float azimuth, float colatitude);
 	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 
@@ -43,9 +44,6 @@ public:
 	inline float get_fovy() const         { return frustum_parameters_.fovy; }
 	inline float get_znear() const        { return frustum_parameters_.znear; }
 	inline float get_zfar() const         { return frustum_parameters_.zfar; }
-
-private:
-	void update_frustum();
 
 private:
 	FrustumParameters frustum_parameters_;

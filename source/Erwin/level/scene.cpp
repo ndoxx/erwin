@@ -243,6 +243,9 @@ void Scene::load_xml(const erwin::FilePath& file_path)
         entity::attach(id_to_ent_id.at(parent_index), e, registry);
     entity::sort_hierarchy(registry);
 
+    // Call finisher callback
+    finish_(*this);
+
     AssetManager::launch_async_tasks();
     loaded_ = true; // TODO: More granularity. At this stage scene is not FULLY loaded
 }
