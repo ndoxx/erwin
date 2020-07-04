@@ -31,10 +31,12 @@ struct ProjectSettings
     fs::path project_file;
     fs::path root_folder;
     erwin::Registry registry;
+    bool loaded = false;
 };
 
 bool load_project(const erwin::FilePath& filepath);
 bool save_project();
+bool is_loaded();
 void close_project();
 const ProjectSettings& get_project_settings();
 

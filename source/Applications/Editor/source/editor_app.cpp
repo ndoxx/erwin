@@ -72,12 +72,14 @@ void ErwinEditor::on_load()
     SceneManager::make_current("main_scene"_h);
 
     // Setup scene injection
-    scn::current().set_injector([](Scene& scene)
+    scn::current().set_injector([this](Scene& scene)
     {
         auto root = scene.get_named("root"_h);
         scene.registry.emplace<FixedHierarchyTag>(root);
         scene.registry.emplace<NonEditableTag>(root);
         scene.registry.emplace<NonRemovableTag>(root);
+
+        scene_editor_layer_->setup_editor_entities(scene.registry);
     });
 
     // Project settings
@@ -85,13 +87,10 @@ void ErwinEditor::on_load()
     const auto& last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && last_project_file.exists())
     {
-        SceneManager::load_scene("main_scene"_h);
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
-        scn::current().set_assets_root(ps.root_folder);
-        scn::current().deserialize_xml(ps.registry.get("project.scene.start"_h));
+        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
-        scene_editor_layer_->setup_editor_entities();
     }
 
     DLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -136,7 +135,17 @@ void ErwinEditor::on_imgui_render()
                 dialog::show_open("ChooseFileDlgKey", "Choose Project File", ".erwin", ".");
 
             if(ImGui::MenuItem("Save project", nullptr, nullptr))
+            {
                 project::save_project();
+                auto& scene = scn::current();
+                if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                    scene.save();
+                else
+                {
+                    // TODO: Save as dialog must appear here
+                    DLOGW("editor") << "Scene was not saved, create a scene file from scene view file menu." << std::endl;
+                }
+            }
 
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
             {
@@ -226,13 +235,10 @@ void ErwinEditor::on_imgui_render()
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [this](const fs::path& filepath) {
         project::load_project(FilePath(filepath));
-        SceneManager::load_scene("main_scene"_h);
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
-        scn::current().set_assets_root(ps.root_folder);
-        scn::current().deserialize_xml(ps.registry.get("project.scene.start"_h));
+        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
-        scene_editor_layer_->setup_editor_entities();
     });
 
     if(enable_docking_)

@@ -14,6 +14,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
+#include "widget/dialog_open.h"
 #include "widget/overlay_stats.h"
 
 using namespace erwin;
@@ -94,10 +95,11 @@ void SceneViewWidget::on_imgui_render()
 {
     if(ImGui::BeginMenuBar())
     {
-        if(ImGui::BeginMenu("File"))
+        if(project::is_loaded() && ImGui::BeginMenu("File"))
         {
             if(ImGui::BeginMenu("Load"))
             {
+                // List all available scenes for current project
                 auto scene_dir = project::asset_dir(DK::SCENE);
                 for(auto& entry : fs::directory_iterator(scene_dir.full_path()))
                 {
@@ -105,16 +107,31 @@ void SceneViewWidget::on_imgui_render()
                     {
                         if(ImGui::MenuItem(entry.path().filename().c_str()))
                         {
-                            // TMP
                             auto& scene = scn::current();
                             scene.unload();
-                            scene.load();
-                            scene.deserialize_xml(FilePath(entry.path()));
+                            scene.load_xml(
+                                FilePath(scene_dir.base_path(), scene_dir.file_path() / entry.path().filename()));
                         }
                     }
                 }
 
                 ImGui::EndMenu();
+            }
+
+            bool save_as_needed = false;
+            if(ImGui::MenuItem("Save"))
+            {
+                auto& scene = scn::current();
+                if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                    scene.save();
+                else
+                    save_as_needed = true;
+            }
+
+            if(ImGui::MenuItem("Save as") || save_as_needed)
+            {
+                dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
+                                  project::asset_dir(DK::SCENE).full_path());
             }
 
             ImGui::EndMenu();
@@ -149,6 +166,12 @@ void SceneViewWidget::on_imgui_render()
         ImGui::SetNextWindowBgAlpha(0.35f);
         stats_overlay_->imgui_render();
     }
+
+    dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath)
+    {
+        auto& scene = scn::current();
+        scene.save_xml(FilePath(filepath));
+    });
 
     // * Show game render in window
     // Retrieve the native framebuffer texture handle

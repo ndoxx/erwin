@@ -30,7 +30,6 @@ MaterialViewWidget::MaterialViewWidget()
     // flags_ |= ImGuiWindowFlags_MenuBar;
     // Create scene with a sphere in the middle
     auto& scene = SceneManager::create_scene("material_editor_scene"_h);
-    scene.load();
 
     // Create camera
     auto e_cam = scene.registry.create();

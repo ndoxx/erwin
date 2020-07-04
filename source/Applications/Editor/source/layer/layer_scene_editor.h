@@ -15,7 +15,7 @@ class SceneEditorLayer : public GuiLayer
 public:
     SceneEditorLayer();
     
-    void setup_editor_entities();
+    void setup_editor_entities(entt::registry&);
 
     virtual void on_imgui_render() override;
 

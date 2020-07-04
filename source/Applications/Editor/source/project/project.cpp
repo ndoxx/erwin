@@ -49,6 +49,7 @@ bool load_project(const FilePath& filepath)
     // Save as last project for future auto load
     cfg::set("settings.project.last_project"_h, filepath);
 
+    s_current_project.loaded = true;
     return true;
 }
 
@@ -66,6 +67,11 @@ bool save_project()
     return true;
 }
 
+bool is_loaded()
+{
+    return s_current_project.loaded;
+}
+
 void close_project()
 {
     DLOGN("editor") << "Closing project." << std::endl;
@@ -73,6 +79,7 @@ void close_project()
     s_current_project.registry.clear();
     s_current_project.project_file = "";
     s_current_project.root_folder = "";
+    s_current_project.loaded = false;
 }
 
 const ProjectSettings& get_project_settings() { return s_current_project; }

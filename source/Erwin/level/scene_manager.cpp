@@ -24,15 +24,6 @@ void SceneManager::add_scene(hash_t name, std::unique_ptr<Scene> scene)
 	s_storage.scenes[name] = std::move(scene);
 }
 
-void SceneManager::load_scene(hash_t name)
-{
-	auto it = s_storage.scenes.find(name);
-	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
-	
-	DLOGN("application") << "Loading scene: " << WCC('n') << istr::resolve(name) << std::endl;
-	it->second->load();
-}
-
 void SceneManager::unload_scene(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);

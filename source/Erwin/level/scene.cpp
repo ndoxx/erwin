@@ -27,13 +27,6 @@ Scene::Scene()
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
 }
 
-void Scene::load()
-{
-    asset_registry_ = AssetManager::create_asset_registry();
-
-    loaded_ = true;
-}
-
 void Scene::unload()
 {
     if(!loaded_)
@@ -88,7 +81,14 @@ void Scene::cleanup()
     }
 }
 
-void Scene::serialize_xml(const FilePath& file_path)
+void Scene::save()
+{
+    W_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set");
+    W_ASSERT(scene_file_path_.check_extension(".scn"_h), "Only .scn XML files supported for now.");
+    save_xml(scene_file_path_);
+}
+
+void Scene::save_xml(const FilePath& file_path)
 {
     DLOGN("scene") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
@@ -143,10 +143,13 @@ void Scene::serialize_xml(const FilePath& file_path)
     DLOGI << "done." << std::endl;
 }
 
-void Scene::deserialize_xml(const erwin::FilePath& file_path)
+void Scene::load_xml(const erwin::FilePath& file_path)
 {
     DLOGN("scene") << "Loading scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
+
+    scene_file_path_ = file_path;
+    asset_registry_ = AssetManager::create_asset_registry();
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);
@@ -171,7 +174,7 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         xml::parse_attribute(asset_node, "type", sz_asset_type);
         std::string asset_rel_path;
         xml::parse_attribute(asset_node, "path", asset_rel_path);
-        FilePath asset_path(root_dir_, asset_rel_path);
+        FilePath asset_path(file_path.base_path(), asset_rel_path);
         AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), asset_path);
     }
 
@@ -241,6 +244,7 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     entity::sort_hierarchy(registry);
 
     AssetManager::launch_async_tasks();
+    loaded_ = true; // TODO: More granularity. At this stage scene is not FULLY loaded
 }
 
 void Scene::load_hdr_environment(const FilePath& hdr_file)

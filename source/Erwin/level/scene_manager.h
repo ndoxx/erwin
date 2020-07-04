@@ -11,7 +11,6 @@ class SceneManager
 {
 public:
     static void add_scene(hash_t name, std::unique_ptr<Scene> scene);
-    static void load_scene(hash_t name);
     static void unload_scene(hash_t name);
     static void remove_scene(hash_t name);
     static void make_current(hash_t name);

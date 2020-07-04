@@ -7,7 +7,6 @@
 #include "widget/widget_rt_peek.h"
 #include "widget/widget_scene_hierarchy.h"
 #include "widget/widget_scene_view.h"
-#include "project/project.h"
 
 using namespace erwin;
 
@@ -57,13 +56,9 @@ void SceneEditorLayer::on_detach()
         delete widget;
 }
 
-void SceneEditorLayer::setup_editor_entities()
+void SceneEditorLayer::setup_editor_entities(entt::registry& registry)
 {
-    auto& scene = scn::current();
-    if(scene.is_loaded())
-    {
-        gizmo_system_.setup_editor_entities(scene.registry);
-    }
+    gizmo_system_.setup_editor_entities(registry);
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
@@ -149,10 +144,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
     {
-        // TMP
-        const auto& ps = project::get_project_settings();
-        FilePath fp(ps.registry.get("project.scene.start"_h));
-        scn::current().serialize_xml(fp);
+        scn::current().save();
         return true;
     }
 
