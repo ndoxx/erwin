@@ -32,16 +32,7 @@ public:
 
 	void load_hdr_environment(const erwin::FilePath& hdr_file);
 
-	void add_entity(erwin::EntityID entity, const std::string& name, const char* icon = nullptr);
-	inline erwin::EntityID create_entity(const std::string& name, const char* icon = nullptr)
-	{
-		auto ent = registry.create();
-		add_entity(ent, name, icon);
-		return ent;
-	}
-
-	void select(erwin::EntityID entity);
-	void drop_selection();
+	erwin::EntityID create_entity(const std::string& name, const char* icon = nullptr);
 
 	void mark_for_removal(erwin::EntityID entity, uint32_t reflected_component);
 	void mark_for_removal(erwin::EntityID entity);

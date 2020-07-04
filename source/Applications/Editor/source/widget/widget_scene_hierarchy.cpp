@@ -51,11 +51,7 @@ void SceneHierarchyWidget::on_imgui_render()
     
     // Basic controls
     if(ImGui::Button("New entity"))
-    {
-        // For the moment, create an entity with editor description only
-        EntityID ent = scene.registry.create();
-        scene.add_entity(ent, "Entity #" + std::to_string(static_cast<unsigned long>(ent)));
-    }
+        scene.create_entity("New Entity");
 
     ImGui::Separator();
 
@@ -137,7 +133,8 @@ void SceneHierarchyWidget::on_imgui_render()
     if(new_selection != k_invalid_entity_id)
     {
     	// Update scene selected entity index
-    	scene.select(new_selection);
+        scene.registry.clear<SelectedTag>();
+        scene.registry.emplace<SelectedTag>(new_selection);
         // Drop gizmo handle selection
         scene.registry.clear<GizmoHandleSelectedTag>();
     }

@@ -1,6 +1,7 @@
 #include "layer/layer_scene_editor.h"
 #include "input/input.h"
 #include "level/scene.h"
+#include "entity/tag_components.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
@@ -142,7 +143,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
-        scn::current<Scene>().drop_selection();
+        scn::current<Scene>().registry.clear<SelectedTag>();
         return true;
     }
 

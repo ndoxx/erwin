@@ -259,21 +259,15 @@ void Scene::load_hdr_environment(const FilePath& hdr_file)
     });
 }
 
-void Scene::add_entity(EntityID entity, const std::string& name, const char* _icon)
+EntityID Scene::create_entity(const std::string& name, const char* _icon)
 {
+    auto entity = registry.create();
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
     registry.emplace<ComponentDescription>(entity, desc);
 
     DLOG("editor", 1) << "[Scene] Added entity: " << name << std::endl;
+    return entity;
 }
-
-void Scene::select(EntityID entity)
-{
-    registry.clear<SelectedTag>();
-    registry.emplace<SelectedTag>(entity);
-}
-
-void Scene::drop_selection() { registry.clear<SelectedTag>(); }
 
 void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 {
