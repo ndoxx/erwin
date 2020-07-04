@@ -12,6 +12,7 @@
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
+#include "entity/tag_components.h"
 
 static void set_gui_behavior()
 {
@@ -49,7 +50,7 @@ void ErwinEditor::on_load()
 
     console_ = new editor::ConsoleWidget();
     WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
-                   {"editor"_h, "application"_h, "entity"_h}));
+                   {"editor"_h, "application"_h, "entity"_h, "scene"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
@@ -67,8 +68,18 @@ void ErwinEditor::on_load()
     create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer_});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
 
-    SceneManager::create_scene<Scene>("main_scene"_h);
+    SceneManager::create_scene("main_scene"_h);
     SceneManager::make_current("main_scene"_h);
+
+    // Setup scene injection
+    scn::current().set_injector([](Scene& scene)
+    {
+        auto root = scene.get_named("root"_h);
+        scene.registry.emplace<FixedHierarchyTag>(root);
+        scene.registry.emplace<NonEditableTag>(root);
+        scene.registry.emplace<NonRemovableTag>(root);
+    });
+
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     const auto& last_project_file = cfg::get("settings.project.last_project"_h);
@@ -77,7 +88,8 @@ void ErwinEditor::on_load()
         SceneManager::load_scene("main_scene"_h);
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
-        scn::current<Scene>().deserialize_xml(ps.registry.get("project.scene.start"_h));
+        scn::current().set_assets_root(ps.root_folder);
+        scn::current().deserialize_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
         scene_editor_layer_->setup_editor_entities();
     }
@@ -217,7 +229,8 @@ void ErwinEditor::on_imgui_render()
         SceneManager::load_scene("main_scene"_h);
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
-        scn::current<Scene>().deserialize_xml(ps.registry.get("project.scene.start"_h));
+        scn::current().set_assets_root(ps.root_folder);
+        scn::current().deserialize_xml(ps.registry.get("project.scene.start"_h));
         scene_view_layer_->setup_camera();
         scene_editor_layer_->setup_editor_entities();
     });

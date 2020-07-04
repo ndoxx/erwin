@@ -4,7 +4,7 @@
 #include "entity/tag_components.h"
 #include "imgui.h"
 #include "imgui/font_awesome.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
 #include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
 
@@ -17,7 +17,7 @@ InspectorWidget::InspectorWidget() : Widget("Inspector", true) {}
 
 void InspectorWidget::entity_tab()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
@@ -61,7 +61,8 @@ void InspectorWidget::entity_tab()
                         }
 
                         // Invoke GUI for this component
-                        invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data, e, &scene.registry, scene.get_asset_registry());
+                        invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data, e, &scene.registry,
+                               scene.get_asset_registry());
                         ImGui::TreePop();
                     }
                     ImGui::Separator();

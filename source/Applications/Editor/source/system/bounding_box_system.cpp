@@ -2,10 +2,10 @@
 #include "asset/bounding.h"
 #include "entity/component/camera.h"
 #include "entity/component/mesh.h"
+#include "entity/component/tags.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
-#include "entity/component/tags.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
 
 using namespace erwin;
 
@@ -14,7 +14,7 @@ namespace editor
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return false;
 
@@ -26,7 +26,7 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     // Perform a ray scene query, tag all entities whose OBBs are hit by the ray
     // TODO: Maybe avoid tagging entity if camera position is inside OBB
     Ray::CollisionData data;
-    scene.registry.view<ComponentOBB>().each([&ray, &data, &scene](auto e, const auto& OBB) {        
+    scene.registry.view<ComponentOBB>().each([&ray, &data, &scene](auto e, const auto& OBB) {
         if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
             scene.registry.emplace<RayHitTag>(e, RayHitTag{data.near});
     });
@@ -38,10 +38,11 @@ void BoundingBoxSystem::update(const GameClock&, entt::registry& registry)
 {
     registry.view<DirtyOBBTag, ComponentOBB, ComponentMesh>().each(
         [](auto /*e*/, auto& OBB, const auto& cmesh) { OBB.init(cmesh.mesh.extent); });
-    
-    registry.view<DirtyOBBTag, ComponentOBB, ComponentTransform3D>().each([](auto /*e*/, auto& OBB, const auto& transform) {
-        OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
-    });
+
+    registry.view<DirtyOBBTag, ComponentOBB, ComponentTransform3D>().each(
+        [](auto /*e*/, auto& OBB, const auto& transform) {
+            OBB.update(transform.global.get_model_matrix(), transform.global.uniform_scale);
+        });
 
     registry.clear<DirtyOBBTag>();
 }

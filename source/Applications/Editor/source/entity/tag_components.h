@@ -9,7 +9,6 @@ struct SelectedTag {};
 struct FixedHierarchyTag {};
 struct NonEditableTag {};
 struct NonRemovableTag {};
-struct NonSerializableTag {};
 struct NoGizmoTag {};
 struct GizmoHandleSelectedTag {};
 struct GizmoHandleComponent

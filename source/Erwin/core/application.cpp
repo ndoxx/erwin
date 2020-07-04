@@ -14,6 +14,7 @@
 #include "event/window_events.h"
 #include "memory/arena.h"
 #include "level/scene_manager.h"
+#include "level/scene.h"
 #include "entity/init.h"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"

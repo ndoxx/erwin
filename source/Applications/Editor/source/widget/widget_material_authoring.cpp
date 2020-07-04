@@ -1,6 +1,7 @@
 #include "widget/widget_material_authoring.h"
 #include "asset/asset_manager.h"
 #include "asset/texture.h"
+#include "entity/component/PBR_material.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/tom_file.h"
 #include "imgui.h"
@@ -8,15 +9,13 @@
 #include "imgui/dialog.h"
 #include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
 #include "utils/string.h"
 #include "widget/dialog_open.h"
-#include "entity/component/PBR_material.h"
-
-#include "level/scene.h"
 
 #include <optional>
 
@@ -174,7 +173,7 @@ void MaterialAuthoringWidget::pack_textures()
 
     Renderer::destroy(fb, true); // Destroy FB but keep attachments alive
 
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     auto& current_material = get_current_material(scene);
     current_material.material.texture_group = tg;
 
@@ -192,7 +191,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
         clear_texture_map(tm_type);
 
     FilePath fp(filepath);
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     const auto& freetex = AssetManager::load<FreeTexture>(scene.get_asset_registry(), fp);
     current_composition_->set_map(tm_type, freetex.handle);
     current_composition_->texture_names[uint32_t(tm_type)] = fp.resource_id();
@@ -205,8 +204,9 @@ void MaterialAuthoringWidget::clear_texture_map(TextureMapType tm_type)
     TextureHandle tex = current_composition_->textures_unpacked[uint32_t(tm_type)];
     if(tex.is_valid())
     {
-        auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
-        AssetManager::release<FreeTexture>(scene.get_asset_registry(), current_composition_->texture_names[uint32_t(tm_type)]);
+        auto& scene = SceneManager::get("material_editor_scene"_h);
+        AssetManager::release<FreeTexture>(scene.get_asset_registry(),
+                                           current_composition_->texture_names[uint32_t(tm_type)]);
         current_composition_->texture_names[uint32_t(tm_type)] = 0;
         current_composition_->clear_map(tm_type);
     }
@@ -243,11 +243,11 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
     if(success)
     {
         // Extract directory name and make it the material name
-        auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+        auto& scene = SceneManager::get("material_editor_scene"_h);
         auto& current_material = get_current_material(scene);
         current_material.name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_material.name << WCC(0)
-                          << "\" as a material name." << std::endl;
+        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_material.name << WCC(0) << "\" as a material name."
+                          << std::endl;
     }
 }
 
@@ -256,7 +256,7 @@ void MaterialAuthoringWidget::clear()
     for(TMEnum tm = 0; tm < TextureMapType::TM_COUNT; ++tm)
         clear_texture_map(TextureMapType(tm));
 
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     auto& current_material = get_current_material(scene);
     const auto& tg = current_material.material.texture_group;
     for(uint32_t ii = 0; ii < tg.texture_count; ++ii)
@@ -270,7 +270,7 @@ void MaterialAuthoringWidget::clear()
 void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 {
     // * Create an export task that will execute when we receive data
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     auto& current_material = get_current_material(scene);
     auto fut_a = Renderer::get_pixel_data(current_material.material.texture_group[0]);
     auto fut_nd = Renderer::get_pixel_data(current_material.material.texture_group[1]);
@@ -355,7 +355,7 @@ static constexpr size_t k_image_size = 150;
 void MaterialAuthoringWidget::on_imgui_render()
 {
     // Restrict to opaque PBR materials for now
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     auto& current_material = get_current_material(scene);
 
     // * Global interface

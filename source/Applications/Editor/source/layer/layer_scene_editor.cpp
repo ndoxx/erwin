@@ -1,6 +1,6 @@
 #include "layer/layer_scene_editor.h"
 #include "input/input.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
 #include "entity/tag_components.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
@@ -59,7 +59,7 @@ void SceneEditorLayer::on_detach()
 
 void SceneEditorLayer::setup_editor_entities()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(scene.is_loaded())
     {
         gizmo_system_.setup_editor_entities(scene.registry);
@@ -68,7 +68,7 @@ void SceneEditorLayer::setup_editor_entities()
 
 void SceneEditorLayer::on_update(GameClock& clock)
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(scene.is_loaded())
     {
         bounding_box_system_.update(clock, scene.registry);
@@ -82,7 +82,7 @@ void SceneEditorLayer::on_update(GameClock& clock)
 
 void SceneEditorLayer::on_render()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(scene.is_loaded())
     {
         bounding_box_system_.render(scene.registry);
@@ -143,7 +143,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
-        scn::current<Scene>().registry.clear<SelectedTag>();
+        scn::current().registry.clear<SelectedTag>();
         return true;
     }
 
@@ -152,7 +152,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
         // TMP
         const auto& ps = project::get_project_settings();
         FilePath fp(ps.registry.get("project.scene.start"_h));
-        scn::current<Scene>().serialize_xml(fp);
+        scn::current().serialize_xml(fp);
         return true;
     }
 

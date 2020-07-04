@@ -1,32 +1,23 @@
 #include "level/scene.h"
 #include "asset/asset_manager.h"
 #include "debug/logger.h"
-#include "entity/component/description.h"
 #include "entity/reflection.h"
 #include "imgui/font_awesome.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 
-#include "entity/component/PBR_material.h"
-#include "entity/component/bounding_box.h"
-#include "entity/component/camera.h"
-#include "entity/component/dirlight_material.h"
+#include "entity/component/description.h"
 #include "entity/component/hierarchy.h"
-#include "entity/component/light.h"
 #include "entity/component/mesh.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
-#include "entity/tag_components.h"
-#include "project/project.h"
 
 #include "filesystem/xml_file.h"
 
 #include <tuple>
 
-using namespace erwin;
-
-namespace editor
+namespace erwin
 {
 
 Scene::Scene()
@@ -36,19 +27,23 @@ Scene::Scene()
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
 }
 
-bool Scene::on_load()
+void Scene::load()
 {
     asset_registry_ = AssetManager::create_asset_registry();
 
-    return true;
+    loaded_ = true;
 }
 
-void Scene::on_unload()
+void Scene::unload()
 {
+    if(!loaded_)
+        return;
+
     named_entities_.clear();
     registry.clear();
 
     AssetManager::release_registry(asset_registry_);
+    loaded_ = false;
 }
 
 void Scene::cleanup()
@@ -80,7 +75,7 @@ void Scene::cleanup()
 
             std::vector<EntityID> subtree;
             entity::depth_first(entity, registry, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
-                DLOG("editor", 1) << "Removing subtree node: " << size_t(child) << std::endl;
+                DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
                 subtree.push_back(child);
                 return false;
             });
@@ -95,7 +90,7 @@ void Scene::cleanup()
 
 void Scene::serialize_xml(const FilePath& file_path)
 {
-    DLOGN("editor") << "Serializing scene: " << std::endl;
+    DLOGN("scene") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
 
     // Open XML file
@@ -150,14 +145,14 @@ void Scene::serialize_xml(const FilePath& file_path)
 
 void Scene::deserialize_xml(const erwin::FilePath& file_path)
 {
-    DLOGN("editor") << "Loading scene: " << std::endl;
+    DLOGN("scene") << "Loading scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);
     if(!scene_f.read())
     {
-        DLOGE("editor") << "Cannot parse scene file." << std::endl;
+        DLOGE("scene") << "Cannot parse scene file." << std::endl;
         return;
     }
 
@@ -165,13 +160,9 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
     auto root = create_entity("__root__", W_ICON(CODE_FORK));
     set_named(root, "root"_h);
     registry.emplace<ComponentTransform3D>(root, glm::vec3(0.f), glm::vec3(0.f), 1.f);
-    registry.emplace<FixedHierarchyTag>(root);
-    registry.emplace<NonEditableTag>(root);
-    registry.emplace<NonRemovableTag>(root);
     registry.emplace<NonSerializableTag>(root);
 
     // Read resource table and load each asset
-    const auto& ps = project::get_project_settings();
     auto* assets_node = scene_f.root->first_node("Assets");
     W_ASSERT(assets_node, "No <Assets> node.");
     for(auto* asset_node = assets_node->first_node("Asset"); asset_node; asset_node = asset_node->next_sibling("Asset"))
@@ -180,7 +171,7 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
         xml::parse_attribute(asset_node, "type", sz_asset_type);
         std::string asset_rel_path;
         xml::parse_attribute(asset_node, "path", asset_rel_path);
-        FilePath asset_path(ps.root_folder, asset_rel_path);
+        FilePath asset_path(root_dir_, asset_rel_path);
         AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), asset_path);
     }
 
@@ -196,6 +187,9 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
             Renderer3D::enable_IBL(true);
         });
     }
+
+    // Inject entities (editor needs this)
+    inject_(*this);
 
     // Load entities
     std::map<size_t, EntityID> id_to_ent_id;
@@ -223,22 +217,22 @@ void Scene::deserialize_xml(const erwin::FilePath& file_path)
                 if(is_named)
                     registry.emplace<NamedEntityTag>(e);
 
-            // DLOGW("editor") << "Entity #" << size_t(e) << std::endl;
+            // DLOGW("scene") << "Entity #" << size_t(e) << std::endl;
             // Deserialize components
             for(auto* cmp_node = entity_node->first_node(); cmp_node; cmp_node = cmp_node->next_sibling())
             {
-                // DLOGW("editor") << ">" << cmp_node->name() << std::endl;
+                // DLOGW("scene") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
-                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node), static_cast<void*>(&registry), e);
+                invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node),
+                       static_cast<void*>(&registry), e);
             }
         }
     }
 
     // Register all named entities
-    registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc)
-    {
+    registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc) {
         set_named(e, H_(desc.name.c_str()));
-        DLOG("editor",1) << "Registered named entity [" << size_t(e) << "] as " << WCC('n') << desc.name << std::endl;
+        DLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << WCC('n') << desc.name << std::endl;
     });
 
     // Setup hierarchy
@@ -265,7 +259,7 @@ EntityID Scene::create_entity(const std::string& name, const char* _icon)
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
     registry.emplace<ComponentDescription>(entity, desc);
 
-    DLOG("editor", 1) << "[Scene] Added entity: " << name << std::endl;
+    DLOG("scene", 1) << "[Scene] Added entity: " << name << std::endl;
     return entity;
 }
 
@@ -282,5 +276,4 @@ void Scene::set_named(erwin::EntityID ent, erwin::hash_t hname)
     named_entities_.insert({hname, ent});
 }
 
-
-} // namespace editor
+} // namespace erwin

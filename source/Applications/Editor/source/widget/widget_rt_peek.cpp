@@ -1,12 +1,12 @@
 #include "widget/widget_rt_peek.h"
-#include "level/scene.h"
 #include "core/intern_string.h"
 #include "entity/component/camera.h"
 #include "filesystem/filesystem.h"
+#include "imgui.h"
+#include "level/scene_manager.h"
+#include "render/common_geometry.h"
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"
-#include "render/common_geometry.h"
-#include "imgui.h"
 
 #include <vector>
 
@@ -28,7 +28,7 @@ struct DebugPane
     std::vector<DebugTextureProperties> properties;
 };
 
-enum PeekFlags: uint32_t
+enum PeekFlags : uint32_t
 {
     NONE = 0,
     TONE_MAP = 1,
@@ -66,19 +66,18 @@ static struct
     PeekData peek_data_;
 } s_storage;
 
-RTPeekWidget::RTPeekWidget():
-Widget("Framebuffers", true)
+RTPeekWidget::RTPeekWidget() : Widget("Framebuffers", true)
 {
     // Create resources
-    FramebufferLayout layout
-    {
-        {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
-    };
+    FramebufferLayout layout{{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}};
     FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
-    s_storage.peek_shader_ = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
-    // s_storage.peek_shader_ = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.spv", "texture_peek");
-    s_storage.pass_ubo_ = Renderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), UsagePattern::Dynamic);
+    s_storage.peek_shader_ =
+        Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.glsl", "texture_peek");
+    // s_storage.peek_shader_ = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/texture_peek.spv",
+    // "texture_peek");
+    s_storage.pass_ubo_ =
+        Renderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), UsagePattern::Dynamic);
     Renderer::shader_attach_uniform_buffer(s_storage.peek_shader_, s_storage.pass_ubo_);
 
     // Initialize GUI
@@ -102,7 +101,7 @@ Widget("Framebuffers", true)
 size_t RTPeekWidget::new_pane(const std::string& name)
 {
     size_t pane_index = s_storage.panes_.size();
-    s_storage.panes_.push_back(DebugPane{name,{}});
+    s_storage.panes_.push_back(DebugPane{name, {}});
     return pane_index;
 }
 
@@ -120,32 +119,32 @@ void RTPeekWidget::register_framebuffer(const std::string& framebuffer_name)
     uint32_t ntex = Renderer::get_framebuffer_texture_count(fb);
     size_t pane_index = new_pane(framebuffer_name);
 
-    for(uint32_t ii=0; ii<ntex; ++ii)
+    for(uint32_t ii = 0; ii < ntex; ++ii)
     {
         TextureHandle texture_handle = Renderer::get_framebuffer_texture(fb, ii);
         hash_t hname = Renderer::get_framebuffer_texture_name(fb, ii);
         std::string tex_name = istr::resolve(hname);
-        register_texture(pane_index, texture_handle, tex_name, (has_depth && ii==ntex-1));
+        register_texture(pane_index, texture_handle, tex_name, (has_depth && ii == ntex - 1));
     }
 }
 
 void RTPeekWidget::on_update(const erwin::GameClock&)
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
-    
+
     const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.get_named("Camera"_h));
     s_storage.peek_data_.projection_parameters = camera.projection_parameters;
-    
+
     // Update UBO data
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
     s_storage.peek_data_.texel_size = FramebufferPool::get_texel_size("fb_texture_view"_h);
-    s_storage.peek_data_.flags = (s_storage.tone_map_ ? PeekFlags::TONE_MAP : PeekFlags::NONE)
-                               | (s_storage.invert_color_ ? PeekFlags::INVERT : PeekFlags::NONE)
-                               | (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE)
-                               | (props.is_depth ? PeekFlags::DEPTH : PeekFlags::NONE);
-    s_storage.peek_data_.channel_filter = { s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f };
+    s_storage.peek_data_.flags = (s_storage.tone_map_ ? PeekFlags::TONE_MAP : PeekFlags::NONE) |
+                                 (s_storage.invert_color_ ? PeekFlags::INVERT : PeekFlags::NONE) |
+                                 (s_storage.split_alpha_ ? PeekFlags::SPLIT_ALPHA : PeekFlags::NONE) |
+                                 (props.is_depth ? PeekFlags::DEPTH : PeekFlags::NONE);
+    s_storage.peek_data_.channel_filter = {s_storage.show_r_, s_storage.show_g_, s_storage.show_b_, 1.f};
 }
 
 void RTPeekWidget::on_layer_render()
@@ -162,8 +161,10 @@ void RTPeekWidget::on_layer_render()
     // frame textures.
     SortKey key;
     key.set_sequence(0, 0, s_storage.peek_shader_);
-    DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_, CommonGeometry::get_mesh("quad"_h).VAO);
-    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData), DataOwnership::Copy));
+    DrawCall dc(DrawCall::Indexed, s_storage.pass_state_, s_storage.peek_shader_,
+                CommonGeometry::get_mesh("quad"_h).VAO);
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo_, &s_storage.peek_data_, sizeof(PeekData),
+                                                      DataOwnership::Copy));
     dc.set_texture(props.texture);
     Renderer::submit(key.encode(), dc);
 }
@@ -175,7 +176,7 @@ void RTPeekWidget::on_imgui_render()
 
     // * Get render properties from GUI
     // Select pane (render target)
-    ImGui::BeginChild("##peekctl", ImVec2(0, 4*ImGui::GetTextLineHeightWithSpacing()));
+    ImGui::BeginChild("##peekctl", ImVec2(0, 4 * ImGui::GetTextLineHeightWithSpacing()));
     ImGui::Columns(2, nullptr, false);
 
     static const char* cur_target_item = s_storage.panes_[s_storage.current_pane_].name.data();
@@ -183,7 +184,7 @@ void RTPeekWidget::on_imgui_render()
 
     if(ImGui::BeginCombo("Target", cur_target_item))
     {
-        for(size_t ii=0; ii<s_storage.panes_.size(); ++ii)
+        for(size_t ii = 0; ii < s_storage.panes_.size(); ++ii)
         {
             const DebugPane& pane = s_storage.panes_[ii];
             bool is_selected = (cur_target_item == pane.name.data());
@@ -206,7 +207,7 @@ void RTPeekWidget::on_imgui_render()
     // Select attachment
     if(ImGui::BeginCombo("Texture", cur_tex_item))
     {
-        for(size_t ii=0; ii<ntex; ++ii)
+        for(size_t ii = 0; ii < ntex; ++ii)
         {
             const DebugTextureProperties& props = pane.properties[ii];
             bool is_selected = (cur_tex_item == props.name.data());
@@ -224,20 +225,24 @@ void RTPeekWidget::on_imgui_render()
     DebugTextureProperties& props = s_storage.panes_[s_storage.current_pane_].properties[s_storage.current_tex_];
     if(ImGui::Button("Save to file"))
         s_storage.save_image_ = true;
-    
+
     if(!props.is_depth)
     {
         ImGui::NextColumn();
         ImGui::Checkbox("Tone map", &s_storage.tone_map_);
 
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.8f,0.f,0.f,1.f));
-        ImGui::SameLine(); ImGui::Selectable("R##fbp_chan", &s_storage.show_r_, 0, ImVec2(15,15));
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f,0.8f,0.f,1.f));
-        ImGui::SameLine(); ImGui::Selectable("G##fbp_chan", &s_storage.show_g_, 0, ImVec2(15,15));
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f,0.f,0.8f,1.f));
-        ImGui::SameLine(); ImGui::Selectable("B##fbp_chan", &s_storage.show_b_, 0, ImVec2(15,15));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.8f, 0.f, 0.f, 1.f));
+        ImGui::SameLine();
+        ImGui::Selectable("R##fbp_chan", &s_storage.show_r_, 0, ImVec2(15, 15));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f, 0.8f, 0.f, 1.f));
+        ImGui::SameLine();
+        ImGui::Selectable("G##fbp_chan", &s_storage.show_g_, 0, ImVec2(15, 15));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.f, 0.f, 0.8f, 1.f));
+        ImGui::SameLine();
+        ImGui::Selectable("B##fbp_chan", &s_storage.show_b_, 0, ImVec2(15, 15));
         ImGui::PopStyleColor(3);
-        ImGui::SameLine(); ImGui::Selectable("I##fbp_inve", &s_storage.invert_color_, 0, ImVec2(15,15));
+        ImGui::SameLine();
+        ImGui::Selectable("I##fbp_inve", &s_storage.invert_color_, 0, ImVec2(15, 15));
 
         ImGui::Checkbox("Alpha split", &s_storage.split_alpha_);
         if(s_storage.split_alpha_)
@@ -258,21 +263,18 @@ void RTPeekWidget::on_imgui_render()
     FramebufferHandle fb = FramebufferPool::get_framebuffer("fb_texture_view"_h);
     TextureHandle texture = Renderer::get_framebuffer_texture(fb, 0);
     void* framebuffer_texture_native = Renderer::get_native_texture_handle(texture);
-    ImGui::GetWindowDrawList()->AddImage(framebuffer_texture_native,
-                                         ImGui::GetCursorScreenPos(),
-                                         ImVec2(winx, winy),
+    ImGui::GetWindowDrawList()->AddImage(framebuffer_texture_native, ImGui::GetCursorScreenPos(), ImVec2(winx, winy),
                                          ImVec2(0, 1), ImVec2(1, 0));
 
     // * Save image if needed
     if(s_storage.save_image_)
     {
         std::string filename = props.name + ".png";
-        DLOG("editor",1) << "Saving framebuffer texture as image: " << std::endl;
+        DLOG("editor", 1) << "Saving framebuffer texture as image: " << std::endl;
         DLOGI << WCC('p') << filename << std::endl;
         Renderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
     }
 }
-
 
 } // namespace editor

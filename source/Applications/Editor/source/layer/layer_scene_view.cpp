@@ -1,6 +1,6 @@
-#include "layer_scene_view.h"
+#include "layer/layer_scene_view.h"
 #include "imgui/font_awesome.h"
-#include "level/scene.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 
 #include <bitset>
@@ -18,7 +18,7 @@ void SceneViewLayer::on_imgui_render() {}
 
 void SceneViewLayer::setup_camera()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
 
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.get_named("Camera"_h));
 
@@ -48,7 +48,7 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(tt >= 10.f)
         tt = 0.f;
 
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
@@ -68,7 +68,7 @@ void SceneViewLayer::on_update(GameClock& clock)
 
 void SceneViewLayer::on_render()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 

@@ -4,6 +4,7 @@
 #include "entity/component/camera.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
+#include "entity/component/tags.h"
 #include "render/renderer_3d.h"
 
 using namespace erwin;

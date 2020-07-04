@@ -1,38 +1,32 @@
 #include "layer_test.h"
 
-#include <iostream>
-#include <iomanip>
 #include <bitset>
+#include <iomanip>
+#include <iostream>
 
 #include "erwin.h"
 #include "render/renderer.h"
-#include "utils/future.hpp"
 #include "scene.h"
-
+#include "utils/future.hpp"
 
 #include "entity/component/PBR_material.h"
 #include "entity/component/bounding_box.h"
+#include "entity/component/camera.h"
 #include "entity/component/dirlight_material.h"
+#include "entity/component/light.h"
 #include "entity/component/mesh.h"
 #include "entity/component/transform.h"
-#include "entity/component/camera.h"
-#include "entity/component/light.h"
 
 using namespace erwin;
 using namespace rtest;
 
-LayerTest::LayerTest(): Layer("TestLayer")
-{
+LayerTest::LayerTest() : Layer("TestLayer") {}
 
-}
-
-void LayerTest::on_imgui_render()
-{
-}
+void LayerTest::on_imgui_render() {}
 
 void LayerTest::setup_camera()
 {
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
 
     ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
 
@@ -43,7 +37,7 @@ void LayerTest::setup_camera()
 void LayerTest::on_attach()
 {
     wfs::set_asset_dir("source/Applications/RTest/assets");
-    bkg_color_ = {0.f,0.f,0.f,1.f};
+    bkg_color_ = {0.f, 0.f, 0.f, 1.f};
 
     SceneManager::create_scene<Scene>("main_scene"_h);
     SceneManager::load_scene("main_scene"_h);
@@ -63,22 +57,19 @@ void LayerTest::on_commit()
     add_listener(this, &LayerTest::on_keyboard_event);
 }
 
-void LayerTest::on_detach()
-{
-
-}
+void LayerTest::on_detach() {}
 
 void LayerTest::on_update(GameClock& clock)
 {
     float dt = clock.get_frame_duration();
     static float tt = 0.f;
     tt += dt;
-    float r = 0.5f*sin(2*M_PI*tt*0.10f + 1.f) + 0.5f;
-    float g = 0.5f*sin(2*M_PI*tt*0.11f + 2.f) + 0.5f;
-    float b = 0.5f*sin(2*M_PI*tt*0.09f + 4.f) + 0.5f;
-    bkg_color_ = {r,g,b,1.f};
+    float r = 0.5f * sin(2 * M_PI * tt * 0.10f + 1.f) + 0.5f;
+    float g = 0.5f * sin(2 * M_PI * tt * 0.11f + 2.f) + 0.5f;
+    float b = 0.5f * sin(2 * M_PI * tt * 0.09f + 4.f) + 0.5f;
+    bkg_color_ = {r, g, b, 1.f};
 
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
@@ -96,7 +87,7 @@ void LayerTest::on_render()
 {
     // Renderer::clear(0, Renderer::default_render_target(), ClearFlags::CLEAR_COLOR_FLAG, bkg_color_);
 
-    auto& scene = scn::current<Scene>();
+    auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 

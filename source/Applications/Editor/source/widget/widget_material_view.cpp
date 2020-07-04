@@ -11,8 +11,7 @@
 #include "render/handles.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
-
-#include "level/scene.h"
+#include "level/scene_manager.h"
 
 #include "imgui.h"
 
@@ -30,7 +29,7 @@ MaterialViewWidget::MaterialViewWidget()
 {
     // flags_ |= ImGuiWindowFlags_MenuBar;
     // Create scene with a sphere in the middle
-    auto& scene = SceneManager::create_scene<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::create_scene("material_editor_scene"_h);
     scene.load();
 
     // Create camera
@@ -65,7 +64,7 @@ MaterialViewWidget::~MaterialViewWidget() {}
 
 void MaterialViewWidget::on_update(const GameClock& clock)
 {
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
 
     scene.registry.view<ComponentTransform3D, ComponentCamera3D>().each([this, &clock](auto, auto& trans, auto& cam) {
         camera_controller_.update(clock, cam, trans);
@@ -105,7 +104,7 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
 
 void MaterialViewWidget::on_layer_render()
 {
-    auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+    auto& scene = SceneManager::get("material_editor_scene"_h);
     Renderer3D::begin_deferred_pass();
     scene.registry.view<ComponentTransform3D, ComponentMesh, ComponentPBRMaterial>().each(
         [](auto, const auto& trans, const auto& mesh, const auto& mat) {
@@ -114,9 +113,9 @@ void MaterialViewWidget::on_layer_render()
     Renderer3D::end_deferred_pass();
 
     // TODO: Use local envmap?
-    if(!scn::current<Scene>().is_loaded())
+    if(!scn::current().is_loaded())
         return;
-    Renderer3D::draw_skybox(scn::current<Scene>().get_environment().environment_map);
+    Renderer3D::draw_skybox(scn::current().get_environment().environment_map);
 }
 
 static const std::vector<std::string> s_mesh_names = {
@@ -139,7 +138,7 @@ void MaterialViewWidget::on_imgui_render()
             if(ImGui::Selectable(s_mesh_names[ii].c_str(), is_selected))
             {
                 current_index_ = ii;
-                auto& scene = SceneManager::get_as<Scene>("material_editor_scene"_h);
+                auto& scene = SceneManager::get("material_editor_scene"_h);
                 auto e_obj = scene.get_named("Object"_h);
                 auto& cmesh = scene.registry.get<ComponentMesh>(e_obj);
                 cmesh.mesh = CommonGeometry::get_mesh(s_va_name[ii]);
