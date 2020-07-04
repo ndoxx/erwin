@@ -26,7 +26,7 @@ public:
 	};
 
 	FreeflyCameraSystem();
-	void init(ComponentTransform3D& transform);
+	void init(const ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
 	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
 

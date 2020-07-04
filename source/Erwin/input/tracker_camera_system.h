@@ -26,7 +26,7 @@ public:
 	};
 
 	TrackerCameraSystem();
-	void init(ComponentTransform3D& transform);
+	void init(const ComponentTransform3D& transform);
 	void set_frustum_parameters(const FrustumParameters& params);
 	void set_position(float radius, float azimuth, float colatitude);
 	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
