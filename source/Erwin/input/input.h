@@ -115,11 +115,7 @@ private:
 
 private:
 	static Input* INSTANCE_;
-#ifdef W_USE_EASTL
-	static eastl::vector<ActionDescriptor> actions;
-#else
 	static std::vector<ActionDescriptor> actions;
-#endif
 };
 
 

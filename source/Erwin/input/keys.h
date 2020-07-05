@@ -174,11 +174,7 @@ enum WKEYMOD: uint8_t
 	}
 }
 
-#ifdef W_USE_EASTL
-	using KeyNameMap = eastl::map<WKEY, std::string>;
-#else
-	using KeyNameMap = std::map<WKEY, std::string>;
-#endif
+using KeyNameMap = std::map<WKEY, std::string>;
 
 static const KeyNameMap KEY_NAMES =
 {
@@ -439,11 +435,7 @@ static const KeyNameMap KEY_NAMES =
 	return WKEY::NONE;
 }
 
-#ifdef W_USE_EASTL
-	using MouseButtonMap = eastl::map<WMOUSE, std::string>;
-#else
-	using MouseButtonMap = std::map<WMOUSE, std::string>;
-#endif
+using MouseButtonMap = std::map<WMOUSE, std::string>;
 
 static const MouseButtonMap MB_NAMES =
 {

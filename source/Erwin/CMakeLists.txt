@@ -1,16 +1,16 @@
 file(GLOB_RECURSE SRC_ERWIN    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 file(GLOB_RECURSE SRC_PLATFORM "${CMAKE_CURRENT_SOURCE_DIR}/../platform/*.cpp")
 
-set(INC_EASTL
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAAssert/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EABase/include/Common"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAMain/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAStdC/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EATest/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAThread/include"
-    )
+# set(INC_EASTL
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/include"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAAssert/include"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EABase/include/Common"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAMain/include"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAStdC/include"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EATest/include"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eastl/test/packages/EAThread/include"
+#     )
 
 # Disable all warnings for third party stuff
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/asset/stb_build.cpp" PROPERTIES COMPILE_FLAGS -w)
@@ -46,7 +46,7 @@ target_include_directories(erwin
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui_filedialog"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
-        "${INC_EASTL}"
+        # "${INC_EASTL}"
     )
 
 set_target_properties(erwin
@@ -141,11 +141,11 @@ target_link_libraries(imgui_filedialog PRIVATE)
 
 
 # EASTL
-set_target_properties(eastl
-    PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
-    )
+# set_target_properties(eastl
+#     PROPERTIES
+#         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libEASTL.a"
+#         INTERFACE_INCLUDE_DIRECTORIES "${INC_EASTL}"
+#     )
 
 target_link_libraries(erwin
     PRIVATE

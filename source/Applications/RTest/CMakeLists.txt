@@ -24,7 +24,6 @@ target_link_libraries(rtest
         erwin
         pthread
         stdc++fs
-        eastl
     )
 
 cotire(rtest)

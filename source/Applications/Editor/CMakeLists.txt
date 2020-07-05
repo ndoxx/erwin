@@ -26,7 +26,6 @@ target_link_libraries(editor
         erwin
         pthread
         stdc++fs
-        eastl
 )
 
 cotire(editor)

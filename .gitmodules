@@ -1,6 +1,3 @@
-[submodule "source/vendor/cereal"]
-	path = source/vendor/cereal
-	url = https://github.com/USCiLab/cereal.git
 [submodule "source/vendor/ctti"]
 	path = source/vendor/ctti
 	url = https://github.com/Manu343726/ctti.git
@@ -24,9 +21,6 @@
 [submodule "source/vendor/rectpack2D"]
 	path = source/vendor/rectpack2D
 	url = https://github.com/TeamHypersomnia/rectpack2D.git
-[submodule "source/vendor/inih"]
-	path = source/vendor/inih
-	url = https://github.com/benhoyt/inih.git
 [submodule "source/vendor/zlib"]
 	path = source/vendor/zlib
 	url = https://github.com/madler/zlib.git
@@ -41,15 +35,9 @@
 [submodule "source/vendor/Catch2"]
 	path = source/vendor/Catch2
 	url = https://github.com/catchorg/Catch2.git
-[submodule "source/vendor/eastl"]
-	path = source/vendor/eastl
-	url = https://github.com/electronicarts/EASTL.git
 [submodule "source/vendor/atomic_queue"]
 	path = source/vendor/atomic_queue
 	url = https://github.com/max0x7ba/atomic_queue.git
-[submodule "source/vendor/taskflow"]
-	path = source/vendor/taskflow
-	url = https://github.com/cpp-taskflow/cpp-taskflow.git
 [submodule "source/vendor/entt"]
 	path = source/vendor/entt
 	url = https://github.com/skypjack/entt.git

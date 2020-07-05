@@ -19,7 +19,6 @@ target_link_libraries(fractal
 		erwin
         pthread
         stdc++fs
-        eastl
     )
 
 cotire(fractal)
