@@ -30,6 +30,7 @@ public:
 	void set_frustum_parameters(const FrustumParameters& params);
 	void update_frustum();
 	void update(const GameClock& clock, ComponentCamera3D& camera, ComponentTransform3D& transform);
+	void transfer_control(bool value);
 
 	bool on_window_resize_event(const WindowResizeEvent& event);
 	bool on_window_moved_event(const WindowMovedEvent& event);

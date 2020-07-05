@@ -40,8 +40,8 @@ protected:
 
 private:
     erwin::FreeflyCameraSystem camera_controller_;
-
     erwin::TransformSystem transform_system_;
+    bool freefly_mode_ = false;
 };
 
 } // namespace editor

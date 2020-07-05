@@ -2,9 +2,10 @@
 #include "asset/bounding.h"
 #include "entity/component/bounding_box.h"
 #include "entity/component/camera.h"
+#include "entity/component/hierarchy.h"
+#include "entity/component/tags.h"
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
-#include "entity/component/tags.h"
 #include "render/renderer_3d.h"
 
 using namespace erwin;
@@ -50,22 +51,26 @@ void GizmoSystem::setup_editor_entities(entt::registry& registry)
         registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
         registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
         registry.emplace<NonSerializableTag>(ents[ii]);
+        registry.emplace<HiddenTag>(ents[ii]);
     }
+
+    // On object selection, tag selected entity such that the gizmo will be updated
+    registry.on_construct<SelectedTag>().connect<&entt::registry::emplace_or_replace<GizmoDirtyTag>>();
 }
 
 void GizmoSystem::update(const erwin::GameClock& /*clock*/, entt::registry& registry)
 {
     // Make the gizmo's entities children of the selected entity
-    // TMP: impl subject to change when we have a proper hierarchy system
-    registry.view<ComponentTransform3D, SelectedTag>(entt::exclude<NoGizmoTag>)
-        .each([&registry](auto e, const auto& parent_transform) {
-            registry.view<ComponentTransform3D, GizmoHandleComponent, ComponentOBB>().each(
-                [e, &parent_transform](auto /*g*/, auto& transform, auto& GH, const auto&) {
-                    GH.parent = e;
-                    transform.local.init(parent_transform.global.position + offsets[size_t(GH.handle_id)],
-                                         parent_transform.global.euler, 1.f);
-                });
+    registry.view<ComponentTransform3D, SelectedTag, GizmoDirtyTag>(entt::exclude<NoGizmoTag>)
+        .each([&registry](auto e, const auto&) {
+            registry.view<GizmoHandleComponent>().each([e, &registry](auto e_gh, auto& GH) {
+                GH.parent = e;
+                entity::attach(e, e_gh, registry);
+            });
+            registry.emplace_or_replace<DirtyTransformTag>(e);
         });
+
+    registry.clear<GizmoDirtyTag>();
 
     selected_part_ = -1;
     registry.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
@@ -79,7 +84,7 @@ void GizmoSystem::render(const entt::registry& registry)
         gizmo_data_.selected = selected_part_;
 
         Renderer3D::begin_line_pass(false);
-        Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.global.get_unscaled_model_matrix(),
+        Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.global.get_model_matrix(),
                               gizmo_material_, &gizmo_data_);
         Renderer3D::end_line_pass();
     });

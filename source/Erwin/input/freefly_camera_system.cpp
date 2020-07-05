@@ -144,26 +144,23 @@ bool FreeflyCameraSystem::on_mouse_moved_event(const MouseMovedEvent& event)
     return true;
 }
 
-bool FreeflyCameraSystem::on_keyboard_event(const erwin::KeyboardEvent& event)
+void FreeflyCameraSystem::transfer_control(bool value)
 {
-    if(Input::match_action(ACTION_FREEFLY_TOGGLE, event))
+    inputs_enabled_ = value;
+    Input::show_cursor(!inputs_enabled_);
+
+    // Save mouse position if control was acquired, restore it if control was released
+    if(inputs_enabled_)
     {
-        // Toggle inputs
-        inputs_enabled_ = !inputs_enabled_;
-        Input::show_cursor(!inputs_enabled_);
-
-        // Save mouse position if control was acquired, restore it if control was released
-        if(inputs_enabled_)
-        {
-            std::tie(prev_mouse_x_, prev_mouse_y_) = Input::get_mouse_position();
-            Input::set_mouse_position(win_x_ + 0.5f * win_width_, win_y_ + 0.5f * win_height_);
-        }
-        else
-            Input::set_mouse_position(prev_mouse_x_, prev_mouse_y_);
-
-        return true;
+        std::tie(prev_mouse_x_, prev_mouse_y_) = Input::get_mouse_position();
+        Input::set_mouse_position(win_x_ + 0.5f * win_width_, win_y_ + 0.5f * win_height_);
     }
+    else
+        Input::set_mouse_position(prev_mouse_x_, prev_mouse_y_);
+}
 
+bool FreeflyCameraSystem::on_keyboard_event(const erwin::KeyboardEvent&)
+{
     return false;
 }
 

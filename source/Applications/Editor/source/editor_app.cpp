@@ -86,6 +86,8 @@ void ErwinEditor::on_load()
     scn::current().set_finisher_callback([this](Scene& scene)
     {
         scene_view_layer_->setup_camera(scene);
+        auto e_cam = scene.get_named("Camera"_h);
+        scene.registry.emplace<NoGizmoTag>(e_cam);
     });
 
     // Project settings

@@ -141,6 +141,20 @@ bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
 {
     if(!enabled_)
         return false;
+
+    if(Input::match_action(ACTION_FREEFLY_TOGGLE, event))
+    {
+        freefly_mode_ = !freefly_mode_;
+        camera_controller_.transfer_control(freefly_mode_);
+        return true;
+    }
+
+    if(!freefly_mode_ && Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
+    {
+        scn::current().save();
+        return true;
+    }
+
     return camera_controller_.on_keyboard_event(event);
 }
 

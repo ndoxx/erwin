@@ -142,12 +142,6 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
         return true;
     }
 
-    if(Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
-    {
-        scn::current().save();
-        return true;
-    }
-
     return false;
 }
 

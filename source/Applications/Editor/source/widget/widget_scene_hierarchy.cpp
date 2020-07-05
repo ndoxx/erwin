@@ -57,7 +57,7 @@ void SceneHierarchyWidget::on_imgui_render()
 
     ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
     EntityID new_selection = k_invalid_entity_id;
-    scene.registry.view<ComponentDescription>(entt::exclude<ComponentHierarchy>)
+    scene.registry.view<ComponentDescription>(entt::exclude<ComponentHierarchy, HiddenTag>)
         .each([&new_selection, &scene](auto e, const auto& desc) {
             ImGuiTreeNodeFlags flags = s_base_flags | s_leaf_flags;
             if(scene.registry.has<SelectedTag>(e))
@@ -89,6 +89,9 @@ void SceneHierarchyWidget::on_imgui_render()
     auto pos_x = ImGui::GetCursorPosX();
     entity::depth_first(scene.get_named("root"_h), scene.registry,
                         [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth) {
+                            if(scene.registry.has<HiddenTag>(curr))
+                                return false;
+
                             ImGuiTreeNodeFlags flags = s_base_flags;
                             if(scene.registry.has<SelectedTag>(curr))
                                 flags |= ImGuiTreeNodeFlags_Selected;
