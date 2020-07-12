@@ -2,6 +2,9 @@
 
 #include <array>
 
+namespace erwin
+{
+
 enum class TextureCompression: uint16_t
 {
 	None = 0,
@@ -150,3 +153,5 @@ struct PixelData
     uint8_t* data;
     size_t size;
 };
+
+} // namespace erwin

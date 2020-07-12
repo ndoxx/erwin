@@ -6,6 +6,9 @@
 #include <vector>
 #include <numeric>
 
+namespace erwin
+{
+
 template <typename T, size_t SIZE> class SparseSet
 {
     static_assert(std::is_unsigned<T>::value, "SparseSet can only contain unsigned integers");
@@ -169,3 +172,5 @@ public:
         dense[index] = temp;
     }
 };
+
+} // namespace erwin

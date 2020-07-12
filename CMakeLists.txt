@@ -13,6 +13,7 @@ include(standard_settings)
 include(toolchain_clang_local)
 include(compiler_warnings) # Hardcore warnings
 include(sanitizers)
+include(doxygen)
 
 # Interface library to enable us to pass on options to multiple projects
 add_library(project_warnings INTERFACE)

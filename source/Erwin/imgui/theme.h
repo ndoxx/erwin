@@ -5,7 +5,7 @@
 
 namespace fs = std::filesystem;
 
-namespace editor
+namespace erwin
 {
 namespace theme
 {
@@ -23,4 +23,4 @@ extern bool load_default();
 extern void reset();
 
 } // namespace theme
-} // namespace editor
+} // namespace erwin
