@@ -9,7 +9,7 @@
 
 using namespace erwin;
 
-namespace editor
+namespace erwin
 {
 namespace theme
 {
@@ -259,4 +259,4 @@ void reset()
 }
 
 } // namespace theme
-} // namespace editor
+} // namespace erwin

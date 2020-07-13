@@ -7,12 +7,11 @@ using namespace editor;
 
 namespace editor
 {
-	class SceneViewLayer;
-	class SceneEditorLayer;
-	class EditorBackgroundLayer;
-	class ConsoleWidget;
-	class KeybindingsWidget;
-}
+class SceneViewLayer;
+class SceneEditorLayer;
+class EditorBackgroundLayer;
+class ConsoleWidget;
+class KeybindingsWidget;
 
 /*
 	Allows to group multiple layers together and batch enable/disable them
@@ -72,7 +71,9 @@ private:
 	bool enable_docking_ = true;
 };
 
+} // namespace editor
+
 erwin::Application* erwin::create_application()
 {
-	return new ErwinEditor();
+	return new editor::ErwinEditor();
 }

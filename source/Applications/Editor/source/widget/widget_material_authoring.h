@@ -24,10 +24,10 @@ protected:
     virtual void on_imgui_render() override;
 
 private:
-    void load_texture_map(TextureMapType tm_type, const fs::path& filepath);
+    void load_texture_map(erwin::TextureMapType tm_type, const fs::path& filepath);
     void load_directory(const fs::path& dirpath);
     void pack_textures();
-    void clear_texture_map(TextureMapType tm_type);
+    void clear_texture_map(erwin::TextureMapType tm_type);
     void clear();
     void export_TOM(const fs::path& tom_path);
 

@@ -35,8 +35,8 @@ void ErwinEditor::on_load()
     FramebufferPool::create_framebuffer("host"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
     // * Configure GUI
-    editor::theme::init();
-    editor::theme::load_default();
+    theme::init();
+    theme::load_default();
     set_gui_behavior();
 
     // Merge icon font
@@ -178,28 +178,28 @@ void ErwinEditor::on_imgui_render()
             ImGui::MenuItem(keybindings_widget_->get_name().c_str(), nullptr, &keybindings_widget_->open_);
 
             ImGui::Separator();
-            const auto& themes = editor::theme::get_list();
+            const auto& themes = theme::get_list();
             if(ImGui::BeginMenu("Theme"))
             {
                 for(const auto& entry : themes)
                 {
                     if(ImGui::MenuItem(entry.name.c_str()))
-                        editor::theme::load(entry);
+                        theme::load(entry);
                 }
                 ImGui::Separator();
                 if(ImGui::MenuItem("ImGui::Classic"))
                 {
-                    editor::theme::reset();
+                    theme::reset();
                     ImGui::StyleColorsClassic();
                 }
                 if(ImGui::MenuItem("ImGui::Light"))
                 {
-                    editor::theme::reset();
+                    theme::reset();
                     ImGui::StyleColorsLight();
                 }
                 if(ImGui::MenuItem("ImGui::Dark"))
                 {
-                    editor::theme::reset();
+                    theme::reset();
                     ImGui::StyleColorsDark();
                 }
 

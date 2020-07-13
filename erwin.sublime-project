@@ -118,6 +118,17 @@
         // ClangFormat plugin settings
         "ClangFormat": {
             "format_on_save": false
+        },
+
+        // DoxyDoxygen config
+        "DoxyDoxygen":
+        {
+            "profiles": [
+                {
+                    "languages":  [ "C++" ],
+                    "doc_styles": [ "Doxygen" ]
+                }
+            ],
         }
     }
 }
