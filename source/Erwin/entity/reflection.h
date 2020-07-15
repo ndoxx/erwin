@@ -56,39 +56,6 @@ static inline auto invoke(uint32_t func_name, uint32_t reflected_type, entt::reg
 	return entt::resolve_id(reflected_type).func(func_name).invoke({}, std::ref(reg), std::forward<Args>(args)...);
 }
 
-// For each component in an entity, invoke a function or any callable type taking
-// the component type ID and an opaque void* pointer to the component's instance as parameters
-// Note that func must be of an invocable type
-template <typename FuncType, typename = traits::IsInvocable<FuncType>>
-static inline void visit_entity(entt::registry& reg, entt::entity e, FuncType&& func)
-{
-	reg.visit(e, [&reg,&func,e](uint64_t type_id)
-	{
-		uint32_t reflected_type = reflect(type_id);
-		if(reflected_type==0)
-			return;
-		auto any = invoke(W_METAFUNC_GET_COMPONENT, reflected_type, reg, e);
-		if(any)
-			func(reflected_type, any.data());
-	});
-}
-
-// For each component in an entity, invoke a meta-function by name.
-// The meta-function should exist in the meta-object associated to each component
-// this function call is susceptible to come upon.
-[[maybe_unused]] static inline void visit_entity(entt::registry& reg, entt::entity e, uint32_t meta_func)
-{
-	reg.visit(e, [&reg,meta_func,e](uint64_t type_id)
-	{
-		uint32_t reflected_type = reflect(type_id);
-		if(reflected_type==0)
-			return;
-		auto any = invoke(W_METAFUNC_GET_COMPONENT, reflected_type, reg, e);
-		if(any)
-			invoke(meta_func, reflected_type, any.data());
-	});
-}
-
 using EntityID = entt::entity;
 [[maybe_unused]] static constexpr EntityID k_invalid_entity_id = entt::null;
 

@@ -32,9 +32,9 @@ MaterialViewWidget::MaterialViewWidget()
     auto& scene = SceneManager::create_scene("material_editor_scene"_h);
 
     // Create camera
-    auto e_cam = scene.registry.create();
-    const auto& ctrans = scene.registry.emplace<ComponentTransform3D>(e_cam, glm::vec3(0.f), glm::vec3(0.f), 1.f);
-    scene.registry.emplace<ComponentCamera3D>(e_cam);
+    auto e_cam = scene.create_entity();
+    const auto& ctrans = scene.add_component<ComponentTransform3D>(e_cam, glm::vec3(0.f), glm::vec3(0.f), 1.f);
+    scene.add_component<ComponentCamera3D>(e_cam);
     scene.set_named(e_cam, "Camera"_h);
 
     camera_controller_.init(ctrans);
@@ -42,8 +42,8 @@ MaterialViewWidget::MaterialViewWidget()
     camera_controller_.set_position(5.f, 0.f, 90.f); // radius, azimuth, colatitude
 
     // Create light
-    auto e_light = scene.registry.create();
-    auto& dirlight = scene.registry.emplace<ComponentDirectionalLight>(e_light);
+    auto e_light = scene.create_entity();
+    auto& dirlight = scene.add_component<ComponentDirectionalLight>(e_light);
     dirlight.set_position(47.626f, 49.027f);
     dirlight.color = {0.95f, 0.85f, 0.5f};
     dirlight.ambient_color = {0.95f, 0.85f, 0.5f};
@@ -52,10 +52,10 @@ MaterialViewWidget::MaterialViewWidget()
     scene.set_named(e_cam, "Light"_h);
 
     // Create renderable object
-    auto e_obj = scene.registry.create();
-    scene.registry.emplace<ComponentPBRMaterial>(e_obj);
-    scene.registry.emplace<ComponentTransform3D>(e_obj, glm::vec3(0.f), glm::vec3(0.f), 1.f);
-    scene.registry.emplace<ComponentMesh>(e_obj, CommonGeometry::get_mesh("icosphere_pbr"_h));
+    auto e_obj = scene.create_entity();
+    scene.add_component<ComponentPBRMaterial>(e_obj);
+    scene.add_component<ComponentTransform3D>(e_obj, glm::vec3(0.f), glm::vec3(0.f), 1.f);
+    scene.add_component<ComponentMesh>(e_obj, CommonGeometry::get_mesh("icosphere_pbr"_h));
     scene.set_named(e_obj, "Object"_h);
 }
 
@@ -65,12 +65,12 @@ void MaterialViewWidget::on_update(const GameClock& clock)
 {
     auto& scene = SceneManager::get("material_editor_scene"_h);
 
-    scene.registry.view<ComponentTransform3D, ComponentCamera3D>().each([this, &clock](auto, auto& trans, auto& cam) {
+    scene.view<ComponentTransform3D, ComponentCamera3D>().each([this, &clock](auto, auto& trans, auto& cam) {
         camera_controller_.update(clock, cam, trans);
         Renderer3D::update_camera(cam, trans.local);
     });
 
-    scene.registry.view<ComponentDirectionalLight>().each(
+    scene.view<ComponentDirectionalLight>().each(
         [](auto, const auto& dirlight) { Renderer3D::update_light(dirlight); });
 
     Renderer3D::update_frame_data();
@@ -105,7 +105,7 @@ void MaterialViewWidget::on_layer_render()
 {
     auto& scene = SceneManager::get("material_editor_scene"_h);
     Renderer3D::begin_deferred_pass();
-    scene.registry.view<ComponentTransform3D, ComponentMesh, ComponentPBRMaterial>().each(
+    scene.view<ComponentTransform3D, ComponentMesh, ComponentPBRMaterial>().each(
         [](auto, const auto& trans, const auto& mesh, const auto& mat) {
             Renderer3D::draw_mesh(mesh.mesh, trans.local.get_model_matrix(), mat.material, &mat.material_data);
         });
@@ -139,7 +139,7 @@ void MaterialViewWidget::on_imgui_render()
                 current_index_ = ii;
                 auto& scene = SceneManager::get("material_editor_scene"_h);
                 auto e_obj = scene.get_named("Object"_h);
-                auto& cmesh = scene.registry.get<ComponentMesh>(e_obj);
+                auto& cmesh = scene.get_component<ComponentMesh>(e_obj);
                 cmesh.mesh = CommonGeometry::get_mesh(s_va_name[ii]);
             }
             if(is_selected)

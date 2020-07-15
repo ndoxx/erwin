@@ -56,9 +56,9 @@ void SceneEditorLayer::on_detach()
         delete widget;
 }
 
-void SceneEditorLayer::setup_editor_entities(entt::registry& registry)
+void SceneEditorLayer::setup_editor_entities(erwin::Scene& scene)
 {
-    gizmo_system_.setup_editor_entities(registry);
+    gizmo_system_.setup_editor_entities(scene);
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
@@ -66,9 +66,9 @@ void SceneEditorLayer::on_update(GameClock& clock)
     auto& scene = scn::current();
     if(scene.is_loaded())
     {
-        bounding_box_system_.update(clock, scene.registry);
+        bounding_box_system_.update(clock, scene);
         selection_system_.update(clock, scene);
-        gizmo_system_.update(clock, scene.registry);
+        gizmo_system_.update(clock, scene);
     }
 
     for(Widget* widget : widgets_)
@@ -80,8 +80,8 @@ void SceneEditorLayer::on_render()
     auto& scene = scn::current();
     if(scene.is_loaded())
     {
-        bounding_box_system_.render(scene.registry);
-        gizmo_system_.render(scene.registry);
+        bounding_box_system_.render(scene);
+        gizmo_system_.render(scene);
     }
 
     for(Widget* widget : widgets_)
@@ -138,7 +138,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
 
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
-        scn::current().registry.clear<SelectedTag>();
+        scn::current().clear<SelectedTag>();
         return true;
     }
 

@@ -6,6 +6,11 @@
 #include "system/gizmo_system.h"
 #include "system/selection_system.h"
 
+namespace erwin
+{
+    class Scene;
+}
+
 namespace editor
 {
 
@@ -15,7 +20,7 @@ class SceneEditorLayer : public GuiLayer
 public:
     SceneEditorLayer();
     
-    void setup_editor_entities(entt::registry&);
+    void setup_editor_entities(erwin::Scene& scene);
 
     virtual void on_imgui_render() override;
 

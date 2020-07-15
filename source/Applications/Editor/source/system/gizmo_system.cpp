@@ -7,6 +7,7 @@
 #include "entity/component/transform.h"
 #include "entity/tag_components.h"
 #include "render/renderer_3d.h"
+#include "level/scene.h"
 
 using namespace erwin;
 
@@ -41,45 +42,45 @@ GizmoSystem::GizmoSystem()
 
 GizmoSystem::~GizmoSystem() {}
 
-void GizmoSystem::setup_editor_entities(entt::registry& registry)
+void GizmoSystem::setup_editor_entities(erwin::Scene& scene)
 {
     // Create 4 entities with OBBs and transforms that will represent the gizmo's interactive zones
-    std::array ents = {registry.create(), registry.create(), registry.create(), registry.create()};
+    std::array ents = {scene.create_entity(), scene.create_entity(), scene.create_entity(), scene.create_entity()};
     for(size_t ii = 0; ii < ents.size(); ++ii)
     {
-        registry.emplace<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
-        registry.emplace<ComponentOBB>(ents[ii], OBB_extent);
-        registry.emplace<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
-        registry.emplace<NonSerializableTag>(ents[ii]);
-        registry.emplace<HiddenTag>(ents[ii]);
+        scene.add_component<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
+        scene.add_component<ComponentOBB>(ents[ii], OBB_extent);
+        scene.add_component<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
+        scene.add_component<NonSerializableTag>(ents[ii]);
+        scene.add_component<HiddenTag>(ents[ii]);
     }
 
     // On object selection, tag selected entity such that the gizmo will be updated
-    registry.on_construct<SelectedTag>().connect<&entt::registry::emplace_or_replace<GizmoDirtyTag>>();
+    scene.on_construct<SelectedTag>().connect<&entt::registry::emplace_or_replace<GizmoDirtyTag>>();
 }
 
-void GizmoSystem::update(const erwin::GameClock& /*clock*/, entt::registry& registry)
+void GizmoSystem::update(const erwin::GameClock& /*clock*/, erwin::Scene& scene)
 {
     // Make the gizmo's entities children of the selected entity
-    registry.view<ComponentTransform3D, SelectedTag, GizmoDirtyTag>(entt::exclude<NoGizmoTag>)
-        .each([&registry](auto e, const auto&) {
-            registry.view<GizmoHandleComponent>().each([e, &registry](auto e_gh, auto& GH) {
+    scene.view<ComponentTransform3D, SelectedTag, GizmoDirtyTag>(entt::exclude<NoGizmoTag>)
+        .each([&scene](auto e, const auto&) {
+            scene.view<GizmoHandleComponent>().each([e, &scene](auto e_gh, auto& GH) {
                 GH.parent = e;
-                entity::attach(e, e_gh, registry);
+                scene.attach(e, e_gh);
             });
-            registry.emplace_or_replace<DirtyTransformTag>(e);
+            scene.try_add_component<DirtyTransformTag>(e);
         });
 
-    registry.clear<GizmoDirtyTag>();
+    scene.clear<GizmoDirtyTag>();
 
     selected_part_ = -1;
-    registry.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
+    scene.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
         [this](auto /*e*/, const auto& GH) { selected_part_ = GH.handle_id; });
 }
 
-void GizmoSystem::render(const entt::registry& registry)
+void GizmoSystem::render(const erwin::Scene& scene)
 {
-    registry.view<const ComponentTransform3D, const SelectedTag>().each([this](auto /*e*/, const auto& transform) {
+    scene.view<const ComponentTransform3D, const SelectedTag>().each([this](auto /*e*/, const auto& transform) {
         // Draw gizmo
         gizmo_data_.selected = selected_part_;
 

@@ -28,7 +28,7 @@ void LayerTest::setup_camera()
 {
     auto& scene = scn::current();
 
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    ComponentTransform3D& transform = scene.get_component<ComponentTransform3D>(scene.camera);
 
     camera_controller_.init(transform);
     camera_controller_.set_frustum_parameters({1280.f / 1024.f, 60, 0.1f, 100.f});
@@ -73,12 +73,12 @@ void LayerTest::on_update(GameClock& clock)
     if(!scene.is_loaded())
         return;
 
-    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.camera);
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.camera);
+    ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(scene.camera);
+    ComponentTransform3D& transform = scene.get_component<ComponentTransform3D>(scene.camera);
     camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform);
-    if(scene.registry.valid(scene.directional_light))
-        Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(scene.directional_light));
+    if(scene.has_entity(scene.directional_light))
+        Renderer3D::update_light(scene.get_component<ComponentDirectionalLight>(scene.directional_light));
 
     Renderer3D::update_frame_data();
 }
@@ -94,7 +94,7 @@ void LayerTest::on_render()
     // Draw scene geometry
     {
         Renderer3D::begin_deferred_pass();
-        auto view = scene.registry.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
+        auto view = scene.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
         for(const entt::entity e : view)
         {
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);

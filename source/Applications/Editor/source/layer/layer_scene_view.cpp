@@ -18,7 +18,7 @@ void SceneViewLayer::on_imgui_render() {}
 
 void SceneViewLayer::setup_camera(Scene& scene)
 {
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(scene.get_named("Camera"_h));
+    ComponentTransform3D& transform = scene.get_component<ComponentTransform3D>(scene.get_named("Camera"_h));
 
     camera_controller_.init(transform);
     camera_controller_.update_frustum();
@@ -50,17 +50,17 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(!scene.is_loaded())
         return;
 
-    transform_system_.update(clock, scene.registry);
+    transform_system_.update(clock, scene);
 
     auto e_camera = scene.get_named("Camera"_h);
-    ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(e_camera);
-    ComponentTransform3D& transform = scene.registry.get<ComponentTransform3D>(e_camera);
+    ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(e_camera);
+    ComponentTransform3D& transform = scene.get_component<ComponentTransform3D>(e_camera);
     camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform.global);
     if(scene.has_named("Sun"_h))
     {
         auto e_dirlight = scene.get_named("Sun"_h);
-        Renderer3D::update_light(scene.registry.get<ComponentDirectionalLight>(e_dirlight));
+        Renderer3D::update_light(scene.get_component<ComponentDirectionalLight>(e_dirlight));
     }
 }
 
@@ -74,7 +74,7 @@ void SceneViewLayer::on_render()
     // Draw scene geometry
     {
         Renderer3D::begin_deferred_pass();
-        auto view = scene.registry.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
+        auto view = scene.view<ComponentTransform3D, ComponentPBRMaterial, ComponentMesh>();
         for(const entt::entity e : view)
         {
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
@@ -90,7 +90,7 @@ void SceneViewLayer::on_render()
 
     {
         Renderer3D::begin_forward_pass(BlendState::Light);
-        auto view = scene.registry.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
+        auto view = scene.view<ComponentDirectionalLight, ComponentDirectionalLightMaterial>();
         for(const entt::entity e : view)
         {
             const ComponentDirectionalLight& dirlight = view.get<ComponentDirectionalLight>(e);
