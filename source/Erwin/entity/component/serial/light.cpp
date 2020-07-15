@@ -1,4 +1,4 @@
-#include "entity/component/light.h"
+#include "entity/component/serial/light.h"
 #include "entity/reflection.h"
 
 namespace erwin

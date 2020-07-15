@@ -1,5 +1,4 @@
-#include "entity/component/transform.h"
-#include "entity/reflection.h"
+#include "entity/component/serial/transform.h"
 #include "glm/gtx/string_cast.hpp"
 
 namespace erwin

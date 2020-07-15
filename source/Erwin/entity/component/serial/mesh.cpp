@@ -1,6 +1,5 @@
-#include "entity/component/mesh.h"
+#include "entity/component/serial/mesh.h"
 #include "asset/asset_manager.h"
-#include "entity/reflection.h"
 #include "render/common_geometry.h"
 
 namespace erwin

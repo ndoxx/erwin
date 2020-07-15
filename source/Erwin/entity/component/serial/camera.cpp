@@ -1,5 +1,4 @@
-#include "entity/component/camera.h"
-#include "entity/reflection.h"
+#include "entity/component/serial/camera.h"
 
 namespace erwin
 {
