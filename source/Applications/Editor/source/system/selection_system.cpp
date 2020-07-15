@@ -13,7 +13,7 @@ namespace editor
 
 void SelectionSystem::update(const GameClock&, Scene& scene)
 {
-    const ComponentCamera3D& camera = scene.registry.get<ComponentCamera3D>(scene.get_named("Camera"_h));
+    const ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(scene.get_named("Camera"_h));
     float nearest = camera.frustum.far;
     EntityID selected = k_invalid_entity_id;
 
@@ -21,7 +21,7 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     // BUG #7: When a NoGizmo tagged entity (like camera) is selected via hierarchy widget,
     // gizmo OBBs are still around previously selected object and
     // will respond to ray hit first, shadowing a legit entity selection query.
-    scene.registry.view<RayHitTag, GizmoHandleComponent>().each(
+    scene.view<RayHitTag, GizmoHandleComponent>().each(
         [&nearest, &selected](auto e, const auto& data, const auto& /*gh*/) {
             if(data.near < nearest)
             {
@@ -32,12 +32,12 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
 
     if(selected != k_invalid_entity_id)
     {
-        scene.registry.clear<RayHitTag, GizmoHandleSelectedTag>();
-        scene.registry.emplace<GizmoHandleSelectedTag>(selected);
+        scene.clear<RayHitTag, GizmoHandleSelectedTag>();
+        scene.add_component<GizmoHandleSelectedTag>(selected);
         return;
     }
 
-    scene.registry.view<RayHitTag>(entt::exclude<GizmoHandleComponent>)
+    scene.view<RayHitTag>(entt::exclude<GizmoHandleComponent>)
         .each([&nearest, &selected](auto e, const auto& data) {
             if(data.near < nearest)
             {
@@ -49,12 +49,12 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     if(selected != k_invalid_entity_id)
     {
         // Drop gizmo handle selection
-        scene.registry.clear<GizmoHandleSelectedTag, SelectedTag>();
-        scene.registry.emplace<SelectedTag>(selected);
+        scene.clear<GizmoHandleSelectedTag, SelectedTag>();
+        scene.add_component<SelectedTag>(selected);
     }
 
     // Clear tags
-    scene.registry.clear<RayHitTag>();
+    scene.clear<RayHitTag>();
 }
 
 } // namespace editor

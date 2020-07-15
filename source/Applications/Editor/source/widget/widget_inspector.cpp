@@ -21,7 +21,7 @@ void InspectorWidget::entity_tab()
     if(!scene.is_loaded())
         return;
 
-    scene.registry.view<SelectedTag, ComponentDescription>(entt::exclude<NonEditableTag>)
+    scene.view<SelectedTag, ComponentDescription>(entt::exclude<NonEditableTag>)
         .each([&scene](auto e, auto& desc) {
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
             if(ImGui::TreeNode("Properties"))
@@ -40,7 +40,7 @@ void InspectorWidget::entity_tab()
             ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
             if(ImGui::TreeNode("Components"))
             {
-                erwin::visit_entity(scene.registry, e, [&scene, e](uint32_t reflected_type, void* data) {
+                scene.visit_entity(e, [&scene, e](uint32_t reflected_type, void* data) {
                     // Don't let special editor components be editable this way
                     if(is_hidden_from_inspector(reflected_type))
                         return;
@@ -61,7 +61,7 @@ void InspectorWidget::entity_tab()
                         }
 
                         // Invoke GUI for this component
-                        invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data, e, &scene.registry,
+                        invoke(W_METAFUNC_INSPECTOR_GUI, reflected_type, data, e, &scene.get_registry(),
                                scene.get_asset_registry());
                         ImGui::TreePop();
                     }
@@ -78,12 +78,12 @@ void InspectorWidget::entity_tab()
                     for(auto&& [reflected, name] : component_names)
                     {
                         // If entity already has component, do not show in combo
-                        if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, scene.registry, e).template cast<bool>())
+                        if(invoke(W_METAFUNC_HAS_COMPONENT, reflected, scene.get_registry(), e).template cast<bool>())
                             continue;
 
                         if(ImGui::Selectable(name.c_str()))
                         {
-                            invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.registry, e);
+                            invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.get_registry(), e);
                             DLOG("editor", 1) << "Added " << component_names.at(reflected) << " to entity "
                                               << static_cast<unsigned long>(e) << std::endl;
                             break;

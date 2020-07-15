@@ -75,11 +75,11 @@ void ErwinEditor::on_load()
     scn::current().set_injector_callback([this](Scene& scene)
     {
         auto root = scene.get_named("root"_h);
-        scene.registry.emplace<FixedHierarchyTag>(root);
-        scene.registry.emplace<NonEditableTag>(root);
-        scene.registry.emplace<NonRemovableTag>(root);
+        scene.add_component<FixedHierarchyTag>(root);
+        scene.add_component<NonEditableTag>(root);
+        scene.add_component<NonRemovableTag>(root);
 
-        scene_editor_layer_->setup_editor_entities(scene.registry);
+        scene_editor_layer_->setup_editor_entities(scene);
     });
 
     // Setup scene finisher callback
@@ -87,7 +87,7 @@ void ErwinEditor::on_load()
     {
         scene_view_layer_->setup_camera(scene);
         auto e_cam = scene.get_named("Camera"_h);
-        scene.registry.emplace<NoGizmoTag>(e_cam);
+        scene.add_component<NoGizmoTag>(e_cam);
     });
 
     // Project settings

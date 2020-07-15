@@ -106,7 +106,7 @@ struct PBRPackingData
 inline auto& get_current_material(Scene& scene)
 {
     auto e_obj = scene.get_named("Object"_h);
-    return scene.registry.get<ComponentPBRMaterial>(e_obj);
+    return scene.get_component<ComponentPBRMaterial>(e_obj);
 }
 
 MaterialAuthoringWidget::MaterialAuthoringWidget() : Widget("Material authoring", true)

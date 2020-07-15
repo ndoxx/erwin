@@ -26,7 +26,7 @@ static void entity_context_menu(Scene& scene, EntityID e)
     ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(e)))));
     if(ImGui::BeginPopupContextItem("Entity context menu"))
     {
-        if(!scene.registry.has<NonRemovableTag>(e) && ImGui::Selectable("Remove"))
+        if(!scene.has_component<NonRemovableTag>(e) && ImGui::Selectable("Remove"))
         {
             scene.mark_for_removal(e);
             DLOG("editor", 1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
@@ -57,10 +57,10 @@ void SceneHierarchyWidget::on_imgui_render()
 
     ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
     EntityID new_selection = k_invalid_entity_id;
-    scene.registry.view<ComponentDescription>(entt::exclude<ComponentHierarchy, HiddenTag>)
+    scene.view<ComponentDescription>(entt::exclude<ComponentHierarchy, HiddenTag>)
         .each([&new_selection, &scene](auto e, const auto& desc) {
             ImGuiTreeNodeFlags flags = s_base_flags | s_leaf_flags;
-            if(scene.registry.has<SelectedTag>(e))
+            if(scene.has_component<SelectedTag>(e))
                 flags |= ImGuiTreeNodeFlags_Selected;
 
             ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(e)), flags, "%s %s", desc.icon.c_str(),
@@ -70,7 +70,7 @@ void SceneHierarchyWidget::on_imgui_render()
                 new_selection = e;
 
             // Disable drag and drop for entities with FixedHierarchyTag
-            if(!scene.registry.has<FixedHierarchyTag>(e) && ImGui::BeginDragDropSource())
+            if(!scene.has_component<FixedHierarchyTag>(e) && ImGui::BeginDragDropSource())
             {
                 ImGui::SetDragDropPayload("DND_HIER_TREE", &e, sizeof(EntityID));
                 ImGui::Text("%s", W_ICON(CHILD));
@@ -87,59 +87,58 @@ void SceneHierarchyWidget::on_imgui_render()
     // OPT: Maybe a depth-first traversal of the whole scene is not needed each frame. Fine for now.
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     auto pos_x = ImGui::GetCursorPosX();
-    entity::depth_first(scene.get_named("root"_h), scene.registry,
-                        [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier, size_t depth) {
-                            if(scene.registry.has<HiddenTag>(curr))
-                                return false;
+    scene.depth_first(scene.get_named("root"_h), [&new_selection, &scene, pos_x, this](auto curr, const auto& curr_hier,
+                                                                                       size_t depth) {
+        if(scene.has_component<HiddenTag>(curr))
+            return false;
 
-                            ImGuiTreeNodeFlags flags = s_base_flags;
-                            if(scene.registry.has<SelectedTag>(curr))
-                                flags |= ImGuiTreeNodeFlags_Selected;
-                            if(curr_hier.children == 0)
-                                flags |= s_leaf_flags;
+        ImGuiTreeNodeFlags flags = s_base_flags;
+        if(scene.has_component<SelectedTag>(curr))
+            flags |= ImGuiTreeNodeFlags_Selected;
+        if(curr_hier.children == 0)
+            flags |= s_leaf_flags;
 
-                            // Cant seem to use Indent() properly, so here I go
-                            ImGui::SetCursorPosX(pos_x + float(depth) * indent_space_);
+        // Cant seem to use Indent() properly, so here I go
+        ImGui::SetCursorPosX(pos_x + float(depth) * indent_space_);
 
-                            const auto& desc = scene.registry.get<ComponentDescription>(curr);
-                            bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s",
-                                                               desc.icon.c_str(), desc.name.c_str());
+        const auto& desc = scene.get_component<ComponentDescription>(curr);
+        bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(intptr_t(curr)), flags, "%s %s", desc.icon.c_str(),
+                                           desc.name.c_str());
 
-                            if(ImGui::IsItemClicked())
-                                new_selection = curr;
+        if(ImGui::IsItemClicked())
+            new_selection = curr;
 
-                            if(!scene.registry.has<FixedHierarchyTag>(curr) && ImGui::BeginDragDropSource())
-                            {
-                                ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
-                                ImGui::Text("%s", W_ICON(CHILD));
-                                ImGui::EndDragDropSource();
-                            }
+        if(!scene.has_component<FixedHierarchyTag>(curr) && ImGui::BeginDragDropSource())
+        {
+            ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
+            ImGui::Text("%s", W_ICON(CHILD));
+            ImGui::EndDragDropSource();
+        }
 
-                            if(ImGui::BeginDragDropTarget())
-                            {
-                                ImGuiDragDropFlags target_flags = 0;
-                                if(const ImGuiPayload* payload =
-                                       ImGui::AcceptDragDropPayload("DND_HIER_TREE", target_flags))
-                                    set_hierarchy_commands_.push_back({*static_cast<EntityID*>(payload->Data), curr});
-                                ImGui::EndDragDropTarget();
-                            }
+        if(ImGui::BeginDragDropTarget())
+        {
+            ImGuiDragDropFlags target_flags = 0;
+            if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_HIER_TREE", target_flags))
+                set_hierarchy_commands_.push_back({*static_cast<EntityID*>(payload->Data), curr});
+            ImGui::EndDragDropTarget();
+        }
 
-                            // Context menu for entities
-                            entity_context_menu(scene, curr);
+        // Context menu for entities
+        entity_context_menu(scene, curr);
 
-                            if(node_open && curr_hier.children != 0)
-                                ImGui::TreePop();
+        if(node_open && curr_hier.children != 0)
+            ImGui::TreePop();
 
-                            return false;
-                        });
+        return false;
+    });
 
     if(new_selection != k_invalid_entity_id)
     {
         // Update scene selected entity index
-        scene.registry.clear<SelectedTag>();
-        scene.registry.emplace<SelectedTag>(new_selection);
+        scene.clear<SelectedTag>();
+        scene.add_component<SelectedTag>(new_selection);
         // Drop gizmo handle selection
-        scene.registry.clear<GizmoHandleSelectedTag>();
+        scene.clear<GizmoHandleSelectedTag>();
     }
 
     // Hierarchy movements
@@ -149,15 +148,15 @@ void SceneHierarchyWidget::on_imgui_render()
         {
             // TODO: For the moment, prevent swapping a parent with its child, maybe allow
             // it later on. Anyway, this situation must be detected.
-            if(!scene.registry.has<ComponentHierarchy>(cmd.source))
-                scene.registry.emplace<ComponentHierarchy>(cmd.source);
-            if(!entity::subtree_contains(cmd.source, cmd.target, scene.registry))
+            if(!scene.has_component<ComponentHierarchy>(cmd.source))
+                scene.add_component<ComponentHierarchy>(cmd.source);
+            if(!scene.subtree_contains(cmd.source, cmd.target))
             {
                 DLOG("editor", 1) << "Setting entity #" << size_t(cmd.source) << " as a child of #"
                                   << size_t(cmd.target) << std::endl;
-                entity::attach(cmd.target, cmd.source, scene.registry);
-                scene.registry.emplace_or_replace<DirtyTransformTag>(cmd.source);
-                scene.registry.emplace_or_replace<DirtyOBBTag>(cmd.source);
+                scene.attach(cmd.target, cmd.source);
+                scene.try_add_component<DirtyTransformTag>(cmd.source);
+                scene.try_add_component<DirtyOBBTag>(cmd.source);
             }
             else
             {
@@ -165,7 +164,7 @@ void SceneHierarchyWidget::on_imgui_render()
             }
         }
 
-        entity::sort_hierarchy(scene.registry);
+        scene.sort_hierarchy();
         set_hierarchy_commands_.clear();
     }
 }

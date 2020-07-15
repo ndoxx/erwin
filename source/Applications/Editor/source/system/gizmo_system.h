@@ -3,6 +3,11 @@
 #include "erwin.h"
 #include "event/window_events.h"
 
+namespace erwin
+{
+    class Scene;
+}
+
 namespace editor
 {
 
@@ -12,10 +17,10 @@ public:
 	GizmoSystem();
 	~GizmoSystem();
 
-    void setup_editor_entities(entt::registry& registry);
+    void setup_editor_entities(erwin::Scene& scene);
 
-    void update(const erwin::GameClock& clock, entt::registry& registry);
-	void render(const entt::registry& registry);
+    void update(const erwin::GameClock& clock, erwin::Scene& scene);
+	void render(const erwin::Scene& scene);
 
 private:
     erwin::Material gizmo_material_;
