@@ -87,6 +87,8 @@ void ErwinEditor::on_load()
     {
         scene_view_layer_->setup_camera(scene);
         auto e_cam = scene.get_named("Camera"_h);
+        scene.add_component<FixedHierarchyTag>(e_cam);
+        scene.add_component<NonRemovableTag>(e_cam);
         scene.add_component<NoGizmoTag>(e_cam);
     });
 

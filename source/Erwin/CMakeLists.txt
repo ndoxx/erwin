@@ -46,6 +46,7 @@ target_include_directories(erwin
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/imgui_filedialog"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/chaiscript/include"
         # "${INC_EASTL}"
     )
 
@@ -153,6 +154,7 @@ target_link_libraries(erwin
         project_options
         m
         z
+        dl
         stdc++fs
         pthread
         atomic
