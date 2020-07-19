@@ -212,12 +212,21 @@ void SceneViewWidget::on_imgui_render()
 void SceneViewWidget::runtime_start()
 {
     DLOGN("scene") << "Starting runtime." << std::endl;
+    // Create a shallow copy of current scene (shared asset registry) and reload
+    auto& runtime_scene = SceneManager::create_scene("runtime"_h);
+    runtime_scene.runtime_clone(scn::current());
+    SceneManager::make_current("runtime"_h);
+
     runtime_ = true;
 }
 
 void SceneViewWidget::runtime_stop()
 {
     DLOGN("scene") << "Ending runtime." << std::endl;
+    // Destroy runtime scene and jump back to editor scene
+    SceneManager::make_current("main_scene"_h);
+    SceneManager::remove_scene("runtime"_h);
+
     runtime_ = false;
     paused_ = false;
 }
@@ -226,11 +235,13 @@ void SceneViewWidget::runtime_pause()
 {
     DLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
     paused_ = !paused_;
+    DLOGW("scene") << "Runtime pause feature not implemented yet." << std::endl;
 }
 
 void SceneViewWidget::runtime_reset()
 {
     DLOGN("scene") << "Resetting runtime." << std::endl;
+    DLOGW("scene") << "Runtime reset feature not implemented yet." << std::endl;
 }
 
 static int s_profile_num_frames = 60;

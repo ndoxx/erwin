@@ -8,9 +8,9 @@
 
 #include "asset/loader_common.h"
 #include "core/core.h"
+#include "filesystem/file_path.h"
 #include "filesystem/image_file.h"
 #include "filesystem/tom_file.h"
-#include "filesystem/file_path.h"
 #include "utils/future.hpp"
 #include "utils/promise_storage.hpp"
 
@@ -25,7 +25,8 @@ public:
     using ManagedResource = typename LoaderT::Resource;
     using DataDescriptor = typename LoaderT::DataDescriptor;
 
-    template <typename... ArgsT> std::pair<const ManagedResource&, const AssetMetaData&> load(const FilePath& file_path, ArgsT&&... args)
+    template <typename... ArgsT>
+    std::pair<const ManagedResource&, const AssetMetaData&> load(const FilePath& file_path, ArgsT&&... args)
     {
         W_PROFILE_FUNCTION()
 
@@ -75,12 +76,14 @@ private:
     PromiseStorage<DataDescriptor> promises_;
     std::vector<FileLoadingTask> file_loading_tasks_;
     std::vector<UploadTask> upload_tasks_;
+    std::vector<hash_t> cache_ready_;
     std::multimap<hash_t, std::function<void(const ManagedResource&)>> on_ready_callbacks_;
 
     std::mutex mutex_;
 };
 
-template <typename LoaderT> std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const FilePath& file_path)
+template <typename LoaderT>
+std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const FilePath& file_path)
 {
     W_PROFILE_FUNCTION()
 
@@ -93,6 +96,11 @@ template <typename LoaderT> std::pair<hash_t, const AssetMetaData&> ResourceMana
         file_loading_tasks_.push_back(FileLoadingTask{token, meta_data});
         upload_tasks_.push_back(UploadTask{token, meta_data, std::move(fut)});
         meta_data_[hname] = std::move(meta_data);
+    }
+    else
+    {
+        // If found in cache, mark resource as cache ready, so on_ready callbacks will be executed right away
+        cache_ready_.push_back(hname);
     }
 
     return {hname, meta_data_[hname]};
@@ -131,6 +139,15 @@ template <typename LoaderT> void ResourceManager<LoaderT>::async_work()
 template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
 {
     W_PROFILE_FUNCTION()
+
+    for(hash_t hname : cache_ready_)
+    {
+        auto range = on_ready_callbacks_.equal_range(hname);
+        for(auto callback_it = range.first; callback_it != range.second; ++callback_it)
+            callback_it->second(managed_resources_.at(hname));
+
+        on_ready_callbacks_.erase(hname);
+    }
 
     for(auto it = upload_tasks_.begin(); it != upload_tasks_.end();)
     {

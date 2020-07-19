@@ -146,6 +146,10 @@ bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
     {
         freefly_mode_ = !freefly_mode_;
         camera_controller_.transfer_control(freefly_mode_);
+        // Camera controller's internal state may have changed if runtime mode
+        // was used, restore camera to avoid a jump
+        if(freefly_mode_)
+            setup_camera(scn::current());
         return true;
     }
 

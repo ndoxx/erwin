@@ -57,6 +57,20 @@ public:
     void unload();
     
     /**
+     * @brief      Determines if scene is runtime.
+     *
+     * @return     True if runtime, False otherwise.
+     */
+    inline bool is_runtime() const { return runtime_; }
+
+    /**
+     * @brief      Make a shallow copy of another scene and load it.
+     *
+     * @param[in]  other  The source scene.
+     */
+    void runtime_clone(const Scene& other);
+    
+    /**
      * @brief      Get location of current scene file.
      *
      * @return     The file location.
@@ -451,7 +465,6 @@ public:
 	 */
 	bool is_sibling(EntityID first, EntityID second);
 
-
 private:
     entt::registry registry;
     std::queue<std::tuple<EntityID, uint32_t>> removed_components_;
@@ -462,6 +475,7 @@ private:
     SceneVisitor finish_ = [](auto&) {};
     size_t asset_registry_;
     bool loaded_ = false;
+    bool runtime_ = false;
 
     FilePath scene_file_path_;
 };

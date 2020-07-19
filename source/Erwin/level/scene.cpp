@@ -37,8 +37,23 @@ void Scene::unload()
     named_entities_.clear();
     registry.clear();
 
-    AssetManager::release_registry(asset_registry_);
+    if(!runtime_)
+        AssetManager::release_registry(asset_registry_);
     loaded_ = false;
+}
+
+void Scene::runtime_clone(const Scene& other)
+{
+    W_ASSERT(!other.scene_file_path_.empty(), "Cannot runtime clone a scene that hasn't been saved.");
+
+    scene_file_path_ = other.scene_file_path_;
+    environment_ = other.environment_;
+    inject_ = other.inject_;
+    finish_ = other.finish_;
+    asset_registry_ = other.asset_registry_;
+    runtime_ = true;
+
+    load_xml(scene_file_path_);
 }
 
 void Scene::cleanup()
