@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -13,11 +14,11 @@
 #include <queue>
 #include <random>
 #include <sstream>
+#include <stack>
 #include <type_traits>
 #include <vector>
-#include <stack>
-#include <filesystem>
 
+#include "core/clock.hpp"
 #include "ctti/type_id.hpp"
 #include "debug/logger.h"
 #include "debug/logger_sink.h"
@@ -25,9 +26,8 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "memory/memory.hpp"
-#include "core/clock.hpp"
-#include "utils/sparse_set.hpp"
 #include "utils/random_operations.hpp"
+#include "utils/sparse_set.hpp"
 
 #include "entity/component/hierarchy.h"
 #include "entity/component/transform.h"
@@ -53,15 +53,12 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-fs::path operator "" _p(const char* fullpath, unsigned long)
+struct CDummy
 {
-    return fs::path(fullpath);
-}
+    CDummy(int A) : a(A) {}
 
-FilePath operator "" _fp(const char* fullpath, unsigned long)
-{
-    return FilePath(fullpath);
-}
+    int a;
+};
 
 int main(int argc, char** argv)
 {

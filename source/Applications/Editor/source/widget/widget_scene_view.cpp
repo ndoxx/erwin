@@ -9,6 +9,8 @@
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "imgui.h"
+#include "imgui/color.h"
+#include "imgui/font_awesome.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
 #include "render/common_geometry.h"
@@ -32,6 +34,8 @@ SceneViewWidget::SceneViewWidget() : Widget("Scene", true), render_surface_{0.f,
     flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
+    runtime_ = false;
+    paused_ = false;
     stats_overlay_ = new RenderStatsOverlay();
 }
 
@@ -152,6 +156,27 @@ void SceneViewWidget::on_imgui_render()
                 Renderer3D::debug_show_uv(s_enable_debug_show_uv);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+
+        // * Toolbar
+        // Scene runtime state indicator
+        if(!runtime_)
+            ImGui::TextColored({0.1f,1.0f,0.1f,1.f}, "[EDITING]");
+        else if(!paused_)
+            ImGui::TextColored({1.0f,0.1f,0.1f,1.f}, "[RUNTIME]");
+        else
+            ImGui::TextColored({1.0f,0.7f,0.1f,1.f}, "[ PAUSE ]");
+
+        // Scene runtime state modifiers
+        if(!runtime_ && ImGui::Button(W_ICON(PLAY)))
+            runtime_start();
+        else if(runtime_ && ImGui::Button(W_ICON(STOP)))
+            runtime_stop();
+        if(runtime_ && ImGui::Button(W_ICON(PAUSE)))
+            runtime_pause();
+        if(runtime_ && ImGui::Button(W_ICON(REPEAT)))
+            runtime_reset();
+
         ImGui::EndMenuBar();
     }
 
@@ -182,6 +207,30 @@ void SceneViewWidget::on_imgui_render()
                                          // ImGui::GetCursorScreenPos(),
                                          ImVec2(render_surface_.x0, render_surface_.y0),
                                          ImVec2(render_surface_.x1, render_surface_.y1), ImVec2(0, 1), ImVec2(1, 0));
+}
+
+void SceneViewWidget::runtime_start()
+{
+    DLOGN("scene") << "Starting runtime." << std::endl;
+    runtime_ = true;
+}
+
+void SceneViewWidget::runtime_stop()
+{
+    DLOGN("scene") << "Ending runtime." << std::endl;
+    runtime_ = false;
+    paused_ = false;
+}
+
+void SceneViewWidget::runtime_pause()
+{
+    DLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
+    paused_ = !paused_;
+}
+
+void SceneViewWidget::runtime_reset()
+{
+    DLOGN("scene") << "Resetting runtime." << std::endl;
 }
 
 static int s_profile_num_frames = 60;
