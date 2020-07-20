@@ -50,7 +50,7 @@ void ErwinEditor::on_load()
 
     console_ = new editor::ConsoleWidget();
     WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
-                   {"editor"_h, "application"_h, "entity"_h, "scene"_h}));
+                   {"editor"_h, "application"_h, "entity"_h, "scene"_h, "script"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;

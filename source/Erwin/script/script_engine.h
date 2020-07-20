@@ -13,17 +13,14 @@ namespace script
 static constexpr size_t k_max_script_vms = 8;
 using VMHandle = size_t;
 
+} // namespace script
+
 class ScriptEngine
 {
 public:
-	VMHandle create_context();
-	void destroy_context(VMHandle handle);
-	inline ChaiContext& get_context(VMHandle handle) { return vms_.at(handle); }
-
-private:
-	SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
-	std::array<ChaiContext, k_max_script_vms> vms_;
+	static script::VMHandle create_context();
+	static void destroy_context(script::VMHandle handle);
+	static script::ChaiContext& get_context(script::VMHandle handle);
 };
 
-} // namespace script
 } // namespace erwin

@@ -12,7 +12,6 @@
 #include "entity/component/mesh.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
-
 #include "filesystem/xml_file.h"
 
 #include <queue>
@@ -27,6 +26,9 @@ Scene::Scene()
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
+
+    // Create a script context
+    script_context_ = ScriptEngine::create_context();
 }
 
 void Scene::unload()
@@ -36,6 +38,8 @@ void Scene::unload()
 
     named_entities_.clear();
     registry.clear();
+
+    ScriptEngine::destroy_context(script_context_);
 
     if(!runtime_)
         AssetManager::release_registry(asset_registry_);

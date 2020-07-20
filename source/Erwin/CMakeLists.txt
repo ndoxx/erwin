@@ -60,6 +60,7 @@ set_target_properties(erwin
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
     )
 target_compile_definitions(erwin PRIVATE W_BUILD_LIB=1)
+target_compile_definitions(erwin PUBLIC CHAISCRIPT_NO_THREADS)
 
 # GLAD
 add_library(glad

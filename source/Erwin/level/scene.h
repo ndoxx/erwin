@@ -5,6 +5,7 @@
 
 #include "asset/environment.h"
 #include "entity/reflection.h"
+#include "script/script_engine.h"
 #include "filesystem/file_path.h"
 
 namespace erwin
@@ -474,6 +475,7 @@ private:
     SceneVisitor inject_ = [](auto&) {};
     SceneVisitor finish_ = [](auto&) {};
     size_t asset_registry_;
+    script::VMHandle script_context_;
     bool loaded_ = false;
     bool runtime_ = false;
 

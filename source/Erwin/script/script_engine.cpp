@@ -1,27 +1,41 @@
 #include "script/script_engine.h"
 #include "script/bindings/glm.h"
+#include "script/bindings/logger.h"
+#include "debug/logger.h"
 #include <chaiscript/chaiscript.hpp>
 
 namespace erwin
 {
-namespace script
+
+using namespace script;
+
+static struct
 {
+	SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
+	std::array<ChaiContext, k_max_script_vms> vms_;
+} s_storage;
 
 VMHandle ScriptEngine::create_context()
 {
-	// Initialize new virtual machine, add common bindings and return handle
-	auto handle = vm_handle_pool_.acquire();
-	vms_[handle].init();
-	vms_[handle].add_bindings(script::make_glm_bindings());
-	return handle;
+    // Initialize new virtual machine, add common bindings and return handle
+    auto handle = s_storage.vm_handle_pool_.acquire();
+    s_storage.vms_[handle].init();
+    s_storage.vms_[handle].add_bindings(script::make_glm_bindings());
+    s_storage.vms_[handle].add_bindings(script::make_logger_bindings());
+    DLOG("script",1) << "Created new script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
+    return handle;
 }
 
 void ScriptEngine::destroy_context(VMHandle handle)
 {
-	vms_[handle] = {};
-	vm_handle_pool_.release(handle);
+    s_storage.vms_[handle] = {};
+    s_storage.vm_handle_pool_.release(handle);
+    DLOG("script",1) << "Destroyed script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
 }
 
+ChaiContext& ScriptEngine::get_context(VMHandle handle)
+{
+	return s_storage.vms_.at(handle);
+}
 
-} // namespace script
 } // namespace erwin
