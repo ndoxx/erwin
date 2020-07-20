@@ -67,7 +67,7 @@ resource_id_(H_(universal_.c_str()))
 			}
 			default:
 			{
-				DLOGE("config") << "Unrecognized protocol: " << protocol << std::endl;
+				DLOGE("ios") << "Unrecognized protocol: " << protocol << std::endl;
 				DLOGI << "Defaulting to root directory." << std::endl;
 				absolute_ = s_root_dir_ / relative;
 			}

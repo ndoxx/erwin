@@ -1,6 +1,6 @@
 #pragma once
 
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 
 namespace erwin
 {
@@ -9,7 +9,7 @@ namespace img
 
 struct HDRDescriptor
 {
-    FilePath filepath;
+    WPath filepath;
     uint32_t channels = 0;
     uint32_t width = 0;
     uint32_t height = 0;
@@ -18,7 +18,7 @@ struct HDRDescriptor
 
 struct PNGDescriptor
 {
-    FilePath filepath;
+    WPath filepath;
     uint32_t channels = 0;
     uint32_t width = 0;
     uint32_t height = 0;

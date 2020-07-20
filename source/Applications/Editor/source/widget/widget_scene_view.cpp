@@ -105,16 +105,16 @@ void SceneViewWidget::on_imgui_render()
             {
                 // List all available scenes for current project
                 auto scene_dir = project::asset_dir(DK::SCENE);
-                for(auto& entry : fs::directory_iterator(scene_dir.full_path()))
+                for(auto& entry : fs::directory_iterator(scene_dir.absolute()))
                 {
                     if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
                     {
                         if(ImGui::MenuItem(entry.path().filename().c_str()))
                         {
+                            // TODO: check that we are not in runtime mode
                             auto& scene = scn::current();
                             scene.unload();
-                            scene.load_xml(
-                                FilePath(scene_dir.base_path(), scene_dir.file_path() / entry.path().filename()));
+                            scene.load_xml(WPath(entry.path()));
                         }
                     }
                 }
@@ -135,7 +135,7 @@ void SceneViewWidget::on_imgui_render()
             if(ImGui::MenuItem("Save as") || save_as_needed)
             {
                 dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                  project::asset_dir(DK::SCENE).full_path());
+                                  project::asset_dir(DK::SCENE).absolute());
             }
 
             ImGui::EndMenu();
@@ -195,7 +195,7 @@ void SceneViewWidget::on_imgui_render()
     dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath)
     {
         auto& scene = scn::current();
-        scene.save_xml(FilePath(filepath));
+        scene.save_xml(WPath(filepath));
     });
 
     // * Show game render in window

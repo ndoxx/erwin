@@ -34,8 +34,8 @@ public:
 	void toggle_imgui_layer();
 
 	// Add an XML configuration file to be parsed at the end of init()
-	void add_configuration(const fs::path& filepath);
-	void add_configuration(const fs::path& user_path, const fs::path& default_path);
+	void add_configuration(const WPath& filepath);
+	void add_configuration(const WPath& user_path, const WPath& default_path);
 
 	bool init();
 	void run();

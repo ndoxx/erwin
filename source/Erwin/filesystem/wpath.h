@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <ostream>
 #include "core/core.h"
 
 namespace fs = std::filesystem;
@@ -10,6 +11,7 @@ namespace erwin
 class WPath
 {
 public:
+	WPath() = default;
     explicit WPath(const std::string& path);
     explicit WPath(const fs::path& path);
 
@@ -139,6 +141,14 @@ public:
      * @return     The extension string (starting with a dot).
      */
     inline std::string extension() const { return absolute_.extension().string(); }
+
+
+    /**
+     * @brief      Get the stem as a string (file name without extension)
+     *
+     * @return     The stem
+     */
+    inline std::string stem() const { return absolute_.stem().string(); }
 
     /**
      * @brief      Get a hash of the universal path. Can be used to identify

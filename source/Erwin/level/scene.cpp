@@ -26,9 +26,6 @@ Scene::Scene()
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
-
-    // Create a script context
-    script_context_ = ScriptEngine::create_context();
 }
 
 void Scene::unload()
@@ -109,7 +106,7 @@ void Scene::save()
     save_xml(scene_file_path_);
 }
 
-void Scene::save_xml(const FilePath& file_path)
+void Scene::save_xml(const WPath& file_path)
 {
     DLOGN("scene") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
@@ -126,7 +123,7 @@ void Scene::save_xml(const FilePath& file_path)
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
         scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
-        scene_f.add_attribute(anode, "path", meta.file_path.file_path().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.universal().c_str());
     }
 
     // Write environment
@@ -164,13 +161,16 @@ void Scene::save_xml(const FilePath& file_path)
     DLOGI << "done." << std::endl;
 }
 
-void Scene::load_xml(const erwin::FilePath& file_path)
+void Scene::load_xml(const erwin::WPath& file_path)
 {
     DLOGN("scene") << "Loading scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
 
     scene_file_path_ = file_path;
     asset_registry_ = AssetManager::create_asset_registry();
+
+    // Create a script context
+    script_context_ = ScriptEngine::create_context();
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);
@@ -193,10 +193,9 @@ void Scene::load_xml(const erwin::FilePath& file_path)
     {
         size_t sz_asset_type;
         xml::parse_attribute(asset_node, "type", sz_asset_type);
-        std::string asset_rel_path;
-        xml::parse_attribute(asset_node, "path", asset_rel_path);
-        FilePath asset_path(file_path.base_path(), asset_rel_path);
-        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), asset_path);
+        std::string asset_univ_path;
+        xml::parse_attribute(asset_node, "path", asset_univ_path);
+        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), WPath(asset_univ_path));
     }
 
     // Load environment
@@ -271,7 +270,7 @@ void Scene::load_xml(const erwin::FilePath& file_path)
     loaded_ = true; // TODO: More granularity. At this stage scene is not FULLY loaded
 }
 
-void Scene::load_hdr_environment(const FilePath& hdr_file)
+void Scene::load_hdr_environment(const WPath& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
     AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {

@@ -1,6 +1,7 @@
 #include "core/registry.h"
 #include "filesystem/filesystem.h"
 #include "utils/string.h"
+#include "debug/logger.h"
 
 namespace erwin
 {
@@ -10,10 +11,10 @@ void Registry::deserialize(const xml::XMLFile& xml, const std::string& root_name
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.full_path().stem().string();
+        root = xml.filepath.stem();
 
     if(xml.root)
-        parse_properties(xml.root, root, xml.filepath.full_path().parent_path());
+        parse_properties(xml.root, root, xml.filepath.absolute().parent_path());
 }
 
 // Recursive parser
@@ -47,7 +48,7 @@ void Registry::parse_properties(void* node, const std::string& name_chain, const
 }
 
 // Property parser
-hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, const fs::path& parent_dir)
+hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, const fs::path& /*parent_dir*/)
 {
     rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
@@ -123,12 +124,8 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, c
         std::string value;
         if(!xml::parse_attribute(xnode, "value", value))
             return 0;
-        bool is_absolute = false;
-        xml::parse_attribute(xnode, "absolute", is_absolute);
-        if(!is_absolute)
-            paths_[full_name_hash] = FilePath(parent_dir, value);
-        else
-            paths_[full_name_hash] = FilePath(value);
+
+        paths_[full_name_hash] = WPath(value);
         break;
     }
     case "size"_h: {
@@ -148,10 +145,10 @@ void Registry::serialize(xml::XMLFile& xml, const std::string& root_name)
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.full_path().stem().string();
+        root = xml.filepath.stem();
 
     if(xml.root)
-        serialize_properties(&xml.doc, xml.root, root, xml.filepath.full_path().parent_path());
+        serialize_properties(&xml.doc, xml.root, root, xml.filepath.absolute().parent_path());
 }
 
 void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
@@ -262,15 +259,8 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         auto it = paths_.find(full_name_hash);
         if(it != paths_.end())
         {
-            bool is_absolute = false;
-            xml::parse_attribute(xnode, "absolute", is_absolute);
-            if(!it->second.full_path().empty())
-            {
-                if(is_absolute)
-                    xml::set_attribute(doc, xnode, "value", it->second.string());
-                else
-                    xml::set_attribute(doc, xnode, "value", it->second.file_path().string());
-            }
+            if(!it->second.empty())
+                xml::set_attribute(doc, xnode, "value", it->second.universal());
         }
         break;
     }
@@ -337,8 +327,8 @@ template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def) c
     return (it != vec4s_.end()) ? it->second : def;
 }
 
-static FilePath empty_path;
-const FilePath& Registry::get(hash_t hname) const
+static WPath empty_path;
+const WPath& Registry::get(hash_t hname) const
 {
     auto it = paths_.find(hname);
     return (it != paths_.end()) ? it->second : empty_path;
@@ -404,7 +394,7 @@ template <> bool Registry::set(hash_t hname, const std::string& val)
     return true;
 }
 
-template <> bool Registry::set(hash_t hname, const FilePath& val)
+template <> bool Registry::set(hash_t hname, const WPath& val)
 {
     auto it = paths_.find(hname);
     if(it == paths_.end())

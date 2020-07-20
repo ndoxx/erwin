@@ -9,7 +9,7 @@
 #include <vector>
 #include <functional>
 
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 #include "render/texture_common.h"
 
 namespace erwin
@@ -52,7 +52,7 @@ struct CATFontRemapElement
 
 struct CATDescriptor
 {
-    FilePath filepath;
+    WPath filepath;
     void* texture_blob;
     void* remapping_blob;
     uint32_t texture_width;

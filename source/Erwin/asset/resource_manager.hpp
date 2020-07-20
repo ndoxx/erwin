@@ -8,11 +8,12 @@
 
 #include "asset/loader_common.h"
 #include "core/core.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 #include "filesystem/image_file.h"
 #include "filesystem/tom_file.h"
 #include "utils/future.hpp"
 #include "utils/promise_storage.hpp"
+#include "debug/logger.h"
 
 namespace fs = std::filesystem;
 
@@ -26,7 +27,7 @@ public:
     using DataDescriptor = typename LoaderT::DataDescriptor;
 
     template <typename... ArgsT>
-    std::pair<const ManagedResource&, const AssetMetaData&> load(const FilePath& file_path, ArgsT&&... args)
+    std::pair<const ManagedResource&, const AssetMetaData&> load(const WPath& file_path, ArgsT&&... args)
     {
         W_PROFILE_FUNCTION()
 
@@ -47,7 +48,7 @@ public:
             return {findit->second, meta_data_[hname]};
     }
 
-    std::pair<hash_t, const AssetMetaData&> load_async(const FilePath& file_path);
+    std::pair<hash_t, const AssetMetaData&> load_async(const WPath& file_path);
 
     void on_ready(hash_t hname, std::function<void(const ManagedResource&)> then);
     void release(hash_t hname);
@@ -83,7 +84,7 @@ private:
 };
 
 template <typename LoaderT>
-std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const FilePath& file_path)
+std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const WPath& file_path)
 {
     W_PROFILE_FUNCTION()
 

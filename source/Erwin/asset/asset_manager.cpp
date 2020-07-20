@@ -164,49 +164,49 @@ TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
     return tex;
 }
 
-template<> const ComponentPBRMaterial& AssetManager::load<ComponentPBRMaterial>(size_t reg, const FilePath& file_path)
+template<> const ComponentPBRMaterial& AssetManager::load<ComponentPBRMaterial>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.material_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const Mesh& AssetManager::load<Mesh>(size_t reg, const FilePath& file_path)
+template<> const Mesh& AssetManager::load<Mesh>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.mesh_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const FreeTexture& AssetManager::load<FreeTexture>(size_t reg, const FilePath& file_path)
+template<> const FreeTexture& AssetManager::load<FreeTexture>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.texture_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const FreeTexture& AssetManager::load<FreeTexture,Texture2DDescriptor>(size_t reg, const FilePath& file_path, const Texture2DDescriptor& options)
+template<> const FreeTexture& AssetManager::load<FreeTexture,Texture2DDescriptor>(size_t reg, const WPath& file_path, const Texture2DDescriptor& options)
 {
     auto&& [res, meta] = s_storage.texture_manager.load(file_path, options);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const TextureAtlas& AssetManager::load<TextureAtlas>(size_t reg, const FilePath& file_path)
+template<> const TextureAtlas& AssetManager::load<TextureAtlas>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.texture_atlas_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const FontAtlas& AssetManager::load<FontAtlas>(size_t reg, const FilePath& file_path)
+template<> const FontAtlas& AssetManager::load<FontAtlas>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.font_atlas_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
     return res;
 }
 
-template<> const Environment& AssetManager::load<Environment>(size_t reg, const FilePath& file_path)
+template<> const Environment& AssetManager::load<Environment>(size_t reg, const WPath& file_path)
 {
     auto&& [res, meta] = s_storage.environment_manager.load(file_path);
     s_storage.registry[reg].insert(meta);
@@ -249,49 +249,49 @@ template<> void AssetManager::release<Environment>(size_t reg, hash_t hname)
     s_storage.registry[reg].erase(hname);
 }
 
-template<> hash_t AssetManager::load_async<ComponentPBRMaterial>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<ComponentPBRMaterial>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.material_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-template<> hash_t AssetManager::load_async<Mesh>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<Mesh>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.mesh_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-template<> hash_t AssetManager::load_async<FreeTexture>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<FreeTexture>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.texture_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-template<> hash_t AssetManager::load_async<TextureAtlas>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<TextureAtlas>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.texture_atlas_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-template<> hash_t AssetManager::load_async<FontAtlas>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<FontAtlas>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.font_atlas_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-template<> hash_t AssetManager::load_async<Environment>(size_t reg, const FilePath& file_path)
+template<> hash_t AssetManager::load_async<Environment>(size_t reg, const WPath& file_path)
 {
     auto&& [handle, meta] = s_storage.environment_manager.load_async(file_path);
     s_storage.registry[reg].insert(meta);
     return handle;
 }
 
-hash_t AssetManager::load_resource_async(size_t reg, AssetMetaData::AssetType type, const FilePath& file_path)
+hash_t AssetManager::load_resource_async(size_t reg, AssetMetaData::AssetType type, const WPath& file_path)
 {
     switch(type)
     {

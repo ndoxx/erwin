@@ -6,7 +6,7 @@
 #include <memory>
 #include <type_traits>
 #include "core/core.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 
 namespace fs = std::filesystem;
 
@@ -44,16 +44,16 @@ void set_asset_dir(const fs::path& path);
 void set_client_config_dir(const fs::path& path);
 
 // Make sure a user config file exists, copy default config to user dir if necessary
-bool ensure_user_config(const fs::path& user_path, const fs::path& default_path);
+bool ensure_user_config(const WPath& user_path, const WPath& default_path);
 
 // Get a text file as a string
-std::string get_file_as_string(const FilePath& path);
+std::string get_file_as_string(const WPath& path);
 // Get a binary file as a vector of bytes
-std::vector<uint8_t> get_file_as_vector(const FilePath& path);
+std::vector<uint8_t> get_file_as_vector(const WPath& path);
 // Get an input stream from a file
-std::shared_ptr<std::istream> get_istream(const FilePath& path, uint8_t mode);
+std::shared_ptr<std::istream> get_istream(const WPath& path, uint8_t mode);
 // Get an output stream to a file
-std::shared_ptr<std::ostream> get_ostream(const FilePath& path, uint8_t mode);
+std::shared_ptr<std::ostream> get_ostream(const WPath& path, uint8_t mode);
 
 } // namespace wfs
 

@@ -30,7 +30,7 @@ static ImGuiLayer* IMGUI_LAYER = nullptr;
 
 static struct ApplicationStorage
 {
-    std::vector<fs::path> configuration_files;
+    std::vector<WPath> configuration_files;
     memory::HeapArea client_area;
     memory::HeapArea system_area;
     memory::HeapArea render_area;
@@ -48,30 +48,26 @@ minimized_(false)
     wfs::init();
 }
 
-void Application::add_configuration(const fs::path& filepath)
+void Application::add_configuration(const WPath& filepath)
 {
-    fs::path fullpath = wfs::get_client_config_dir() / filepath;
-    if(fs::exists(fullpath))
-        s_storage.configuration_files.push_back(fullpath);
+    if(filepath.exists())
+        s_storage.configuration_files.push_back(filepath);
     else
     {
         DLOGW("application") << "Unable to find configuration file:" << std::endl;
         DLOGI << "client configuration directory: " << WCC('p') << wfs::get_client_config_dir() << std::endl;
-        DLOGI << "file path: " << WCC('p') << fullpath << std::endl;
+        DLOGI << "file path: " << WCC('p') << filepath << std::endl;
     }
 }
 
-void Application::add_configuration(const fs::path& user_path, const fs::path& default_path)
+void Application::add_configuration(const WPath& user_path, const WPath& default_path)
 {
-    fs::path fullpath_default_path = wfs::get_client_config_dir() / default_path;
-    fs::path full_user_path        = wfs::get_user_dir() / user_path;
-
-    if(wfs::ensure_user_config(full_user_path, fullpath_default_path))
-        s_storage.configuration_files.push_back(full_user_path);
+    if(wfs::ensure_user_config(user_path, default_path))
+        s_storage.configuration_files.push_back(user_path);
     else
     {
         DLOGW("application") << "Unable to find configuration file:" << std::endl;
-        DLOGI << "file path: " << WCC('p') << full_user_path << std::endl;
+        DLOGI << "file path: " << WCC('p') << user_path << std::endl;
     }
 }
 
@@ -96,7 +92,7 @@ bool Application::init()
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
-        cfg::load(FilePath(wfs::get_config_dir(), "erwin.xml"));
+        cfg::load("syscfg://erwin.xml"_wp);
 
         WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
         WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
@@ -112,7 +108,7 @@ bool Application::init()
         DLOGI << "Config dir:      " << WCC('p') << wfs::get_config_dir() << WCC(0) << std::endl;
 
         // Parse intern strings
-        istr::init("intern_strings.txt");
+        istr::init();
         Input::init();
     }
 
@@ -146,7 +142,7 @@ bool Application::init()
         DLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file: s_storage.configuration_files)
-            cfg::load(FilePath(cfg_file));
+            cfg::load(cfg_file);
     }
 
     // Initialize client memory
@@ -377,7 +373,7 @@ void Application::run()
     {
         DLOGN("application") << "Saving config file:" << std::endl;
         DLOGI << WCC('p') << cfg_file << std::endl;
-        cfg::save(FilePath(cfg_file));
+        cfg::save(cfg_file);
     }
 
     DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;

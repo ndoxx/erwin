@@ -47,7 +47,7 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
     }
 }
 
-AssetMetaData MaterialLoader::build_meta_data(const FilePath& file_path)
+AssetMetaData MaterialLoader::build_meta_data(const WPath& file_path)
 {
     W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
     W_ASSERT(file_path.check_extension(".tom"_h), "Invalid input file.");
@@ -97,7 +97,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     ShaderHandle shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");
     UniformBufferHandle ubo = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
 
-    std::string name = descriptor.filepath.file_path().stem().string();
+    std::string name = descriptor.filepath.stem();
 
     Material mat = {H_(name.c_str()), tg, shader, ubo, sizeof(ComponentPBRMaterial::MaterialData), resource_id};
     Renderer3D::register_shader(shader);

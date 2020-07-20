@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/registry.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 
 namespace editor
 {
@@ -28,20 +28,19 @@ namespace project
 
 struct ProjectSettings
 {
-    fs::path project_file;
-    fs::path root_folder;
+    erwin::WPath project_file;
+    erwin::WPath root_folder;
     erwin::Registry registry;
     bool loaded = false;
 };
 
-bool load_project(const erwin::FilePath& filepath);
+bool load_project(const erwin::WPath& filepath);
 bool save_project();
 bool is_loaded();
 void close_project();
 const ProjectSettings& get_project_settings();
 
-erwin::FilePath asset_dir(DK dir_key);
-erwin::FilePath asset_path(DK dir_key, const fs::path& file_path);
+erwin::WPath asset_dir(DK dir_key);
 
 } // namespace project
 } // namespace editor

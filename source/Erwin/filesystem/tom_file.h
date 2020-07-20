@@ -8,7 +8,7 @@
 #include <string>
 
 #include "core/core.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 #include "render/texture_common.h"
 
 namespace erwin
@@ -43,7 +43,7 @@ struct TextureMapDescriptor
 
 struct TOMDescriptor
 {
-    FilePath filepath;
+    WPath filepath;
     uint16_t width;
     uint16_t height;
     LosslessCompression compression;

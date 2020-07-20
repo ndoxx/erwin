@@ -6,7 +6,7 @@
 namespace erwin
 {
 
-AssetMetaData TextureLoader::build_meta_data(const FilePath& file_path)
+AssetMetaData TextureLoader::build_meta_data(const WPath& file_path)
 {
     // Sanity check
     W_ASSERT(file_path.exists(), "File does not exist.");

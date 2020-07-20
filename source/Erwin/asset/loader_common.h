@@ -1,6 +1,6 @@
 #pragma once
 
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 
 namespace erwin
 {
@@ -19,7 +19,7 @@ struct AssetMetaData
         MeshWESH
     };
 
-    FilePath file_path;
+    WPath file_path;
     AssetType type;
 };
 

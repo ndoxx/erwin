@@ -16,11 +16,11 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, en
 {
     // Load material from file
     if(ImGui::Button("Load"))
-        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).full_path());
+        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).absolute());
 
     editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
     {
-        cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, FilePath(filepath)); // // Copy material
+        cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, WPath(filepath)); // // Copy material
     });
     
     // ImGui::TextUnformatted(cmp.name.c_str()); // Name unused atm
