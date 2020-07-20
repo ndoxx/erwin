@@ -31,9 +31,28 @@
 
 #include "entity/component/hierarchy.h"
 #include "entity/component/transform.h"
+#include "entity/component/camera.h"
+#include "entity/component/bounding_box.h"
+#include "entity/component/mesh.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/light.h"
+#include "entity/component/description.h"
+
 #include "entt/entt.hpp"
 
+#include "filesystem/wpath.h"
+
 using namespace erwin;
+
+// TMP
+template <> void erwin::inspector_GUI<ComponentTransform3D>(ComponentTransform3D&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentCamera3D>(ComponentCamera3D&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentOBB>(ComponentOBB&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, entt::registry&, size_t) {}
 
 void init_logger()
 {
@@ -53,16 +72,26 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-struct CDummy
+void show(const WPath& p)
 {
-    CDummy(int A) : a(A) {}
-
-    int a;
-};
+    BANG();
+    DLOG("nuclear",1) << p << std::endl;
+    DLOG("nuclear",1) << p.absolute() << std::endl;
+    DLOG("nuclear",1) << p.relative() << std::endl;
+}
 
 int main(int argc, char** argv)
 {
     init_logger();
+
+    WPath::set_root_directory("/home/ndx/dev/Erwin");
+    WPath::set_resource_directory("/home/ndx/erwin_workspace/test_scene/assets");
+
+    auto p = "res://textures/materials/dirtyWickerWeave.tom"_wp;
+    show(p);
+
+    auto p2 = "/home/ndx/erwin_workspace/test_scene/assets/textures/materials/dirtyWickerWeave.tom"_wp;
+    show(p2);
 
     return 0;
 }

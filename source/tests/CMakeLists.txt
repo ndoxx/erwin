@@ -33,7 +33,8 @@ set_target_properties(test_logger
 target_link_libraries(test_logger
                       erwin
                       pthread
-                      eastl)
+                      # eastl
+                      )
 cotire(test_logger)
 
 
@@ -61,7 +62,7 @@ target_link_libraries(test_serial
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(test_serial)
 
@@ -98,7 +99,7 @@ target_link_libraries(test_erwin
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(test_erwin)
 
@@ -128,6 +129,6 @@ target_link_libraries(nuclear
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(nuclear)
