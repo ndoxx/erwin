@@ -63,6 +63,7 @@ struct ChaiContext
     void init();
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
     void use(const WPath& script_path);
+    void eval(const std::string& command);
     ActorIndex instantiate(const std::string& entry_point, EntityID e);
     inline Actor& get_actor(ActorIndex idx) { return actors_.at(idx); }
 

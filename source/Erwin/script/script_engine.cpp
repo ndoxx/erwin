@@ -1,7 +1,7 @@
 #include "script/script_engine.h"
+#include "debug/logger.h"
 #include "script/bindings/glm.h"
 #include "script/bindings/logger.h"
-#include "debug/logger.h"
 #include <chaiscript/chaiscript.hpp>
 
 namespace erwin
@@ -11,8 +11,8 @@ using namespace script;
 
 static struct
 {
-	SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
-	std::array<ChaiContext, k_max_script_vms> vms_;
+    SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
+    std::array<ChaiContext, k_max_script_vms> vms_;
 } s_storage;
 
 VMHandle ScriptEngine::create_context()
@@ -22,7 +22,11 @@ VMHandle ScriptEngine::create_context()
     s_storage.vms_[handle].init();
     s_storage.vms_[handle].add_bindings(script::make_glm_bindings());
     s_storage.vms_[handle].add_bindings(script::make_logger_bindings());
-    DLOG("script",1) << "Created new script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
+
+    // Redirect the print function
+    s_storage.vms_[handle].eval("global print = DLOG;");
+
+    DLOG("script", 1) << "Created new script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
     return handle;
 }
 
@@ -30,12 +34,9 @@ void ScriptEngine::destroy_context(VMHandle handle)
 {
     s_storage.vms_[handle] = {};
     s_storage.vm_handle_pool_.release(handle);
-    DLOG("script",1) << "Destroyed script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
+    DLOG("script", 1) << "Destroyed script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
 }
 
-ChaiContext& ScriptEngine::get_context(VMHandle handle)
-{
-	return s_storage.vms_.at(handle);
-}
+ChaiContext& ScriptEngine::get_context(VMHandle handle) { return s_storage.vms_.at(handle); }
 
 } // namespace erwin

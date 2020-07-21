@@ -40,6 +40,18 @@ void ChaiContext::use(const WPath& script_path)
     }
 }
 
+void ChaiContext::eval(const std::string& command)
+{
+    try
+    {
+        vm->eval(command);
+    }
+    catch(const chaiscript::exception::eval_error& e)
+    {
+        DLOGE("script") << e.pretty_print() << std::endl;
+    }
+}
+
 ActorIndex ChaiContext::instantiate(const std::string& entry_point, EntityID e)
 {
     DLOGN("script") << "Instantiating actor class '" << WCC('n') << entry_point << WCC(0) << "' for entity ["

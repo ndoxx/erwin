@@ -21,6 +21,9 @@ protected:
 	virtual void on_imgui_render() override;
 
 private:
+	void save_command(const std::string& command);
+
+private:
 	struct MessageItem
 	{
 		std::string message;
@@ -29,7 +32,9 @@ private:
 
     char input_buffer_[256];
     std::deque<MessageItem> items_;
+    std::deque<std::string> command_history_;
     uint32_t queue_max_len_;
+    uint32_t history_max_len_;
 
     bool auto_scroll_;
     bool scroll_to_bottom_;

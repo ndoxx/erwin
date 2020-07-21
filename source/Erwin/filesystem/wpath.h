@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <ostream>
+#include <map>
 #include "core/core.h"
 
 namespace fs = std::filesystem;
@@ -12,6 +13,7 @@ class WPath
 {
 public:
 	WPath() = default;
+    WPath(const std::string& proto, const fs::path& path);
     explicit WPath(const std::string& path);
     explicit WPath(const fs::path& path);
 
@@ -215,6 +217,9 @@ public:
     friend std::ostream& operator <<(std::ostream& stream, const WPath& rhs);
 
 private:
+    static std::string make_universal(const std::string& proto, const fs::path& path);
+
+private:
 	static fs::path s_root_dir_;
     static fs::path s_user_dir_;
     static fs::path s_resource_dir_;
@@ -222,6 +227,7 @@ private:
     static fs::path s_app_resource_dir_;
     static fs::path s_sys_config_dir_;
     static fs::path s_sys_resource_dir_;
+    static const std::map<hash_t, const fs::path&> s_protos;
 
     std::string universal_;
     fs::path absolute_;
