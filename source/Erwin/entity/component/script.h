@@ -14,6 +14,7 @@ struct ComponentScript
 
 	WPath file_path;
 	std::string entry_point;
+	script::ActorIndex actor_index = 0;
 };
 
 } // namespace erwin

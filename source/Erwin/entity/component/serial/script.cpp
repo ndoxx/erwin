@@ -19,7 +19,13 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
     auto ctx_handle = scene.get_script_context();
     auto& ctx = ScriptEngine::get_context(ctx_handle);
     auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
-    ctx.use(cscript.file_path);
+
+    // Evaluate and instantiate only if scene is runtime
+    if(scene.is_runtime())
+    {
+	    ctx.use(cscript.file_path);
+	    cscript.actor_index = ctx.instantiate(cscript.entry_point, e);
+	}
 }
 
 } // namespace erwin

@@ -53,6 +53,7 @@ template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, e
 template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, entt::registry&, size_t) {}
 template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, entt::registry&, size_t) {}
 template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, entt::registry&, size_t) {}
+template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityID, entt::registry&, size_t) {}
 
 void init_logger()
 {

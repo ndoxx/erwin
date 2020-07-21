@@ -60,8 +60,8 @@ std::shared_ptr<chaiscript::Module> make_glm_bindings()
 	module->add(fun([](vec2& lhs, const vec2& rhs){ lhs += rhs; return lhs; }), "+=");
 	module->add(fun([](vec2& lhs, const vec2& rhs){ lhs -= rhs; return lhs; }), "-=");
 	module->add(fun([](vec2& lhs, const float rhs){ lhs *= rhs; return lhs; }), "*=");
+	module->add(fun([](const vec2& lhs, const vec2& rhs){ return glm::reflect(lhs,rhs); }), "reflect");
 	module->add(fun(static_cast<vec2 (*)(const vec2&)>(normalize)), "normalize");
-	module->add(fun(static_cast<vec2 (*)(const vec2&, const vec2&)>(reflect)), "reflect");
 	module->add(fun(static_cast<float (*)(const vec2&)>(length)), "length");
 	module->add(fun(static_cast<float (*)(const vec2&)>(length)), "norm");
 	module->add(fun(static_cast<float (*)(const vec2&)>(length2)), "length2");
@@ -93,9 +93,9 @@ std::shared_ptr<chaiscript::Module> make_glm_bindings()
 	module->add(fun([](vec3& lhs, const vec3& rhs){ lhs += rhs; return lhs; }), "+=");
 	module->add(fun([](vec3& lhs, const vec3& rhs){ lhs -= rhs; return lhs; }), "-=");
 	module->add(fun([](vec3& lhs, const float rhs){ lhs *= rhs; return lhs; }), "*=");
+	module->add(fun([](const vec3& lhs, const vec3& rhs){ return glm::reflect(lhs,rhs); }), "reflect");
 	module->add(fun(static_cast<vec3 (*)(const vec3&)>(normalize)), "normalize");
 	module->add(fun(static_cast<vec3 (*)(const vec3&, const vec3&)>(cross)), "cross");
-	module->add(fun(static_cast<vec3 (*)(const vec3&, const vec3&)>(reflect)), "reflect");
 	module->add(fun(static_cast<float (*)(const vec3&)>(length)), "length");
 	module->add(fun(static_cast<float (*)(const vec3&)>(length)), "norm");
 	module->add(fun(static_cast<float (*)(const vec3&)>(length2)), "length2");
@@ -129,8 +129,8 @@ std::shared_ptr<chaiscript::Module> make_glm_bindings()
 	module->add(fun([](vec4& lhs, const vec4& rhs){ lhs += rhs; return lhs; }), "+=");
 	module->add(fun([](vec4& lhs, const vec4& rhs){ lhs -= rhs; return lhs; }), "-=");
 	module->add(fun([](vec4& lhs, const float rhs){ lhs *= rhs; return lhs; }), "*=");
+	module->add(fun([](const vec4& lhs, const vec4& rhs){ return glm::reflect(lhs,rhs); }), "reflect");
 	module->add(fun(static_cast<vec4 (*)(const vec4&)>(normalize)), "normalize");
-	module->add(fun(static_cast<vec4 (*)(const vec4&, const vec4&)>(reflect)), "reflect");
 	module->add(fun(static_cast<float (*)(const vec4&)>(length)), "length");
 	module->add(fun(static_cast<float (*)(const vec4&)>(length)), "norm");
 	module->add(fun(static_cast<float (*)(const vec4&)>(length2)), "length2");
