@@ -454,7 +454,7 @@ public:
 	 *
 	 * @return     True if child, False otherwise.
 	 */
-	bool is_child(EntityID parent, EntityID node);
+	bool is_child(EntityID parent, EntityID node) const;
 	
 	/**
 	 * @brief      Check if two nodes are siblings.
@@ -464,7 +464,14 @@ public:
 	 *
 	 * @return     True if the two nodes are siblings, False otherwise.
 	 */
-	bool is_sibling(EntityID first, EntityID second);
+	bool is_sibling(EntityID first, EntityID second) const;
+
+    /**
+     * @brief      Gets the script context handle.
+     *
+     * @return     Handle to the script context.
+     */
+    inline script::VMHandle get_script_context() const { return script_context_; }
 
 private:
     entt::registry registry;

@@ -71,11 +71,12 @@ template <typename ComponentType>
 extern void serialize_bin(const ComponentType&, std::ostream&) {}
 
 // Deserialization
+class Scene;
 template <typename ComponentType>
-extern void deserialize_xml(rapidxml::xml_node<>*, entt::registry&, EntityID) {}
+extern void deserialize_xml(rapidxml::xml_node<>*, Scene&, EntityID) {}
 
 template <typename ComponentType>
-extern void deserialize_bin(std::istream&, EntityID, entt::registry&) {}
+extern void deserialize_bin(std::istream&, Scene&, EntityID) {}
 
 namespace metafunc
 {
@@ -137,15 +138,15 @@ namespace metafunc
 	}
 
 	template <typename ComponentType>
-	inline void deserialize_xml_typecast(void* node, void* reg, EntityID e)
+	inline void deserialize_xml_typecast(void* node, void* scene, EntityID e)
 	{
-		deserialize_xml<ComponentType>(static_cast<rapidxml::xml_node<>*>(node), *static_cast<entt::registry*>(reg), e);
+		deserialize_xml<ComponentType>(static_cast<rapidxml::xml_node<>*>(node), *static_cast<Scene*>(scene), e);
 	}
 
 	template <typename ComponentType>
-	inline void deserialize_bin_typecast(std::istream& stream, EntityID e, entt::registry* r)
+	inline void deserialize_bin_typecast(std::istream& stream, void* scene, EntityID e)
 	{
-		deserialize_bin<ComponentType>(stream, e, *r);
+		deserialize_bin<ComponentType>(stream, *static_cast<Scene*>(scene), e);
 	}
 } // namespace metafunc
 } // namespace erwin

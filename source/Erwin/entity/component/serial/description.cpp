@@ -1,5 +1,6 @@
 #include "entity/component/serial/description.h"
 #include "imgui/font_awesome.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -13,7 +14,7 @@ void serialize_xml<ComponentDescription>(const ComponentDescription& cmp, xml::X
 }
 
 template <>
-void deserialize_xml<ComponentDescription>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+void deserialize_xml<ComponentDescription>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     std::string name;
     std::string desc;
@@ -21,7 +22,7 @@ void deserialize_xml<ComponentDescription>(rapidxml::xml_node<>* cmp_node, entt:
     xml::parse_node(cmp_node, "desc", desc);
 
     ComponentDescription cdesc = {name, W_ICON(CUBE), desc};
-    registry.emplace<ComponentDescription>(e, cdesc);
+    scene.add_component<ComponentDescription>(e, cdesc);
 }
 
 } // namespace erwin

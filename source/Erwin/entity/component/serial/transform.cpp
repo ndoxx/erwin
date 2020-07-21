@@ -1,5 +1,6 @@
 #include "entity/component/serial/transform.h"
 #include "glm/gtx/string_cast.hpp"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -14,14 +15,14 @@ void serialize_xml<ComponentTransform3D>(const ComponentTransform3D& cmp, xml::X
 }
 
 template <>
-void deserialize_xml<ComponentTransform3D>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+void deserialize_xml<ComponentTransform3D>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     glm::vec3 T, R;
     float S;
     xml::parse_node(cmp_node, "T", T);
     xml::parse_node(cmp_node, "R", R);
     xml::parse_node(cmp_node, "S", S);
-    registry.emplace<ComponentTransform3D>(e, T, R, S);
+    scene.add_component<ComponentTransform3D>(e, T, R, S);
 }
 
 } // namespace erwin

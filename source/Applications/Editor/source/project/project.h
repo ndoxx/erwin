@@ -13,6 +13,7 @@ enum class DK: uint8_t
 	MATERIAL,
 	FONT,
 	MESH,
+	SCRIPT,
 	SCENE,
 
 	WORK_ATLAS,
@@ -20,7 +21,8 @@ enum class DK: uint8_t
 	WORK_MATERIAL,
 	WORK_FONT,
 	WORK_MESH,
-	WORK_SCENE
+	WORK_SCRIPT,
+	WORK_SCENE,
 };
 
 namespace project

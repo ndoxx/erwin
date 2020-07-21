@@ -1,6 +1,7 @@
 #include "entity/component/serial/mesh.h"
 #include "asset/asset_manager.h"
 #include "render/common_geometry.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -13,7 +14,7 @@ void serialize_xml<ComponentMesh>(const ComponentMesh& cmp, xml::XMLFile& file, 
     file.add_attribute(cmp_node, "id", to_string(cmp.mesh.resource_id).c_str());
 }
 
-template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     bool procedural = false;
     size_t resource_id = 0;
@@ -22,13 +23,13 @@ template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, 
 
     if(procedural)
     {
-        auto& cmesh = registry.emplace<ComponentMesh>(e);
+        auto& cmesh = scene.add_component<ComponentMesh>(e);
         cmesh.mesh = CommonGeometry::get_mesh(resource_id);
     }
     else
     {
         AssetManager::on_ready<Mesh>(
-            resource_id, [&registry, e = e](const Mesh& mesh) { registry.emplace<ComponentMesh>(e, mesh); });
+            resource_id, [&scene, e = e](const Mesh& mesh) { scene.add_component<ComponentMesh>(e, mesh); });
     }
 }
 

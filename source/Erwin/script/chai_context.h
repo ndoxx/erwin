@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "filesystem/wpath.h"
 
 namespace chaiscript
 {
@@ -34,6 +35,7 @@ struct ChaiContext
 
     void init();
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
+    void use(const WPath& script_path);
 };
 
 } // namespace script

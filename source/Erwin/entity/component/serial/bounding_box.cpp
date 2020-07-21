@@ -1,11 +1,12 @@
 #include "entity/component/serial/bounding_box.h"
+#include "level/scene.h"
 
 namespace erwin
 {
 
-template <> void deserialize_xml<ComponentOBB>(rapidxml::xml_node<>*, entt::registry& registry, EntityID e)
+template <> void deserialize_xml<ComponentOBB>(rapidxml::xml_node<>*, Scene& scene, EntityID e)
 {
-    registry.emplace<ComponentOBB>(e);
+    scene.add_component<ComponentOBB>(e);
 }
 
 } // namespace erwin

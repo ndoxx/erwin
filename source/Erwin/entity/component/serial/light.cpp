@@ -1,5 +1,6 @@
 #include "entity/component/serial/light.h"
 #include "entity/reflection.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -17,9 +18,9 @@ void serialize_xml<ComponentDirectionalLight>(const ComponentDirectionalLight& c
 }
 
 template <>
-void deserialize_xml<ComponentDirectionalLight>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+void deserialize_xml<ComponentDirectionalLight>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
-    auto& cmp_dl = registry.emplace<ComponentDirectionalLight>(e);
+    auto& cmp_dl = scene.add_component<ComponentDirectionalLight>(e);
 
     float incl = 0.f;
     float ap = 0.f;

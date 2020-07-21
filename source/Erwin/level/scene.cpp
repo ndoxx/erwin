@@ -247,7 +247,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
                 // DLOGW("scene") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
                 invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node),
-                       static_cast<void*>(&registry), e);
+                       static_cast<void*>(this), e);
             }
         }
     }
@@ -489,7 +489,7 @@ bool Scene::subtree_contains(EntityID root, EntityID node)
     return found;
 }
 
-bool Scene::is_child(EntityID parent, EntityID node)
+bool Scene::is_child(EntityID parent, EntityID node) const
 {
     const auto& parent_hierarchy = registry.get<ComponentHierarchy>(parent);
 
@@ -503,7 +503,7 @@ bool Scene::is_child(EntityID parent, EntityID node)
     return false;
 }
 
-bool Scene::is_sibling(EntityID first, EntityID second)
+bool Scene::is_sibling(EntityID first, EntityID second) const
 {
     const auto& hierarchy_1 = registry.get<ComponentHierarchy>(first);
     const auto& hierarchy_2 = registry.get<ComponentHierarchy>(second);

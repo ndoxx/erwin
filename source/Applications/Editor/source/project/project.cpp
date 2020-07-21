@@ -37,18 +37,18 @@ bool load_project(const WPath& filepath)
     DLOG("editor", 0) << "Import paths:" << std::endl;
     DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
     DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.import.material"_h)
-          << std::endl;
+    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
+    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
     DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
     DLOG("editor", 0) << "Export paths:" << std::endl;
     DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
     DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.export.material"_h)
-          << std::endl;
+    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
+    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
     DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
@@ -109,6 +109,9 @@ WPath asset_dir(DK dir_key)
     case DK::MESH:
         dirpath = s_current_project.registry.get("project.content.export.mesh"_h);
         break;
+    case DK::SCRIPT:
+        dirpath = s_current_project.registry.get("project.content.export.script"_h);
+        break;
     case DK::SCENE:
         dirpath = s_current_project.registry.get("project.content.export.scene"_h);
         break;
@@ -127,6 +130,9 @@ WPath asset_dir(DK dir_key)
         break;
     case DK::WORK_MESH:
         dirpath = s_current_project.registry.get("project.content.import.mesh"_h);
+        break;
+    case DK::WORK_SCRIPT:
+        dirpath = s_current_project.registry.get("project.content.import.script"_h);
         break;
     case DK::WORK_SCENE:
         dirpath = s_current_project.registry.get("project.content.import.scene"_h);

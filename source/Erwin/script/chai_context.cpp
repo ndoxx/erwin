@@ -10,5 +10,7 @@ void ChaiContext::init() { vm = std::make_shared<chaiscript::ChaiScript>(); }
 
 void ChaiContext::add_bindings(std::shared_ptr<chaiscript::Module> module) { vm->add(module); }
 
+void ChaiContext::use(const WPath& script_path) { vm->use(script_path.string()); }
+
 } // namespace script
 } // namespace erwin
