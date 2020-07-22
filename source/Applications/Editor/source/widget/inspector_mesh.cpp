@@ -15,11 +15,11 @@ void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, entt::registry
 {
     // Load mesh from file
     if(ImGui::Button("Load"))
-        editor::dialog::show_open("ChooseWeshDlgKey", "Choose mesh file", ".wesh", editor::project::asset_dir(editor::DK::MESH).full_path());
+        editor::dialog::show_open("ChooseWeshDlgKey", "Choose mesh file", ".wesh", editor::project::asset_dir(editor::DK::MESH).absolute());
 
     editor::dialog::on_open("ChooseWeshDlgKey", [&cmp,&registry,e,asset_registry](const fs::path& filepath)
     {
-        cmp.mesh = AssetManager::load<Mesh>(asset_registry, FilePath(filepath));
+        cmp.mesh = AssetManager::load<Mesh>(asset_registry, WPath("res", filepath));
         registry.emplace_or_replace<DirtyOBBTag>(e);
     });
     

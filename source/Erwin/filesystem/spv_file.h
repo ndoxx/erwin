@@ -9,7 +9,7 @@
 
 #include "core/core.h"
 #include "render/shader_lang.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 
 namespace erwin
 {
@@ -22,7 +22,7 @@ struct ShaderStageDescriptor
 	std::string entry_point;
 };
 
-extern std::vector<ShaderStageDescriptor> parse_stages(const FilePath& path);
+extern std::vector<ShaderStageDescriptor> parse_stages(const WPath& path);
 
 } // namespace spv
 } // namespace erwin

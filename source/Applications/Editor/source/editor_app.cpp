@@ -24,8 +24,8 @@ void ErwinEditor::on_client_init()
 {
     wfs::set_asset_dir("source/Applications/Editor/assets");
     wfs::set_client_config_dir("source/Applications/Editor/config");
-    add_configuration("client.xml");
-    add_configuration("config/settings.xml", "default_settings.xml");
+    add_configuration("cfg://client.xml"_wp);
+    add_configuration("usr://config/settings.xml"_wp, "cfg://default_settings.xml"_wp);
 }
 
 void ErwinEditor::on_load()
@@ -50,7 +50,7 @@ void ErwinEditor::on_load()
 
     console_ = new editor::ConsoleWidget();
     WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
-                   {"editor"_h, "application"_h, "entity"_h, "scene"_h}));
+                   {"editor"_h, "application"_h, "entity"_h, "scene"_h, "script"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
     DLOGN("editor") << "Loading Erwin Editor." << std::endl;
@@ -87,6 +87,8 @@ void ErwinEditor::on_load()
     {
         scene_view_layer_->setup_camera(scene);
         auto e_cam = scene.get_named("Camera"_h);
+        scene.add_component<FixedHierarchyTag>(e_cam);
+        scene.add_component<NonRemovableTag>(e_cam);
         scene.add_component<NoGizmoTag>(e_cam);
     });
 
@@ -241,7 +243,7 @@ void ErwinEditor::on_imgui_render()
 
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
-        project::load_project(FilePath(filepath));
+        project::load_project(WPath(filepath));
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));

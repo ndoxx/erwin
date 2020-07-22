@@ -107,6 +107,7 @@ void Renderer3D::init()
     W_PROFILE_FUNCTION()
 
     // Init resources
+    // TODO: use universal paths
 	s_storage.line_shader                       = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/line_shader.glsl", "lines");
 	s_storage.dirlight_shader                   = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
 	s_storage.skybox_shader                     = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/skybox.glsl", "skybox");
@@ -132,7 +133,7 @@ void Renderer3D::init()
 	brdf_lut_desc.image_format = ImageFormat::RGBA8;
 	brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
 	brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-	const auto& freetex = AssetManager::load<FreeTexture,Texture2DDescriptor>(0, FilePath(wfs::get_system_asset_dir(), "textures/ibl_brdf_integration.png"), brdf_lut_desc);
+	const auto& freetex = AssetManager::load<FreeTexture,Texture2DDescriptor>(0, "sysres://textures/ibl_brdf_integration.png"_wp, brdf_lut_desc);
 	s_storage.BRDF_integration_map = freetex.handle;
 }
 

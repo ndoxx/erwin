@@ -7,6 +7,6 @@ namespace erwin
 template <>
 void serialize_xml<ComponentMesh>(const ComponentMesh& cmp, xml::XMLFile& file, rapidxml::xml_node<>* cmp_node);
 
-template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e);
+template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e);
 
 } // namespace erwin

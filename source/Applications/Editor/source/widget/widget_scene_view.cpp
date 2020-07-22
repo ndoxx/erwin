@@ -9,6 +9,8 @@
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "imgui.h"
+#include "imgui/color.h"
+#include "imgui/font_awesome.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
 #include "render/common_geometry.h"
@@ -32,6 +34,8 @@ SceneViewWidget::SceneViewWidget() : Widget("Scene", true), render_surface_{0.f,
     flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
+    runtime_ = false;
+    paused_ = false;
     stats_overlay_ = new RenderStatsOverlay();
 }
 
@@ -101,16 +105,16 @@ void SceneViewWidget::on_imgui_render()
             {
                 // List all available scenes for current project
                 auto scene_dir = project::asset_dir(DK::SCENE);
-                for(auto& entry : fs::directory_iterator(scene_dir.full_path()))
+                for(auto& entry : fs::directory_iterator(scene_dir.absolute()))
                 {
                     if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
                     {
                         if(ImGui::MenuItem(entry.path().filename().c_str()))
                         {
+                            // TODO: check that we are not in runtime mode
                             auto& scene = scn::current();
                             scene.unload();
-                            scene.load_xml(
-                                FilePath(scene_dir.base_path(), scene_dir.file_path() / entry.path().filename()));
+                            scene.load_xml(WPath(entry.path()));
                         }
                     }
                 }
@@ -131,7 +135,7 @@ void SceneViewWidget::on_imgui_render()
             if(ImGui::MenuItem("Save as") || save_as_needed)
             {
                 dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                  project::asset_dir(DK::SCENE).full_path());
+                                  project::asset_dir(DK::SCENE).absolute());
             }
 
             ImGui::EndMenu();
@@ -152,6 +156,44 @@ void SceneViewWidget::on_imgui_render()
                 Renderer3D::debug_show_uv(s_enable_debug_show_uv);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+
+        // * Toolbar
+        // Scene runtime state indicator
+        if(!runtime_)
+            ImGui::TextColored({0.1f,1.0f,0.1f,1.f}, "[EDITING]");
+        else if(!paused_)
+            ImGui::TextColored({1.0f,0.1f,0.1f,1.f}, "[RUNTIME]");
+        else
+            ImGui::TextColored({1.0f,0.7f,0.1f,1.f}, "[ PAUSE ]");
+
+        // Scene runtime state modifiers
+        if(!runtime_ && ImGui::Button(W_ICON(PLAY)))
+            runtime_start();
+        else if(runtime_ && ImGui::Button(W_ICON(STOP)))
+            runtime_stop();
+
+        if(runtime_)
+        {
+            if(ImGui::Button(W_ICON(PAUSE)))
+                runtime_pause();
+            if(paused_ && ImGui::Button(W_ICON(STEP_FORWARD)))
+                Application::get_instance().get_clock().require_next_frame();
+            if(ImGui::Button(W_ICON(REPEAT)))
+                runtime_reset();
+
+            if(!paused_)
+            {
+                ImGui::Separator();
+                if(ImGui::Button(W_ICON(CARET_UP)))
+                    Application::get_instance().get_clock().frame_speed_up();
+                if(ImGui::Button(W_ICON(CARET_DOWN)))
+                    Application::get_instance().get_clock().frame_slow_down();
+                if(ImGui::Button(W_ICON(SORT)))
+                    Application::get_instance().get_clock().set_frame_speed(1.f);
+            }
+        }
+
         ImGui::EndMenuBar();
     }
 
@@ -170,7 +212,7 @@ void SceneViewWidget::on_imgui_render()
     dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath)
     {
         auto& scene = scn::current();
-        scene.save_xml(FilePath(filepath));
+        scene.save_xml(WPath(filepath));
     });
 
     // * Show game render in window
@@ -182,6 +224,41 @@ void SceneViewWidget::on_imgui_render()
                                          // ImGui::GetCursorScreenPos(),
                                          ImVec2(render_surface_.x0, render_surface_.y0),
                                          ImVec2(render_surface_.x1, render_surface_.y1), ImVec2(0, 1), ImVec2(1, 0));
+}
+
+void SceneViewWidget::runtime_start()
+{
+    DLOGN("scene") << "Starting runtime." << std::endl;
+    // Create a shallow copy of current scene (shared asset registry) and reload
+    auto& runtime_scene = SceneManager::create_scene("runtime"_h);
+    runtime_scene.runtime_clone(scn::current());
+    SceneManager::make_current("runtime"_h);
+
+    runtime_ = true;
+}
+
+void SceneViewWidget::runtime_stop()
+{
+    DLOGN("scene") << "Ending runtime." << std::endl;
+    // Destroy runtime scene and jump back to editor scene
+    SceneManager::make_current("main_scene"_h);
+    SceneManager::remove_scene("runtime"_h);
+
+    runtime_ = false;
+    paused_ = false;
+}
+
+void SceneViewWidget::runtime_pause()
+{
+    DLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
+    paused_ = !paused_;
+    Application::get_instance().get_clock().pause(paused_);
+}
+
+void SceneViewWidget::runtime_reset()
+{
+    DLOGN("scene") << "Resetting runtime." << std::endl;
+    DLOGW("scene") << "Runtime reset feature not implemented yet." << std::endl;
 }
 
 static int s_profile_num_frames = 60;

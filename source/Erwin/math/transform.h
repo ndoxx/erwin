@@ -41,10 +41,21 @@ struct Transform3D
         uniform_scale = Uniform_scale;
     }
 
+    inline void rotate(const glm::vec3& axis, float angle)
+    {
+        glm::rotate(rotation, angle, axis);
+        euler = glm::degrees(glm::eulerAngles(rotation));
+    }
+
     inline void set_rotation(const glm::vec3& Euler)
     {
         euler = Euler;
         rotation = glm::quat(glm::radians(euler));
+    }
+
+    inline void translate(const glm::vec3& delta)
+    {
+        position += delta;
     }
 
     inline glm::mat4 get_model_matrix() const

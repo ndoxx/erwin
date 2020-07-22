@@ -86,6 +86,7 @@ static void build_user_dir()
 static void check_user_dir()
 {
     s_user_dir = get_home_directory() / ".erwin";
+    WPath::set_user_directory(s_user_dir);
 
     // * Check existence (TODO: and integrity) of user directory
     if(!fs::exists(s_user_dir))
@@ -100,6 +101,11 @@ void init()
     W_ASSERT(fs::exists(s_conf_path), "No config directory detected in root directory.");
     s_sys_asset_path = s_root_path / "source/Erwin/assets";
     W_ASSERT(fs::exists(s_sys_asset_path), "No assets directory detected in Erwin source directory.");
+
+    WPath::set_root_directory(s_root_path);
+    WPath::set_system_config_directory(s_conf_path);
+    WPath::set_system_resource_directory(s_sys_asset_path);
+
     // Register shader directory as an include directory for client shaders
     slang::register_include_directory(s_sys_asset_path / "shaders");
     s_asset_path = fs::path();
@@ -145,17 +151,19 @@ const fs::path& get_system_asset_dir()
 void set_asset_dir(const fs::path& path)
 {
 	s_asset_path = s_root_path / path;
+    WPath::set_application_resource_directory(s_asset_path);
 }
 
 void set_client_config_dir(const fs::path& path)
 {
     s_client_config_path = s_root_path / path;
+    WPath::set_application_config_directory(s_client_config_path);
 }
 
-bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
+bool ensure_user_config(const WPath& user_path, const WPath& default_path)
 {
-    bool has_user    = fs::exists(user_path);
-    bool has_default = fs::exists(default_path);
+    bool has_user    = user_path.exists();
+    bool has_default = default_path.exists();
 
     if(!has_default && !has_user)
     {
@@ -169,9 +177,9 @@ bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
     if(has_default && has_user)
     {
         // Copy default if more recent
-        auto ftime_u         = fs::last_write_time(user_path);
+        auto ftime_u         = fs::last_write_time(user_path.absolute());
         std::time_t cftime_u = decltype(ftime_u)::clock::to_time_t(ftime_u);
-        auto ftime_d         = fs::last_write_time(default_path);
+        auto ftime_d         = fs::last_write_time(default_path.absolute());
         std::time_t cftime_d = decltype(ftime_d)::clock::to_time_t(ftime_d);
         copy_default = (cftime_d > cftime_u);
     }
@@ -181,26 +189,26 @@ bool ensure_user_config(const fs::path& user_path, const fs::path& default_path)
         DLOG("config",1) << "Copying default config:" << std::endl;
         DLOGI << "User:    " << WCC('p') << user_path << std::endl;
         DLOGI << "Default: " << WCC('p') << default_path << std::endl;
-        fs::copy_file(default_path, user_path, fs::copy_options::overwrite_existing);
+        fs::copy_file(default_path.absolute(), user_path.absolute(), fs::copy_options::overwrite_existing);
     }
 
     return true;
 }
 
-std::string get_file_as_string(const FilePath& path)
+std::string get_file_as_string(const WPath& path)
 {
     W_ASSERT(path.exists(), "File does not exist.");
 
-    std::ifstream ifs(path.full_path());
+    std::ifstream ifs(path.absolute());
     return std::string((std::istreambuf_iterator<char>(ifs)),
                         std::istreambuf_iterator<char>());
 }
 
-std::vector<uint8_t> get_file_as_vector(const FilePath& filepath)
+std::vector<uint8_t> get_file_as_vector(const WPath& filepath)
 {
     W_ASSERT(filepath.exists(), "File does not exist.");
 
-    std::ifstream ifs(filepath.full_path(), std::ios::binary);
+    std::ifstream ifs(filepath.absolute(), std::ios::binary);
     ifs.unsetf(std::ios::skipws);
 
     std::streampos file_size;
@@ -219,14 +227,14 @@ std::vector<uint8_t> get_file_as_vector(const FilePath& filepath)
     return vec;
 }
 
-std::shared_ptr<std::istream> get_istream(const FilePath& file_path, uint8_t mode)
+std::shared_ptr<std::istream> get_istream(const WPath& file_path, uint8_t mode)
 {
     auto std_mode = std::ios::in;
     if(mode & FileMode::binary)
         std_mode |= std::ios::binary;
 
     // Get stream to file
-    std::shared_ptr<std::ifstream> ifs = std::make_shared<std::ifstream>(file_path.full_path(), std_mode);
+    std::shared_ptr<std::ifstream> ifs = std::make_shared<std::ifstream>(file_path.absolute(), std_mode);
 
     // Sanity check
     if(!ifs->is_open())
@@ -242,14 +250,14 @@ std::shared_ptr<std::istream> get_istream(const FilePath& file_path, uint8_t mod
     return ifs;
 }
 
-std::shared_ptr<std::ostream> get_ostream(const FilePath& file_path, uint8_t mode)
+std::shared_ptr<std::ostream> get_ostream(const WPath& file_path, uint8_t mode)
 {
     auto std_mode = std::ios::out;
     if(mode & FileMode::binary)
         std_mode |= std::ios::binary;
 
     // Create stream to file
-    std::shared_ptr<std::ofstream> ofs = std::make_shared<std::ofstream>(file_path.full_path(), std_mode);
+    std::shared_ptr<std::ofstream> ofs = std::make_shared<std::ofstream>(file_path.absolute(), std_mode);
 
     // Sanity check
     if(!ofs->is_open())

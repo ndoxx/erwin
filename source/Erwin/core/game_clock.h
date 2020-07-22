@@ -12,9 +12,10 @@ public:
     inline bool is_paused() const { return pause_; }
     inline float get_frame_speed() const { return next_frame_required_?1.0f:frame_speed_; }
 
+    inline void pause(bool value) { pause_ = value; }
     inline void toggle_pause() { pause_ = ! pause_; }
     inline void set_frame_speed(float value) { frame_speed_ = value; }
-    inline void require_next_frame() { if(frame_speed_ == 0.0f) next_frame_required_ = true; }
+    inline void require_next_frame() { next_frame_required_ = true; }
 
     inline void frame_speed_up()
     {

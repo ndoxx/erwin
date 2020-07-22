@@ -8,6 +8,7 @@
 #include "entity/component/serial/dirlight_material.h"
 #include "entity/component/serial/light.h"
 #include "entity/component/serial/description.h"
+#include "entity/component/serial/script.h"
 
 namespace erwin
 {
@@ -21,6 +22,7 @@ template <> void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, en
 template <> void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID e, entt::registry& registry, size_t);
 template <> void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial& cmp, EntityID e, entt::registry& registry, size_t);
 template <> void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight& cmp, EntityID e, entt::registry& registry, size_t);
+template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e, entt::registry& registry, size_t);
 
 namespace entity
 {
@@ -34,6 +36,7 @@ void init_components()
     REFLECT_COMPONENT(ComponentPBRMaterial);
     REFLECT_COMPONENT(ComponentDirectionalLightMaterial);
     REFLECT_COMPONENT(ComponentDirectionalLight);
+    REFLECT_COMPONENT(ComponentScript);
 
     REFLECT_COMPONENT(ComponentDescription);
     HIDE_FROM_INSPECTOR(ComponentDescription);

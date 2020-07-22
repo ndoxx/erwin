@@ -14,9 +14,14 @@ namespace project
 
 static ProjectSettings s_current_project;
 
-bool load_project(const FilePath& filepath)
+bool load_project(const WPath& filepath)
 {
     DLOGN("editor") << "Loading project." << std::endl;
+
+    // Detect and set assets directory
+    fs::path res_dir = filepath.absolute().parent_path() / "assets";
+    W_ASSERT(fs::exists(res_dir), "Cannot find 'assets' folder near project file.");
+    WPath::set_resource_directory(res_dir);
 
     // Read file and parse
     xml::XMLFile project_f(filepath);
@@ -24,26 +29,26 @@ bool load_project(const FilePath& filepath)
         return false;
 
     s_current_project.registry.deserialize(project_f, "project");
-    s_current_project.project_file = filepath.full_path();
-    s_current_project.root_folder = filepath.base_path();
+    s_current_project.project_file = filepath;
+    s_current_project.root_folder = WPath(filepath.absolute().parent_path());
 
     DLOG("editor", 0) << "Name: " << WCC('n') << s_current_project.registry.get("project.project_name"_h, std::string())
                       << std::endl;
     DLOG("editor", 0) << "Import paths:" << std::endl;
     DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
     DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.import.material"_h)
-          << std::endl;
+    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
+    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
     DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
     DLOG("editor", 0) << "Export paths:" << std::endl;
     DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
     DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.export.material"_h)
-          << std::endl;
+    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
     DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
     DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
+    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
     DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
@@ -58,7 +63,7 @@ bool save_project()
     DLOGN("editor") << "Saving project." << std::endl;
 
     // Read file and parse
-    xml::XMLFile project_f(FilePath(s_current_project.project_file));
+    xml::XMLFile project_f(s_current_project.project_file);
     if(!project_f.read())
         return false;
 
@@ -77,16 +82,16 @@ void close_project()
     DLOGN("editor") << "Closing project." << std::endl;
 
     s_current_project.registry.clear();
-    s_current_project.project_file = "";
-    s_current_project.root_folder = "";
+    s_current_project.project_file = {};
+    s_current_project.root_folder = {};
     s_current_project.loaded = false;
 }
 
 const ProjectSettings& get_project_settings() { return s_current_project; }
 
-FilePath asset_dir(DK dir_key)
+WPath asset_dir(DK dir_key)
 {
-    FilePath dirpath;
+    WPath dirpath;
     switch(dir_key)
     {
     case DK::ATLAS:
@@ -103,6 +108,9 @@ FilePath asset_dir(DK dir_key)
         break;
     case DK::MESH:
         dirpath = s_current_project.registry.get("project.content.export.mesh"_h);
+        break;
+    case DK::SCRIPT:
+        dirpath = s_current_project.registry.get("project.content.export.script"_h);
         break;
     case DK::SCENE:
         dirpath = s_current_project.registry.get("project.content.export.scene"_h);
@@ -123,21 +131,18 @@ FilePath asset_dir(DK dir_key)
     case DK::WORK_MESH:
         dirpath = s_current_project.registry.get("project.content.import.mesh"_h);
         break;
+    case DK::WORK_SCRIPT:
+        dirpath = s_current_project.registry.get("project.content.import.script"_h);
+        break;
     case DK::WORK_SCENE:
         dirpath = s_current_project.registry.get("project.content.import.scene"_h);
         break;
     }
 
     if(dirpath.empty())
-        return FilePath(s_current_project.root_folder);
+        return s_current_project.root_folder;
 
     return dirpath;
-}
-
-FilePath asset_path(DK dir_key, const fs::path& file_path)
-{
-    auto dirpath = asset_dir(dir_key);
-    return FilePath(dirpath.base_path(), dirpath.file_path() / file_path);
 }
 
 } // namespace project

@@ -1,7 +1,7 @@
 #include "imgui/theme.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 #include "imgui.h"
 #include "debug/logger.h"
 
@@ -101,7 +101,7 @@ static void parse_property(rapidxml::xml_node<>* prop_node, void* destination)
 void init()
 {
     // Iterate themes directory
-    fs::path theme_dir = wfs::get_system_asset_dir() / "themes";
+    fs::path theme_dir = "sysres://themes"_wp.absolute();
     for(auto& entry: fs::directory_iterator(theme_dir))
     {
         if(!entry.is_regular_file())
@@ -109,7 +109,7 @@ void init()
         if(entry.path().extension().string().compare(".xml"))
             continue;
 
-        xml::XMLFile theme_f(FilePath(entry.path()));
+        xml::XMLFile theme_f(WPath(entry.path()));
         if(!theme_f.read())
             continue;
         auto* root = theme_f.root;
@@ -148,7 +148,7 @@ const std::vector<ThemeEntry>& get_list()
 
 bool load(const ThemeEntry& entry)
 {
-    FilePath xml_path(entry.path);
+    WPath xml_path(entry.path);
 
 	DLOGN("editor") << "Loading theme: " << entry.name << std::endl;
 

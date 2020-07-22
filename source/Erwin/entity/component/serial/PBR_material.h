@@ -9,6 +9,6 @@ void serialize_xml<ComponentPBRMaterial>(const ComponentPBRMaterial& cmp, xml::X
                                          rapidxml::xml_node<>* cmp_node);
 
 template <>
-void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e);
+void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e);
 
 } // namespace erwin

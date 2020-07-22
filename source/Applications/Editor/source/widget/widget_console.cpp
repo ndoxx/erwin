@@ -1,4 +1,6 @@
 #include "widget/widget_console.h"
+#include "script/script_engine.h"
+#include "level/scene_manager.h"
 #include "debug/logger.h"
 #include "imgui.h"
 
@@ -7,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+
+using namespace erwin;
 
 namespace editor
 {
@@ -33,6 +37,7 @@ Widget("Console", true)
 	auto_scroll_ = true;
 	scroll_to_bottom_ = false;
 	queue_max_len_ = 100;
+	history_max_len_ = 50;
 }
 
 int ConsoleWidget::text_edit_callback(void* _data)
@@ -70,9 +75,26 @@ void ConsoleWidget::push(const std::string& message)
        items_.pop_front();
 }
 
+// BUG #8: Runtime scene cannot be displayed if some commands are sent 
+// in edit mode. 
+// var s = to_string(vec2(1,2)); // Causes the bug
+// var n = normalize(vec2(1,2)); // Causes the bug
+// GLM bindings seem to cause this bug
+// Exiting runtime mode and entering it again seems to fix the problem
 void ConsoleWidget::send_command(const std::string& command)
 {
-	push("> " + command);
+	// Display in widget and evaluate in script engine
+	auto ctx_handle = scn::current().get_script_context();
+	push("ctx_" + std::to_string(ctx_handle) + "> " + command);
+	save_command(command); // TODO: use command history to enable command navigation with arrow keys
+	ScriptEngine::get_context(ctx_handle).eval(command);
+}
+
+void ConsoleWidget::save_command(const std::string& command)
+{
+	command_history_.push_back(command);
+    if(command_history_.size() == history_max_len_)
+       command_history_.pop_front();
 }
 
 void ConsoleWidget::on_imgui_render()

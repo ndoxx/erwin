@@ -11,7 +11,7 @@ namespace erwin
 namespace dbg
 {
 
-static const uint32_t CHANNEL_STYLE_PALETTE = 16u;
+static const uint32_t CHANNEL_STYLE_PALETTE = 8u;
 
 LoggerThread::LoggerThread():
 thread_state_(STATE_IDLE),

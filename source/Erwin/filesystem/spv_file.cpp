@@ -13,7 +13,7 @@ namespace spv
 #define SPV_MAGIC 0x07230203
 
 
-std::vector<ShaderStageDescriptor> parse_stages(const FilePath& path)
+std::vector<ShaderStageDescriptor> parse_stages(const WPath& path)
 {
     std::string entrypointname[6];
 

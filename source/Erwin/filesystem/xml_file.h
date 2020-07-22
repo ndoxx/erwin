@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "utils/string.h"
-#include "filesystem/file_path.h"
+#include "filesystem/wpath.h"
 #include "glm/glm.hpp"
 #include "rapidxml/rapidxml.hpp"
 
@@ -58,13 +58,13 @@ namespace xml
 
 struct XMLFile
 {
-    FilePath filepath;
+    WPath filepath;
     rapidxml::xml_document<> doc;
     rapidxml::xml_node<>* root = nullptr;
     std::string buffer;
 
     XMLFile() = default;
-    explicit XMLFile(const FilePath& filepath): filepath(filepath), root(nullptr) { }
+    explicit XMLFile(const WPath& filepath): filepath(filepath), root(nullptr) { }
     ~XMLFile() { release(); }
 
     // Read and parse an XML file. Only the filepath member need be initialized.

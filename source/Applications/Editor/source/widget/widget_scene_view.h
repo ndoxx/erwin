@@ -15,6 +15,11 @@ public:
 	
 	bool on_mouse_event(const erwin::MouseButtonEvent& event);
 
+	void runtime_start();
+	void runtime_stop();
+	void runtime_pause();
+	void runtime_reset();
+
 protected:
 	virtual void on_imgui_render() override;
 	virtual void on_resize(uint32_t width, uint32_t height) override;
@@ -37,6 +42,8 @@ private:
 
 	bool enable_runtime_profiling_;
 	bool track_next_frame_draw_calls_;
+	bool runtime_;
+	bool paused_;
 };
 
 } // namespace editor

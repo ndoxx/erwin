@@ -169,7 +169,7 @@ void FrameDrawCallData::export_json()
     DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
     DLOGI << WCC('p') << json_path << std::endl;
 
-    auto p_ofs = wfs::get_ostream(FilePath(json_path), wfs::ascii);
+    auto p_ofs = wfs::get_ostream(WPath(json_path), wfs::ascii);
     auto& ofs = *p_ofs;
 
     ofs << "{"

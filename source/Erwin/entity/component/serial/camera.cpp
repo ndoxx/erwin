@@ -1,4 +1,5 @@
 #include "entity/component/serial/camera.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -22,12 +23,12 @@ void serialize_xml<ComponentCamera3D>(const ComponentCamera3D& cmp, xml::XMLFile
 }
 
 template <>
-void deserialize_xml<ComponentCamera3D>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+void deserialize_xml<ComponentCamera3D>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     ComponentCamera3D::Frustum3D frustum;
     xml::parse_node(cmp_node, "frustum", frustum);
 
-    auto& cmp_camera = registry.emplace<ComponentCamera3D>(e);
+    auto& cmp_camera = scene.add_component<ComponentCamera3D>(e);
     cmp_camera.set_projection(frustum);
 }
 } // namespace erwin

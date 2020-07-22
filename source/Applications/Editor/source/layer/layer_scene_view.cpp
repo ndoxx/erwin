@@ -2,6 +2,7 @@
 #include "imgui/font_awesome.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
+#include "script/script_engine.h"
 
 #include <bitset>
 #include <iomanip>
@@ -40,7 +41,7 @@ void SceneViewLayer::on_detach() {}
 
 void SceneViewLayer::on_update(GameClock& clock)
 {
-    float dt = clock.get_frame_duration();
+    float dt = clock.get_scaled_frame_duration();
     static float tt = 0.f;
     tt += dt;
     if(tt >= 10.f)
@@ -49,6 +50,16 @@ void SceneViewLayer::on_update(GameClock& clock)
     auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
+
+    // TODO: traverse UPDATERS only, some scripts may not have an update function
+    if(scene.is_runtime())
+    {
+        auto& ctx = ScriptEngine::get_context(scene.get_script_context());
+        ctx.traverse_actors([dt](auto& actor)
+        {
+            actor.update(dt);
+        });
+    }
 
     transform_system_.update(clock, scene);
 
@@ -146,6 +157,10 @@ bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
     {
         freefly_mode_ = !freefly_mode_;
         camera_controller_.transfer_control(freefly_mode_);
+        // Camera controller's internal state may have changed if runtime mode
+        // was used, restore camera to avoid a jump
+        if(freefly_mode_)
+            setup_camera(scn::current());
         return true;
     }
 

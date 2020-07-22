@@ -5,13 +5,13 @@
 
 #include "asset/environment.h"
 #include "entity/reflection.h"
-#include "filesystem/file_path.h"
+#include "script/script_engine.h"
+#include "filesystem/wpath.h"
 
 namespace erwin
 {
 
 struct ComponentHierarchy;
-
 class Scene
 {
 public:
@@ -33,14 +33,14 @@ public:
      *
      * @param[in]  file_path  Path to a valid .scn XML format file.
      */
-    void load_xml(const FilePath& file_path);
+    void load_xml(const WPath& file_path);
     
     /**
      * @brief      Save current scene to a .scn XML format file.
      *
      * @param[in]  file_path  The file path.
      */
-    void save_xml(const FilePath& file_path);
+    void save_xml(const WPath& file_path);
     
     // Save scene to the file it was loaded from (if any)
     
@@ -57,11 +57,25 @@ public:
     void unload();
     
     /**
+     * @brief      Determines if scene is runtime.
+     *
+     * @return     True if runtime, False otherwise.
+     */
+    inline bool is_runtime() const { return runtime_; }
+
+    /**
+     * @brief      Make a shallow copy of another scene and load it.
+     *
+     * @param[in]  other  The source scene.
+     */
+    void runtime_clone(const Scene& other);
+    
+    /**
      * @brief      Get location of current scene file.
      *
      * @return     The file location.
      */
-    inline const FilePath& get_file_location() const { return scene_file_path_; }
+    inline const WPath& get_file_location() const { return scene_file_path_; }
     
     /**
      * @brief      Check if scene is loaded.
@@ -89,7 +103,7 @@ public:
      *
      * @param[in]  hdr_file  Path to a valid HDR image file.
      */
-    void load_hdr_environment(const FilePath& hdr_file);
+    void load_hdr_environment(const WPath& hdr_file);
     
     /**
      * @brief      Gets the environment.
@@ -439,7 +453,7 @@ public:
 	 *
 	 * @return     True if child, False otherwise.
 	 */
-	bool is_child(EntityID parent, EntityID node);
+	bool is_child(EntityID parent, EntityID node) const;
 	
 	/**
 	 * @brief      Check if two nodes are siblings.
@@ -449,8 +463,14 @@ public:
 	 *
 	 * @return     True if the two nodes are siblings, False otherwise.
 	 */
-	bool is_sibling(EntityID first, EntityID second);
+	bool is_sibling(EntityID first, EntityID second) const;
 
+    /**
+     * @brief      Gets the script context handle.
+     *
+     * @return     Handle to the script context.
+     */
+    inline script::VMHandle get_script_context() const { return script_context_; }
 
 private:
     entt::registry registry;
@@ -461,9 +481,11 @@ private:
     SceneVisitor inject_ = [](auto&) {};
     SceneVisitor finish_ = [](auto&) {};
     size_t asset_registry_;
+    script::VMHandle script_context_;
     bool loaded_ = false;
+    bool runtime_ = false;
 
-    FilePath scene_file_path_;
+    WPath scene_file_path_;
 };
 
 } // namespace erwin

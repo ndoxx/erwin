@@ -129,6 +129,9 @@ void SceneHierarchyWidget::on_imgui_render()
         if(node_open && curr_hier.children != 0)
             ImGui::TreePop();
 
+        // FIXME: Tree never collapses if we always return false.
+        // Maybe returning true should skip children only.
+        // Maybe we could return an enumerated type to select the desired behavior.
         return false;
     });
 

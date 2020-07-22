@@ -18,7 +18,7 @@ public:
     using Resource = ComponentPBRMaterial;
     using DataDescriptor = tom::TOMDescriptor;
 
-    static AssetMetaData build_meta_data(const FilePath& file_path);
+    static AssetMetaData build_meta_data(const WPath& file_path);
     static DataDescriptor load_from_file(const AssetMetaData& meta_data);
     static Resource upload(const DataDescriptor& descriptor, hash_t resource_id);
     static void destroy(Resource& resource);

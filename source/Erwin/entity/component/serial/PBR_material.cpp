@@ -1,4 +1,5 @@
 #include "entity/component/serial/PBR_material.h"
+#include "level/scene.h"
 
 namespace erwin
 {
@@ -24,7 +25,7 @@ void serialize_xml<ComponentPBRMaterial>(const ComponentPBRMaterial& cmp, xml::X
 }
 
 template <>
-void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, entt::registry& registry, EntityID e)
+void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     size_t resource_id = 0;
     bool override = false;
@@ -44,9 +45,9 @@ void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, entt:
 	}
 
     AssetManager::on_ready<ComponentPBRMaterial>(resource_id,
-                                                 [&registry, e = e, md = md, override = override](const ComponentPBRMaterial& mat)
+                                                 [&scene, e = e, md = md, override = override](const ComponentPBRMaterial& mat)
 	{
-		auto& cmp_mat = registry.emplace<ComponentPBRMaterial>(e, mat);
+		auto& cmp_mat = scene.add_component<ComponentPBRMaterial>(e, mat);
 	    if(override)
 	    {
 			cmp_mat.material_data = md;

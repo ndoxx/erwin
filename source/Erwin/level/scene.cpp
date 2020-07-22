@@ -12,7 +12,6 @@
 #include "entity/component/mesh.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
-
 #include "filesystem/xml_file.h"
 
 #include <queue>
@@ -37,8 +36,25 @@ void Scene::unload()
     named_entities_.clear();
     registry.clear();
 
-    AssetManager::release_registry(asset_registry_);
+    ScriptEngine::destroy_context(script_context_);
+
+    if(!runtime_)
+        AssetManager::release_registry(asset_registry_);
     loaded_ = false;
+}
+
+void Scene::runtime_clone(const Scene& other)
+{
+    W_ASSERT(!other.scene_file_path_.empty(), "Cannot runtime clone a scene that hasn't been saved.");
+
+    scene_file_path_ = other.scene_file_path_;
+    environment_ = other.environment_;
+    inject_ = other.inject_;
+    finish_ = other.finish_;
+    asset_registry_ = other.asset_registry_;
+    runtime_ = true;
+
+    load_xml(scene_file_path_);
 }
 
 void Scene::cleanup()
@@ -90,7 +106,7 @@ void Scene::save()
     save_xml(scene_file_path_);
 }
 
-void Scene::save_xml(const FilePath& file_path)
+void Scene::save_xml(const WPath& file_path)
 {
     DLOGN("scene") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
@@ -107,7 +123,7 @@ void Scene::save_xml(const FilePath& file_path)
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
         scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
-        scene_f.add_attribute(anode, "path", meta.file_path.file_path().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.universal().c_str());
     }
 
     // Write environment
@@ -145,13 +161,16 @@ void Scene::save_xml(const FilePath& file_path)
     DLOGI << "done." << std::endl;
 }
 
-void Scene::load_xml(const erwin::FilePath& file_path)
+void Scene::load_xml(const erwin::WPath& file_path)
 {
     DLOGN("scene") << "Loading scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
 
     scene_file_path_ = file_path;
     asset_registry_ = AssetManager::create_asset_registry();
+
+    // Create a script context
+    script_context_ = ScriptEngine::create_context(*this);
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);
@@ -174,10 +193,9 @@ void Scene::load_xml(const erwin::FilePath& file_path)
     {
         size_t sz_asset_type;
         xml::parse_attribute(asset_node, "type", sz_asset_type);
-        std::string asset_rel_path;
-        xml::parse_attribute(asset_node, "path", asset_rel_path);
-        FilePath asset_path(file_path.base_path(), asset_rel_path);
-        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), asset_path);
+        std::string asset_univ_path;
+        xml::parse_attribute(asset_node, "path", asset_univ_path);
+        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), WPath(asset_univ_path));
     }
 
     // Load environment
@@ -229,7 +247,7 @@ void Scene::load_xml(const erwin::FilePath& file_path)
                 // DLOGW("scene") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
                 invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node),
-                       static_cast<void*>(&registry), e);
+                       static_cast<void*>(this), e);
             }
         }
     }
@@ -252,7 +270,7 @@ void Scene::load_xml(const erwin::FilePath& file_path)
     loaded_ = true; // TODO: More granularity. At this stage scene is not FULLY loaded
 }
 
-void Scene::load_hdr_environment(const FilePath& hdr_file)
+void Scene::load_hdr_environment(const WPath& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
     AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {
@@ -471,7 +489,7 @@ bool Scene::subtree_contains(EntityID root, EntityID node)
     return found;
 }
 
-bool Scene::is_child(EntityID parent, EntityID node)
+bool Scene::is_child(EntityID parent, EntityID node) const
 {
     const auto& parent_hierarchy = registry.get<ComponentHierarchy>(parent);
 
@@ -485,7 +503,7 @@ bool Scene::is_child(EntityID parent, EntityID node)
     return false;
 }
 
-bool Scene::is_sibling(EntityID first, EntityID second)
+bool Scene::is_sibling(EntityID first, EntityID second) const
 {
     const auto& hierarchy_1 = registry.get<ComponentHierarchy>(first);
     const auto& hierarchy_2 = registry.get<ComponentHierarchy>(second);

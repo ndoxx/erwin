@@ -57,6 +57,7 @@ void InspectorWidget::entity_tab()
                             scene.mark_for_removal(e, reflected_type);
                             DLOG("editor", 1) << "Removed component " << component_name << " from entity "
                                               << static_cast<unsigned long>(e) << std::endl;
+                            ImGui::TreePop();
                             return;
                         }
 

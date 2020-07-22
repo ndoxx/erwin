@@ -6,7 +6,7 @@
 namespace erwin
 {
 
-AssetMetaData TextureAtlasLoader::build_meta_data(const FilePath& file_path)
+AssetMetaData TextureAtlasLoader::build_meta_data(const WPath& file_path)
 {
     W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
     W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
@@ -80,7 +80,7 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, ha
 
 void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(resource.texture); }
 
-AssetMetaData FontAtlasLoader::build_meta_data(const FilePath& file_path)
+AssetMetaData FontAtlasLoader::build_meta_data(const WPath& file_path)
 {
     W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
     W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
