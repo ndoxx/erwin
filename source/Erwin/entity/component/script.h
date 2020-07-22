@@ -9,12 +9,17 @@ namespace erwin
 
 struct ComponentScript
 {
+public:
 	ComponentScript() = default;
 	explicit ComponentScript(const std::string& universal_path);
+	explicit ComponentScript(const WPath& path);
 
 	WPath file_path;
 	std::string entry_point;
 	script::ActorIndex actor_index = 0;
+
+private:
+	void detect_entry_point();
 };
 
 } // namespace erwin

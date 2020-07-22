@@ -41,8 +41,14 @@ struct Actor
 
     std::function<void(float)> update;
 
+    Actor(InstanceHandle ih): instance_handle(ih) {}
+    inline void enable(bool value) { enabled_ = value; }
+    inline bool is_enabled() const { return enabled_; }
     inline bool has_trait(ActorTrait trait) const { return (traits & trait); }
     inline void set_trait(ActorTrait trait) { traits |= trait; }
+
+private:
+    bool enabled_ = true;
 };
 
 /*
@@ -53,6 +59,7 @@ struct Actor
 struct ChaiContext
 {
     using VM_ptr = std::shared_ptr<chaiscript::ChaiScript>;
+    using ActorVisitor = std::function<void(Actor&)>;
     VM_ptr vm;
 
     ChaiContext() = default;
@@ -65,8 +72,13 @@ struct ChaiContext
     void use(const WPath& script_path);
     void eval(const std::string& command);
     ActorIndex instantiate(const std::string& entry_point, EntityID e);
-    inline Actor& get_actor(ActorIndex idx) { return actors_.at(idx); }
-    inline auto& get_actors() { return actors_; }
+    inline auto& get_actor(ActorIndex idx) { return actors_.at(idx); }
+    inline void traverse_actors(ActorVisitor visit)
+    {
+        for(auto& actor : actors_)
+            if(actor.is_enabled())
+                visit(actor);
+    }
 
 private:
     std::vector<Actor> actors_;

@@ -9,7 +9,17 @@ namespace erwin
 ComponentScript::ComponentScript(const std::string& universal_path):
 file_path(universal_path)
 {
-    // Detect script entry point
+	detect_entry_point();
+}
+
+ComponentScript::ComponentScript(const WPath& path):
+file_path(path)
+{
+	detect_entry_point();
+}
+
+void ComponentScript::detect_entry_point()
+{
     std::ifstream ifs(file_path.absolute());
     std::string line, pragma, kw, arg;
     std::getline(ifs, line);

@@ -51,12 +51,14 @@ void SceneViewLayer::on_update(GameClock& clock)
     if(!scene.is_loaded())
         return;
 
-    // TMP
+    // TODO: traverse UPDATERS only, some scripts may not have an update function
     if(scene.is_runtime())
     {
         auto& ctx = ScriptEngine::get_context(scene.get_script_context());
-        for(auto& actor: ctx.get_actors())
+        ctx.traverse_actors([dt](auto& actor)
+        {
             actor.update(dt);
+        });
     }
 
     transform_system_.update(clock, scene);
