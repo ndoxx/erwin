@@ -36,11 +36,11 @@ std::shared_ptr<chaiscript::Module> make_glm_bindings()
 	module->add(fun(static_cast<float (*)(float)>(ceil)), "ceil");
 	module->add(fun(static_cast<float (*)(float)>(floor)), "floor");
 	module->add(fun(static_cast<float (*)(float)>(fract)), "fract");
-	module->add(fun(&glm::pi<float>), "pi");
-	module->add(fun(&glm::half_pi<float>), "half_pi");
-	module->add(fun(&glm::two_pi<float>), "two_pi");
-	module->add(fun(&glm::quarter_pi<float>), "quarter_pi");
-	module->add(fun(&glm::three_over_two_pi<float>), "three_over_two_pi");
+	module->add_global_const(const_var(glm::pi<float>()), "pi");
+	module->add_global_const(const_var(glm::half_pi<float>()), "half_pi");
+	module->add_global_const(const_var(glm::two_pi<float>()), "two_pi");
+	module->add_global_const(const_var(glm::quarter_pi<float>()), "quarter_pi");
+	module->add_global_const(const_var(glm::three_over_two_pi<float>()), "three_over_two_pi");
 
 	// 2D vector
 	module->add(user_type<vec2>(), "vec2");

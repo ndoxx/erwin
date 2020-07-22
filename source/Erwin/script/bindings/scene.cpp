@@ -17,6 +17,9 @@ void bind_transform(std::shared_ptr<chaiscript::Module> module)
     ADD_FUN(Transform3D, uniform_scale);
 
     ADD_FUN(Transform3D, init);
+    ADD_FUN(Transform3D, translate);
+    ADD_FUN(Transform3D, rotate);
+    ADD_FUN(Transform3D, set_rotation);
 }
 
 // * Scene bindings

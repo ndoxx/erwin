@@ -70,7 +70,17 @@ ActorIndex ChaiContext::instantiate(const std::string& entry_point, EntityID e)
     {
         auto func = vm->eval<std::function<void(chaiscript::Boxed_Value&, float)>>("__update");
         // actor.update = std::bind(func, std::placeholders::_1, s_storage.actor_instances_.at(instance_handle)); // DNW
-        actor.update = [instance_handle, func](float dt) { func(s_storage.actor_instances_.at(instance_handle), dt); };
+        actor.update = [instance_handle, func](float dt)
+        {
+            try
+            {
+                func(s_storage.actor_instances_.at(instance_handle), dt);
+            }
+            catch(const chaiscript::exception::eval_error& e)
+            {
+                DLOGE("script") << e.pretty_print() << std::endl;
+            }
+        };
         actor.set_trait(Actor::ActorTrait::UPDATER);
     	DLOGI << WCC('v') << "__update(float dt)" << std::endl;
     }

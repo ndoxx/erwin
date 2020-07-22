@@ -66,6 +66,7 @@ struct ChaiContext
     void eval(const std::string& command);
     ActorIndex instantiate(const std::string& entry_point, EntityID e);
     inline Actor& get_actor(ActorIndex idx) { return actors_.at(idx); }
+    inline auto& get_actors() { return actors_; }
 
 private:
     std::vector<Actor> actors_;

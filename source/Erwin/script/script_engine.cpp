@@ -6,6 +6,7 @@
 #include "script/bindings/scene_proxy.h"
 #include "level/scene.h"
 #include <chaiscript/chaiscript.hpp>
+#include <glm/glm.hpp>
 
 namespace erwin
 {

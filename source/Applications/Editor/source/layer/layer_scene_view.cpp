@@ -2,6 +2,7 @@
 #include "imgui/font_awesome.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
+#include "script/script_engine.h"
 
 #include <bitset>
 #include <iomanip>
@@ -49,6 +50,14 @@ void SceneViewLayer::on_update(GameClock& clock)
     auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
+
+    // TMP
+    if(scene.is_runtime())
+    {
+        auto& ctx = ScriptEngine::get_context(scene.get_script_context());
+        for(auto& actor: ctx.get_actors())
+            actor.update(dt);
+    }
 
     transform_system_.update(clock, scene);
 
