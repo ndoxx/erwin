@@ -41,7 +41,7 @@ void SceneViewLayer::on_detach() {}
 
 void SceneViewLayer::on_update(GameClock& clock)
 {
-    float dt = clock.get_frame_duration();
+    float dt = clock.get_scaled_frame_duration();
     static float tt = 0.f;
     tt += dt;
     if(tt >= 10.f)

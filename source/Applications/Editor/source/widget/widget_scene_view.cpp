@@ -172,10 +172,27 @@ void SceneViewWidget::on_imgui_render()
             runtime_start();
         else if(runtime_ && ImGui::Button(W_ICON(STOP)))
             runtime_stop();
-        if(runtime_ && ImGui::Button(W_ICON(PAUSE)))
-            runtime_pause();
-        if(runtime_ && ImGui::Button(W_ICON(REPEAT)))
-            runtime_reset();
+
+        if(runtime_)
+        {
+            if(ImGui::Button(W_ICON(PAUSE)))
+                runtime_pause();
+            if(paused_ && ImGui::Button(W_ICON(STEP_FORWARD)))
+                Application::get_instance().get_clock().require_next_frame();
+            if(ImGui::Button(W_ICON(REPEAT)))
+                runtime_reset();
+
+            if(!paused_)
+            {
+                ImGui::Separator();
+                if(ImGui::Button(W_ICON(CARET_UP)))
+                    Application::get_instance().get_clock().frame_speed_up();
+                if(ImGui::Button(W_ICON(CARET_DOWN)))
+                    Application::get_instance().get_clock().frame_slow_down();
+                if(ImGui::Button(W_ICON(SORT)))
+                    Application::get_instance().get_clock().set_frame_speed(1.f);
+            }
+        }
 
         ImGui::EndMenuBar();
     }
@@ -235,7 +252,7 @@ void SceneViewWidget::runtime_pause()
 {
     DLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
     paused_ = !paused_;
-    DLOGW("scene") << "Runtime pause feature not implemented yet." << std::endl;
+    Application::get_instance().get_clock().pause(paused_);
 }
 
 void SceneViewWidget::runtime_reset()

@@ -296,9 +296,6 @@ void Application::run()
 	std::chrono::nanoseconds frame_d(16666666);
 	while(is_running_)
 	{
-	    if(game_clock_.is_paused())
-	        continue;
-
         // --- EVENT PHASE ---
 	    game_clock_.update(frame_d);
 
@@ -309,10 +306,13 @@ void Application::run()
 
         // --- UPDATE PHASE ---
 		// For each layer, update
+        if(!game_clock_.is_paused() || game_clock_.is_next_frame_required())
 		{
             W_PROFILE_SCOPE("Layer updates")
     		for(auto* layer: layer_stack_)
     			layer->update(game_clock_);
+
+            game_clock_.release_flags();
 		}
 
         // Frame config
@@ -353,9 +353,6 @@ void Application::run()
         // --- CLEANUP PHASE ---
         if(SceneManager::has_current())
             SceneManager::get_current().cleanup();
-
-    	// To allow frame by frame update
-    	game_clock_.release_flags();
 
 		// Update window
         window_->update();
