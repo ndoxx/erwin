@@ -7,6 +7,9 @@
 
 namespace erwin
 {
+
+class Scene;
+
 namespace script
 {
 
@@ -18,7 +21,7 @@ using VMHandle = size_t;
 class ScriptEngine
 {
 public:
-	static script::VMHandle create_context();
+	static script::VMHandle create_context(Scene& scene);
 	static void destroy_context(script::VMHandle handle);
 	static script::ChaiContext& get_context(script::VMHandle handle);
 };

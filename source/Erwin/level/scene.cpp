@@ -170,7 +170,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
     asset_registry_ = AssetManager::create_asset_registry();
 
     // Create a script context
-    script_context_ = ScriptEngine::create_context();
+    script_context_ = ScriptEngine::create_context(*this);
 
     // Parse XML file
     xml::XMLFile scene_f(file_path);

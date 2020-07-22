@@ -12,7 +12,6 @@ namespace erwin
 {
 
 struct ComponentHierarchy;
-
 class Scene
 {
 public:

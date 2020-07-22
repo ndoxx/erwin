@@ -2,6 +2,9 @@
 #include "debug/logger.h"
 #include "script/bindings/glm.h"
 #include "script/bindings/logger.h"
+#include "script/bindings/scene.h"
+#include "script/bindings/scene_proxy.h"
+#include "level/scene.h"
 #include <chaiscript/chaiscript.hpp>
 
 namespace erwin
@@ -15,13 +18,16 @@ static struct
     std::array<ChaiContext, k_max_script_vms> vms_;
 } s_storage;
 
-VMHandle ScriptEngine::create_context()
+VMHandle ScriptEngine::create_context(Scene& scene)
 {
     // Initialize new virtual machine, add common bindings and return handle
     auto handle = s_storage.vm_handle_pool_.acquire();
     s_storage.vms_[handle].init();
-    s_storage.vms_[handle].add_bindings(script::make_glm_bindings());
     s_storage.vms_[handle].add_bindings(script::make_logger_bindings());
+    s_storage.vms_[handle].add_bindings(script::make_glm_bindings());
+    s_storage.vms_[handle].add_bindings(script::make_scene_bindings());
+
+    s_storage.vms_[handle]->add_global(chaiscript::var(SceneProxy(scene)), "scene");
 
     // Redirect the print function
     s_storage.vms_[handle].eval("global print = DLOG;");
