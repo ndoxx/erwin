@@ -4,6 +4,7 @@
 #include "filesystem/filesystem.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
+#include "level/scene.h"
 #include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
 #include "imgui.h"
@@ -12,8 +13,10 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, entt::registry&, size_t asset_registry)
+void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, Scene& scene)
 {
+    size_t asset_registry = scene.get_asset_registry();
+
     // Load material from file
     if(ImGui::Button("Load"))
         editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).absolute());

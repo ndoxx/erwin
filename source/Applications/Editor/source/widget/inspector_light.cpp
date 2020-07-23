@@ -8,7 +8,7 @@ static float s_inclination_deg   = 90.0f;
 static float s_arg_periapsis_deg = 160.0f;
 
 template <> 
-void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight& cmp, EntityID, entt::registry&, size_t)
+void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight& cmp, EntityID, Scene&)
 {
     if(ImGui::SliderFloat("Inclination", &s_inclination_deg, 0.0f, 180.0f))
         cmp.set_position(s_inclination_deg, s_arg_periapsis_deg);

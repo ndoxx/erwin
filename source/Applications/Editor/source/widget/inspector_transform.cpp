@@ -1,6 +1,7 @@
 #include "entity/component/transform.h"
 #include "entity/component/tags.h"
 #include "entity/reflection.h"
+#include "level/scene.h"
 #include "imgui.h"
 #include "imgui/imgui_utils.h"
 
@@ -8,7 +9,7 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, entt::registry& registry, size_t)
+void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, Scene& scene)
 {
 	static constexpr float k_step = 0.1f;
 	static constexpr float k_step_fast = 0.5f;
@@ -29,7 +30,7 @@ void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, 
     	cmp.local.set_rotation(cmp.local.euler);
 
     if(update_position | update_rotation | update_scale)
-    	registry.emplace_or_replace<DirtyTransformTag>(e);
+    	scene.try_add_component<DirtyTransformTag>(e);
 }
 
 } // namespace erwin

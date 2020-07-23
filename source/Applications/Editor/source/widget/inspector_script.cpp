@@ -8,7 +8,7 @@ namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, entt::registry&, size_t)
+void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, Scene&)
 {
     // Load material from file
     if(ImGui::Button("Load"))
@@ -26,7 +26,6 @@ void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, entt::regist
     }
 
     // Parameters
-    ImGui::Separator();
     // auto& actor = 
 }
 

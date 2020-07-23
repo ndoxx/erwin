@@ -46,14 +46,15 @@
 using namespace erwin;
 
 // TMP
-template <> void erwin::inspector_GUI<ComponentTransform3D>(ComponentTransform3D&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentCamera3D>(ComponentCamera3D&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentOBB>(ComponentOBB&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, entt::registry&, size_t) {}
-template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityID, entt::registry&, size_t) {}
+class Scene;
+template <> void erwin::inspector_GUI<ComponentTransform3D>(ComponentTransform3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentCamera3D>(ComponentCamera3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentOBB>(ComponentOBB&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityID, Scene&) {}
 
 void init_logger()
 {
