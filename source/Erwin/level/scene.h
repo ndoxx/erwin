@@ -5,8 +5,8 @@
 
 #include "asset/environment.h"
 #include "entity/reflection.h"
-#include "script/script_engine.h"
 #include "filesystem/wpath.h"
+#include "script/common.h"
 
 namespace erwin
 {

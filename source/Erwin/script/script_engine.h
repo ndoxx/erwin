@@ -9,15 +9,6 @@ namespace erwin
 {
 
 class Scene;
-
-namespace script
-{
-
-static constexpr size_t k_max_script_vms = 8;
-using VMHandle = size_t;
-
-} // namespace script
-
 class ScriptEngine
 {
 public:

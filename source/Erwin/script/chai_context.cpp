@@ -1,8 +1,8 @@
+#include "core/intern_string.h"
 #include "debug/logger.h"
+#include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
-#include "filesystem/filesystem.h"
-#include "core/intern_string.h"
 #include <chaiscript/chaiscript.hpp>
 #include <regex>
 
@@ -158,9 +158,12 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
     auto instance_handle = s_storage.actor_handle_pool_.acquire();
     DLOGI << "Instance handle: " << instance_handle << std::endl;
 
-    s_storage.actor_instances_[instance_handle] = vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
+    auto& instance = s_storage.actor_instances_[instance_handle] =
+        vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
+
     actors_.emplace_back(instance_handle);
     auto& actor = actors_.back();
+    actor.actor_type = actor_type;
 
     // * Detect special methods
     DLOG("script", 1) << "Methods: " << std::endl;
@@ -171,19 +174,27 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
         DLOGI << "None" << std::endl;
     }
 
-#ifdef W_DEBUG
-    // Show exposed parameters
+    // * Share exposed parameters
     DLOG("script", 1) << "Parameter set: " << std::endl;
-    for(auto&& [type, name]: reflection.parameters)
+    for(auto&& [type, name] : reflection.parameters)
     {
         DLOGI << istr::resolve(type) << ' ' << WCC('n') << name << std::endl;
+        switch(type)
+        {
+        case "float"_h: {
+            auto func = vm->eval<std::function<float&(chaiscript::Boxed_Value&)>>(name);
+            actor.add_parameter(name, std::ref<float>(func(instance)));
+            break;
+        }
+        default: {
+            DLOGW("script") << "Ignoring parameter '" << name << "' of unknown type " << istr::resolve(type)
+                            << std::endl;
+        }
+        }
     }
-#endif
 
     return actors_.size() - 1;
 }
-
-
 
 #ifdef W_DEBUG
 #include <fstream>
@@ -197,7 +208,7 @@ void ChaiContext::dbg_dump_state(const std::string& outfile)
 
         ofs << paramList[0].name() << " " << objs.first << "()\n";
 
-        for(auto it = paramList.begin()+1; it!=paramList.end(); ++it)
+        for(auto it = paramList.begin() + 1; it != paramList.end(); ++it)
         {
             ofs << "    -> " << it->name() << '\n';
         }

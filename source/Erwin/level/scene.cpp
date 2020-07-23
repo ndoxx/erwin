@@ -6,6 +6,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
+#include "script/script_engine.h"
 
 #include "entity/component/description.h"
 #include "entity/component/hierarchy.h"

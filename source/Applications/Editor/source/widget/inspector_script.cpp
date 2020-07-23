@@ -24,6 +24,10 @@ void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, entt::regist
         ImGui::TextColored({0.1f,0.5f,1.f,1.f}, "%s", cmp.file_path.universal().c_str());
         ImGui::Text("entry: %s", cmp.entry_point.c_str());
     }
+
+    // Parameters
+    ImGui::Separator();
+    // auto& actor = 
 }
 
 } // namespace erwin
