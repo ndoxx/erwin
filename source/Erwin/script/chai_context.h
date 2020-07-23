@@ -19,6 +19,8 @@ class Module;
 
 namespace erwin
 {
+struct ComponentScript;
+
 namespace script
 {
 
@@ -101,6 +103,7 @@ struct ChaiContext
 
     inline VM_ptr operator->() { return vm; }
     inline auto& get_actor(ActorIndex idx) { return actors_.at(idx); }
+    inline const auto& get_reflection(hash_t actor_type) const { return reflections_.at(actor_type); }
     inline void traverse_actors(ActorVisitor visit)
     {
         for(auto& actor : actors_)
@@ -113,6 +116,8 @@ struct ChaiContext
     hash_t use(const WPath& script_path);
     void eval(const std::string& command);
     ActorIndex instantiate(hash_t actor_type, EntityID e);
+
+    void setup_component(ComponentScript& cscript, EntityID e);
 
 #ifdef W_DEBUG
     void dbg_dump_state(const std::string& outfile);

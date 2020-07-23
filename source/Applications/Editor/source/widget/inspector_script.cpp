@@ -2,13 +2,15 @@
 #include "entity/reflection.h"
 #include "widget/dialog_open.h"
 #include "project/project.h"
+#include "level/scene.h"
+#include "imgui/imgui_utils.h"
 #include "imgui.h"
 
 namespace erwin
 {
 
 template <> 
-void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, Scene&)
+void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, Scene& scene)
 {
     // Load material from file
     if(ImGui::Button("Load"))
@@ -26,7 +28,23 @@ void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID, Scene&)
     }
 
     // Parameters
-    // auto& actor = 
+    auto& ctx = ScriptEngine::get_context(scene.get_script_context());
+    auto& actor = ctx.get_actor(cmp.actor_index);
+    const auto& params = ctx.get_reflection(actor.actor_type).parameters;
+
+    ImGui::TextUnformatted("Parameters:");
+    for(auto&& [type, name] : params)
+    {
+        switch(type)
+        {
+            case "float"_h:
+            {
+                ImGui::SliderFloatDefault(name.c_str(), actor.get_parameter_ptr<float>(name), 1.0f, 30.f, 30.f);
+                break;
+            }
+            default : {}
+        }
+    }
 }
 
 } // namespace erwin

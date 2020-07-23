@@ -18,11 +18,10 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
 	std::string universal_path;
     xml::parse_node(cmp_node, "path", universal_path);
     
+    auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
     auto ctx_handle = scene.get_script_context();
     auto& ctx = ScriptEngine::get_context(ctx_handle);
-    auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
-    hash_t actor_type = ctx.use(cscript.file_path);
-    cscript.actor_index = ctx.instantiate(actor_type, e);
+    ctx.setup_component(cscript, e);
 
     // TODO: parse XML for parameter values and init actor instance
 }

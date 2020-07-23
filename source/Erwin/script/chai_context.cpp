@@ -3,6 +3,7 @@
 #include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
+#include "entity/component/serial/script.h"
 #include <chaiscript/chaiscript.hpp>
 #include <regex>
 
@@ -195,6 +196,14 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
 
     return actors_.size() - 1;
 }
+
+void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
+{
+    hash_t actor_type = use(cscript.file_path);
+    cscript.actor_index = instantiate(actor_type, e);
+    cscript.entry_point = get_reflection(actor_type).name;
+}
+
 
 #ifdef W_DEBUG
 #include <fstream>
