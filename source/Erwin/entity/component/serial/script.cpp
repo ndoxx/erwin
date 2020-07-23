@@ -25,9 +25,9 @@ void serialize_xml<ComponentScript>(const ComponentScript& cmp, xml::XMLFile& fi
             float value = actor.get_parameter<float>(param.name);
             file.add_attribute(param_node, "name", param.name.c_str());
             file.add_attribute(param_node, "value", std::to_string(value).c_str());
-            file.add_attribute(param_node, "min", std::to_string(std::get<0>(param.range)).c_str());
-            file.add_attribute(param_node, "max", std::to_string(std::get<1>(param.range)).c_str());
-            file.add_attribute(param_node, "def", std::to_string(std::get<2>(param.range)).c_str());
+            // file.add_attribute(param_node, "min", std::to_string(std::get<0>(param.range)).c_str());
+            // file.add_attribute(param_node, "max", std::to_string(std::get<1>(param.range)).c_str());
+            // file.add_attribute(param_node, "def", std::to_string(std::get<2>(param.range)).c_str());
             break;
         }
         default: {

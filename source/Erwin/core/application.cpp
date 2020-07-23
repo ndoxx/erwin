@@ -306,13 +306,10 @@ void Application::run()
 
         // --- UPDATE PHASE ---
 		// For each layer, update
-        if(!game_clock_.is_paused() || game_clock_.is_next_frame_required())
 		{
             W_PROFILE_SCOPE("Layer updates")
     		for(auto* layer: layer_stack_)
     			layer->update(game_clock_);
-
-            game_clock_.release_flags();
 		}
 
         // Frame config

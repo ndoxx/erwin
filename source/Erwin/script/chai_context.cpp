@@ -92,7 +92,7 @@ static std::tuple<float,float,float> make_range(const std::string& str_list)
 }
 
 static const std::regex actor_rx("#pragma\\s*actor\\s*(.+)");
-static const std::regex param_rx("#pragma\\s*param<(.+?)>\\s*range<(.+?)>\\s*var (.+?);");
+static const std::regex param_rx("#pragma\\s*param<(.+?),(.+?)>\\s*var (.+?);");
 hash_t ChaiContext::reflect(const WPath& script_path)
 {
     auto src = wfs::get_file_as_string(script_path);

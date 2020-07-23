@@ -98,9 +98,11 @@ static bool s_show_frame_profiler = false;
 static bool s_enable_debug_show_uv = false;
 void SceneViewWidget::on_imgui_render()
 {
+    auto& scene = scn::current();
+
     if(ImGui::BeginMenuBar())
     {
-        if(project::is_loaded() && ImGui::BeginMenu("File"))
+        if(project::is_loaded() && !scene.is_runtime() && ImGui::BeginMenu("File"))
         {
             if(ImGui::BeginMenu("Load"))
             {
@@ -113,7 +115,6 @@ void SceneViewWidget::on_imgui_render()
                         if(ImGui::MenuItem(entry.path().filename().c_str()))
                         {
                             // TODO: check that we are not in runtime mode
-                            auto& scene = scn::current();
                             scene.unload();
                             scene.load_xml(WPath(entry.path()));
                         }
@@ -126,7 +127,6 @@ void SceneViewWidget::on_imgui_render()
             bool save_as_needed = false;
             if(ImGui::MenuItem("Save"))
             {
-                auto& scene = scn::current();
                 if(!scene.get_file_location().empty() && scene.get_file_location().exists())
                     scene.save();
                 else
@@ -209,10 +209,7 @@ void SceneViewWidget::on_imgui_render()
         stats_overlay_->imgui_render();
     }
 
-    dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {
-        auto& scene = scn::current();
-        scene.save_xml(WPath(filepath));
-    });
+    dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(WPath(filepath)); });
 
     // * Show game render in window
     // Retrieve the native framebuffer texture handle
