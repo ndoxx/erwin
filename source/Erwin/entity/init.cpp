@@ -15,14 +15,15 @@ namespace erwin
 
 // Defined in the editor
 // TODO: Check that it still works when client does not define these symbols
-template <> void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentCamera3D>(ComponentCamera3D& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentOBB>(ComponentOBB& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight& cmp, EntityID e, entt::registry& registry, size_t);
-template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e, entt::registry& registry, size_t);
+class Scene;
+template <> void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentCamera3D>(ComponentCamera3D& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentOBB>(ComponentOBB& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight& cmp, EntityID e, Scene&);
+template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e, Scene&);
 
 namespace entity
 {

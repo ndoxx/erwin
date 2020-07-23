@@ -1,10 +1,13 @@
+#include "core/intern_string.h"
 #include "debug/logger.h"
+#include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
-#include "filesystem/filesystem.h"
-#include "core/intern_string.h"
+#include "entity/component/serial/script.h"
+#include "utils/string.h"
 #include <chaiscript/chaiscript.hpp>
 #include <regex>
+#include <cstdlib>
 
 namespace erwin
 {
@@ -17,6 +20,12 @@ static struct
     SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
 } s_storage;
 
+void Actor::update_parameters(const Actor& other)
+{
+    for(auto&& [name, pref]: floats_)
+        pref.get() = other.floats_.at(name);
+}
+
 ChaiContext::~ChaiContext()
 {
     for(auto actor : actors_)
@@ -26,7 +35,11 @@ ChaiContext::~ChaiContext()
     }
 }
 
-void ChaiContext::init() { vm = std::make_shared<chaiscript::ChaiScript>(); }
+void ChaiContext::init(VMHandle handle)
+{
+    vm = std::make_shared<chaiscript::ChaiScript>();
+    handle_ = handle;
+}
 
 void ChaiContext::add_bindings(std::shared_ptr<chaiscript::Module> module) { vm->add(module); }
 
@@ -66,8 +79,20 @@ void ChaiContext::eval(const std::string& command)
     }
 }
 
-static const std::regex actor_rx("#pragma actor (.+)");
-static const std::regex param_rx("#pragma param<(.+?)>\\s+var (.+?);");
+static std::tuple<float,float,float> make_range(const std::string& str_list)
+{
+    auto tokens = su::tokenize(str_list,',');
+    W_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
+    return
+    {
+        std::strtof(tokens[0].c_str(), nullptr),
+        std::strtof(tokens[1].c_str(), nullptr),
+        std::strtof(tokens[2].c_str(), nullptr)
+    };
+}
+
+static const std::regex actor_rx("#pragma\\s*actor\\s*(.+)");
+static const std::regex param_rx("#pragma\\s*param<(.+?),(.+?)>\\s*var (.+?);");
 hash_t ChaiContext::reflect(const WPath& script_path)
 {
     auto src = wfs::get_file_as_string(script_path);
@@ -92,7 +117,7 @@ hash_t ChaiContext::reflect(const WPath& script_path)
         while(std::regex_search(start, src.cend(), param_match, param_rx))
         {
             std::string param_name = param_match[1];
-            reflection.parameters.push_back({H_(param_name.c_str()), param_match[2]});
+            reflection.parameters.push_back({H_(param_name.c_str()), param_match[3], make_range(param_match[2])});
             start = param_match.suffix().first;
         }
     }
@@ -158,9 +183,12 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
     auto instance_handle = s_storage.actor_handle_pool_.acquire();
     DLOGI << "Instance handle: " << instance_handle << std::endl;
 
-    s_storage.actor_instances_[instance_handle] = vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
+    auto& instance = s_storage.actor_instances_[instance_handle] =
+        vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
+
     actors_.emplace_back(instance_handle);
     auto& actor = actors_.back();
+    actor.actor_type = actor_type;
 
     // * Detect special methods
     DLOG("script", 1) << "Methods: " << std::endl;
@@ -171,18 +199,46 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
         DLOGI << "None" << std::endl;
     }
 
-#ifdef W_DEBUG
-    // Show exposed parameters
+    // * Share exposed parameters
     DLOG("script", 1) << "Parameter set: " << std::endl;
-    for(auto&& [type, name]: reflection.parameters)
+    for(const auto& param : reflection.parameters)
     {
-        DLOGI << istr::resolve(type) << ' ' << WCC('n') << name << std::endl;
+        DLOGI << istr::resolve(param.type) << ' ' << WCC('n') << param.name << std::endl;
+        switch(param.type)
+        {
+        case "float"_h: {
+            auto func = vm->eval<std::function<float&(chaiscript::Boxed_Value&)>>(param.name);
+            actor.add_parameter(param.name, std::ref<float>(func(instance)));
+            break;
+        }
+        default: {
+            DLOGW("script") << "Ignoring parameter '" << param.name << "' of unknown type " << istr::resolve(param.type)
+                            << std::endl;
+        }
+        }
     }
-#endif
 
     return actors_.size() - 1;
 }
 
+void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
+{
+    hash_t actor_type = use(cscript.file_path);
+    cscript.actor_index = instantiate(actor_type, e);
+    cscript.entry_point = get_reflection(actor_type).name;
+    cscript.script_context = handle_;
+}
+
+void ChaiContext::update_parameters(const ChaiContext& other)
+{
+    // Transport parameter values from other VM to this one
+    // ASSUME: Actors are the same in both sides
+    W_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
+    for(size_t ii=0; ii<actors_.size(); ++ii)
+    {
+        actors_[ii].update_parameters(other.actors_[ii]);
+    }
+}
 
 
 #ifdef W_DEBUG
@@ -197,7 +253,7 @@ void ChaiContext::dbg_dump_state(const std::string& outfile)
 
         ofs << paramList[0].name() << " " << objs.first << "()\n";
 
-        for(auto it = paramList.begin()+1; it!=paramList.end(); ++it)
+        for(auto it = paramList.begin() + 1; it != paramList.end(); ++it)
         {
             ofs << "    -> " << it->name() << '\n';
         }

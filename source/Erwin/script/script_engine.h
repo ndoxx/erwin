@@ -9,21 +9,13 @@ namespace erwin
 {
 
 class Scene;
-
-namespace script
-{
-
-static constexpr size_t k_max_script_vms = 8;
-using VMHandle = size_t;
-
-} // namespace script
-
 class ScriptEngine
 {
 public:
 	static script::VMHandle create_context(Scene& scene);
 	static void destroy_context(script::VMHandle handle);
 	static script::ChaiContext& get_context(script::VMHandle handle);
+	static void transport_runtime_parameters(script::VMHandle source, script::VMHandle target);
 };
 
 } // namespace erwin

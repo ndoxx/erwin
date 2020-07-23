@@ -6,7 +6,7 @@ namespace erwin
 {
 
 template <>
-void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial& cmp, EntityID, entt::registry&, size_t)
+void inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial& cmp, EntityID, Scene&)
 {
     ImGui::SliderFloat("App. diameter", &cmp.material_data.scale, 0.1f, 0.4f);
 }

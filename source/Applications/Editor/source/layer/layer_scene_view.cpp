@@ -41,33 +41,34 @@ void SceneViewLayer::on_detach() {}
 
 void SceneViewLayer::on_update(GameClock& clock)
 {
-    float dt = clock.get_scaled_frame_duration();
-    static float tt = 0.f;
-    tt += dt;
-    if(tt >= 10.f)
-        tt = 0.f;
-
     auto& scene = scn::current();
     if(!scene.is_loaded())
         return;
 
-    // TODO: traverse UPDATERS only, some scripts may not have an update function
-    if(scene.is_runtime())
+    if(!clock.is_paused() || clock.is_next_frame_required())
     {
-        auto& ctx = ScriptEngine::get_context(scene.get_script_context());
-        ctx.traverse_actors([dt](auto& actor)
+        // TODO: traverse UPDATERS only, some scripts may not have an update function
+        if(scene.is_runtime())
         {
-            actor.update(dt);
-        });
+            float dt = clock.get_scaled_frame_duration();
+            auto& ctx = ScriptEngine::get_context(scene.get_script_context());
+            ctx.traverse_actors([dt](auto& actor)
+            {
+                actor.update(dt);
+            });
+        }
+
+        transform_system_.update(clock, scene);
+        clock.release_flags();
     }
 
-    transform_system_.update(clock, scene);
-
+    // Always update camera, so we can freefly while a runtime scene is paused
     auto e_camera = scene.get_named("Camera"_h);
     ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(e_camera);
     ComponentTransform3D& transform = scene.get_component<ComponentTransform3D>(e_camera);
     camera_controller_.update(clock, camera, transform);
     Renderer3D::update_camera(camera, transform.global);
+
     if(scene.has_named("Sun"_h))
     {
         auto e_dirlight = scene.get_named("Sun"_h);
@@ -164,7 +165,7 @@ bool SceneViewLayer::on_keyboard_event(const erwin::KeyboardEvent& event)
         return true;
     }
 
-    if(!freefly_mode_ && Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
+    if(!freefly_mode_ && !scn::current().is_runtime() && Input::match_action(ACTION_EDITOR_SAVE_SCENE, event))
     {
         scn::current().save();
         return true;

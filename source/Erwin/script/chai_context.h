@@ -1,13 +1,16 @@
 #pragma once
 
+#include "core/core.h"
 #include "entity/reflection.h"
 #include "filesystem/wpath.h"
-#include "core/core.h"
+#include "script/common.h"
 #include <functional>
-#include <memory>
-#include <vector>
-#include <set>
 #include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <vector>
+#include <tuple>
 
 namespace chaiscript
 {
@@ -17,12 +20,10 @@ class Module;
 
 namespace erwin
 {
+struct ComponentScript;
+
 namespace script
 {
-
-static constexpr size_t k_max_actors = 128;
-using ActorIndex = size_t;
-using InstanceHandle = size_t;
 
 template <typename ExposedT> std::shared_ptr<chaiscript::Module> make_bindings() { return nullptr; }
 #define ADD_CLASS(Class) module->add(chaiscript::user_type<Class>(), #Class)
@@ -37,6 +38,7 @@ struct ActorReflection
     {
         hash_t type;
         std::string name;
+        std::tuple<float,float,float> range;
     };
 
     std::string name;
@@ -48,27 +50,46 @@ struct ActorReflection
 */
 struct Actor
 {
+    template <typename T> using SharedParameterMap = std::unordered_map<std::string, std::reference_wrapper<T>>;
+
     enum ActorTrait : uint8_t
     {
         NONE = 0,
         UPDATER = 1
     };
 
-    InstanceHandle instance_handle = 0;
-    hash_t actor_type = 0;
-    uint8_t traits = 0;
-
-    std::function<void(float)> update;
-
-    Actor(InstanceHandle ih): instance_handle(ih) {}
+    Actor(InstanceHandle ih) : instance_handle(ih) {}
     inline void enable(bool value) { enabled_ = value; }
     inline bool is_enabled() const { return enabled_; }
     inline bool has_trait(ActorTrait trait) const { return (traits & trait); }
     inline void set_trait(ActorTrait trait) { traits |= trait; }
 
+    template <typename T> inline void add_parameter(const std::string&, std::reference_wrapper<T>) {}
+    template <typename T> inline std::reference_wrapper<T> get_parameter(const std::string&) { return {}; }
+    template <typename T> inline T* get_parameter_ptr(const std::string&) { return nullptr; }
+
+    void update_parameters(const Actor& other);
+
+public:
+    InstanceHandle instance_handle = 0;
+    hash_t actor_type = 0;
+    uint8_t traits = 0;
+    std::function<void(float)> update;
+
 private:
     bool enabled_ = true;
+    SharedParameterMap<float> floats_;
 };
+
+template <> inline void Actor::add_parameter<float>(const std::string& name, std::reference_wrapper<float> tref)
+{
+    floats_.insert({name, tref});
+}
+template <> inline std::reference_wrapper<float> Actor::get_parameter<float>(const std::string& name)
+{
+    return floats_.at(name);
+}
+template <> inline float* Actor::get_parameter_ptr<float>(const std::string& name) { return &(floats_.at(name).get()); }
 
 /*
     Encapsulate the creation of ChaiScript objects. This allows to
@@ -86,6 +107,7 @@ struct ChaiContext
 
     inline VM_ptr operator->() { return vm; }
     inline auto& get_actor(ActorIndex idx) { return actors_.at(idx); }
+    inline const auto& get_reflection(hash_t actor_type) const { return reflections_.at(actor_type); }
     inline void traverse_actors(ActorVisitor visit)
     {
         for(auto& actor : actors_)
@@ -93,11 +115,14 @@ struct ChaiContext
                 visit(actor);
     }
 
-    void init();
+    void init(VMHandle handle);
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
     hash_t use(const WPath& script_path);
     void eval(const std::string& command);
     ActorIndex instantiate(hash_t actor_type, EntityID e);
+
+    void setup_component(ComponentScript& cscript, EntityID e);
+    void update_parameters(const ChaiContext& other);
 
 #ifdef W_DEBUG
     void dbg_dump_state(const std::string& outfile);
@@ -110,6 +135,7 @@ private:
     std::vector<Actor> actors_;
     std::map<hash_t, ActorReflection> reflections_;
     std::map<hash_t, hash_t> used_files_;
+    VMHandle handle_;
 };
 
 } // namespace script

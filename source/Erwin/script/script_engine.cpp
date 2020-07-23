@@ -23,7 +23,7 @@ VMHandle ScriptEngine::create_context(Scene& scene)
 {
     // Initialize new virtual machine, add common bindings and return handle
     auto handle = s_storage.vm_handle_pool_.acquire();
-    s_storage.vms_[handle].init();
+    s_storage.vms_[handle].init(handle);
     s_storage.vms_[handle].add_bindings(script::make_logger_bindings());
     s_storage.vms_[handle].add_bindings(script::make_glm_bindings());
     s_storage.vms_[handle].add_bindings(script::make_scene_bindings());
@@ -45,5 +45,11 @@ void ScriptEngine::destroy_context(VMHandle handle)
 }
 
 ChaiContext& ScriptEngine::get_context(VMHandle handle) { return s_storage.vms_.at(handle); }
+
+void ScriptEngine::transport_runtime_parameters(script::VMHandle source, script::VMHandle target)
+{
+    s_storage.vms_.at(target).update_parameters(s_storage.vms_.at(source));
+}
+
 
 } // namespace erwin
