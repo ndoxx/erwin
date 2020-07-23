@@ -10,6 +10,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <tuple>
 
 namespace chaiscript
 {
@@ -37,6 +38,7 @@ struct ActorReflection
     {
         hash_t type;
         std::string name;
+        std::tuple<float,float,float> range;
     };
 
     std::string name;

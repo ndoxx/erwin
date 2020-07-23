@@ -4,8 +4,10 @@
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
 #include "entity/component/serial/script.h"
+#include "utils/string.h"
 #include <chaiscript/chaiscript.hpp>
 #include <regex>
+#include <cstdlib>
 
 namespace erwin
 {
@@ -67,8 +69,20 @@ void ChaiContext::eval(const std::string& command)
     }
 }
 
-static const std::regex actor_rx("#pragma actor (.+)");
-static const std::regex param_rx("#pragma param<(.+?)>\\s+var (.+?);");
+static std::tuple<float,float,float> make_range(const std::string& str_list)
+{
+    auto tokens = su::tokenize(str_list,',');
+    W_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
+    return
+    {
+        std::strtof(tokens[0].c_str(), nullptr),
+        std::strtof(tokens[1].c_str(), nullptr),
+        std::strtof(tokens[2].c_str(), nullptr)
+    };
+}
+
+static const std::regex actor_rx("#pragma\\s*actor\\s*(.+)");
+static const std::regex param_rx("#pragma\\s*param<(.+?)>\\s*range<(.+?)>\\s*var (.+?);");
 hash_t ChaiContext::reflect(const WPath& script_path)
 {
     auto src = wfs::get_file_as_string(script_path);
@@ -93,7 +107,7 @@ hash_t ChaiContext::reflect(const WPath& script_path)
         while(std::regex_search(start, src.cend(), param_match, param_rx))
         {
             std::string param_name = param_match[1];
-            reflection.parameters.push_back({H_(param_name.c_str()), param_match[2]});
+            reflection.parameters.push_back({H_(param_name.c_str()), param_match[3], make_range(param_match[2])});
             start = param_match.suffix().first;
         }
     }
@@ -177,18 +191,18 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
 
     // * Share exposed parameters
     DLOG("script", 1) << "Parameter set: " << std::endl;
-    for(auto&& [type, name] : reflection.parameters)
+    for(const auto& param : reflection.parameters)
     {
-        DLOGI << istr::resolve(type) << ' ' << WCC('n') << name << std::endl;
-        switch(type)
+        DLOGI << istr::resolve(param.type) << ' ' << WCC('n') << param.name << std::endl;
+        switch(param.type)
         {
         case "float"_h: {
-            auto func = vm->eval<std::function<float&(chaiscript::Boxed_Value&)>>(name);
-            actor.add_parameter(name, std::ref<float>(func(instance)));
+            auto func = vm->eval<std::function<float&(chaiscript::Boxed_Value&)>>(param.name);
+            actor.add_parameter(param.name, std::ref<float>(func(instance)));
             break;
         }
         default: {
-            DLOGW("script") << "Ignoring parameter '" << name << "' of unknown type " << istr::resolve(type)
+            DLOGW("script") << "Ignoring parameter '" << param.name << "' of unknown type " << istr::resolve(param.type)
                             << std::endl;
         }
         }
