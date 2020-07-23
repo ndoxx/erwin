@@ -14,6 +14,8 @@
 #include "widget/widget_keybindings.h"
 #include "entity/tag_components.h"
 
+#include <fstream>
+
 static void set_gui_behavior()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -90,6 +92,12 @@ void ErwinEditor::on_load()
         scene.add_component<FixedHierarchyTag>(e_cam);
         scene.add_component<NonRemovableTag>(e_cam);
         scene.add_component<NoGizmoTag>(e_cam);
+
+/*
+#ifdef W_DEBUG
+        ScriptEngine::get_context(scene.get_script_context()).dbg_dump_state("out.log");
+#endif
+*/
     });
 
     // Project settings

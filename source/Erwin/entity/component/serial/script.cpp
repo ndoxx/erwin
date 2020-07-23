@@ -9,6 +9,8 @@ template <>
 void serialize_xml<ComponentScript>(const ComponentScript& cmp, xml::XMLFile& file, rapidxml::xml_node<>* cmp_node)
 {
     file.add_node(cmp_node, "path", cmp.file_path.universal().c_str());
+
+    // TODO: save actor parameters
 }
 
 template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
@@ -19,11 +21,10 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
     auto ctx_handle = scene.get_script_context();
     auto& ctx = ScriptEngine::get_context(ctx_handle);
     auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
-    ctx.use(cscript.file_path);
+    hash_t actor_type = ctx.use(cscript.file_path);
+    cscript.actor_index = ctx.instantiate(actor_type, e);
 
-    // Instantiate only if scene is runtime
-    if(scene.is_runtime())
-	    cscript.actor_index = ctx.instantiate(cscript.entry_point, e);
+    // TODO: parse XML for parameter values and init actor instance
 }
 
 } // namespace erwin

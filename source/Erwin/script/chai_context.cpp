@@ -1,7 +1,10 @@
 #include "debug/logger.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
+#include "filesystem/filesystem.h"
+#include "core/intern_string.h"
 #include <chaiscript/chaiscript.hpp>
+#include <regex>
 
 namespace erwin
 {
@@ -27,16 +30,28 @@ void ChaiContext::init() { vm = std::make_shared<chaiscript::ChaiScript>(); }
 
 void ChaiContext::add_bindings(std::shared_ptr<chaiscript::Module> module) { vm->add(module); }
 
-void ChaiContext::use(const WPath& script_path)
+hash_t ChaiContext::use(const WPath& script_path)
 {
     try
     {
         vm->use(script_path.string());
+
+        // If opened for the first time, reflect actor class
+        auto findit = used_files_.find(script_path.resource_id());
+        if(findit == used_files_.end())
+        {
+            hash_t type = reflect(script_path);
+            used_files_.insert({script_path.resource_id(), type});
+            return type;
+        }
+        else
+            return findit->second;
     }
     catch(const chaiscript::exception::eval_error& e)
     {
         DLOGE("script") << e.pretty_print() << std::endl;
     }
+    return 0;
 }
 
 void ChaiContext::eval(const std::string& command)
@@ -49,6 +64,41 @@ void ChaiContext::eval(const std::string& command)
     {
         DLOGE("script") << e.pretty_print() << std::endl;
     }
+}
+
+static const std::regex actor_rx("#pragma actor (.+)");
+static const std::regex param_rx("#pragma param<(.+?)>\\s+var (.+?);");
+hash_t ChaiContext::reflect(const WPath& script_path)
+{
+    auto src = wfs::get_file_as_string(script_path);
+
+    ActorReflection reflection;
+    hash_t hname;
+
+    // Reflect actor class name
+    {
+        std::smatch actor_match;
+        if(std::regex_search(src, actor_match, actor_rx))
+        {
+            reflection.name = actor_match[1];
+            hname = H_(reflection.name.c_str());
+        }
+    }
+
+    // Reflect parameters
+    {
+        std::smatch param_match;
+        std::string::const_iterator start(src.cbegin());
+        while(std::regex_search(start, src.cend(), param_match, param_rx))
+        {
+            std::string param_name = param_match[1];
+            reflection.parameters.push_back({H_(param_name.c_str()), param_match[2]});
+            start = param_match.suffix().first;
+        }
+    }
+
+    reflections_.insert({hname, std::move(reflection)});
+    return hname;
 }
 
 /*
@@ -90,16 +140,25 @@ static void try_load(ChaiContext::VM_ptr vm, const std::string& name, Actor& act
     }
 }
 
-ActorIndex ChaiContext::instantiate(const std::string& entry_point, EntityID e)
+ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
 {
-    DLOGN("script") << "Instantiating actor class '" << WCC('n') << entry_point << WCC(0) << "' for entity ["
+    if(actor_type == 0)
+    {
+        DLOGE("script") << "Actor class cannot be instantiated due to a parsing error." << std::endl;
+        return 0;
+    }
+
+    // Get type reflection
+    const auto& reflection = reflections_.at(actor_type);
+
+    DLOGN("script") << "Instantiating actor class '" << WCC('n') << reflection.name << WCC(0) << "' for entity ["
                     << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
     auto instance_handle = s_storage.actor_handle_pool_.acquire();
     DLOGI << "Instance handle: " << instance_handle << std::endl;
 
-    s_storage.actor_instances_[instance_handle] = vm->eval(entry_point + "(" + std::to_string(int(e)) + ")");
+    s_storage.actor_instances_[instance_handle] = vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
     actors_.emplace_back(instance_handle);
     auto& actor = actors_.back();
 
@@ -112,8 +171,42 @@ ActorIndex ChaiContext::instantiate(const std::string& entry_point, EntityID e)
         DLOGI << "None" << std::endl;
     }
 
+#ifdef W_DEBUG
+    // Show exposed parameters
+    DLOG("script", 1) << "Parameter set: " << std::endl;
+    for(auto&& [type, name]: reflection.parameters)
+    {
+        DLOGI << istr::resolve(type) << ' ' << WCC('n') << name << std::endl;
+    }
+#endif
+
     return actors_.size() - 1;
 }
+
+
+
+#ifdef W_DEBUG
+#include <fstream>
+void ChaiContext::dbg_dump_state(const std::string& outfile)
+{
+    std::ofstream ofs(outfile);
+
+    for(const auto& objs : vm->get_state().engine_state.m_function_objects)
+    {
+        auto paramList = objs.second->get_param_types();
+
+        ofs << paramList[0].name() << " " << objs.first << "()\n";
+
+        for(auto it = paramList.begin()+1; it!=paramList.end(); ++it)
+        {
+            ofs << "    -> " << it->name() << '\n';
+        }
+    }
+
+    ofs << std::endl;
+    ofs.close();
+}
+#endif
 
 } // namespace script
 } // namespace erwin

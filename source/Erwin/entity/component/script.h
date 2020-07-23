@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
-#include "script/script_engine.h"
 #include "filesystem/wpath.h"
+#include "script/script_engine.h"
+#include <string>
 
 namespace erwin
 {
@@ -10,16 +10,13 @@ namespace erwin
 struct ComponentScript
 {
 public:
-	ComponentScript() = default;
-	explicit ComponentScript(const std::string& universal_path);
-	explicit ComponentScript(const WPath& path);
+    ComponentScript() = default;
+    explicit ComponentScript(const std::string& universal_path) : file_path(universal_path) {}
+    explicit ComponentScript(const WPath& path) : file_path(path) {}
 
-	WPath file_path;
-	std::string entry_point;
-	script::ActorIndex actor_index = 0;
-
-private:
-	void detect_entry_point();
+    WPath file_path;
+    std::string entry_point;
+    script::ActorIndex actor_index = 0;
 };
 
 } // namespace erwin

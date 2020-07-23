@@ -2,9 +2,12 @@
 
 #include "entity/reflection.h"
 #include "filesystem/wpath.h"
+#include "core/core.h"
 #include <functional>
 #include <memory>
 #include <vector>
+#include <set>
+#include <map>
 
 namespace chaiscript
 {
@@ -26,6 +29,21 @@ template <typename ExposedT> std::shared_ptr<chaiscript::Module> make_bindings()
 #define ADD_FUN(Class, Name) module->add(chaiscript::fun(&Class::Name), #Name)
 
 /*
+    Represents a scripted data type.
+*/
+struct ActorReflection
+{
+    struct Parameter
+    {
+        hash_t type;
+        std::string name;
+    };
+
+    std::string name;
+    std::vector<Parameter> parameters;
+};
+
+/*
     Represents an instantiated script object.
 */
 struct Actor
@@ -37,6 +55,7 @@ struct Actor
     };
 
     InstanceHandle instance_handle = 0;
+    hash_t actor_type = 0;
     uint8_t traits = 0;
 
     std::function<void(float)> update;
@@ -66,12 +85,6 @@ struct ChaiContext
     ~ChaiContext();
 
     inline VM_ptr operator->() { return vm; }
-
-    void init();
-    void add_bindings(std::shared_ptr<chaiscript::Module> module);
-    void use(const WPath& script_path);
-    void eval(const std::string& command);
-    ActorIndex instantiate(const std::string& entry_point, EntityID e);
     inline auto& get_actor(ActorIndex idx) { return actors_.at(idx); }
     inline void traverse_actors(ActorVisitor visit)
     {
@@ -80,8 +93,23 @@ struct ChaiContext
                 visit(actor);
     }
 
+    void init();
+    void add_bindings(std::shared_ptr<chaiscript::Module> module);
+    hash_t use(const WPath& script_path);
+    void eval(const std::string& command);
+    ActorIndex instantiate(hash_t actor_type, EntityID e);
+
+#ifdef W_DEBUG
+    void dbg_dump_state(const std::string& outfile);
+#endif
+
+private:
+    hash_t reflect(const WPath& script_path);
+
 private:
     std::vector<Actor> actors_;
+    std::map<hash_t, ActorReflection> reflections_;
+    std::map<hash_t, hash_t> used_files_;
 };
 
 } // namespace script
