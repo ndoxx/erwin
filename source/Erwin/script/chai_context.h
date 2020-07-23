@@ -68,6 +68,8 @@ struct Actor
     template <typename T> inline std::reference_wrapper<T> get_parameter(const std::string&) { return {}; }
     template <typename T> inline T* get_parameter_ptr(const std::string&) { return nullptr; }
 
+    void update_parameters(const Actor& other);
+
 public:
     InstanceHandle instance_handle = 0;
     hash_t actor_type = 0;
@@ -120,6 +122,7 @@ struct ChaiContext
     ActorIndex instantiate(hash_t actor_type, EntityID e);
 
     void setup_component(ComponentScript& cscript, EntityID e);
+    void update_parameters(const ChaiContext& other);
 
 #ifdef W_DEBUG
     void dbg_dump_state(const std::string& outfile);

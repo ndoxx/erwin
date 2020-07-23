@@ -168,7 +168,9 @@ void Scene::load_xml(const erwin::WPath& file_path)
     DLOGI << WCC('p') << file_path << std::endl;
 
     scene_file_path_ = file_path;
-    asset_registry_ = AssetManager::create_asset_registry();
+    
+    if(!runtime_)
+        asset_registry_ = AssetManager::create_asset_registry();
 
     // Create a script context
     script_context_ = ScriptEngine::create_context(*this);

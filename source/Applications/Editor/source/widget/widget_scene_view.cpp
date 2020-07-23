@@ -16,6 +16,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
+#include "script/script_engine.h"
 #include "widget/dialog_open.h"
 #include "widget/overlay_stats.h"
 
@@ -134,8 +135,7 @@ void SceneViewWidget::on_imgui_render()
 
             if(ImGui::MenuItem("Save as") || save_as_needed)
             {
-                dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                  project::asset_dir(DK::SCENE).absolute());
+                dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn", project::asset_dir(DK::SCENE).absolute());
             }
 
             ImGui::EndMenu();
@@ -161,11 +161,11 @@ void SceneViewWidget::on_imgui_render()
         // * Toolbar
         // Scene runtime state indicator
         if(!runtime_)
-            ImGui::TextColored({0.1f,1.0f,0.1f,1.f}, "[EDITING]");
+            ImGui::TextColored({0.1f, 1.0f, 0.1f, 1.f}, "[EDITING]");
         else if(!paused_)
-            ImGui::TextColored({1.0f,0.1f,0.1f,1.f}, "[RUNTIME]");
+            ImGui::TextColored({1.0f, 0.1f, 0.1f, 1.f}, "[RUNTIME]");
         else
-            ImGui::TextColored({1.0f,0.7f,0.1f,1.f}, "[ PAUSE ]");
+            ImGui::TextColored({1.0f, 0.7f, 0.1f, 1.f}, "[ PAUSE ]");
 
         // Scene runtime state modifiers
         if(!runtime_ && ImGui::Button(W_ICON(PLAY)))
@@ -209,8 +209,7 @@ void SceneViewWidget::on_imgui_render()
         stats_overlay_->imgui_render();
     }
 
-    dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath)
-    {
+    dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {
         auto& scene = scn::current();
         scene.save_xml(WPath(filepath));
     });
@@ -240,6 +239,12 @@ void SceneViewWidget::runtime_start()
 void SceneViewWidget::runtime_stop()
 {
     DLOGN("scene") << "Ending runtime." << std::endl;
+
+    // Copy values of script parameters that may have been modified during runtime back to main scene
+    auto target_context = SceneManager::get("main_scene"_h).get_script_context();
+    auto source_context = SceneManager::get("runtime"_h).get_script_context();
+    ScriptEngine::transport_runtime_parameters(source_context, target_context);
+
     // Destroy runtime scene and jump back to editor scene
     SceneManager::make_current("main_scene"_h);
     SceneManager::remove_scene("runtime"_h);

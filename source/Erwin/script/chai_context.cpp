@@ -20,6 +20,12 @@ static struct
     SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
 } s_storage;
 
+void Actor::update_parameters(const Actor& other)
+{
+    for(auto&& [name, pref]: floats_)
+        pref.get() = other.floats_.at(name);
+}
+
 ChaiContext::~ChaiContext()
 {
     for(auto actor : actors_)
@@ -216,6 +222,17 @@ void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
     hash_t actor_type = use(cscript.file_path);
     cscript.actor_index = instantiate(actor_type, e);
     cscript.entry_point = get_reflection(actor_type).name;
+}
+
+void ChaiContext::update_parameters(const ChaiContext& other)
+{
+    // Transport parameter values from other VM to this one
+    // ASSUME: Actors are the same in both sides
+    W_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
+    for(size_t ii=0; ii<actors_.size(); ++ii)
+    {
+        actors_[ii].update_parameters(other.actors_[ii]);
+    }
 }
 
 

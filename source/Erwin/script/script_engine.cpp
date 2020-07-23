@@ -46,4 +46,10 @@ void ScriptEngine::destroy_context(VMHandle handle)
 
 ChaiContext& ScriptEngine::get_context(VMHandle handle) { return s_storage.vms_.at(handle); }
 
+void ScriptEngine::transport_runtime_parameters(script::VMHandle source, script::VMHandle target)
+{
+    s_storage.vms_.at(target).update_parameters(s_storage.vms_.at(source));
+}
+
+
 } // namespace erwin
