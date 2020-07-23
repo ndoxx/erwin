@@ -35,7 +35,11 @@ ChaiContext::~ChaiContext()
     }
 }
 
-void ChaiContext::init() { vm = std::make_shared<chaiscript::ChaiScript>(); }
+void ChaiContext::init(VMHandle handle)
+{
+    vm = std::make_shared<chaiscript::ChaiScript>();
+    handle_ = handle;
+}
 
 void ChaiContext::add_bindings(std::shared_ptr<chaiscript::Module> module) { vm->add(module); }
 
@@ -222,6 +226,7 @@ void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
     hash_t actor_type = use(cscript.file_path);
     cscript.actor_index = instantiate(actor_type, e);
     cscript.entry_point = get_reflection(actor_type).name;
+    cscript.script_context = handle_;
 }
 
 void ChaiContext::update_parameters(const ChaiContext& other)

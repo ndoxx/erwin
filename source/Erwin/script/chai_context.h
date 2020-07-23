@@ -115,7 +115,7 @@ struct ChaiContext
                 visit(actor);
     }
 
-    void init();
+    void init(VMHandle handle);
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
     hash_t use(const WPath& script_path);
     void eval(const std::string& command);
@@ -135,6 +135,7 @@ private:
     std::vector<Actor> actors_;
     std::map<hash_t, ActorReflection> reflections_;
     std::map<hash_t, hash_t> used_files_;
+    VMHandle handle_;
 };
 
 } // namespace script

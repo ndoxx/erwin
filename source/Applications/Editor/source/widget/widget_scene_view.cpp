@@ -241,9 +241,12 @@ void SceneViewWidget::runtime_stop()
     DLOGN("scene") << "Ending runtime." << std::endl;
 
     // Copy values of script parameters that may have been modified during runtime back to main scene
-    auto target_context = SceneManager::get("main_scene"_h).get_script_context();
-    auto source_context = SceneManager::get("runtime"_h).get_script_context();
-    ScriptEngine::transport_runtime_parameters(source_context, target_context);
+    if(cfg::get("settings.scripting.transport_runtime_parameters"_h, true))
+    {
+        auto target_context = SceneManager::get("main_scene"_h).get_script_context();
+        auto source_context = SceneManager::get("runtime"_h).get_script_context();
+        ScriptEngine::transport_runtime_parameters(source_context, target_context);
+    }
 
     // Destroy runtime scene and jump back to editor scene
     SceneManager::make_current("main_scene"_h);

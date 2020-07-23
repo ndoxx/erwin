@@ -1,6 +1,6 @@
 #include "entity/component/serial/script.h"
-#include "script/script_engine.h"
 #include "level/scene.h"
+#include "script/script_engine.h"
 
 namespace erwin
 {
@@ -10,20 +10,69 @@ void serialize_xml<ComponentScript>(const ComponentScript& cmp, xml::XMLFile& fi
 {
     file.add_node(cmp_node, "path", cmp.file_path.universal().c_str());
 
-    // TODO: save actor parameters
+    // Save actor parameters
+    auto& ctx = ScriptEngine::get_context(cmp.script_context);
+    auto& actor = ctx.get_actor(cmp.actor_index);
+    const auto& params = ctx.get_reflection(actor.actor_type).parameters;
+
+    auto* params_node = file.add_node(cmp_node, "parameters");
+    for(const auto& param : params)
+    {
+        switch(param.type)
+        {
+        case "float"_h: {
+            auto* param_node = file.add_node(params_node, "float");
+            float value = actor.get_parameter<float>(param.name);
+            file.add_attribute(param_node, "name", param.name.c_str());
+            file.add_attribute(param_node, "value", std::to_string(value).c_str());
+            file.add_attribute(param_node, "min", std::to_string(std::get<0>(param.range)).c_str());
+            file.add_attribute(param_node, "max", std::to_string(std::get<1>(param.range)).c_str());
+            file.add_attribute(param_node, "def", std::to_string(std::get<2>(param.range)).c_str());
+            break;
+        }
+        default: {
+        }
+        }
+    }
+}
+
+static void set_actor_property(script::Actor& actor, rapidxml::xml_node<>* xnode)
+{
+    std::string str_param_name;
+    if(!xml::parse_attribute(xnode, "name", str_param_name))
+        return;
+
+    // Get hash from node name
+    hash_t type_h = H_(xnode->name());
+    switch(type_h)
+    {
+    case "float"_h: {
+        xml::parse_attribute(xnode, "value", actor.get_parameter<float>(str_param_name).get());
+        break;
+    }
+    default: {
+    }
+    }
 }
 
 template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
-	std::string universal_path;
+    std::string universal_path;
     xml::parse_node(cmp_node, "path", universal_path);
-    
+
     auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
     auto ctx_handle = scene.get_script_context();
     auto& ctx = ScriptEngine::get_context(ctx_handle);
     ctx.setup_component(cscript, e);
 
-    // TODO: parse XML for parameter values and init actor instance
+    // Parse XML for parameter values and init actor instance
+    auto& actor = ctx.get_actor(cscript.actor_index);
+
+    auto* params_node = cmp_node->first_node("parameters");
+    if(params_node)
+        for(rapidxml::xml_node<>* param_node = params_node->first_node(); param_node;
+            param_node = param_node->next_sibling())
+            set_actor_property(actor, param_node);
 }
 
 } // namespace erwin
