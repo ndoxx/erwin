@@ -473,6 +473,11 @@ public:
     inline script::VMHandle get_script_context() const { return script_context_; }
 
 private:
+    void script_destroy_callback(entt::registry& reg, entt::entity e);
+    void hierarchy_destroy_callback(entt::registry& reg, entt::entity e);
+    void named_tag_destroy_callback(entt::registry& reg, entt::entity e);
+
+private:
     entt::registry registry;
     std::queue<std::tuple<EntityID, uint32_t>> removed_components_;
     std::queue<EntityID> removed_entities_;

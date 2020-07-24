@@ -8,9 +8,9 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
-#include <tuple>
 
 namespace chaiscript
 {
@@ -38,7 +38,7 @@ struct ActorReflection
     {
         hash_t type;
         std::string name;
-        std::tuple<float,float,float> range;
+        std::tuple<float, float, float> range;
     };
 
     std::string name;
@@ -91,7 +91,10 @@ template <> inline std::reference_wrapper<float> Actor::get_parameter<float>(con
     return floats_.at(name);
 }
 template <> inline float* Actor::get_parameter_ptr<float>(const std::string& name) { return &(floats_.at(name).get()); }
-template <> inline bool Actor::has_parameter<float>(const std::string& name) const { return floats_.find(name) != floats_.end(); }
+template <> inline bool Actor::has_parameter<float>(const std::string& name) const
+{
+    return floats_.find(name) != floats_.end();
+}
 
 /*
     Encapsulate the creation of ChaiScript objects. This allows to
@@ -104,8 +107,8 @@ struct ChaiContext
     using ActorVisitor = std::function<void(Actor&)>;
     VM_ptr vm;
 
-    ChaiContext() = default;
-    ~ChaiContext();
+    ChaiContext();
+    ~ChaiContext() = default;
 
     inline VM_ptr operator->() { return vm; }
     inline auto& get_actor(ActorHandle idx) { return actors_.at(idx); }
@@ -131,10 +134,13 @@ struct ChaiContext
     void dbg_dump_state(const std::string& outfile);
 #endif
 
+    struct Storage;
+
 private:
     hash_t reflect(const WPath& script_path);
 
 private:
+    std::shared_ptr<Storage> storage_ = nullptr;
     std::map<ActorHandle, Actor> actors_;
     std::map<hash_t, ActorReflection> reflections_;
     std::map<hash_t, hash_t> used_files_;

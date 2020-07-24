@@ -23,11 +23,36 @@
 namespace erwin
 {
 
-void kill_actor(entt::registry& reg, entt::entity e)
+void Scene::script_destroy_callback(entt::registry& reg, entt::entity e)
 {
     const auto& cscript = reg.get<ComponentScript>(e);
-    auto& ctx = ScriptEngine::get_context(cscript.script_context);
+    auto& ctx = ScriptEngine::get_context(script_context_);
     ctx.remove_actor(cscript.actor_index);
+}
+
+void Scene::hierarchy_destroy_callback(entt::registry& reg, entt::entity e)
+{
+    const auto& hier = reg.get<ComponentHierarchy>(e);
+    if(hier.parent != k_invalid_entity_id)
+        detach(e);
+
+    // Remove all children
+    // This will cause this method to be called recursively on the whole subtree
+    std::vector<EntityID> children;
+    for(auto child = hier.first_child; child != k_invalid_entity_id;)
+    {
+        DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
+        children.push_back(child);
+        const auto& child_hier = reg.get<ComponentHierarchy>(child);
+        child = child_hier.next_sibling;
+    }
+    reg.destroy(children.begin(), children.end());
+}
+
+void Scene::named_tag_destroy_callback(entt::registry& reg, entt::entity e)
+{
+    if(auto* p_desc = reg.try_get<ComponentDescription>(e))
+        named_entities_.erase(H_(p_desc->name.c_str()));
 }
 
 Scene::Scene()
@@ -36,8 +61,13 @@ Scene::Scene()
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
 
+    // On component hierarchy destruction, remove whole subtree
+    // ALT: or moved up?
+    registry.on_destroy<ComponentHierarchy>().connect<&Scene::hierarchy_destroy_callback>(*this);
     // Unload actor on script component destruction
-    registry.on_destroy<ComponentScript>().connect<&kill_actor>();
+    registry.on_destroy<ComponentScript>().connect<&Scene::script_destroy_callback>(*this);
+    // If entity is named, must remove it from the named entities map upon destruction
+    registry.on_destroy<NamedEntityTag>().connect<&Scene::named_tag_destroy_callback>(*this);
 }
 
 void Scene::unload()
@@ -83,30 +113,7 @@ void Scene::cleanup()
     while(!removed_entities_.empty())
     {
         auto entity = removed_entities_.front();
-
-        // If entity is named, must remove it from the named entities map
-        if(registry.has<NamedEntityTag>(entity))
-            if(auto* p_desc = registry.try_get<ComponentDescription>(entity))
-                named_entities_.erase(H_(p_desc->name.c_str()));
-
-        // Check if entity has children, if so, the whole subtree must be destroyed
-        // ALT: or moved up?
-        if(auto* p_hier = registry.try_get<ComponentHierarchy>(entity))
-        {
-            if(p_hier->parent != k_invalid_entity_id)
-                detach(entity);
-
-            std::vector<EntityID> subtree;
-            depth_first(entity, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
-                DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
-                subtree.push_back(child);
-                return false;
-            });
-            registry.destroy(subtree.begin(), subtree.end());
-        }
-        else
-            registry.destroy(entity);
-
+        registry.destroy(entity);
         removed_entities_.pop();
     }
 }

@@ -1,39 +1,32 @@
 #include "core/intern_string.h"
 #include "debug/logger.h"
+#include "entity/component/serial/script.h"
 #include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
-#include "entity/component/serial/script.h"
 #include "utils/string.h"
 #include <chaiscript/chaiscript.hpp>
-#include <regex>
 #include <cstdlib>
+#include <regex>
 
 namespace erwin
 {
 namespace script
 {
 
-static struct
-{
-    std::array<chaiscript::Boxed_Value, k_max_actors> actor_instances_;
-    SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
-} s_storage;
-
 void Actor::update_parameters(const Actor& other)
 {
-    for(auto&& [name, pref]: floats_)
+    for(auto&& [name, pref] : floats_)
         pref.get() = other.floats_.at(name);
 }
 
-ChaiContext::~ChaiContext()
+struct ChaiContext::Storage
 {
-    for(auto&& [hnd, actor] : actors_)
-    {
-        s_storage.actor_instances_[actor.instance_handle] = {};
-        s_storage.actor_handle_pool_.release(actor.instance_handle);
-    }
-}
+    std::array<chaiscript::Boxed_Value, k_max_actors> actor_instances_;
+    SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
+};
+
+ChaiContext::ChaiContext() { storage_ = std::make_shared<Storage>(); }
 
 void ChaiContext::init(VMHandle handle)
 {
@@ -79,16 +72,12 @@ void ChaiContext::eval(const std::string& command)
     }
 }
 
-static std::tuple<float,float,float> make_range(const std::string& str_list)
+static std::tuple<float, float, float> make_range(const std::string& str_list)
 {
-    auto tokens = su::tokenize(str_list,',');
+    auto tokens = su::tokenize(str_list, ',');
     W_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
-    return
-    {
-        std::strtof(tokens[0].c_str(), nullptr),
-        std::strtof(tokens[1].c_str(), nullptr),
-        std::strtof(tokens[2].c_str(), nullptr)
-    };
+    return {std::strtof(tokens[0].c_str(), nullptr), std::strtof(tokens[1].c_str(), nullptr),
+            std::strtof(tokens[2].c_str(), nullptr)};
 }
 
 static const std::regex actor_rx("#pragma\\s*actor\\s*(.+)");
@@ -132,7 +121,7 @@ hash_t ChaiContext::reflect(const WPath& script_path)
     functor execution, the actor will be disabled.
 */
 template <typename... ArgsT>
-static void try_load(ChaiContext::VM_ptr vm, const std::string& name, Actor& actor,
+static void try_load(ChaiContext::VM_ptr vm, ChaiContext::Storage& storage, const std::string& name, Actor& actor,
                      std::function<void(ArgsT...)>& target_functor, Actor::ActorTrait trait)
 {
     // Actor disabled on script error.
@@ -146,10 +135,10 @@ static void try_load(ChaiContext::VM_ptr vm, const std::string& name, Actor& act
     try
     {
         auto func = vm->eval<std::function<void(chaiscript::Boxed_Value&, ArgsT...)>>(name);
-        target_functor = [instance_handle = actor.instance_handle, func, disable_on_fault](ArgsT... args) {
+        target_functor = [instance_handle = actor.instance_handle, func, disable_on_fault, &storage](ArgsT... args) {
             try
             {
-                func(s_storage.actor_instances_.at(instance_handle), std::forward<ArgsT>(args)...);
+                func(storage.actor_instances_.at(instance_handle), std::forward<ArgsT>(args)...);
             }
             catch(const chaiscript::exception::eval_error& e)
             {
@@ -180,10 +169,10 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
                     << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
-    auto instance_handle = s_storage.actor_handle_pool_.acquire();
+    auto instance_handle = storage_->actor_handle_pool_.acquire();
     DLOGI << "Instance handle: " << instance_handle << std::endl;
 
-    auto& instance = s_storage.actor_instances_[instance_handle] =
+    auto& instance = storage_->actor_instances_[instance_handle] =
         vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
 
     ActorHandle hnd = actors_.size();
@@ -194,7 +183,7 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
 
     // * Detect special methods
     DLOG("script", 1) << "Methods: " << std::endl;
-    try_load(vm, "__update", actor, actor.update, Actor::ActorTrait::UPDATER);
+    try_load(vm, *storage_, "__update", actor, actor.update, Actor::ActorTrait::UPDATER);
 
     if(actor.traits == 0)
     {
@@ -250,10 +239,9 @@ void ChaiContext::update_parameters(const ChaiContext& other)
     // Transport parameter values from other VM to this one
     // ASSUME: Actors are the same in both sides
     W_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
-    for(auto&& [hnd, actor]: actors_)
+    for(auto&& [hnd, actor] : actors_)
         actor.update_parameters(other.actors_.at(hnd));
 }
-
 
 #ifdef W_DEBUG
 #include <fstream>

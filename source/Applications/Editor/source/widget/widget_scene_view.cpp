@@ -226,7 +226,7 @@ void SceneViewWidget::runtime_start()
 {
     DLOGN("scene") << "Starting runtime." << std::endl;
     // Save main scene
-    SceneManager::get("main_scene"_h).save();
+    // SceneManager::get("main_scene"_h).save();
     // Create a shallow copy of current scene (shared asset registry) and reload
     auto& runtime_scene = SceneManager::create_scene("runtime"_h);
     runtime_scene.runtime_clone(scn::current());
