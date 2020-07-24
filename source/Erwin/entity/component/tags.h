@@ -9,5 +9,6 @@ struct DirtyOBBTag {};
 struct DirtyTransformTag {};
 struct NamedEntityTag {};
 struct NonSerializableTag {};
+struct NonRemovableTag {};
 
 } // namespace erwin

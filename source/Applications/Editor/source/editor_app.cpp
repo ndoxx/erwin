@@ -13,6 +13,7 @@
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
 #include "entity/tag_components.h"
+#include "entity/component/tags.h"
 
 #include <fstream>
 

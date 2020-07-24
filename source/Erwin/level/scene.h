@@ -474,7 +474,6 @@ public:
 
 private:
     void script_destroy_callback(entt::registry& reg, entt::entity e);
-    void hierarchy_destroy_callback(entt::registry& reg, entt::entity e);
     void named_tag_destroy_callback(entt::registry& reg, entt::entity e);
 
 private:

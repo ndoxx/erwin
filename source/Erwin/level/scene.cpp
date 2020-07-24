@@ -30,25 +30,6 @@ void Scene::script_destroy_callback(entt::registry& reg, entt::entity e)
     ctx.remove_actor(cscript.actor_index);
 }
 
-void Scene::hierarchy_destroy_callback(entt::registry& reg, entt::entity e)
-{
-    const auto& hier = reg.get<ComponentHierarchy>(e);
-    if(hier.parent != k_invalid_entity_id)
-        detach(e);
-
-    // Remove all children
-    // This will cause this method to be called recursively on the whole subtree
-    std::vector<EntityID> children;
-    for(auto child = hier.first_child; child != k_invalid_entity_id;)
-    {
-        DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
-        children.push_back(child);
-        const auto& child_hier = reg.get<ComponentHierarchy>(child);
-        child = child_hier.next_sibling;
-    }
-    reg.destroy(children.begin(), children.end());
-}
-
 void Scene::named_tag_destroy_callback(entt::registry& reg, entt::entity e)
 {
     if(auto* p_desc = reg.try_get<ComponentDescription>(e))
@@ -61,9 +42,6 @@ Scene::Scene()
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
 
-    // On component hierarchy destruction, remove whole subtree
-    // ALT: or moved up?
-    registry.on_destroy<ComponentHierarchy>().connect<&Scene::hierarchy_destroy_callback>(*this);
     // Unload actor on script component destruction
     registry.on_destroy<ComponentScript>().connect<&Scene::script_destroy_callback>(*this);
     // If entity is named, must remove it from the named entities map upon destruction
@@ -113,7 +91,27 @@ void Scene::cleanup()
     while(!removed_entities_.empty())
     {
         auto entity = removed_entities_.front();
-        registry.destroy(entity);
+
+        // Check if entity has children, if so, the whole subtree must be destroyed.
+        // Can't do this on component destruction as it would put the registry in a
+        // bad state, where clearing it causes an assertion in debug. I tried.
+        // ALT: or moved up?
+        if(auto* p_hier = registry.try_get<ComponentHierarchy>(entity))
+        {
+            if(p_hier->parent != k_invalid_entity_id)
+                detach(entity);
+
+            std::vector<EntityID> subtree;
+            depth_first(entity, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
+                DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
+                subtree.push_back(child);
+                return false;
+            });
+            registry.destroy(subtree.begin(), subtree.end());
+        }
+        else
+            registry.destroy(entity);
+
         removed_entities_.pop();
     }
 }
@@ -130,11 +128,11 @@ void Scene::save_xml(const WPath& file_path)
     DLOGN("scene") << "Serializing scene: " << std::endl;
     DLOGI << WCC('p') << file_path << std::endl;
 
-    // Open XML file
+    // * Open XML file
     xml::XMLFile scene_f(file_path);
     scene_f.create_root("Scene");
 
-    // Write resource table
+    // * Write resource table
     auto* assets_node = scene_f.add_node(scene_f.root, "Assets");
     const auto& metas = AssetManager::get_resource_meta(asset_registry_);
     for(auto&& [hname, meta] : metas)
@@ -145,15 +143,30 @@ void Scene::save_xml(const WPath& file_path)
         scene_f.add_attribute(anode, "path", meta.file_path.universal().c_str());
     }
 
-    // Write environment
+    // * Write environment
     auto* env_node = scene_f.add_node(scene_f.root, "Environment");
     scene_f.add_attribute(env_node, "id", std::to_string(environment_.resource_id).c_str());
 
-    // Visit each entity, for each component invoke serialization method
+    // * Write entities
     auto* entities_node = scene_f.add_node(scene_f.root, "Entities");
     scene_f.add_attribute(entities_node, "root", std::to_string(size_t(get_named("root"_h))).c_str());
 
-    registry.each([this, &scene_f, entities_node](const EntityID e) {
+    // First, get entities in hierarchy order
+    // This avoids scene file reordering after each consecutive save, and potential bugs
+    std::vector<EntityID> entities;
+    registry.view<NamedEntityTag>(entt::exclude<ComponentHierarchy>).each([&entities](auto e)
+    {
+        entities.push_back(e);
+    });
+    depth_first_ordered(get_named("root"_h), [&entities](EntityID e, const auto&, size_t)
+    {
+        entities.push_back(e);
+        return false;
+    });      
+
+    // Visit each entity, for each component invoke serialization method
+    for(auto e: entities)
+    {
         if(registry.has<NonSerializableTag>(e))
             return;
 
@@ -172,9 +185,9 @@ void Scene::save_xml(const WPath& file_path)
             invoke(W_METAFUNC_SERIALIZE_XML, reflected_type, std::as_const(data), &scene_f,
                    static_cast<void*>(cmp_node));
         });
-    });
+    }
 
-    // Write file
+    // * Write file
     scene_f.write();
 
     DLOGI << "done." << std::endl;
