@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 namespace erwin
 {
 
-template <typename LoaderT> class ResourceManager
+template <typename LoaderT> class ResourceCache
 {
 public:
     using ManagedResource = typename LoaderT::Resource;
@@ -84,7 +84,7 @@ private:
 };
 
 template <typename LoaderT>
-std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(const WPath& file_path)
+std::pair<hash_t, const AssetMetaData&> ResourceCache<LoaderT>::load_async(const WPath& file_path)
 {
     W_PROFILE_FUNCTION()
 
@@ -108,12 +108,12 @@ std::pair<hash_t, const AssetMetaData&> ResourceManager<LoaderT>::load_async(con
 }
 
 template <typename LoaderT>
-void ResourceManager<LoaderT>::on_ready(hash_t hname, std::function<void(const ManagedResource&)> then)
+void ResourceCache<LoaderT>::on_ready(hash_t hname, std::function<void(const ManagedResource&)> then)
 {
     on_ready_callbacks_.emplace(hname, then);
 }
 
-template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
+template <typename LoaderT> void ResourceCache<LoaderT>::release(hash_t hname)
 {
     W_PROFILE_FUNCTION()
 
@@ -126,7 +126,7 @@ template <typename LoaderT> void ResourceManager<LoaderT>::release(hash_t hname)
     }
 }
 
-template <typename LoaderT> void ResourceManager<LoaderT>::async_work()
+template <typename LoaderT> void ResourceCache<LoaderT>::async_work()
 {
     for(const auto& task : file_loading_tasks_)
     {
@@ -137,7 +137,7 @@ template <typename LoaderT> void ResourceManager<LoaderT>::async_work()
     file_loading_tasks_.clear();
 }
 
-template <typename LoaderT> void ResourceManager<LoaderT>::sync_work()
+template <typename LoaderT> void ResourceCache<LoaderT>::sync_work()
 {
     W_PROFILE_FUNCTION()
 

@@ -25,9 +25,6 @@ void serialize_xml<ComponentScript>(const ComponentScript& cmp, xml::XMLFile& fi
             float value = actor.get_parameter<float>(param.name);
             file.add_attribute(param_node, "name", param.name.c_str());
             file.add_attribute(param_node, "value", std::to_string(value).c_str());
-            // file.add_attribute(param_node, "min", std::to_string(std::get<0>(param.range)).c_str());
-            // file.add_attribute(param_node, "max", std::to_string(std::get<1>(param.range)).c_str());
-            // file.add_attribute(param_node, "def", std::to_string(std::get<2>(param.range)).c_str());
             break;
         }
         default: {
@@ -47,7 +44,8 @@ static void set_actor_property(script::Actor& actor, rapidxml::xml_node<>* xnode
     switch(type_h)
     {
     case "float"_h: {
-        xml::parse_attribute(xnode, "value", actor.get_parameter<float>(str_param_name).get());
+        if(actor.has_parameter<float>(str_param_name))
+            xml::parse_attribute(xnode, "value", actor.get_parameter<float>(str_param_name).get());
         break;
     }
     default: {
@@ -60,19 +58,23 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
     std::string universal_path;
     xml::parse_node(cmp_node, "path", universal_path);
 
-    auto& cscript = scene.add_component<ComponentScript>(e, universal_path);
-    auto ctx_handle = scene.get_script_context();
-    auto& ctx = ScriptEngine::get_context(ctx_handle);
-    ctx.setup_component(cscript, e);
+    WPath script_path(universal_path);
+    if(script_path.exists() && !script_path.empty())
+    {
+        auto& cscript = scene.add_component<ComponentScript>(e, script_path);
+        auto ctx_handle = scene.get_script_context();
+        auto& ctx = ScriptEngine::get_context(ctx_handle);
+        ctx.setup_component(cscript, e);
 
-    // Parse XML for parameter values and init actor instance
-    auto& actor = ctx.get_actor(cscript.actor_index);
+        // Parse XML for parameter values and init actor instance
+        auto& actor = ctx.get_actor(cscript.actor_index);
 
-    auto* params_node = cmp_node->first_node("parameters");
-    if(params_node)
-        for(rapidxml::xml_node<>* param_node = params_node->first_node(); param_node;
-            param_node = param_node->next_sibling())
-            set_actor_property(actor, param_node);
+        auto* params_node = cmp_node->first_node("parameters");
+        if(params_node)
+            for(rapidxml::xml_node<>* param_node = params_node->first_node(); param_node;
+                param_node = param_node->next_sibling())
+                set_actor_property(actor, param_node);
+    }
 }
 
 } // namespace erwin

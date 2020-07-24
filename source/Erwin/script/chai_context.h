@@ -67,6 +67,7 @@ struct Actor
     template <typename T> inline void add_parameter(const std::string&, std::reference_wrapper<T>) {}
     template <typename T> inline std::reference_wrapper<T> get_parameter(const std::string&) { return {}; }
     template <typename T> inline T* get_parameter_ptr(const std::string&) { return nullptr; }
+    template <typename T> inline bool has_parameter(const std::string&) const { return false; }
 
     void update_parameters(const Actor& other);
 
@@ -90,6 +91,7 @@ template <> inline std::reference_wrapper<float> Actor::get_parameter<float>(con
     return floats_.at(name);
 }
 template <> inline float* Actor::get_parameter_ptr<float>(const std::string& name) { return &(floats_.at(name).get()); }
+template <> inline bool Actor::has_parameter<float>(const std::string& name) const { return floats_.find(name) != floats_.end(); }
 
 /*
     Encapsulate the creation of ChaiScript objects. This allows to
@@ -106,11 +108,11 @@ struct ChaiContext
     ~ChaiContext();
 
     inline VM_ptr operator->() { return vm; }
-    inline auto& get_actor(ActorIndex idx) { return actors_.at(idx); }
+    inline auto& get_actor(ActorHandle idx) { return actors_.at(idx); }
     inline const auto& get_reflection(hash_t actor_type) const { return reflections_.at(actor_type); }
     inline void traverse_actors(ActorVisitor visit)
     {
-        for(auto& actor : actors_)
+        for(auto&& [hnd, actor] : actors_)
             if(actor.is_enabled())
                 visit(actor);
     }
@@ -119,7 +121,8 @@ struct ChaiContext
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
     hash_t use(const WPath& script_path);
     void eval(const std::string& command);
-    ActorIndex instantiate(hash_t actor_type, EntityID e);
+    ActorHandle instantiate(hash_t actor_type, EntityID e);
+    void remove_actor(ActorHandle idx);
 
     void setup_component(ComponentScript& cscript, EntityID e);
     void update_parameters(const ChaiContext& other);
@@ -132,7 +135,7 @@ private:
     hash_t reflect(const WPath& script_path);
 
 private:
-    std::vector<Actor> actors_;
+    std::map<ActorHandle, Actor> actors_;
     std::map<hash_t, ActorReflection> reflections_;
     std::map<hash_t, hash_t> used_files_;
     VMHandle handle_;

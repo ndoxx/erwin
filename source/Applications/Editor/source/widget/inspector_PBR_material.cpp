@@ -15,16 +15,18 @@ namespace erwin
 template <>
 void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, Scene& scene)
 {
-    size_t asset_registry = scene.get_asset_registry();
-
     // Load material from file
-    if(ImGui::Button("Load"))
-        editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).absolute());
-
-    editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
+    if(!scene.is_runtime())
     {
-        cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, WPath("res", filepath)); // // Copy material
-    });
+        size_t asset_registry = scene.get_asset_registry();
+        if(ImGui::Button("Load"))
+            editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).absolute());
+
+        editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
+        {
+            cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, WPath("res", filepath)); // // Copy material
+        });
+    }
     
     // ImGui::TextUnformatted(cmp.name.c_str()); // Name unused atm
 

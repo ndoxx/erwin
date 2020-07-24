@@ -23,6 +23,9 @@ SceneHierarchyWidget::SceneHierarchyWidget() : Widget("Hierarchy", true) {}
 
 static void entity_context_menu(Scene& scene, EntityID e)
 {
+    if(scene.is_runtime())
+        return;
+    
     ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(e)))));
     if(ImGui::BeginPopupContextItem("Entity context menu"))
     {
@@ -69,8 +72,8 @@ void SceneHierarchyWidget::on_imgui_render()
             if(ImGui::IsItemClicked())
                 new_selection = e;
 
-            // Disable drag and drop for entities with FixedHierarchyTag
-            if(!scene.has_component<FixedHierarchyTag>(e) && ImGui::BeginDragDropSource())
+            // Disable drag and drop for entities with FixedHierarchyTag and during runtime
+            if(!scene.is_runtime() && !scene.has_component<FixedHierarchyTag>(e) && ImGui::BeginDragDropSource())
             {
                 ImGui::SetDragDropPayload("DND_HIER_TREE", &e, sizeof(EntityID));
                 ImGui::Text("%s", W_ICON(CHILD));
@@ -108,7 +111,7 @@ void SceneHierarchyWidget::on_imgui_render()
         if(ImGui::IsItemClicked())
             new_selection = curr;
 
-        if(!scene.has_component<FixedHierarchyTag>(curr) && ImGui::BeginDragDropSource())
+        if(!scene.is_runtime() && !scene.has_component<FixedHierarchyTag>(curr) && ImGui::BeginDragDropSource())
         {
             ImGui::SetDragDropPayload("DND_HIER_TREE", &curr, sizeof(EntityID));
             ImGui::Text("%s", W_ICON(CHILD));

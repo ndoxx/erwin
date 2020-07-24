@@ -16,7 +16,7 @@ public:
 
     WPath file_path;
     std::string entry_point;
-    script::ActorIndex actor_index = 0;
+    script::ActorHandle actor_index = 0;
     script::VMHandle script_context = 0;
 };
 

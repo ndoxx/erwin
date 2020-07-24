@@ -13,6 +13,7 @@
 #include "entity/component/mesh.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
+#include "entity/component/script.h"
 #include "filesystem/xml_file.h"
 
 #include <queue>
@@ -22,11 +23,21 @@
 namespace erwin
 {
 
+void kill_actor(entt::registry& reg, entt::entity e)
+{
+    const auto& cscript = reg.get<ComponentScript>(e);
+    auto& ctx = ScriptEngine::get_context(cscript.script_context);
+    ctx.remove_actor(cscript.actor_index);
+}
+
 Scene::Scene()
 {
     // Setup registry signal handling
     registry.on_construct<ComponentMesh>().connect<&entt::registry::emplace_or_replace<DirtyOBBTag>>();
     registry.on_construct<ComponentTransform3D>().connect<&entt::registry::emplace_or_replace<DirtyTransformTag>>();
+
+    // Unload actor on script component destruction
+    registry.on_destroy<ComponentScript>().connect<&kill_actor>();
 }
 
 void Scene::unload()
@@ -277,10 +288,15 @@ void Scene::load_hdr_environment(const WPath& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
     AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {
+        // Unload current environment
+        if(environment_.resource_id != 0)
+            AssetManager::release<Environment>(asset_registry_, environment_.resource_id);
+
         environment_ = env;
         Renderer3D::set_environment(environment_);
         Renderer3D::enable_IBL(true);
     });
+    AssetManager::launch_async_tasks();
 }
 
 EntityID Scene::create_entity() { return registry.create(); }

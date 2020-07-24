@@ -9,7 +9,7 @@ namespace script
 
 static constexpr std::size_t k_max_actors = 128;
 static constexpr std::size_t k_max_script_vms = 8;
-using ActorIndex = std::size_t;
+using ActorHandle = std::size_t;
 using InstanceHandle = std::size_t;
 using VMHandle = std::size_t;
 

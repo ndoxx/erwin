@@ -24,7 +24,7 @@ static struct
 } s_storage;
 
 HexDumpWidget::HexDumpWidget():
-Widget("Hex dump", true)
+Widget("Hex dump", false)
 {
 
 }

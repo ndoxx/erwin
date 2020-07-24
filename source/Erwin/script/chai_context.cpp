@@ -28,7 +28,7 @@ void Actor::update_parameters(const Actor& other)
 
 ChaiContext::~ChaiContext()
 {
-    for(auto actor : actors_)
+    for(auto&& [hnd, actor] : actors_)
     {
         s_storage.actor_instances_[actor.instance_handle] = {};
         s_storage.actor_handle_pool_.release(actor.instance_handle);
@@ -165,7 +165,7 @@ static void try_load(ChaiContext::VM_ptr vm, const std::string& name, Actor& act
     }
 }
 
-ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
+ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
 {
     if(actor_type == 0)
     {
@@ -186,8 +186,10 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
     auto& instance = s_storage.actor_instances_[instance_handle] =
         vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
 
-    actors_.emplace_back(instance_handle);
-    auto& actor = actors_.back();
+    ActorHandle hnd = actors_.size();
+    actors_.emplace(hnd, instance_handle);
+    auto& actor = actors_.at(hnd);
+
     actor.actor_type = actor_type;
 
     // * Detect special methods
@@ -218,7 +220,21 @@ ActorIndex ChaiContext::instantiate(hash_t actor_type, EntityID e)
         }
     }
 
-    return actors_.size() - 1;
+    return hnd;
+}
+
+void ChaiContext::remove_actor(ActorHandle idx)
+{
+    auto it = actors_.find(idx);
+    if(it != actors_.end())
+    {
+        DLOGN("script") << "Removing actor instance: " << idx << std::endl;
+        actors_.erase(it);
+    }
+    else
+    {
+        DLOGW("script") << "Cannot remove unknown actor instance: " << idx << std::endl;
+    }
 }
 
 void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
@@ -234,10 +250,8 @@ void ChaiContext::update_parameters(const ChaiContext& other)
     // Transport parameter values from other VM to this one
     // ASSUME: Actors are the same in both sides
     W_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
-    for(size_t ii=0; ii<actors_.size(); ++ii)
-    {
-        actors_[ii].update_parameters(other.actors_[ii]);
-    }
+    for(auto&& [hnd, actor]: actors_)
+        actor.update_parameters(other.actors_.at(hnd));
 }
 
 

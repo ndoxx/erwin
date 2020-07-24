@@ -4,9 +4,11 @@
 #include "entity/tag_components.h"
 #include "imgui.h"
 #include "imgui/font_awesome.h"
+#include "widget/dialog_open.h"
 #include "level/scene_manager.h"
 #include "render/renderer_3d.h"
 #include "render/renderer_pp.h"
+#include "project/project.h"
 
 using namespace erwin;
 
@@ -51,14 +53,17 @@ void InspectorWidget::entity_tab()
                     if(ImGui::TreeNode(component_name))
                     {
                         // Basic controls over this component
-                        ImGui::SameLine(ImGui::GetWindowWidth() - 50);
-                        if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
+                        if(!scene.is_runtime())
                         {
-                            scene.mark_for_removal(e, reflected_type);
-                            DLOG("editor", 1) << "Removed component " << component_name << " from entity "
-                                              << static_cast<unsigned long>(e) << std::endl;
-                            ImGui::TreePop();
-                            return;
+                            ImGui::SameLine(ImGui::GetWindowWidth() - 50);
+                            if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
+                            {
+                                scene.mark_for_removal(e, reflected_type);
+                                DLOG("editor", 1) << "Removed component " << component_name << " from entity "
+                                                  << static_cast<unsigned long>(e) << std::endl;
+                                ImGui::TreePop();
+                                return;
+                            }
                         }
 
                         // Invoke GUI for this component
@@ -107,6 +112,22 @@ void InspectorWidget::environment_tab()
         if(ImGui::Checkbox("IBL", &s_enable_IBL))
         {
             Renderer3D::enable_IBL(s_enable_IBL);
+        }
+
+        auto& scene = scn::current();
+        // BUGFIX: During runtime: Unload -> Load another -> Reload first one -> crash
+        // Crash happens because of an out of range exception in environment resource cache
+        // For now I just disable environment loading during runtime
+        if(!scene.is_runtime())
+        {
+            // Load environment from HDR equirectangular texture file
+            if(ImGui::Button("Load"))
+                editor::dialog::show_open("ChooseHDRDlgKey", "Choose HDR file", ".hdr", editor::project::asset_dir(editor::DK::HDR).absolute());
+
+            editor::dialog::on_open("ChooseHDRDlgKey", [&scene](const fs::path& filepath)
+            {
+                scene.load_hdr_environment(WPath("res", filepath));
+            });
         }
 
         if(s_enable_IBL)
