@@ -118,7 +118,7 @@ void Scene::cleanup()
 
 void Scene::save()
 {
-    W_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set");
+    W_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set.");
     W_ASSERT(scene_file_path_.check_extension(".scn"_h), "Only .scn XML files supported for now.");
     save_xml(scene_file_path_);
 }
@@ -158,7 +158,7 @@ void Scene::save_xml(const WPath& file_path)
     {
         entities.push_back(e);
     });
-    depth_first_ordered(get_named("root"_h), [&entities](EntityID e, const auto&, size_t)
+    depth_first(get_named("root"_h), [&entities](EntityID e, const auto&, size_t)
     {
         entities.push_back(e);
         return false;

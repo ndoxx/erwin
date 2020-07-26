@@ -239,6 +239,10 @@ void SceneViewWidget::runtime_stop()
 {
     DLOGN("scene") << "Ending runtime." << std::endl;
 
+    // Force unpause on exiting runtime (avoids weird bugs)
+    paused_ = false;
+    Application::get_instance().get_clock().pause(paused_);
+
     // Copy values of script parameters that may have been modified during runtime back to main scene
     if(cfg::get("settings.scripting.transport_runtime_parameters"_h, true))
     {
@@ -252,7 +256,6 @@ void SceneViewWidget::runtime_stop()
     SceneManager::remove_scene("runtime"_h);
 
     runtime_ = false;
-    paused_ = false;
 }
 
 void SceneViewWidget::runtime_pause()
