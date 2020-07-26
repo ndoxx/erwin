@@ -168,7 +168,7 @@ void Scene::save_xml(const WPath& file_path)
     for(auto e: entities)
     {
         if(registry.has<NonSerializableTag>(e))
-            return;
+            continue;
 
         auto* enode = scene_f.add_node(entities_node, "Entity");
         scene_f.add_attribute(enode, "id", std::to_string(size_t(e)).c_str());

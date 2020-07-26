@@ -9,6 +9,29 @@
 
 using namespace erwin;
 
+#include "entity/component/hierarchy.h"
+#include "entity/component/transform.h"
+#include "entity/component/camera.h"
+#include "entity/component/bounding_box.h"
+#include "entity/component/mesh.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/light.h"
+#include "entity/component/description.h"
+#include "entity/component/script.h"
+
+// TMP
+class Scene;
+template <> void erwin::inspector_GUI<ComponentTransform3D>(ComponentTransform3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentCamera3D>(ComponentCamera3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentOBB>(ComponentOBB&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityID, Scene&) {}
+
+
 struct MandelbrotData
 {
 	glm::mat4 view_projection;
@@ -56,7 +79,7 @@ public:
 	virtual void on_detach() override
 	{
 		Renderer::destroy(mandel_ubo_);
-		AssetManager::release(shader_);
+		// AssetManager::release(shader_);
 	}
 
 protected:
@@ -85,7 +108,7 @@ protected:
 		pass_state.depth_stencil_state.depth_test_enabled = false;
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
-		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
+		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_mesh("quad"_h).VAO);
 		dc.add_dependency(Renderer::update_uniform_buffer(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy));
 		Renderer::submit("Presentation"_h, dc);
 	}
@@ -140,7 +163,7 @@ public:
 	{
 		wfs::set_asset_dir("source/Applications/FractalExplorer/assets");
 		wfs::set_client_config_dir("source/Applications/FractalExplorer/config");
-		this->add_configuration("client.xml");
+	    add_configuration("cfg://client.xml"_wp);
 	}
 
 	virtual void on_load() override

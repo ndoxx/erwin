@@ -6,6 +6,7 @@ target_sources(fractal
 target_include_directories(fractal
     PRIVATE
         "${CMAKE_SOURCE_DIR}/source/Erwin"
+        "${CMAKE_SOURCE_DIR}/source/vendor"
     )
 set_target_properties(fractal
     PROPERTIES

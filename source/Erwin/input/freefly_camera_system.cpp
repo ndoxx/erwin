@@ -53,9 +53,14 @@ void FreeflyCameraSystem::update(const erwin::GameClock& clock, ComponentCamera3
 {
     // Update camera projection
     if(dirty_frustum_)
+    {
         camera.set_projection(frustum_);
+        camera.update_transform(transform.local.get_model_matrix());
+        dirty_frustum_ = false;
+        return;
+    }
 
-    if(!inputs_enabled_ && !dirty_frustum_)
+    if(!inputs_enabled_)
         return;
 
     // Translational magnitude
@@ -86,9 +91,6 @@ void FreeflyCameraSystem::update(const erwin::GameClock& clock, ComponentCamera3
     transform.local.position = position_;
     transform.local.set_rotation({pitch_, yaw_, 0.f});
     camera.update_transform(transform.local.get_model_matrix());
-
-    if(dirty_frustum_)
-        dirty_frustum_ = false;
 }
 
 bool FreeflyCameraSystem::on_window_resize_event(const WindowResizeEvent& event)
