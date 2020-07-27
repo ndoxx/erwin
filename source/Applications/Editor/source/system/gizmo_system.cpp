@@ -1,68 +1,80 @@
 #include "system/gizmo_system.h"
-#include "entity/component/tags.h"
+#include "core/application.h"
+#include "entity/component/camera.h"
+#include "entity/component/editor_tags.h"
+#include "entity/component/gizmo.h"
+#include "entity/component/transform.h"
 #include "level/scene.h"
+#include "event/event_bus.h"
+#include "event/window_events.h"
+
+#include "imguizmo/ImGuizmo.h"
 
 using namespace erwin;
 
 namespace editor
 {
 
+// TMP: to match with offset in Scene View Widget
+static constexpr float k_start_x = 4.f;
+static constexpr float k_start_y = 43.f;
+
 GizmoSystem::GizmoSystem()
 {
+    Application::get_instance().set_on_imgui_newframe_callback([]() { ImGuizmo::BeginFrame(); });
 
+    EventBus::subscribe(this, &GizmoSystem::on_framebuffer_resize_event);
+    EventBus::subscribe(this, &GizmoSystem::on_window_moved_event);
 }
 
 GizmoSystem::~GizmoSystem() {}
 
-void GizmoSystem::setup_editor_entities(erwin::Scene&)
+void GizmoSystem::setup_editor_entities(Scene& scene)
 {
-    // Create 4 entities with OBBs and transforms that will represent the gizmo's interactive zones
-    /*std::array ents = {scene.create_entity(), scene.create_entity(), scene.create_entity(), scene.create_entity()};
-    for(size_t ii = 0; ii < ents.size(); ++ii)
-    {
-        scene.add_component<GizmoHandleComponent>(ents[ii], GizmoHandleComponent{int(ii), k_invalid_entity_id});
-        scene.add_component<ComponentOBB>(ents[ii], OBB_extent);
-        scene.add_component<ComponentTransform3D>(ents[ii], offsets[ii], glm::vec3(0.f), 1.f);
-        scene.add_component<NonSerializableTag>(ents[ii]);
-        scene.add_component<HiddenTag>(ents[ii]);
-    }*/
-
     // On object selection, create a Gizmo component
-    
-    //scene.on_construct<SelectedTag>().connect<&entt::registry::emplace_or_replace<GizmoDirtyTag>>();
-    //scene.on_destroy<SelectedTag>().connect<...>();
+    // Remove it on object deselection
+    scene.on_construct<SelectedTag>().connect<&entt::registry::emplace_or_replace<ComponentGizmo>>();
+    scene.on_destroy<SelectedTag>().connect<&entt::registry::remove_if_exists<ComponentGizmo>>();
 }
 
-void GizmoSystem::update(const erwin::GameClock&, erwin::Scene&)
+bool GizmoSystem::on_framebuffer_resize_event(const FramebufferResizeEvent& event)
 {
-    // Make the gizmo's entities children of the selected entity
-    /*scene.view<ComponentTransform3D, SelectedTag, GizmoDirtyTag>(entt::exclude<NoGizmoTag>)
-        .each([&scene](auto e, const auto&) {
-            scene.view<GizmoHandleComponent>().each([e, &scene](auto e_gh, auto& GH) {
-                GH.parent = e;
-                scene.attach(e, e_gh);
-            });
-            scene.try_add_component<DirtyTransformTag>(e);
+    render_surface_.w = float(event.width);
+    render_surface_.h = float(event.height);
+    return false;
+}
+
+bool GizmoSystem::on_window_moved_event(const WindowMovedEvent& event)
+{
+    render_surface_.x = float(event.x) + k_start_x;
+    render_surface_.y = float(event.y) + k_start_y;
+    return false;
+}
+
+
+void GizmoSystem::update(const GameClock&, Scene& scene)
+{
+    scene.view<const ComponentTransform3D, ComponentGizmo>().each(
+        [](auto, const auto& transform, auto& gizmo) {
+            gizmo.model_matrix = transform.global.get_model_matrix();
         });
-
-    scene.clear<GizmoDirtyTag>();
-
-    selected_part_ = -1;
-    scene.view<const GizmoHandleComponent, const GizmoHandleSelectedTag>().each(
-        [this](auto, const auto& GH) { selected_part_ = GH.handle_id; });*/
 }
 
-void GizmoSystem::on_imgui_render(const erwin::Scene&)
+void GizmoSystem::on_imgui_render(Scene& scene)
 {
-    /*scene.view<const ComponentTransform3D, const SelectedTag>().each([this](auto, const auto& transform) {
-        // Draw gizmo
-        gizmo_data_.selected = selected_part_;
+    ImGuizmo::SetRect(render_surface_.x, render_surface_.y, render_surface_.w, render_surface_.h);
 
-        Renderer3D::begin_line_pass(false);
-        Renderer3D::draw_mesh(CommonGeometry::get_mesh("origin_lines"_h), transform.global.get_model_matrix(),
-                              gizmo_material_, &gizmo_data_);
-        Renderer3D::end_line_pass();
-    });*/
+    auto e_camera = scene.get_named("Camera"_h);
+    auto& ccamera = scene.get_component<ComponentCamera3D>(e_camera);
+
+    scene.view<ComponentGizmo>().each(
+        [&ccamera](auto, auto& gizmo) {
+            auto gizmo_operation = ImGuizmo::TRANSLATE;
+            auto gizmo_mode = ImGuizmo::LOCAL;
+
+            ImGuizmo::Manipulate(&ccamera.view_matrix[0][0], &ccamera.projection_matrix[0][0], gizmo_operation,
+                                 gizmo_mode, &gizmo.model_matrix[0][0], nullptr, nullptr);
+        });
 }
 
 } // namespace editor

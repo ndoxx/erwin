@@ -340,6 +340,7 @@ void Application::run()
             if(IMGUI_LAYER->is_enabled())
             {
         		IMGUI_LAYER->begin();
+                on_imgui_new_frame_();
                 this->on_imgui_render();
         		for(auto* layer: layer_stack_)
         			layer->on_imgui_render();

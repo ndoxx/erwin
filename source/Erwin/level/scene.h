@@ -269,6 +269,15 @@ public:
      */
     template <typename ComponentT> auto on_construct() { return registry.on_construct<ComponentT>(); }
 
+    /**
+     * @brief      Called before component destruction.
+     *
+     * @tparam     ComponentT  Type of component that will trigger a call on destruction.
+     *
+     * @return     Connectable object.
+     */
+    template <typename ComponentT> auto on_destroy() { return registry.on_destroy<ComponentT>(); }
+
 	/**
 	 * @brief      Invoke a function for each component of an entity.
 	 * 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <filesystem>
+#include <functional>
 
 #include "core/core.h"
 #include "core/window.h"
@@ -53,6 +54,8 @@ public:
 
 	bool on_window_close_event(const WindowCloseEvent& e);
 
+	inline void set_on_imgui_newframe_callback(std::function<void(void)> callback) { on_imgui_new_frame_ = callback; }
+
 protected:
 	bool vsync_enabled_;
 
@@ -64,6 +67,8 @@ private:
 
 	LayerStack layer_stack_;
 	GameClock game_clock_;
+
+	std::function<void(void)> on_imgui_new_frame_ = [](){};
 };
 
 // Defined in the client
