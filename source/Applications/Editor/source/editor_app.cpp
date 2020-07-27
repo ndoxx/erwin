@@ -12,8 +12,8 @@
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
-#include "entity/tag_components.h"
 #include "entity/component/tags.h"
+#include "entity/component/editor_tags.h"
 
 #include <fstream>
 

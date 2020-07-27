@@ -1,7 +1,7 @@
 #include "layer/layer_scene_editor.h"
 #include "input/input.h"
 #include "level/scene_manager.h"
-#include "entity/tag_components.h"
+#include "entity/component/editor_tags.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
@@ -79,10 +79,7 @@ void SceneEditorLayer::on_render()
 {
     auto& scene = scn::current();
     if(scene.is_loaded())
-    {
         bounding_box_system_.render(scene);
-        gizmo_system_.render(scene);
-    }
 
     for(Widget* widget : widgets_)
         widget->on_layer_render();
@@ -92,6 +89,7 @@ void SceneEditorLayer::on_imgui_render()
 {
     for(Widget* widget : widgets_)
         widget->imgui_render();
+    gizmo_system_.on_imgui_render(scn::current());
 }
 
 bool SceneEditorLayer::on_mouse_button_event(const MouseButtonEvent& event)

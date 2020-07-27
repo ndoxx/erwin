@@ -3,7 +3,7 @@
 #include "entity/component/camera.h"
 #include "entity/component/mesh.h"
 #include "entity/component/transform.h"
-#include "entity/tag_components.h"
+#include "entity/component/editor_tags.h"
 #include "level/scene.h"
 
 using namespace erwin;
@@ -21,8 +21,8 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     // BUG #7: When a NoGizmo tagged entity (like camera) is selected via hierarchy widget,
     // gizmo OBBs are still around previously selected object and
     // will respond to ray hit first, shadowing a legit entity selection query.
-    scene.view<RayHitTag, GizmoHandleComponent>().each(
-        [&nearest, &selected](auto e, const auto& data, const auto& /*gh*/) {
+    /*scene.view<RayHitTag, GizmoHandleComponent>().each(
+        [&nearest, &selected](auto e, const auto& data, const auto&) {
             if(data.near < nearest)
             {
                 nearest = data.near;
@@ -35,9 +35,9 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
         scene.clear<RayHitTag, GizmoHandleSelectedTag>();
         scene.add_component<GizmoHandleSelectedTag>(selected);
         return;
-    }
+    }*/
 
-    scene.view<RayHitTag>(entt::exclude<GizmoHandleComponent>)
+    scene.view<RayHitTag>(/*entt::exclude<GizmoHandleComponent>*/)
         .each([&nearest, &selected](auto e, const auto& data) {
             if(data.near < nearest)
             {
@@ -49,7 +49,7 @@ void SelectionSystem::update(const GameClock&, Scene& scene)
     if(selected != k_invalid_entity_id)
     {
         // Drop gizmo handle selection
-        scene.clear<GizmoHandleSelectedTag, SelectedTag>();
+        scene.clear</*GizmoHandleSelectedTag, */SelectedTag>();
         scene.add_component<SelectedTag>(selected);
     }
 

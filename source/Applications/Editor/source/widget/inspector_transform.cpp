@@ -25,7 +25,12 @@ void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, 
     update_rotation |= ImGui::SliderFloatDefault("Pitch##cmp_tr3", &cmp.local.euler.x, -90.f, 90.f, 0.f);
     update_rotation |= ImGui::SliderFloatDefault("Yaw##cmp_tr3",   &cmp.local.euler.y, -180.f, 180.f, 0.f);
     update_rotation |= ImGui::SliderFloatDefault("Roll##cmp_tr3",  &cmp.local.euler.z, -180.f, 180.f, 0.f);
-    
+    if(ImGui::Button("Reset orientation", {ImGui::GetContentRegionAvailWidth(), 0.f}))
+    {
+    	cmp.local.euler = {0.f,0.f,0.f};
+    	update_rotation = true;
+    }
+
     if(update_rotation)
     	cmp.local.set_rotation(cmp.local.euler);
 

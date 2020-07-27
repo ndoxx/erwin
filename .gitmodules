@@ -47,3 +47,6 @@
 [submodule "source/vendor/chaiscript"]
 	path = source/vendor/chaiscript
 	url = https://github.com/ChaiScript/ChaiScript.git
+[submodule "source/vendor/imguizmo"]
+	path = source/vendor/imguizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
