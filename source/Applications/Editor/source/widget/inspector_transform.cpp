@@ -1,5 +1,6 @@
 #include "entity/component/transform.h"
 #include "entity/component/tags.h"
+#include "entity/component/editor_tags.h"
 #include "entity/reflection.h"
 #include "level/scene.h"
 #include "imgui.h"
@@ -35,7 +36,10 @@ void inspector_GUI<ComponentTransform3D>(ComponentTransform3D& cmp, EntityID e, 
     	cmp.local.set_rotation(cmp.local.euler);
 
     if(update_position | update_rotation | update_scale)
-    	scene.try_add_component<DirtyTransformTag>(e);
+    {
+        scene.try_add_component<DirtyTransformTag>(e);
+        scene.try_add_component<editor::GizmoDirtyTag>(e);
+    }
 }
 
 } // namespace erwin

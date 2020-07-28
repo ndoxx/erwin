@@ -81,6 +81,7 @@ void ErwinEditor::on_load()
         scene.add_component<FixedHierarchyTag>(root);
         scene.add_component<NonEditableTag>(root);
         scene.add_component<NonRemovableTag>(root);
+        scene.add_component<NoGizmoTag>(root);
 
         scene_editor_layer_->setup_editor_entities(scene);
     });

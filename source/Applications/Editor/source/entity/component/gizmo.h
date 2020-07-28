@@ -7,8 +7,6 @@ namespace editor
 
 struct ComponentGizmo
 {
-	ComponentGizmo();
-
 	glm::mat4 model_matrix;
 	glm::mat4 delta;
 };

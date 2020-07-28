@@ -3,7 +3,6 @@
 #include "erwin.h"
 #include "layer/gui_layer.h"
 #include "system/bounding_box_system.h"
-#include "system/gizmo_system.h"
 #include "system/selection_system.h"
 
 namespace erwin
@@ -15,6 +14,7 @@ namespace editor
 {
 
 class SceneViewWidget;
+class GizmoWidget;
 class SceneEditorLayer : public GuiLayer
 {
 public:
@@ -37,11 +37,11 @@ protected:
     bool on_key_typed_event(const erwin::KeyTypedEvent& event);
 
 private:
-    GizmoSystem gizmo_system_;
     BoundingBoxSystem bounding_box_system_;
     SelectionSystem selection_system_;
 
     SceneViewWidget* scene_view_widget_ = nullptr;
+    GizmoWidget* gizmo_widget_ = nullptr;
 };
 
 } // namespace editor

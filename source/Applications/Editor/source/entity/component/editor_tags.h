@@ -8,6 +8,7 @@ struct HiddenTag {};
 struct FixedHierarchyTag {};
 struct NonEditableTag {};
 struct NoGizmoTag {};
+struct GizmoUpdateTag {};
 struct GizmoDirtyTag {};
 struct RayHitTag
 {
