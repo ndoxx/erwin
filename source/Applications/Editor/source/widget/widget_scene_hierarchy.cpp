@@ -2,8 +2,8 @@
 #include "entity/component/description.h"
 #include "entity/component/hierarchy.h"
 #include "entity/component/tags.h"
+#include "entity/component/editor_tags.h"
 #include "entity/reflection.h"
-#include "entity/tag_components.h"
 #include "imgui.h"
 #include "imgui/font_awesome.h"
 #include "level/scene_manager.h"
@@ -144,7 +144,7 @@ void SceneHierarchyWidget::on_imgui_render()
         scene.clear<SelectedTag>();
         scene.add_component<SelectedTag>(new_selection);
         // Drop gizmo handle selection
-        scene.clear<GizmoHandleSelectedTag>();
+        // scene.clear<GizmoHandleSelectedTag>();
     }
 
     // Hierarchy movements

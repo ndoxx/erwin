@@ -4,7 +4,7 @@
 #include "entity/component/mesh.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
-#include "entity/tag_components.h"
+#include "entity/component/editor_tags.h"
 #include "level/scene_manager.h"
 
 using namespace erwin;

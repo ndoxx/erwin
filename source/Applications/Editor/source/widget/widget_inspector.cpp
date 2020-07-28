@@ -1,7 +1,7 @@
 #include "widget/widget_inspector.h"
 #include "entity/component/description.h"
 #include "entity/reflection.h"
-#include "entity/tag_components.h"
+#include "entity/component/editor_tags.h"
 #include "imgui.h"
 #include "imgui/font_awesome.h"
 #include "widget/dialog_open.h"

@@ -12,8 +12,8 @@
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
-#include "entity/tag_components.h"
 #include "entity/component/tags.h"
+#include "entity/component/editor_tags.h"
 
 #include <fstream>
 
@@ -81,6 +81,7 @@ void ErwinEditor::on_load()
         scene.add_component<FixedHierarchyTag>(root);
         scene.add_component<NonEditableTag>(root);
         scene.add_component<NonRemovableTag>(root);
+        scene.add_component<NoGizmoTag>(root);
 
         scene_editor_layer_->setup_editor_entities(scene);
     });

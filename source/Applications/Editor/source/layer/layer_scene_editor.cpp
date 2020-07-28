@@ -1,12 +1,13 @@
 #include "layer/layer_scene_editor.h"
 #include "input/input.h"
 #include "level/scene_manager.h"
-#include "entity/tag_components.h"
+#include "entity/component/editor_tags.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
 #include "widget/widget_scene_hierarchy.h"
 #include "widget/widget_scene_view.h"
+#include "widget/widget_gizmo.h"
 
 using namespace erwin;
 
@@ -27,9 +28,11 @@ void SceneEditorLayer::on_attach()
 #endif
 
     scene_view_widget_ = new SceneViewWidget();
+    gizmo_widget_ = new GizmoWidget();
     add_widget(scene_view_widget_);
     add_widget(new SceneHierarchyWidget());
     add_widget(new InspectorWidget());
+    add_widget(gizmo_widget_);
 
     // Register main render targets in peek widget
     RTPeekWidget* peek_widget;
@@ -58,7 +61,7 @@ void SceneEditorLayer::on_detach()
 
 void SceneEditorLayer::setup_editor_entities(erwin::Scene& scene)
 {
-    gizmo_system_.setup_editor_entities(scene);
+    gizmo_widget_->setup_editor_entities(scene);
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
@@ -68,7 +71,6 @@ void SceneEditorLayer::on_update(GameClock& clock)
     {
         bounding_box_system_.update(clock, scene);
         selection_system_.update(clock, scene);
-        gizmo_system_.update(clock, scene);
     }
 
     for(Widget* widget : widgets_)
@@ -79,10 +81,7 @@ void SceneEditorLayer::on_render()
 {
     auto& scene = scn::current();
     if(scene.is_loaded())
-    {
         bounding_box_system_.render(scene);
-        gizmo_system_.render(scene);
-    }
 
     for(Widget* widget : widgets_)
         widget->on_layer_render();
@@ -105,6 +104,10 @@ bool SceneEditorLayer::on_mouse_button_event(const MouseButtonEvent& event)
         if(io.WantCaptureMouse)
             return true;
     }
+
+    // If gizmo is hovered, consume event
+    if(gizmo_widget_->is_hovered())
+        return true;
 
     return scene_view_widget_->on_mouse_event(event);
 }
@@ -139,6 +142,12 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
     if(Input::match_action(ACTION_DROP_SELECTION, event))
     {
         scn::current().clear<SelectedTag>();
+        return true;
+    }
+
+    if(Input::match_action(ACTION_EDITOR_CYCLE_GIZMO, event) && !gizmo_widget_->is_in_use())
+    {
+        gizmo_widget_->cycle_operation();
         return true;
     }
 

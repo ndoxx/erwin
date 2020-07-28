@@ -13,4 +13,5 @@
 	<action name="ACTION_EDITOR_CYCLE_MODE"     desc="Cycle between editor modes"   key="SHIFT+C"/>
 	<action name="ACTION_EDITOR_QUIT"           desc="Exit editor"                  key="CTRL+ESCAPE"/>
 	<action name="ACTION_EDITOR_SAVE_SCENE"     desc="Save current scene"           key="CTRL+S"/>
+	<action name="ACTION_EDITOR_CYCLE_GIZMO"    desc="Cycle gizmo operation"        key="G"/>
 </Keymap>
