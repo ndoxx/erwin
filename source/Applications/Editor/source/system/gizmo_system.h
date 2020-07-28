@@ -33,6 +33,10 @@ private:
         float h;
     };
     RenderSurface render_surface_;
+    int current_mode_;
+    int current_operation_;
+    bool use_snap_;
+    glm::vec3 snap_;
 };
 
 
