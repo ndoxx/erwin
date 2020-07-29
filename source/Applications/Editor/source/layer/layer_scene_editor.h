@@ -14,7 +14,6 @@ namespace editor
 {
 
 class SceneViewWidget;
-class GizmoWidget;
 class SceneEditorLayer : public GuiLayer
 {
 public:
@@ -41,7 +40,6 @@ private:
     SelectionSystem selection_system_;
 
     SceneViewWidget* scene_view_widget_ = nullptr;
-    GizmoWidget* gizmo_widget_ = nullptr;
 };
 
 } // namespace editor

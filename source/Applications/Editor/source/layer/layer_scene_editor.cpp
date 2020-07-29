@@ -7,7 +7,6 @@
 #include "widget/widget_rt_peek.h"
 #include "widget/widget_scene_hierarchy.h"
 #include "widget/widget_scene_view.h"
-#include "widget/widget_gizmo.h"
 
 using namespace erwin;
 
@@ -28,11 +27,9 @@ void SceneEditorLayer::on_attach()
 #endif
 
     scene_view_widget_ = new SceneViewWidget();
-    gizmo_widget_ = new GizmoWidget();
     add_widget(scene_view_widget_);
     add_widget(new SceneHierarchyWidget());
     add_widget(new InspectorWidget());
-    add_widget(gizmo_widget_);
 
     // Register main render targets in peek widget
     RTPeekWidget* peek_widget;
@@ -61,7 +58,7 @@ void SceneEditorLayer::on_detach()
 
 void SceneEditorLayer::setup_editor_entities(erwin::Scene& scene)
 {
-    gizmo_widget_->setup_editor_entities(scene);
+    scene_view_widget_->setup_editor_entities(scene);
 }
 
 void SceneEditorLayer::on_update(GameClock& clock)
@@ -105,10 +102,6 @@ bool SceneEditorLayer::on_mouse_button_event(const MouseButtonEvent& event)
             return true;
     }
 
-    // If gizmo is hovered, consume event
-    if(gizmo_widget_->is_hovered())
-        return true;
-
     return scene_view_widget_->on_mouse_event(event);
 }
 
@@ -145,13 +138,7 @@ bool SceneEditorLayer::on_keyboard_event(const KeyboardEvent& event)
         return true;
     }
 
-    if(Input::match_action(ACTION_EDITOR_CYCLE_GIZMO, event) && !gizmo_widget_->is_in_use())
-    {
-        gizmo_widget_->cycle_operation();
-        return true;
-    }
-
-    return false;
+    return scene_view_widget_->on_keyboard_event(event);
 }
 
 bool SceneEditorLayer::on_key_typed_event(const KeyTypedEvent&)

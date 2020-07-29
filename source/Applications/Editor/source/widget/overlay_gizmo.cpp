@@ -1,4 +1,4 @@
-#include "widget/widget_gizmo.h"
+#include "widget/overlay_gizmo.h"
 #include "core/application.h"
 #include "entity/component/camera.h"
 #include "entity/component/editor_tags.h"
@@ -9,6 +9,7 @@
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "level/scene_manager.h"
+#include "widget/widget_scene_view.h"
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -22,23 +23,18 @@ using namespace erwin;
 namespace editor
 {
 
-// TMP: to match with offset in Scene View Widget
-// TODO: have a global viewport state
-static constexpr float k_start_x = 4.f;
-static constexpr float k_start_y = 43.f;
-
 static constexpr std::array<ImGuizmo::OPERATION, 3> k_ops = {ImGuizmo::TRANSLATE, ImGuizmo::TRANSLATE,
                                                              ImGuizmo::ROTATE};
 static constexpr std::array<ImGuizmo::MODE, 2> k_modes = {ImGuizmo::LOCAL, ImGuizmo::WORLD};
 
-GizmoWidget::GizmoWidget()
+GizmoOverlay::GizmoOverlay()
     : Widget("Manipulator", true), current_mode_(RefFrame::World), current_operation_(Operation::Translate),
       use_snap_(true), show_grid_(false), grid_size_(8), snap_(0.5f), grid_model_(1.f)
 {
-    Application::get_instance().set_on_imgui_newframe_callback([]() { ImGuizmo::BeginFrame(); });
+    flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav;
 
-    EventBus::subscribe(this, &GizmoWidget::on_framebuffer_resize_event);
-    EventBus::subscribe(this, &GizmoWidget::on_window_moved_event);
+    Application::get_instance().set_on_imgui_newframe_callback([]() { ImGuizmo::BeginFrame(); });
 }
 
 void on_select(entt::registry& reg, entt::entity e)
@@ -51,7 +47,7 @@ void on_select(entt::registry& reg, entt::entity e)
     cgizmo.delta = glm::mat4(0.f);
 }
 
-void GizmoWidget::setup_editor_entities(Scene& scene)
+void GizmoOverlay::setup_editor_entities(Scene& scene)
 {
     // On object selection, create a Gizmo component
     // Remove it on object deselection
@@ -59,12 +55,12 @@ void GizmoWidget::setup_editor_entities(Scene& scene)
     scene.on_destroy<SelectedTag>().connect<&entt::registry::remove_if_exists<ComponentGizmo>>();
 }
 
-void GizmoWidget::cycle_operation()
+void GizmoOverlay::cycle_operation()
 {
     set_operation(Operation((uint8_t(current_operation_) + 1) % uint8_t(Operation::Count)));
 }
 
-void GizmoWidget::set_operation(Operation op)
+void GizmoOverlay::set_operation(Operation op)
 {
     current_operation_ = op;
     if(current_operation_ == Operation::Translate)
@@ -73,25 +69,11 @@ void GizmoWidget::set_operation(Operation op)
         snap_.x = 45.f;
 }
 
-bool GizmoWidget::is_in_use() const { return ImGuizmo::IsUsing(); }
+bool GizmoOverlay::is_in_use() const { return ImGuizmo::IsUsing(); }
 
-bool GizmoWidget::is_hovered() const { return ImGuizmo::IsOver(); }
+bool GizmoOverlay::is_hovered() const { return ImGuizmo::IsOver(); }
 
-bool GizmoWidget::on_framebuffer_resize_event(const FramebufferResizeEvent& event)
-{
-    render_surface_.w = float(event.width);
-    render_surface_.h = float(event.height);
-    return false;
-}
-
-bool GizmoWidget::on_window_moved_event(const WindowMovedEvent& event)
-{
-    render_surface_.x = float(event.x) + k_start_x;
-    render_surface_.y = float(event.y) + k_start_y;
-    return false;
-}
-
-void GizmoWidget::on_update(const GameClock&)
+void GizmoOverlay::on_update(const GameClock&)
 {
     if(current_operation_ == Operation::Disabled)
         return;
@@ -119,7 +101,7 @@ void GizmoWidget::on_update(const GameClock&)
     });
 }
 
-void GizmoWidget::on_imgui_render()
+void GizmoOverlay::on_imgui_render()
 {
     // * Interface
     if(ImGui::RadioButton("Dis", current_operation_ == Operation::Disabled))
@@ -133,19 +115,22 @@ void GizmoWidget::on_imgui_render()
     if(ImGui::RadioButton("Rot", current_operation_ == Operation::Rotate))
         set_operation(Operation::Rotate);
 
-    ImGui::TextUnformatted("Snap");
-    ImGui::Checkbox("##GizmoSnap", &use_snap_);
-    ImGui::SameLine();
-    switch(current_operation_)
+    if(current_operation_ != Operation::Disabled)
     {
-    case Operation::Translate:
-        ImGui::InputFloat3("##GizmoSnapValue", &snap_.x);
-        break;
-    case Operation::Rotate:
-        ImGui::InputFloat("##GizmoSnapValue", &snap_.x);
-        break;
-    default:
-        break;
+        ImGui::TextUnformatted("Snap");
+        ImGui::Checkbox("##GizmoSnap", &use_snap_);
+        ImGui::SameLine();
+        switch(current_operation_)
+        {
+        case Operation::Translate:
+            ImGui::InputFloat3("##GizmoSnapValue", &snap_.x);
+            break;
+        case Operation::Rotate:
+            ImGui::InputFloat("##GizmoSnapValue", &snap_.x);
+            break;
+        default:
+            break;
+        }
     }
 
     ImGui::Separator();
@@ -153,15 +138,17 @@ void GizmoWidget::on_imgui_render()
     ImGui::Checkbox("##ShowGrid", &show_grid_);
     ImGui::SameLine();
     ImGui::SliderInt("##GridSize", &grid_size_, 1, 16);
+}
 
+void GizmoOverlay::draw_gizmo(const RenderSurface& rs)
+{
     // * Manipulation
     auto& scene = scn::current();
     if(current_operation_ == Operation::Disabled || scene.is_runtime())
         return;
 
-    ImGuizmo::SetRect(render_surface_.x, render_surface_.y, render_surface_.w, render_surface_.h);
-    // FIXME: Gizmo still visible over GUI when outside viewport
-    // ImGui::PushClipRect({render_surface_.x, render_surface_.y}, {render_surface_.x + render_surface_.w, render_surface_.y + render_surface_.h}, false); // DNW
+    ImGuizmo::SetDrawlist();
+    ImGuizmo::SetRect(rs.x0, rs.y0, rs.w, rs.h);
 
     auto e_camera = scene.get_named("Camera"_h);
     auto& ccamera = scene.get_component<ComponentCamera3D>(e_camera);
@@ -177,17 +164,16 @@ void GizmoWidget::on_imgui_render()
         }
     });
 
+    // TODO: Grid should use depth test, maybe configure a callback in ImGui draw list to change this state?
     if(show_grid_)
         ImGuizmo::DrawGrid(&ccamera.view_matrix[0][0], &ccamera.projection_matrix[0][0], &grid_model_[0][0], float(grid_size_));
 
     /*{
         float vmw = 100.f;
-        float startx = render_surface_.x + render_surface_.w - vmw;
-        float starty = render_surface_.y;
+        float startx = rs.x1 - vmw;
+        float starty = rs.y0;
         ImGuizmo::ViewManipulate(&ccamera.view_matrix[0][0], 50.f, {startx, starty}, {vmw, vmw}, 0xCCCCCCCC);
     }*/
-
-    // ImGui::PopClipRect();
 }
 
 } // namespace editor

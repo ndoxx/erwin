@@ -10,16 +10,18 @@ class Scene;
 namespace editor
 {
 
-class GizmoWidget : public Widget
+struct RenderSurface;
+class GizmoOverlay : public Widget
 {
 public:
-    GizmoWidget();
-    virtual ~GizmoWidget() = default;
+    GizmoOverlay();
+    virtual ~GizmoOverlay() = default;
 
     void setup_editor_entities(erwin::Scene& scene);
     void cycle_operation();
     bool is_in_use() const;
     bool is_hovered() const;
+    void draw_gizmo(const RenderSurface& rs);
 
     virtual void on_update(const erwin::GameClock& clock) override;
     virtual void on_imgui_render() override;
@@ -42,20 +44,11 @@ private:
         Count
     };
 
-    struct RenderSurface
-    {
-        float x;
-        float y;
-        float w;
-        float h;
-    };
-
     bool on_framebuffer_resize_event(const erwin::FramebufferResizeEvent&);
     bool on_window_moved_event(const erwin::WindowMovedEvent&);
     void set_operation(Operation op);
 
 private:
-    RenderSurface render_surface_;
     RefFrame current_mode_;
     Operation current_operation_;
     bool use_snap_;

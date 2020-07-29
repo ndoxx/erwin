@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "imgui/color.h"
 #include "imgui/font_awesome.h"
+#include "input/input.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
 #include "render/common_geometry.h"
@@ -18,6 +19,7 @@
 #include "render/renderer_3d.h"
 #include "script/script_engine.h"
 #include "widget/dialog_open.h"
+#include "widget/overlay_gizmo.h"
 #include "widget/overlay_stats.h"
 
 using namespace erwin;
@@ -38,13 +40,21 @@ SceneViewWidget::SceneViewWidget() : Widget("Scene", true), render_surface_{0.f,
     runtime_ = false;
     paused_ = false;
     stats_overlay_ = new RenderStatsOverlay();
+    gizmo_overlay_ = new GizmoOverlay();
 }
 
-SceneViewWidget::~SceneViewWidget() { delete stats_overlay_; }
+SceneViewWidget::~SceneViewWidget()
+{
+    delete gizmo_overlay_;
+    delete stats_overlay_;
+}
+
+void SceneViewWidget::setup_editor_entities(erwin::Scene& scene) { gizmo_overlay_->setup_editor_entities(scene); }
 
 void SceneViewWidget::on_update(const GameClock& clock)
 {
     stats_overlay_->on_update(clock);
+    gizmo_overlay_->on_update(clock);
 
     if(track_next_frame_draw_calls_)
     {
@@ -80,6 +90,10 @@ void SceneViewWidget::on_move(int32_t x, int32_t y)
 
 bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
 {
+    // If gizmo is hovered, consume event
+    if(gizmo_overlay_->is_hovered())
+        return true;
+
     if(event.button == keymap::WMOUSE::BUTTON_0 && event.pressed && event.x > render_surface_.x0 &&
        event.x < render_surface_.x1 && event.y > render_surface_.y0 && event.y < render_surface_.y1)
     {
@@ -94,12 +108,22 @@ bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
     return false;
 }
 
+bool SceneViewWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
+{
+    if(Input::match_action(ACTION_EDITOR_CYCLE_GIZMO, event) && !gizmo_overlay_->is_in_use())
+    {
+        gizmo_overlay_->cycle_operation();
+        return true;
+    }
+
+    return false;
+}
+
 static bool s_show_frame_profiler = false;
 static bool s_enable_debug_show_uv = false;
 void SceneViewWidget::on_imgui_render()
 {
     auto& scene = scn::current();
-
     if(ImGui::BeginMenuBar())
     {
         if(project::is_loaded() && !scene.is_runtime() && ImGui::BeginMenu("File"))
@@ -148,6 +172,7 @@ void SceneViewWidget::on_imgui_render()
         if(ImGui::BeginMenu("Overlays"))
         {
             ImGui::MenuItem("Render stats", NULL, &stats_overlay_->open_);
+            ImGui::MenuItem("Manipulator", NULL, &gizmo_overlay_->open_);
             ImGui::EndMenu();
         }
         if(ImGui::BeginMenu("Debug"))
@@ -209,6 +234,15 @@ void SceneViewWidget::on_imgui_render()
         stats_overlay_->imgui_render();
     }
 
+    if(gizmo_overlay_->open_)
+    {
+        ImVec2 overlay_pos(render_surface_.x1 - k_overlay_dist, render_surface_.y1 - k_overlay_dist);
+        ImVec2 overlay_pivot(1.f, 1.f);
+        ImGui::SetNextWindowPos(overlay_pos, ImGuiCond_Always, overlay_pivot);
+        ImGui::SetNextWindowBgAlpha(0.95f);
+        gizmo_overlay_->imgui_render();
+    }
+
     dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(WPath(filepath)); });
 
     // * Show game render in window
@@ -220,6 +254,9 @@ void SceneViewWidget::on_imgui_render()
                                          // ImGui::GetCursorScreenPos(),
                                          ImVec2(render_surface_.x0, render_surface_.y0),
                                          ImVec2(render_surface_.x1, render_surface_.y1), ImVec2(0, 1), ImVec2(1, 0));
+
+    // * Show gizmos
+    gizmo_overlay_->draw_gizmo(render_surface_);
 }
 
 void SceneViewWidget::runtime_start()
