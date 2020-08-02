@@ -126,43 +126,51 @@ void SceneViewWidget::on_imgui_render()
     auto& scene = scn::current();
     if(ImGui::BeginMenuBar())
     {
-        if(project::is_loaded() && !scene.is_runtime() && ImGui::BeginMenu("File"))
+        if(project::is_loaded() && !scene.is_runtime())
         {
-            if(ImGui::BeginMenu("Load"))
+            if(ImGui::BeginMenu("File"))
             {
-                // List all available scenes for current project
-                auto scene_dir = project::asset_dir(DK::SCENE);
-                for(auto& entry : fs::directory_iterator(scene_dir.absolute()))
+                if(ImGui::BeginMenu("Load"))
                 {
-                    if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
+                    // List all available scenes for current project
+                    auto scene_dir = project::asset_dir(DK::SCENE);
+                    for(auto& entry : fs::directory_iterator(scene_dir.absolute()))
                     {
-                        if(ImGui::MenuItem(entry.path().filename().c_str()))
+                        if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
                         {
-                            // TODO: check that we are not in runtime mode
-                            scene.unload();
-                            scene.load_xml(WPath(entry.path()));
+                            if(ImGui::MenuItem(entry.path().filename().c_str()))
+                            {
+                                scene.unload();
+                                scene.load_xml(WPath(entry.path()));
+                            }
                         }
                     }
+
+                    ImGui::EndMenu();
+                }
+
+                bool save_as_needed = false;
+                if(ImGui::MenuItem("Save"))
+                {
+                    if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                        scene.save();
+                    else
+                        save_as_needed = true;
+                }
+
+                if(ImGui::MenuItem("Save as") || save_as_needed)
+                {
+                    dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
+                                      project::asset_dir(DK::SCENE).absolute());
                 }
 
                 ImGui::EndMenu();
             }
-
-            bool save_as_needed = false;
-            if(ImGui::MenuItem("Save"))
-            {
-                if(!scene.get_file_location().empty() && scene.get_file_location().exists())
-                    scene.save();
-                else
-                    save_as_needed = true;
-            }
-
-            if(ImGui::MenuItem("Save as") || save_as_needed)
-            {
-                dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn", project::asset_dir(DK::SCENE).absolute());
-            }
-
-            ImGui::EndMenu();
+        }
+        else
+        {
+            // Grayed-out menu
+            ImGui::TextColored({0.5f, 0.5f, 0.5f, 1.f}, "File ");
         }
         if(ImGui::BeginMenu("Profiling"))
         {

@@ -7,10 +7,20 @@
 #include "entity/component/editor_tags.h"
 #include "level/scene_manager.h"
 
+#include "glm/gtx/string_cast.hpp"
+
 using namespace erwin;
 
 namespace editor
 {
+
+inline bool OBB_contains(const ComponentOBB& OBB, const glm::vec3& pos, const glm::vec3& point)
+{
+    for(int ii=0; ii<3; ++ii)
+        if((point[ii] < (pos[ii]+OBB.uniform_scale*OBB.extent_m[size_t(2*ii)])) || (point[ii] > (pos[ii]+OBB.uniform_scale*OBB.extent_m[size_t(2*ii+1)])))
+            return false;
+    return true;
+}
 
 bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event)
 {
@@ -18,17 +28,20 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     if(!scene.is_loaded())
         return false;
 
-    const ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(scene.get_named("Camera"_h));
+    auto e_cam = scene.get_named("Camera"_h);
+    const ComponentCamera3D& camera = scene.get_component<ComponentCamera3D>(e_cam);
+    const ComponentTransform3D& camera_transform = scene.get_component<ComponentTransform3D>(e_cam);
 
     glm::mat4 VP_inv = glm::inverse(camera.view_projection_matrix);
     Ray ray(event.coords, VP_inv);
 
     // Perform a ray scene query, tag all entities whose OBBs are hit by the ray
-    // TODO: Maybe avoid tagging entity if camera position is inside OBB
+    // Avoid tagging entity if camera position is inside OBB
     Ray::CollisionData data;
-    scene.view<ComponentOBB>().each([&ray, &data, &scene](auto e, const auto& OBB) {
-        if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
-            scene.add_component<RayHitTag>(e, RayHitTag{data.near});
+    scene.view<ComponentOBB, ComponentTransform3D>().each([&ray, &data, &camera_transform, &scene](auto e, const auto& OBB, const auto& trans) {
+        if(!OBB_contains(OBB, trans.global.position, camera_transform.local.position))
+            if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
+                scene.add_component<RayHitTag>(e, RayHitTag{data.near});
     });
 
     return true;

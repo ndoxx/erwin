@@ -1,19 +1,19 @@
 #include "editor_app.h"
 #include "debug/logger_thread.h"
+#include "entity/component/editor_tags.h"
+#include "entity/component/tags.h"
 #include "imgui/font_awesome.h"
 #include "imgui/theme.h"
 #include "layer/layer_material_editor.h"
+#include "layer/layer_post_processing.h"
 #include "layer/layer_scene_editor.h"
 #include "layer/layer_scene_view.h"
-#include "layer/layer_post_processing.h"
-#include "level/scene_manager.h"
 #include "level/scene.h"
+#include "level/scene_manager.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
-#include "entity/component/tags.h"
-#include "entity/component/editor_tags.h"
 
 #include <fstream>
 
@@ -75,8 +75,7 @@ void ErwinEditor::on_load()
     SceneManager::make_current("main_scene"_h);
 
     // Setup scene injection
-    scn::current().set_injector_callback([this](Scene& scene)
-    {
+    scn::current().set_injector_callback([this](Scene& scene) {
         auto root = scene.get_named("root"_h);
         scene.add_component<FixedHierarchyTag>(root);
         scene.add_component<NonEditableTag>(root);
@@ -87,19 +86,18 @@ void ErwinEditor::on_load()
     });
 
     // Setup scene finisher callback
-    scn::current().set_finisher_callback([this](Scene& scene)
-    {
+    scn::current().set_finisher_callback([this](Scene& scene) {
         scene_view_layer_->setup_camera(scene);
         auto e_cam = scene.get_named("Camera"_h);
         scene.add_component<FixedHierarchyTag>(e_cam);
         scene.add_component<NonRemovableTag>(e_cam);
         scene.add_component<NoGizmoTag>(e_cam);
 
-/*
-#ifdef W_DEBUG
-        ScriptEngine::get_context(scene.get_script_context()).dbg_dump_state("out.log");
-#endif
-*/
+        /*
+        #ifdef W_DEBUG
+                ScriptEngine::get_context(scene.get_script_context()).dbg_dump_state("out.log");
+        #endif
+        */
     });
 
     // Project settings
@@ -160,10 +158,8 @@ void ErwinEditor::on_imgui_render()
                 if(!scene.get_file_location().empty() && scene.get_file_location().exists())
                     scene.save();
                 else
-                {
-                    // TODO: Save as dialog must appear here
-                    DLOGW("editor") << "Scene was not saved, create a scene file from scene view file menu." << std::endl;
-                }
+                    dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
+                                      project::asset_dir(DK::SCENE).absolute());
             }
 
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
@@ -257,6 +253,11 @@ void ErwinEditor::on_imgui_render()
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
+    });
+
+    dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {
+        auto& scene = scn::current();
+        scene.save_xml(WPath(filepath));
     });
 
     if(enable_docking_)

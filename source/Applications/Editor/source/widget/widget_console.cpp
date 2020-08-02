@@ -75,12 +75,6 @@ void ConsoleWidget::push(const std::string& message)
        items_.pop_front();
 }
 
-// BUG #8: Runtime scene cannot be displayed if some commands are sent 
-// in edit mode. 
-// var s = to_string(vec2(1,2)); // Causes the bug
-// var n = normalize(vec2(1,2)); // Causes the bug
-// GLM bindings seem to cause this bug
-// Exiting runtime mode and entering it again seems to fix the problem
 void ConsoleWidget::send_command(const std::string& command)
 {
 	// Display in widget and evaluate in script engine
