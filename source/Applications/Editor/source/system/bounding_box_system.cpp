@@ -14,10 +14,12 @@ using namespace erwin;
 namespace editor
 {
 
-inline bool OBB_contains(const ComponentOBB& OBB, const glm::vec3& pos, const glm::vec3& point)
+inline bool OBB_contains(const ComponentOBB& OBB, const glm::vec3& point)
 {
+    auto point_ms = glm::inverse(OBB.model_matrix) * glm::vec4(point,1.f);
+    point_ms /= point_ms.w;
     for(int ii=0; ii<3; ++ii)
-        if((point[ii] < (pos[ii]+OBB.uniform_scale*OBB.extent_m[size_t(2*ii)])) || (point[ii] > (pos[ii]+OBB.uniform_scale*OBB.extent_m[size_t(2*ii+1)])))
+        if((point_ms[ii] < OBB.extent_m[size_t(2*ii)]) || (point_ms[ii] > OBB.extent_m[size_t(2*ii+1)]))
             return false;
     return true;
 }
@@ -38,9 +40,9 @@ bool BoundingBoxSystem::on_ray_scene_query_event(const RaySceneQueryEvent& event
     // Perform a ray scene query, tag all entities whose OBBs are hit by the ray
     // Avoid tagging entity if camera position is inside OBB
     Ray::CollisionData data;
-    scene.view<ComponentOBB, ComponentTransform3D>().each([&ray, &data, &camera_transform, &scene](auto e, const auto& OBB, const auto& trans) {
-        if(!OBB_contains(OBB, trans.global.position, camera_transform.local.position))
-            if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
+    scene.view<ComponentOBB>().each([&ray, &data, &camera_transform, &scene](auto e, const auto& OBB) {
+        if(ray.collides_OBB(OBB.model_matrix, OBB.extent_m, OBB.uniform_scale, data))
+            if(!OBB_contains(OBB, camera_transform.local.position))
                 scene.add_component<RayHitTag>(e, RayHitTag{data.near});
     });
 
