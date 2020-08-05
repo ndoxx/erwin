@@ -47,6 +47,7 @@ target_include_directories(erwin
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/chaiscript/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/kibble/source"
         # "${INC_EASTL}"
     )
 
@@ -82,6 +83,14 @@ set_target_properties(glfw
     PROPERTIES
         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libglfw3.a"
         INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
+    )
+
+# Kibble library as a static import
+add_library(kibble STATIC IMPORTED)
+set_target_properties(kibble
+    PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libkibble.a"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/kibble/source"
     )
 
 # ImGui: Compile as an object library (with relocatable code)
@@ -164,6 +173,7 @@ target_link_libraries(erwin
         glfw
         imgui
         imgui_filedialog
+        kibble
     )
 
 cotire(erwin)

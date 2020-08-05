@@ -229,7 +229,7 @@ public:
     {
         if(event_filter_[EventT::ID])
         {
-            dbg::get_log("event"_h, dbg::MsgType::EVENT, 0)
+            kb::klog::get_log("event"_h, kb::klog::MsgType::EVENT, 0)
                 << "\033[1;38;2;0;0;0m\033[1;48;2;0;185;153m[" << event.NAME << "]\033[0m " << event << std::endl;
         }
     }

@@ -17,9 +17,11 @@
 #include "level/scene.h"
 #include "entity/init.h"
 #include "debug/logger.h"
-#include "debug/logger_thread.h"
+#include "kibble/logger/logger_thread.h"
 
 #include <iostream>
+
+using namespace kb;
 
 namespace erwin
 {
@@ -44,6 +46,7 @@ minimized_(false)
     // Create application singleton
     W_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
+    KLOGGER_START();
     // Initialize file system
     wfs::init();
 }
@@ -94,12 +97,12 @@ bool Application::init()
         // Initialize config
         cfg::load("syscfg://erwin.xml"_wp);
 
-        WLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
-        WLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
+        KLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
+        KLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
 
         // Spawn logger thread
-        WLOGGER(spawn());
-        WLOGGER(sync());
+        KLOGGER(spawn());
+        KLOGGER(sync());
 
         // Log basic info
         DLOGN("config") << "[Paths]" << std::endl;
@@ -247,7 +250,7 @@ void Application::shutdown()
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::shutdown();
-        WLOGGER(kill());
+        KLOGGER(kill());
     } 
 }
 
@@ -357,7 +360,7 @@ void Application::run()
 
         {
             W_PROFILE_SCOPE("Logger flush")
-            WLOGGER(flush());
+            KLOGGER(flush());
         }
 
         frame_d = frame_clock.restart();

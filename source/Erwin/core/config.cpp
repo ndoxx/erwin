@@ -2,13 +2,15 @@
 #include "utils/string.h"
 #include "core/registry.h"
 #include "debug/logger.h"
-#include "debug/logger_thread.h"
-#include "debug/logger_sink.h"
+#include "kibble/logger/logger_thread.h"
+#include "kibble/logger/logger_sink.h"
 #include "filesystem/xml_file.h"
 
 #include <unordered_map>
 #include <string>
 #include <iostream>
+
+using namespace kb;
 
 namespace erwin
 {
@@ -27,7 +29,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     	uint32_t chan_verbosity=0;
 		if(!xml::parse_attribute(chan, "name", chan_name)) continue;
 		xml::parse_attribute(chan, "verbosity", chan_verbosity);
-		WLOGGER(create_channel(chan_name, uint8_t(chan_verbosity)));
+		KLOGGER(create_channel(chan_name, uint8_t(chan_verbosity)));
 	}
 
 	// Add and configure sinks
@@ -42,19 +44,19 @@ static void init_logger(rapidxml::xml_node<>* node)
 
     	// Sink creation
 		hash_t htype = H_(sink_type.c_str());
-		std::unique_ptr<dbg::Sink> p_sink = nullptr;
+		std::unique_ptr<klog::Sink> p_sink = nullptr;
 		switch(htype)
 		{
 			case "ConsoleSink"_h:
 			{
-				p_sink = std::make_unique<dbg::ConsoleSink>();
+				p_sink = std::make_unique<klog::ConsoleSink>();
 				break;
 			}
 			case "LogFileSink"_h:
 			{
 				std::string dest_file;
 				if(xml::parse_attribute(sink, "destination", dest_file))
-					p_sink = std::make_unique<dbg::LogFileSink>(dest_file);
+					p_sink = std::make_unique<klog::LogFileSink>(dest_file);
 				break;
 			}
 		}
@@ -80,11 +82,11 @@ static void init_logger(rapidxml::xml_node<>* node)
 
     	if(attach_all)
     	{
-			WLOGGER(attach_all(sink_name, std::move(p_sink)));
+			KLOGGER(attach_all(sink_name, std::move(p_sink)));
     	}
     	else if(!chan_hnames.empty())
     	{
-			WLOGGER(attach(sink_name, std::move(p_sink), chan_hnames));
+			KLOGGER(attach(sink_name, std::move(p_sink), chan_hnames));
     	}
     }
 }

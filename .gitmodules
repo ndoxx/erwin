@@ -50,3 +50,6 @@
 [submodule "source/vendor/imguizmo"]
 	path = source/vendor/imguizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "source/vendor/kibble"]
+	path = source/vendor/kibble
+	url = https://github.com/ndoxx/kibble.git

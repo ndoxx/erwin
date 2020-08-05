@@ -1,7 +1,7 @@
 #pragma once
 
 #include "widget/widget.h"
-#include "debug/logger_sink.h"
+#include "kibble/logger/logger_sink.h"
 #include <deque>
 
 namespace editor
@@ -41,13 +41,13 @@ private:
 };
 
 // This logger sink writes to the console widget
-class ConsoleWidgetSink: public erwin::dbg::Sink
+class ConsoleWidgetSink: public kb::klog::Sink
 {
 public:
 	explicit ConsoleWidgetSink(ConsoleWidget* p_console);
 
 	virtual ~ConsoleWidgetSink() = default;
-	virtual void send(const erwin::dbg::LogStatement& stmt, const erwin::dbg::LogChannel& chan) override;
+	virtual void send(const kb::klog::LogStatement& stmt, const kb::klog::LogChannel& chan) override;
 	virtual void send_raw(const std::string& message) override;
 
 private:

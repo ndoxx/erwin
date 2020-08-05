@@ -14,8 +14,8 @@
 #include "texture_packer.h"
 #include "shader_packer.h"
 #include "debug/logger.h"
-#include "debug/logger_sink.h"
-#include "debug/logger_thread.h"
+#include "kibble/logger/logger_sink.h"
+#include "kibble/logger/logger_thread.h"
 #include "filesystem/xml_file.h"
 #include "render/shader_lang.h"
 
@@ -86,11 +86,11 @@ static void show_logo()
 
 static void init_logger()
 {
-    WLOGGER(create_channel("fudge", 3));
-    WLOGGER(create_channel("shader", 3));
-    WLOGGER(attach_all("ConsoleSink", std::make_unique<dbg::ConsoleSink>()));
-    WLOGGER(attach_all("MainFileSink", std::make_unique<dbg::LogFileSink>("fudge.log")));
-    WLOGGER(set_single_threaded(true));
+    KLOGGER(create_channel("fudge", 3));
+    KLOGGER(create_channel("shader", 3));
+    KLOGGER(attach_all("ConsoleSink", std::make_unique<klog::ConsoleSink>()));
+    KLOGGER(attach_all("MainFileSink", std::make_unique<klog::LogFileSink>("fudge.log")));
+    KLOGGER(set_single_threaded(true));
 }
 
 static bool cmd_option_exists(const char** begin, const char** end, const std::string& option)

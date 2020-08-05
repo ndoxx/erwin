@@ -149,21 +149,21 @@ static std::string strip_ansi(const std::string& str)
 	return std::regex_replace(str, ansi_regex, "");
 }
 
-static std::string message_type_to_style_tag(erwin::dbg::MsgType type)
+static std::string message_type_to_style_tag(kb::klog::MsgType type)
 {
 	switch(type)
 	{
-		case erwin::dbg::MsgType::RAW:     return "";
-	    case erwin::dbg::MsgType::NORMAL:  return "";
-	    case erwin::dbg::MsgType::ITEM:    return "";
-	    case erwin::dbg::MsgType::EVENT:   return "";
-	    case erwin::dbg::MsgType::NOTIFY:  return "[!N]";
-	    case erwin::dbg::MsgType::WARNING: return "[!W]";
-	    case erwin::dbg::MsgType::ERROR:   return "[!E]";
-	    case erwin::dbg::MsgType::FATAL:   return "[!F]";
-	    case erwin::dbg::MsgType::BANG:    return "";
-	    case erwin::dbg::MsgType::GOOD:    return "[!G]";
-	    case erwin::dbg::MsgType::BAD:     return "[!B]";
+		case kb::klog::MsgType::RAW:     return "";
+	    case kb::klog::MsgType::NORMAL:  return "";
+	    case kb::klog::MsgType::ITEM:    return "";
+	    case kb::klog::MsgType::EVENT:   return "";
+	    case kb::klog::MsgType::NOTIFY:  return "[!N]";
+	    case kb::klog::MsgType::WARNING: return "[!W]";
+	    case kb::klog::MsgType::ERROR:   return "[!E]";
+	    case kb::klog::MsgType::FATAL:   return "[!F]";
+	    case kb::klog::MsgType::BANG:    return "";
+	    case kb::klog::MsgType::GOOD:    return "[!G]";
+	    case kb::klog::MsgType::BAD:     return "[!B]";
 	    default:                           return "";
 	}
 }
@@ -174,7 +174,7 @@ console_(p_console)
 
 }
 
-void ConsoleWidgetSink::send(const erwin::dbg::LogStatement& stmt, const erwin::dbg::LogChannel&)
+void ConsoleWidgetSink::send(const kb::klog::LogStatement& stmt, const kb::klog::LogChannel&)
 {
 	float ts = std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count();
 	std::stringstream ss;

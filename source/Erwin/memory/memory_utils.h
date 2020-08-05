@@ -4,7 +4,7 @@
 #include <string>
 #include <ostream>
 
-#include "debug/logger_common.h"
+#include "kibble/logger/logger_common.h"
 
 namespace erwin
 {
@@ -44,7 +44,7 @@ struct AreaItem
 } // namespace debug
 #endif
 
-extern void hex_dump_highlight(uint32_t word, const WCB& wcb);
+extern void hex_dump_highlight(uint32_t word, const kb::WCB& wcb);
 extern void hex_dump_clear_highlights();
 extern void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std::string& title="");
 

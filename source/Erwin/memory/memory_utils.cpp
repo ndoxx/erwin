@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <map>
 
+using namespace kb;
+
 namespace erwin
 {
 namespace memory

@@ -1,5 +1,5 @@
 #include "editor_app.h"
-#include "debug/logger_thread.h"
+#include "kibble/logger/logger_thread.h"
 #include "entity/component/editor_tags.h"
 #include "entity/component/tags.h"
 #include "imgui/font_awesome.h"
@@ -52,7 +52,7 @@ void ErwinEditor::on_load()
     io.Fonts->AddFontFromFileTTF(icon_font_path.c_str(), 16.0f, &config, ranges);
 
     console_ = new editor::ConsoleWidget();
-    WLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
+    KLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
                    {"editor"_h, "application"_h, "entity"_h, "scene"_h, "script"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
