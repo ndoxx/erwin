@@ -581,7 +581,7 @@ static void sort_commands()
 void Renderer::flush()
 {
     W_PROFILE_RENDER_FUNCTION()
-    static nanoClock flush_clock;
+    static kb::nanoClock flush_clock;
     if(s_storage.profiling_enabled_)
     {
         s_storage.query_timer->start();

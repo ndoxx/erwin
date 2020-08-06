@@ -1,49 +1,14 @@
-#ifndef CLOCK_HPP_INCLUDED
-#define CLOCK_HPP_INCLUDED
+#pragma once
 
-#include <chrono>
+#include "kibble/time/clock.h"
 
 namespace erwin
 {
 
-template < typename Period >
-class Clock
-{
-public:
-    Clock();
-    Period get_elapsed_time() const;
-    Period restart();
-
-private:
-    std::chrono::time_point< std::chrono::high_resolution_clock > time_point_;
-};
-
-template < typename Period >
-Clock< Period >::Clock()
-    : time_point_( std::chrono::high_resolution_clock::now() )
-{}
-
-template < typename Period >
-Period Clock< Period >::get_elapsed_time() const
-{
-    const Period elapsedTime( std::chrono::high_resolution_clock::now() - time_point_ );
-    return elapsedTime;
-}
-
-template < typename Period >
-Period Clock< Period >::restart()
-{
-    const Period period( get_elapsed_time() );
-    time_point_ = std::chrono::high_resolution_clock::now();
-    return period;
-}
-
-using nanoClock = Clock<std::chrono::nanoseconds>;
-
 #ifdef W_DEBUG
 namespace dbg
 {
-static nanoClock debug_clock;
+static kb::nanoClock debug_clock;
 }
 
 inline void TIC_()
@@ -60,4 +25,3 @@ inline float TOC_()
 
 }
 
-#endif // CLOCK_HPP_INCLUDED
