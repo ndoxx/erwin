@@ -14,7 +14,7 @@ namespace erwin
 template <typename HandleT>[[maybe_unused]] static constexpr uint32_t k_max_handles = 256;
 
 typedef uint64_t HandleID;
-[[maybe_unused]] static constexpr uint32_t k_invalid_handle = 0xffffffff;
+[[maybe_unused]] static constexpr uint32_t k_null_handle = 0xffffffff;
 
 #define HANDLE_DECLARATION(HANDLE_NAME, MAX_HANDLES)                                                                   \
     struct HANDLE_NAME                                                                                                 \
@@ -28,13 +28,14 @@ typedef uint64_t HandleID;
         inline void release()                                                                                          \
         {                                                                                                              \
             s_ppool_->release(data);                                                                                   \
-            data = k_invalid_handle;                                                                                   \
+            data = k_null_handle;                                                                                      \
         }                                                                                                              \
         inline uint16_t index() const { return data & PoolT::k_handle_mask; }                                          \
         inline bool is_valid() const { return s_ppool_->is_valid(data); }                                              \
+        inline bool is_null() const { return data == k_null_handle; }                                                  \
         inline bool operator==(const HANDLE_NAME& o) const { return data == o.data; }                                  \
         inline bool operator!=(const HANDLE_NAME& o) const { return data != o.data; }                                  \
-        uint32_t data = k_invalid_handle;                                                                              \
+        uint32_t data = k_null_handle;                                                                                 \
     };                                                                                                                 \
     template <> static constexpr uint32_t k_max_handles<HANDLE_NAME> = MAX_HANDLES
 

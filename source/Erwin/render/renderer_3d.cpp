@@ -496,7 +496,7 @@ void Renderer3D::draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, cons
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, mesh.VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
-	if(material.ubo.data != k_invalid_handle && material_data)
+	if(!material.ubo.is_null() && material_data)
 		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
 	for(uint32_t ii=0; ii<material.texture_group.texture_count; ++ii)
 		dc.set_texture(material.texture_group.textures[ii], ii);

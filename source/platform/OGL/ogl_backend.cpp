@@ -35,7 +35,7 @@ struct VertexArrayDependencies
     {
         for(VertexBufferHandle vbo: vbos)
             vbo.release();
-        if(ibo.data != k_invalid_handle)
+        if(!ibo.is_null())
             ibo.release();
         vbos.clear();
     }
@@ -493,7 +493,7 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
     s_storage.vertex_arrays[handle.index()].init();
     s_storage.vertex_arrays[handle.index()].set_vertex_buffer(s_storage.vertex_buffers[vb.index()]);
     s_storage.vertex_array_dependencies[handle.index()].vbos.push_back(vb);
-    if(ib.data != k_invalid_handle)
+    if(!ib.is_null())
     {
         s_storage.vertex_arrays[handle.index()].set_index_buffer(s_storage.index_buffers[ib.index()]);
         s_storage.vertex_array_dependencies[handle.index()].ibo = ib;
@@ -528,7 +528,7 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
         s_storage.vertex_array_dependencies[handle.index()].vbos.push_back(vb);
     }
 
-    if(ib.data != k_invalid_handle)
+    if(!ib.is_null())
     {
         s_storage.vertex_arrays[handle.index()].set_index_buffer(s_storage.index_buffers[ib.index()]);
         s_storage.vertex_array_dependencies[handle.index()].ibo = ib;
@@ -1115,7 +1115,7 @@ void draw(memory::LinearBuffer<>& buf)
         TextureHandle hnd;
         buf.read(&hnd);
 
-        if(hnd.data == k_invalid_handle)
+        if(hnd.is_null())
             continue;
 
         // Avoid texture switching if not necessary
