@@ -111,12 +111,12 @@ struct RenderState
     BlendState        blend_state    = BlendState::Opaque;
     RasterizerState   rasterizer_state;
     DepthStencilState depth_stencil_state;
-    FramebufferHandle render_target;
+    uint16_t          render_target;
     uint8_t           target_mip_level = 0;
 
     inline uint64_t encode() const
     {
-        return ((static_cast<uint64_t>(render_target.index)                      << k_framebuffer_shift)  & k_framebuffer_mask)
+        return ((static_cast<uint64_t>(render_target)                            << k_framebuffer_shift)  & k_framebuffer_mask)
              | ((static_cast<uint64_t>(target_mip_level)                         << k_target_mips_shift)  & k_target_mips_mask)
              | ((static_cast<uint64_t>(rasterizer_state.clear_flags)             << k_clear_shift)        & k_clear_mask)
              | ((static_cast<uint64_t>(blend_state)                              << k_transp_shift)       & k_transp_mask)
@@ -132,7 +132,7 @@ struct RenderState
 
     inline void decode(uint64_t state)
     {
-        render_target.index                      = uint16_t(       (state & k_framebuffer_mask)  >> k_framebuffer_shift);
+        render_target                            = uint16_t(       (state & k_framebuffer_mask)  >> k_framebuffer_shift);
         target_mip_level                         = uint8_t(        (state & k_target_mips_mask)  >> k_target_mips_shift);
         rasterizer_state.clear_flags             = uint8_t(        (state & k_clear_mask)        >> k_clear_shift);
         blend_state                              = BlendState(     (state & k_transp_mask)       >> k_transp_shift);

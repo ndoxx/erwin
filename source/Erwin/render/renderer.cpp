@@ -141,7 +141,7 @@ struct FrameDrawCallData
     inline void on_submit(const DrawCall& dc, uint64_t key)
     {
         draw_calls.insert(
-            std::make_pair(key, DrawCallSummary{dc.data.state_flags, dc.type, dc.data.shader.index, submitted++}));
+            std::make_pair(key, DrawCallSummary{dc.data.state_flags, dc.type, dc.data.shader.index(), submitted++}));
     }
 
     inline void on_dispatch(uint64_t)
@@ -722,7 +722,7 @@ VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHa
 
     for(auto vb : vbs)
     {
-        W_ASSERT_FMT(vb.is_valid(), "Invalid VertexBufferHandle: %hu.", vb.index);
+        W_ASSERT_FMT(vb.is_valid(), "Invalid VertexBufferHandle: %hu.", vb.index());
         cw.write(&vb);
     }
     cw.submit();
@@ -1145,7 +1145,7 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 
 void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, const glm::vec4& clear_color)
 {
-    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index);
+    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
 
     uint32_t color = color::pack(clear_color);
 
@@ -1159,8 +1159,8 @@ void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, con
 
 void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target)
 {
-    W_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index);
-    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index);
+    W_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index());
+    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
 
     DrawCommandWriter cw(DrawCommand::BlitDepth);
     cw.write(&source);
@@ -1172,7 +1172,7 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
 uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size,
                                                 DataOwnership copy)
 {
-    W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index);
+    W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index());
     W_ASSERT(data, "Data is null.");
 
     DrawCommandWriter cw(DrawCommand::UpdateShaderStorageBuffer);
@@ -1194,7 +1194,7 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size,
                                          DataOwnership copy)
 {
-    W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index);
+    W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index());
     W_ASSERT(data, "Data is null.");
 
     DrawCommandWriter cw(DrawCommand::UpdateUniformBuffer);

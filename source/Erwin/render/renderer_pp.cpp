@@ -203,7 +203,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 			glm::vec2 target_size = screen_size * s_storage.bloom_stage_ratios[ii];
 			blur_data.offset = {1.f/target_size.x, 0.f}; // Offset is horizontal
 
-			state.render_target = s_storage.bloom_fbos[ii];
+			state.render_target = s_storage.bloom_fbos[ii].index();
 			uint64_t state_flags = state.encode();
 			key.set_sequence(s_storage.sequence++, view_id, s_storage.bloom_blur_shader);
 
@@ -215,7 +215,7 @@ void PostProcessingRenderer::bloom_pass(hash_t source_fb, uint32_t glow_index)
 	}
 
 	state.blend_state = BlendState::Light;
-	state.render_target = s_storage.bloom_combine_fbo;
+	state.render_target = s_storage.bloom_combine_fbo.index();
 	uint64_t state_flags = state.encode();
 	// * For each bloom stage xx, given framebuffer bloom_tmp_xx as input,
 	//   perform vertical blur, output to bloom_combine
@@ -244,7 +244,7 @@ void PostProcessingRenderer::combine(hash_t framebuffer, uint32_t index, bool us
 	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = s_storage.final_render_target;
+	state.render_target = s_storage.final_render_target.index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Alpha;
@@ -266,7 +266,7 @@ void PostProcessingRenderer::lighten(hash_t framebuffer, uint32_t index)
 	uint8_t view_id = Renderer::next_layer_id();
 	SortKey key;
 	RenderState state;
-	state.render_target = s_storage.final_render_target;
+	state.render_target = s_storage.final_render_target.index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG;
 	state.blend_state = BlendState::Light;

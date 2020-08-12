@@ -73,7 +73,7 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, ha
 
     DLOG("texture", 1) << "Found " << WCC('v') << atlas.remapping.size() << WCC(0) << " sub-textures in atlas."
                        << std::endl;
-    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index) << std::endl;
+    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }
@@ -148,7 +148,7 @@ FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /
 
     DLOG("texture", 1) << "Found " << WCC('v') << atlas.remapping.size() << WCC(0) << " characters in atlas."
                        << std::endl;
-    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index) << std::endl;
+    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }

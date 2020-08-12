@@ -219,13 +219,13 @@ void Renderer3D::set_IBL_ambient_strength(float value)
 void Renderer3D::register_shader(ShaderHandle shader)
 {
 	// Check if already registered
-	if(s_storage.registered_shaders.find(shader.index) != s_storage.registered_shaders.end())
+	if(s_storage.registered_shaders.find(shader.index()) != s_storage.registered_shaders.end())
 		return;
 
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.frame_ubo);
 	Renderer::shader_attach_uniform_buffer(shader, s_storage.transform_ubo);
 
-	s_storage.registered_shaders.insert(shader.index);
+	s_storage.registered_shaders.insert(shader.index());
 }
 /*
 bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, const Material& material)
@@ -261,7 +261,7 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
 
 	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
 	RenderState state;
-	state.render_target = fb;
+	state.render_target = fb.index();
 	state.rasterizer_state.cull_mode = CullMode::None;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
@@ -306,7 +306,7 @@ CubemapHandle Renderer3D::generate_irradiance_map(CubemapHandle env_map)
 
 	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
 	RenderState state;
-	state.render_target = fb;
+	state.render_target = fb.index();
 	state.rasterizer_state.cull_mode = CullMode::None;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
@@ -348,7 +348,7 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
 
 	// Render a single quad, the geometry shader will perform layered rendering with 6 invocations
 	RenderState state;
-	state.render_target = fb;
+	state.render_target = fb.index();
 	state.rasterizer_state.cull_mode = CullMode::None;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = false;
@@ -387,7 +387,7 @@ void Renderer3D::begin_deferred_pass()
 
 	// Pass state
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("GBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("GBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
@@ -410,7 +410,7 @@ void Renderer3D::end_deferred_pass()
 
 	// Directional light pass
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = BlendState::Opaque;
@@ -447,7 +447,7 @@ void Renderer3D::begin_forward_pass(BlendState blend_state)
 
 	// Pass state
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_DEPTH_FLAG;
 	state.blend_state = blend_state;
@@ -466,7 +466,7 @@ void Renderer3D::begin_line_pass(bool enable_depth_test)
 {
 	// State
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.blend_state = BlendState::Alpha;
 	state.depth_stencil_state.depth_test_enabled = enable_depth_test;
@@ -496,7 +496,7 @@ void Renderer3D::draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, cons
 
 	DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, mesh.VAO);
 	dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData), DataOwnership::Copy));
-	if(material.ubo.index != k_invalid_handle && material_data)
+	if(material.ubo.data != k_invalid_handle && material_data)
 		dc.add_dependency(Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
 	for(uint32_t ii=0; ii<material.texture_group.texture_count; ++ii)
 		dc.set_texture(material.texture_group.textures[ii], ii);
@@ -532,7 +532,7 @@ void Renderer3D::draw_skybox(CubemapHandle cubemap)
 	VertexArrayHandle cube = CommonGeometry::get_mesh("cube"_h).VAO;
 
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("LBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Front;
 	state.blend_state = BlendState::Opaque;
 	state.depth_stencil_state.depth_func = DepthFunc::LEqual;

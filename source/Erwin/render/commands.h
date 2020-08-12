@@ -141,7 +141,7 @@ struct DrawCall
 	// Set a cubemap at next slot
 	inline void add_cubemap(CubemapHandle cm)
 	{
-		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index);
+		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index());
 		W_ASSERT_FMT(cubemap_count<k_max_cubemap_slots-1, "Cubemap slot out of bounds: %u", cubemap_count);
 		cubemaps[cubemap_count++] = cm;
 	}
@@ -149,7 +149,7 @@ struct DrawCall
 	// Set a cubemap at a given slot
 	inline void set_cubemap(CubemapHandle cm, uint32_t slot=0)
 	{
-		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index);
+		W_ASSERT_FMT(cm.is_valid(), "Invalid CubemapHandle of index: %hu", cm.index());
 		W_ASSERT_FMT(slot<k_max_cubemap_slots, "Texture slot out of bounds: %u", slot);
 		cubemaps[slot] = cm;
 		++cubemap_count;

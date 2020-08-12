@@ -146,7 +146,7 @@ void MaterialAuthoringWidget::pack_textures()
 
     // Render a single quad
     RenderState state;
-    state.render_target = fb;
+    state.render_target = fb.index();
     state.rasterizer_state.cull_mode = CullMode::Back;
     state.blend_state = BlendState::Opaque;
     state.depth_stencil_state.depth_test_enabled = false;

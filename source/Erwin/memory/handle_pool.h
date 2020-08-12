@@ -5,6 +5,6 @@
 namespace erwin
 {
 
-template <size_t SIZE> using HandlePoolT = SparsePool<uint16_t, SIZE>;
+template <size_t SIZE> using HandlePoolT = SecureSparsePool<uint32_t, SIZE, 16>;
 
 } // namespace erwin

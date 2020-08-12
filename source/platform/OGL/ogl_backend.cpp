@@ -17,6 +17,8 @@
 namespace erwin
 {
 
+static constexpr uint16_t k_invalid_index = 0xffff;
+
 static const std::map<DrawPrimitive, GLenum> OGLPrimitive = {
     {DrawPrimitive::Lines, GL_LINES}, {DrawPrimitive::Triangles, GL_TRIANGLES}, {DrawPrimitive::Quads, GL_QUADS}};
 
@@ -33,7 +35,7 @@ struct VertexArrayDependencies
     {
         for(VertexBufferHandle vbo: vbos)
             vbo.release();
-        if(ibo.index != k_invalid_handle)
+        if(ibo.data != k_invalid_handle)
             ibo.release();
         vbos.clear();
     }
@@ -47,7 +49,7 @@ static struct RenderDeviceStorage
         clear_resources();
 
         default_framebuffer_ = FramebufferHandle::acquire();
-        current_framebuffer_ = default_framebuffer_;
+        current_framebuffer_index_ = default_framebuffer_.index();
         host_window_size_ = {0, 0};
 
         invalidate_texture_cache();
@@ -78,26 +80,26 @@ static struct RenderDeviceStorage
 
     inline void invalidate_texture_cache()
     {
-        std::fill(last_texture_index, last_texture_index + k_max_texture_slots, k_invalid_handle);
+        std::fill(last_texture_index, last_texture_index + k_max_texture_slots, k_invalid_index);
     }
 
     inline void invalidate_cubemap_cache()
     {
-        std::fill(last_cubemap_index, last_cubemap_index + k_max_cubemap_slots, k_invalid_handle);
+        std::fill(last_cubemap_index, last_cubemap_index + k_max_cubemap_slots, k_invalid_index);
     }
 
     inline void invalidate_VAO_cache()
     {
-        last_VAO_index = k_invalid_handle;
+        last_VAO_index = k_invalid_index;
     }
 
     inline void invalidate_shader_cache()
     {
-        last_shader_index = k_invalid_handle;
+        last_shader_index = k_invalid_index;
     }
 
     FramebufferHandle default_framebuffer_ = {};
-    FramebufferHandle current_framebuffer_ = {};
+    uint16_t current_framebuffer_index_ = {};
     glm::vec2 host_window_size_;
     std::map<uint16_t, FramebufferTextureVector> framebuffer_textures_;
     std::array<VertexArrayDependencies, k_max_handles<VertexArrayHandle>> vertex_array_dependencies;
@@ -134,7 +136,7 @@ void OGLBackend::release() { s_storage.release(); }
 // ------------------- PRIVATE API -------------------
 const OGLTexture2D& OGLBackend::create_texture_inplace(TextureHandle handle, const Texture2DDescriptor& desc)
 {
-    auto& ret = s_storage.textures[handle.index];
+    auto& ret = s_storage.textures[handle.index()];
     ret.release();
     ret.init(desc);
     return ret;
@@ -142,7 +144,7 @@ const OGLTexture2D& OGLBackend::create_texture_inplace(TextureHandle handle, con
 
 const OGLCubemap& OGLBackend::create_cubemap_inplace(CubemapHandle handle, const CubemapDescriptor& desc)
 {
-    auto& ret = s_storage.cubemaps[handle.index];
+    auto& ret = s_storage.cubemaps[handle.index()];
     ret.release();
     ret.init(desc);
     return ret;
@@ -151,13 +153,13 @@ const OGLCubemap& OGLBackend::create_cubemap_inplace(CubemapHandle handle, const
 const OGLTexture2D& OGLBackend::get_texture(TextureHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-    return s_storage.textures[handle.index];
+    return s_storage.textures[handle.index()];
 }
 
 const OGLCubemap& OGLBackend::get_cubemap(CubemapHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid CubemapHandle.");
-    return s_storage.cubemaps[handle.index];
+    return s_storage.cubemaps[handle.index()];
 }
 // ------------------- PRIVATE API -------------------
 
@@ -165,13 +167,13 @@ void OGLBackend::viewport(float xx, float yy, float width, float height) { glVie
 
 void OGLBackend::add_framebuffer_texture_vector(FramebufferHandle handle, const FramebufferTextureVector& ftv)
 {
-    s_storage.framebuffer_textures_.insert(std::make_pair(handle.index, ftv));
+    s_storage.framebuffer_textures_.insert(std::make_pair(handle.index(), ftv));
 }
 
 void OGLBackend::bind_default_framebuffer()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    s_storage.current_framebuffer_ = s_storage.default_framebuffer_;
+    s_storage.current_framebuffer_index_ = s_storage.default_framebuffer_.index();
 }
 
 void OGLBackend::read_framebuffer_rgba(uint32_t width, uint32_t height, unsigned char* pixels)
@@ -191,35 +193,35 @@ FramebufferHandle OGLBackend::default_render_target() { return s_storage.default
 TextureHandle OGLBackend::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
 {
     W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-    W_ASSERT(index < s_storage.framebuffer_textures_[handle.index].handles.size(),
+    W_ASSERT(index < s_storage.framebuffer_textures_[handle.index()].handles.size(),
              "Invalid framebuffer texture index.");
-    return s_storage.framebuffer_textures_[handle.index].handles[index];
+    return s_storage.framebuffer_textures_[handle.index()].handles[index];
 }
 
 CubemapHandle OGLBackend::get_framebuffer_cubemap(FramebufferHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-    return s_storage.framebuffer_textures_[handle.index].cubemap;
+    return s_storage.framebuffer_textures_[handle.index()].cubemap;
 }
 
 hash_t OGLBackend::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
 {
     W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-    return s_storage.framebuffer_textures_[handle.index].debug_names[index];
+    return s_storage.framebuffer_textures_[handle.index()].debug_names[index];
 }
 
 uint32_t OGLBackend::get_framebuffer_texture_count(FramebufferHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-    return uint32_t(s_storage.framebuffer_textures_[handle.index].handles.size());
+    return uint32_t(s_storage.framebuffer_textures_[handle.index()].handles.size());
 }
 
 void* OGLBackend::get_native_texture_handle(TextureHandle handle)
 {
     W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
-    if(!s_storage.textures[handle.index].is_initialized())
+    if(!s_storage.textures[handle.index()].is_initialized())
         return nullptr;
-    return s_storage.textures[handle.index].get_native_handle();
+    return s_storage.textures[handle.index()].get_native_handle();
 }
 
 VertexBufferLayoutHandle OGLBackend::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
@@ -227,7 +229,7 @@ VertexBufferLayoutHandle OGLBackend::create_vertex_buffer_layout(const std::vect
     VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
     W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
-    s_storage.vertex_buffer_layouts[handle.index] = make_ref<BufferLayout>(&elements[0], elements.size());
+    s_storage.vertex_buffer_layouts[handle.index()] = make_ref<BufferLayout>(&elements[0], elements.size());
 
     return handle;
 }
@@ -236,7 +238,7 @@ const BufferLayout& OGLBackend::get_vertex_buffer_layout(VertexBufferLayoutHandl
 {
     W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
-    return *s_storage.vertex_buffer_layouts[handle.index];
+    return *s_storage.vertex_buffer_layouts[handle.index()];
 }
 
 void OGLBackend::set_clear_color(float r, float g, float b, float a) { glClearColor(r, g, b, a); }
@@ -438,7 +440,7 @@ void create_index_buffer(memory::LinearBuffer<>& buf)
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current_vao);
     glBindVertexArray(0);
 
-    s_storage.index_buffers[handle.index].init(auxiliary, count, primitive, mode);
+    s_storage.index_buffers[handle.index()].init(auxiliary, count, primitive, mode);
 
     // Restore VAO
     glBindVertexArray(current_vao);
@@ -467,8 +469,8 @@ void create_vertex_buffer(memory::LinearBuffer<>& buf)
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current_vao);
     glBindVertexArray(0);
 
-    const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index];
-    s_storage.vertex_buffers[handle.index].init(auxiliary, count, layout, mode);
+    const auto& layout = *s_storage.vertex_buffer_layouts[layout_hnd.index()];
+    s_storage.vertex_buffers[handle.index()].init(auxiliary, count, layout, mode);
 
     // Restore VAO
     glBindVertexArray(current_vao);
@@ -488,13 +490,13 @@ void create_vertex_array(memory::LinearBuffer<>& buf)
     buf.read(&ib);
     buf.read(&vb);
 
-    s_storage.vertex_arrays[handle.index].init();
-    s_storage.vertex_arrays[handle.index].set_vertex_buffer(s_storage.vertex_buffers[vb.index]);
-    s_storage.vertex_array_dependencies[handle.index].vbos.push_back(vb);
-    if(ib.index != k_invalid_handle)
+    s_storage.vertex_arrays[handle.index()].init();
+    s_storage.vertex_arrays[handle.index()].set_vertex_buffer(s_storage.vertex_buffers[vb.index()]);
+    s_storage.vertex_array_dependencies[handle.index()].vbos.push_back(vb);
+    if(ib.data != k_invalid_handle)
     {
-        s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
-        s_storage.vertex_array_dependencies[handle.index].ibo = ib;
+        s_storage.vertex_arrays[handle.index()].set_index_buffer(s_storage.index_buffers[ib.index()]);
+        s_storage.vertex_array_dependencies[handle.index()].ibo = ib;
     }
 
 
@@ -516,20 +518,20 @@ void create_vertex_array_multiple_VBO(memory::LinearBuffer<>& buf)
     buf.read(&ib);
     buf.read(&VBO_count);
 
-    s_storage.vertex_arrays[handle.index].init();
+    s_storage.vertex_arrays[handle.index()].init();
 
     for(uint8_t ii = 0; ii < VBO_count; ++ii)
     {
         VertexBufferHandle vb;
         buf.read(&vb);
-        s_storage.vertex_arrays[handle.index].add_vertex_buffer(s_storage.vertex_buffers[vb.index]);
-        s_storage.vertex_array_dependencies[handle.index].vbos.push_back(vb);
+        s_storage.vertex_arrays[handle.index()].add_vertex_buffer(s_storage.vertex_buffers[vb.index()]);
+        s_storage.vertex_array_dependencies[handle.index()].vbos.push_back(vb);
     }
 
-    if(ib.index != k_invalid_handle)
+    if(ib.data != k_invalid_handle)
     {
-        s_storage.vertex_arrays[handle.index].set_index_buffer(s_storage.index_buffers[ib.index]);
-        s_storage.vertex_array_dependencies[handle.index].ibo = ib;
+        s_storage.vertex_arrays[handle.index()].set_index_buffer(s_storage.index_buffers[ib.index()]);
+        s_storage.vertex_array_dependencies[handle.index()].ibo = ib;
     }
 
     // VAO binding state has changed, invalidate last bound VAO
@@ -554,7 +556,7 @@ void create_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read_str(name);
     buf.read(&auxiliary);
 
-    s_storage.uniform_buffers[handle.index].init(name, auxiliary, size, mode);
+    s_storage.uniform_buffers[handle.index()].init(name, auxiliary, size, mode);
     GL_END_DBG()
 }
 
@@ -574,7 +576,7 @@ void create_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read_str(name);
     buf.read(&auxiliary);
 
-    s_storage.shader_storage_buffers[handle.index].init(name, auxiliary, size, mode);
+    s_storage.shader_storage_buffers[handle.index()].init(name, auxiliary, size, mode);
     GL_END_DBG()
 }
 
@@ -592,7 +594,7 @@ void create_shader(memory::LinearBuffer<>& buf)
 
     auto ref = make_ref<OGLShader>();
     ref->init(name, WPath(filepath));
-    s_storage.shaders[handle.index] = ref;
+    s_storage.shaders[handle.index()] = ref;
     // s_storage.shader_compat[handle.index].set_layout(s_storage.shaders[handle.index]->get_attribute_layout());
 
     // Shader state has changed, invalidate last bound shader
@@ -611,7 +613,7 @@ void create_texture_2D(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&descriptor);
 
-    s_storage.textures[handle.index].init(descriptor);
+    s_storage.textures[handle.index()].init(descriptor);
     // Free resources if needed
     descriptor.release();
 
@@ -631,7 +633,7 @@ void create_cubemap(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&descriptor);
 
-    s_storage.cubemaps[handle.index].init(descriptor);
+    s_storage.cubemaps[handle.index()].init(descriptor);
 
     // Cubemap state has changed, invalidate last bound cubemaps
     s_storage.invalidate_cubemap_cache();
@@ -658,8 +660,8 @@ void create_framebuffer(memory::LinearBuffer<>& buf)
     buf.read(&auxiliary);
 
     FramebufferLayout layout(auxiliary, count);
-    const auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
-    s_storage.framebuffers[handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
+    const auto& texture_vector = s_storage.framebuffer_textures_[handle.index()];
+    s_storage.framebuffers[handle.index()] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
     GL_END_DBG()
 }
 
@@ -675,7 +677,7 @@ void update_index_buffer(memory::LinearBuffer<>& buf)
     buf.read(&count);
     buf.read(&auxiliary);
 
-    s_storage.index_buffers[handle.index].map(auxiliary, count * sizeof(uint32_t));
+    s_storage.index_buffers[handle.index()].map(auxiliary, count * sizeof(uint32_t));
     GL_END_DBG()
 }
 
@@ -691,7 +693,7 @@ void update_vertex_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    s_storage.vertex_buffers[handle.index].map(auxiliary, size);
+    s_storage.vertex_buffers[handle.index()].map(auxiliary, size);
     GL_END_DBG()
 }
 
@@ -707,7 +709,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    auto& UBO = s_storage.uniform_buffers[handle.index];
+    auto& UBO = s_storage.uniform_buffers[handle.index()];
     UBO.map(auxiliary, size ? size : UBO.get_size());
     GL_END_DBG()
 }
@@ -724,7 +726,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&auxiliary);
 
-    s_storage.shader_storage_buffers[handle.index].map(auxiliary, size);
+    s_storage.shader_storage_buffers[handle.index()].map(auxiliary, size);
     GL_END_DBG()
 }
 
@@ -738,8 +740,8 @@ void shader_attach_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&shader_handle);
     buf.read(&ubo_handle);
 
-    auto& shader = *s_storage.shaders[shader_handle.index];
-    shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index]);
+    auto& shader = *s_storage.shaders[shader_handle.index()];
+    shader.attach_uniform_buffer(s_storage.uniform_buffers[ubo_handle.index()]);
     GL_END_DBG()
 }
 
@@ -753,8 +755,8 @@ void shader_attach_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&shader_handle);
     buf.read(&ssbo_handle);
 
-    auto& shader = *s_storage.shaders[shader_handle.index];
-    shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index]);
+    auto& shader = *s_storage.shaders[shader_handle.index()];
+    shader.attach_shader_storage(s_storage.shader_storage_buffers[ssbo_handle.index()]);
     GL_END_DBG()
 }
 
@@ -771,10 +773,10 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
     buf.read(&width);
     buf.read(&height);
 
-    uint8_t flags = s_storage.framebuffers[fb_handle.index]->get_flags();
-    auto layout = s_storage.framebuffers[fb_handle.index]->get_layout();
-    auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index];
-    s_storage.framebuffers[fb_handle.index] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
+    uint8_t flags = s_storage.framebuffers[fb_handle.index()]->get_flags();
+    auto layout = s_storage.framebuffers[fb_handle.index()]->get_layout();
+    auto& texture_vector = s_storage.framebuffer_textures_[fb_handle.index()];
+    s_storage.framebuffers[fb_handle.index()] = make_scope<OGLFramebuffer>(width, height, flags, layout, texture_vector);
     GL_END_DBG()
 }
 
@@ -809,7 +811,7 @@ void get_pixel_data(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&promise_token);
 
-    auto&& [data, size] = s_storage.textures[handle.index].read_pixels();
+    auto&& [data, size] = s_storage.textures[handle.index()].read_pixels();
     s_storage.texture_data_promises_.fulfill(promise_token, PixelData{data, size});
     GL_END_DBG()
 }
@@ -820,7 +822,7 @@ void generate_cubemap_mipmaps(memory::LinearBuffer<>& buf)
     CubemapHandle handle;
     buf.read(&handle);
 
-    s_storage.cubemaps[handle.index].generate_mipmaps();
+    s_storage.cubemaps[handle.index()].generate_mipmaps();
     GL_END_DBG()
 }
 
@@ -834,7 +836,7 @@ void framebuffer_screenshot(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read_str(filepath);
 
-    s_storage.framebuffers[handle.index]->screenshot(filepath);
+    s_storage.framebuffers[handle.index()]->screenshot(filepath);
     GL_END_DBG()
 }
 
@@ -845,7 +847,7 @@ void destroy_index_buffer(memory::LinearBuffer<>& buf)
 
     IndexBufferHandle handle;
     buf.read(&handle);
-    s_storage.index_buffers[handle.index].release();
+    s_storage.index_buffers[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -857,7 +859,7 @@ void destroy_vertex_buffer_layout(memory::LinearBuffer<>& buf)
 
     VertexBufferLayoutHandle handle;
     buf.read(&handle);
-    s_storage.vertex_buffer_layouts[handle.index] = nullptr;
+    s_storage.vertex_buffer_layouts[handle.index()] = nullptr;
     handle.release();
     GL_END_DBG()
 }
@@ -869,7 +871,7 @@ void destroy_vertex_buffer(memory::LinearBuffer<>& buf)
 
     VertexBufferHandle handle;
     buf.read(&handle);
-    s_storage.vertex_buffers[handle.index].release();
+    s_storage.vertex_buffers[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -881,8 +883,8 @@ void destroy_vertex_array(memory::LinearBuffer<>& buf)
 
     VertexArrayHandle handle;
     buf.read(&handle);
-    s_storage.vertex_arrays[handle.index].release();
-    s_storage.vertex_array_dependencies[handle.index].release(); // Release VBOs/IBO handles
+    s_storage.vertex_arrays[handle.index()].release();
+    s_storage.vertex_array_dependencies[handle.index()].release(); // Release VBOs/IBO handles
     handle.release();
     GL_END_DBG()
 }
@@ -894,7 +896,7 @@ void destroy_uniform_buffer(memory::LinearBuffer<>& buf)
 
     UniformBufferHandle handle;
     buf.read(&handle);
-    s_storage.uniform_buffers[handle.index].release();
+    s_storage.uniform_buffers[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -906,7 +908,7 @@ void destroy_shader_storage_buffer(memory::LinearBuffer<>& buf)
 
     ShaderStorageBufferHandle handle;
     buf.read(&handle);
-    s_storage.shader_storage_buffers[handle.index].release();
+    s_storage.shader_storage_buffers[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -918,7 +920,7 @@ void destroy_shader(memory::LinearBuffer<>& buf)
 
     ShaderHandle handle;
     buf.read(&handle);
-    s_storage.shaders[handle.index] = nullptr;
+    s_storage.shaders[handle.index()] = nullptr;
     // s_storage.shader_compat[handle.index].clear();
     handle.release();
     GL_END_DBG()
@@ -931,7 +933,7 @@ void destroy_texture_2D(memory::LinearBuffer<>& buf)
 
     TextureHandle handle;
     buf.read(&handle);
-    s_storage.textures[handle.index].release();
+    s_storage.textures[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -943,7 +945,7 @@ void destroy_cubemap(memory::LinearBuffer<>& buf)
 
     CubemapHandle handle;
     buf.read(&handle);
-    s_storage.cubemaps[handle.index].release();
+    s_storage.cubemaps[handle.index()].release();
     handle.release();
     GL_END_DBG()
 }
@@ -958,31 +960,31 @@ void destroy_framebuffer(memory::LinearBuffer<>& buf)
     buf.read(&handle);
     buf.read(&detach_textures);
 
-    bool has_cubemap = s_storage.framebuffers[handle.index]->has_cubemap();
-    s_storage.framebuffers[handle.index] = nullptr;
+    bool has_cubemap = s_storage.framebuffers[handle.index()]->has_cubemap();
+    s_storage.framebuffers[handle.index()] = nullptr;
 
     // Delete framebuffer textures if they are not detached
     if(!detach_textures)
     {
-        auto& texture_vector = s_storage.framebuffer_textures_[handle.index];
+        auto& texture_vector = s_storage.framebuffer_textures_[handle.index()];
         if(!has_cubemap)
         {
             for(uint32_t ii = 0; ii < texture_vector.handles.size(); ++ii)
             {
-                uint16_t tex_index = texture_vector.handles[ii].index;
+                uint16_t tex_index = texture_vector.handles[ii].index();
                 s_storage.textures[tex_index].release();
                 texture_vector.handles[ii].release();
             }
         }
         else
         {
-            uint16_t cm_index = texture_vector.cubemap.index;
+            uint16_t cm_index = texture_vector.cubemap.index();
             s_storage.cubemaps[cm_index].release();
             texture_vector.cubemap.release();
         }
     }
 
-    s_storage.framebuffer_textures_.erase(handle.index);
+    s_storage.framebuffer_textures_.erase(handle.index());
     handle.release();
     GL_END_DBG()
 }
@@ -1014,15 +1016,15 @@ static void handle_state(uint64_t state_flags)
         if(has_mutated(state_flags, s_storage.state_cache_, k_framebuffer_mask) ||
            has_mutated(state_flags, s_storage.state_cache_, k_target_mips_mask))
         {
-            if(state.render_target == s_storage.default_framebuffer_)
+            if(state.render_target == s_storage.default_framebuffer_.index())
             {
                 gfx::backend->bind_default_framebuffer();
                 gfx::backend->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
             }
             else
-                s_storage.framebuffers[state.render_target.index]->bind(state.target_mip_level);
+                s_storage.framebuffers[state.render_target]->bind(state.target_mip_level);
 
-            s_storage.current_framebuffer_ = state.render_target;
+            s_storage.current_framebuffer_index_ = state.render_target;
 
             // Only clear on render target switch, if clear flags are set
             if(state.rasterizer_state.clear_flags != ClearFlags::CLEAR_NONE)
@@ -1091,14 +1093,14 @@ void draw(memory::LinearBuffer<>& buf)
     handle_state(data.state_flags);
 
     // * Detect if a new shader needs to be used, update and bind shader resources
-    auto& shader = *s_storage.shaders[data.shader.index];
+    auto& shader = *s_storage.shaders[data.shader.index()];
 
     if constexpr (k_enable_state_cache)
     {
-        if(data.shader.index != s_storage.last_shader_index)
+        if(data.shader.index() != s_storage.last_shader_index)
         {
             shader.bind();
-            s_storage.last_shader_index = data.shader.index;
+            s_storage.last_shader_index = data.shader.index();
             s_storage.invalidate_texture_cache();
             s_storage.invalidate_cubemap_cache();
         }
@@ -1113,22 +1115,22 @@ void draw(memory::LinearBuffer<>& buf)
         TextureHandle hnd;
         buf.read(&hnd);
 
-        if(hnd.index == k_invalid_handle)
+        if(hnd.data == k_invalid_handle)
             continue;
 
         // Avoid texture switching if not necessary
         if constexpr (k_enable_state_cache)
         {
-            if(hnd.index != s_storage.last_texture_index[ii])
+            if(hnd.data != s_storage.last_texture_index[ii])
             {
-                const auto& texture = s_storage.textures[hnd.index];
+                const auto& texture = s_storage.textures[hnd.index()];
                 shader.attach_texture_2D(texture, ii);
-                s_storage.last_texture_index[ii] = hnd.index;
+                s_storage.last_texture_index[ii] = hnd.index();
             }
         }
         else
         {
-            const auto& texture = s_storage.textures[hnd.index];
+            const auto& texture = s_storage.textures[hnd.index()];
             shader.attach_texture_2D(texture, ii);
         }
     }
@@ -1143,29 +1145,29 @@ void draw(memory::LinearBuffer<>& buf)
         // Avoid texture switching if not necessary
         if constexpr (k_enable_state_cache)
         {
-            if(hnd.index != s_storage.last_cubemap_index[ii])
+            if(hnd.index() != s_storage.last_cubemap_index[ii])
             {
-                const auto& cubemap = s_storage.cubemaps[hnd.index];
+                const auto& cubemap = s_storage.cubemaps[hnd.index()];
                 shader.attach_cubemap(cubemap, ii + texture_count); // Cubemap samplers after 2d samplers (this is awkward)
-                s_storage.last_cubemap_index[ii] = hnd.index;
+                s_storage.last_cubemap_index[ii] = hnd.index();
             }
         }
         else
         {
-            const auto& cubemap = s_storage.cubemaps[hnd.index];
+            const auto& cubemap = s_storage.cubemaps[hnd.index()];
             shader.attach_cubemap(cubemap, ii + texture_count); // Cubemap samplers after 2d samplers (this is awkward)
         }
     }
 
     // * Execute draw call
-    auto& va = s_storage.vertex_arrays[data.VAO.index];
+    auto& va = s_storage.vertex_arrays[data.VAO.index()];
     // Avoid switching vertex array when possible
     if constexpr (k_enable_state_cache)
     {
-        if(data.VAO.index != s_storage.last_VAO_index)
+        if(data.VAO.data != s_storage.last_VAO_index)
         {
             va.bind();
-            s_storage.last_VAO_index = data.VAO.index;
+            s_storage.last_VAO_index = data.VAO.index();
         }
     }
     else
@@ -1223,23 +1225,23 @@ void clear(memory::LinearBuffer<>& buf)
     }
     else
     {
-        auto& fb = *s_storage.framebuffers[target.index];
+        auto& fb = *s_storage.framebuffers[target.index()];
         fb.bind();
         gfx::backend->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
         gfx::backend->clear(int(flags));
     }
 
-    if(s_storage.current_framebuffer_ != target)
+    if(s_storage.current_framebuffer_index_ != target.index())
     {
         // Rebind current framebuffer
-        if(s_storage.current_framebuffer_ == s_storage.default_framebuffer_)
+        if(s_storage.current_framebuffer_index_ == s_storage.default_framebuffer_.index())
         {
             gfx::backend->bind_default_framebuffer();
             gfx::backend->viewport(0, 0, s_storage.host_window_size_.x, s_storage.host_window_size_.y);
         }
         else
         {
-            auto& fb = *s_storage.framebuffers[s_storage.current_framebuffer_.index];
+            auto& fb = *s_storage.framebuffers[s_storage.current_framebuffer_index_];
             fb.bind();
             gfx::backend->viewport(0, 0, float(fb.get_width()), float(fb.get_height()));
         }
@@ -1258,7 +1260,7 @@ void blit_depth(memory::LinearBuffer<>& buf)
     buf.read(&source);
     buf.read(&target);
 
-    s_storage.framebuffers[target.index]->blit_depth(*s_storage.framebuffers[source.index]);
+    s_storage.framebuffers[target.index()]->blit_depth(*s_storage.framebuffers[source.index()]);
     GL_END_DBG()
 }
 
@@ -1275,7 +1277,7 @@ void update_shader_storage_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&data);
 
-    s_storage.shader_storage_buffers[ssbo_handle.index].stream(data, size, 0);
+    s_storage.shader_storage_buffers[ssbo_handle.index()].stream(data, size, 0);
     /*
         auto& ssbo = *s_storage.shader_storage_buffers[ssbo_handle.index];
         if(!ssbo.has_persistent_mapping())
@@ -1299,7 +1301,7 @@ void update_uniform_buffer(memory::LinearBuffer<>& buf)
     buf.read(&size);
     buf.read(&data);
 
-    auto& ubo = s_storage.uniform_buffers[ubo_handle.index];
+    auto& ubo = s_storage.uniform_buffers[ubo_handle.index()];
     ubo.stream(data, size ? size : ubo.get_size(), 0);
     GL_END_DBG()
 }

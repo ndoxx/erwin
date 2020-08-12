@@ -85,7 +85,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     DLOGI << "Found " << WCC('v') << tg.texture_count << WCC(0) << " texture maps. TextureHandles: { ";
     for(size_t ii = 0; ii < tg.texture_count; ++ii)
     {
-        DLOG("texture", 1) << WCC('v') << tg.textures[ii].index << " ";
+        DLOG("texture", 1) << WCC('v') << tg.textures[ii].index() << " ";
     }
     DLOG("texture", 1) << WCC(0) << "}" << std::endl;
 #endif

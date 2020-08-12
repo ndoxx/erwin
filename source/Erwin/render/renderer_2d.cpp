@@ -130,7 +130,7 @@ void Renderer2D::shutdown()
 
 void Renderer2D::create_batch(TextureHandle handle)
 {
-	::erwin::create_batch(handle.index, handle);
+	::erwin::create_batch(handle.index(), handle);
 }
 
 void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent)
@@ -138,7 +138,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
     W_PROFILE_FUNCTION()
 
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
@@ -191,7 +191,7 @@ void Renderer2D::draw_quad(const Transform2D& transform, const TextureAtlas& atl
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;
 
 	// Get appropriate batch
-	auto& batch = s_storage.batches[atlas.texture.index];
+	auto& batch = s_storage.batches[atlas.texture.index()];
 
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(batch.count == s_storage.max_batch_count)
