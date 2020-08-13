@@ -79,37 +79,60 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
+std::string to_str(uint32_t handle, const SecureSparsePool<uint32_t, 64, 16>& pool)
+{
+    std::stringstream ss;
+    ss << std::bitset<32>(handle) << " [" << std::to_string(handle & pool.k_handle_mask) << '/'
+       << std::to_string((handle & pool.k_guard_mask) >> pool.k_guard_shift) << ']';
+    return ss.str();
+}
+
 int main(int argc, char** argv)
 {
     init_logger();
 
     SecureSparsePool<uint32_t, 64, 16> handle_pool;
 
-    DLOG("nuclear",1) << std::bitset<32>(handle_pool.k_guard_mask) << std::endl;
-    DLOG("nuclear",1) << std::bitset<32>(handle_pool.k_handle_mask) << std::endl;
+    DLOG("nuclear", 1) << std::bitset<32>(handle_pool.k_guard_mask) << std::endl;
+    DLOG("nuclear", 1) << std::bitset<32>(handle_pool.k_handle_mask) << std::endl;
 
     DLOGN("nuclear") << "Testing" << std::endl;
-    for(size_t ii=0; ii<8; ++ii)
+    for(size_t ii = 0; ii < 10; ++ii)
     {
-        auto h0 = handle_pool.acquire();
-        auto h1 = handle_pool.acquire();
-        DLOG("nuclear",1) << std::bitset<32>(h0) << std::endl;
-        DLOG("nuclear",1) << std::bitset<32>(h1) << std::endl;
-        handle_pool.release(h0);
+        handle_pool.acquire();
     }
-    auto h0 = handle_pool.acquire();
 
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(0) << std::endl;
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(1) << std::endl;
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(18) << std::endl;
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(h0) << std::endl;
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(0b00000000000010000000000000000000) << std::endl;
-    
     BANG();
-    handle_pool.release(1);
-    DLOG("nuclear",1) << std::boolalpha << handle_pool.is_valid(1) << std::endl;
-    auto h1 = handle_pool.acquire();
-    DLOG("nuclear",1) << std::bitset<32>(h1) << std::endl;
+    auto h10 = handle_pool.acquire();
+    auto h11 = handle_pool.acquire();
+    auto h12 = handle_pool.acquire();
+
+    DLOG("nuclear", 1) << to_str(h10, handle_pool) << std::endl;
+    DLOG("nuclear", 1) << to_str(h11, handle_pool) << std::endl;
+    DLOG("nuclear", 1) << to_str(h12, handle_pool) << std::endl;
+
+    BANG();
+
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h10) << std::endl;
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h11) << std::endl;
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h12) << std::endl;
+
+    handle_pool.release(h10);
+    // handle_pool.release(h11);
+    // handle_pool.release(h12);
+
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h10) << std::endl;
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h11) << std::endl;
+    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h12) << std::endl;
+
+    BANG();
+    auto h_a = handle_pool.acquire();
+    auto h_b = handle_pool.acquire();
+    auto h_c = handle_pool.acquire();
+
+    DLOG("nuclear", 1) << to_str(h_a, handle_pool) << std::endl;
+    DLOG("nuclear", 1) << to_str(h_b, handle_pool) << std::endl;
+    DLOG("nuclear", 1) << to_str(h_c, handle_pool) << std::endl;
 
     return 0;
 }

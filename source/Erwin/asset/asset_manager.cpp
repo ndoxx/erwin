@@ -109,7 +109,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
 
     std::string shader_name = name.empty() ? file_path.stem().string() : name;
     ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
-    DLOG("asset", 1) << "ShaderHandle: " << WCC('v') << handle.index() << std::endl;
+    DLOG("asset", 1) << "ShaderHandle: " << WCC('v') << handle << std::endl;
     s_storage.shader_cache.insert({hname, handle});
 
     return handle;

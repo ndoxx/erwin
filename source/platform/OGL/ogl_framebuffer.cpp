@@ -119,7 +119,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
 
 OGLFramebuffer::~OGLFramebuffer()
 {
-    DLOG("render", 1) << "OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << " [" << rd_handle_ << "] destroyed."
+    DLOG("render", 1) << "OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << " (id=" << rd_handle_ << ") destroyed."
                       << std::endl;
     if(rd_handle_)
         glDeleteFramebuffers(1, &rd_handle_);

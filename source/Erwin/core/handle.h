@@ -5,6 +5,7 @@
 #include "memory/handle_pool.h"
 #include "render/renderer_config.h"
 #include <cstdint>
+#include <ostream>
 
 namespace erwin
 {
@@ -31,10 +32,12 @@ typedef uint64_t HandleID;
             data = k_null_handle;                                                                                      \
         }                                                                                                              \
         inline uint16_t index() const { return data & PoolT::k_handle_mask; }                                          \
+        inline uint16_t guard() const { return (data & PoolT::k_guard_mask) >> PoolT::k_guard_shift; }                 \
         inline bool is_valid() const { return s_ppool_->is_valid(data); }                                              \
         inline bool is_null() const { return data == k_null_handle; }                                                  \
         inline bool operator==(const HANDLE_NAME& o) const { return data == o.data; }                                  \
         inline bool operator!=(const HANDLE_NAME& o) const { return data != o.data; }                                  \
+        friend std::ostream& operator<<(std::ostream& stream, const HANDLE_NAME&);                                     \
         uint32_t data = k_null_handle;                                                                                 \
     };                                                                                                                 \
     template <> static constexpr uint32_t k_max_handles<HANDLE_NAME> = MAX_HANDLES
@@ -50,6 +53,11 @@ typedef uint64_t HandleID;
     {                                                                                                                  \
         W_DELETE(s_ppool_, arena);                                                                                     \
         s_ppool_ = nullptr;                                                                                            \
+    }                                                                                                                  \
+    std::ostream& operator<<(std::ostream& stream, const HANDLE_NAME& h)                                               \
+    {                                                                                                                  \
+        stream << '[' << h.index() << '/' << h.guard() << ']';                                                         \
+        return stream;                                                                                                 \
     }                                                                                                                  \
     HANDLE_NAME HANDLE_NAME::acquire() { return HANDLE_NAME{s_ppool_->acquire()}; }
 

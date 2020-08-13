@@ -51,10 +51,10 @@ Environment EnvironmentLoader::upload(const Texture2DDescriptor& descriptor, has
     TextureHandle handle = Renderer::create_texture_2D(descriptor);
     environment.size = descriptor.height;
     environment.environment_map = Renderer3D::generate_cubemap_hdr(handle, environment.size);
-    Renderer::destroy(handle);
     environment.diffuse_irradiance_map = Renderer3D::generate_irradiance_map(environment.environment_map);
     environment.prefiltered_map = Renderer3D::generate_prefiltered_map(environment.environment_map, environment.size);
     environment.resource_id = resource_id;
+    Renderer::destroy(handle);
 
     return environment;
 }

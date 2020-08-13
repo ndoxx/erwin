@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "core/core.h"
+
 namespace erwin
 {
 
@@ -38,7 +40,7 @@ public:
     {
         if(!has(val))
         {
-            assert(val < SIZE && "Exceeding SparseSet capacity");
+            W_ASSERT(val < SIZE, "Exceeding SparseSet capacity");
 
             dense[size_] = val;
             sparse[val] = T(size_);
@@ -152,7 +154,7 @@ public:
 
     T acquire()
     {
-        assert(size_ + 1 < SIZE && "Exceeding SparsePool capacity");
+        W_ASSERT(size_ + 1 < SIZE, "Exceeding SparsePool capacity");
 
         T index = T(size_++);
         T handle = dense[index];
@@ -163,7 +165,7 @@ public:
 
     void release(T handle)
     {
-        assert(is_valid(handle) && "Cannot release unknown handle");
+        W_ASSERT(is_valid(handle), "Cannot release unknown handle");
 
         T index = sparse[handle];
         T temp = dense[--size_];
@@ -186,12 +188,13 @@ constexpr UIntT make_mask(const UIntT shift_pos)
 
 template <typename T, size_t SIZE, size_t GUARD_BITS> class SecureSparsePool
 {
-    static_assert(std::is_unsigned_v<T>, "SecureSparsePool can only contain unsigned integers");
+    static_assert(std::is_unsigned<T>::value, "SecureSparsePool can only contain unsigned integers");
 
 private:
     using Array = std::array<T, SIZE>;
     Array dense;
     Array sparse; // Map of elements to dense set indices
+    Array guard;  // Auto-incremented when index reused
 
     size_t size_ = 0; // Element count
 
@@ -214,38 +217,39 @@ public:
     inline bool is_valid(const T& val) const
     {
         T unguarded = val & k_handle_mask;
-        return unguarded < SIZE && sparse[unguarded] < size_ && dense[sparse[unguarded]] == val;
+        T guard_val = (val & k_guard_mask) >> k_guard_shift;
+        return unguarded < SIZE && sparse[unguarded] < size_ && dense[sparse[unguarded]] == unguarded && guard_val == guard[unguarded];
     }
 
     void clear()
     {
         size_ = 0;
         std::iota(dense.begin(), dense.end(), 0);
+        std::fill(guard.begin(), guard.end(), 0);
     }
 
     T acquire()
     {
-        assert(size_ + 1 < SIZE && "Exceeding SecureSparsePool capacity");
+        W_ASSERT(size_ + 1 < SIZE, "Exceeding SecureSparsePool capacity");
 
         T index = T(size_++);
-        T handle = dense[index];
-        T unguarded = handle & k_handle_mask;
+        T unguarded = dense[index];
         sparse[unguarded] = index;
 
-        return handle;
+        return unguarded | (guard[unguarded] << k_guard_shift);
     }
 
     void release(T handle)
     {
-        assert(is_valid(handle) && "Cannot release invalid handle");
+        W_ASSERT(is_valid(handle), "Cannot release unknown handle");
 
         T unguarded = handle & k_handle_mask;
-        T new_guard = (handle & k_guard_mask) + (T(1u) << k_guard_shift);
         T index = sparse[unguarded];
         T temp = dense[--size_] & k_handle_mask;
-        dense[size_] = unguarded | new_guard;
+        dense[size_] = unguarded;
         sparse[temp] = index;
         dense[index] = temp;
+        ++guard[unguarded];
     }
 };
 

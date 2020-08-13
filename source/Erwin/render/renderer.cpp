@@ -637,7 +637,6 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
                                                 UsagePattern mode)
 {
     IndexBufferHandle handle = IndexBufferHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Allocate auxiliary data
     uint32_t* auxiliary = nullptr;
@@ -667,7 +666,6 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
     W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
     VertexBufferHandle handle = VertexBufferHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Allocate auxiliary data
     float* auxiliary = nullptr;
@@ -696,7 +694,6 @@ VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBuff
     W_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
 
     VertexArrayHandle handle = VertexArrayHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Write data
     RenderCommandWriter cw(RenderCommand::CreateVertexArray);
@@ -711,7 +708,6 @@ VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBuff
 VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHandle>& vbs, IndexBufferHandle ib)
 {
     VertexArrayHandle handle = VertexArrayHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     uint8_t VBO_count = uint8_t(vbs.size());
 
@@ -734,7 +730,6 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, con
                                                     UsagePattern mode)
 {
     UniformBufferHandle handle = UniformBufferHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Allocate auxiliary data
     uint8_t* auxiliary = nullptr;
@@ -762,7 +757,6 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
                                                                  uint32_t size, UsagePattern mode)
 {
     ShaderStorageBufferHandle handle = ShaderStorageBufferHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Allocate auxiliary data
     uint8_t* auxiliary = nullptr;
@@ -789,7 +783,6 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
 ShaderHandle Renderer::create_shader(const fs::path& filepath, const std::string& name)
 {
     ShaderHandle handle = ShaderHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     RenderCommandWriter cw(RenderCommand::CreateShader);
     cw.write(&handle);
@@ -803,7 +796,6 @@ ShaderHandle Renderer::create_shader(const fs::path& filepath, const std::string
 TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 {
     TextureHandle handle = TextureHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     RenderCommandWriter cw(RenderCommand::CreateTexture2D);
     cw.write(&handle);
@@ -816,7 +808,6 @@ TextureHandle Renderer::create_texture_2D(const Texture2DDescriptor& desc)
 CubemapHandle Renderer::create_cubemap(const CubemapDescriptor& desc)
 {
     CubemapHandle handle = CubemapHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     RenderCommandWriter cw(RenderCommand::CreateCubemap);
     cw.write(&handle);
@@ -830,7 +821,6 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
                                                const FramebufferLayout& layout)
 {
     FramebufferHandle handle = FramebufferHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     // Create handles for framebuffer textures
     FramebufferTextureVector texture_vector;
@@ -844,7 +834,6 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
         for(uint32_t ii = 0; ii < tex_count; ++ii)
         {
             TextureHandle tex_handle = TextureHandle::acquire();
-            W_ASSERT(tex_handle.is_valid(), "No more free handle in handle pool.");
             texture_vector.handles.push_back(tex_handle);
             texture_vector.debug_names.push_back((has_depth && ii == tex_count - 1) ? "depth"_h
                                                                                     : layout[ii].target_name);
@@ -853,7 +842,6 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
     else
     {
         CubemapHandle cm_handle = CubemapHandle::acquire();
-        W_ASSERT(cm_handle.is_valid(), "No more free handle in handle pool.");
         W_ASSERT(layout.get_count() == 1, "Only one cubemap attachment per framebuffer allowed.");
         texture_vector.cubemap = cm_handle;
         texture_vector.debug_names.push_back(layout[0].target_name);
