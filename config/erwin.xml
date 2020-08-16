@@ -20,6 +20,7 @@
 		<Sink name="ConsoleSink"    type="ConsoleSink" channels="all"/>
 		<Sink name="MainFileSink"   type="LogFileSink" channels="all"   destination="erwin.log"/>
 		<Sink name="EventFileSink"  type="LogFileSink" channels="event" destination="events.log"/>
+		<Sink name="NetSink"        type="NetSink"     channels="all"   host="localhost" port="31337"/>
 
 		<bool name="backtrace_on_error" value="false"/>
 		<bool name="single_threaded"    value="true"/>
