@@ -1,0 +1,130 @@
+:root{
+	--message-dark:  rgba(40, 40, 40, 0.97);
+	--message-light: rgba(60, 60, 60, 0.97);
+	--message-head:  rgba(80, 80, 80, 0.97);
+	--body:          rgba(20, 20, 20, 0.97);
+	--body-fg:       rgba(240, 240, 240, 0.97);
+	--border:        rgba(100, 100, 100, 0.97);
+}
+
+body {
+	background: var(--body);
+}
+
+header, section, footer {
+	padding: 10px;
+	margin: 0;
+	border-width: 2px;
+	border-style: solid;
+	border-color: var(--border);
+	border-radius: 5px;
+	background: var(--body);
+	color: var(--body-fg);
+}
+
+header{
+	text-align: center;
+	vertical-align: middle;
+}
+
+#message-container{
+	padding-left: 20px;
+	padding-right: 20px;
+	padding-top: 20px;
+	overflow-y: scroll;
+	background: #101010;
+	color: var(--body-fg);
+	display: inline-block;
+	height: 83.5vh;
+	max-height: 83.5vh;
+	width: 96vw;
+}
+
+.message{
+	background-color: var(--message-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-dark)), to(var(--message-light)));
+    background:-moz-linear-gradient(var(--message-dark), var(--message-light));
+    background:-o-linear-gradient(var(--message-dark), var(--message-light));
+	background: linear-gradient(var(--message-dark),var(--message-light));
+	border-radius: 5px;
+	margin-bottom: 1px;
+	margin-right: 1px;
+	padding-left: 5px;
+	padding-right: 5px;
+	padding-top: 1px;
+	padding-bottom: 1px;
+	display: block;
+}
+
+.hidden{
+	display: none;
+}
+
+.messagehead{
+	width: 7%;
+	background-color: var(--message-head);
+	display: inline-block;
+	padding-left: 5px;
+	padding-right: 5px;
+	margin-right: 5px;
+}
+
+.timestamp{
+	text-align: center;
+	font-size: 11px;
+}
+
+.channel{
+	color: #000000;
+	text-align: center;
+	font-size: 11px;
+}
+
+.channel-core{
+	background: #ffb400;
+}
+.channel-application{
+	background: #ffde00;
+}
+.channel-editor{
+	background: #d7ea02;
+}
+.channel-event{
+	background: #85ea02;
+}
+.channel-asset{
+	background: #20efa8;
+}
+.channel-memory{
+	background: #20efed;
+}
+.channel-thread{
+	background: #20bcef;
+}
+.channel-entity{
+	background: #2073ef;
+}
+.channel-scene{
+	background: #6920ef;
+}
+.channel-script{
+	background: #ad20ef;
+}
+.channel-render{
+	background: #e820ef;
+}
+.channel-shader{
+	background: #ef209f;
+}
+.channel-texture{
+	background: #ef209f;
+}
+.channel-util{
+	background: #ef2020;
+}
+.channel-config{
+	background: #ef2020;
+}
+.channel-ios{
+	background: #bababa;
+}

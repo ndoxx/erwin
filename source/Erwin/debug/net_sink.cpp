@@ -7,8 +7,8 @@
 namespace erwin
 {
 
-static const std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
-static std::string strip_ansi(const std::string& str) { return std::regex_replace(str, ansi_regex, ""); }
+/*static const std::regex ansi_regex("\033\\[.+?m"); // matches ANSI codes
+static std::string strip_ansi(const std::string& str) { return std::regex_replace(str, ansi_regex, ""); }*/
 
 static constexpr char s_base64_chars[] = {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
@@ -66,11 +66,13 @@ void NetSink::send(const kb::klog::LogStatement& stmt, const kb::klog::LogChanne
 {
     // Send JSON formatted message
     std::stringstream ss;
-    ss << "{\"action\":\"msg\", \"channel\":\"" << chan.name << "\", \"type\":\"" << uint32_t(stmt.msg_type)
-       << "\", \"severity\":\"" << uint32_t(stmt.severity) << "\", \"timestamp\":\""
-       << std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count() << "\", \"line\":\""
-       << stmt.code_line << "\", \"file\":\"" << stmt.code_file << "\", \"message\":\""
-       << base64_encode(strip_ansi(stmt.message)) << "\"}";
+    ss << "{\"action\":\"msg\", \"channel\":\"" << chan.name 
+       << "\", \"type\":\"" << uint32_t(stmt.msg_type)
+       << "\", \"severity\":\"" << uint32_t(stmt.severity) 
+       << "\", \"timestamp\":\"" << std::chrono::duration_cast<std::chrono::duration<float>>(stmt.timestamp).count() 
+       << "\", \"line\":\"" << stmt.code_line 
+       << "\", \"file\":\"" << stmt.code_file 
+       << "\", \"message\":\"" << base64_encode(stmt.message + "\033[0m") << "\"}";
     stream_->send(ss.str());
 }
 

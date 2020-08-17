@@ -3,10 +3,12 @@ var KLogger = {};
 KLogger.debug = false;
 KLogger.wsUri = "ws://xdn.local:8337";
 KLogger.websocket = false;
+KLogger.ansi_up = false;
 
 KLogger.dlog = function(text) {
 	if(KLogger.debug) console.log(text);
 }
+
 
 function handle_message(item)
 {
@@ -16,7 +18,8 @@ function handle_message(item)
 		var e = JSON.parse(item);
 		switch(e.action) {
 			case "msg":
-				$("#message-container").append('<div class="message">[' + e.timestamp + '][' + e.channel + '] ' + atob(e.message) + '</div>');
+				var message = KLogger.ansi_up.ansi_to_html(atob(e.message));
+				$("#message-container").append('<div class="message filter-' + e.channel + '"><div class="messagehead"><div class="channel channel-' + e.channel + '">' + e.channel + '</div><div class="timestamp">' + e.timestamp + '</div></div>' + message + '</div>');
 				break;
 			default:
 				KLogger.dlog("Unknown packet:");
@@ -30,27 +33,42 @@ function handle_message(item)
 	}
 }
 
+// Add or remove the "hidden" CSS class to hide / show messages of a given channel
+function update_filter(channel)
+{
+	var cb = document.getElementById('check-' + channel);
+	if(cb.checked == true){
+		$(".filter-" + channel).each(function() {
+			$(this).removeClass("hidden");
+		});
+	}
+	else{
+		$(".filter-" + channel).each(function() {
+			$(this).addClass("hidden");
+		});
+	}
+}
+
 $(function(){
+	KLogger.ansi_up = new AnsiUp;
 	KLogger.websocket = new WebSocket(KLogger.wsUri);
 
 	KLogger.websocket.onmessage = function(e) {
 		
 		// Multiple messages could be concatenated in e.data, we split them in an array
-		var found = [],
-		    rxp = /({.+?})/g,
-		    curMatch;
+		var rxp = /({.+?})/g, curMatch;
 
 		while(curMatch = rxp.exec(e.data)) {
-		    found.push(curMatch[1]);
+		    handle_message(curMatch[1]);
 		}
-
-		for(var i=0; i<found.length; i++)
-		{
-			handle_message(found[i]);
-		}
-
-		/*found.forEach(function (item, index) {
-			handle_message(item);
-		});*/
 	}
+
+	// Create checkbox controls for channel filtering
+	var channels = ['core','application','editor','event','asset','memory','thread','entity','scene','script','render','shader','texture','util','config','ios'];
+
+	channels.forEach(function (channel, index)
+	{
+		var id = 'check-' + channel;
+		$("#controls-container").append('<input type="checkbox" id="' + id + '" onclick="update_filter(\''+ channel + '\')" checked>' + channel + '</input>');
+	});
 });
