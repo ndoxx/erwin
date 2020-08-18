@@ -42,7 +42,7 @@
 
 #include "entt/entt.hpp"
 
-#include "filesystem/wpath.h"
+#include "debug/net_sink.h"
 
 using namespace erwin;
 using namespace kb;
@@ -63,6 +63,7 @@ template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityI
 void init_logger()
 {
     KLOGGER_START();
+    KLOGGER(create_channel("application", 3));
     KLOGGER(create_channel("memory", 3));
     KLOGGER(create_channel("thread", 3));
     KLOGGER(create_channel("nuclear", 3));
@@ -71,6 +72,16 @@ void init_logger()
     KLOGGER(create_channel("render", 3));
     KLOGGER(create_channel("asset", 3));
     KLOGGER(attach_all("console_sink", std::make_unique<klog::ConsoleSink>()));
+
+    {
+        auto net_sink = std::make_unique<NetSink>();
+        if(net_sink->connect("localhost", 31337))
+        {
+            std::cout << "CONNECTED" << std::endl;
+            KLOGGER(attach_all("net_sink", std::move(net_sink)));
+        }
+    }
+
     KLOGGER(set_single_threaded(true));
     KLOGGER(set_backtrace_on_error(false));
     KLOGGER(spawn());
@@ -79,60 +90,27 @@ void init_logger()
     DLOGN("nuclear") << "Nuclear test" << std::endl;
 }
 
-std::string to_str(uint32_t handle, const SecureSparsePool<uint32_t, 64, 16>& pool)
-{
-    std::stringstream ss;
-    ss << std::bitset<32>(handle) << " [" << std::to_string(handle & pool.k_handle_mask) << '/'
-       << std::to_string((handle & pool.k_guard_mask) >> pool.k_guard_shift) << ']';
-    return ss.str();
-}
-
 int main(int argc, char** argv)
 {
     init_logger();
 
-    SecureSparsePool<uint32_t, 64, 16> handle_pool;
+    DLOG("memory",0) << "Plip plop" << std::endl;
+    DLOG("thread",0) << "Plip plop" << std::endl;
+    DLOG("entity",0) << "Plip plop" << std::endl;
+    DLOG("config",0) << "Plip plop" << std::endl;
+    DLOG("render",0) << "Plip plop" << std::endl;
+    DLOG("asset",0)  << "Plip plop" << std::endl;
+    DLOGI << "Item 1" << std::endl;
+    DLOGI << "Item 2" << std::endl;
+    DLOGI << "Item 3" << std::endl;
 
-    DLOG("nuclear", 1) << std::bitset<32>(handle_pool.k_guard_mask) << std::endl;
-    DLOG("nuclear", 1) << std::bitset<32>(handle_pool.k_handle_mask) << std::endl;
-
-    DLOGN("nuclear") << "Testing" << std::endl;
-    for(size_t ii = 0; ii < 10; ++ii)
-    {
-        handle_pool.acquire();
-    }
-
+    DLOGN("application") << "Notification" << std::endl;
+    DLOGW("application") << "Warning" << std::endl;
+    DLOGE("application") << "Error" << std::endl;
+    DLOGF("application") << "Fatal" << std::endl;
+    DLOGG("application") << "Good" << std::endl;
+    DLOGB("application") << "Bad" << std::endl;
     BANG();
-    auto h10 = handle_pool.acquire();
-    auto h11 = handle_pool.acquire();
-    auto h12 = handle_pool.acquire();
-
-    DLOG("nuclear", 1) << to_str(h10, handle_pool) << std::endl;
-    DLOG("nuclear", 1) << to_str(h11, handle_pool) << std::endl;
-    DLOG("nuclear", 1) << to_str(h12, handle_pool) << std::endl;
-
-    BANG();
-
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h10) << std::endl;
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h11) << std::endl;
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h12) << std::endl;
-
-    handle_pool.release(h10);
-    // handle_pool.release(h11);
-    // handle_pool.release(h12);
-
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h10) << std::endl;
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h11) << std::endl;
-    DLOG("nuclear", 1) << std::boolalpha << handle_pool.is_valid(h12) << std::endl;
-
-    BANG();
-    auto h_a = handle_pool.acquire();
-    auto h_b = handle_pool.acquire();
-    auto h_c = handle_pool.acquire();
-
-    DLOG("nuclear", 1) << to_str(h_a, handle_pool) << std::endl;
-    DLOG("nuclear", 1) << to_str(h_b, handle_pool) << std::endl;
-    DLOG("nuclear", 1) << to_str(h_c, handle_pool) << std::endl;
 
     return 0;
 }

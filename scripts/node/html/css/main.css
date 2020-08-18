@@ -1,6 +1,21 @@
 :root{
-	--message-dark:  rgba(40, 40, 40, 0.97);
-	--message-light: rgba(60, 60, 60, 0.97);
+	--message-dark:          rgba(40, 40, 40, 0.97);
+	--message-light:         rgba(60, 60, 60, 0.97);
+	--message-notify-dark:   #5200cc;
+	--message-notify-light:  #6600ff;
+	--message-warning-dark:  #e65c00;
+	--message-warning-light: #ff6600;
+	--message-error-dark:    #cc0000;
+	--message-error-light:   #e60000;
+	--message-fatal-dark:    #990000;
+	--message-fatal-light:   #b30000;
+	--message-bang-dark:     #e67300;
+	--message-bang-light:    #ff8000;
+	--message-good-dark:     #739900;
+	--message-good-light:    #99cc00;
+	--message-bad-dark:      #990033;
+	--message-bad-light:     #cc0044;
+
 	--message-head:  rgba(80, 80, 80, 0.97);
 	--body:          rgba(20, 20, 20, 0.97);
 	--body-fg:       rgba(240, 240, 240, 0.97);
@@ -11,7 +26,7 @@ body {
 	background: var(--body);
 }
 
-header, section, footer {
+header{
 	padding: 10px;
 	margin: 0;
 	border-width: 2px;
@@ -20,24 +35,36 @@ header, section, footer {
 	border-radius: 5px;
 	background: var(--body);
 	color: var(--body-fg);
-}
-
-header{
 	text-align: center;
 	vertical-align: middle;
 }
 
-#message-container{
-	padding-left: 20px;
-	padding-right: 20px;
-	padding-top: 20px;
+.wrapper{
+	display: flex;
+	height: 90vh;
+	max-height: 90vh;
+}
+
+.panel{
+	padding: 10px;
+	margin: 0;
+	border-width: 2px;
+	border-style: solid;
+	border-color: var(--border);
+	border-radius: 5px;
+	background: var(--body);
+	color: var(--body-fg);
 	overflow-y: scroll;
 	background: #101010;
-	color: var(--body-fg);
-	display: inline-block;
-	height: 83.5vh;
-	max-height: 83.5vh;
-	width: 96vw;
+}
+
+#message-container{
+	flex: 3;
+}
+
+#controls-container{
+	flex: 1;
+	overflow: hidden;
 }
 
 .message{
@@ -56,7 +83,11 @@ header{
 	display: block;
 }
 
-.hidden{
+.chan-hidden{
+	display: none;
+}
+
+.sev-hidden{
 	display: none;
 }
 
@@ -68,16 +99,17 @@ header{
 	padding-right: 5px;
 	margin-right: 5px;
 }
-
 .timestamp{
 	text-align: center;
 	font-size: 11px;
 }
-
 .channel{
 	color: #000000;
 	text-align: center;
 	font-size: 11px;
+}
+.location-caption{
+	font-size: 12px;
 }
 
 .channel-core{
@@ -127,4 +159,57 @@ header{
 }
 .channel-ios{
 	background: #bababa;
+}
+
+.type-item{
+	margin-left: 25px;
+}
+.type-notify{
+	background-color: var(--message-notify-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-notify-dark)), to(var(--message-notify-light)));
+    background:-moz-linear-gradient(var(--message-notify-dark), var(--message-notify-light));
+    background:-o-linear-gradient(var(--message-notify-dark), var(--message-notify-light));
+	background: linear-gradient(var(--message-notify-dark),var(--message-notify-light));
+}
+.type-warning{
+	background-color: var(--message-warning-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-warning-dark)), to(var(--message-warning-light)));
+    background:-moz-linear-gradient(var(--message-warning-dark), var(--message-warning-light));
+    background:-o-linear-gradient(var(--message-warning-dark), var(--message-warning-light));
+	background: linear-gradient(var(--message-warning-dark),var(--message-warning-light));
+}
+.type-error{
+	background-color: var(--message-error-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-error-dark)), to(var(--message-error-light)));
+    background:-moz-linear-gradient(var(--message-error-dark), var(--message-error-light));
+    background:-o-linear-gradient(var(--message-error-dark), var(--message-error-light));
+	background: linear-gradient(var(--message-error-dark),var(--message-error-light));
+}
+.type-fatal{
+	background-color: var(--message-fatal-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-fatal-dark)), to(var(--message-fatal-light)));
+    background:-moz-linear-gradient(var(--message-fatal-dark), var(--message-fatal-light));
+    background:-o-linear-gradient(var(--message-fatal-dark), var(--message-fatal-light));
+	background: linear-gradient(var(--message-fatal-dark),var(--message-fatal-light));
+}
+.type-bang{
+	background-color: var(--message-bang-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-bang-dark)), to(var(--message-bang-light)));
+    background:-moz-linear-gradient(var(--message-bang-dark), var(--message-bang-light));
+    background:-o-linear-gradient(var(--message-bang-dark), var(--message-bang-light));
+	background: linear-gradient(var(--message-bang-dark),var(--message-bang-light));
+}
+.type-good{
+	background-color: var(--message-good-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-good-dark)), to(var(--message-good-light)));
+    background:-moz-linear-gradient(var(--message-good-dark), var(--message-good-light));
+    background:-o-linear-gradient(var(--message-good-dark), var(--message-good-light));
+	background: linear-gradient(var(--message-good-dark),var(--message-good-light));
+}
+.type-bad{
+	background-color: var(--message-bad-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-bad-dark)), to(var(--message-bad-light)));
+    background:-moz-linear-gradient(var(--message-bad-dark), var(--message-bad-light));
+    background:-o-linear-gradient(var(--message-bad-dark), var(--message-bad-light));
+	background: linear-gradient(var(--message-bad-dark),var(--message-bad-light));
 }
