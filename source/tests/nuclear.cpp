@@ -77,7 +77,6 @@ void init_logger()
         auto net_sink = std::make_unique<NetSink>();
         if(net_sink->connect("localhost", 31337))
         {
-            std::cout << "CONNECTED" << std::endl;
             KLOGGER(attach_all("net_sink", std::move(net_sink)));
         }
     }

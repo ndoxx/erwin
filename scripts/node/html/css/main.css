@@ -112,55 +112,6 @@ header{
 	font-size: 12px;
 }
 
-.channel-core{
-	background: #ffb400;
-}
-.channel-application{
-	background: #ffde00;
-}
-.channel-editor{
-	background: #d7ea02;
-}
-.channel-event{
-	background: #85ea02;
-}
-.channel-asset{
-	background: #20efa8;
-}
-.channel-memory{
-	background: #20efed;
-}
-.channel-thread{
-	background: #20bcef;
-}
-.channel-entity{
-	background: #2073ef;
-}
-.channel-scene{
-	background: #6920ef;
-}
-.channel-script{
-	background: #ad20ef;
-}
-.channel-render{
-	background: #e820ef;
-}
-.channel-shader{
-	background: #ef209f;
-}
-.channel-texture{
-	background: #ef209f;
-}
-.channel-util{
-	background: #ef2020;
-}
-.channel-config{
-	background: #ef2020;
-}
-.channel-ios{
-	background: #bababa;
-}
-
 .type-item{
 	margin-left: 25px;
 }

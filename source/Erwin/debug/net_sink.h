@@ -12,6 +12,7 @@ public:
     virtual ~NetSink();
     virtual void send(const kb::klog::LogStatement& stmt, const kb::klog::LogChannel& chan) override;
     virtual void send_raw(const std::string& message) override;
+    virtual void on_attach() override;
     bool connect(const std::string& server, uint16_t port);
 
 private:
