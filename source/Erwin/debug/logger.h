@@ -32,17 +32,17 @@ namespace erwin
     if constexpr(!DO_LOG)                                                                                              \
         ;                                                                                                              \
     else                                                                                                               \
-        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::NOTIFY, 0)
+        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::NOTIFY, 1)
 #define DLOGW(C)                                                                                                       \
     if constexpr(!DO_LOG)                                                                                              \
         ;                                                                                                              \
     else                                                                                                               \
-        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::WARNING, 1, __LINE__, __FILE__)
+        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::WARNING, 2, __LINE__, __FILE__)
 #define DLOGE(C)                                                                                                       \
     if constexpr(!DO_LOG)                                                                                              \
         ;                                                                                                              \
     else                                                                                                               \
-        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::ERROR, 2, __LINE__, __FILE__)
+        kb::klog::get_log(kb::H_((C)), kb::klog::MsgType::ERROR, 3, __LINE__, __FILE__)
 #define DLOGF(C)                                                                                                       \
     if constexpr(!DO_LOG)                                                                                              \
         ;                                                                                                              \

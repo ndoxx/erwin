@@ -49,7 +49,7 @@ function rgbToHex(rgb) {
 }
 
 // Add or remove the "hidden" CSS class to hide / show messages of a given channel
-function update_channel_filter() {
+function updateChannelFilter() {
 	$("#channelSelector option").each(function() {
 		var channel = $(this).text();
 		if($(this).prop('selected')) {
@@ -65,7 +65,7 @@ function update_channel_filter() {
 	});
 }
 
-function select_all_channels() {
+function selectAllCHannels() {
 	$("#channelSelector option").each(function() {
 		$(this).prop('selected', true);
 	});
@@ -74,7 +74,7 @@ function select_all_channels() {
 	});
 }
 
-function update_verbosity_filter() {
+function updateVerbosityFilter() {
 	var verbosity = $("#verbositySlider").val();
 	for(var severity=0; severity<=3; ++severity) {
 		if(verbosity >= 3-severity) {
@@ -90,14 +90,14 @@ function update_verbosity_filter() {
 	}
 }
 
-function update_channel_controls() {
+function updateChannelControls() {
 	// Clear channel options
 	$("#channelSelector option").remove();
 
 	// For each channel in channels array, create a selectable option
 	$('#channelSelector').attr('size',KLogger.channels.length);
 	KLogger.channels.forEach(function (channel, index) {
-		$("#channelSelector").append(`<option id="option-${channel}" onclick="update_channel_filter()" selected="selected">${channel}</option>`);
+		$("#channelSelector").append(`<option id="option-${channel}" selected="selected">${channel}</option>`);
 	});
 
 	// Also create a style for each channel
@@ -111,11 +111,51 @@ function update_channel_controls() {
 	}
 }
 
-function clear_messages() {
-	$("#message-container > div.message").remove();
+function clearMessages() {
+	$("#message-container").empty();
 }
 
-function handle_message(item) {
+function createChannelSubscriptionsHiddenField(subscriptions) {
+	$("#message-container").append(`<input type="hidden" id="hidSubscriptions" name="hidSubscriptions" value="${subscriptions}">`);
+}
+
+function loadChannelSubscriptions() {
+	KLogger.channels = $("#message-container > #hidSubscriptions").val().split(',');
+}
+
+function downloadInnerHtml(filename, elId, mimeType) {
+    var elHtml = document.getElementById(elId).innerHTML;
+    var link = document.createElement('a');
+    mimeType = mimeType || 'text/plain';
+
+    link.setAttribute('download', filename);
+    link.setAttribute('href', 'data:' + mimeType + ';charset=utf-8,' + encodeURIComponent(elHtml));
+    link.click();
+    link.remove();
+}
+
+function loadContents(contents) {
+	clearMessages();
+	html = $.parseHTML(contents);
+	$("#message-container").append(html);
+	loadChannelSubscriptions();
+	updateChannelControls();
+}
+
+function readSingleFile(e) {
+	var file = e.target.files[0];
+	if (!file) {
+		return;
+	}
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		var contents = e.target.result;
+		loadContents(contents);
+	};
+	reader.readAsText(file);
+}
+
+function handlePacket(item) {
 	try {
 		KLogger.dlog(item);
 		var e = JSON.parse(item);
@@ -138,10 +178,12 @@ function handle_message(item) {
 					else if (a > b) return 1;
 					return 0;
 				});
-				update_channel_controls();
+				// Add hidden field in message container so that channel subscriptions can be serialized later on
+				createChannelSubscriptionsHiddenField(KLogger.channels);
+				updateChannelControls();
 				break;
 			case "new_connection":
-				clear_messages();
+				clearMessages();
 			default:
 				KLogger.dlog("Unknown packet:");
 				KLogger.dlog(e);
@@ -163,16 +205,36 @@ $(function() {
 		var rxp = /({.+?})/g, curMatch;
 
 		while(curMatch = rxp.exec(e.data)) {
-		    handle_message(curMatch[1]);
+		    handlePacket(curMatch[1]);
 		}
 	}
 
+	// ---- FILE CONTROLS ----
+	$("#controls-container").append(`<div class="divider"><span></span><span>File</span><span></span></div>`);
+
+	// Export button
+	$("#controls-container").append(`<input type=button value="Export" onclick="downloadInnerHtml('erwin.log','message-container','text/html')" style="width: 100%"></input>`)
+	// Import button
+	$("#controls-container").append(`<input id="fileDialog" type="file" style="display: none" />`);
+	$("#controls-container").append(`<input id="btnShowFiledialog" type=button value="Import" style="width: 100%"></input>`);
+
+	$("#btnShowFiledialog").on("click", function() {
+		$("#fileDialog").trigger("click");
+	});
+
+	document.getElementById('fileDialog').addEventListener('change', readSingleFile, false);
+
+
+	// ---- FILTER CONTROLS ----
+	$("#controls-container").append(`<div class="divider"><span></span><span>Filter</span><span></span></div>`);
+
 	// Create controls for channel filtering
-	$("#controls-container").append(`<input type=button value="Select all" onclick="select_all_channels()" style="width: 100%"></input>`);
-	$("#controls-container").append(`<select multiple size="${KLogger.channels.length}" id="channelSelector" style="width: 100%;"></select>`);
-	update_channel_controls();
+	$("#controls-container").append(`<input type=button value="Select all" onclick="selectAllCHannels()" style="width: 100%"></input>`);
+	$("#controls-container").append(`<select multiple size="${KLogger.channels.length}" id="channelSelector" onchange="updateChannelFilter()" style="width: 100%;"></select>`);
+	updateChannelControls();
 
 	// Severity filtering
-	$("#controls-container").append(`<label for="verbositySlider">Verbosity:</label>`);
-	$("#controls-container").append(`<input id="verbositySlider" type=range min="0" max="3" value="3" class="slider" oninput="update_verbosity_filter()" style="width: 100%">`);
+	$("#controls-container").append(`<div id="rangeWithLabel" style="display: flex;">`);
+	$("#rangeWithLabel").append(`<label for="verbositySlider" style="flex-grow: 1; margin-right: 5px;">Verbosity</label>`);
+	$("#rangeWithLabel").append(`<input id="verbositySlider" type=range min="0" max="3" value="3" class="slider" oninput="updateVerbosityFilter()" style="width: 100%; flex-grow: 3;">`);
 });

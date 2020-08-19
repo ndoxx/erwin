@@ -93,15 +93,23 @@ int main(int argc, char** argv)
 {
     init_logger();
 
-    DLOG("memory",0) << "Plip plop" << std::endl;
-    DLOG("thread",0) << "Plip plop" << std::endl;
-    DLOG("entity",0) << "Plip plop" << std::endl;
-    DLOG("config",0) << "Plip plop" << std::endl;
-    DLOG("render",0) << "Plip plop" << std::endl;
-    DLOG("asset",0)  << "Plip plop" << std::endl;
-    DLOGI << "Item 1" << std::endl;
-    DLOGI << "Item 2" << std::endl;
-    DLOGI << "Item 3" << std::endl;
+    DLOG("core",0) << "I'm, like, super hardcore." << std::endl;
+    DLOG("memory",0) << "I had something to log, but I... can't remember..." << std::endl;
+    
+    DLOG("thread",0) << "I use plastic zip bags with a corner cut off for " << WCC('i') << "threading" << WCC(0) << " my yarn through." << std::endl;
+    
+    DLOG("entity",1) << "Unlike hauntings, " << WCC('n') << "apparitions" << WCC(0) << " appear to interact intelligently with people in the living world." << std::endl;
+    DLOG("entity",0) << "Some examples of what may cause this type of paranormal entity include:" << std::endl;
+    DLOGI << "Someone who was murdered" << std::endl;
+    DLOGI << "Someone who died suddenly in an accident" << std::endl;
+    DLOGI << "A person who died with unrelenting guilt for something he did while alive" << std::endl;
+    DLOGI << "A person who died from an illness and still had unfinished business" << std::endl;
+
+    DLOGW("config") << "msconfig.exe not found." << std::endl;
+    DLOGI << "To correct this problem, install linux." << std::endl;
+
+    DLOG("render",0) << "Rendering triangle " << WCC('v') << 45238 << WCC(0) << " out of " << WCC('v') << 453821234 << WCC(0) << '.' << std::endl;
+    DLOG("asset",0)  << "CDS is based on a credit relationship with only one borrower (single-name CDS), the risk shedder transfers the reference asset." << std::endl;
 
     DLOGN("application") << "Notification" << std::endl;
     DLOGW("application") << "Warning" << std::endl;

@@ -3,14 +3,12 @@
 	--message-light:         rgba(60, 60, 60, 0.97);
 	--message-notify-dark:   #5200cc;
 	--message-notify-light:  #6600ff;
-	--message-warning-dark:  #e65c00;
-	--message-warning-light: #ff6600;
-	--message-error-dark:    #cc0000;
+	--message-warning-dark:  #995c00;
+	--message-warning-light: #e68a00;
+	--message-error-dark:    #b30000;
 	--message-error-light:   #e60000;
-	--message-fatal-dark:    #990000;
+	--message-fatal-dark:    #800000;
 	--message-fatal-light:   #b30000;
-	--message-bang-dark:     #e67300;
-	--message-bang-light:    #ff8000;
 	--message-good-dark:     #739900;
 	--message-good-light:    #99cc00;
 	--message-bad-dark:      #990033;
@@ -20,6 +18,8 @@
 	--body:          rgba(20, 20, 20, 0.97);
 	--body-fg:       rgba(240, 240, 240, 0.97);
 	--border:        rgba(100, 100, 100, 0.97);
+
+	--divider: #ff9900;
 }
 
 body {
@@ -78,9 +78,17 @@ header{
 	margin-right: 1px;
 	padding-left: 5px;
 	padding-right: 5px;
-	padding-top: 1px;
-	padding-bottom: 1px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	font-size: 16px;
+	font-weight: normal;
+	font-family: Arial, Helvetica, sans-serif;
 	display: block;
+}
+
+.message:hover{
+	font-weight: bold;
+	box-shadow: inset 0 0 100px 100px rgba(200, 200, 255, 0.2);
 }
 
 .chan-hidden{
@@ -143,13 +151,6 @@ header{
     background:-o-linear-gradient(var(--message-fatal-dark), var(--message-fatal-light));
 	background: linear-gradient(var(--message-fatal-dark),var(--message-fatal-light));
 }
-.type-bang{
-	background-color: var(--message-bang-dark);
-    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-bang-dark)), to(var(--message-bang-light)));
-    background:-moz-linear-gradient(var(--message-bang-dark), var(--message-bang-light));
-    background:-o-linear-gradient(var(--message-bang-dark), var(--message-bang-light));
-	background: linear-gradient(var(--message-bang-dark),var(--message-bang-light));
-}
 .type-good{
 	background-color: var(--message-good-dark);
     background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-good-dark)), to(var(--message-good-light)));
@@ -163,4 +164,38 @@ header{
     background:-moz-linear-gradient(var(--message-bad-dark), var(--message-bad-light));
     background:-o-linear-gradient(var(--message-bad-dark), var(--message-bad-light));
 	background: linear-gradient(var(--message-bad-dark),var(--message-bad-light));
+}
+
+.divider {								/* minor cosmetics */
+    display: table; 
+    font-size: 24px; 
+    text-align: center; 
+    width: 75%; 						/* divider width */
+    margin: 10px auto;					/* spacing above/below */
+}
+.divider span { display: table-cell; position: relative; }
+.divider span:first-child, .divider span:last-child {
+    width: 50%;
+    top: 13px;							/* adjust vertical align */
+    -moz-background-size: 100% 2px; 	/* line width */
+    background-size: 100% 2px; 			/* line width */
+    background-position: 0 0, 0 100%;
+    background-repeat: no-repeat;
+}
+.divider span:first-child {				/* color changes in here */
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(transparent), to(var(--divider)));
+    background-image: -webkit-linear-gradient(180deg, transparent, var(--divider));
+    background-image: -moz-linear-gradient(180deg, transparent, var(--divider));
+    background-image: -o-linear-gradient(180deg, transparent, var(--divider));
+    background-image: linear-gradient(90deg, transparent, var(--divider));
+}
+.divider span:nth-child(2) {
+    color: var(--divider); padding: 0px 5px; width: auto; white-space: nowrap;
+}
+.divider span:last-child {				/* color changes in here */
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(var(--divider)), to(transparent));
+    background-image: -webkit-linear-gradient(180deg, var(--divider), transparent);
+    background-image: -moz-linear-gradient(180deg, var(--divider), transparent);
+    background-image: -o-linear-gradient(180deg, var(--divider), transparent);
+    background-image: linear-gradient(90deg, var(--divider), transparent);
 }
