@@ -13,6 +13,8 @@
 	--message-good-light:    #99cc00;
 	--message-bad-dark:      #990033;
 	--message-bad-light:     #cc0044;
+	--message-status-dark:   #bbbbbb;
+	--message-status-light:  #dddddd;
 
 	--message-head:  rgba(80, 80, 80, 0.97);
 	--body:          rgba(20, 20, 20, 0.97);
@@ -89,6 +91,20 @@ header{
 .message:hover{
 	font-weight: bold;
 	box-shadow: inset 0 0 100px 100px rgba(200, 200, 255, 0.2);
+}
+
+.message-status{
+	font-size: 12px;
+	font-weight: bold;
+	text-align: center;
+	width: 20%;
+
+	background-color: var(--message-status-dark);
+    background:-webkit-gradient(linear, 0 0, 0 100%, from(var(--message-status-dark)), to(var(--message-status-light)));
+    background:-moz-linear-gradient(var(--message-status-dark), var(--message-status-light));
+    background:-o-linear-gradient(var(--message-status-dark), var(--message-status-light));
+	background: linear-gradient(var(--message-status-dark),var(--message-status-light));
+	color: #000000;
 }
 
 .chan-hidden{

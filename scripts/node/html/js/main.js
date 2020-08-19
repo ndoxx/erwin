@@ -170,6 +170,7 @@ function handlePacket(item) {
 				}
 				$("#message-container").append(`<div class="message ${styeClass} filter-${e.channel} filter-sev-${e.severity}"><div class="messagehead"><div class="channel" style="background: ${chanColor}">${e.channel}</div><div class="timestamp">${e.timestamp}</div></div>${message}${locationCaption}</div>`);
 				break;
+			
 			case "set_channels":
 				KLogger.channels = e.channels;
 				// Sort alphabetically
@@ -182,8 +183,17 @@ function handlePacket(item) {
 				createChannelSubscriptionsHiddenField(KLogger.channels);
 				updateChannelControls();
 				break;
-			case "new_connection":
+			
+			case "connect":
 				clearMessages();
+				$("#message-container").append(`<div class="message message-status">NetSink connected.</div>`);
+				$("#message-container").append(`<div class="message message-status">peer: ${e.peer_ip}:${e.peer_port}</div>`);
+				break;
+			
+			case "disconnect":
+				$("#message-container").append(`<div class="message message-status">NetSink disconnected.</div>`);
+				break;
+			
 			default:
 				KLogger.dlog("Unknown packet:");
 				KLogger.dlog(e);

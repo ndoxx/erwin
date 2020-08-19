@@ -53,7 +53,11 @@ static std::string base64_encode(const std::string data)
 NetSink::~NetSink()
 {
     if(stream_)
+    {
+    	// Notify server before closing connection
+    	stream_->send("{\"action\":\"disconnect\"}");
         delete stream_;
+    }
 }
 
 bool NetSink::connect(const std::string& server, uint16_t port)
@@ -67,11 +71,15 @@ void NetSink::on_attach()
 {
 	if(stream_ != nullptr)
 	{
+	    std::stringstream ss;
 		// Notify new connection
-    	stream_->send("{\"action\":\"new_connection\"}");
+		ss << "{\"action\":\"connect\", "
+		   << "\"peer_ip\":\""   << stream_->get_peer_ip() << "\", "
+		   << "\"peer_port\":\"" << uint32_t(stream_->get_peer_port()) << "\"}";
+    	stream_->send(ss.str());
 
 	    // Send subscribed channels to server
-	    std::stringstream ss;
+	    ss.str("");
 	    ss << "{\"action\":\"set_channels\", \"channels\":["; 
 	    for(size_t ii=0; ii<subscriptions_.size(); ++ii)
 	    {

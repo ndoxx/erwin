@@ -40,9 +40,14 @@ var nstatic = require('node-static');
 var fileServer = new nstatic.Server('./html');
 
 var server = http.createServer(function(request, response) {
+	// Redirect root path to log.html
+	if(request.url == '/') {
+		fileServer.serveFile('/log.html', 200, {}, request, response);
+		return;
+	}
     request.addListener('end', function () {
 	    fileServer.serve(request, response, function (err, result) {
-	        if (err) { // There was an error serving the file
+	        if(err) { // There was an error serving the file
 	            console.error("Error serving " + request.url + " - " + err.message);
 
 	            // Respond to the client
