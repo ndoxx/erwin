@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Theme name="Darcula" author="ice1000">
+	<color name="Text"                  value="(0.73333335,0.73333335,0.73333335,1.00)"/>
+	<color name="TextDisabled"          value="(0.34509805,0.34509805,0.34509805,1.00)"/>
+	<color name="WindowBg"              value="(0.23529413,0.24705884,0.25490198,0.94)"/>
+	<color name="ChildBg"               value="(0.23529413,0.24705884,0.25490198,0.00)"/>
+	<color name="PopupBg"               value="(0.23529413,0.24705884,0.25490198,0.94)"/>
+	<color name="Border"                value="(0.33333334,0.33333334,0.33333334,0.50)"/>
+	<color name="BorderShadow"          value="(0.15686275,0.15686275,0.15686275,0.00)"/>
+	<color name="FrameBg"               value="(0.16862746,0.16862746,0.16862746,0.54)"/>
+	<color name="FrameBgHovered"        value="(0.453125,0.67578125,0.99609375,0.67)"/>
+	<color name="FrameBgActive"         value="(0.47058827,0.47058827,0.47058827,0.67)"/>
+	<color name="TitleBg"               value="(0.04,0.04,0.04,1.00)"/>
+	<color name="TitleBgCollapsed"      value="(0.16,0.29,0.48,1.00)"/>
+	<color name="TitleBgActive"         value="(0.00,0.00,0.00,0.51)"/>
+	<color name="MenuBarBg"             value="(0.27058825,0.28627452,0.2901961,0.80)"/>
+	<color name="ScrollbarBg"           value="(0.27058825,0.28627452,0.2901961,0.60)"/>
+	<color name="ScrollbarGrab"         value="(0.21960786,0.30980393,0.41960788,0.51)"/>
+	<color name="ScrollbarGrabHovered"  value="(0.21960786,0.30980393,0.41960788,1.00)"/>
+	<color name="ScrollbarGrabActive"   value="(0.13725491,0.19215688,0.2627451,0.91)"/>
+	<color name="CheckMark"             value="(0.90,0.90,0.90,0.83)"/>
+	<color name="SliderGrab"            value="(0.70,0.70,0.70,0.62)"/>
+	<color name="SliderGrabActive"      value="(0.30,0.30,0.30,0.84)"/>
+	<color name="Button"                value="(0.33333334,0.3529412,0.36078432,0.49)"/>
+	<color name="ButtonHovered"         value="(0.21960786,0.30980393,0.41960788,1.00)"/>
+	<color name="ButtonActive"          value="(0.13725491,0.19215688,0.2627451,1.00)"/>
+	<color name="Header"                value="(0.33333334,0.3529412,0.36078432,0.53)"/>
+	<color name="HeaderHovered"         value="(0.453125,0.67578125,0.99609375,0.67)"/>
+	<color name="HeaderActive"          value="(0.47058827,0.47058827,0.47058827,0.67)"/>
+	<color name="Separator"             value="(0.31640625,0.31640625,0.31640625,1.00)"/>
+	<color name="SeparatorHovered"      value="(0.31640625,0.31640625,0.31640625,1.00)"/>
+	<color name="SeparatorActive"       value="(0.31640625,0.31640625,0.31640625,1.00)"/>
+	<color name="ResizeGrip"            value="(1.00,1.00,1.00,0.85)"/>
+	<color name="ResizeGripHovered"     value="(1.00,1.00,1.00,0.60)"/>
+	<color name="ResizeGripActive"      value="(1.00,1.00,1.00,0.90)"/>
+	<color name="PlotLines"             value="(0.61,0.61,0.61,1.00)"/>
+	<color name="PlotLinesHovered"      value="(1.00,0.43,0.35,1.00)"/>
+	<color name="PlotHistogram"         value="(0.90,0.70,0.00,1.00)"/>
+	<color name="PlotHistogramHovered"  value="(1.00,0.60,0.00,1.00)"/>
+	<color name="TextSelectedBg"        value="(0.18431373,0.39607847,0.79215693,0.90)"/>
+
+	<prop name="WindowRounding"		type="float" value="5.3"/>
+	<prop name="GrabRounding"		type="float" value="2.3"/>
+	<prop name="FrameRounding"		type="float" value="2.3"/>
+	<prop name="ScrollbarRounding"	type="float" value="5.0"/>
+	<prop name="FrameBorderSize"	type="float" value="1.0"/>
+	<prop name="ItemSpacing"		type="vec2"  value="(5.0,6.5)"/>
+</Theme>

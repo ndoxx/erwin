@@ -3,9 +3,12 @@
 #include "render/renderer_2d.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
+#include "render/camera_2d.h"
+#include "core/config.h"
+#include "filesystem/filesystem.h"
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
-#include "core/config.h"
+#include "math/transform.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/vec_swizzle.hpp"
 
@@ -34,7 +37,6 @@ static struct
 	UniformBufferHandle pass_ubo;
 	ShaderStorageBufferHandle instance_ssbo;
 	TextureHandle white_texture;
-	uint32_t white_texture_data;
 
 	glm::mat4 view_projection_matrix;
 	glm::mat4 projection_matrix;
@@ -43,7 +45,6 @@ static struct
 	FrustumSides frustum_sides;
 	uint64_t pass_state;
 
-	uint32_t num_draw_calls; // stats
 	uint32_t max_batch_count;
 	uint8_t view_id;
 	std::map<uint16_t, Batch2D> batches;
@@ -98,28 +99,23 @@ void Renderer2D::init()
 {
     W_PROFILE_FUNCTION()
 
-    FramebufferLayout layout =
+    FramebufferLayout layout
     {
         {"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}
     };
-    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), layout, true);
+    FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT, layout);
 
-	s_storage.num_draw_calls = 0;
 	s_storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
-	// s_storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
-	s_storage.batch_2d_shader = Renderer::create_shader(filesystem::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
+	s_storage.batch_2d_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/instance_shader.glsl", "instance_shader");
+	// s_storage.batch_2d_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/instance_shader.spv", "instance_shader");
 	s_storage.pass_ubo = Renderer::create_uniform_buffer("matrices", nullptr, sizeof(glm::mat4), UsagePattern::Dynamic);
 	s_storage.instance_ssbo = Renderer::create_shader_storage_buffer("instance_data", nullptr, s_storage.max_batch_count*sizeof(InstanceData), UsagePattern::Dynamic);
 	
 	Renderer::shader_attach_uniform_buffer(s_storage.batch_2d_shader, s_storage.pass_ubo);
 	Renderer::shader_attach_storage_buffer(s_storage.batch_2d_shader, s_storage.instance_ssbo);
 
-	s_storage.white_texture_data = 0xffffffff;
-	s_storage.white_texture = Renderer::create_texture_2D(Texture2DDescriptor{1,1,
-								  					 				   			&s_storage.white_texture_data,
-								  					 				   			ImageFormat::RGBA8,
-								  					 				   			MAG_NEAREST | MIN_NEAREST});
+	s_storage.white_texture = AssetManager::create_debug_texture("white"_h, 1);
 	::erwin::create_batch(0, s_storage.white_texture);
 }
 
@@ -127,7 +123,6 @@ void Renderer2D::shutdown()
 {
     W_PROFILE_FUNCTION()
 
-	Renderer::destroy(s_storage.white_texture);
 	Renderer::destroy(s_storage.instance_ssbo);
 	Renderer::destroy(s_storage.pass_ubo);
 	Renderer::destroy(s_storage.batch_2d_shader);
@@ -135,7 +130,7 @@ void Renderer2D::shutdown()
 
 void Renderer2D::create_batch(TextureHandle handle)
 {
-	::erwin::create_batch(handle.index, handle);
+	::erwin::create_batch(handle.index(), handle);
 }
 
 void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent)
@@ -143,17 +138,14 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
     W_PROFILE_FUNCTION()
 
 	RenderState state;
-	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h);
+	state.render_target = FramebufferPool::get_framebuffer("SpriteBuffer"_h).index();
 	state.rasterizer_state.cull_mode = CullMode::Back;
 	state.rasterizer_state.clear_flags = CLEAR_COLOR_FLAG | CLEAR_DEPTH_FLAG;
 	state.blend_state = transparent ? BlendState::Alpha : BlendState::Opaque;
 	state.depth_stencil_state.depth_test_enabled = true;
 
-	// Reset stats
-	s_storage.num_draw_calls = 0;
-
 	s_storage.pass_state = state.encode();
-	s_storage.view_id = Renderer::next_view_id();
+	s_storage.view_id = Renderer::next_layer_id();
 
 	// Set scene data
 	s_storage.view_projection_matrix = camera.get_view_projection_matrix();
@@ -180,30 +172,26 @@ static void flush_batch(Batch2D& batch)
 	{
 		SortKey key;
 		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
-		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_mesh("quad"_h).VAO);
 		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
 		dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo, &s_storage.view_projection_matrix, sizeof(glm::mat4), DataOwnership::Copy));
-		dc.set_UBO(s_storage.pass_ubo);
-		dc.set_SSBO(s_storage.instance_ssbo);
 		dc.set_instance_count(batch.count);
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
 
-		++s_storage.num_draw_calls;
 		batch.count = 0;
 		batch.max_depth = -1.f;
 		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
 	}
 }
 
-void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas_handle, hash_t tile, const glm::vec4& tint)
+void Renderer2D::draw_quad(const Transform2D& transform, const TextureAtlas& atlas, hash_t tile, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;
 
 	// Get appropriate batch
-	const TextureAtlas& atlas = AssetManager::get(atlas_handle);
-	auto& batch = s_storage.batches[atlas.texture.index];
+	auto& batch = s_storage.batches[atlas.texture.index()];
 
 	// Check that current batch has enough space, if not, upload batch and start to fill next batch
 	if(batch.count == s_storage.max_batch_count)
@@ -214,11 +202,11 @@ void Renderer2D::draw_quad(const ComponentTransform2D& transform, TextureAtlasHa
 		batch.max_depth = transform.position.z;
 
 	glm::vec4 uvs = atlas.get_uv(tile);
-	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
+	batch.instance_data[batch.count] = {uvs, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale), {}};
 	++batch.count;
 }
 
-void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint)
+void Renderer2D::draw_colored_quad(const Transform2D& transform, const glm::vec4& tint)
 {
 	// * Frustum culling
 	if(frustum_cull(glm::xy(transform.position), glm::vec2(transform.uniform_scale), s_storage.frustum_sides)) return;
@@ -234,17 +222,14 @@ void Renderer2D::draw_colored_quad(const ComponentTransform2D& transform, const 
 	if(transform.position.z > batch.max_depth)
 		batch.max_depth = transform.position.z;
 
-	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale)};
+	batch.instance_data[batch.count] = {{0.f,0.f,1.f,1.f}, tint, glm::vec4(transform.position, 1.f), glm::vec2(transform.uniform_scale), {}};
 	++batch.count;
 }
 
-void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle, float x, float y, float scale, const glm::vec4& tint)
+void Renderer2D::draw_text(const std::string& text, const FontAtlas& font, float x, float y, float scale, const glm::vec4& tint)
 {
 	// Ad hoc rescaling of character advance parameter
 	constexpr float k_adv_factor = 1.05f;
-
-	// Get font atlas
-	const FontAtlas& font = AssetManager::get(font_handle);
 
 	Batch2D batch;
 	batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), Renderer::get_arena());
@@ -255,7 +240,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 	std::string::const_iterator itc;
     for(itc = text.begin(); itc != text.end(); ++itc)
     {
-    	const FontAtlas::RemappingElement& remap = font.get_remapping(*itc);
+    	const FontAtlas::RemappingElement& remap = font.get_remapping(uint64_t(*itc));
     	// Handle null size characters
     	if(remap.w == 0)
     	{
@@ -269,7 +254,7 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 
     	glm::vec2 vscale = {scale*remap.w/s_storage.fb_size.x, scale*remap.h/s_storage.fb_size.y};
 
-    	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale};
+    	batch.instance_data[batch.count++] = {remap.uvs, tint, glm::vec4(xpos, ypos, 0.f, 1.f), vscale, {}};
 
     	x += k_adv_factor*scale*remap.advance / s_storage.fb_size.y;
     }
@@ -280,16 +265,12 @@ void Renderer2D::draw_text(const std::string& text, FontAtlasHandle font_handle,
 
 		SortKey key;
 		key.set_depth(batch.max_depth, s_storage.view_id, s_storage.pass_state, s_storage.batch_2d_shader);
-		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_vertex_array("quad"_h));
+		DrawCall dc(DrawCall::IndexedInstanced, s_storage.pass_state, s_storage.batch_2d_shader, CommonGeometry::get_mesh("quad"_h).VAO);
 		dc.add_dependency(Renderer::update_shader_storage_buffer(s_storage.instance_ssbo, batch.instance_data, batch.count * sizeof(InstanceData), DataOwnership::Forward));
 		dc.add_dependency(Renderer::update_uniform_buffer(s_storage.pass_ubo, &id, sizeof(glm::mat4), DataOwnership::Copy));
-		dc.set_UBO(s_storage.pass_ubo);
-		dc.set_SSBO(s_storage.instance_ssbo);
 		dc.set_instance_count(batch.count);
 		dc.set_texture(batch.texture);
 		Renderer::submit(key.encode(), dc);
-
-		++s_storage.num_draw_calls;
 	}
 }
 
@@ -298,11 +279,6 @@ void Renderer2D::flush()
 {
 	for(auto&& [key, batch]: s_storage.batches)
 		flush_batch(batch);
-}
-
-uint32_t Renderer2D::get_draw_call_count()
-{
-	return s_storage.num_draw_calls;
 }
 
 } // namespace erwin

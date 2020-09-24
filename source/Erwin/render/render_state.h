@@ -68,9 +68,13 @@ struct DepthStencilState
 constexpr uint8_t  k_framebuffer_bits   = 16;
 constexpr uint64_t k_framebuffer_shift  = uint64_t(64) - k_framebuffer_bits;
 constexpr uint64_t k_framebuffer_mask   = uint64_t(0xffff) << k_framebuffer_shift;
+// Target mip level
+constexpr uint8_t  k_target_mips_bits   = 3;
+constexpr uint64_t k_target_mips_shift  = k_framebuffer_shift - k_target_mips_bits;
+constexpr uint64_t k_target_mips_mask   = uint64_t(0x7) << k_target_mips_shift;
 // Clear flags
 constexpr uint8_t  k_clear_bits         = 3;
-constexpr uint64_t k_clear_shift        = k_framebuffer_shift - k_clear_bits;
+constexpr uint64_t k_clear_shift        = k_target_mips_shift - k_clear_bits;
 constexpr uint64_t k_clear_mask         = uint64_t(0x7) << k_clear_shift;
 // Transparency
 constexpr uint8_t  k_transp_bits        = 2;
@@ -107,26 +111,29 @@ struct RenderState
     BlendState        blend_state    = BlendState::Opaque;
     RasterizerState   rasterizer_state;
     DepthStencilState depth_stencil_state;
-    FramebufferHandle render_target;
+    uint16_t          render_target;
+    uint8_t           target_mip_level = 0;
 
     inline uint64_t encode() const
     {
-        return (((uint64_t)render_target.index                      << k_framebuffer_shift)  & k_framebuffer_mask)
-             | (((uint64_t)rasterizer_state.clear_flags             << k_clear_shift)        & k_clear_mask)
-             | (((uint64_t)blend_state                              << k_transp_shift)       & k_transp_mask)
-             | (((uint64_t)rasterizer_state.cull_mode               << k_cull_mode_shift)    & k_cull_mode_mask)
-             | (((uint64_t)depth_stencil_state.depth_test_enabled   << k_depth_test_shift)   & k_depth_test_mask)
-             | (((uint64_t)depth_stencil_state.stencil_test_enabled << k_stencil_test_shift) & k_stencil_test_mask)
-             | (((uint64_t)depth_stencil_state.depth_lock           << k_depth_lock_shift)   & k_depth_lock_mask)
-             | (((uint64_t)depth_stencil_state.stencil_lock         << k_stencil_lock_shift) & k_stencil_lock_mask)
-             | (((uint64_t)depth_stencil_state.depth_func           << k_depth_func_shift)   & k_depth_func_mask)
-             | (((uint64_t)depth_stencil_state.stencil_func         << k_stencil_func_shift) & k_stencil_func_mask)
-             | (((uint64_t)depth_stencil_state.stencil_operator     << k_stencil_op_shift)   & k_stencil_op_mask);
+        return ((static_cast<uint64_t>(render_target)                            << k_framebuffer_shift)  & k_framebuffer_mask)
+             | ((static_cast<uint64_t>(target_mip_level)                         << k_target_mips_shift)  & k_target_mips_mask)
+             | ((static_cast<uint64_t>(rasterizer_state.clear_flags)             << k_clear_shift)        & k_clear_mask)
+             | ((static_cast<uint64_t>(blend_state)                              << k_transp_shift)       & k_transp_mask)
+             | ((static_cast<uint64_t>(rasterizer_state.cull_mode)               << k_cull_mode_shift)    & k_cull_mode_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_test_enabled)   << k_depth_test_shift)   & k_depth_test_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_test_enabled) << k_stencil_test_shift) & k_stencil_test_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_lock)           << k_depth_lock_shift)   & k_depth_lock_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_lock)         << k_stencil_lock_shift) & k_stencil_lock_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.depth_func)           << k_depth_func_shift)   & k_depth_func_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_func)         << k_stencil_func_shift) & k_stencil_func_mask)
+             | ((static_cast<uint64_t>(depth_stencil_state.stencil_operator)     << k_stencil_op_shift)   & k_stencil_op_mask);
     }
 
     inline void decode(uint64_t state)
     {
-        render_target.index                      = uint16_t(       (state & k_framebuffer_mask)  >> k_framebuffer_shift);
+        render_target                            = uint16_t(       (state & k_framebuffer_mask)  >> k_framebuffer_shift);
+        target_mip_level                         = uint8_t(        (state & k_target_mips_mask)  >> k_target_mips_shift);
         rasterizer_state.clear_flags             = uint8_t(        (state & k_clear_mask)        >> k_clear_shift);
         blend_state                              = BlendState(     (state & k_transp_mask)       >> k_transp_shift);
         rasterizer_state.cull_mode               = CullMode(       (state & k_cull_mode_mask)    >> k_cull_mode_shift);

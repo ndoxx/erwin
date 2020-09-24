@@ -1,13 +1,17 @@
 #pragma once
 
 #include "core/core.h"
-#include "render/camera_2d.h"
-#include "asset/handles.h"
 #include "render/handles.h"
-#include "entity/component_transform.h"
+
+#include "glm/glm.hpp"
 
 namespace erwin
 {
+
+class OrthographicCamera2D;
+struct Transform2D;
+struct TextureAtlas;
+struct FontAtlas;
 
 // 2D renderer front-end
 class Renderer2D
@@ -18,16 +22,13 @@ public:
 	// End a pass
 	static void end_pass();
 	// Draw a textured quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.
-	static void draw_quad(const ComponentTransform2D& transform, TextureAtlasHandle atlas, hash_t tile, const glm::vec4& tint=glm::vec4(1.f));
+	static void draw_quad(const Transform2D& transform, const TextureAtlas& atlas, hash_t tile, const glm::vec4& tint=glm::vec4(1.f));
 	// Draw a colored quad. This quad will be batched with others if it passes frustum culling, and instanced on queue flush.
-	static void draw_colored_quad(const ComponentTransform2D& transform, const glm::vec4& tint);
+	static void draw_colored_quad(const Transform2D& transform, const glm::vec4& tint);
 	// Render text
-	static void draw_text(const std::string& text, FontAtlasHandle font, float x, float y, float scale, const glm::vec4& tint);
+	static void draw_text(const std::string& text, const FontAtlas& font, float x, float y, float scale, const glm::vec4& tint);
 	// Force current batch to be pushed to render queue
 	static void flush();
-
-	// Stats
-	static uint32_t get_draw_call_count();
 
 private:
 	friend class Application;

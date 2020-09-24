@@ -3,18 +3,20 @@
 #include <vector>
 #include <iostream>
 
+#define W_TEST
 #include "catch2/catch.hpp"
 #include "debug/logger.h"
 #include "debug/logger_thread.h"
 #include "debug/logger_sink.h"
-#include "event/event.h"
+#include "memory/memory.hpp"
 #include "event/event_bus.h"
+#include "event/event.h"
 
 using namespace erwin;
 
-struct CollideEvent: public WEvent
+struct CollideEvent
 {
-	EVENT_DECLARATION(CollideEvent);
+	EVENT_DECLARATIONS(CollideEvent);
 
     CollideEvent() = default;
 	CollideEvent(uint32_t first, uint32_t second):
@@ -25,16 +27,16 @@ struct CollideEvent: public WEvent
 	}
 
 #ifdef W_DEBUG
-    virtual void print(std::ostream& stream) const override
+    friend std::ostream& operator <<(std::ostream& stream, const CollideEvent& rhs)
     {
-        stream << first << " <-> " << second;
+        stream << rhs.first << " <-> " << rhs.second;
+        return stream;
     }
 #endif
 
     int first;
     int second;
 };
-EVENT_DEFINITION(CollideEvent);
 
 
 class ColliderSystem
@@ -47,12 +49,12 @@ public:
 
 	void fire_collision_instant(uint32_t first, uint32_t second)
 	{
-		EVENTBUS.publish(CollideEvent(first, second));
+		EventBus::fire(CollideEvent(first, second));
 	}
 
 	void enqueue_collision(uint32_t first, uint32_t second)
 	{
-		EVENTBUS.enqueue(new CollideEvent(first, second));
+		EventBus::enqueue(CollideEvent(first, second));
 	}
 };
 
@@ -77,21 +79,16 @@ public:
 class EventFixture
 {
 public:
-	EventFixture():
-	area(1_kB)
+	EventFixture()
 	{
-        EventBus::init();
-        EVENTBUS.init_event_pool<CollideEvent>(area, 8);
-		EVENTBUS.subscribe(&collision_response, &CollisionResponseSystem::on_collision);
+		EventBus::subscribe(&collision_response, &CollisionResponseSystem::on_collision);
 	}
 	~EventFixture()
 	{
-        EVENTBUS.destroy_event_pool<CollideEvent>();
-        EventBus::shutdown();
+		EventBus::reset();
 	}
 
 protected:
-    memory::HeapArea area;
     ColliderSystem collider;
     CollisionResponseSystem collision_response;
 };
@@ -100,6 +97,7 @@ TEST_CASE_METHOD(EventFixture, "Firing event instantly", "[evt]")
 {
 	collider.fire_collision_instant(0,1);
 
+	REQUIRE(EventBus::empty());
 	REQUIRE(collision_response.handled.size()==1);
 	auto&& [a,b] = collision_response.handled[0];
 	REQUIRE((a==0 && b==1));
@@ -110,7 +108,7 @@ TEST_CASE_METHOD(EventFixture, "Enqueueing event", "[evt]")
 	collider.enqueue_collision(0,1);
 	REQUIRE(collision_response.handled.size()==0);
 
-	EVENTBUS.dispatch();
+	EventBus::dispatch();
 
 	REQUIRE(collision_response.handled.size()==1);
 	auto&& [a,b] = collision_response.handled[0];
@@ -123,7 +121,7 @@ TEST_CASE_METHOD(EventFixture, "Enqueueing multiple events", "[evt]")
 	collider.enqueue_collision(2,3);
 	REQUIRE(collision_response.handled.size()==0);
 
-	EVENTBUS.dispatch();
+	EventBus::dispatch();
 
 	REQUIRE(collision_response.handled.size()==2);
 	auto&& [a,b] = collision_response.handled[0];
@@ -131,14 +129,3 @@ TEST_CASE_METHOD(EventFixture, "Enqueueing multiple events", "[evt]")
 	auto&& [c,d] = collision_response.handled[1];
 	REQUIRE((c==2 && d==3));
 }
-
-/*
-TEST_CASE_METHOD(EventFixture, "Saturating event pool", "[evt]")
-{
-	for(int ii=0; ii<10; ++ii)
-		collider.enqueue_collision(0,1);
-
-	EVENTBUS.dispatch();
-	REQUIRE(collision_response.handled.size()==8);
-}
-*/

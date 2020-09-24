@@ -61,7 +61,7 @@ std::string RenderState::to_string()
 	}
 
 	// Render target
-	ss << "|RT:" << render_target.index;
+	ss << "|RT:" << render_target;
 
 	return ss.str();
 }

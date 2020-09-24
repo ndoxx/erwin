@@ -8,16 +8,14 @@ namespace erwin
 class GameClock
 {
 public:
-    GameClock();
-    ~GameClock() = default;
-
     inline bool is_next_frame_required() const { return next_frame_required_; }
     inline bool is_paused() const { return pause_; }
     inline float get_frame_speed() const { return next_frame_required_?1.0f:frame_speed_; }
 
+    inline void pause(bool value) { pause_ = value; }
     inline void toggle_pause() { pause_ = ! pause_; }
     inline void set_frame_speed(float value) { frame_speed_ = value; }
-    inline void require_next_frame() { if(frame_speed_ == 0.0f) next_frame_required_ = true; }
+    inline void require_next_frame() { next_frame_required_ = true; }
 
     inline void frame_speed_up()
     {
@@ -32,19 +30,19 @@ public:
             frame_speed_ = 0.0f;
     }
 
-    inline void update(std::chrono::nanoseconds dt) { dt_ = dt.count()/1.0e9; }
+    inline void update(std::chrono::nanoseconds dt) { dt_ = float(dt.count())/float(1.0e9); }
     inline void release_flags() { next_frame_required_ = false; }
     inline float get_scaled_frame_duration() const { return get_frame_speed()*dt_; }
     inline float get_frame_duration() const { return dt_; }
 
 private:
-    float frame_speed_;
-    float dt_;
-    bool next_frame_required_;
-    bool pause_;
+    float frame_speed_ = 1.f;
+    float dt_ = 0.f;
+    bool next_frame_required_ = false;
+    bool pause_ = false;
 
-    static float MAX_FRAME_SPEED_;
-    static float SPEED_INCREMENT_;
+    static constexpr float MAX_FRAME_SPEED_ = 5.f;
+    static constexpr float SPEED_INCREMENT_ = 0.1f;
 };
 
 } // namespace erwin

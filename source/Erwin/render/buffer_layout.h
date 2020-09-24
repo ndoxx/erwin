@@ -35,6 +35,8 @@ struct BufferLayoutElement
     // Get the number of components for the underlying type
     uint32_t get_component_count() const;
 
+    bool operator ==(const BufferLayoutElement& other);
+
     hash_t name;
     ShaderDataType type;
     uint32_t size;
@@ -46,8 +48,15 @@ struct BufferLayoutElement
 class BufferLayout
 {
 public:
-    BufferLayout(const std::initializer_list<BufferLayoutElement>& elements);
-    BufferLayout(BufferLayoutElement* elements, uint32_t count);
+    BufferLayout() = default;
+    explicit BufferLayout(const std::initializer_list<BufferLayoutElement>& elements);
+    BufferLayout(BufferLayoutElement const* elements, uint32_t count);
+
+    void init(BufferLayoutElement const* elements, uint32_t count);
+    void clear();
+
+    bool operator ==(const BufferLayout& other);
+    bool compare(const BufferLayout& other);
 
     // Iterators for use in range-based for loops
     inline std::vector<BufferLayoutElement>::iterator begin()             { return elements_.begin(); }

@@ -50,12 +50,10 @@ public:
 COMPONENT_DEFINITION(CComponent);
 
 // Systems
-class ABAdderSystem: public ComponentSystem<AComponent, BComponent>
+class ABAdderSystem: public ComponentSystem<RequireAll<AComponent, BComponent>>
 {
-	using BaseType = ComponentSystem<AComponent, BComponent>;
-
 public:
-	ABAdderSystem(EntityManager* manager): BaseType(manager) {}
+	ABAdderSystem() = default;
 	virtual ~ABAdderSystem() = default;
 	virtual bool init() override final { return true; }
 
@@ -76,12 +74,10 @@ public:
 	}
 };
 
-class BCAdderSystem: public ComponentSystem<BComponent, CComponent>
+class BCAdderSystem: public ComponentSystem<RequireAll<BComponent, CComponent>>
 {
-	using BaseType = ComponentSystem<BComponent, CComponent>;
-
 public:
-	BCAdderSystem(EntityManager* manager): BaseType(manager) {}
+	BCAdderSystem() = default;
 	virtual ~BCAdderSystem() = default;
 	virtual bool init() override final { return true; }
 
@@ -109,51 +105,56 @@ public:
 	ECSFixture():
 	area(1_MB)
 	{
-		size_t N = 8;
-		mgr.create_component_manager<AComponent>(area, N);
-		mgr.create_component_manager<BComponent>(area, N);
-		mgr.create_component_manager<CComponent>(area, N);
-		mgr.create_system<ABAdderSystem>();
-		mgr.create_system<BCAdderSystem>();
+		size_t N = 16;
+		ECS::create_component_manager<AComponent>(area, N);
+		ECS::create_component_manager<BComponent>(area, N);
+		ECS::create_component_manager<CComponent>(area, N);
+		ECS::create_system<ABAdderSystem>();
+		ECS::create_system<BCAdderSystem>();
 
 		// Entities that contain A and B components
 		for(int ii=0; ii<4; ++ii)
 		{
-			EntityID ent = mgr.create_entity();
-			mgr.create_component<AComponent>(ent);
-			mgr.create_component<BComponent>(ent);
-			mgr.submit_entity(ent);
+			EntityID ent = ECS::create_entity();
+			ECS::create_component<AComponent>(ent);
+			ECS::create_component<BComponent>(ent);
+			ECS::submit_entity(ent);
 		}
 		// Entities that contain B and C components
 		for(int ii=0; ii<4; ++ii)
 		{
-			EntityID ent = mgr.create_entity();
-			mgr.create_component<BComponent>(ent);
-			mgr.create_component<CComponent>(ent);
-			mgr.submit_entity(ent);
+			EntityID ent = ECS::create_entity();
+			ECS::create_component<BComponent>(ent);
+			ECS::create_component<CComponent>(ent);
+			ECS::submit_entity(ent);
 		}
 	}
 
+	~ECSFixture()
+	{
+		ECS::shutdown();
+	}
+
+
 protected:
 	memory::HeapArea area;
-	EntityManager mgr;
 };
 
 TEST_CASE_METHOD(ECSFixture, "Component filtering test: check processed entities", "[ecs]")
 {
 	GameClock game_clock;
-	mgr.update(game_clock);
-	area.debug_hex_dump(std::cout);
+	ECS::update(game_clock);
+	// area.debug_hex_dump(std::cout);
 
 	for(int ii=0; ii<4; ++ii)
 	{
-		Entity& ent = mgr.get_entity(ii);
+		Entity& ent = ECS::get_entity(ii);
 		REQUIRE(ent.get_component<BComponent>()->b1 == 11);
 		REQUIRE(ent.get_component<BComponent>()->b2 == 9);
 	}
 	for(int ii=4; ii<8; ++ii)
 	{
-		Entity& ent = mgr.get_entity(ii);
+		Entity& ent = ECS::get_entity(ii);
 		REQUIRE(ent.get_component<CComponent>()->c == 10);
 	}
 }
@@ -165,20 +166,61 @@ TEST_CASE_METHOD(ECSFixture, "Component filtering test: check ignored entities",
 	// Entities that contain A and C components (should be ignored)
 	for(int ii=0; ii<4; ++ii)
 	{
-		EntityID ent = mgr.create_entity();
-		mgr.create_component<AComponent>(ent);
-		mgr.create_component<CComponent>(ent);
-		mgr.submit_entity(ent);
+		EntityID ent = ECS::create_entity();
+		ECS::create_component<AComponent>(ent);
+		ECS::create_component<CComponent>(ent);
+		ECS::submit_entity(ent);
 		ids.push_back(ent);
 	}
 
 	GameClock game_clock;
-	mgr.update(game_clock);
-	area.debug_hex_dump(std::cout);
+	ECS::update(game_clock);
+	// area.debug_hex_dump(std::cout);
 
 	for(EntityID id: ids)
 	{
-		Entity& ent = mgr.get_entity(id);
+		Entity& ent = ECS::get_entity(id);
 		REQUIRE(ent.get_component<CComponent>()->c == 0);
 	}
+}
+
+TEST_CASE_METHOD(ECSFixture, "Adding a component dynamically", "[ecs]")
+{
+	EntityID ent = ECS::create_entity();
+	auto& a = ECS::create_component<AComponent>(ent);
+	auto& b = ECS::create_component<BComponent>(ent);
+	ECS::submit_entity(ent);
+
+	GameClock game_clock;
+	ECS::update(game_clock);
+	REQUIRE(b.b1 == 11);
+	REQUIRE(b.b2 == 9);
+
+	auto& c = ECS::add_component<CComponent>(ent);
+	REQUIRE(c.c == 0);
+	ECS::update(game_clock);
+	REQUIRE(b.b1 == 12);
+	REQUIRE(b.b2 == 8);
+	REQUIRE(c.c == 10);
+}
+
+TEST_CASE_METHOD(ECSFixture, "Removing a component dynamically", "[ecs]")
+{
+	EntityID ent = ECS::create_entity();
+	auto& a = ECS::create_component<AComponent>(ent);
+	auto& b = ECS::create_component<BComponent>(ent);
+	auto& c = ECS::create_component<CComponent>(ent);
+	ECS::submit_entity(ent);
+
+	GameClock game_clock;
+	ECS::update(game_clock);
+	REQUIRE(b.b1 == 11);
+	REQUIRE(b.b2 == 9);
+	REQUIRE(c.c == 10);
+
+	bool success = ECS::remove_component<CComponent>(ent);
+	REQUIRE(success);
+
+	ECS::update(game_clock);
+	REQUIRE(c.c == 10);
 }

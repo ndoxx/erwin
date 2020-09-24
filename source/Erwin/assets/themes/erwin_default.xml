@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Theme name="Default" base="dark" author="ndx">
+    <color name="Border"			value="(0.3,0.3,0.3,1.0)"/>
+    <color name="BorderShadow"		value="(0.0,0.0,0.0,0.0)"/>
+    <color name="TitleBg"			value="(0.05,0.3,0.7,1.0)"/>
+    <color name="TitleBgCollapsed"	value="(0.05,0.7,0.3,0.75)"/>
+    <color name="TitleBgActive"		value="(1.0,0.5,0.05,1.0)"/>
+    <color name="Header"			value="(0.05,0.3,0.7,1.0)"/>
+    <color name="HeaderHovered"		value="(0.6,0.6,0.6,1.0)"/>
+    <color name="HeaderActive"		value="(1.0,0.5,0.05,1.0)"/>
+    <color name="ResizeGrip"		value="(0.05,0.3,0.7,1.0)"/>
+    <color name="ResizeGripHovered"	value="(0.6,0.6,0.6,1.0)"/>
+    <color name="ResizeGripActive"	value="(1.0,0.5,0.05,1.0)"/>
+    <color name="Button"			value="(0.05,0.3,0.7,1.0)"/>
+    <color name="ButtonHovered"		value="(0.6,0.6,0.6,1.0)"/>
+    <color name="ButtonActive"		value="(1.0,0.5,0.05,1.0)"/>
+    <color name="SliderGrab"		value="(0.6,0.6,0.6,1.0)"/>
+    <color name="SliderGrabActive"	value="(1.0,0.5,0.05,1.0)"/>
+    <color name="PlotLines"			value="(0.1,0.8,0.2,1.0)"/>
+
+    <prop name="WindowRounding" type="float" value="5.0"/>
+</Theme>

@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include "core/hashstr.h"
+#include "kibble/hash/hashstr.h"
 
 // Export JSON instrumentation profiles compatible with chrome://tracing
 #define W_PROFILE
@@ -33,18 +33,22 @@
 
 #ifdef W_ENABLE_ASSERT
 	#include <cstdio>
+	namespace detail
+	{
+		extern void assert_redirect();
+	}
 	#define ASSERT_FMT_BUFFER_SIZE__ 128
 	static char ASSERT_FMT_BUFFER__[ASSERT_FMT_BUFFER_SIZE__];
 	#define W_STATIC_ERROR(FSTR, ...) printf( FSTR , __VA_ARGS__ )
-	#define W_ASSERT_FMT(CND, FORMAT_STR, ...) { if(!( CND )) { snprintf(ASSERT_FMT_BUFFER__, ASSERT_FMT_BUFFER_SIZE__, FORMAT_STR, __VA_ARGS__); printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , ASSERT_FMT_BUFFER__ , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
-	#define W_ASSERT(CND, STR) { if(!( CND )) { printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , STR , __FILE__ , __func__ , __LINE__ ); W_DEBUG_BREAK(); }}
+	#define W_ASSERT_FMT(CND, FORMAT_STR, ...) { if(!( CND )) { snprintf(ASSERT_FMT_BUFFER__, ASSERT_FMT_BUFFER_SIZE__, FORMAT_STR, __VA_ARGS__); printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , ASSERT_FMT_BUFFER__ , __FILE__ , __func__ , __LINE__ ); ::detail::assert_redirect(); }}
+	#define W_ASSERT(CND, STR) { if(!( CND )) { printf("\033[1;38;2;255;0;0mAssertion failed:\033[0m '%s' -- %s\n%s:%s:%d\n", #CND , STR , __FILE__ , __func__ , __LINE__ ); ::detail::assert_redirect(); }}
 #else
 	#define W_STATIC_ERROR(FSTR, ...)
 	#define W_ASSERT_FMT(CND, FORMAT_STR, ...)
 	#define W_ASSERT(CND, STR)
 #endif
 
-inline void fatal() { exit(-1); }
+[[maybe_unused]] static inline void fatal() { exit(-1); }
 
 // Instrumentation timer
 #ifdef W_PROFILE
@@ -93,5 +97,10 @@ namespace erwin
 	{
 	  return std::make_unique<T>(std::forward<Args>(args)...);
 	}
+
+	using hash_t = kb::hash_t;
+	[[maybe_unused]] static constexpr hash_t H_(const char* str) { return kb::H_(str); }
+	[[maybe_unused]] static constexpr hash_t operator"" _h(const char* internstr, size_t) { return H_(internstr); }
+	[[maybe_unused]] static inline hash_t HCOMBINE_(hash_t first, hash_t second) { return kb::HCOMBINE_(first, second); }
 
 } // namespace erwin

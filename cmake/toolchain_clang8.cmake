@@ -1,7 +1,7 @@
-if(DEFINED TOOLCHAIN_CLANG_7_)
+if(DEFINED TOOLCHAIN_CLANG_8_)
   return()
 else()
-  set(TOOLCHAIN_CLANG_7_ 1)
+  set(TOOLCHAIN_CLANG_8_ 1)
 endif()
 
 SET (CMAKE_C_COMPILER             "/usr/bin/clang-8")
@@ -12,7 +12,6 @@ SET (CMAKE_C_FLAGS_RELEASE        "-O3 -DNDEBUG")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 SET (CMAKE_CXX_COMPILER             "/usr/bin/clang++-8")
-SET (CMAKE_CXX_FLAGS                "-stdlib=libstdc++ -Wall -pedantic -Wno-unsupported-friend")
 SET (CMAKE_CXX_FLAGS_DEBUG          "-g")
 SET (CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
 SET (CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")

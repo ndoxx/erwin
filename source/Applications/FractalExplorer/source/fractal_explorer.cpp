@@ -5,17 +5,32 @@
 
 #define W_ENTRY_POINT
 #include "erwin.h"
-
-#include "render/buffer.h"
-#include "render/shader.h"
-#include "render/render_device.h"
-#include "render/common_geometry.h"
-#include "platform/ogl_shader.h"
-#include "platform/ogl_texture.h"
-
 #include "glm/glm.hpp"
 
 using namespace erwin;
+
+#include "entity/component/hierarchy.h"
+#include "entity/component/transform.h"
+#include "entity/component/camera.h"
+#include "entity/component/bounding_box.h"
+#include "entity/component/mesh.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/light.h"
+#include "entity/component/description.h"
+#include "entity/component/script.h"
+
+// TMP
+class Scene;
+template <> void erwin::inspector_GUI<ComponentTransform3D>(ComponentTransform3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentCamera3D>(ComponentCamera3D&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentOBB>(ComponentOBB&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentMesh>(ComponentMesh&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLightMaterial>(ComponentDirectionalLightMaterial&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentDirectionalLight>(ComponentDirectionalLight&, EntityID, Scene&) {}
+template <> void erwin::inspector_GUI<ComponentScript>(ComponentScript&, EntityID, Scene&) {}
+
 
 struct MandelbrotData
 {
@@ -40,12 +55,6 @@ public:
 
 	~FractalLayer() = default;
 
-	virtual bool on_event(const MouseButtonEvent& event) override
-	{
-		DLOGN("event") << get_name() << " -> Handled event: " << event << std::endl;
-		return true;
-	}
-
 	virtual void on_imgui_render() override
 	{
 		if(show_menu_)
@@ -56,6 +65,7 @@ public:
 	        ImGui::SliderFloat("Attenuation", &data_.attenuation, 0.f, 5.f);
 	        ImGui::SliderFloat3("Palette", (float*)&data_.palette, 0.0f, 1.0f);
 	        ImGui::SliderFloat("Animation speed", &speed_, 0.f, 1.f);
+	        ImGui::End();
 	    }
 	}
 
@@ -69,7 +79,7 @@ public:
 	virtual void on_detach() override
 	{
 		Renderer::destroy(mandel_ubo_);
-		AssetManager::release(shader_);
+		// AssetManager::release(shader_);
 	}
 
 protected:
@@ -98,28 +108,35 @@ protected:
 		pass_state.depth_stencil_state.depth_test_enabled = false;
 		pass_state.rasterizer_state.clear_color = glm::vec4(0.2f,0.2f,0.2f,0.f);
 
-		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_vertex_array("quad"_h));
-		dc.set_UBO(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy);
+		DrawCall dc(DrawCall::Indexed, pass_state.encode(), shader_, CommonGeometry::get_mesh("quad"_h).VAO);
+		dc.add_dependency(Renderer::update_uniform_buffer(mandel_ubo_, &data_, sizeof(MandelbrotData), DataOwnership::Copy));
 		Renderer::submit("Presentation"_h, dc);
 	}
 
-	virtual bool on_event(const WindowResizeEvent& event) override
+	bool on_window_resize_event(const WindowResizeEvent& event)
 	{
 		camera_ctl_.on_window_resize_event(event);
 		return false;
 	}
 
-	virtual bool on_event(const MouseScrollEvent& event) override
+	bool on_mouse_scroll_event(const MouseScrollEvent& event)
 	{
 		camera_ctl_.on_mouse_scroll_event(event);
 		return false;
 	}
 
-	virtual bool on_event(const KeyboardEvent& event) override
+	bool on_keyboard_event(const KeyboardEvent& event)
 	{
 		if(event.pressed && event.key == keymap::WKEY::TAB)
 			show_menu_ = !show_menu_;
 		return false;
+	}
+
+	virtual void on_commit() override
+	{
+		add_listener(this, &FractalLayer::on_window_resize_event);
+		add_listener(this, &FractalLayer::on_mouse_scroll_event);
+		add_listener(this, &FractalLayer::on_keyboard_event);
 	}
 
 private:
@@ -144,12 +161,14 @@ public:
 
 	virtual void on_client_init() override
 	{
-		filesystem::set_asset_dir("source/Applications/FractalExplorer/assets");
+		wfs::set_asset_dir("source/Applications/FractalExplorer/assets");
+		wfs::set_client_config_dir("source/Applications/FractalExplorer/config");
+	    add_configuration("cfg://client.xml"_wp);
 	}
 
 	virtual void on_load() override
 	{
-		EVENTBUS.subscribe(this, &FractalExplorer::on_keyboard_event);
+		EventBus::subscribe(this, &FractalExplorer::on_keyboard_event);
 
 		push_layer(new FractalLayer());
 	}
@@ -158,7 +177,7 @@ public:
 	{
 		// Terminate on ESCAPE
 		if(e.pressed && e.key == keymap::WKEY::ESCAPE)
-			EVENTBUS.publish(WindowCloseEvent());
+			EventBus::enqueue(WindowCloseEvent());
 
 		return false;
 	}

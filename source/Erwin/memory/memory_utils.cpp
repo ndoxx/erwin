@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <map>
 
+using namespace kb;
+
 namespace erwin
 {
 namespace memory
@@ -12,21 +14,21 @@ namespace memory
 namespace utils
 {
 
+static const std::string suffix[] = {"B", "kB", "MB", "GB", "TB"};
+static constexpr int length = 5;
+
 std::string human_size(std::size_t bytes)
 {
-	static std::string suffix[] = {"B", "kB", "MB", "GB", "TB"};
-	static int length = 5;
-
 	int i = 0;
-	double dblBytes = bytes;
+	double dblBytes = double(bytes);
 
 	if (bytes > 1024) {
 		for (i = 0; (bytes / 1024) > 0 && i<length-1; i++, bytes /= 1024)
-			dblBytes = bytes / 1024.0;
+			dblBytes = double(bytes) / 1024.0;
 	}
 
 	static char output[200];
-	sprintf(output, "%.02lf %s", dblBytes, suffix[i].c_str());
+	snprintf(output, 200, "%.02lf %s", dblBytes, suffix[i].c_str());
 	return output;
 }
 

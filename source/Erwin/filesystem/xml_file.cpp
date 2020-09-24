@@ -1,6 +1,5 @@
-#include <fstream>
-
 #include "filesystem/xml_file.h"
+#include "filesystem/filesystem.h"
 #include "debug/logger.h"
 #include "rapidxml/rapidxml_print.hpp"
 
@@ -98,6 +97,22 @@ void XMLFile::release()
     buffer.clear();
 }
 
+void XMLFile::create_root(const char* root_name, bool write_declaration)
+{
+    W_ASSERT(root == nullptr, "XML file already has a root");
+
+    if(write_declaration)
+    {
+        xml_node<>* decl = doc.allocate_node(node_declaration);
+        decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+        decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+        doc.append_node(decl);
+    }
+
+    root = doc.allocate_node(node_element, doc.allocate_string(root_name));
+    doc.append_node(root);
+}
+
 xml_node<>* XMLFile::add_node(xml_node<>* parent, const char* node_name, const char* node_value)
 {
     xml_node<>* node = doc.allocate_node(node_element, doc.allocate_string(node_name));
@@ -123,24 +138,17 @@ void XMLFile::set_value(xml_node<>* node, const char* value)
 
 bool XMLFile::read()
 {
-    DLOGN("core") << "Parsing XML file:" << std::endl;
+    DLOG("core",0) << "Parsing XML file:" << std::endl;
     DLOGI << WCC('p') << filepath << std::endl;
 
-    if(!fs::exists(filepath))
+    if(!filepath.exists())
     {
         DLOGE("core") << "File does not exist." << std::endl;
         return false;
     }
 
-    // Read the xml file into a vector
-    std::ifstream ifs(filepath);
-    if(!ifs.is_open())
-    {
-        DLOGE("core") << "Unable to open file." << std::endl;
-        return false;
-    }
-    buffer = std::string((std::istreambuf_iterator<char>(ifs)),
-                          std::istreambuf_iterator<char>());
+    // Read the xml file into buffer
+    buffer = wfs::get_file_as_string(filepath);
 
     // Parse the buffer using the xml file parsing library into doc
     try
@@ -172,9 +180,8 @@ bool XMLFile::read()
 
 void XMLFile::write()
 {
-    std::ofstream file(filepath);
-    file << doc;
-    file.close();
+    auto ofs = wfs::get_ostream(filepath, wfs::ascii);
+    (*ofs) << doc;
 }
 
 template <>
@@ -223,6 +230,18 @@ hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name)
         return 0;
 
     return H_(leaf_node->value());
+}
+
+template <>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const std::string& source)
+{
+    rapidxml::xml_attribute<>* pAttr = node->first_attribute(name);
+    if(!pAttr)
+        return false;
+
+    char* attr_value = doc.allocate_string(source.c_str());
+    pAttr->value(attr_value);
+    return true;
 }
 
 } // namespace xml

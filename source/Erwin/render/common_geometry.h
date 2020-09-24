@@ -1,6 +1,8 @@
 #pragma once
+#include <functional>
 #include "render/handles.h"
 #include "core/core.h"
+#include "asset/mesh.h"
 
 namespace erwin
 {
@@ -8,7 +10,10 @@ namespace erwin
 class CommonGeometry
 {
 public:
-	static VertexArrayHandle get_vertex_array(hash_t name);
+	using MeshVisitor = std::function<bool(const Mesh&, const std::string&)>;
+
+	static const Mesh& get_mesh(hash_t name);
+	static void visit_meshes(MeshVisitor visit);
 
 private:
 	friend class Application;

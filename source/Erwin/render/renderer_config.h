@@ -1,6 +1,7 @@
 #pragma once
 
-// #define W_PROFILE_RENDER
+#include <cstdint>
+#define W_PROFILE_RENDER
 
 namespace erwin
 {
@@ -17,17 +18,31 @@ namespace erwin
 #define W_RC_PROFILE_DRAW_CALLS true
 
 // Maximum amount of texture slots per draw call
-static constexpr uint32_t k_max_texture_slots = 4;
-// Maximum amount of uniform buffer slots per draw call
-static constexpr uint32_t k_max_UBO_slots = 2;
+static constexpr uint32_t k_max_texture_slots = 32;
+// Maximum amount of cubemap slots per draw call
+static constexpr uint32_t k_max_cubemap_slots = 8;
 // Maximum amount of render commands per frame, per command buffer
 static constexpr uint32_t k_max_render_commands = 2048;
 // Maximum amount of draw calls per frame
 static constexpr uint32_t k_max_draw_calls = 8192;
-// Maximum amount of handles for every object managed by the main renderer
-// TODO: each object should have its own amount
-static constexpr uint32_t k_max_render_handles = 128;
 // Maximum amount of dependencies per draw call
 static constexpr uint32_t k_max_draw_call_dependencies = 8;
+
+// Maximum amount of managed objects
+static constexpr uint32_t k_max_index_buffers = 512;
+static constexpr uint32_t k_max_vertex_buffer_layouts = 64;
+static constexpr uint32_t k_max_vertex_buffers = 512;
+static constexpr uint32_t k_max_vertex_arrays = 512;
+static constexpr uint32_t k_max_uniform_buffers = 256;
+static constexpr uint32_t k_max_shader_storage_buffers = 64;
+static constexpr uint32_t k_max_textures = 256;
+static constexpr uint32_t k_max_cubemaps = 256;
+static constexpr uint32_t k_max_shaders = 256;
+static constexpr uint32_t k_max_framebuffers = 256;
+
+// DEBUG
+static constexpr bool k_enable_state_cache = true;
+
+#define W_RC_BREAK_ON_API_ERROR false
 
 } // namespace erwin

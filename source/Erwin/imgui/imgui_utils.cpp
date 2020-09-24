@@ -35,16 +35,16 @@ void PlotVar(const char* label, float value, float scale_min, float scale_max, s
     PlotVarData& pvd = g_PlotVarsMap[id];
 
     // Setup
-    if (pvd.Data.capacity() != buffer_size)
+    if (pvd.Data.capacity() != int(buffer_size))
     {
-        pvd.Data.resize(buffer_size);
+        pvd.Data.resize(int(buffer_size));
         memset(&pvd.Data[0], 0, sizeof(float) * buffer_size);
         pvd.DataInsertIdx = 0;
         pvd.LastFrame = -1;
     }
 
     // Insert (avoid unnecessary modulo operator)
-    if (pvd.DataInsertIdx == buffer_size)
+    if (pvd.DataInsertIdx == int(buffer_size))
         pvd.DataInsertIdx = 0;
     int display_idx = pvd.DataInsertIdx;
     if (value != FLT_MAX)
@@ -54,9 +54,9 @@ void PlotVar(const char* label, float value, float scale_min, float scale_max, s
     int current_frame = ImGui::GetFrameCount();
     if (pvd.LastFrame != current_frame)
     {
-        ImGui::PlotLines("##plot", &pvd.Data[0], buffer_size, pvd.DataInsertIdx, NULL, scale_min, scale_max, ImVec2(0, 40));
+        ImGui::PlotLines("##plot", &pvd.Data[0], int(buffer_size), pvd.DataInsertIdx, NULL, scale_min, scale_max, ImVec2(0, 40));
         ImGui::SameLine();
-        ImGui::Text("%s\n%-3.4f", label, pvd.Data[display_idx]);    // Display last value in buffer
+        ImGui::Text("%s\n%-3.4f", label, double(pvd.Data[display_idx]));    // Display last value in buffer
         pvd.LastFrame = current_frame;
     }
 
@@ -69,7 +69,7 @@ void PlotVarFlushOldEntries()
     for (PlotVarsMap::iterator it = g_PlotVarsMap.begin(); it != g_PlotVarsMap.end(); )
     {
         PlotVarData& pvd = it->second;
-        if (pvd.LastFrame < current_frame - fmax(400,(int)pvd.Data.size()))
+        if (pvd.LastFrame < current_frame - fmax(400, int(pvd.Data.size())))
             it = g_PlotVarsMap.erase(it);
         else
             ++it;
@@ -119,6 +119,24 @@ void WCombo(const char* combo_name, const char* text, int& current_index, int ni
     }
     ImGui::SameLine(0, style.ItemInnerSpacing.x);
     ImGui::TextUnformatted(text);
+}
+
+bool SliderFloatDefault(const char* label, float* v, float v_min, float v_max, float v_default, const char* display_format)
+{
+    bool ret = ImGui::SliderFloat(label, v, v_min, v_max, display_format);
+    if(ImGui::BeginPopupContextItem(label))
+    {
+        char buf[64];
+        snprintf(buf, 64, "Reset to %f", double(v_default));
+        if(ImGui::MenuItem(buf))
+        {
+            *v = v_default;
+            ret = true;
+        }
+        ImGui::MenuItem("Close");
+        ImGui::EndPopup();
+    }
+    return ret;
 }
 
 }

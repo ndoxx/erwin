@@ -33,7 +33,8 @@ set_target_properties(test_logger
 target_link_libraries(test_logger
                       erwin
                       pthread
-                      eastl)
+                      # eastl
+                      )
 cotire(test_logger)
 
 
@@ -61,7 +62,7 @@ target_link_libraries(test_serial
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(test_serial)
 
@@ -71,10 +72,12 @@ cotire(test_serial)
 set(SRC_ENGINE_TEST
     catch_app.cpp
     test_memory.cpp
-    test_ecs.cpp
+    test_async.cpp
+    # test_ecs.cpp
     test_rng.cpp
     test_event.cpp
-    test_jobs.cpp
+    # test_jobs.cpp
+    test_hierarchy.cpp
    )
 
 add_executable(test_erwin ${SRC_ENGINE_TEST})
@@ -96,7 +99,7 @@ target_link_libraries(test_erwin
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(test_erwin)
 
@@ -109,11 +112,11 @@ set(SRC_NUCLEAR
 add_executable(nuclear ${SRC_NUCLEAR})
 
 target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
-target_include_directories(nuclear PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
-target_include_directories(nuclear PRIVATE "${INC_EASTL}")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+target_include_directories(nuclear SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/cereal/include")
+target_include_directories(nuclear SYSTEM PRIVATE "${INC_EASTL}")
 
 set_target_properties(nuclear
     PROPERTIES
@@ -126,6 +129,6 @@ target_link_libraries(nuclear
                       erwin
                       pthread
                       stdc++fs
-                      eastl
+                      # eastl
                       )
 cotire(nuclear)

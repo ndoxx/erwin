@@ -4,6 +4,7 @@
 #include "debug/logger.h"
 #include <vector>
 #include <regex>
+#include <algorithm>
 
 namespace erwin
 {
@@ -30,11 +31,6 @@ void register_include_directory(const fs::path& dir_path)
 	}
 }
 
-void clear_include_directories()
-{
-	s_storage.include_dirs.clear();
-}
-
 static fs::path find_include(const fs::path& base_dir, const std::string& filename)
 {
 	// First, check if file can be found in the direct vicinity
@@ -42,12 +38,10 @@ static fs::path find_include(const fs::path& base_dir, const std::string& filena
 		return base_dir / filename;
 
 	// Then, check all registered include directories
-	for(auto&& inc_path: s_storage.include_dirs)
-		if(fs::exists(inc_path / filename))
-			return inc_path / filename;
-
-	// Fail
-	return "";
+	return *std::find_if(s_storage.include_dirs.begin(), s_storage.include_dirs.end(), [&filename](const fs::path& inc_path)
+	{
+		return fs::exists(inc_path / filename);
+	}) / filename;
 }
 
 // From a source string, parse #include directives and return a new source string
@@ -63,7 +57,7 @@ static std::string handle_includes(const fs::path& base_dir, const std::string& 
         // DLOG("shader", 1) << "including: " << WCC('p') << filename << WCC(0) << std::endl;
         fs::path inc_path = find_include(base_dir, filename);
         W_ASSERT_FMT(inc_path.string().size()!=0, "Could not find include file: %s", filename.c_str());
-        return "\n" + filesystem::get_file_as_string(inc_path) + "\n";
+        return "\n" + wfs::get_file_as_string(WPath(inc_path)) + "\n";
     });
 }
 
@@ -72,7 +66,7 @@ void pre_process_GLSL(const fs::path& filepath, std::vector<std::pair<ExecutionM
 	DLOG("shader",1) << "Pre-processing source: " << std::endl;
 	DLOGI << WCC('p') << filepath.filename() << std::endl;
 
-    std::string full_source(filesystem::get_file_as_string(filepath));
+    std::string full_source(wfs::get_file_as_string(WPath(filepath)));
     fs::path base_directory = filepath.parent_path();
 
     // Look for #type directives to segment shader code

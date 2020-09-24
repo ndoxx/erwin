@@ -19,12 +19,7 @@ camera_position_(camera_.get_position())
 
 }
 
-OrthographicCamera2DController::~OrthographicCamera2DController()
-{
-	
-}
-
-void OrthographicCamera2DController::update(GameClock& clock)
+void OrthographicCamera2DController::update(const GameClock& clock)
 {
 	// * Handle inputs
 	float dt = clock.get_frame_duration();
@@ -63,7 +58,7 @@ void OrthographicCamera2DController::update(GameClock& clock)
 
 bool OrthographicCamera2DController::on_window_resize_event(const WindowResizeEvent& event)
 {
-	aspect_ratio_ = event.width/float(event.height);
+	aspect_ratio_ = float(event.width)/float(event.height);
 	camera_.set_projection({-aspect_ratio_*zoom_level_, aspect_ratio_*zoom_level_, -zoom_level_, zoom_level_});
 	return false;
 }

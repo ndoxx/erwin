@@ -6,12 +6,10 @@
 
 #include <vector>
 #include <string>
-#include <filesystem>
 
 #include "core/core.h"
+#include "filesystem/wpath.h"
 #include "render/texture_common.h"
-
-namespace fs = std::filesystem;
 
 namespace erwin
 {
@@ -22,6 +20,12 @@ enum class LosslessCompression: uint8_t
 {
 	None = 0,
 	Deflate
+};
+
+enum class MaterialType: uint8_t
+{
+	NONE = 0,
+	PBR
 };
 
 struct TextureMapDescriptor
@@ -39,12 +43,16 @@ struct TextureMapDescriptor
 
 struct TOMDescriptor
 {
-    fs::path filepath;
+    WPath filepath;
     uint16_t width;
     uint16_t height;
     LosslessCompression compression;
     TextureWrap address_UV;
-    std::vector<TextureMapDescriptor> texture_maps;
+    std::vector<TextureMapDescriptor> texture_maps = {};
+
+    uint8_t* material_data = nullptr;
+    uint32_t material_data_size = 0;
+    MaterialType material_type = MaterialType::NONE;
 
     void release();
 };
@@ -52,7 +60,7 @@ struct TOMDescriptor
 // Read a TOM file, put data into descriptor (will allocate memory)
 extern void read_tom(TOMDescriptor& desc);
 // Write a TOM file using data contained in descriptor
-extern void write_tom(const TOMDescriptor& desc);
+extern void write_tom(TOMDescriptor& desc);
 
 } // namespace tom
 } // namespace erwin

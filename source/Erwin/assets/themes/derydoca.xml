@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Theme name="Derydoca" author="Derydoca">
+	<color name="Text"                   value="(1.000,1.000,1.000,1.000)"/>
+	<color name="TextDisabled"           value="(0.500,0.500,0.500,1.000)"/>
+	<color name="WindowBg"               value="(0.180,0.180,0.180,1.000)"/>
+	<color name="ChildBg"                value="(0.280,0.280,0.280,0.000)"/>
+	<color name="PopupBg"                value="(0.313,0.313,0.313,1.000)"/>
+	<color name="Border"                 value="(0.266,0.266,0.266,1.000)"/>
+	<color name="BorderShadow"           value="(0.000,0.000,0.000,0.000)"/>
+	<color name="FrameBg"                value="(0.160,0.160,0.160,1.000)"/>
+	<color name="FrameBgHovered"         value="(0.200,0.200,0.200,1.000)"/>
+	<color name="FrameBgActive"          value="(0.280,0.280,0.280,1.000)"/>
+	<color name="TitleBg"                value="(0.148,0.148,0.148,1.000)"/>
+	<color name="TitleBgActive"          value="(0.148,0.148,0.148,1.000)"/>
+	<color name="TitleBgCollapsed"       value="(0.148,0.148,0.148,1.000)"/>
+	<color name="MenuBarBg"              value="(0.195,0.195,0.195,1.000)"/>
+	<color name="ScrollbarBg"            value="(0.160,0.160,0.160,1.000)"/>
+	<color name="ScrollbarGrab"          value="(0.277,0.277,0.277,1.000)"/>
+	<color name="ScrollbarGrabHovered"   value="(0.300,0.300,0.300,1.000)"/>
+	<color name="ScrollbarGrabActive"    value="(1.000,0.391,0.000,1.000)"/>
+	<color name="CheckMark"              value="(1.000,1.000,1.000,1.000)"/>
+	<color name="SliderGrab"             value="(0.391,0.391,0.391,1.000)"/>
+	<color name="SliderGrabActive"       value="(1.000,0.391,0.000,1.000)"/>
+	<color name="Button"                 value="(1.000,1.000,1.000,0.000)"/>
+	<color name="ButtonHovered"          value="(1.000,1.000,1.000,0.156)"/>
+	<color name="ButtonActive"           value="(1.000,1.000,1.000,0.391)"/>
+	<color name="Header"                 value="(0.313,0.313,0.313,1.000)"/>
+	<color name="HeaderHovered"          value="(0.469,0.469,0.469,1.000)"/>
+	<color name="HeaderActive"           value="(0.469,0.469,0.469,1.000)"/>
+	<color name="Separator"              value="(0.266,0.266,0.266,1.000)"/>
+	<color name="SeparatorHovered"       value="(0.391,0.391,0.391,1.000)"/>
+	<color name="SeparatorActive"        value="(1.000,0.391,0.000,1.000)"/>
+	<color name="ResizeGrip"             value="(1.000,1.000,1.000,0.250)"/>
+	<color name="ResizeGripHovered"      value="(1.000,1.000,1.000,0.670)"/>
+	<color name="ResizeGripActive"       value="(1.000,0.391,0.000,1.000)"/>
+	<color name="Tab"                    value="(0.098,0.098,0.098,1.000)"/>
+	<color name="TabHovered"             value="(0.352,0.352,0.352,1.000)"/>
+	<color name="TabActive"              value="(0.195,0.195,0.195,1.000)"/>
+	<color name="TabUnfocused"           value="(0.098,0.098,0.098,1.000)"/>
+	<color name="TabUnfocusedActive"     value="(0.195,0.195,0.195,1.000)"/>
+	<color name="DockingPreview"         value="(1.000,0.391,0.000,0.781)"/>
+	<color name="DockingEmptyBg"         value="(0.180,0.180,0.180,1.000)"/>
+	<color name="PlotLines"              value="(0.469,0.469,0.469,1.000)"/>
+	<color name="PlotLinesHovered"       value="(1.000,0.391,0.000,1.000)"/>
+	<color name="PlotHistogram"          value="(0.586,0.586,0.586,1.000)"/>
+	<color name="PlotHistogramHovered"   value="(1.000,0.391,0.000,1.000)"/>
+	<color name="TextSelectedBg"         value="(1.000,1.000,1.000,0.156)"/>
+	<color name="DragDropTarget"         value="(1.000,0.391,0.000,1.000)"/>
+	<color name="NavHighlight"           value="(1.000,0.391,0.000,1.000)"/>
+	<color name="NavWindowingHighlight"  value="(1.000,0.391,0.000,1.000)"/>
+	<color name="NavWindowingDimBg"      value="(0.000,0.000,0.000,0.586)"/>
+	<color name="ModalWindowDimBg"       value="(0.000,0.000,0.000,0.586)"/>
+
+	<prop name="ChildRounding"		type="float" value="4.0"/>
+	<prop name="FrameBorderSize"	type="float" value="1.0"/>
+	<prop name="FrameRounding"		type="float" value="2.0"/>
+	<prop name="GrabMinSize"		type="float" value="7.0"/>
+	<prop name="PopupRounding"		type="float" value="2.0"/>
+	<prop name="ScrollbarRounding"	type="float" value="12.0"/>
+	<prop name="ScrollbarSize"		type="float" value="13.0"/>
+	<prop name="TabBorderSize"		type="float" value="1.0"/>
+	<prop name="TabRounding"		type="float" value="0.0"/>
+	<prop name="WindowRounding"		type="float" value="4.0"/>
+
+</Theme>

@@ -5,6 +5,11 @@
 namespace erwin
 {
 
+/*
+	LEGACY
+	TODO: Move this to a component when we need it
+*/
+
 struct Frustum2D
 {
 	float left;
@@ -16,7 +21,7 @@ struct Frustum2D
 // Contains the side line coefficients of a given frustum in world space
 struct FrustumSides
 {
-	FrustumSides();
+	FrustumSides() = default;
 	FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_space);
 
 	glm::vec3 side[4]; // left, right, bottom, top
@@ -25,8 +30,7 @@ struct FrustumSides
 class OrthographicCamera2D
 {
 public:
-	OrthographicCamera2D(const Frustum2D& frustum);
-	~OrthographicCamera2D();
+	explicit OrthographicCamera2D(const Frustum2D& frustum);
 
 	inline const glm::vec2& get_position() const { return position_; }
 	inline float get_angle() const { return angle_; }

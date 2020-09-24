@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Theme name="Cherry" author="r-lyeh">
+    <color name="Text"                  value="(0.860,0.930,0.890,0.78)"/>
+    <color name="TextDisabled"          value="(0.860,0.930,0.890,0.28)"/>
+    <color name="WindowBg"              value="(0.13,0.14,0.17,1.00)"/>
+    <color name="PopupBg"               value="(0.200,0.220,0.270,0.9)"/>
+    <color name="Border"                value="(0.31,0.31,1.00,0.00)"/>
+    <color name="BorderShadow"          value="(0.00,0.00,0.00,0.00)"/>
+    <color name="FrameBg"               value="(0.200,0.220,0.270,1.00)"/>
+    <color name="FrameBgHovered"        value="(0.455,0.198,0.301,0.78)"/>
+    <color name="FrameBgActive"         value="(0.455,0.198,0.301,1.00)"/>
+    <color name="TitleBg"               value="(0.232,0.201,0.271,1.00)"/>
+    <color name="TitleBgActive"         value="(0.502,0.075,0.256,1.00)"/>
+    <color name="TitleBgCollapsed"      value="(0.200,0.220,0.270,0.75)"/>
+    <color name="MenuBarBg"             value="(0.200,0.220,0.270,0.47)"/>
+    <color name="ScrollbarBg"           value="(0.200,0.220,0.270,1.00)"/>
+    <color name="ScrollbarGrab"         value="(0.09,0.15,0.16,1.00)"/>
+    <color name="ScrollbarGrabHovered"  value="(0.455,0.198,0.301,0.78)"/>
+    <color name="ScrollbarGrabActive"   value="(0.455,0.198,0.301,1.00)"/>
+    <color name="CheckMark"             value="(0.71,0.22,0.27,1.00)"/>
+    <color name="SliderGrab"            value="(0.47,0.77,0.83,0.14)"/>
+    <color name="SliderGrabActive"      value="(0.71,0.22,0.27,1.00)"/>
+    <color name="Button"                value="(0.47,0.77,0.83,0.14)"/>
+    <color name="ButtonHovered"         value="(0.455,0.198,0.301,0.86)"/>
+    <color name="ButtonActive"          value="(0.455,0.198,0.301,1.00)"/>
+    <color name="Header"                value="(0.455,0.198,0.301,0.76)"/>
+    <color name="HeaderHovered"         value="(0.455,0.198,0.301,0.86)"/>
+    <color name="HeaderActive"          value="(0.502,0.075,0.256,1.00)"/>
+    <color name="ResizeGrip"            value="(0.47,0.77,0.83,0.04)"/>
+    <color name="ResizeGripHovered"     value="(0.455,0.198,0.301,0.78)"/>
+    <color name="ResizeGripActive"      value="(0.455,0.198,0.301,1.00)"/>
+    <color name="PlotLines"             value="(0.882,0.216,0.494,1.00)"/> <!-- (0.860,0.930,0.890,0.63) -->
+    <color name="PlotLinesHovered"      value="(0.455,0.198,0.301,1.00)"/>
+    <color name="PlotHistogram"         value="(0.860,0.930,0.890,0.63)"/>
+    <color name="PlotHistogramHovered"  value="(0.455,0.198,0.301,1.00)"/>
+    <color name="TextSelectedBg"        value="(0.455,0.198,0.301,0.43)"/>
+
+    <prop name="WindowPadding"      type="vec2"  value="(6.0,4.0)"/>
+    <prop name="FramePadding"       type="vec2"  value="(5.0,2.0)"/>
+    <prop name="ItemSpacing"        type="vec2"  value="(7.0,1.0)"/>
+    <prop name="ItemInnerSpacing"   type="vec2"  value="(1.0,1.0)"/>
+    <prop name="TouchExtraPadding"  type="vec2"  value="(0.0,0.0)"/>
+    <prop name="WindowTitleAlign"   type="vec2"  value="(0.5,0.0)"/>
+    <prop name="FrameRounding"      type="float" value="3.0"/>
+    <prop name="WindowRounding"     type="float" value="0.0"/>
+    <prop name="IndentSpacing"      type="float" value="6.0"/>
+    <prop name="ScrollbarSize"      type="float" value="12.0"/>
+    <prop name="ScrollbarRounding"  type="float" value="16.0"/>
+    <prop name="GrabMinSize"        type="float" value="20.0"/>
+    <prop name="GrabRounding"       type="float" value="2.0"/>
+    <prop name="FrameBorderSize"    type="float" value="0.0"/>
+    <prop name="WindowBorderSize"   type="float" value="1.0"/>
+</Theme>

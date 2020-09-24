@@ -1,26 +1,29 @@
-set(SRC_RTEST
-    source/rtest_app.cpp
-    source/layer_test.cpp
-   )
+add_executable(rtest)
 
-add_executable(rtest ${SRC_RTEST})
-target_include_directories(rtest PRIVATE "${CMAKE_SOURCE_DIR}/source/Erwin")
-target_include_directories(rtest PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glm")
-target_include_directories(rtest PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/imgui")
-target_include_directories(rtest PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/ctti/include")
+file(GLOB_RECURSE SRC_RTEST "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
+target_sources(rtest
+    PRIVATE
+      ${SRC_RTEST}
+    )
+target_include_directories(rtest
+    PRIVATE
+        "${CMAKE_SOURCE_DIR}/source/Applications/Sandbox/source"
+        "${CMAKE_SOURCE_DIR}/source/Erwin"
+    )
 
 set_target_properties(rtest
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-)
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+    )
 
 target_link_libraries(rtest
-					            erwin
-                      pthread
-                      stdc++fs
-                      eastl
-                      )
+    PRIVATE
+        erwin
+        pthread
+        stdc++fs
+    )
+
 cotire(rtest)

@@ -49,9 +49,9 @@ make
 cp libz.a ../../../lib/
 cd ../../../build
 # EASTL
-cd ../source/vendor/eastl
-git submodule update --init
-bash ./build.sh
+# cd ../source/vendor/eastl
+# git submodule update --init
+# bash ./build.sh
 # mkdir build
 # cd build
 # cmake .. -DEASTL_BUILD_TESTS:BOOL=ON -DEASTL_BUILD_BENCHMARK:BOOL=OFF
@@ -59,8 +59,16 @@ bash ./build.sh
 # cd test
 # ctest -C Release -V
 # cd ../../
-cp build/libEASTL.a ../../../lib/
-cd ../../../build
+# cp build/libEASTL.a ../../../lib/
+
+# Kibble
+cd ../source/vendor/kibble
+mkdir build
+cd build
+cmake ..
+make kibble -j4
+cp ../lib/libkibble.a ../../../../lib/
+cd ../../../../build
 
 # Erwin lib and apps
 # make erwin -j4

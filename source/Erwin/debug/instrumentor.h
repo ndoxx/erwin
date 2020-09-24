@@ -14,7 +14,7 @@ struct ProfileResult
     std::string name;
     long long start;
     long long end;
-    uint32_t thread_id;
+    size_t thread_id;
 };
 
 struct InstrumentationSession
@@ -37,7 +37,7 @@ public:
 class InstrumentationTimer
 {
 public:
-    InstrumentationTimer(const char* name);
+    explicit InstrumentationTimer(const char* name);
     ~InstrumentationTimer();
 
     void stop();

@@ -7,8 +7,8 @@
 #include <cstring>
 #include <vector>
 
-#include "core/core.h"
 #include "utils/string.h"
+#include "filesystem/wpath.h"
 #include "glm/glm.hpp"
 #include "rapidxml/rapidxml.hpp"
 
@@ -58,13 +58,13 @@ namespace xml
 
 struct XMLFile
 {
-    fs::path filepath;
+    WPath filepath;
     rapidxml::xml_document<> doc;
-    rapidxml::xml_node<>* root;
+    rapidxml::xml_node<>* root = nullptr;
     std::string buffer;
 
     XMLFile() = default;
-    XMLFile(const fs::path& filepath): filepath(filepath) { }
+    explicit XMLFile(const WPath& filepath): filepath(filepath), root(nullptr) { }
     ~XMLFile() { release(); }
 
     // Read and parse an XML file. Only the filepath member need be initialized.
@@ -73,6 +73,7 @@ struct XMLFile
     void write();
 
     void release();
+    void create_root(const char* root_name, bool write_declaration = true);
     rapidxml::xml_node<>* add_node(rapidxml::xml_node<>* parent, const char* node_name, const char* node_value = nullptr);
     rapidxml::xml_attribute<>* add_attribute(rapidxml::xml_node<>* node, const char* attr_name, const char* attr_val);
     void set_value(rapidxml::xml_node<>* node, const char* value);
@@ -111,6 +112,18 @@ bool parse_attribute(rapidxml::xml_node<>* node, const char* name, T& destinatio
 }
 
 template <typename T>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const T& source)
+{
+    rapidxml::xml_attribute<>* pAttr = node->first_attribute(name);
+    if(!pAttr)
+        return false;
+
+    char* attr_value = doc.allocate_string(to_string<T>(source).c_str());
+    pAttr->value(attr_value);
+    return true;
+}
+
+template <typename T>
 bool parse_node(rapidxml::xml_node<>* parent, const char* leaf_name, T& destination)
 {
     rapidxml::xml_node<>* leaf_node = parent->first_node(leaf_name);
@@ -128,6 +141,8 @@ hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name);
 template <>
 void parse_node<const char*>(rapidxml::xml_node<>* parent, const char* name, std::function<void(const char* value)> exec);
 
+template <>
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const std::string& source);
 
 // Unused
 template <typename T>

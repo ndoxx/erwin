@@ -59,6 +59,14 @@ uint32_t BufferLayoutElement::get_component_count() const
     return 0;
 }
 
+bool BufferLayoutElement::operator ==(const BufferLayoutElement& other)
+{
+    return name == other.name
+        && type == other.type
+        && normalized == other.normalized;
+}
+
+
 BufferLayout::BufferLayout(const std::initializer_list<BufferLayoutElement>& elements):
 elements_(elements),
 stride_(0)
@@ -66,12 +74,45 @@ stride_(0)
     compute_offset_and_stride();
 }
 
-BufferLayout::BufferLayout(BufferLayoutElement* elements, uint32_t count):
+BufferLayout::BufferLayout(BufferLayoutElement const* elements, uint32_t count):
 stride_(0)
 {
-	elements_.resize(count);
-	memcpy(elements_.data(), elements, count * sizeof(BufferLayoutElement));
+    init(elements, count);
+}
+
+void BufferLayout::init(BufferLayoutElement const* elements, uint32_t count)
+{
+    for(uint32_t ii=0; ii<count; ++ii)
+        elements_.push_back(elements[ii]);
     compute_offset_and_stride();
+}
+
+void BufferLayout::clear()
+{
+    stride_ = 0;
+    elements_.clear();
+}
+
+bool BufferLayout::operator ==(const BufferLayout& other)
+{
+    if(elements_.size() != other.elements_.size())
+        return false;
+
+    bool ret = true;
+    for(size_t ii=0; ii<elements_.size(); ++ii)
+        ret &= elements_[ii] == other.elements_[ii];
+    return ret;
+}
+
+bool BufferLayout::compare(const BufferLayout& other)
+{
+    if(elements_.size() != other.elements_.size())
+        return false;
+
+    bool ret = true;
+    for(size_t ii=0; ii<elements_.size(); ++ii)
+        ret &= elements_[ii] == other.elements_[ii];
+    return ret;
 }
 
 void BufferLayout::compute_offset_and_stride()

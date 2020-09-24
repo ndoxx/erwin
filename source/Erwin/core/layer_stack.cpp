@@ -4,13 +4,6 @@
 namespace erwin
 {
 
-
-LayerStack::LayerStack():
-overlay_pos_(0)
-{
-	
-}
-
 LayerStack::~LayerStack()
 {
 	clear();
@@ -28,7 +21,7 @@ void LayerStack::clear()
 
 size_t LayerStack::push_layer(Layer* layer)
 {
-	layers_.emplace(layers_.begin() + overlay_pos_, layer);
+	layers_.emplace(layers_.begin() + long(overlay_pos_), layer);
 	++overlay_pos_;
 	layer->on_attach();
 
@@ -63,7 +56,7 @@ void LayerStack::pop_layer(size_t index)
 		DLOG("application",1) << "Popped layer \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 		
 		delete layer;
-		layers_.erase(layers_.begin() + index);
+		layers_.erase(layers_.begin() + long(index));
 		--overlay_pos_;
 
 		update_layer_ids();
@@ -81,9 +74,18 @@ void LayerStack::pop_overlay(size_t index)
 		DLOG("application",1) << "Popped overlay \"" << WCC('n') << layer->get_name() << WCC(0) << "\" at index " << index << std::endl;
 
 		delete layer;
-		layers_.erase(layers_.begin() + index);
+		layers_.erase(layers_.begin() + long(index));
 
 		update_layer_ids();
+	}
+}
+
+void LayerStack::commit()
+{
+	for(auto it=layers_.end(); it!=layers_.begin();)
+	{
+		Layer* layer = *--it;
+		layer->on_commit();
 	}
 }
 
@@ -103,31 +105,14 @@ void LayerStack::set_layer_enabled(size_t index, bool value)
 std::ostream& operator <<(std::ostream& stream, const LayerStack& rhs)
 {
 	stream << "[ ";
-	for(auto it = rhs.layers_.begin(); it<rhs.layers_.begin()+rhs.overlay_pos_; ++it)
+	for(auto it = rhs.layers_.begin(); it<rhs.layers_.begin()+long(rhs.overlay_pos_); ++it)
 		stream << "{" << (*it)->get_name() << "} ";
 	stream << "| ";
-	for(auto it = rhs.layers_.begin()+rhs.overlay_pos_; it<rhs.layers_.end(); ++it)
+	for(auto it = rhs.layers_.begin()+long(rhs.overlay_pos_); it<rhs.layers_.end(); ++it)
 		stream << "{" << (*it)->get_name() << "} ";
 	stream << "]";
 
 	return stream;
-}
-
-template <>
-bool LayerStack::dispatch<WindowResizeEvent>(const WindowResizeEvent& event)
-{
-	bool handled = false;
-	for(auto it=layers_.end(); it!=layers_.begin();)
-	{
-		Layer* layer = *--it;
-		if(layer->on_event(event))
-		{
-			handled = true;
-			break;
-		}
-	}
-
-    return false;//handled;
 }
 
 } // namespace erwin

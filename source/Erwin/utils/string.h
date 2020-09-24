@@ -66,8 +66,9 @@ static inline std::string trim_copy(std::string s)
 }
 
 // Tokenize an input string into a vector of strings, specifying a delimiter
-static inline void tokenize(const std::string& str, std::vector<std::string>& dst, char delimiter=',')
+static inline std::vector<std::string> tokenize(const std::string& str, char delimiter=',')
 {
+    std::vector<std::string> dst;
     std::stringstream ss(str);
 
     while(ss.good())
@@ -76,6 +77,7 @@ static inline void tokenize(const std::string& str, std::vector<std::string>& ds
         std::getline(ss, substr, delimiter);
         dst.push_back(substr);
     }
+    return dst;
 }
 
 // Tokenize an input string and call a visitor for each token
@@ -95,7 +97,7 @@ static inline void tokenize(const std::string& str, char delimiter, std::functio
 static inline size_t parse_size(const std::string& input, char delimiter='_')
 {
     auto delimiter_pos = input.find_first_of(delimiter);
-    size_t size = std::stoi(input.substr(0,delimiter_pos));
+    size_t size = static_cast<size_t>(std::stoi(input.substr(0,delimiter_pos)));
     switch(H_(input.substr(delimiter_pos+1).c_str()))
     {
         case "B"_h:  return size;
@@ -106,14 +108,28 @@ static inline size_t parse_size(const std::string& input, char delimiter='_')
     return size;
 }
 
+static inline std::string size_to_string(size_t size)
+{
+    static const std::string sizes[] = {"_B", "_kB", "_MB", "_GB"};
+
+    int ii = 0;
+    while(size%1024 == 0 && ii < 4)
+    {
+        size /= 1024;
+        ++ii;
+    }
+
+    return std::to_string(size) + sizes[ii];
+}
+
 static inline void center(std::string& input, int size)
 {
-    int diff = size - input.size();
+    int diff = size - static_cast<int>(input.size());
     if(diff <= 0)
         return;
 
-    int before = diff / 2;
-    int after  = before + diff % 2;
+    size_t before = static_cast<size_t>(diff / 2);
+    size_t after  = static_cast<size_t>(before + diff % 2);
     input = std::string(before, ' ') + input + std::string(after, ' ');
 }
 
@@ -125,6 +141,16 @@ static inline void split_string(const std::string& str, Container& cont, char de
     while (std::getline(ss, token, delim)) {
         cont.push_back(token);
     }
+}
+
+static inline void to_lower(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::tolower(c); });
+}
+
+static inline void to_upper(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::toupper(c); });
 }
 
 namespace rx

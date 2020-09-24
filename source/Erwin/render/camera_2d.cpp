@@ -6,8 +6,6 @@
 namespace erwin
 {
 
-FrustumSides::FrustumSides() {  }
-
 FrustumSides::FrustumSides(const Frustum2D& frustum, const glm::mat4& to_world_space)
 {
 	W_PROFILE_FUNCTION()
@@ -33,11 +31,6 @@ position_(0.f)
 	set_projection(frustum);
 }
 
-OrthographicCamera2D::~OrthographicCamera2D()
-{
-	
-}
-
 void OrthographicCamera2D::set_projection(const Frustum2D& frustum)
 {
 	frustum_ = frustum;
@@ -57,12 +50,12 @@ void OrthographicCamera2D::update_view_matrix()
 
 glm::vec2 OrthographicCamera2D::get_up() const
 {
-	return glm::vec2(-sin(glm::radians(angle_)), cos(glm::radians(angle_)));
+	return glm::vec2(-std::sin(glm::radians(angle_)), std::cos(glm::radians(angle_)));
 }
 
 glm::vec2 OrthographicCamera2D::get_right() const
 {
-	return glm::vec2(cos(glm::radians(angle_)), sin(glm::radians(angle_)));
+	return glm::vec2(std::cos(glm::radians(angle_)), std::sin(glm::radians(angle_)));
 }
 
 } // namespace erwin

@@ -10,10 +10,9 @@ namespace erwin
 class OrthographicCamera2DController
 {
 public:
-	OrthographicCamera2DController(float aspect_ratio, float zoom_level=1.f);
-	~OrthographicCamera2DController();
+	explicit OrthographicCamera2DController(float aspect_ratio, float zoom_level=1.f);
 
-	void update(GameClock& clock);
+	void update(const GameClock& clock);
 
 	inline const OrthographicCamera2D& get_camera() const { return camera_; }
 	inline OrthographicCamera2D& get_camera()             { return camera_; }

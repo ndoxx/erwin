@@ -3,20 +3,16 @@
 #include "core/intern_string.h"
 #include "debug/logger.h"
 #include "event/event_bus.h"
+#include "event/window_events.h"
 
 namespace erwin
 {
-
-struct FramebufferProperties
-{
-	bool has_depth;
-};
 
 struct FramebufferPoolStorage
 {
 	std::map<hash_t, FramebufferHandle> framebuffers_;
 	std::map<hash_t, WScope<FbConstraint>> constraints_;
-	std::map<hash_t, FramebufferProperties> properties_;
+	std::map<hash_t, uint8_t> flags_;
 
 	uint32_t current_width_;
 	uint32_t current_height_;
@@ -25,8 +21,8 @@ static FramebufferPoolStorage s_storage;
 
 static bool on_framebuffer_resize_event(const FramebufferResizeEvent& event)
 {
-	s_storage.current_width_  = event.width;
-	s_storage.current_height_ = event.height;
+	s_storage.current_width_  = uint32_t(event.width);
+	s_storage.current_height_ = uint32_t(event.height);
 
 	// Recreate each dynamic framebuffer to fit the new size, given its constraints
 	for(auto&& [name, constraint]: s_storage.constraints_)
@@ -48,7 +44,7 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 	s_storage.current_width_  = initial_width;
 	s_storage.current_height_ = initial_height;
 
-	EVENTBUS.subscribe(&on_framebuffer_resize_event);
+	EventBus::subscribe(&on_framebuffer_resize_event);
 	DLOGN("render") << "Framebuffer pool created." << std::endl;
 }
 
@@ -76,9 +72,9 @@ void FramebufferPool::traverse_framebuffers(std::function<void(FramebufferHandle
 
 bool FramebufferPool::has_depth(hash_t name)
 {
-	auto it = s_storage.properties_.find(name);
-	W_ASSERT(it != s_storage.properties_.end(), "[FramebufferPool] Invalid framebuffer name.");
-	return it->second.has_depth;
+	auto it = s_storage.flags_.find(name);
+	W_ASSERT(it != s_storage.flags_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	return bool(it->second & FBFlag::FB_DEPTH_ATTACHMENT);
 }
 
 uint32_t FramebufferPool::get_width(hash_t name)
@@ -106,7 +102,7 @@ glm::vec2 FramebufferPool::get_texel_size(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
 	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
-	return {1.f/it->second->get_width(s_storage.current_width_), 1.f/it->second->get_height(s_storage.current_height_)};
+	return {1.f/float(it->second->get_width(s_storage.current_width_)), 1.f/float(it->second->get_height(s_storage.current_height_))};
 }
 
 uint32_t FramebufferPool::get_screen_width()
@@ -126,10 +122,10 @@ glm::vec2 FramebufferPool::get_screen_size()
 
 glm::vec2 FramebufferPool::get_screen_texel_size()
 {
-	return {1.f/s_storage.current_width_, 1.f/s_storage.current_height_};
+	return {1.f/float(s_storage.current_width_), 1.f/float(s_storage.current_height_)};
 }
 
-FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, const FramebufferLayout& layout, bool depth, bool stencil)
+FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbConstraint> constraint, uint8_t flags, const FramebufferLayout& layout)
 {
 	// Check that no framebuffer is already registered to this name
 	auto it = s_storage.framebuffers_.find(name);
@@ -142,10 +138,12 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	uint32_t width  = constraint->get_width(s_storage.current_width_);
 	uint32_t height = constraint->get_width(s_storage.current_height_);
 
-	FramebufferHandle handle = Renderer::create_framebuffer(width, height, depth, stencil, layout);
+	FramebufferHandle handle = Renderer::create_framebuffer(width, height, flags, layout);
 	s_storage.framebuffers_.insert(std::make_pair(name, handle));
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
-	s_storage.properties_.insert(std::make_pair(name, FramebufferProperties{depth}));
+	s_storage.flags_.insert(std::make_pair(name, flags));
+
+	DLOG("render",1) << "Submit framebuffer creation: " << WCC('n') << istr::resolve(name) << ' ' << WCC(0) << handle << std::endl;
 
 	return handle;
 }
