@@ -119,6 +119,8 @@ public:
      */
     inline size_t get_asset_registry() const { return asset_registry_; }
 
+    void create_asset_registry();
+
 
     //* ENTITY MANIPULATION
 

@@ -304,6 +304,12 @@ void Scene::load_xml(const erwin::WPath& file_path)
     loaded_ = true; // TODO: More granularity. At this stage scene is not FULLY loaded
 }
 
+void Scene::create_asset_registry()
+{
+    // NOTE(ndx): Dangerous, does not check if a registry is already created
+    asset_registry_ = AssetManager::create_asset_registry();
+}
+
 void Scene::load_hdr_environment(const WPath& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
