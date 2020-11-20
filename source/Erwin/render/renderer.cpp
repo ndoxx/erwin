@@ -642,7 +642,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
     uint32_t* auxiliary = nullptr;
     if(index_data)
     {
-        auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
+        auxiliary = K_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
         memcpy(auxiliary, index_data, count * sizeof(uint32_t));
     }
     else
@@ -671,7 +671,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
     float* auxiliary = nullptr;
     if(vertex_data)
     {
-        auxiliary = W_NEW_ARRAY_DYNAMIC(float, count, s_storage.auxiliary_arena_);
+        auxiliary = K_NEW_ARRAY_DYNAMIC(float, count, s_storage.auxiliary_arena_);
         memcpy(auxiliary, vertex_data, count * sizeof(float));
     }
     else
@@ -735,7 +735,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, con
     uint8_t* auxiliary = nullptr;
     if(data)
     {
-        auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+        auxiliary = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
         memcpy(auxiliary, data, size);
     }
     else
@@ -762,7 +762,7 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
     uint8_t* auxiliary = nullptr;
     if(data)
     {
-        auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+        auxiliary = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
         memcpy(auxiliary, data, size);
     }
     else
@@ -852,7 +852,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 
     // Allocate auxiliary data
     FramebufferLayoutElement* auxiliary =
-        W_NEW_ARRAY_DYNAMIC_ALIGN(FramebufferLayoutElement, count, s_storage.auxiliary_arena_, 8);
+        K_NEW_ARRAY_DYNAMIC_ALIGN(FramebufferLayoutElement, count, s_storage.auxiliary_arena_, 8);
     memcpy(auxiliary, layout.data(), count * sizeof(FramebufferLayoutElement));
 
     RenderCommandWriter cw(RenderCommand::CreateFramebuffer);
@@ -872,7 +872,7 @@ void Renderer::update_index_buffer(IndexBufferHandle handle, const uint32_t* dat
     K_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
     K_ASSERT(data, "No data!");
 
-    uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
+    uint32_t* auxiliary = K_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, count);
 
     RenderCommandWriter cw(RenderCommand::UpdateIndexBuffer);
@@ -887,7 +887,7 @@ void Renderer::update_vertex_buffer(VertexBufferHandle handle, const void* data,
     K_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
     K_ASSERT(data, "No data!");
 
-    uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+    uint8_t* auxiliary = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
 
     RenderCommandWriter cw(RenderCommand::UpdateVertexBuffer);
@@ -902,7 +902,7 @@ void Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* dat
     K_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
     K_ASSERT(data, "No data!");
 
-    uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+    uint8_t* auxiliary = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
 
     RenderCommandWriter cw(RenderCommand::UpdateUniformBuffer);
@@ -917,7 +917,7 @@ void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, co
     K_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
     K_ASSERT(data, "No data!");
 
-    uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+    uint8_t* auxiliary = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
 
     RenderCommandWriter cw(RenderCommand::UpdateShaderStorageBuffer);
@@ -1169,7 +1169,7 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 
     if(data && bool(copy))
     {
-        void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+        void* data_copy = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
         memcpy(data_copy, data, size);
         cw.write(&data_copy);
     }
@@ -1191,7 +1191,7 @@ uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void*
 
     if(data && bool(copy))
     {
-        void* data_copy = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
+        void* data_copy = K_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
         memcpy(data_copy, data, size);
         cw.write(&data_copy);
     }

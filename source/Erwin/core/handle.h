@@ -47,11 +47,11 @@ typedef uint64_t HandleID;
     void HANDLE_NAME::init_pool(LinearArena& arena)                                                                    \
     {                                                                                                                  \
         K_ASSERT_FMT(s_ppool_ == nullptr, "Memory pool for %s is already initialized.", #HANDLE_NAME);                 \
-        s_ppool_ = W_NEW(HandlePoolT<k_max_handles<HANDLE_NAME>>, arena);                                              \
+        s_ppool_ = K_NEW(HandlePoolT<k_max_handles<HANDLE_NAME>>, arena);                                              \
     }                                                                                                                  \
     void HANDLE_NAME::destroy_pool(LinearArena& arena)                                                                 \
     {                                                                                                                  \
-        W_DELETE(s_ppool_, arena);                                                                                     \
+        K_DELETE(s_ppool_, arena);                                                                                     \
         s_ppool_ = nullptr;                                                                                            \
     }                                                                                                                  \
     std::ostream& operator<<(std::ostream& stream, const HANDLE_NAME& h)                                               \

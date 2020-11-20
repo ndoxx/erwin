@@ -156,7 +156,7 @@ void Renderer2D::begin_pass(const OrthographicCamera2D& camera, bool transparent
 
 	// Reset batch instance data pointers
 	for(auto&& [key, batch]: s_storage.batches)
-		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
+		batch.instance_data = K_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
 }
 
 void Renderer2D::end_pass()
@@ -181,7 +181,7 @@ static void flush_batch(Batch2D& batch)
 
 		batch.count = 0;
 		batch.max_depth = -1.f;
-		batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
+		batch.instance_data = K_NEW_ARRAY_DYNAMIC(InstanceData, s_storage.max_batch_count, Renderer::get_arena());
 	}
 }
 
@@ -232,7 +232,7 @@ void Renderer2D::draw_text(const std::string& text, const FontAtlas& font, float
 	constexpr float k_adv_factor = 1.05f;
 
 	Batch2D batch;
-	batch.instance_data = W_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), Renderer::get_arena());
+	batch.instance_data = K_NEW_ARRAY_DYNAMIC(InstanceData, text.size(), Renderer::get_arena());
 	batch.max_depth = 0.f;
 	batch.texture = font.texture;
 	batch.count = 0;
