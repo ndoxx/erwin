@@ -3,7 +3,7 @@
 #include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include "utils/sparse_set.hpp"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include <chaiscript/chaiscript.hpp>
 #include <cstdlib>
 #include <kibble/logger/logger.h>
@@ -76,7 +76,7 @@ void ChaiContext::eval(const std::string& command)
 
 static std::tuple<float, float, float> make_range(const std::string& str_list)
 {
-    auto tokens = su::tokenize(str_list, ',');
+    auto tokens = kb::su::tokenize(str_list, ',');
     K_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
     return {std::strtof(tokens[0].c_str(), nullptr), std::strtof(tokens[1].c_str(), nullptr),
             std::strtof(tokens[2].c_str(), nullptr)};

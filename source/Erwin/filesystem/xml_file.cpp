@@ -5,10 +5,8 @@
 
 using namespace rapidxml;
 
-
-namespace erwin
+namespace kb
 {
-
 template <> std::string to_string<glm::vec2>(const glm::vec2& v)
 {
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + ")";
@@ -40,6 +38,10 @@ template <> std::string to_string<glm::ivec4>(const glm::ivec4& v)
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," +
            std::to_string(v.w) + ")";
 }
+} // namespace kb
+
+namespace erwin
+{
 
 template <> bool str_val<glm::vec2>(const char* value, glm::vec2& result)
 {
@@ -76,7 +78,7 @@ template <> bool str_val<bool>(const char* value, bool& result)
     result = !strcmp(value, "true");
     return true;
 }
-
+    
 namespace xml
 {
 

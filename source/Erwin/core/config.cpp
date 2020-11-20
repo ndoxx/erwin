@@ -1,5 +1,5 @@
 #include "core/config.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include "core/registry.h"
 #include <kibble/logger/logger.h>
 #include "debug/net_sink.h"
@@ -86,7 +86,7 @@ static void init_logger(rapidxml::xml_node<>* node)
     			attach_all = true;
     		else
     		{
-	    		su::tokenize(sink_chan_list, ',', [&](const std::string& chan_name)
+	    		kb::su::tokenize(sink_chan_list, ',', [&](const std::string& chan_name)
 	    		{
 	    			chan_hnames.push_back(H_(chan_name.c_str()));
 	    		});
@@ -191,14 +191,14 @@ hash_t get_hash(hash_t hname, const std::string& def)
 hash_t get_hash_lower(hash_t hname, const std::string& def)
 {
 	std::string str(registry.get(hname, def));
-    su::to_lower(str);
+    kb::su::to_lower(str);
     return H_(str.c_str());
 }
 
 hash_t get_hash_upper(hash_t hname, const std::string& def)
 {
 	std::string str(registry.get(hname, def));
-    su::to_upper(str);
+    kb::su::to_upper(str);
     return H_(str.c_str());
 }
 

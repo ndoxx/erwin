@@ -3,7 +3,7 @@
 #include "event/window_events.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include <kibble/logger/logger.h>
 
 
@@ -42,7 +42,7 @@ bool Input::parse_keybindings(void* node)
             return false;
         if(key_comb.find_first_of("+") != std::string::npos)
         {
-            auto tokens = su::tokenize(key_comb, '+');
+            auto tokens = kb::su::tokenize(key_comb, '+');
             for(size_t ii = 0; ii < tokens.size() - 1; ++ii)
             {
                 hash_t hmod = H_(tokens[ii].c_str());

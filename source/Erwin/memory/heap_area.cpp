@@ -1,5 +1,5 @@
 #include "memory/heap_area.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 
 namespace erwin
 {
@@ -33,7 +33,7 @@ void HeapArea::debug_show_content()
 		B = uint8_t((1.f-usage)*B1 + usage*B2);
 
 		std::string name(item.name);
-		su::center(name,22);
+		kb::su::center(name,22);
 		KLOGR("memory") << "    0x" << std::hex << item.begin << " [" << kb::WCC(R,G,B) << name << kb::WCC(0) << "] 0x" << item.end 
 						<< " s=" << std::dec << utils::human_size(item.size) << std::endl;
 	}

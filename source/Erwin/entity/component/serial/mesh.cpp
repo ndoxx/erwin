@@ -11,7 +11,7 @@ void serialize_xml<ComponentMesh>(const ComponentMesh& cmp, xml::XMLFile& file, 
 {
     if(cmp.mesh.procedural)
         file.add_attribute(cmp_node, "proc", "true");
-    file.add_attribute(cmp_node, "id", to_string(cmp.mesh.resource_id).c_str());
+    file.add_attribute(cmp_node, "id", kb::to_string(cmp.mesh.resource_id).c_str());
 }
 
 template <> void deserialize_xml<ComponentMesh>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)

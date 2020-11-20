@@ -3,7 +3,7 @@
 #include <kibble/logger/logger.h>
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 
 using namespace erwin;
 

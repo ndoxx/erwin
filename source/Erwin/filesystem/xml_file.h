@@ -7,22 +7,25 @@
 #include <cstring>
 #include <vector>
 
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include "filesystem/wpath.h"
 #include "glm/glm.hpp"
 #include "rapidxml/rapidxml.hpp"
 
 namespace fs = std::filesystem;
 
-namespace erwin
+namespace kb
 {
-
 template<> std::string to_string(const glm::vec2& v);
 template<> std::string to_string(const glm::vec3& v);
 template<> std::string to_string(const glm::vec4& v);
 template<> std::string to_string(const glm::ivec2& v);
 template<> std::string to_string(const glm::ivec3& v);
 template<> std::string to_string(const glm::ivec4& v);
+} // namespace kb
+
+namespace erwin
+{
 
 template <typename T>
 bool str_val(const char* value, T& result)
@@ -118,7 +121,7 @@ bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, co
     if(!pAttr)
         return false;
 
-    char* attr_value = doc.allocate_string(to_string<T>(source).c_str());
+    char* attr_value = doc.allocate_string(kb::to_string<T>(source).c_str());
     pAttr->value(attr_value);
     return true;
 }

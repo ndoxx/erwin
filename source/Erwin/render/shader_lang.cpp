@@ -1,6 +1,6 @@
 #include "render/shader_lang.h"
 #include "filesystem/filesystem.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include <algorithm>
 #include <kibble/logger/logger.h>
 #include <regex>
@@ -51,7 +51,7 @@ static std::string handle_includes(const fs::path& base_dir, const std::string& 
 {
     // std::regex e_inc("\\s*#\\s*include\\s+(?:<[^>]*>|\"[^\"]*\")\\s*");
     std::regex e_inc("\\s*#\\s*include\\s+([<\"][^>\"]*[>\"])\\s*");
-    return su::rx::regex_replace(source, e_inc, [&](const std::smatch& m) {
+    return kb::su::rx::regex_replace(source, e_inc, [&](const std::smatch& m) {
         std::string result = m[1].str();
         std::string filename = result.substr(1, result.size() - 2);
         // KLOG("shader", 1) << "including: " << kb::WCC('p') << filename << kb::WCC(0) << std::endl;

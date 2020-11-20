@@ -1,6 +1,6 @@
 #include "core/registry.h"
 #include "filesystem/filesystem.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include <kibble/logger/logger.h>
 
 namespace erwin
@@ -132,7 +132,7 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, c
         std::string value;
         if(!xml::parse_attribute(xnode, "value", value))
             return 0;
-        sizes_[full_name_hash] = su::parse_size(value, '_');
+        sizes_[full_name_hash] = kb::su::parse_size(value, '_');
         break;
     }
     }
@@ -267,7 +267,7 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
     case "size"_h: {
         auto it = sizes_.find(full_name_hash);
         if(it != sizes_.end())
-            xml::set_attribute(doc, xnode, "value", su::size_to_string(it->second));
+            xml::set_attribute(doc, xnode, "value", kb::su::size_to_string(it->second));
         break;
     }
     }

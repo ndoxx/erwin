@@ -2,7 +2,7 @@
 #include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
 #include "core/core.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include "render/shader_lang.h"
 #include <kibble/logger/logger.h>
 

@@ -9,7 +9,7 @@
 #include "filesystem/spv_file.h"
 #include "platform/OGL/ogl_buffer.h"
 #include "platform/OGL/ogl_shader.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include <kibble/logger/logger.h>
 
 #include "glad/glad.h"
@@ -304,7 +304,7 @@ static void shader_error_report(GLuint ShaderID, int line_offset, const std::str
         if(errlines.find(nline++) != errlines.end())
         {
             int actual_line = nline + line_offset;
-            su::trim(line);
+            kb::su::trim(line);
             KLOGR("shader") << "\033[1;38;2;255;200;10m> \033[1;38;2;255;90;90m" << actual_line
                             << "\033[1;38;2;255;200;10m : " << line << std::endl;
         }

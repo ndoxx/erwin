@@ -1,5 +1,5 @@
 #include "memory/memory_utils.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 
 #include <iomanip>
 #include <cstdint>
@@ -60,7 +60,7 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std
 	std::size_t end_offset = 32-std::size_t(end)%32;
 
 	std::string dump_title = title.size() ? title : "HEX DUMP";
-	su::center(dump_title,12);
+	kb::su::center(dump_title,12);
 	stream << kb::WCC(102,153,0) << "/-" << kb::WCC(0,130,10) << dump_title << kb::WCC(102,153,0) << "-\\" << std::endl;
 	stream << std::hex;
 	while(current < end+end_offset/4)

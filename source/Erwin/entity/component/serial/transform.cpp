@@ -9,8 +9,8 @@ template <>
 void serialize_xml<ComponentTransform3D>(const ComponentTransform3D& cmp, xml::XMLFile& file,
                                          rapidxml::xml_node<>* cmp_node)
 {
-    file.add_node(cmp_node, "T", erwin::to_string(cmp.local.position).c_str());
-    file.add_node(cmp_node, "R", erwin::to_string(cmp.local.euler).c_str());
+    file.add_node(cmp_node, "T", kb::to_string(cmp.local.position).c_str());
+    file.add_node(cmp_node, "R", kb::to_string(cmp.local.euler).c_str());
     file.add_node(cmp_node, "S", std::to_string(cmp.local.uniform_scale).c_str());
 }
 

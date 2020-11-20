@@ -14,7 +14,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include "widget/dialog_open.h"
 
 #include <optional>
@@ -230,7 +230,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
             // Extract name without extension, transform to lower case,
             // detect corresponding texture map type and assign
             std::string stem = entry.path().stem().string();
-            su::to_lower(stem);
+            kb::su::to_lower(stem);
             TextureMapType tm_type = detect_texture_map(stem);
             if(tm_type != TM_COUNT)
             {

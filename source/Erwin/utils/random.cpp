@@ -1,5 +1,5 @@
 #include "utils/random.h"
-#include "utils/string.h"
+#include <kibble/string/string.h>
 #include "core/core.h"
 
 #include <chrono>
@@ -20,7 +20,7 @@ uint64_t splitmix64(uint64_t& state)
 
 XorShiftEngine::Seed::Seed(const char* str)
 {
-	auto tokens = su::tokenize(str, ':');
+	auto tokens = kb::su::tokenize(str, ':');
 	K_ASSERT(tokens.size()==2, "[XorShiftEngine] Bad seed string.");
 	state_[0] = std::strtoull(tokens[0].c_str(), nullptr, 10);
 	state_[1] = std::strtoull(tokens[1].c_str(), nullptr, 10);
