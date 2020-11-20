@@ -2,14 +2,12 @@
 #include "entity/component/serial/script.h"
 #include "filesystem/filesystem.h"
 #include "script/script_engine.h"
-#include "utils/sparse_set.hpp"
-#include <kibble/string/string.h>
 #include <chaiscript/chaiscript.hpp>
 #include <cstdlib>
 #include <kibble/logger/logger.h>
+#include <kibble/string/string.h>
+#include <kibble/util/sparse_set.h>
 #include <regex>
-
-
 
 namespace erwin
 {
@@ -25,7 +23,7 @@ void Actor::update_parameters(const Actor& other)
 struct ChaiContext::Storage
 {
     std::array<chaiscript::Boxed_Value, k_max_actors> actor_instances_;
-    SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
+    kb::SparsePool<InstanceHandle, k_max_actors> actor_handle_pool_;
 };
 
 ChaiContext::ChaiContext() { storage_ = std::make_shared<Storage>(); }
@@ -167,8 +165,8 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
     // Get type reflection
     const auto& reflection = reflections_.at(actor_type);
 
-    KLOGN("script") << "Instantiating actor class '" << kb::WCC('n') << reflection.name << kb::WCC(0) << "' for entity ["
-                    << size_t(e) << "]" << std::endl;
+    KLOGN("script") << "Instantiating actor class '" << kb::WCC('n') << reflection.name << kb::WCC(0)
+                    << "' for entity [" << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
     auto instance_handle = storage_->actor_handle_pool_.acquire();

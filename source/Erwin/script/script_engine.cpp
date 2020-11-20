@@ -1,12 +1,13 @@
 #include "script/script_engine.h"
-#include <kibble/logger/logger.h>
+#include "level/scene.h"
 #include "script/bindings/glm.h"
 #include "script/bindings/logger.h"
 #include "script/bindings/scene.h"
 #include "script/bindings/scene_proxy.h"
-#include "level/scene.h"
 #include <chaiscript/chaiscript.hpp>
 #include <glm/glm.hpp>
+#include <kibble/logger/logger.h>
+#include <kibble/util/sparse_set.h>
 
 namespace erwin
 {
@@ -15,7 +16,7 @@ using namespace script;
 
 static struct
 {
-    SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
+    kb::SparsePool<VMHandle, k_max_script_vms> vm_handle_pool_;
     std::array<ChaiContext, k_max_script_vms> vms_;
 } s_storage;
 
@@ -50,6 +51,5 @@ void ScriptEngine::transport_runtime_parameters(script::VMHandle source, script:
 {
     s_storage.vms_.at(target).update_parameters(s_storage.vms_.at(source));
 }
-
 
 } // namespace erwin

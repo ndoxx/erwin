@@ -3,7 +3,6 @@
 #include <memory>
 #include <array>
 #include "script/chai_context.h"
-#include "utils/sparse_set.hpp"
 
 namespace erwin
 {

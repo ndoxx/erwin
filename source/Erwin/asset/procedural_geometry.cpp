@@ -2,12 +2,10 @@
 #include "asset/mesh_fabricator.h"
 #include "core/core.h"
 #include "glm/glm.hpp"
-#include "utils/constexpr_math.h"
-
 
 #include "glm/gtx/string_cast.hpp"
 #include <kibble/logger/logger.h>
-
+#include <kibble/math/constexpr_math.h>
 
 namespace erwin
 {
@@ -17,8 +15,8 @@ namespace pg
 static MeshFabricator s_m;
 static TriangleMeshFabricator s_tm;
 
-Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,[[maybe_unused]] 
-                 Parameters* params)
+Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vector<uint32_t>& idata,
+                 [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
     K_ASSERT(params == nullptr, "Parameters unsupported for now.");
@@ -125,8 +123,8 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Constants to get normalized vertex positions
-    static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
-    static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
+    static constexpr float PHI = (1.0f + kb::math::fsqrt(5.0f)) / 2.0f;
+    static constexpr float ONE_N = 1.0f / (kb::math::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
     static constexpr float PHI_N = PHI * ONE_N;
 
     s_m.add_vertex({-ONE_N, PHI_N, 0.f});
@@ -147,10 +145,10 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     {
         // Compute positions in spherical coordinates
         const glm::vec3& pos = s_m.positions[ii];
-        float phi   = std::atan2(pos.z, pos.x);
+        float phi = std::atan2(pos.z, pos.x);
         float theta = std::asin(pos.y); // Position is normalized -> r = 1
         // Remap latitude and longitude angles to [0,1] and use them as UVs
-        s_m.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f -theta / float(M_PI)};
+        s_m.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f - theta / float(M_PI)};
     }
 
     s_m.add_triangle(0, 11, 5);
@@ -177,7 +175,6 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
     return s_m.build_shape(layout, vdata, idata);
 }
 
-
 // ---- Functions to fix the UV zipper artifact on icospheres ----
 // Thanks to Michael Thygesen: https://mft-dev.dk/uv-mapping-sphere/
 
@@ -187,16 +184,16 @@ std::vector<size_t> detect_wrapped_UVs()
     // For each triangle in the mesh, compute UV normal, if it is
     // pointing inward, triangle is flipped, meaning UV is wrapped.
     std::vector<size_t> wrapped;
-    for(size_t ii=0; ii<s_tm.triangle_count; ++ii)
+    for(size_t ii = 0; ii < s_tm.triangle_count; ++ii)
     {
-        size_t tt = 3*ii;
-        size_t a  = s_tm.indices[tt+0];
-        size_t b  = s_tm.indices[tt+1];
-        size_t c  = s_tm.indices[tt+2];
+        size_t tt = 3 * ii;
+        size_t a = s_tm.indices[tt + 0];
+        size_t b = s_tm.indices[tt + 1];
+        size_t c = s_tm.indices[tt + 2];
         glm::vec3 uv_a = {s_tm.uvs[a].x, s_tm.uvs[a].y, 0.f};
         glm::vec3 uv_b = {s_tm.uvs[b].x, s_tm.uvs[b].y, 0.f};
         glm::vec3 uv_c = {s_tm.uvs[c].x, s_tm.uvs[c].y, 0.f};
-        glm::vec3 norm = glm::cross(uv_b-uv_a, uv_c-uv_a);
+        glm::vec3 norm = glm::cross(uv_b - uv_a, uv_c - uv_a);
         if(norm.z < 0.f)
             wrapped.push_back(tt);
     }
@@ -209,16 +206,13 @@ void fix_warped_faces()
     std::vector<size_t> wrapped = detect_wrapped_UVs();
 
     std::map<size_t, size_t> visited;
-    for(size_t ii: wrapped)
+    for(size_t ii : wrapped)
     {
-        std::array<size_t,3> abc =
-        {
-            s_tm.indices[ii+0], s_tm.indices[ii+1], s_tm.indices[ii+2]
-        };
+        std::array<size_t, 3> abc = {s_tm.indices[ii + 0], s_tm.indices[ii + 1], s_tm.indices[ii + 2]};
         // For each index in triangle ii detect if corresponding vertex is problematic
-        for(size_t jj=0; jj<3; ++jj)
+        for(size_t jj = 0; jj < 3; ++jj)
         {
-            size_t ind = s_tm.indices[ii+jj];
+            size_t ind = s_tm.indices[ii + jj];
             const glm::vec2& uv = s_tm.uvs[ind];
             // Problematic vertex has its U coordinate close to 0
             if(uv.x < 0.25f)
@@ -226,7 +220,7 @@ void fix_warped_faces()
                 // If not already visited, duplicate vertex but unwrap U by adding 1
                 size_t temp;
                 auto it = visited.find(ind);
-                if(it==visited.end())
+                if(it == visited.end())
                 {
                     glm::vec2 new_uv = uv;
                     new_uv.x += 1.f;
@@ -249,30 +243,26 @@ void fix_warped_faces()
 void fix_shared_pole_vertices()
 {
     // Find indices of north and south poles
-    glm::vec3 north = {0.f,  1.f, 0.f};
+    glm::vec3 north = {0.f, 1.f, 0.f};
     glm::vec3 south = {0.f, -1.f, 0.f};
-    std::array<glm::vec3,2> poles = { north, south };
-    std::array<size_t,2> poles_idx =
-    {
-        s_tm.vertex_hash_map.find(north)->second,
-        s_tm.vertex_hash_map.find(south)->second
-    };
+    std::array<glm::vec3, 2> poles = {north, south};
+    std::array<size_t, 2> poles_idx = {s_tm.vertex_hash_map.find(north)->second,
+                                       s_tm.vertex_hash_map.find(south)->second};
 
-    for(size_t pp=0; pp<2; ++pp)
+    for(size_t pp = 0; pp < 2; ++pp)
     {
         // Visit all triangles that contain this pole
         // In my sphere mesh, pole triangle index is always 1 mod 3 (vertex B in triangle ABC)
         // as long as refinement is at least 2.
         std::vector<std::pair<size_t, TriangleMeshFabricator::Triangle>> reassigned;
-        s_tm.traverse_triangle_class(poles_idx[pp], [&](TriangleMeshFabricator::TriangleRange range)
-        {
+        s_tm.traverse_triangle_class(poles_idx[pp], [&](TriangleMeshFabricator::TriangleRange range) {
             bool first_vertex = true;
             for(auto it = range.first; it != range.second; ++it)
             {
                 size_t tri_idx = it->second;
-                size_t a = s_tm.indices[tri_idx+0];
-                size_t b = s_tm.indices[tri_idx+1]; // Pole
-                size_t c = s_tm.indices[tri_idx+2];
+                size_t a = s_tm.indices[tri_idx + 0];
+                size_t b = s_tm.indices[tri_idx + 1]; // Pole
+                size_t c = s_tm.indices[tri_idx + 2];
 
                 glm::vec2 new_uv = s_tm.uvs[b];
                 new_uv.x = 0.5f * (s_tm.uvs[a].x + s_tm.uvs[c].x);
@@ -293,7 +283,7 @@ void fix_shared_pole_vertices()
             }
         });
         // Reassign triangles
-        for(auto&& [tri_idx, triangle]: reassigned)
+        for(auto&& [tri_idx, triangle] : reassigned)
             s_tm.set_triangle_by_index(tri_idx, triangle);
     }
 }
@@ -302,8 +292,8 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
                       [[maybe_unused]] Parameters* params)
 {
     // Constants to get normalized vertex positions
-    static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
-    static constexpr float ONE_N = 1.0f / (utils::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
+    static constexpr float PHI = (1.0f + kb::math::fsqrt(5.0f)) / 2.0f;
+    static constexpr float ONE_N = 1.0f / (kb::math::fsqrt(2.0f + PHI)); // norm of any icosahedron vertex position
     static constexpr float PHI_N = PHI * ONE_N;
 
     // Ignore parameters for now, only z-plane available
@@ -354,15 +344,16 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
     {
         // Compute positions in spherical coordinates
         const glm::vec3& pos = s_tm.positions[ii];
-        float phi   = std::atan2(pos.z, pos.x);
+        float phi = std::atan2(pos.z, pos.x);
         float theta = std::asin(pos.y); // Position is normalized -> r = 1
         // Remap latitude and longitude angles to [0,1] and use them as UVs
-        s_tm.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f -theta / float(M_PI)};
+        s_tm.uvs[ii] = {0.5f + phi / (2 * float(M_PI)), 0.5f - theta / float(M_PI)};
     }
 
     // Fix UV distorsions at seams and poles
     fix_warped_faces();
-    if constexpr(k_refine>=2) fix_shared_pole_vertices(); // Will not work with a lesser refinement
+    if constexpr(k_refine >= 2)
+        fix_shared_pole_vertices(); // Will not work with a lesser refinement
 
     return s_tm.build_shape(layout, vdata, idata);
 }

@@ -13,7 +13,7 @@
 #include "asset/special_texture_factory.h"
 #include "asset/texture_loader.h"
 
-#include "utils/sparse_set.hpp"
+#include <kibble/util/sparse_set.h>
 
 #include <chrono>
 #include <thread>
@@ -49,7 +49,7 @@ static struct
     ResourceCache<EnvironmentLoader> environment_cache;
     ResourceCache<MeshLoader> mesh_cache;
 
-    SparsePool<size_t, k_max_asset_registries> registry_handle_pool;
+    kb::SparsePool<size_t, k_max_asset_registries> registry_handle_pool;
     std::array<AssetRegistry, k_max_asset_registries> registry;
 
     std::map<hash_t, ShaderHandle> shader_cache;
