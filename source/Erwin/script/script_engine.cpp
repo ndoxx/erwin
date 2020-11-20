@@ -1,5 +1,5 @@
 #include "script/script_engine.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "script/bindings/glm.h"
 #include "script/bindings/logger.h"
 #include "script/bindings/scene.h"
@@ -31,9 +31,9 @@ VMHandle ScriptEngine::create_context(Scene& scene)
     s_storage.vms_[handle]->add_global(chaiscript::var(SceneProxy(scene)), "scene");
 
     // Redirect the print function
-    s_storage.vms_[handle].eval("global print = DLOG;");
+    s_storage.vms_[handle].eval("global print = KLOG;");
 
-    DLOG("script", 1) << "Created new script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
+    KLOG("script", 1) << "Created new script context [" << kb::WCC('n') << handle << kb::WCC(0) << "]" << std::endl;
     return handle;
 }
 
@@ -41,7 +41,7 @@ void ScriptEngine::destroy_context(VMHandle handle)
 {
     s_storage.vms_[handle] = {};
     s_storage.vm_handle_pool_.release(handle);
-    DLOG("script", 1) << "Destroyed script context [" << WCC('n') << handle << WCC(0) << "]" << std::endl;
+    KLOG("script", 1) << "Destroyed script context [" << kb::WCC('n') << handle << kb::WCC(0) << "]" << std::endl;
 }
 
 ChaiContext& ScriptEngine::get_context(VMHandle handle) { return s_storage.vms_.at(handle); }

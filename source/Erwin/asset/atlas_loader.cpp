@@ -1,30 +1,32 @@
 #include "asset/atlas_loader.h"
 #include "core/core.h"
-#include "debug/logger.h"
 #include "render/renderer.h"
+#include <kibble/logger/logger.h>
+
+
 
 namespace erwin
 {
 
 AssetMetaData TextureAtlasLoader::build_meta_data(const WPath& file_path)
 {
-    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
+    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    K_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::TextureAtlasCAT};
 }
 
 cat::CATDescriptor TextureAtlasLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset", 1) << "Loading CAT file:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading CAT file:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     cat::CATDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
     cat::read_cat(descriptor);
 
     // Make sure this is a texture atlas
-    W_ASSERT(descriptor.remapping_type == cat::RemappingType::TextureAtlas,
+    K_ASSERT(descriptor.remapping_type == cat::RemappingType::TextureAtlas,
              "Invalid remapping type for a texture atlas.");
 
     return descriptor;
@@ -71,9 +73,9 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, ha
                                                                     0, descriptor.texture_blob, format, filter,
                                                                     TextureWrap::REPEAT, TF_MUST_FREE});
 
-    DLOG("texture", 1) << "Found " << WCC('v') << atlas.remapping.size() << WCC(0) << " sub-textures in atlas."
+    KLOG("texture", 1) << "Found " << kb::WCC('v') << atlas.remapping.size() << kb::WCC(0) << " sub-textures in atlas."
                        << std::endl;
-    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index()) << std::endl;
+    KLOG("texture", 1) << "TextureHandle: " << kb::WCC('v') << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }
@@ -82,23 +84,23 @@ void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(res
 
 AssetMetaData FontAtlasLoader::build_meta_data(const WPath& file_path)
 {
-    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    W_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
+    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    K_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::FontAtlasCAT};
 }
 
 cat::CATDescriptor FontAtlasLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset", 1) << "Loading CAT file:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading CAT file:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     cat::CATDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
     cat::read_cat(descriptor);
 
     // Make sure this is a font atlas
-    W_ASSERT(descriptor.remapping_type == cat::RemappingType::FontAtlas, "Invalid remapping type for a font atlas.");
+    K_ASSERT(descriptor.remapping_type == cat::RemappingType::FontAtlas, "Invalid remapping type for a font atlas.");
 
     return descriptor;
 }
@@ -146,9 +148,9 @@ FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /
                                                                     // ImageFormat::R8,
                                                                     filter, TextureWrap::REPEAT, TF_MUST_FREE});
 
-    DLOG("texture", 1) << "Found " << WCC('v') << atlas.remapping.size() << WCC(0) << " characters in atlas."
+    KLOG("texture", 1) << "Found " << kb::WCC('v') << atlas.remapping.size() << kb::WCC(0) << " characters in atlas."
                        << std::endl;
-    DLOG("texture", 1) << "TextureHandle: " << WCC('v') << int(atlas.texture.index()) << std::endl;
+    KLOG("texture", 1) << "TextureHandle: " << kb::WCC('v') << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }

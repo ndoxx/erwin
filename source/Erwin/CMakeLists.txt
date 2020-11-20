@@ -85,14 +85,6 @@ set_target_properties(glfw
         INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/glfw"
     )
 
-# Kibble library as a static import
-add_library(kibble STATIC IMPORTED)
-set_target_properties(kibble
-    PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libkibble.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/source/vendor/kibble/source"
-    )
-
 # ImGui: Compile as an object library (with relocatable code)
 add_library(imgui OBJECT)
 target_sources(imgui

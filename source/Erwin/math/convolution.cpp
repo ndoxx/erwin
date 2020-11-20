@@ -46,9 +46,9 @@ SeparableGaussianKernel::SeparableGaussianKernel(uint32_t size, float sigma)
 
 void SeparableGaussianKernel::init(uint32_t size, float _sigma)
 {
-	W_ASSERT_FMT(size%2==1, "Gaussian kernel size must be odd, got %u.", size);
-	W_ASSERT_FMT((size+1)/2<=k_max_kernel_coefficients, "Gaussian kernel size out of bounds, got %u.", size);
-	W_ASSERT_FMT(_sigma>0.f, "Gaussian kernel sigma must be strictly positive, got %f.", double(_sigma));
+	K_ASSERT_FMT(size%2==1, "Gaussian kernel size must be odd, got %u.", size);
+	K_ASSERT_FMT((size+1)/2<=k_max_kernel_coefficients, "Gaussian kernel size out of bounds, got %u.", size);
+	K_ASSERT_FMT(_sigma>0.f, "Gaussian kernel sigma must be strictly positive, got %f.", double(_sigma));
 
 	half_size = (size+1)/2;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "widget/widget.h"
-#include "kibble/logger/logger_sink.h"
+#include <kibble/logger/logger_sink.h>
 #include <deque>
 
 namespace editor

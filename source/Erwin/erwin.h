@@ -15,7 +15,7 @@
 #include "input/input.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "render/renderer.h"
 #include "render/renderer_2d.h"

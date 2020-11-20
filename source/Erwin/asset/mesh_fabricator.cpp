@@ -7,7 +7,7 @@
 #include <set>
 #include <numeric>
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "glm/gtx/string_cast.hpp"
 
 namespace erwin
@@ -140,7 +140,7 @@ Extent MeshFabricator::build_shape(const BufferLayout& layout, std::vector<float
             break;
         }
         default:
-            W_ASSERT_FMT(false, "Unknown attribute: %s", istr::resolve(elt.name).c_str());
+            K_ASSERT_FMT(false, "Unknown attribute: %s", istr::resolve(elt.name).c_str());
         }
         ++elements_count;
     }
@@ -148,7 +148,7 @@ Extent MeshFabricator::build_shape(const BufferLayout& layout, std::vector<float
     // Get the total number of components per vertex
     uint32_t vertex_size = std::accumulate(components_count, components_count + k_max_attrib, 0u);
 
-    W_ASSERT(has_position, "Meshes must have a position attribute.");
+    K_ASSERT(has_position, "Meshes must have a position attribute.");
 
     // Build attributes that need to be built
     if(has_normal)
@@ -216,8 +216,8 @@ size_t TriangleMeshFabricator::get_mid_point(Edge edge)
 
 void TriangleMeshFabricator::set_triangle_by_index(size_t tri_index, const Triangle& T)
 {
-    W_ASSERT(tri_index+2<3*triangle_count, "Index out of bounds during triangle assignment operation.");
-    W_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
+    K_ASSERT(tri_index+2<3*triangle_count, "Index out of bounds during triangle assignment operation.");
+    K_ASSERT(tri_index%3 == 0, "Index is not a triangle index (index%3 != 0)");
     for(size_t ii = 0; ii < 3; ++ii)
     {
         // Remove old triangle class association
@@ -474,7 +474,7 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
             break;
         }
         default:
-            W_ASSERT_FMT(false, "Unknown attribute: %s", istr::resolve(elt.name).c_str());
+            K_ASSERT_FMT(false, "Unknown attribute: %s", istr::resolve(elt.name).c_str());
         }
         ++elements_count;
     }
@@ -482,7 +482,7 @@ Extent TriangleMeshFabricator::build_shape(const BufferLayout& layout, std::vect
     // Get the total number of components per vertex
     uint32_t vertex_size = std::accumulate(components_count, components_count + k_max_attrib, 0u);
 
-    W_ASSERT(has_position, "Meshes must have a position attribute.");
+    K_ASSERT(has_position, "Meshes must have a position attribute.");
 
     // Build attributes that need to be built
     if(has_normal)

@@ -1,6 +1,6 @@
 #include "project/project.h"
 #include "core/config.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 #include "utils/string.h"
@@ -16,11 +16,11 @@ static ProjectSettings s_current_project;
 
 bool load_project(const WPath& filepath)
 {
-    DLOGN("editor") << "Loading project." << std::endl;
+    KLOGN("editor") << "Loading project." << std::endl;
 
     // Detect and set assets directory
     fs::path res_dir = filepath.absolute().parent_path() / "assets";
-    W_ASSERT(fs::exists(res_dir), "Cannot find 'assets' folder near project file.");
+    K_ASSERT(fs::exists(res_dir), "Cannot find 'assets' folder near project file.");
     WPath::set_resource_directory(res_dir);
 
     // Read file and parse
@@ -32,24 +32,24 @@ bool load_project(const WPath& filepath)
     s_current_project.project_file = filepath;
     s_current_project.root_folder = WPath(filepath.absolute().parent_path());
 
-    DLOG("editor", 0) << "Name: " << WCC('n') << s_current_project.registry.get("project.project_name"_h, std::string())
+    KLOG("editor", 0) << "Name: " << kb::WCC('n') << s_current_project.registry.get("project.project_name"_h, std::string())
                       << std::endl;
-    DLOG("editor", 0) << "Import paths:" << std::endl;
-    DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
-    DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
-    DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
-    DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
-    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
-    DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
-    DLOG("editor", 0) << "Export paths:" << std::endl;
-    DLOGI << "Atlas:    " << WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
-    DLOGI << "HDR:      " << WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
-    DLOGI << "Material: " << WCC('p') << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
-    DLOGI << "Font:     " << WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
-    DLOGI << "Mesh:     " << WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
-    DLOGI << "Script:   " << WCC('p') << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
-    DLOGI << "Scene:    " << WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
+    KLOG("editor", 0) << "Import paths:" << std::endl;
+    KLOGI << "Atlas:    " << kb::WCC('p') << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
+    KLOGI << "HDR:      " << kb::WCC('p') << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
+    KLOGI << "Material: " << kb::WCC('p') << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
+    KLOGI << "Font:     " << kb::WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
+    KLOGI << "Mesh:     " << kb::WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
+    KLOGI << "Script:   " << kb::WCC('p') << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
+    KLOGI << "Scene:    " << kb::WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
+    KLOG("editor", 0) << "Export paths:" << std::endl;
+    KLOGI << "Atlas:    " << kb::WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
+    KLOGI << "HDR:      " << kb::WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
+    KLOGI << "Material: " << kb::WCC('p') << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
+    KLOGI << "Font:     " << kb::WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
+    KLOGI << "Mesh:     " << kb::WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
+    KLOGI << "Script:   " << kb::WCC('p') << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
+    KLOGI << "Scene:    " << kb::WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
     cfg::set("settings.project.last_project"_h, filepath);
@@ -60,7 +60,7 @@ bool load_project(const WPath& filepath)
 
 bool save_project()
 {
-    DLOGN("editor") << "Saving project." << std::endl;
+    KLOGN("editor") << "Saving project." << std::endl;
 
     // Read file and parse
     xml::XMLFile project_f(s_current_project.project_file);
@@ -79,7 +79,7 @@ bool is_loaded()
 
 void close_project()
 {
-    DLOGN("editor") << "Closing project." << std::endl;
+    KLOGN("editor") << "Closing project." << std::endl;
 
     s_current_project.registry.clear();
     s_current_project.project_file = {};

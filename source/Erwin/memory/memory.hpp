@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <algorithm>
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 // Useful to avoid uninitialized reads with Valgrind during hexdumps
 // Disable for retail build
@@ -72,8 +72,8 @@ class SimpleBoundsChecking
 public:
 	inline void put_sentinel_front(uint8_t* ptr) const   { std::fill(ptr, ptr + SIZE_FRONT, 0xf0); }
 	inline void put_sentinel_back(uint8_t* ptr) const    { std::fill(ptr, ptr + SIZE_BACK, 0x0f); }
-	inline void check_sentinel_front([[maybe_unused]] uint8_t* ptr) const { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
-	inline void check_sentinel_back([[maybe_unused]] uint8_t* ptr) const  { W_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
+	inline void check_sentinel_front([[maybe_unused]] uint8_t* ptr) const { K_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0xf0f0f0f0, "Memory overwrite detected (front) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
+	inline void check_sentinel_back([[maybe_unused]] uint8_t* ptr) const  { K_ASSERT_FMT(*reinterpret_cast<uint32_t*>(ptr)==0x0f0f0f0f, "Memory overwrite detected (back) at %p, got %#08x.", static_cast<void*>(ptr), *reinterpret_cast<uint32_t*>(ptr)); }
 
 	static constexpr size_t SIZE_FRONT = 4;
 	static constexpr size_t SIZE_BACK = 4;
@@ -105,7 +105,7 @@ public:
 	{
 		if(num_allocs_)
 		{
-			DLOGE("memory") << "[MemoryTracker] Alloc-dealloc mismatch: " << num_allocs_ << std::endl;
+			KLOGE("memory") << "[MemoryTracker] Alloc-dealloc mismatch: " << num_allocs_ << std::endl;
 		}
 	}
 
@@ -180,8 +180,8 @@ public:
 #ifdef W_DEBUG
 		if(begin == nullptr)
 		{
-			DLOGF("memory") << "[Arena] \"" << debug_name_ << "\": Out of memory." << std::endl;
-			W_ASSERT(false, "Allocation failed.");
+			KLOGF("memory") << "[Arena] \"" << debug_name_ << "\": Out of memory." << std::endl;
+			K_ASSERT(false, "Allocation failed.");
 		}
 #endif
 
@@ -200,10 +200,10 @@ public:
 		bounds_checker_.put_sentinel_back(current + size);
         memory_tracker_.on_allocation(begin, decorated_size, alignment);
 
-    	// DLOGW("memory") << "Allocation" << std::endl;
-    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
-    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
-    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)current) << std::endl;
+    	// KLOGW("memory") << "Allocation" << std::endl;
+    	// KLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// KLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// KLOGI << "User ptr:       " << std::hex << uint64_t((void*)current) << std::endl;
 
 		// Unlock resource and return user pointer
 		thread_guard_.leave();
@@ -228,10 +228,10 @@ public:
 
 		allocator_.deallocate(begin);
 
-    	// DLOGW("memory") << "Deallocation" << std::endl;
-    	// DLOGI << "Decorated size: " << decorated_size << std::endl;
-    	// DLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
-    	// DLOGI << "User ptr:       " << std::hex << uint64_t((void*)ptr) << std::endl;
+    	// KLOGW("memory") << "Deallocation" << std::endl;
+    	// KLOGI << "Decorated size: " << decorated_size << std::endl;
+    	// KLOGI << "Begin ptr:      " << std::hex << uint64_t((void*)begin) << std::endl;
+    	// KLOGI << "User ptr:       " << std::hex << uint64_t((void*)ptr) << std::endl;
 
 		thread_guard_.leave();
 	}
@@ -373,10 +373,10 @@ public:
 #ifdef W_DEBUG
 		if(head_ + size >= end_)
 		{
-			DLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overwrite!" << std::endl;
+			KLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overwrite!" << std::endl;
 		}
 #endif
-		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overwrite!");
+		K_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overwrite!");
 		memcpy(head_, source, size);
 		head_ += size;
 	}
@@ -385,10 +385,10 @@ public:
 #ifdef W_DEBUG
 		if(head_ + size >= end_)
 		{
-			DLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overread!" << std::endl;
+			KLOGF("memory") << "[LinearBuffer] \"" << debug_name_ << "\": Data buffer overread!" << std::endl;
 		}
 #endif
-		W_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overread!");
+		K_ASSERT(head_ + size < end_, "[LinearBuffer] Data buffer overread!");
 		memcpy(destination, head_, size);
 		head_ += size;
 	}

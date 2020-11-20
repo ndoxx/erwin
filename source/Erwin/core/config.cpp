@@ -1,17 +1,17 @@
 #include "core/config.h"
 #include "utils/string.h"
 #include "core/registry.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "debug/net_sink.h"
-#include "kibble/logger/logger_thread.h"
-#include "kibble/logger/logger_sink.h"
+#include <kibble/logger/logger_thread.h>
+#include <kibble/logger/logger_sink.h>
 #include "filesystem/xml_file.h"
 
 #include <unordered_map>
 #include <string>
 #include <iostream>
 
-using namespace kb;
+
 
 namespace erwin
 {
@@ -45,19 +45,19 @@ static void init_logger(rapidxml::xml_node<>* node)
 
     	// Sink creation
 		hash_t htype = H_(sink_type.c_str());
-		std::unique_ptr<klog::Sink> p_sink = nullptr;
+		std::unique_ptr<kb::klog::Sink> p_sink = nullptr;
 		switch(htype)
 		{
 			case "ConsoleSink"_h:
 			{
-				p_sink = std::make_unique<klog::ConsoleSink>();
+				p_sink = std::make_unique<kb::klog::ConsoleSink>();
 				break;
 			}
 			case "LogFileSink"_h:
 			{
 				std::string dest_file;
 				if(xml::parse_attribute(sink, "destination", dest_file))
-					p_sink = std::make_unique<klog::LogFileSink>(dest_file);
+					p_sink = std::make_unique<kb::klog::LogFileSink>(dest_file);
 				break;
 			}
 			case "NetSink"_h:

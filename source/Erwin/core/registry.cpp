@@ -1,7 +1,7 @@
 #include "core/registry.h"
 #include "filesystem/filesystem.h"
 #include "utils/string.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {

@@ -1,6 +1,6 @@
 #include "input/camera_2d_controller.h"
 #include "input/input.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {

@@ -1,7 +1,7 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "core/core.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "asset/procedural_geometry.h"
 
 #include <vector>
@@ -43,7 +43,7 @@ static VertexArrayHandle make_geometry(const std::string& name, VertexBufferLayo
 
 void CommonGeometry::init()
 {
-	DLOGN("render") << "Creating procedural common geometry" << std::endl;
+	KLOGN("render") << "Creating procedural common geometry" << std::endl;
 
 	// Buffer layouts are created immediately, so their data can be queried here and now
 	VertexBufferLayoutHandle pos_VBL    = Renderer::create_vertex_buffer_layout({
@@ -90,7 +90,7 @@ void CommonGeometry::shutdown()
 const Mesh& CommonGeometry::get_mesh(hash_t name)
 {
 	auto it = s_storage.meshes_.find(name);
-	W_ASSERT(it!=s_storage.meshes_.end(), "[CommonGeometry] Cannot find mesh at that name.");
+	K_ASSERT(it!=s_storage.meshes_.end(), "[CommonGeometry] Cannot find mesh at that name.");
 	return it->second.mesh;
 }
 

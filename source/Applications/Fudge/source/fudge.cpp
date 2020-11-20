@@ -13,9 +13,9 @@
 #include "atlas_packer.h"
 #include "texture_packer.h"
 #include "shader_packer.h"
-#include "debug/logger.h"
-#include "kibble/logger/logger_sink.h"
-#include "kibble/logger/logger_thread.h"
+#include <kibble/logger/logger.h>
+#include <kibble/logger/logger_sink.h>
+#include <kibble/logger/logger_thread.h>
 #include "filesystem/xml_file.h"
 #include "render/shader_lang.h"
 
@@ -43,12 +43,12 @@ static fs::path get_selfpath()
     }
     else
     {
-        DLOGE("fudge") << "Cannot read self path using readlink." << std::endl;
+        KLOGE("fudge") << "Cannot read self path using readlink." << std::endl;
         return fs::path();
     }
 #elif _WIN32
 
-    DLOGE("fudge") << "get_selfpath() not yet implemented." << std::endl;
+    KLOGE("fudge") << "get_selfpath() not yet implemented." << std::endl;
     return fs::path();
 
 #endif
@@ -71,25 +71,25 @@ static std::string grad(float a)
 
 static void show_logo()
 {
-    DLOGR("fudge") << grad(0.0f) << " (                              (                                " << std::endl;
-    DLOGR("fudge") << grad(0.2f) << " )\\ )        (                  )\\ )               )             " << std::endl;
-    DLOGR("fudge") << grad(0.4f) << "(()/(   (    )\\ )  (  (     (  (()/(    )       ( /(    (   (    " << std::endl;
-    DLOGR("fudge") << grad(0.5f) << " /(_)) ))\\  (()/(  )\\))(   ))\\  /(_))( /(   (   )\\())  ))\\  )(   " << std::endl;
-    DLOGR("fudge") << grad(0.6f) << "(_))_|/((_)  ((_))((_))\\  /((_)(_))  )(_))  )\\ ((_)\\  /((_)(()\\  " << std::endl;
-    DLOGR("fudge") << grad(0.7f) << "| |_ (_))(   _| |  (()(_)(_))  | _ \\((_)_  ((_)| |(_)(_))   ((_) " << std::endl;
-    DLOGR("fudge") << grad(0.8f) << "| __|| || |/ _` | / _` | / -_) |  _// _` |/ _| | / / / -_) | '_| " << std::endl;
-    DLOGR("fudge") << grad(0.9f) << "|_|   \\_,_|\\__,_| \\__, | \\___| |_|  \\__,_|\\__| |_\\_\\ \\___| |_|   " << std::endl;
-    DLOGR("fudge") << grad(1.0f) << "                  |___/                                          \033[0m" << std::endl;
-    DLOGR("fudge") << "\033[1;48;2;153;0;0m                        Atlas packer tool                        \033[0m" << std::endl;
-    DLOGR("fudge") << std::endl;
+    KLOGR("fudge") << grad(0.0f) << " (                              (                                " << std::endl;
+    KLOGR("fudge") << grad(0.2f) << " )\\ )        (                  )\\ )               )             " << std::endl;
+    KLOGR("fudge") << grad(0.4f) << "(()/(   (    )\\ )  (  (     (  (()/(    )       ( /(    (   (    " << std::endl;
+    KLOGR("fudge") << grad(0.5f) << " /(_)) ))\\  (()/(  )\\))(   ))\\  /(_))( /(   (   )\\())  ))\\  )(   " << std::endl;
+    KLOGR("fudge") << grad(0.6f) << "(_))_|/((_)  ((_))((_))\\  /((_)(_))  )(_))  )\\ ((_)\\  /((_)(()\\  " << std::endl;
+    KLOGR("fudge") << grad(0.7f) << "| |_ (_))(   _| |  (()(_)(_))  | _ \\((_)_  ((_)| |(_)(_))   ((_) " << std::endl;
+    KLOGR("fudge") << grad(0.8f) << "| __|| || |/ _` | / _` | / -_) |  _// _` |/ _| | / / / -_) | '_| " << std::endl;
+    KLOGR("fudge") << grad(0.9f) << "|_|   \\_,_|\\__,_| \\__, | \\___| |_|  \\__,_|\\__| |_\\_\\ \\___| |_|   " << std::endl;
+    KLOGR("fudge") << grad(1.0f) << "                  |___/                                          \033[0m" << std::endl;
+    KLOGR("fudge") << "\033[1;48;2;153;0;0m                        Atlas packer tool                        \033[0m" << std::endl;
+    KLOGR("fudge") << std::endl;
 }
 
 static void init_logger()
 {
     KLOGGER(create_channel("fudge", 3));
     KLOGGER(create_channel("shader", 3));
-    KLOGGER(attach_all("ConsoleSink", std::make_unique<klog::ConsoleSink>()));
-    KLOGGER(attach_all("MainFileSink", std::make_unique<klog::LogFileSink>("fudge.log")));
+    KLOGGER(attach_all("ConsoleSink", std::make_unique<kb::klog::ConsoleSink>()));
+    KLOGGER(attach_all("MainFileSink", std::make_unique<kb::klog::LogFileSink>("fudge.log")));
     KLOGGER(set_single_threaded(true));
 }
 
@@ -102,7 +102,7 @@ static bool parse_atlas_export_options(rapidxml::xml_node<>* export_node, fudge:
 {
     if(export_node == nullptr)
     {
-        DLOGW("fudge") << "No export node detected, setting default export options." << std::endl;
+        KLOGW("fudge") << "No export node detected, setting default export options." << std::endl;
         return false;
     }
 
@@ -150,29 +150,29 @@ int main(int argc, char const *argv[])
     s_force_shader_rebuild = s_force_rebuild || cmd_option_exists(argv, argv + argc, "--fshader");
 
     // * Locate executable path, root directory, config directory, asset and fonts directories
-    DLOGN("fudge") << "Locating unpacked assets." << std::endl;
+    KLOGN("fudge") << "Locating unpacked assets." << std::endl;
     s_self_path = get_selfpath();
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
 
-    DLOGI << "Self path: " << WCC('p') << s_self_path << std::endl;
-    DLOGI << "Root path: " << WCC('p') << s_root_path << std::endl;
-    DLOGI << "Conf path: " << WCC('p') << s_conf_path << std::endl;
+    KLOGI << "Self path: " << kb::WCC('p') << s_self_path << std::endl;
+    KLOGI << "Root path: " << kb::WCC('p') << s_root_path << std::endl;
+    KLOGI << "Conf path: " << kb::WCC('p') << s_conf_path << std::endl;
 
     xml::XMLFile cfg(s_conf_path / "fudge.xml");
     if(!cfg.read())
     {
-        DLOGE("fudge") << "Could not complete configuration step." << std::endl;
-        DLOGI << "Missing file: " << WCC('p') << (s_conf_path / "fudge.xml") << std::endl;
-        DLOGI << "Exiting." << std::endl;
+        KLOGE("fudge") << "Could not complete configuration step." << std::endl;
+        KLOGI << "Missing file: " << kb::WCC('p') << (s_conf_path / "fudge.xml") << std::endl;
+        KLOGI << "Exiting." << std::endl;
         exit(EXIT_FAILURE);
     }
     // Load asset registry file
     fudge::far::load(s_conf_path / "fudge.far");
 
-    DLOGR("fudge") << std::endl;
-    DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
-    DLOGR("fudge") << std::endl;
+    KLOGR("fudge") << std::endl;
+    KLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+    KLOGR("fudge") << std::endl;
 
     // ---------------- TEXTURE ATLASES ----------------
     rapidxml::xml_node<>* atl_node = cfg.root->first_node("atlas");
@@ -193,26 +193,26 @@ int main(int argc, char const *argv[])
                 parse_atlas_export_options(batch->first_node("export"), options);
 
                 // Iterate directory
-                DLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
-                DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+                KLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
+                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_cat_rebuild))
                     {
-                        DLOG("fudge",1) << "Processing directory: " << WCC('p') << entry.path().stem() << std::endl;
+                        KLOG("fudge",1) << "Processing directory: " << kb::WCC('p') << entry.path().stem() << std::endl;
 
                         fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, options);
-                        DLOGR("fudge") << std::endl;
+                        KLOGR("fudge") << std::endl;
                     }
                 }
             }
 
-            DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
-            DLOGR("fudge") << std::endl;
+            KLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+            KLOGR("fudge") << std::endl;
         }
         else
         {
-            DLOGW("fudge") << "Cannot find \"texture\" node. Skipping texture atlas packing." << std::endl;
+            KLOGW("fudge") << "Cannot find \"texture\" node. Skipping texture atlas packing." << std::endl;
         }
 
         // ---------------- FONT ATLASES ----------------
@@ -232,34 +232,34 @@ int main(int argc, char const *argv[])
                 fudge::atlas::AtlasExportOptions options;
                 parse_atlas_export_options(batch->first_node("export"), options);
 
-                DLOGN("fudge") << "Iterating fonts directory:" << std::endl;
-                DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+                KLOGN("fudge") << "Iterating fonts directory:" << std::endl;
+                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_regular_file() && 
                        !entry.path().extension().string().compare(".ttf") &&
                        (fudge::far::need_create(entry) || s_force_font_rebuild))
                     {
-                        DLOG("fudge",1) << "Processing font: " << WCC('n') << entry.path().filename() << std::endl;
+                        KLOG("fudge",1) << "Processing font: " << kb::WCC('n') << entry.path().filename() << std::endl;
                         fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, options, 32);
-                        DLOGR("fudge") << std::endl;
+                        KLOGR("fudge") << std::endl;
                     }
                 }
             }
 
             fudge::atlas::release_fonts();
 
-            DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
-            DLOGR("fudge") << std::endl;
+            KLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+            KLOGR("fudge") << std::endl;
         }
         else
         {
-            DLOGW("fudge") << "Cannot find \"font\" node. Skipping font atlas packing." << std::endl;
+            KLOGW("fudge") << "Cannot find \"font\" node. Skipping font atlas packing." << std::endl;
         }
     }
     else
     {
-        DLOGW("fudge") << "Cannot find \"atlas\" node. Skipping atlas packing." << std::endl;
+        KLOGW("fudge") << "Cannot find \"atlas\" node. Skipping atlas packing." << std::endl;
     }
 
     // ---------------- TEXTURE MAPS ----------------
@@ -276,23 +276,23 @@ int main(int argc, char const *argv[])
             if(!xml::parse_node(batch, "config", config_file)) continue;
             if(!fudge::texmap::configure(s_root_path / config_file))
             {
-                DLOGE("fudge") << "Failed to configure texture maps." << std::endl;
+                KLOGE("fudge") << "Failed to configure texture maps." << std::endl;
                 continue;
             }
 
-            DLOGN("fudge") << "Iterating unpacked texture maps directory:" << std::endl;
-            DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+            KLOGN("fudge") << "Iterating unpacked texture maps directory:" << std::endl;
+            KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
             for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_tom_rebuild))
                     fudge::texmap::make_tom(entry.path(), s_root_path / output_path);
         }
 
-        DLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
-        DLOGR("fudge") << std::endl;
+        KLOGR("fudge") << "--------------------------------------------------------------------------------" << std::endl;
+        KLOGR("fudge") << std::endl;
     }
     else
     {
-        DLOGW("fudge") << "Cannot find \"texmap\" node. Skipping texture maps packing." << std::endl;
+        KLOGW("fudge") << "Cannot find \"texmap\" node. Skipping texture maps packing." << std::endl;
     }
 
     // ---------------- SHADERS ----------------
@@ -309,8 +309,8 @@ int main(int argc, char const *argv[])
                 if(xml::parse_attribute(include_node, "path", include_dir))
                 {
                     erwin::slang::register_include_directory(s_root_path / include_dir);
-                    DLOG("fudge",1) << "Detected shader include directory:" << std::endl;
-                    DLOGI << WCC('p') << include_dir << std::endl;
+                    KLOG("fudge",1) << "Detected shader include directory:" << std::endl;
+                    KLOGI << kb::WCC('p') << include_dir << std::endl;
                 }
             }
 
@@ -324,17 +324,17 @@ int main(int argc, char const *argv[])
 
                 // Create temporary folder
                 fs::create_directory(s_root_path / output_path / "tmp");
-                DLOGN("fudge") << "Iterating shaders directory:" << std::endl;
-                DLOGI << WCC('p') << input_path << WCC(0) << std::endl;
+                KLOGN("fudge") << "Iterating shaders directory:" << std::endl;
+                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_regular_file() && 
                        !entry.path().extension().string().compare(".glsl") &&
                        (fudge::far::need_create(entry) || s_force_shader_rebuild))
                     {
-                        DLOG("fudge",1) << "Processing: " << WCC('n') << entry.path().filename() << WCC(0) << std::endl;
+                        KLOG("fudge",1) << "Processing: " << kb::WCC('n') << entry.path().filename() << kb::WCC(0) << std::endl;
                         fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
-                        DLOGR("fudge") << std::endl;
+                        KLOGR("fudge") << std::endl;
                     }
                 }
                 // Delete temporary folder

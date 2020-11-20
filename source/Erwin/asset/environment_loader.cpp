@@ -9,16 +9,16 @@ namespace erwin
 AssetMetaData EnvironmentLoader::build_meta_data(const WPath& file_path)
 {
     // Sanity check
-    W_ASSERT(file_path.exists(), "File does not exist.");
-    W_ASSERT_FMT(file_path.check_extension(".hdr"_h), "Incompatible file type: %s", file_path.extension().c_str());
+    K_ASSERT(file_path.exists(), "File does not exist.");
+    K_ASSERT_FMT(file_path.check_extension(".hdr"_h), "Incompatible file type: %s", file_path.extension().c_str());
 
     return {file_path, AssetMetaData::AssetType::EnvironmentHDR};
 }
 
 Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset", 1) << "Loading environment:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading environment:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     Texture2DDescriptor descriptor;
 
@@ -26,13 +26,13 @@ Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_
     img::HDRDescriptor hdrfile{meta_data.file_path};
     img::read_hdr(hdrfile);
 
-    DLOGI << "Width:    " << WCC('v') << hdrfile.width << std::endl;
-    DLOGI << "Height:   " << WCC('v') << hdrfile.height << std::endl;
-    DLOGI << "Channels: " << WCC('v') << hdrfile.channels << std::endl;
+    KLOGI << "Width:    " << kb::WCC('v') << hdrfile.width << std::endl;
+    KLOGI << "Height:   " << kb::WCC('v') << hdrfile.height << std::endl;
+    KLOGI << "Channels: " << kb::WCC('v') << hdrfile.channels << std::endl;
 
     if(2 * hdrfile.height != hdrfile.width)
     {
-        DLOGW("asset") << "HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
+        KLOGW("asset") << "HDR file must be in 2:1 format (width = 2 * height) for optimal results." << std::endl;
     }
 
     descriptor.width = hdrfile.width;

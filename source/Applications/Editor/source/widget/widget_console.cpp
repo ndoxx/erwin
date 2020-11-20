@@ -1,7 +1,7 @@
 #include "widget/widget_console.h"
 #include "script/script_engine.h"
 #include "level/scene_manager.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "imgui.h"
 
 #include <regex>

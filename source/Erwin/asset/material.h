@@ -23,12 +23,12 @@ struct TextureGroup
 
 	inline TextureHandle& operator[](uint32_t index)
 	{
-		W_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
+		K_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
 		return textures[index];
 	}
 	inline const TextureHandle& operator[](uint32_t index) const
 	{
-		W_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
+		K_ASSERT(index<k_max_texture_slots, "TextureGroup index out of bounds.");
 		return textures[index];
 	}
 };

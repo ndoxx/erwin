@@ -1,5 +1,5 @@
 #include "editor_app.h"
-#include "kibble/logger/logger_thread.h"
+#include <kibble/logger/logger_thread.h>
 #include "entity/component/editor_tags.h"
 #include "entity/component/tags.h"
 #include "imgui/font_awesome.h"
@@ -56,7 +56,7 @@ void ErwinEditor::on_load()
                    {"editor"_h, "application"_h, "entity"_h, "scene"_h, "script"_h}));
     keybindings_widget_ = new editor::KeybindingsWidget();
 
-    DLOGN("editor") << "Loading Erwin Editor." << std::endl;
+    KLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
     scene_view_layer_ = new SceneViewLayer();
     scene_editor_layer_ = new editor::SceneEditorLayer();
@@ -110,7 +110,7 @@ void ErwinEditor::on_load()
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
     }
 
-    DLOGN("editor") << "Erwin Editor is ready." << std::endl;
+    KLOGN("editor") << "Erwin Editor is ready." << std::endl;
 
     // If editor is enabled, PPRenderer should draw to the host window framebuffer instead of the default one
     PostProcessingRenderer::set_final_render_target("host"_h);
@@ -315,7 +315,7 @@ void ErwinEditor::show_dockspace_window(bool* p_open)
 
 void ErwinEditor::create_state(EditorStateIdx idx, EditorState&& state)
 {
-    W_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
+    K_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
     states_[size_t(idx)] = state;
 }
 
@@ -324,7 +324,7 @@ void ErwinEditor::switch_state(EditorStateIdx idx)
     if(idx == current_state_idx_)
         return;
 
-    W_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
+    K_ASSERT(idx < EditorStateIdx::COUNT, "State index out of bounds");
     states_[size_t(current_state_idx_)].enable(false);
     states_[size_t(idx)].enable(true);
 

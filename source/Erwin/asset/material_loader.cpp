@@ -34,31 +34,31 @@ static ImageFormat select_image_format(uint8_t channels, TextureCompression comp
         case TextureCompression::DXT1:
             return srgb ? ImageFormat::COMPRESSED_SRGB_S3TC_DXT1 : ImageFormat::COMPRESSED_RGB_S3TC_DXT1;
         default: {
-            DLOGE("texture") << "Unsupported compression option, defaulting to RGB8." << std::endl;
+            KLOGE("texture") << "Unsupported compression option, defaulting to RGB8." << std::endl;
             return ImageFormat::RGB8;
         }
         }
     }
     else
     {
-        DLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << int(channels) << std::endl;
-        DLOGI << "Defaulting to RGBA8." << std::endl;
+        KLOGE("texture") << "Only 3 or 4 color channels supported, but got: " << int(channels) << std::endl;
+        KLOGI << "Defaulting to RGBA8." << std::endl;
         return ImageFormat::RGBA8;
     }
 }
 
 AssetMetaData MaterialLoader::build_meta_data(const WPath& file_path)
 {
-    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    W_ASSERT(file_path.check_extension(".tom"_h), "Invalid input file.");
+    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    K_ASSERT(file_path.check_extension(".tom"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::MaterialTOM};
 }
 
 tom::TOMDescriptor MaterialLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset", 1) << "Loading TOM file:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading TOM file:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     tom::TOMDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
@@ -82,16 +82,16 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     }
 
 #ifdef W_DEBUG
-    DLOGI << "Found " << WCC('v') << tg.texture_count << WCC(0) << " texture maps. TextureHandles: { ";
+    KLOGI << "Found " << kb::WCC('v') << tg.texture_count << kb::WCC(0) << " texture maps. TextureHandles: { ";
     for(size_t ii = 0; ii < tg.texture_count; ++ii)
     {
-        DLOG("texture", 1) << WCC('v') << tg.textures[ii].index() << " ";
+        KLOG("texture", 1) << kb::WCC('v') << tg.textures[ii].index() << " ";
     }
-    DLOG("texture", 1) << WCC(0) << "}" << std::endl;
+    KLOG("texture", 1) << kb::WCC(0) << "}" << std::endl;
 #endif
 
-    W_ASSERT(descriptor.material_type == tom::MaterialType::PBR, "Material is not PBR.");
-    W_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData),
+    K_ASSERT(descriptor.material_type == tom::MaterialType::PBR, "Material is not PBR.");
+    K_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData),
              "Invalid material data size.");
 
     ShaderHandle shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");

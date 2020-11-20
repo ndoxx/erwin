@@ -133,18 +133,18 @@ public:
     // Set THE vertex buffer, should use this for interleaved data
     inline void set_vertex_buffer(std::reference_wrapper<OGLVertexBuffer> r_vb)
     {
-        W_ASSERT(vertex_buffers_.size()==0, "[OGLVertexArray] Use add_vertex_buffer() instead if you intend to add multiple vertex buffers (non-interleaved data).");
+        K_ASSERT(vertex_buffers_.size()==0, "[OGLVertexArray] Use add_vertex_buffer() instead if you intend to add multiple vertex buffers (non-interleaved data).");
         add_vertex_buffer(r_vb);
     }
 
     inline const OGLVertexBuffer& get_vertex_buffer(uint32_t index=0) const
     {
-        W_ASSERT(index<vertex_buffers_.size(), "[OGLVertexArray] Vertex buffer index out of bounds");
+        K_ASSERT(index<vertex_buffers_.size(), "[OGLVertexArray] Vertex buffer index out of bounds");
         return vertex_buffers_[index];
     }
     inline OGLVertexBuffer& get_vertex_buffer(uint32_t index=0)
     {
-        W_ASSERT(index<vertex_buffers_.size(), "[OGLVertexArray] Vertex buffer index out of bounds");
+        K_ASSERT(index<vertex_buffers_.size(), "[OGLVertexArray] Vertex buffer index out of bounds");
         return vertex_buffers_[index];
     }
 

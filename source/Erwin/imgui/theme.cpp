@@ -3,7 +3,7 @@
 #include "filesystem/xml_file.h"
 #include "filesystem/wpath.h"
 #include "imgui.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <algorithm>
 
@@ -150,7 +150,7 @@ bool load(const ThemeEntry& entry)
 {
     WPath xml_path(entry.path);
 
-	DLOGN("editor") << "Loading theme: " << entry.name << std::endl;
+	KLOGN("editor") << "Loading theme: " << entry.name << std::endl;
 
 	xml::XMLFile theme_f(xml_path);
 	if(!theme_f.read())
@@ -185,7 +185,7 @@ bool load(const ThemeEntry& entry)
     	{
     		std::string name;
     		xml::parse_attribute(col_node, "name", name);
-    		DLOGW("editor") << "Skipping unknown ImGuiCol: " << name << std::endl;
+    		KLOGW("editor") << "Skipping unknown ImGuiCol: " << name << std::endl;
     		continue;
     	}
 
@@ -249,7 +249,7 @@ bool load(const ThemeEntry& entry)
 
 bool load_default()
 {
-    W_ASSERT(s_themes.size()!=0, "Themes list is empty, call theme::init().");
+    K_ASSERT(s_themes.size()!=0, "Themes list is empty, call theme::init().");
     return load(s_themes[0]);
 }
 

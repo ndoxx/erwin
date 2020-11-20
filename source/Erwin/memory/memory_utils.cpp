@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <map>
 
-using namespace kb;
+
 
 namespace erwin
 {
@@ -35,9 +35,9 @@ std::string human_size(std::size_t bytes)
 } // namespace utils
 
 
-static std::map<uint32_t, WCB> s_highlights;
+static std::map<uint32_t, kb::WCB> s_highlights;
 
-void hex_dump_highlight(uint32_t word, const WCB& wcb)
+void hex_dump_highlight(uint32_t word, const kb::WCB& wcb)
 {
 	s_highlights[word] = wcb;
 }
@@ -61,20 +61,20 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std
 
 	std::string dump_title = title.size() ? title : "HEX DUMP";
 	su::center(dump_title,12);
-	stream << WCC(102,153,0) << "/-" << WCC(0,130,10) << dump_title << WCC(102,153,0) << "-\\" << std::endl;
+	stream << kb::WCC(102,153,0) << "/-" << kb::WCC(0,130,10) << dump_title << kb::WCC(102,153,0) << "-\\" << std::endl;
 	stream << std::hex;
 	while(current < end+end_offset/4)
 	{
 		// Show 32 bytes aligned addresses
 		if(std::size_t(current)%32==0)
-			stream << WCC(102,153,0) << "[0x" << std::setfill('0') << std::setw(8) << std::size_t(current) << "] ";
+			stream << kb::WCC(102,153,0) << "[0x" << std::setfill('0') << std::setw(8) << std::size_t(current) << "] ";
 		// Separator after 16 bytes aligned addresses
 		else if(std::size_t(current)%16==0)
 			stream << " ";
 
 		// Out-of-scope data in dark gray dots
 		if(current < begin || current >= end)
-			stream << WCC(100,100,100) << "........";
+			stream << kb::WCC(100,100,100) << "........";
 		else
 		{
 			// Get current value
@@ -83,10 +83,10 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std
 			auto it = s_highlights.find(value);
 			// Highlight recognized words
 			if(it!=s_highlights.end())
-				stream << WCC(220,220,220) << it->second << std::setfill('0') << std::setw(8) << value << WCB(0);
+				stream << kb::WCC(220,220,220) << it->second << std::setfill('0') << std::setw(8) << value << kb::WCB(0);
 			// Basic display
 			else
-				stream << WCC(220,220,220) << std::setfill('0') << std::setw(8) << value;
+				stream << kb::WCC(220,220,220) << std::setfill('0') << std::setw(8) << value;
 		}
 
 		// Jump lines before 32 bytes aligned addresses
@@ -97,7 +97,7 @@ void hex_dump(std::ostream& stream, const void* ptr, std::size_t size, const std
 
 		++current;
 	}
-	stream << WCC(0) << std::dec;
+	stream << kb::WCC(0) << std::dec;
 }
 
 } // namespace memory

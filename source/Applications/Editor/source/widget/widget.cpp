@@ -1,5 +1,5 @@
 #include "widget/widget.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "imgui.h"
 
 namespace editor

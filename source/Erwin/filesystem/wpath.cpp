@@ -1,7 +1,8 @@
 #include "filesystem/wpath.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <regex>
+
 
 namespace erwin
 {
@@ -29,7 +30,7 @@ std::string WPath::make_universal(const std::string& proto, const fs::path& path
 {
     hash_t hproto = H_(proto.c_str());
     auto findit = s_protos.find(hproto);
-    W_ASSERT(findit != s_protos.end(), "Unknown protocol.");
+    K_ASSERT(findit != s_protos.end(), "Unknown protocol.");
     return proto + "://" + fs::relative(path, findit->second).string();
 }
 
@@ -47,38 +48,38 @@ WPath::WPath(const std::string& path) : universal_(path), resource_id_(H_(univer
         switch(protocol_)
         {
         case "usr"_h: {
-            W_ASSERT(!s_user_dir_.empty(), "User directory is not initialized.");
+            K_ASSERT(!s_user_dir_.empty(), "User directory is not initialized.");
             absolute_ = s_user_dir_ / relative;
             break;
         }
         case "res"_h: {
-            W_ASSERT(!s_resource_dir_.empty(), "Resource base directory is not initialized.");
+            K_ASSERT(!s_resource_dir_.empty(), "Resource base directory is not initialized.");
             absolute_ = s_resource_dir_ / relative;
             break;
         }
         case "cfg"_h: {
-            W_ASSERT(!s_config_dir_.empty(), "Client config directory is not initialized.");
+            K_ASSERT(!s_config_dir_.empty(), "Client config directory is not initialized.");
             absolute_ = s_config_dir_ / relative;
             break;
         }
         case "appres"_h: {
-            W_ASSERT(!s_app_resource_dir_.empty(), "Application resource directory is not initialized.");
+            K_ASSERT(!s_app_resource_dir_.empty(), "Application resource directory is not initialized.");
             absolute_ = s_app_resource_dir_ / relative;
             break;
         }
         case "sysres"_h: {
-            W_ASSERT(!s_sys_resource_dir_.empty(), "System resource directory is not initialized.");
+            K_ASSERT(!s_sys_resource_dir_.empty(), "System resource directory is not initialized.");
             absolute_ = s_sys_resource_dir_ / relative;
             break;
         }
         case "syscfg"_h: {
-            W_ASSERT(!s_sys_config_dir_.empty(), "System config directory is not initialized.");
+            K_ASSERT(!s_sys_config_dir_.empty(), "System config directory is not initialized.");
             absolute_ = s_sys_config_dir_ / relative;
             break;
         }
         default: {
-            DLOGE("ios") << "Unrecognized protocol: " << protocol << std::endl;
-            DLOGI << "Defaulting to root directory." << std::endl;
+            KLOGE("ios") << "Unrecognized protocol: " << protocol << std::endl;
+            KLOGI << "Defaulting to root directory." << std::endl;
             absolute_ = s_root_dir_ / relative;
         }
         }
@@ -117,13 +118,13 @@ fs::path WPath::relative() const
 
 fs::path WPath::operator/(const std::string& rhs)
 {
-    W_ASSERT(is_directory(), "Cannot concatenate paths, LHS is not a directory.");
+    K_ASSERT(is_directory(), "Cannot concatenate paths, LHS is not a directory.");
     return absolute_ / rhs;
 }
 
 std::ostream& operator<<(std::ostream& stream, const WPath& rhs)
 {
-    stream << WCC('p') << "\"" << rhs.universal_ << "\"" << WCC(0);
+    stream << kb::WCC('p') << "\"" << rhs.universal_ << "\"" << kb::WCC(0);
     return stream;
 }
 

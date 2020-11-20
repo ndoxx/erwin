@@ -1,5 +1,4 @@
 #include "core/intern_string.h"
-#include "debug/logger.h"
 #include "entity/component/serial/script.h"
 #include "filesystem/filesystem.h"
 #include "script/script_engine.h"
@@ -7,7 +6,10 @@
 #include "utils/string.h"
 #include <chaiscript/chaiscript.hpp>
 #include <cstdlib>
+#include <kibble/logger/logger.h>
 #include <regex>
+
+
 
 namespace erwin
 {
@@ -55,7 +57,7 @@ hash_t ChaiContext::use(const WPath& script_path)
     }
     catch(const chaiscript::exception::eval_error& e)
     {
-        DLOGE("script") << e.pretty_print() << std::endl;
+        KLOGE("script") << e.pretty_print() << std::endl;
     }
     return 0;
 }
@@ -68,14 +70,14 @@ void ChaiContext::eval(const std::string& command)
     }
     catch(const chaiscript::exception::eval_error& e)
     {
-        DLOGE("script") << e.pretty_print() << std::endl;
+        KLOGE("script") << e.pretty_print() << std::endl;
     }
 }
 
 static std::tuple<float, float, float> make_range(const std::string& str_list)
 {
     auto tokens = su::tokenize(str_list, ',');
-    W_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
+    K_ASSERT(tokens.size() == 3, "Script parameter range must match: <min,max,default>");
     return {std::strtof(tokens[0].c_str(), nullptr), std::strtof(tokens[1].c_str(), nullptr),
             std::strtof(tokens[2].c_str(), nullptr)};
 }
@@ -129,7 +131,7 @@ static void try_load(ChaiContext::VM_ptr vm, ChaiContext::Storage& storage, cons
     // by ref would not work.
     auto disable_on_fault = [&actor]() {
         actor.enable(false);
-        DLOGW("script") << "Actor was disabled due to a script error." << std::endl;
+        KLOGW("script") << "Actor was disabled due to a script error." << std::endl;
     };
 
     try
@@ -142,12 +144,12 @@ static void try_load(ChaiContext::VM_ptr vm, ChaiContext::Storage& storage, cons
             }
             catch(const chaiscript::exception::eval_error& e)
             {
-                DLOGE("script") << e.pretty_print() << std::endl;
+                KLOGE("script") << e.pretty_print() << std::endl;
                 disable_on_fault();
             }
         };
         actor.set_trait(trait);
-        DLOGI << WCC('v') << name << std::endl;
+        KLOGI << kb::WCC('v') << name << std::endl;
     }
     catch(const chaiscript::exception::eval_error&)
     {
@@ -158,19 +160,19 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
 {
     if(actor_type == 0)
     {
-        DLOGE("script") << "Actor class cannot be instantiated due to a parsing error." << std::endl;
+        KLOGE("script") << "Actor class cannot be instantiated due to a parsing error." << std::endl;
         return 0;
     }
 
     // Get type reflection
     const auto& reflection = reflections_.at(actor_type);
 
-    DLOGN("script") << "Instantiating actor class '" << WCC('n') << reflection.name << WCC(0) << "' for entity ["
+    KLOGN("script") << "Instantiating actor class '" << kb::WCC('n') << reflection.name << kb::WCC(0) << "' for entity ["
                     << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
     auto instance_handle = storage_->actor_handle_pool_.acquire();
-    DLOGI << "Instance handle: " << instance_handle << std::endl;
+    KLOGI << "Instance handle: " << instance_handle << std::endl;
 
     auto& instance = storage_->actor_instances_[instance_handle] =
         vm->eval(reflection.name + "(" + std::to_string(int(e)) + ")");
@@ -182,19 +184,19 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
     actor.actor_type = actor_type;
 
     // * Detect special methods
-    DLOG("script", 1) << "Methods: " << std::endl;
+    KLOG("script", 1) << "Methods: " << std::endl;
     try_load(vm, *storage_, "__update", actor, actor.update, Actor::ActorTrait::UPDATER);
 
     if(actor.traits == 0)
     {
-        DLOGI << "None" << std::endl;
+        KLOGI << "None" << std::endl;
     }
 
     // * Share exposed parameters
-    DLOG("script", 1) << "Parameter set: " << std::endl;
+    KLOG("script", 1) << "Parameter set: " << std::endl;
     for(const auto& param : reflection.parameters)
     {
-        DLOGI << istr::resolve(param.type) << ' ' << WCC('n') << param.name << std::endl;
+        KLOGI << istr::resolve(param.type) << ' ' << kb::WCC('n') << param.name << std::endl;
         switch(param.type)
         {
         case "float"_h: {
@@ -203,7 +205,7 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
             break;
         }
         default: {
-            DLOGW("script") << "Ignoring parameter '" << param.name << "' of unknown type " << istr::resolve(param.type)
+            KLOGW("script") << "Ignoring parameter '" << param.name << "' of unknown type " << istr::resolve(param.type)
                             << std::endl;
         }
         }
@@ -217,12 +219,12 @@ void ChaiContext::remove_actor(ActorHandle idx)
     auto it = actors_.find(idx);
     if(it != actors_.end())
     {
-        DLOGN("script") << "Removing actor instance: " << idx << std::endl;
+        KLOGN("script") << "Removing actor instance: " << idx << std::endl;
         actors_.erase(it);
     }
     else
     {
-        DLOGW("script") << "Cannot remove unknown actor instance: " << idx << std::endl;
+        KLOGW("script") << "Cannot remove unknown actor instance: " << idx << std::endl;
     }
 }
 
@@ -238,7 +240,7 @@ void ChaiContext::update_parameters(const ChaiContext& other)
 {
     // Transport parameter values from other VM to this one
     // ASSUME: Actors are the same in both sides
-    W_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
+    K_ASSERT(actors_.size() == other.actors_.size(), "Actor vector size mismatch.");
     for(auto&& [hnd, actor] : actors_)
         actor.update_parameters(other.actors_.at(hnd));
 }

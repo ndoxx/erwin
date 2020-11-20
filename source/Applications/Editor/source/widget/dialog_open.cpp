@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "ImGuiFileDialog/ImGuiFileDialog.h"
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace editor
 {

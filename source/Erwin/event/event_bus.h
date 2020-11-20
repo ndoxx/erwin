@@ -21,7 +21,7 @@
 
 #include "core/config.h"
 #include "core/core.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "event/delegate.h"
 #include "event/event.h"
 

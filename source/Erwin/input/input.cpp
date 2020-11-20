@@ -1,10 +1,12 @@
 #include "input/input.h"
-#include "event/window_events.h"
 #include "event/event_bus.h"
+#include "event/window_events.h"
 #include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 #include "utils/string.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
+
+
 
 namespace erwin
 {
@@ -13,48 +15,50 @@ std::vector<Input::ActionDescriptor> Input::actions;
 
 void Input::init()
 {
-	// Push null action
-	actions.push_back({keymap::WKEY::NONE, false, false, keymap::WKEYMOD::NONE, "", ""});
+    // Push null action
+    actions.push_back({keymap::WKEY::NONE, false, false, keymap::WKEYMOD::NONE, "", ""});
 
-	load_config();
+    load_config();
 }
 
 bool Input::parse_keybindings(void* node)
 {
-	rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
+    rapidxml::xml_node<>* xnode = static_cast<rapidxml::xml_node<>*>(node);
 
     // For each siblings at this recursion level
-    for(rapidxml::xml_node<>* cur_node=xnode->first_node("action");
-        cur_node;
-        cur_node=cur_node->next_sibling("action"))
+    for(rapidxml::xml_node<>* cur_node = xnode->first_node("action"); cur_node;
+        cur_node = cur_node->next_sibling("action"))
     {
         std::string action_name, description, key_comb;
-        if(!xml::parse_attribute(cur_node, "name", action_name)) return false;
+        if(!xml::parse_attribute(cur_node, "name", action_name))
+            return false;
         if(!xml::parse_attribute(cur_node, "desc", description))
-        	description = action_name;
+            description = action_name;
 
         // Detect and extract key modifiers
         keymap::WKEY key = keymap::WKEY::NONE;
         uint8_t mods = keymap::WKEYMOD::NONE;
-        if(!xml::parse_attribute(cur_node, "key", key_comb)) return false;
+        if(!xml::parse_attribute(cur_node, "key", key_comb))
+            return false;
         if(key_comb.find_first_of("+") != std::string::npos)
         {
-        	auto tokens = su::tokenize(key_comb, '+');
-        	for(size_t ii=0; ii<tokens.size()-1; ++ii)
-        	{
-        		hash_t hmod = H_(tokens[ii].c_str());
-        		mods |= keymap::mod_name_to_mod(hmod);
-        	}
-        	hash_t hkey_name = H_(tokens.back().c_str());
-        	key = keymap::key_name_to_key(hkey_name);
+            auto tokens = su::tokenize(key_comb, '+');
+            for(size_t ii = 0; ii < tokens.size() - 1; ++ii)
+            {
+                hash_t hmod = H_(tokens[ii].c_str());
+                mods |= keymap::mod_name_to_mod(hmod);
+            }
+            hash_t hkey_name = H_(tokens.back().c_str());
+            key = keymap::key_name_to_key(hkey_name);
         }
         else
         {
-        	hash_t hkey_name = H_(key_comb.c_str());
-        	key = keymap::key_name_to_key(hkey_name);
+            hash_t hkey_name = H_(key_comb.c_str());
+            key = keymap::key_name_to_key(hkey_name);
         }
 
-		if(key == keymap::WKEY::NONE) continue;
+        if(key == keymap::WKEY::NONE)
+            continue;
 
         bool repeat = false;
         xml::parse_attribute(cur_node, "repeat", repeat);
@@ -62,8 +66,8 @@ bool Input::parse_keybindings(void* node)
         hash_t htrigger = xml::parse_attribute_h(cur_node, "trigger");
         bool trigger = (htrigger == "press"_h || htrigger == 0);
 
-		// The XML file we're parsing better be in the correct enum order!
-		actions.push_back({key, trigger, repeat, mods, action_name, description});
+        // The XML file we're parsing better be in the correct enum order!
+        actions.push_back({key, trigger, repeat, mods, action_name, description});
     }
 
     return true;
@@ -71,47 +75,43 @@ bool Input::parse_keybindings(void* node)
 
 bool Input::load_config()
 {
-	DLOGN("config") << "Loading keybindings." << std::endl;
+    KLOGN("config") << "Loading keybindings." << std::endl;
 
-	auto user_filepath = "usr://config/keybindings.xml"_wp;
-	WPath default_filepath(wfs::get_root_dir() / s_default_keybindings_path);
+    auto user_filepath = "usr://config/keybindings.xml"_wp;
+    WPath default_filepath(wfs::get_root_dir() / s_default_keybindings_path);
 
-	if(!wfs::ensure_user_config(user_filepath, default_filepath))
-		return false;
+    if(!wfs::ensure_user_config(user_filepath, default_filepath))
+        return false;
 
-	// Read file and parse
-	xml::XMLFile kbd_f(user_filepath);
-	if(!kbd_f.read())
-		return false;
+    // Read file and parse
+    xml::XMLFile kbd_f(user_filepath);
+    if(!kbd_f.read())
+        return false;
 
-	return parse_keybindings(kbd_f.root);
+    return parse_keybindings(kbd_f.root);
 }
 
 bool Input::save_config()
 {
-	auto filepath = "usr://config/keybindings.xml"_wp;
-	DLOG("config",1) << "Saving key bindings:" << std::endl;
-	DLOGI << WCC('p') << filepath << std::endl;
-	// Direct XML output for now
-	auto p_ofs = wfs::get_ostream(filepath, wfs::ascii);
-	auto& ofs = *p_ofs;
-	ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
-	ofs << "<Keymap>" << std::endl;
+    auto filepath = "usr://config/keybindings.xml"_wp;
+    KLOG("config", 1) << "Saving key bindings:" << std::endl;
+    KLOGI << kb::WCC('p') << filepath << std::endl;
+    // Direct XML output for now
+    auto p_ofs = wfs::get_ostream(filepath, wfs::ascii);
+    auto& ofs = *p_ofs;
+    ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
+    ofs << "<Keymap>" << std::endl;
 
-	for(uint32_t ii=1; ii<actions.size(); ++ii)
-	{
-		const auto& action = actions[ii];
+    for(uint32_t ii = 1; ii < actions.size(); ++ii)
+    {
+        const auto& action = actions[ii];
         std::string key_comb = keymap::modifier_string(action.mods) + keymap::KEY_NAMES.at(action.key);
-		ofs << "\t<action name=\"" << action.name
-			<< "\" desc=\"" << action.description
-			<< "\" key=\"" << key_comb
-			<< "\" trigger=\"" << (action.pressed ? "press" : "release")
-			<< "\"/>" << std::endl;
-	}
-	ofs << "</Keymap>" << std::endl;
+        ofs << "\t<action name=\"" << action.name << "\" desc=\"" << action.description << "\" key=\"" << key_comb
+            << "\" trigger=\"" << (action.pressed ? "press" : "release") << "\"/>" << std::endl;
+    }
+    ofs << "</Keymap>" << std::endl;
 
-	return true;
+    return true;
 }
-
 
 } // namespace erwin

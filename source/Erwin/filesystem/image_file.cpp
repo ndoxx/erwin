@@ -1,6 +1,6 @@
 #include "filesystem/image_file.h"
 #include "stb/stb_image.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <cstring>
 

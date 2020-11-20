@@ -9,8 +9,8 @@ namespace erwin
 AssetMetaData TextureLoader::build_meta_data(const WPath& file_path)
 {
     // Sanity check
-    W_ASSERT(file_path.exists(), "File does not exist.");
-    W_ASSERT_FMT(file_path.check_extension(".png"_h), "Incompatible file type: %s", file_path.c_str());
+    K_ASSERT(file_path.exists(), "File does not exist.");
+    K_ASSERT_FMT(file_path.check_extension(".png"_h), "Incompatible file type: %s", file_path.c_str());
 
     return {file_path, AssetMetaData::AssetType::ImageFilePNG};
 }
@@ -18,8 +18,8 @@ AssetMetaData TextureLoader::build_meta_data(const WPath& file_path)
 Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data,
                                                   std::optional<Texture2DDescriptor> options)
 {
-    DLOG("asset", 1) << "Loading image file:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading image file:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     Texture2DDescriptor descriptor;
 
@@ -32,9 +32,9 @@ Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data
     pngfile.channels = 4;
     img::read_png(pngfile);
 
-    DLOGI << "Width:    " << WCC('v') << pngfile.width << std::endl;
-    DLOGI << "Height:   " << WCC('v') << pngfile.height << std::endl;
-    DLOGI << "Channels: " << WCC('v') << pngfile.channels << std::endl;
+    KLOGI << "Width:    " << kb::WCC('v') << pngfile.width << std::endl;
+    KLOGI << "Height:   " << kb::WCC('v') << pngfile.height << std::endl;
+    KLOGI << "Channels: " << kb::WCC('v') << pngfile.channels << std::endl;
 
     descriptor.width = pngfile.width;
     descriptor.height = pngfile.height;

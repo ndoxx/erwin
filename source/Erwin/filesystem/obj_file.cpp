@@ -1,5 +1,5 @@
 #include "filesystem/obj_file.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <string_view>
 #include <cstdio>
@@ -93,8 +93,8 @@ MeshData read(std::istream& stream)
             }
             else
             {
-                DLOGE("nuclear") << "Unrecognized sequence during face extraction: " << std::endl;
-                DLOGI << line << std::endl;
+                KLOGE("nuclear") << "Unrecognized sequence during face extraction: " << std::endl;
+                KLOGI << line << std::endl;
             }
 
             if(tri_ok)

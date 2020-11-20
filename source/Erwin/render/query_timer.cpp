@@ -1,6 +1,6 @@
 #include "render/query_timer.h"
 #include "render/backend.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "platform/OGL/ogl_query_timer.h"
 
@@ -12,7 +12,7 @@ WScope<QueryTimer> QueryTimer::create()
     switch(gfx::get_backend())
     {
         case GfxAPI::None:
-            DLOGE("render") << "QueryTimer: not implemented for GfxAPI::None." << std::endl;
+            KLOGE("render") << "QueryTimer: not implemented for GfxAPI::None." << std::endl;
             return nullptr;
 
         case GfxAPI::OpenGL:

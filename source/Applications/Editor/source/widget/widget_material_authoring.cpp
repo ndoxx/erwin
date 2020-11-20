@@ -183,8 +183,8 @@ void MaterialAuthoringWidget::pack_textures()
 
 void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs::path& filepath)
 {
-    DLOG("editor", 1) << "Loading texture map: " << s_texture_map_names[size_t(tm_type)] << std::endl;
-    DLOGI << WCC('p') << filepath << std::endl;
+    KLOG("editor", 1) << "Loading texture map: " << s_texture_map_names[size_t(tm_type)] << std::endl;
+    KLOGI << kb::WCC('p') << filepath << std::endl;
 
     // If texture map already assigned, delete it
     if(current_composition_->has_map(tm_type))
@@ -217,8 +217,8 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
 {
     clear();
 
-    DLOG("editor", 1) << "Loading texture directory:" << std::endl;
-    DLOGI << WCC('p') << dirpath << std::endl;
+    KLOG("editor", 1) << "Loading texture directory:" << std::endl;
+    KLOGI << kb::WCC('p') << dirpath << std::endl;
 
     bool success = false;
     // For each file in directory
@@ -246,7 +246,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
         auto& scene = SceneManager::get("material_editor_scene"_h);
         auto& current_material = get_current_material(scene);
         current_material.name = dirpath.stem().string();
-        DLOG("editor", 1) << "Selected \"" << WCC('n') << current_material.name << WCC(0) << "\" as a material name."
+        KLOG("editor", 1) << "Selected \"" << kb::WCC('n') << current_material.name << kb::WCC(0) << "\" as a material name."
                           << std::endl;
     }
 }
@@ -324,8 +324,8 @@ static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::
     tom::write_tom(tom_desc);
     tom_desc.release();
 
-    DLOG("editor", 1) << "Exported material to:" << std::endl;
-    DLOGI << WCC('p') << path << std::endl;
+    KLOG("editor", 1) << "Exported material to:" << std::endl;
+    KLOGI << kb::WCC('p') << path << std::endl;
 }
 
 void MaterialAuthoringWidget::on_update(const erwin::GameClock&)

@@ -1,7 +1,7 @@
 #include "platform/OGL/ogl_framebuffer.h"
 #include "platform/OGL/ogl_texture.h"
 #include "platform/OGL/ogl_backend.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "stb/stb_image_write.h"
 
@@ -15,21 +15,21 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
 {
     if(has_cubemap())
     {
-        W_ASSERT(!has_depth() && !has_stencil(),
+        K_ASSERT(!has_depth() && !has_stencil(),
                  "Cubemap framebuffer attachment is incompatible with depth and stencil attachments.");
     }
 
-    DLOG("render", 1) << "Creating OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << "." << std::endl;
+    KLOG("render", 1) << "Creating OpenGL " << kb::WCC('i') << "Framebuffer" << kb::WCC(0) << "." << std::endl;
 
     glCreateFramebuffers(1, &rd_handle_);
     glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
 
-    DLOGI << "handle:       " << rd_handle_ << std::endl;
-    DLOGI << "width*height: " << width_ << "*" << height_ << std::endl;
-    DLOGI << "#color bufs:  " << layout.get_count() << std::endl;
-    DLOGI << "has cubemap:  " << (has_cubemap() ? "true" : "false") << std::endl;
-    DLOGI << "has depth:    " << (has_depth() ? "true" : "false") << std::endl;
-    DLOGI << "has stencil:  " << (has_stencil() ? "true" : "false") << std::endl;
+    KLOGI << "handle:       " << rd_handle_ << std::endl;
+    KLOGI << "width*height: " << width_ << "*" << height_ << std::endl;
+    KLOGI << "#color bufs:  " << layout.get_count() << std::endl;
+    KLOGI << "has cubemap:  " << (has_cubemap() ? "true" : "false") << std::endl;
+    KLOGI << "has depth:    " << (has_depth() ? "true" : "false") << std::endl;
+    KLOGI << "has stencil:  " << (has_stencil() ? "true" : "false") << std::endl;
 
     auto* backend = static_cast<OGLBackend*>(gfx::backend.get());
     texture_handles_ = texture_vector.handles;
@@ -83,7 +83,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
     }
     else
     {
-        W_ASSERT(layout.get_count() == 1, "Framebuffer: only 1 cubemap attachment supported for now.");
+        K_ASSERT(layout.get_count() == 1, "Framebuffer: only 1 cubemap attachment supported for now.");
 
         const auto elt = layout[0];
 
@@ -119,7 +119,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
 
 OGLFramebuffer::~OGLFramebuffer()
 {
-    DLOG("render", 1) << "OpenGL " << WCC('i') << "Framebuffer" << WCC(0) << " (id=" << rd_handle_ << ") destroyed."
+    KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Framebuffer" << kb::WCC(0) << " (id=" << rd_handle_ << ") destroyed."
                       << std::endl;
     if(rd_handle_)
         glDeleteFramebuffers(1, &rd_handle_);
@@ -136,7 +136,7 @@ void OGLFramebuffer::bind(uint32_t mip_level)
     }
     else
     {
-        W_ASSERT(has_cubemap(), "[Framebuffer] Target mipmap level only available for cubemap attachements.");
+        K_ASSERT(has_cubemap(), "[Framebuffer] Target mipmap level only available for cubemap attachements.");
         uint32_t mip_width = std::max(1u, uint32_t(width_ / (1u << mip_level)));
         uint32_t mip_height = std::max(1u, uint32_t(height_ / (1u << mip_level)));
         // glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_handle_);
@@ -153,7 +153,7 @@ void OGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 void OGLFramebuffer::screenshot(const std::string& filepath)
 {
-    DLOGN("render") << "[Framebuffer] Saving screenshot:" << std::endl;
+    KLOGN("render") << "[Framebuffer] Saving screenshot:" << std::endl;
 
     // Allocate buffer for image data
     unsigned char* pixels = new unsigned char[width_ * height_ * 4];
@@ -172,7 +172,7 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     // Cleanup
     delete[] pixels;
 
-    DLOGI << WCC('p') << filepath << std::endl;
+    KLOGI << kb::WCC('p') << filepath << std::endl;
 }
 
 void OGLFramebuffer::blit_depth(const OGLFramebuffer& source)
@@ -230,35 +230,35 @@ void OGLFramebuffer::framebuffer_error_report()
         switch(status)
         {
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            DLOGE("render")
+            KLOGE("render")
                 << "[Framebuffer] Not all framebuffer attachment points are framebuffer attachment complete."
                 << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            DLOGE("render") << "[Framebuffer] No images are attached to the framebuffer." << std::endl;
+            KLOGE("render") << "[Framebuffer] No images are attached to the framebuffer." << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-            DLOGE("render") << "[Framebuffer] Incomplete draw buffer." << std::endl;
+            KLOGE("render") << "[Framebuffer] Incomplete draw buffer." << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-            DLOGE("render") << "[Framebuffer] Incomplete read buffer." << std::endl;
+            KLOGE("render") << "[Framebuffer] Incomplete read buffer." << std::endl;
             break;
         case GL_FRAMEBUFFER_UNSUPPORTED:
-            DLOGE("render") << "[Framebuffer] The combination of internal formats of the attached images violates an "
+            KLOGE("render") << "[Framebuffer] The combination of internal formats of the attached images violates an "
                                "implementation-dependent set of restrictions."
                             << std::endl;
         case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-            DLOGE("render") << "[Framebuffer] Incomplete multisample." << std::endl;
+            KLOGE("render") << "[Framebuffer] Incomplete multisample." << std::endl;
             break;
         case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-            DLOGE("render") << "[Framebuffer] Incomplete layer targets." << std::endl;
+            KLOGE("render") << "[Framebuffer] Incomplete layer targets." << std::endl;
             break;
         default:
             break;
         }
     }
     else
-        DLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << WCC('g') << "complete" << WCC(0) << "."
+        KLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << kb::WCC('g') << "complete" << kb::WCC(0) << "."
                           << std::endl;
 }
 

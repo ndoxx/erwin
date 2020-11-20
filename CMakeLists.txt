@@ -31,7 +31,8 @@ endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	add_definitions(-DW_DEBUG)
-	add_definitions(-DW_ENABLE_ASSERT)
+	add_definitions(-DK_DEBUG)
+	add_definitions(-DK_ENABLE_ASSERT)
 	add_definitions(-DLOGGING_ENABLED=1)
 endif()
 

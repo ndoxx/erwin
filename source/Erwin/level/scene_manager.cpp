@@ -4,7 +4,7 @@
 #include "level/scene_manager.h"
 #include "level/scene.h"
 #include "core/intern_string.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {
@@ -18,32 +18,32 @@ static struct
 
 void SceneManager::add_scene(hash_t name, std::unique_ptr<Scene> scene)
 {
-	W_ASSERT_FMT(s_storage.scenes.find(name) == s_storage.scenes.end(), "Cannot add a new scene at this name, name \"%s\" is already in use.", istr::resolve(name).c_str());
+	K_ASSERT_FMT(s_storage.scenes.find(name) == s_storage.scenes.end(), "Cannot add a new scene at this name, name \"%s\" is already in use.", istr::resolve(name).c_str());
 
-	DLOGN("application") << "Adding new scene: " << WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Adding new scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
 	s_storage.scenes[name] = std::move(scene);
 }
 
 void SceneManager::unload_scene(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);
-	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
+	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 	
-	DLOGN("application") << "Unloading scene: " << WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Unloading scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
 	it->second->unload();
 }
 
 Scene& SceneManager::get(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);
-	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
+	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 
 	return *it->second;
 }
 
 Scene& SceneManager::get_current()
 {
-	W_ASSERT(s_storage.current_scene.has_value(), "No current scene is set.");
+	K_ASSERT(s_storage.current_scene.has_value(), "No current scene is set.");
 	return s_storage.current_scene->get();
 }
 
@@ -60,9 +60,9 @@ bool SceneManager::has_current()
 void SceneManager::remove_scene(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);
-	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
+	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 	
-	DLOGN("application") << "Removing scene: " << WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Removing scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
 	it->second->unload();
 	s_storage.scenes.erase(it);
 }
@@ -70,7 +70,7 @@ void SceneManager::remove_scene(hash_t name)
 void SceneManager::make_current(hash_t name)
 {
 	auto it = s_storage.scenes.find(name);
-	W_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
+	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 
 	s_storage.current_scene = *it->second;
 	s_storage.current_scene_name = name;

@@ -3,7 +3,7 @@
 
 #include "intern_string.h"
 #include "filesystem/filesystem.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {
@@ -28,7 +28,7 @@ static void parse(std::istream& stream)
 
 void init()
 {
-    DLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
+    KLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
     auto ifs = wfs::get_istream("syscfg://intern_strings.txt"_wp, wfs::ascii);
     parse(*ifs);
 }

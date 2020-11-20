@@ -59,7 +59,7 @@ void InspectorWidget::entity_tab()
                             if(ImGui::Button(W_ICON(WINDOW_CLOSE)))
                             {
                                 scene.mark_for_removal(e, reflected_type);
-                                DLOG("editor", 1) << "Removed component " << component_name << " from entity "
+                                KLOG("editor", 1) << "Removed component " << component_name << " from entity "
                                                   << static_cast<unsigned long>(e) << std::endl;
                                 ImGui::TreePop();
                                 return;
@@ -89,7 +89,7 @@ void InspectorWidget::entity_tab()
                         if(ImGui::Selectable(name.c_str()))
                         {
                             invoke(W_METAFUNC_CREATE_COMPONENT, reflected, scene.get_registry(), e);
-                            DLOG("editor", 1) << "Added " << component_names.at(reflected) << " to entity "
+                            KLOG("editor", 1) << "Added " << component_names.at(reflected) << " to entity "
                                               << static_cast<unsigned long>(e) << std::endl;
                             break;
                         }

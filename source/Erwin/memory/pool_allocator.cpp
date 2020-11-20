@@ -36,7 +36,7 @@ void* PoolAllocator::allocate([[maybe_unused]] std::size_t size, std::size_t ali
     if(alignment && std::size_t(next+offset) % alignment)
         padding = utils::alignment_padding(next+offset, alignment);
 
-	W_ASSERT(padding + size <= node_size_, "[PoolAllocator] Allocation size does not fit initial requirement.");
+	K_ASSERT(padding + size <= node_size_, "[PoolAllocator] Allocation size does not fit initial requirement.");
 	
     // Mark padding area
 #ifdef ALLOCATOR_PADDING_MAGIC

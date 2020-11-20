@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "entt/entt.hpp"
 #include <istream>
 #include <map>

@@ -4,7 +4,7 @@
 
 #include "core/clock.hpp"
 #include "core/config.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "filesystem/filesystem.h"
 #include "math/color.h"
 #include "memory/arena.h"
@@ -166,8 +166,8 @@ struct FrameDrawCallData
 
 void FrameDrawCallData::export_json()
 {
-    DLOGN("render") << "Exporting frame draw call profile:" << std::endl;
-    DLOGI << WCC('p') << json_path << std::endl;
+    KLOGN("render") << "Exporting frame draw call profile:" << std::endl;
+    KLOGI << kb::WCC('p') << json_path << std::endl;
 
     auto p_ofs = wfs::get_ostream(WPath(json_path), wfs::ascii);
     auto& ofs = *p_ofs;
@@ -197,7 +197,7 @@ void FrameDrawCallData::export_json()
 
     reset();
 
-    DLOG("render", 1) << "done" << std::endl;
+    KLOG("render", 1) << "done" << std::endl;
 }
 #endif
 
@@ -325,7 +325,7 @@ public:
 
     inline void submit()
     {
-        W_ASSERT_FMT(!cmdbuf_.is_full(), "Command buffer %d is full!", int(type_));
+        K_ASSERT_FMT(!cmdbuf_.is_full(), "Command buffer %d is full!", int(type_));
         uint64_t key = uint64_t(cmdbuf_.count);
         cmdbuf_.entries[cmdbuf_.count++] = {key, head_};
     }
@@ -375,7 +375,7 @@ public:
 
     inline uint32_t submit(uint64_t key)
     {
-        W_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
+        K_ASSERT(!cmdbuf_.is_full(), "Render queue is full!");
         cmdbuf_.entries[cmdbuf_.count] = {key, head_};
         return uint32_t(cmdbuf_.count++);
     }
@@ -392,11 +392,11 @@ void Renderer::init(memory::HeapArea& area)
 
     if(s_storage.initialized_)
     {
-        DLOGW("render") << "[Renderer] Already initialized, skipping." << std::endl;
+        KLOGW("render") << "[Renderer] Already initialized, skipping." << std::endl;
         return;
     }
 
-    DLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
+    KLOGN("render") << "[Renderer] Allocating renderer storage." << std::endl;
 
     // Create and initialize storage object
     s_storage.init(&area);
@@ -409,7 +409,7 @@ void Renderer::init(memory::HeapArea& area)
         gfx::set_backend(GfxAPI::OpenGL);
         break;
     default: {
-        DLOGF("render") << "Non recognized renderer backend string: "
+        KLOGF("render") << "Non recognized renderer backend string: "
                         << cfg::get<std::string>("erwin.renderer.backend"_h, "OpenGL") << std::endl;
         fatal();
     }
@@ -417,9 +417,9 @@ void Renderer::init(memory::HeapArea& area)
 
     s_storage.query_timer = QueryTimer::create();
 
-    DLOGI << "done" << std::endl;
+    KLOGI << "done" << std::endl;
 
-    DLOGN("render") << "[Renderer] Creating main render targets." << std::endl;
+    KLOGN("render") << "[Renderer] Creating main render targets." << std::endl;
     // Create main render targets
     {
         FramebufferLayout layout{
@@ -449,7 +449,7 @@ void Renderer::init(memory::HeapArea& area)
     // Renderer configuration
     gfx::backend->set_seamless_cubemaps_enabled(cfg::get<bool>("erwin.renderer.enable_cubemap_seamless"_h, false));
 
-    DLOGI << "done" << std::endl;
+    KLOGI << "done" << std::endl;
 }
 
 void Renderer::shutdown()
@@ -458,24 +458,24 @@ void Renderer::shutdown()
 
     if(!s_storage.initialized_)
     {
-        DLOGW("render") << "[Renderer] Not initialized, skipping shutdown." << std::endl;
+        KLOGW("render") << "[Renderer] Not initialized, skipping shutdown." << std::endl;
         return;
     }
 
     flush();
-    DLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
+    KLOGN("render") << "[Renderer] Releasing renderer storage." << std::endl;
 
     gfx::backend->release();
 
     s_storage.release();
     s_storage.initialized_ = false;
 
-    DLOGI << "done" << std::endl;
+    KLOGI << "done" << std::endl;
 }
 
 uint8_t Renderer::next_layer_id()
 {
-    W_ASSERT(s_storage.queue_.current_view_id_ < 255, "View id overflow.");
+    K_ASSERT(s_storage.queue_.current_view_id_ < 255, "View id overflow.");
     return s_storage.queue_.current_view_id_++;
 }
 
@@ -535,8 +535,8 @@ const BufferLayout& Renderer::get_vertex_buffer_layout(VertexBufferLayoutHandle 
 /*
 bool Renderer::is_compatible(VertexBufferLayoutHandle layout, ShaderHandle shader)
 {
-    W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
-    W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+    K_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
+    K_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
 
     if(!s_storage.shader_compat[shader.index].ready)
         return false;
@@ -646,7 +646,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
         memcpy(auxiliary, index_data, count * sizeof(uint32_t));
     }
     else
-        W_ASSERT(mode != UsagePattern::Static, "Index data can't be null in static mode.");
+        K_ASSERT(mode != UsagePattern::Static, "Index data can't be null in static mode.");
 
     // Write data
     RenderCommandWriter cw(RenderCommand::CreateIndexBuffer);
@@ -663,7 +663,7 @@ IndexBufferHandle Renderer::create_index_buffer(const uint32_t* index_data, uint
 VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layout, const float* vertex_data,
                                                   uint32_t count, UsagePattern mode)
 {
-    W_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
+    K_ASSERT(layout.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
     VertexBufferHandle handle = VertexBufferHandle::acquire();
 
@@ -675,7 +675,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
         memcpy(auxiliary, vertex_data, count * sizeof(float));
     }
     else
-        W_ASSERT(mode != UsagePattern::Static, "Vertex data can't be null in static mode.");
+        K_ASSERT(mode != UsagePattern::Static, "Vertex data can't be null in static mode.");
 
     // Write data
     RenderCommandWriter cw(RenderCommand::CreateVertexBuffer);
@@ -691,7 +691,7 @@ VertexBufferHandle Renderer::create_vertex_buffer(VertexBufferLayoutHandle layou
 
 VertexArrayHandle Renderer::create_vertex_array(VertexBufferHandle vb, IndexBufferHandle ib)
 {
-    W_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
+    K_ASSERT(vb.is_valid(), "Invalid VertexBufferHandle!");
 
     VertexArrayHandle handle = VertexArrayHandle::acquire();
 
@@ -718,7 +718,7 @@ VertexArrayHandle Renderer::create_vertex_array(const std::vector<VertexBufferHa
 
     for(auto vb : vbs)
     {
-        W_ASSERT_FMT(vb.is_valid(), "Invalid VertexBufferHandle: %hu.", vb.index());
+        K_ASSERT_FMT(vb.is_valid(), "Invalid VertexBufferHandle: %hu.", vb.index());
         cw.write(&vb);
     }
     cw.submit();
@@ -739,7 +739,7 @@ UniformBufferHandle Renderer::create_uniform_buffer(const std::string& name, con
         memcpy(auxiliary, data, size);
     }
     else
-        W_ASSERT(mode != UsagePattern::Static, "UBO data can't be null in static mode.");
+        K_ASSERT(mode != UsagePattern::Static, "UBO data can't be null in static mode.");
 
     // Write data
     RenderCommandWriter cw(RenderCommand::CreateUniformBuffer);
@@ -766,7 +766,7 @@ ShaderStorageBufferHandle Renderer::create_shader_storage_buffer(const std::stri
         memcpy(auxiliary, data, size);
     }
     else
-        W_ASSERT(mode != UsagePattern::Static, "SSBO data can't be null in static mode.");
+        K_ASSERT(mode != UsagePattern::Static, "SSBO data can't be null in static mode.");
 
     // Write data
     RenderCommandWriter cw(RenderCommand::CreateShaderStorageBuffer);
@@ -842,7 +842,7 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
     else
     {
         CubemapHandle cm_handle = CubemapHandle::acquire();
-        W_ASSERT(layout.get_count() == 1, "Only one cubemap attachment per framebuffer allowed.");
+        K_ASSERT(layout.get_count() == 1, "Only one cubemap attachment per framebuffer allowed.");
         texture_vector.cubemap = cm_handle;
         texture_vector.debug_names.push_back(layout[0].target_name);
     }
@@ -869,8 +869,8 @@ FramebufferHandle Renderer::create_framebuffer(uint32_t width, uint32_t height, 
 
 void Renderer::update_index_buffer(IndexBufferHandle handle, const uint32_t* data, uint32_t count)
 {
-    W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
-    W_ASSERT(data, "No data!");
+    K_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
+    K_ASSERT(data, "No data!");
 
     uint32_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint32_t, count, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, count);
@@ -884,8 +884,8 @@ void Renderer::update_index_buffer(IndexBufferHandle handle, const uint32_t* dat
 
 void Renderer::update_vertex_buffer(VertexBufferHandle handle, const void* data, uint32_t size)
 {
-    W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
-    W_ASSERT(data, "No data!");
+    K_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
+    K_ASSERT(data, "No data!");
 
     uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
@@ -899,8 +899,8 @@ void Renderer::update_vertex_buffer(VertexBufferHandle handle, const void* data,
 
 void Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size)
 {
-    W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
-    W_ASSERT(data, "No data!");
+    K_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
+    K_ASSERT(data, "No data!");
 
     uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
@@ -914,8 +914,8 @@ void Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* dat
 
 void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size)
 {
-    W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
-    W_ASSERT(data, "No data!");
+    K_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
+    K_ASSERT(data, "No data!");
 
     uint8_t* auxiliary = W_NEW_ARRAY_DYNAMIC(uint8_t, size, s_storage.auxiliary_arena_);
     memcpy(auxiliary, data, size);
@@ -929,8 +929,8 @@ void Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, co
 
 void Renderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHandle ubo)
 {
-    W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
-    W_ASSERT(ubo.is_valid(), "Invalid UniformBufferHandle!");
+    K_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+    K_ASSERT(ubo.is_valid(), "Invalid UniformBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::ShaderAttachUniformBuffer);
     cw.write(&shader);
@@ -940,8 +940,8 @@ void Renderer::shader_attach_uniform_buffer(ShaderHandle shader, UniformBufferHa
 
 void Renderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBufferHandle ssbo)
 {
-    W_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
-    W_ASSERT(ssbo.is_valid(), "Invalid ShaderStorageBufferHandle!");
+    K_ASSERT(shader.is_valid(), "Invalid ShaderHandle!");
+    K_ASSERT(ssbo.is_valid(), "Invalid ShaderStorageBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::ShaderAttachStorageBuffer);
     cw.write(&shader);
@@ -951,7 +951,7 @@ void Renderer::shader_attach_storage_buffer(ShaderHandle shader, ShaderStorageBu
 
 void Renderer::update_framebuffer(FramebufferHandle fb, uint32_t width, uint32_t height)
 {
-    W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
+    K_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::UpdateFramebuffer);
     cw.write(&fb);
@@ -976,7 +976,7 @@ void Renderer::set_host_window_size(uint32_t width, uint32_t height)
 
 std::future<PixelData> Renderer::get_pixel_data(TextureHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
 
     auto&& [token, fut] = gfx::backend->future_texture_data();
     RenderCommandWriter cw(RenderCommand::GetPixelData);
@@ -989,7 +989,7 @@ std::future<PixelData> Renderer::get_pixel_data(TextureHandle handle)
 
 void Renderer::generate_mipmaps(CubemapHandle cubemap)
 {
-    W_ASSERT(cubemap.is_valid(), "Invalid CubemapHandle!");
+    K_ASSERT(cubemap.is_valid(), "Invalid CubemapHandle!");
 
     RenderCommandWriter cw(RenderCommand::GenerateCubemapMipmaps);
     cw.write(&cubemap);
@@ -998,7 +998,7 @@ void Renderer::generate_mipmaps(CubemapHandle cubemap)
 
 void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& filepath)
 {
-    W_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
+    K_ASSERT(fb.is_valid(), "Invalid FramebufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::FramebufferScreenshot);
     cw.write(&fb);
@@ -1008,7 +1008,7 @@ void Renderer::framebuffer_screenshot(FramebufferHandle fb, const fs::path& file
 
 void Renderer::destroy(IndexBufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid IndexBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyIndexBuffer);
     cw.write(&handle);
@@ -1017,7 +1017,7 @@ void Renderer::destroy(IndexBufferHandle handle)
 
 void Renderer::destroy(VertexBufferLayoutHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyVertexBufferLayout);
     cw.write(&handle);
@@ -1026,7 +1026,7 @@ void Renderer::destroy(VertexBufferLayoutHandle handle)
 
 void Renderer::destroy(VertexBufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid VertexBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyVertexBuffer);
     cw.write(&handle);
@@ -1035,7 +1035,7 @@ void Renderer::destroy(VertexBufferHandle handle)
 
 void Renderer::destroy(VertexArrayHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid VertexArrayHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyVertexArray);
     cw.write(&handle);
@@ -1044,7 +1044,7 @@ void Renderer::destroy(VertexArrayHandle handle)
 
 void Renderer::destroy(UniformBufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid UniformBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyUniformBuffer);
     cw.write(&handle);
@@ -1053,7 +1053,7 @@ void Renderer::destroy(UniformBufferHandle handle)
 
 void Renderer::destroy(ShaderStorageBufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid ShaderStorageBufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyShaderStorageBuffer);
     cw.write(&handle);
@@ -1062,7 +1062,7 @@ void Renderer::destroy(ShaderStorageBufferHandle handle)
 
 void Renderer::destroy(ShaderHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid ShaderHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyShader);
     cw.write(&handle);
@@ -1071,7 +1071,7 @@ void Renderer::destroy(ShaderHandle handle)
 
 void Renderer::destroy(TextureHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid TextureHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyTexture2D);
     cw.write(&handle);
@@ -1080,7 +1080,7 @@ void Renderer::destroy(TextureHandle handle)
 
 void Renderer::destroy(CubemapHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid CubemapHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid CubemapHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyCubemap);
     cw.write(&handle);
@@ -1089,7 +1089,7 @@ void Renderer::destroy(CubemapHandle handle)
 
 void Renderer::destroy(FramebufferHandle handle, bool detach_textures)
 {
-    W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid FramebufferHandle!");
 
     RenderCommandWriter cw(RenderCommand::DestroyFramebuffer);
     cw.write(&handle);
@@ -1133,7 +1133,7 @@ void Renderer::submit(uint64_t key, const DrawCall& dc)
 
 void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, const glm::vec4& clear_color)
 {
-    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
+    K_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
 
     uint32_t color = color::pack(clear_color);
 
@@ -1147,8 +1147,8 @@ void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, con
 
 void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHandle target)
 {
-    W_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index());
-    W_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
+    K_ASSERT_FMT(source.is_valid(), "Invalid FramebufferHandle: %hu", source.index());
+    K_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
 
     DrawCommandWriter cw(DrawCommand::BlitDepth);
     cw.write(&source);
@@ -1160,8 +1160,8 @@ void Renderer::blit_depth(uint64_t key, FramebufferHandle source, FramebufferHan
 uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle, const void* data, uint32_t size,
                                                 DataOwnership copy)
 {
-    W_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index());
-    W_ASSERT(data, "Data is null.");
+    K_ASSERT_FMT(handle.is_valid(), "Invalid ShaderStorageBufferHandle: %hu", handle.index());
+    K_ASSERT(data, "Data is null.");
 
     DrawCommandWriter cw(DrawCommand::UpdateShaderStorageBuffer);
     cw.write(&handle);
@@ -1182,8 +1182,8 @@ uint32_t Renderer::update_shader_storage_buffer(ShaderStorageBufferHandle handle
 uint32_t Renderer::update_uniform_buffer(UniformBufferHandle handle, const void* data, uint32_t size,
                                          DataOwnership copy)
 {
-    W_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index());
-    W_ASSERT(data, "Data is null.");
+    K_ASSERT_FMT(handle.is_valid(), "Invalid UniformBufferHandle: %hu", handle.index());
+    K_ASSERT(data, "Data is null.");
 
     DrawCommandWriter cw(DrawCommand::UpdateUniformBuffer);
     cw.write(&handle);

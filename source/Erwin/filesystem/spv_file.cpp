@@ -1,6 +1,6 @@
 #include "filesystem/spv_file.h"
 #include "filesystem/filesystem.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <cstring>
 #include <string>
@@ -27,7 +27,7 @@ std::vector<ShaderStageDescriptor> parse_stages(const WPath& path)
     uint32_t reserved = 0;
 
     ifs->read(opaque_cast(&magic), sizeof(uint32_t));
-    W_ASSERT(magic == SPV_MAGIC, "Invalid .spv file, wrong magic number");
+    K_ASSERT(magic == SPV_MAGIC, "Invalid .spv file, wrong magic number");
     ifs->read(opaque_cast(&version), sizeof(uint32_t));
     ifs->read(opaque_cast(&genmagnum), sizeof(uint32_t));
     ifs->read(opaque_cast(&bound), sizeof(uint32_t));

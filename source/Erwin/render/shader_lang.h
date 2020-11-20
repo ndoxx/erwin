@@ -41,7 +41,7 @@ enum class ExecutionModel: uint32_t
         case "compute"_h:                return ExecutionModel::Compute;
         case "comp"_h:                   return ExecutionModel::Compute;
 	}
-    W_ASSERT(false, "Unknown shader type.");
+    K_ASSERT(false, "Unknown shader type.");
     return ExecutionModel::Vertex;
 }
 

@@ -1,6 +1,6 @@
 #include "level/scene.h"
 #include "asset/asset_manager.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "entity/reflection.h"
 #include "imgui/font_awesome.h"
 #include "render/common_geometry.h"
@@ -65,7 +65,7 @@ void Scene::unload()
 
 void Scene::runtime_clone(const Scene& other)
 {
-    W_ASSERT(!other.scene_file_path_.empty(), "Cannot runtime clone a scene that hasn't been saved.");
+    K_ASSERT(!other.scene_file_path_.empty(), "Cannot runtime clone a scene that hasn't been saved.");
 
     scene_file_path_ = other.scene_file_path_;
     environment_ = other.environment_;
@@ -103,7 +103,7 @@ void Scene::cleanup()
 
             std::vector<EntityID> subtree;
             depth_first(entity, [&subtree](EntityID child, const ComponentHierarchy&, size_t) {
-                DLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
+                KLOG("scene", 1) << "Removing subtree node: " << size_t(child) << std::endl;
                 subtree.push_back(child);
                 return false;
             });
@@ -118,15 +118,15 @@ void Scene::cleanup()
 
 void Scene::save()
 {
-    W_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set.");
-    W_ASSERT(scene_file_path_.check_extension(".scn"_h), "Only .scn XML files supported for now.");
+    K_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set.");
+    K_ASSERT(scene_file_path_.check_extension(".scn"_h), "Only .scn XML files supported for now.");
     save_xml(scene_file_path_);
 }
 
 void Scene::save_xml(const WPath& file_path)
 {
-    DLOGN("scene") << "Serializing scene: " << std::endl;
-    DLOGI << WCC('p') << file_path << std::endl;
+    KLOGN("scene") << "Serializing scene: " << std::endl;
+    KLOGI << kb::WCC('p') << file_path << std::endl;
 
     // * Open XML file
     xml::XMLFile scene_f(file_path);
@@ -190,13 +190,13 @@ void Scene::save_xml(const WPath& file_path)
     // * Write file
     scene_f.write();
 
-    DLOGI << "done." << std::endl;
+    KLOGI << "done." << std::endl;
 }
 
 void Scene::load_xml(const erwin::WPath& file_path)
 {
-    DLOGN("scene") << "Loading scene: " << std::endl;
-    DLOGI << WCC('p') << file_path << std::endl;
+    KLOGN("scene") << "Loading scene: " << std::endl;
+    KLOGI << kb::WCC('p') << file_path << std::endl;
 
     scene_file_path_ = file_path;
     
@@ -210,7 +210,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
     xml::XMLFile scene_f(file_path);
     if(!scene_f.read())
     {
-        DLOGE("scene") << "Cannot parse scene file." << std::endl;
+        KLOGE("scene") << "Cannot parse scene file." << std::endl;
         return;
     }
 
@@ -222,7 +222,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
 
     // Read resource table and load each asset
     auto* assets_node = scene_f.root->first_node("Assets");
-    W_ASSERT(assets_node, "No <Assets> node.");
+    K_ASSERT(assets_node, "No <Assets> node.");
     for(auto* asset_node = assets_node->first_node("Asset"); asset_node; asset_node = asset_node->next_sibling("Asset"))
     {
         size_t sz_asset_type;
@@ -235,7 +235,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
     // Load environment
     {
         auto* env_node = scene_f.root->first_node("Environment");
-        W_ASSERT(env_node, "No <Environment> node.");
+        K_ASSERT(env_node, "No <Environment> node.");
         hash_t id;
         xml::parse_attribute(env_node, "id", id);
         AssetManager::on_ready<Environment>(id, [this](const Environment& env) {
@@ -256,7 +256,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
         size_t root_id = 0;
         xml::parse_attribute(entities_node, "root", root_id);
         id_to_ent_id[root_id] = root;
-        W_ASSERT(entities_node, "No <Entities> node.");
+        K_ASSERT(entities_node, "No <Entities> node.");
         for(auto* entity_node = entities_node->first_node("Entity"); entity_node;
             entity_node = entity_node->next_sibling("Entity"))
         {
@@ -274,11 +274,11 @@ void Scene::load_xml(const erwin::WPath& file_path)
                 if(is_named)
                     registry.emplace<NamedEntityTag>(e);
 
-            // DLOGW("scene") << "Entity #" << size_t(e) << std::endl;
+            // KLOGW("scene") << "Entity #" << size_t(e) << std::endl;
             // Deserialize components
             for(auto* cmp_node = entity_node->first_node(); cmp_node; cmp_node = cmp_node->next_sibling())
             {
-                // DLOGW("scene") << ">" << cmp_node->name() << std::endl;
+                // KLOGW("scene") << ">" << cmp_node->name() << std::endl;
                 const uint32_t reflected_type = entt::hashed_string{cmp_node->name()};
                 invoke(W_METAFUNC_DESERIALIZE_XML, reflected_type, static_cast<void*>(cmp_node),
                        static_cast<void*>(this), e);
@@ -289,7 +289,7 @@ void Scene::load_xml(const erwin::WPath& file_path)
     // Register all named entities
     registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc) {
         set_named(e, H_(desc.name.c_str()));
-        DLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << WCC('n') << desc.name << std::endl;
+        KLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << kb::WCC('n') << desc.name << std::endl;
     });
 
     // Setup hierarchy
@@ -333,7 +333,7 @@ EntityID Scene::create_entity(const std::string& name, const char* _icon)
     ComponentDescription desc = {name, (_icon) ? _icon : W_ICON(CUBE), ""};
     registry.emplace<ComponentDescription>(entity, desc);
 
-    DLOG("scene", 1) << "[Scene] Added entity: " << name << std::endl;
+    KLOG("scene", 1) << "[Scene] Added entity: " << name << std::endl;
     return entity;
 }
 
@@ -346,7 +346,7 @@ void Scene::mark_for_removal(EntityID entity) { removed_entities_.push(entity); 
 
 void Scene::set_named(erwin::EntityID ent, erwin::hash_t hname)
 {
-    W_ASSERT(registry.valid(ent), "[Scene] Invalid entity.");
+    K_ASSERT(registry.valid(ent), "[Scene] Invalid entity.");
     named_entities_.insert({hname, ent});
 }
 
@@ -363,7 +363,7 @@ void Scene::attach(EntityID parent, EntityID child)
     auto& child_hierarchy = registry.get<ComponentHierarchy>(child);
 
     // Make sure we don't try to attach a node to itself or one of its children
-    W_ASSERT_FMT(!subtree_contains(child, parent), "Child node [%zu] cannot be the ancestor of its parent [%zu].",
+    K_ASSERT_FMT(!subtree_contains(child, parent), "Child node [%zu] cannot be the ancestor of its parent [%zu].",
                  size_t(child), size_t(parent));
 
     // If child was already assigned a parent, detach it from tree
@@ -387,7 +387,7 @@ void Scene::detach(EntityID node)
 {
     auto& node_hierarchy = registry.get<ComponentHierarchy>(node);
     auto& parent_hierarchy = registry.get<ComponentHierarchy>(node_hierarchy.parent);
-    W_ASSERT(node_hierarchy.parent != k_invalid_entity_id, "Cannot detach orphan node.");
+    K_ASSERT(node_hierarchy.parent != k_invalid_entity_id, "Cannot detach orphan node.");
 
     // Stitch back siblings if any
     if(node_hierarchy.next_sibling != k_invalid_entity_id)

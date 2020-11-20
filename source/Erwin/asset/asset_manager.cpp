@@ -98,7 +98,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
     if(it != s_storage.shader_cache.end())
         return it->second;
 
-    DLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
+    KLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
 
     // First, check if shader file exists in system assets
     fs::path fullpath;
@@ -109,7 +109,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
 
     std::string shader_name = name.empty() ? file_path.stem().string() : name;
     ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
-    DLOG("asset", 1) << "ShaderHandle: " << WCC('v') << handle << std::endl;
+    KLOG("asset", 1) << "ShaderHandle: " << kb::WCC('v') << handle << std::endl;
     s_storage.shader_cache.insert({hname, handle});
 
     return handle;
@@ -411,13 +411,13 @@ void AssetManager::release(ShaderHandle handle)
 {
     W_PROFILE_FUNCTION()
 
-    W_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
-    DLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
+    K_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
+    KLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
 
     erase_by_value(s_storage.shader_cache_, handle);
     Renderer::destroy(handle);
 
-    DLOG("asset",1) << "handle: " << WCC('v') << handle.index << std::endl;
+    KLOG("asset",1) << "handle: " << kb::WCC('v') << handle.index << std::endl;
 }
 
 */

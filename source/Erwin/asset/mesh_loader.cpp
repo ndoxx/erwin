@@ -6,16 +6,16 @@ namespace erwin
 
 AssetMetaData MeshLoader::build_meta_data(const WPath& file_path)
 {
-    W_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    W_ASSERT(file_path.check_extension(".wesh"_h), "Invalid input file.");
+    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
+    K_ASSERT(file_path.check_extension(".wesh"_h), "Invalid input file.");
 
     return {file_path, AssetMetaData::AssetType::MeshWESH};
 }
 
 wesh::WeshDescriptor MeshLoader::load_from_file(const AssetMetaData& meta_data)
 {
-    DLOG("asset", 1) << "Loading WESH file:" << std::endl;
-    DLOGI << WCC('p') << meta_data.file_path << std::endl;
+    KLOG("asset", 1) << "Loading WESH file:" << std::endl;
+    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
 
     return wesh::read(meta_data.file_path);
 }

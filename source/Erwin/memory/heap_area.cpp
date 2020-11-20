@@ -22,9 +22,9 @@ void HeapArea::debug_show_content()
 	uint8_t G = uint8_t((1.f-usage)*G1 + usage*G2);
 	uint8_t B = uint8_t((1.f-usage)*B1 + usage*B2);
 
-	DLOG("memory",1) << "Usage: " << utils::human_size(used_mem) << " / "
+	KLOG("memory",1) << "Usage: " << utils::human_size(used_mem) << " / "
 					 << utils::human_size(size_) << " (" 
-					 << WCC(R,G,B) << 100*usage << WCC(0) << "%)" << std::endl;
+					 << kb::WCC(R,G,B) << 100*usage << kb::WCC(0) << "%)" << std::endl;
 	for(auto&& item: items_)
 	{
 		usage = float(item.size) / float(used_mem);
@@ -34,7 +34,7 @@ void HeapArea::debug_show_content()
 
 		std::string name(item.name);
 		su::center(name,22);
-		DLOGR("memory") << "    0x" << std::hex << item.begin << " [" << WCC(R,G,B) << name << WCC(0) << "] 0x" << item.end 
+		KLOGR("memory") << "    0x" << std::hex << item.begin << " [" << kb::WCC(R,G,B) << name << kb::WCC(0) << "] 0x" << item.end 
 						<< " s=" << std::dec << utils::human_size(item.size) << std::endl;
 	}
 }

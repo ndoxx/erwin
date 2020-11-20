@@ -4,7 +4,7 @@
 #include "core/core.h"
 #include "utils/string.h"
 #include "render/shader_lang.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <vector>
 #include <string>
@@ -49,17 +49,17 @@ extern bool check_toolchain()
 {
     if(system("glslangValidator -v > /dev/null 2>&1"))
     {
-        DLOGW("fudge") << "glslangValidator not found, skipping shader compilation." << std::endl;
+        KLOGW("fudge") << "glslangValidator not found, skipping shader compilation." << std::endl;
         return false;
     }
     if(system("spirv-link --version > /dev/null 2>&1"))
     {
-        DLOGW("fudge") << "spirv-link not found, skipping shader compilation." << std::endl;
+        KLOGW("fudge") << "spirv-link not found, skipping shader compilation." << std::endl;
         return false;
     }
     if(system("spirv-opt --version > /dev/null 2>&1"))
     {
-        DLOGW("fudge") << "spirv-opt not found, skipping shader compilation." << std::endl;
+        KLOGW("fudge") << "spirv-opt not found, skipping shader compilation." << std::endl;
         return false;
     }
     
@@ -105,8 +105,8 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
 
     if(success)
     {
-    	DLOG("fudge",1) << "Successfully compiled shaders. Now, linking." << std::endl;
-    	DLOGI << WCC('p') << out_path.filename() << WCC(0) << std::endl;
+    	KLOG("fudge",1) << "Successfully compiled shaders. Now, linking." << std::endl;
+    	KLOGI << kb::WCC('p') << out_path.filename() << kb::WCC(0) << std::endl;
 
 		std::stringstream cmd;
 		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
@@ -130,15 +130,15 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
         cmd << "--eliminate-dead-code-aggressive ";
         cmd << "-o " << out_path.string() << " " << out_path.string();
 
-        DLOG("fudge",1) << "Optimizing." << std::endl;
+        KLOG("fudge",1) << "Optimizing." << std::endl;
         system(cmd.str().c_str());
 
         // Check output file
         auto stages = erwin::spv::parse_stages(out_path);
         for(auto&& stage: stages)
         {
-            DLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
-                            << ": " << WCC('g') << stage.entry_point << WCC(0) << std::endl;
+            KLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
+                            << ": " << kb::WCC('g') << stage.entry_point << kb::WCC(0) << std::endl;
         }
     }
 }

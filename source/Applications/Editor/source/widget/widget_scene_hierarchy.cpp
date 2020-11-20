@@ -32,7 +32,7 @@ static void entity_context_menu(Scene& scene, EntityID e)
         if(!scene.has_component<NonRemovableTag>(e) && ImGui::Selectable("Remove"))
         {
             scene.mark_for_removal(e);
-            DLOG("editor", 1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
+            KLOG("editor", 1) << "Removed entity " << static_cast<unsigned long>(e) << std::endl;
         }
         ImGui::EndPopup();
     }
@@ -158,7 +158,7 @@ void SceneHierarchyWidget::on_imgui_render()
                 scene.add_component<ComponentHierarchy>(cmd.source);
             if(!scene.subtree_contains(cmd.source, cmd.target))
             {
-                DLOG("editor", 1) << "Setting entity #" << size_t(cmd.source) << " as a child of #"
+                KLOG("editor", 1) << "Setting entity #" << size_t(cmd.source) << " as a child of #"
                                   << size_t(cmd.target) << std::endl;
                 scene.attach(cmd.target, cmd.source);
                 scene.try_add_component<DirtyTransformTag>(cmd.source);
@@ -166,7 +166,7 @@ void SceneHierarchyWidget::on_imgui_render()
             }
             else
             {
-                DLOGW("editor") << "Swapping a parent with one of its children is not implemented yet." << std::endl;
+                KLOGW("editor") << "Swapping a parent with one of its children is not implemented yet." << std::endl;
             }
         }
 

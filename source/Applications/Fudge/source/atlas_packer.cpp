@@ -3,7 +3,7 @@
 #include "dxt_compressor.h"
 
 #include "filesystem/cat_file.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "core/core.h"
 
 #include "stb/stb_image.h"
@@ -65,7 +65,7 @@ static uint8_t* blit_atlas(const std::vector<ImageData>& images, uint32_t width,
 
         if(img.name.size()>31)
         {
-            DLOGW("fudge") << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
+            KLOGW("fudge") << "Truncated name: " << img.name << " -> " << elt.name << std::endl;
         }
 
         elt.x = img.x;
@@ -97,7 +97,7 @@ static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElem
 {
     if(options.file_type == FileType::CAT)
     {
-        W_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression not yet supported.");
+        K_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression not yet supported.");
 
         uint32_t blob_size = 4*out_w*out_h;
         if(options.texture_compression == TextureCompression::DXT5)
@@ -110,7 +110,7 @@ static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElem
 
         // Export
         fs::path out_atlas = output_dir / (out_name + ".cat");
-        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
         cat::write_cat(
         {
             out_atlas,
@@ -142,8 +142,8 @@ static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElem
         ofs.close();
 
         // Export
-        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-        DLOGI << "export: " << WCC('p') << out_remap << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_remap << std::endl;
         stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
     }
     
@@ -169,7 +169,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const Atl
             img.y = 0;
             if(!img.data)
             {
-                DLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
+                KLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
                 continue;
             }
 
@@ -183,7 +183,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const Atl
     auto result_size = fudge::pack(rectangles);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    DLOG("fudge",1) << "Resultant bin size: " << WCC('v') << out_w << "x" << out_h << std::endl;
+    KLOG("fudge",1) << "Resultant bin size: " << kb::WCC('v') << out_w << "x" << out_h << std::endl;
 
     // Update image positions
     for(int ii=0; ii<rectangles.size(); ++ii)
@@ -198,12 +198,12 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const Atl
         if(out_w%4)
         {
             out_w += (4-out_w%4);
-            DLOG("fudge",1) << "Padded width to: "  << WCC('v') << out_w << std::endl;
+            KLOG("fudge",1) << "Padded width to: "  << kb::WCC('v') << out_w << std::endl;
         }
         if(out_h%4)
         {
             out_h += (4-out_h%4);
-            DLOG("fudge",1) << "Padded height to: " << WCC('v') << out_h << std::endl;
+            KLOG("fudge",1) << "Padded height to: " << kb::WCC('v') << out_h << std::endl;
         }
     }
 
@@ -249,7 +249,7 @@ void init_fonts()
     // Init freetype
     if(FT_Init_FreeType(&ft_))
     {
-        DLOGE("fudge") << "Could not init FreeType Library." << std::endl;
+        KLOGE("fudge") << "Could not init FreeType Library." << std::endl;
         exit(0);
     }
 }
@@ -333,12 +333,12 @@ static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemap
     {
         uint32_t blob_size = 4*out_w*out_h;
         // uint32_t blob_size = out_w*out_h;
-        W_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression incompatible with single channel font atlas.");
-        W_ASSERT(options.texture_compression != TextureCompression::DXT5, "DXT5 compression incompatible with single channel font atlas.");
+        K_ASSERT(options.texture_compression != TextureCompression::DXT1, "DXT1 compression incompatible with single channel font atlas.");
+        K_ASSERT(options.texture_compression != TextureCompression::DXT5, "DXT5 compression incompatible with single channel font atlas.");
 
         // Export
         fs::path out_atlas = output_dir / (out_name + ".cat");
-        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
         cat::write_cat(
         {
             out_atlas,
@@ -371,8 +371,8 @@ static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemap
         ofs.close();
 
         // Export
-        DLOGI << "export: " << WCC('p') << out_atlas << std::endl;
-        DLOGI << "export: " << WCC('p') << out_remap << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::WCC('p') << out_remap << std::endl;
         stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
     }
 
@@ -388,7 +388,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
     FT_Face face;
     if(FT_New_Memory_Face(ft_, reinterpret_cast<FT_Byte*>(&buffer[0]), buffer.size(), 0, &face))
     {
-        DLOGE("fudge") << "Failed to load font: " << input_font << std::endl;
+        KLOGE("fudge") << "Failed to load font: " << input_font << std::endl;
         return;
     }
 
@@ -408,7 +408,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
         // Load character glyph
         if(FT_Load_Char(face, cc, FT_LOAD_RENDER))
         {
-            DLOGE("fudge") << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
+            KLOGE("fudge") << "Failed to load Glyph: \'" << std::to_string(cc) << "\'" << std::endl;
             cc = FT_Get_Next_Char(face, cc, &index);
             if(!index)
                 break;
@@ -450,7 +450,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
     auto result_size = fudge::pack(rectangles,1000);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    DLOG("fudge",1) << "Resultant bin size: " << WCC('v') << out_w << "x" << out_h << std::endl;
+    KLOG("fudge",1) << "Resultant bin size: " << kb::WCC('v') << out_w << "x" << out_h << std::endl;
 
     // Update character positions
     for(int ii=0; ii<rectangles.size(); ++ii)

@@ -13,7 +13,7 @@
 #include "filesystem/tom_file.h"
 #include "utils/future.hpp"
 #include "utils/promise_storage.hpp"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace fs = std::filesystem;
 

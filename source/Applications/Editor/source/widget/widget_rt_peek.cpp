@@ -107,7 +107,7 @@ size_t RTPeekWidget::new_pane(const std::string& name)
 
 void RTPeekWidget::register_texture(size_t pane_index, TextureHandle texture, const std::string& name, bool is_depth)
 {
-    W_ASSERT(pane_index < s_storage.panes_.size(), "Pane index out of bounds.");
+    K_ASSERT(pane_index < s_storage.panes_.size(), "Pane index out of bounds.");
     s_storage.panes_[pane_index].properties.push_back({texture, is_depth, name});
 }
 
@@ -270,8 +270,8 @@ void RTPeekWidget::on_imgui_render()
     if(s_storage.save_image_)
     {
         std::string filename = props.name + ".png";
-        DLOG("editor", 1) << "Saving framebuffer texture as image: " << std::endl;
-        DLOGI << WCC('p') << filename << std::endl;
+        KLOG("editor", 1) << "Saving framebuffer texture as image: " << std::endl;
+        KLOGI << kb::WCC('p') << filename << std::endl;
         Renderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
     }

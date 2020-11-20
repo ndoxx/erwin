@@ -7,7 +7,7 @@
 #include "entity/component/transform.h"
 #include "entity/reflection.h"
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {

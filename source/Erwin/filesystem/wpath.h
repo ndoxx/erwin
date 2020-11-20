@@ -24,8 +24,8 @@ public:
      */
     static inline void set_root_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_root_dir_ = path;
     }
 
@@ -36,8 +36,8 @@ public:
      */
     static inline void set_user_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_user_dir_ = path;
     }
 
@@ -48,8 +48,8 @@ public:
      */
     static inline void set_resource_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_resource_dir_ = path;
     }
 
@@ -60,8 +60,8 @@ public:
      */
     static inline void set_application_config_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_config_dir_ = path;
     }
 
@@ -72,8 +72,8 @@ public:
      */
     static inline void set_application_resource_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_app_resource_dir_ = path;
     }
 
@@ -84,8 +84,8 @@ public:
      */
     static inline void set_system_resource_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_sys_resource_dir_ = path;
     }
 
@@ -96,8 +96,8 @@ public:
      */
     static inline void set_system_config_directory(const fs::path& path)
     {
-        W_ASSERT(fs::exists(path), "Directory does not exist.");
-        W_ASSERT(fs::is_directory(path), "Not a directory.");
+        K_ASSERT(fs::exists(path), "Directory does not exist.");
+        K_ASSERT(fs::is_directory(path), "Not a directory.");
         s_sys_config_dir_ = path;
     }
 

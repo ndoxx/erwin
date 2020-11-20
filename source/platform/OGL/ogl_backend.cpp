@@ -152,13 +152,13 @@ const OGLCubemap& OGLBackend::create_cubemap_inplace(CubemapHandle handle, const
 
 const OGLTexture2D& OGLBackend::get_texture(TextureHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
     return s_storage.textures[handle.index()];
 }
 
 const OGLCubemap& OGLBackend::get_cubemap(CubemapHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid CubemapHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid CubemapHandle.");
     return s_storage.cubemaps[handle.index()];
 }
 // ------------------- PRIVATE API -------------------
@@ -192,33 +192,33 @@ FramebufferHandle OGLBackend::default_render_target() { return s_storage.default
 
 TextureHandle OGLBackend::get_framebuffer_texture(FramebufferHandle handle, uint32_t index)
 {
-    W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
-    W_ASSERT(index < s_storage.framebuffer_textures_[handle.index()].handles.size(),
+    K_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+    K_ASSERT(index < s_storage.framebuffer_textures_[handle.index()].handles.size(),
              "Invalid framebuffer texture index.");
     return s_storage.framebuffer_textures_[handle.index()].handles[index];
 }
 
 CubemapHandle OGLBackend::get_framebuffer_cubemap(FramebufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
     return s_storage.framebuffer_textures_[handle.index()].cubemap;
 }
 
 hash_t OGLBackend::get_framebuffer_texture_name(FramebufferHandle handle, uint32_t index)
 {
-    W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
     return s_storage.framebuffer_textures_[handle.index()].debug_names[index];
 }
 
 uint32_t OGLBackend::get_framebuffer_texture_count(FramebufferHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid FramebufferHandle.");
     return uint32_t(s_storage.framebuffer_textures_[handle.index()].handles.size());
 }
 
 void* OGLBackend::get_native_texture_handle(TextureHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
+    K_ASSERT(handle.is_valid(), "Invalid TextureHandle.");
     if(!s_storage.textures[handle.index()].is_initialized())
         return nullptr;
     return s_storage.textures[handle.index()].get_native_handle();
@@ -227,7 +227,7 @@ void* OGLBackend::get_native_texture_handle(TextureHandle handle)
 VertexBufferLayoutHandle OGLBackend::create_vertex_buffer_layout(const std::vector<BufferLayoutElement>& elements)
 {
     VertexBufferLayoutHandle handle = VertexBufferLayoutHandle::acquire();
-    W_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
+    K_ASSERT(handle.is_valid(), "No more free handle in handle pool.");
 
     s_storage.vertex_buffer_layouts[handle.index()] = make_ref<BufferLayout>(&elements[0], elements.size());
 
@@ -236,7 +236,7 @@ VertexBufferLayoutHandle OGLBackend::create_vertex_buffer_layout(const std::vect
 
 const BufferLayout& OGLBackend::get_vertex_buffer_layout(VertexBufferLayoutHandle handle)
 {
-    W_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
+    K_ASSERT(handle.is_valid(), "Invalid VertexBufferLayoutHandle!");
 
     return *s_storage.vertex_buffer_layouts[handle.index()];
 }
@@ -388,17 +388,17 @@ const std::string& OGLBackend::show_error()
 
 uint32_t OGLBackend::get_error() { return glGetError(); }
 
-void OGLBackend::assert_no_error() { W_ASSERT(glGetError() == 0, "OpenGL error occurred!"); }
+void OGLBackend::assert_no_error() { K_ASSERT(glGetError() == 0, "OpenGL error occurred!"); }
 
 void OGLBackend::set_pack_alignment(uint32_t value)
 {
-    W_ASSERT(is_power_of_2(value), "OGLBackend::set_pack_alignment: arg must be a power of 2.");
+    K_ASSERT(is_power_of_2(value), "OGLBackend::set_pack_alignment: arg must be a power of 2.");
     glPixelStorei(GL_PACK_ALIGNMENT, value);
 }
 
 void OGLBackend::set_unpack_alignment(uint32_t value)
 {
-    W_ASSERT(is_power_of_2(value), "OGLBackend::set_pack_alignment: arg must be a power of 2.");
+    K_ASSERT(is_power_of_2(value), "OGLBackend::set_pack_alignment: arg must be a power of 2.");
     glPixelStorei(GL_UNPACK_ALIGNMENT, value);
 }
 
@@ -782,7 +782,7 @@ void update_framebuffer(memory::LinearBuffer<>& buf)
 
 void clear_framebuffers(memory::LinearBuffer<>&)
 {
-    W_ASSERT(false, "Clear framebuffers not implemented.");
+    K_ASSERT(false, "Clear framebuffers not implemented.");
     /*FramebufferPool::traverse_framebuffers([](FramebufferHandle handle)
     {
         s_storage.framebuffers[handle.index]->bind();
@@ -1195,7 +1195,7 @@ void draw(memory::LinearBuffer<>& buf)
         break;
     }
     default:
-        W_ASSERT(false, "Specified draw call type is unsupported at the moment.");
+        K_ASSERT(false, "Specified draw call type is unsupported at the moment.");
         break;
     }
 

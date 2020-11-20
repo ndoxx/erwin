@@ -51,7 +51,7 @@ public:
 
     inline void add_vertex(const glm::vec3& position, const glm::vec2& uv = {0.f, 0.f})
     {
-        // W_ASSERT(vertex_count+1<k_max_vertices, "Vertex data is full.");
+        // K_ASSERT(vertex_count+1<k_max_vertices, "Vertex data is full.");
         positions[vertex_count] = position;
         uvs[vertex_count] = uv;
         ++vertex_count;
@@ -59,7 +59,7 @@ public:
 
     inline void add_vertex(glm::vec3&& position, glm::vec2&& uv)
     {
-        // W_ASSERT(vertex_count+1<k_max_vertices, "Vertex data is full.");
+        // K_ASSERT(vertex_count+1<k_max_vertices, "Vertex data is full.");
         positions[vertex_count] = std::move(position);
         uvs[vertex_count] = std::move(uv);
         ++vertex_count;

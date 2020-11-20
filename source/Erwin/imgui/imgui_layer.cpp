@@ -1,6 +1,6 @@
 #include "imgui_layer.h"
 #include "core/application.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "imgui.h"
 #include "examples/imgui_impl_glfw.h"

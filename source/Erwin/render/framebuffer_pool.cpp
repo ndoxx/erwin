@@ -1,7 +1,7 @@
 #include "render/framebuffer_pool.h"
 #include "render/renderer.h"
 #include "core/intern_string.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 #include "event/event_bus.h"
 #include "event/window_events.h"
 
@@ -45,7 +45,7 @@ void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
 	s_storage.current_height_ = initial_height;
 
 	EventBus::subscribe(&on_framebuffer_resize_event);
-	DLOGN("render") << "Framebuffer pool created." << std::endl;
+	KLOGN("render") << "Framebuffer pool created." << std::endl;
 }
 
 void FramebufferPool::shutdown()
@@ -53,14 +53,14 @@ void FramebufferPool::shutdown()
 	for(auto&& [name, fb]: s_storage.framebuffers_)
 		Renderer::destroy(fb);
 
-	DLOGN("render") << "Framebuffer pool released." << std::endl;
+	KLOGN("render") << "Framebuffer pool released." << std::endl;
 }
 
 FramebufferHandle FramebufferPool::get_framebuffer(hash_t name)
 {
 	// Check that a framebuffer is registered to this name
 	auto it = s_storage.framebuffers_.find(name);
-	W_ASSERT(it != s_storage.framebuffers_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.framebuffers_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return it->second;
 }
 
@@ -73,35 +73,35 @@ void FramebufferPool::traverse_framebuffers(std::function<void(FramebufferHandle
 bool FramebufferPool::has_depth(hash_t name)
 {
 	auto it = s_storage.flags_.find(name);
-	W_ASSERT(it != s_storage.flags_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.flags_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return bool(it->second & FBFlag::FB_DEPTH_ATTACHMENT);
 }
 
 uint32_t FramebufferPool::get_width(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
-	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return it->second->get_width(s_storage.current_width_);
 }
 
 uint32_t FramebufferPool::get_height(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
-	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return it->second->get_height(s_storage.current_height_);
 }
 
 glm::vec2 FramebufferPool::get_size(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
-	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return {it->second->get_width(s_storage.current_width_), it->second->get_height(s_storage.current_height_)};
 }
 
 glm::vec2 FramebufferPool::get_texel_size(hash_t name)
 {
 	auto it = s_storage.constraints_.find(name);
-	W_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
+	K_ASSERT(it != s_storage.constraints_.end(), "[FramebufferPool] Invalid framebuffer name.");
 	return {1.f/float(it->second->get_width(s_storage.current_width_)), 1.f/float(it->second->get_height(s_storage.current_height_))};
 }
 
@@ -131,7 +131,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	auto it = s_storage.framebuffers_.find(name);
 	if(it != s_storage.framebuffers_.end())
 	{
-		DLOGW("render") << "Framebuffer " << istr::resolve(name) << " already exists, ignoring." << std::endl;
+		KLOGW("render") << "Framebuffer " << istr::resolve(name) << " already exists, ignoring." << std::endl;
 		return FramebufferHandle();
 	}
 
@@ -143,7 +143,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
 	s_storage.flags_.insert(std::make_pair(name, flags));
 
-	DLOG("render",1) << "Submit framebuffer creation: " << WCC('n') << istr::resolve(name) << ' ' << WCC(0) << handle << std::endl;
+	KLOG("render",1) << "Submit framebuffer creation: " << kb::WCC('n') << istr::resolve(name) << ' ' << kb::WCC(0) << handle << std::endl;
 
 	return handle;
 }

@@ -7,7 +7,7 @@
 #include "entity/reflection.h"
 #include "event/window_events.h"
 
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {

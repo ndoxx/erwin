@@ -4,7 +4,7 @@
 #include "filesystem/tom_file.h"
 #include "filesystem/xml_file.h"
 #include "render/texture_common.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "stb/stb_image.h"
 #include <fstream>
@@ -78,8 +78,8 @@ static TextureFilter parse_filter(const std::string& min_filter_str, const std::
     	case "LINEAR"_h:  mag_filter = TextureFilter::MAG_LINEAR; break;
     	default:
     	{
-    		DLOGW("fudge") << "Unrecognized magnification filter: " << mag_filter_str << std::endl;
-    		DLOGI << "Defaulting to: " << WCC('d') << "NEAREST" << std::endl;
+    		KLOGW("fudge") << "Unrecognized magnification filter: " << mag_filter_str << std::endl;
+    		KLOGI << "Defaulting to: " << kb::WCC('d') << "NEAREST" << std::endl;
     		mag_filter = TextureFilter::MAG_NEAREST;
     	}
     }
@@ -94,8 +94,8 @@ static TextureFilter parse_filter(const std::string& min_filter_str, const std::
 	    case "LINEAR_MIPMAP_LINEAR"_h:   min_filter = TextureFilter::MIN_LINEAR_MIPMAP_LINEAR; break;
     	default:
     	{
-    		DLOGW("fudge") << "Unrecognized minification filter: " << min_filter_str << std::endl;
-    		DLOGI << "Defaulting to: " << WCC('d') << "NEAREST" << std::endl;
+    		KLOGW("fudge") << "Unrecognized minification filter: " << min_filter_str << std::endl;
+    		KLOGI << "Defaulting to: " << kb::WCC('d') << "NEAREST" << std::endl;
     		min_filter = TextureFilter::MIN_NEAREST;
     	}
 	}
@@ -112,15 +112,15 @@ static TextureCompression parse_compression(const std::string& compression_str, 
 		{
 	        if(channels != 4)
 			{
-				DLOGE("fudge") << "Need 4 color channels for DXT5 compression, got: " << channels << std::endl;
+				KLOGE("fudge") << "Need 4 color channels for DXT5 compression, got: " << channels << std::endl;
 				return TextureCompression::None;
 			}
 			return TextureCompression::DXT5;
 		}
 		default:
 		{
-			DLOGW("fudge") << "Unrecognized compression string: " << compression_str << std::endl;
-			DLOGI << "No compression will be set." << std::endl;
+			KLOGW("fudge") << "Unrecognized compression string: " << compression_str << std::endl;
+			KLOGI << "No compression will be set." << std::endl;
 			return TextureCompression::None;
 		}
 	}
@@ -137,7 +137,7 @@ static bool handle_groups(std::map<hash_t, TexmapData>& in_tex_maps, uint32_t wi
 	{
 		if(spec.qualify(in_tex_maps))
 		{
-        	DLOG("fudge",1) << "Qualifies for grouping under layout: " << WCC('n') << spec.texmap_spec.name << std::endl;
+        	KLOG("fudge",1) << "Qualifies for grouping under layout: " << kb::WCC('n') << spec.texmap_spec.name << std::endl;
             TexmapData tmap
             {
             	spec.texmap_spec.name,
@@ -205,7 +205,7 @@ bool configure(const fs::path& filepath)
 	xml::XMLFile cfg(filepath);
 	if(!cfg.read())
 	{
-		DLOGE("fudge") << "Failed to parse configuration file." << std::endl;
+		KLOGE("fudge") << "Failed to parse configuration file." << std::endl;
 		return false;
 	}
 
@@ -225,7 +225,7 @@ bool configure(const fs::path& filepath)
 	auto* tmaps_node = cfg.root->first_node("TextureMaps");
 	if(!tmaps_node)
 	{
-		DLOGE("fudge") << "Unable to find TextureMaps node." << std::endl;
+		KLOGE("fudge") << "Unable to find TextureMaps node." << std::endl;
 		return false;
 	}
 
@@ -247,9 +247,9 @@ bool configure(const fs::path& filepath)
 
         xml::parse_attribute(tmap_node, "srgb", spec.srgb);
 
-        DLOG("fudge",1) << "Texture map: " << WCC('n') << spec.name << std::endl;
-        DLOGI << "channels:    " << spec.channels << std::endl;
-        DLOGI << "compression: " << compression_str << std::endl;
+        KLOG("fudge",1) << "Texture map: " << kb::WCC('n') << spec.name << std::endl;
+        KLOGI << "channels:    " << spec.channels << std::endl;
+        KLOGI << "compression: " << compression_str << std::endl;
 
         s_texmap_specs.insert(std::make_pair(H_(spec.name.c_str()), spec));
     }
@@ -296,13 +296,13 @@ bool configure(const fs::path& filepath)
 	    // Sanity check
 	    if(spec.texmap_spec.channels > 4)
 	    {
-	    	DLOGW("fudge") << "Skipping group with more than 4 channels." << std::endl;
+	    	KLOGW("fudge") << "Skipping group with more than 4 channels." << std::endl;
 	    	continue;
 	    }
 
-        DLOG("fudge",1) << "Group: " << WCC('n') << spec.texmap_spec.name << std::endl;
-        DLOGI << "channels:    " << spec.texmap_spec.channels << std::endl;
-        DLOGI << "compression: " << compression_str << std::endl;
+        KLOG("fudge",1) << "Group: " << kb::WCC('n') << spec.texmap_spec.name << std::endl;
+        KLOGI << "channels:    " << spec.texmap_spec.channels << std::endl;
+        KLOGI << "compression: " << compression_str << std::endl;
 
 	    s_group_specs.push_back(std::make_pair(H_(spec.texmap_spec.name.c_str()), spec));
 	    // Also register internal texture map specs as a regular texture map spec.
@@ -337,7 +337,7 @@ bool configure(const fs::path& filepath)
 
 void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 {
-    DLOGN("fudge") << "Processing directory: " << WCC('p') << input_dir.stem() << std::endl;
+    KLOGN("fudge") << "Processing directory: " << kb::WCC('p') << input_dir.stem() << std::endl;
 
     std::map<hash_t, TexmapData> texture_maps;
 
@@ -349,7 +349,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     {
         if(entry.is_regular_file())
         {
-            DLOG("fudge",1) << "Reading: " << WCC('p') << entry.path().filename() << std::endl;
+            KLOG("fudge",1) << "Reading: " << kb::WCC('p') << entry.path().filename() << std::endl;
 
             TexmapData tmap;
             tmap.name = entry.path().stem().string();
@@ -359,8 +359,8 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
             auto it = s_texmap_specs.find(tmap_hname);
             if(it == s_texmap_specs.end())
             {
-            	DLOGW("fudge") << "Skipping unrecognized texture map: " << tmap.name << std::endl;
-            	DLOGI << "Describe it in the XML config file." << std::endl;
+            	KLOGW("fudge") << "Skipping unrecognized texture map: " << tmap.name << std::endl;
+            	KLOGI << "Describe it in the XML config file." << std::endl;
             	continue;
             }
             const TexmapSpec& spec = it->second;
@@ -370,15 +370,15 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
             tmap.compression = spec.compression;
             if(!tmap.data)
             {
-    			DLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
+    			KLOGE("fudge") << "Error while loading image: " << entry.path().filename() << std::endl;
                 continue;
             }
 
             // Check that number of color channels in input asset coincides with corresponding texture map specs 
             /*if(tmap.channels != spec.channels)
             {
-            	DLOGW("fudge") << "Input image channels number mismatch: " << std::endl;
-            	DLOGI << "Expected " << spec.channels << " but got " << tmap.channels << std::endl;
+            	KLOGW("fudge") << "Input image channels number mismatch: " << std::endl;
+            	KLOGI << "Expected " << spec.channels << " but got " << tmap.channels << std::endl;
             }*/
 
             // Check size is homogeneous across all maps
@@ -391,9 +391,9 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
             {
             	if(tmap.width != width || tmap.height != height)
             	{
-            		DLOGW("fudge") << "Skipping texture map with inconsistent size." << std::endl;
-            		DLOGI << "Expected: " << width << "x" << height << std::endl;
-            		DLOGI << "But got:  " << tmap.width << "x" << tmap.height << std::endl;
+            		KLOGW("fudge") << "Skipping texture map with inconsistent size." << std::endl;
+            		KLOGI << "Expected: " << width << "x" << height << std::endl;
+            		KLOGI << "But got:  " << tmap.width << "x" << tmap.height << std::endl;
         			stbi_image_free(tmap.data);
             		continue;
             	}
@@ -401,11 +401,11 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 
             if(spec.srgb)
             {
-            	DLOGI << "SRGB format." << std::endl;
+            	KLOGI << "SRGB format." << std::endl;
             }
 	    	if(spec.compression == TextureCompression::DXT5)
 	    	{
-	    		DLOGI << "DXT5 compression." << std::endl;
+	    		KLOGI << "DXT5 compression." << std::endl;
 	    	}
 
             texture_maps.insert(std::make_pair(tmap_hname, tmap));
@@ -417,10 +417,10 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     {
     	if(handle_groups(texture_maps, width, height))
     	{
-    		DLOG("fudge",1) << "New texture map composition: " << std::endl;
+    		KLOG("fudge",1) << "New texture map composition: " << std::endl;
     		for(auto&& [key,dat]: texture_maps)
     		{
-    			DLOGI << dat.name << std::endl;
+    			KLOGI << dat.name << std::endl;
     		}
     	}
     }
@@ -454,20 +454,20 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     const LayoutSpec* layout = find_layout(texture_maps);
     if(layout == nullptr)
     {
-    	DLOGW("fudge") << "Cannot find a valid material layout for this collection." << std::endl;
+    	KLOGW("fudge") << "Cannot find a valid material layout for this collection." << std::endl;
     	for(auto&& [key, tmap]: texture_maps)
     		ordered_tmap.push_back(std::make_pair(key,&tmap));
     }
     else
     {
-    	DLOG("fudge",1) << "Detected material layout: " << WCC('n') << layout->name << std::endl;
+    	KLOG("fudge",1) << "Detected material layout: " << kb::WCC('n') << layout->name << std::endl;
     	for(auto&& hslot: layout->slots)
     		ordered_tmap.push_back(std::make_pair(hslot, &texture_maps[hslot]));
 
-	    DLOG("fudge",1) << "Slots:" << std::endl;
+	    KLOG("fudge",1) << "Slots:" << std::endl;
 		for(int ii=0; ii<ordered_tmap.size(); ++ii)
 		{
-			DLOGI << ii << ": " << ordered_tmap[ii].second->name << std::endl;
+			KLOGI << ii << ": " << ordered_tmap[ii].second->name << std::endl;
 		}
     }
 
@@ -492,7 +492,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 		tom_desc.texture_maps.push_back(tm_desc);
 	}
 
-	DLOG("fudge",1) << "Exporting: " << WCC('p') << out_file_name << std::endl;
+	KLOG("fudge",1) << "Exporting: " << kb::WCC('p') << out_file_name << std::endl;
 	tom::write_tom(tom_desc);
 
     // Cleanup

@@ -1,5 +1,5 @@
 #include "render/buffer_layout.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <cstring>
 
@@ -24,7 +24,7 @@ static uint32_t data_type_to_size(ShaderDataType type)
         case ShaderDataType::Bool:  return sizeof(bool);
     }
 
-    DLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
+    KLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
     return 0;
 }
 
@@ -55,7 +55,7 @@ uint32_t BufferLayoutElement::get_component_count() const
         case ShaderDataType::Bool:  return 1;
     }
 
-    DLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
+    KLOGE("render") << "Unknown ShaderDataType: " << int(type) << std::endl;
     return 0;
 }
 

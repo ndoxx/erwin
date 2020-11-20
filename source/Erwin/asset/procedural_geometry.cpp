@@ -6,7 +6,7 @@
 
 
 #include "glm/gtx/string_cast.hpp"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 
 namespace erwin
@@ -21,7 +21,7 @@ Extent make_cube(const BufferLayout& layout, std::vector<float>& vdata, std::vec
                  Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Setup position and UV vertex data, all th rest can be computed from this
     s_m.add_vertex({0.5f, -0.5f, 0.5f}, {1.0f, 1.0f});
@@ -71,7 +71,7 @@ Extent make_cube_lines(const BufferLayout& layout, std::vector<float>& vdata, st
                        [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Setup position and UV vertex data, all th rest can be computed from this
     s_m.add_vertex({0.5f, -0.5f, 0.5f}, {1.0f, 1.0f});
@@ -105,7 +105,7 @@ Extent make_plane(const BufferLayout& layout, std::vector<float>& vdata, std::ve
                   [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     s_m.add_vertex({-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f});
     s_m.add_vertex({1.0f, -1.0f, 0.0f}, {1.0f, 0.0f});
@@ -122,7 +122,7 @@ Extent make_icosahedron(const BufferLayout& layout, std::vector<float>& vdata, s
                         [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now, only z-plane available
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Constants to get normalized vertex positions
     static constexpr float PHI   = (1.0f + utils::fsqrt(5.0f)) / 2.0f;
@@ -307,7 +307,7 @@ Extent make_icosphere(const BufferLayout& layout, std::vector<float>& vdata, std
     static constexpr float PHI_N = PHI * ONE_N;
 
     // Ignore parameters for now, only z-plane available
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     // Start with an icosahedron
     s_tm.add_vertex({-ONE_N, PHI_N, 0.f});
@@ -371,7 +371,7 @@ Extent make_origin(const BufferLayout& layout, std::vector<float>& vdata, std::v
                    [[maybe_unused]] Parameters* params)
 {
     // Ignore parameters for now
-    W_ASSERT(params == nullptr, "Parameters unsupported for now.");
+    K_ASSERT(params == nullptr, "Parameters unsupported for now.");
 
     s_m.add_vertex({0.f, 0.f, 0.f});
     s_m.add_vertex({1.f, 0.f, 0.f});

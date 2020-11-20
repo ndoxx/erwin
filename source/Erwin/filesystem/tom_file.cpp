@@ -2,7 +2,7 @@
 #include "filesystem/filesystem.h"
 #include "asset/dxt_compressor.h"
 #include "core/z_wrapper.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <cstring>
 #include <numeric>
@@ -69,9 +69,9 @@ void read_tom(TOMDescriptor& desc)
     TOMHeader header;
     ifs->read(opaque_cast(&header), sizeof(TOMHeader));
 
-    W_ASSERT(header.magic == TOM_MAGIC, "Invalid TOM file: magic number mismatch.");
-    W_ASSERT(header.version_major == TOM_VERSION_MAJOR, "Invalid TOM file: version (major) mismatch.");
-    W_ASSERT(header.version_minor == TOM_VERSION_MINOR, "Invalid TOM file: version (minor) mismatch.");
+    K_ASSERT(header.magic == TOM_MAGIC, "Invalid TOM file: magic number mismatch.");
+    K_ASSERT(header.version_major == TOM_VERSION_MAJOR, "Invalid TOM file: version (major) mismatch.");
+    K_ASSERT(header.version_minor == TOM_VERSION_MINOR, "Invalid TOM file: version (minor) mismatch.");
 
     desc.width       = header.texture_width;
     desc.height      = header.texture_height;
@@ -99,8 +99,8 @@ void read_tom(TOMDescriptor& desc)
     for(auto&& block: blocks)
     {
         // Sanity check
-        W_ASSERT(block.channels>0, "Tom: wrong number of texture channels: min is 1.");
-        W_ASSERT(block.channels<=4, "Tom: wrong number of texture channels: max is 4.");
+        K_ASSERT(block.channels>0, "Tom: wrong number of texture channels: min is 1.");
+        K_ASSERT(block.channels<=4, "Tom: wrong number of texture channels: max is 4.");
 
     	TextureMapDescriptor bdesc =
     	{

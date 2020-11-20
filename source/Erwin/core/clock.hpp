@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kibble/time/clock.h"
+#include <kibble/time/clock.h>
 
 namespace erwin
 {

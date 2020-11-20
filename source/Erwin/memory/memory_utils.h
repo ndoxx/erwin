@@ -4,7 +4,7 @@
 #include <string>
 #include <ostream>
 
-#include "kibble/logger/logger_common.h"
+#include <kibble/logger/logger_common.h>
 
 namespace erwin
 {

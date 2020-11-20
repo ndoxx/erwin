@@ -40,9 +40,9 @@ void read_cat(CATDescriptor& desc)
     CATHeader header;
     ifs->read(opaque_cast(&header), sizeof(CATHeader));
 
-    W_ASSERT(header.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
-    W_ASSERT(header.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
-    W_ASSERT(header.version_minor == CAT_VERSION_MINOR, "Invalid CAT file: version (minor) mismatch.");
+    K_ASSERT(header.magic == CAT_MAGIC, "Invalid CAT file: magic number mismatch.");
+    K_ASSERT(header.version_major == CAT_VERSION_MAJOR, "Invalid CAT file: version (major) mismatch.");
+    K_ASSERT(header.version_minor == CAT_VERSION_MINOR, "Invalid CAT file: version (minor) mismatch.");
 
     desc.texture_width        = header.texture_width;
     desc.texture_height       = header.texture_height;

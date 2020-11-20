@@ -1,92 +1,81 @@
 #include "filesystem/xml_file.h"
 #include "filesystem/filesystem.h"
-#include "debug/logger.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include <kibble/logger/logger.h>
 
 using namespace rapidxml;
+
 
 namespace erwin
 {
 
-template<>
-std::string to_string<glm::vec2>(const glm::vec2& v)
+template <> std::string to_string<glm::vec2>(const glm::vec2& v)
 {
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + ")";
 }
 
-template<>
-std::string to_string<glm::vec3>(const glm::vec3& v)
+template <> std::string to_string<glm::vec3>(const glm::vec3& v)
 {
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + ")";
 }
 
-template<>
-std::string to_string<glm::vec4>(const glm::vec4& v)
+template <> std::string to_string<glm::vec4>(const glm::vec4& v)
 {
-    return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," + std::to_string(v.w) + ")";
+    return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," +
+           std::to_string(v.w) + ")";
 }
 
-template<>
-std::string to_string<glm::ivec2>(const glm::ivec2& v)
+template <> std::string to_string<glm::ivec2>(const glm::ivec2& v)
 {
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + ")";
 }
 
-template<>
-std::string to_string<glm::ivec3>(const glm::ivec3& v)
+template <> std::string to_string<glm::ivec3>(const glm::ivec3& v)
 {
     return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + ")";
 }
 
-template<>
-std::string to_string<glm::ivec4>(const glm::ivec4& v)
+template <> std::string to_string<glm::ivec4>(const glm::ivec4& v)
 {
-    return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," + std::to_string(v.w) + ")";
+    return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," +
+           std::to_string(v.w) + ")";
 }
 
-template <>
-bool str_val<glm::vec2>(const char* value, glm::vec2& result)
+template <> bool str_val<glm::vec2>(const char* value, glm::vec2& result)
 {
     return sscanf(value, "(%f,%f)", &result[0], &result[1]) > 0;
 }
 
-template <>
-bool str_val<glm::vec3>(const char* value, glm::vec3& result)
+template <> bool str_val<glm::vec3>(const char* value, glm::vec3& result)
 {
     return sscanf(value, "(%f,%f,%f)", &result[0], &result[1], &result[2]) > 0;
 }
 
-template <>
-bool str_val<glm::vec4>(const char* value, glm::vec4& result)
+template <> bool str_val<glm::vec4>(const char* value, glm::vec4& result)
 {
     return sscanf(value, "(%f,%f,%f,%f)", &result[0], &result[1], &result[2], &result[3]) > 0;
 }
 
-template <>
-bool str_val<glm::ivec2>(const char* value, glm::ivec2& result)
+template <> bool str_val<glm::ivec2>(const char* value, glm::ivec2& result)
 {
     return sscanf(value, "(%d,%d)", &result[0], &result[1]) > 0;
 }
 
-template <>
-bool str_val<glm::ivec3>(const char* value, glm::ivec3& result)
+template <> bool str_val<glm::ivec3>(const char* value, glm::ivec3& result)
 {
     return sscanf(value, "(%d,%d,%d)", &result[0], &result[1], &result[2]) > 0;
 }
 
-template <>
-bool str_val<glm::ivec4>(const char* value, glm::ivec4& result)
+template <> bool str_val<glm::ivec4>(const char* value, glm::ivec4& result)
 {
     return sscanf(value, "(%d,%d,%d,%d)", &result[0], &result[1], &result[2], &result[3]) > 0;
 }
 
-template <>
-bool str_val<bool>(const char* value, bool& result)
+template <> bool str_val<bool>(const char* value, bool& result)
 {
     result = !strcmp(value, "true");
     return true;
 }
-
 
 namespace xml
 {
@@ -99,7 +88,7 @@ void XMLFile::release()
 
 void XMLFile::create_root(const char* root_name, bool write_declaration)
 {
-    W_ASSERT(root == nullptr, "XML file already has a root");
+    K_ASSERT(root == nullptr, "XML file already has a root");
 
     if(write_declaration)
     {
@@ -131,19 +120,16 @@ xml_attribute<>* XMLFile::add_attribute(xml_node<>* node, const char* attr_name,
     return attr;
 }
 
-void XMLFile::set_value(xml_node<>* node, const char* value)
-{
-    node->value(doc.allocate_string(value));
-}
+void XMLFile::set_value(xml_node<>* node, const char* value) { node->value(doc.allocate_string(value)); }
 
 bool XMLFile::read()
 {
-    DLOG("core",0) << "Parsing XML file:" << std::endl;
-    DLOGI << WCC('p') << filepath << std::endl;
+    KLOG("core", 0) << "Parsing XML file:" << std::endl;
+    KLOGI << kb::WCC('p') << filepath << std::endl;
 
     if(!filepath.exists())
     {
-        DLOGE("core") << "File does not exist." << std::endl;
+        KLOGE("core") << "File does not exist." << std::endl;
         return false;
     }
 
@@ -158,12 +144,12 @@ bool XMLFile::read()
     }
     catch(parse_error& e)
     {
-        DLOGE("core") << "Parse error: " << e.what() << std::endl << "At: " << e.where<char>() << std::endl;
+        KLOGE("core") << "Parse error: " << e.what() << std::endl << "At: " << e.where<char>() << std::endl;
         return false;
     }
     catch(validation_error& e)
     {
-        DLOGE("core") << "Validation error: " << e.what() << std::endl;
+        KLOGE("core") << "Validation error: " << e.what() << std::endl;
         return false;
     }
 
@@ -171,7 +157,7 @@ bool XMLFile::read()
     root = doc.first_node();
     if(!root)
     {
-        DLOGW("core") << "File has no root node." << std::endl;
+        KLOGW("core") << "File has no root node." << std::endl;
         return false;
     }
 
@@ -233,7 +219,8 @@ hash_t parse_node_h(rapidxml::xml_node<>* parent, const char* leaf_name)
 }
 
 template <>
-bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name, const std::string& source)
+bool set_attribute(rapidxml::xml_document<>& doc, rapidxml::xml_node<>* node, const char* name,
+                   const std::string& source)
 {
     rapidxml::xml_attribute<>* pAttr = node->first_attribute(name);
     if(!pAttr)

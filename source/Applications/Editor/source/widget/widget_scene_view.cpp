@@ -269,7 +269,7 @@ void SceneViewWidget::on_imgui_render()
 
 void SceneViewWidget::runtime_start()
 {
-    DLOGN("scene") << "Starting runtime." << std::endl;
+    KLOGN("scene") << "Starting runtime." << std::endl;
     // Save main scene
     SceneManager::get("main_scene"_h).save();
     // Create a shallow copy of current scene (shared asset registry) and reload
@@ -282,7 +282,7 @@ void SceneViewWidget::runtime_start()
 
 void SceneViewWidget::runtime_stop()
 {
-    DLOGN("scene") << "Ending runtime." << std::endl;
+    KLOGN("scene") << "Ending runtime." << std::endl;
 
     // Force unpause on exiting runtime (avoids weird bugs)
     paused_ = false;
@@ -305,15 +305,15 @@ void SceneViewWidget::runtime_stop()
 
 void SceneViewWidget::runtime_pause()
 {
-    DLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
+    KLOGN("scene") << (paused_ ? "Resuming runtime." : "Pausing runtime.") << std::endl;
     paused_ = !paused_;
     Application::get_instance().get_clock().pause(paused_);
 }
 
 void SceneViewWidget::runtime_reset()
 {
-    DLOGN("scene") << "Resetting runtime." << std::endl;
-    DLOGW("scene") << "Runtime reset feature not implemented yet." << std::endl;
+    KLOGN("scene") << "Resetting runtime." << std::endl;
+    KLOGW("scene") << "Runtime reset feature not implemented yet." << std::endl;
 }
 
 static int s_profile_num_frames = 60;

@@ -16,12 +16,12 @@
 #include "level/scene_manager.h"
 #include "level/scene.h"
 #include "entity/init.h"
-#include "debug/logger.h"
-#include "kibble/logger/logger_thread.h"
+#include <kibble/logger/logger.h>
+#include <kibble/logger/logger_thread.h>
 
 #include <iostream>
 
-using namespace kb;
+
 
 namespace erwin
 {
@@ -44,7 +44,7 @@ is_running_(true),
 minimized_(false)
 {
     // Create application singleton
-    W_ASSERT(!Application::pinstance_, "Application already exists!");
+    K_ASSERT(!Application::pinstance_, "Application already exists!");
 	Application::pinstance_ = this;
     KLOGGER_START();
     // Initialize file system
@@ -57,9 +57,9 @@ void Application::add_configuration(const WPath& filepath)
         s_storage.configuration_files.push_back(filepath);
     else
     {
-        DLOGW("application") << "Unable to find configuration file:" << std::endl;
-        DLOGI << "client configuration directory: " << WCC('p') << wfs::get_client_config_dir() << std::endl;
-        DLOGI << "file path: " << WCC('p') << filepath << std::endl;
+        KLOGW("application") << "Unable to find configuration file:" << std::endl;
+        KLOGI << "client configuration directory: " << kb::WCC('p') << wfs::get_client_config_dir() << std::endl;
+        KLOGI << "file path: " << kb::WCC('p') << filepath << std::endl;
     }
 }
 
@@ -69,8 +69,8 @@ void Application::add_configuration(const WPath& user_path, const WPath& default
         s_storage.configuration_files.push_back(user_path);
     else
     {
-        DLOGW("application") << "Unable to find configuration file:" << std::endl;
-        DLOGI << "file path: " << WCC('p') << user_path << std::endl;
+        KLOGW("application") << "Unable to find configuration file:" << std::endl;
+        KLOGI << "file path: " << kb::WCC('p') << user_path << std::endl;
     }
 }
 
@@ -105,10 +105,10 @@ bool Application::init()
         KLOGGER(sync());
 
         // Log basic info
-        DLOGN("config") << "[Paths]" << std::endl;
-        DLOGI << "Executable path: " << WCC('p') << wfs::get_self_dir() << WCC(0) << std::endl;
-        DLOGI << "Root dir:        " << WCC('p') << wfs::get_root_dir() << WCC(0) << std::endl;
-        DLOGI << "Config dir:      " << WCC('p') << wfs::get_config_dir() << WCC(0) << std::endl;
+        KLOGN("config") << "[Paths]" << std::endl;
+        KLOGI << "Executable path: " << kb::WCC('p') << wfs::get_self_dir() << kb::WCC(0) << std::endl;
+        KLOGI << "Root dir:        " << kb::WCC('p') << wfs::get_root_dir() << kb::WCC(0) << std::endl;
+        KLOGI << "Config dir:      " << kb::WCC('p') << wfs::get_config_dir() << kb::WCC(0) << std::endl;
 
         // Parse intern strings
         istr::init();
@@ -118,11 +118,11 @@ bool Application::init()
     // Initialize system memory
     {
         W_PROFILE_SCOPE("System memory init")
-        DLOGN("application") << "Initializing system memory" << std::endl;
+        KLOGN("application") << "Initializing system memory" << std::endl;
         size_t system_mem_size = cfg::get<size_t>("erwin.memory.system_area"_h, 10_MB);
         if(!s_storage.system_area.init(system_mem_size))
         {
-            DLOGF("application") << "Cannot allocate system memory." << std::endl;
+            KLOGF("application") << "Cannot allocate system memory." << std::endl;
             return false;
         }
     }
@@ -130,11 +130,11 @@ bool Application::init()
     // Initialize renderer memory
     {
         W_PROFILE_SCOPE("Renderer memory init")
-        DLOGN("application") << "Initializing renderer memory" << std::endl;
+        KLOGN("application") << "Initializing renderer memory" << std::endl;
         size_t renderer_mem_size = cfg::get<size_t>("erwin.memory.renderer_area"_h, 20_MB);
         if(!s_storage.render_area.init(renderer_mem_size))
         {
-            DLOGF("application") << "Cannot allocate renderer memory." << std::endl;
+            KLOGF("application") << "Cannot allocate renderer memory." << std::endl;
             return false;
         }
     }
@@ -142,7 +142,7 @@ bool Application::init()
     // Configure client
     {
         W_PROFILE_SCOPE("Client configuration parsing")
-        DLOGN("config") << "Parsing client configuration" << std::endl;
+        KLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file: s_storage.configuration_files)
             cfg::load(cfg_file);
@@ -151,11 +151,11 @@ bool Application::init()
     // Initialize client memory
     {
         W_PROFILE_SCOPE("Client memory init")
-        DLOGN("application") << "Initializing client memory" << std::endl;
+        KLOGN("application") << "Initializing client memory" << std::endl;
         size_t client_mem_size = cfg::get<size_t>("client.memory.area"_h, 1_MB);
         if(!s_storage.client_area.init(client_mem_size))
         {
-            DLOGF("application") << "Cannot allocate client memory." << std::endl;
+            KLOGF("application") << "Cannot allocate client memory." << std::endl;
             return false;
         }
     }
@@ -215,15 +215,15 @@ bool Application::init()
 
     // Show memory content
 #ifdef W_DEBUG
-    DLOG("memory",1) << WCC(204,153,0) << "--- System memory area ---" << std::endl;
+    KLOG("memory",1) << kb::WCC(204,153,0) << "--- System memory area ---" << std::endl;
     s_storage.system_area.debug_show_content();
-    DLOG("memory",1) << WCC(204,153,0) << "--- Render memory area ---" << std::endl;
+    KLOG("memory",1) << kb::WCC(204,153,0) << "--- Render memory area ---" << std::endl;
     s_storage.render_area.debug_show_content();
-    DLOG("memory",1) << WCC(204,153,0) << "--- Client memory area ---" << std::endl;
+    KLOG("memory",1) << kb::WCC(204,153,0) << "--- Client memory area ---" << std::endl;
     s_storage.client_area.debug_show_content();
 #endif
 
-    DLOG("application",1) << WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
+    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
     return true;
 }
 
@@ -284,16 +284,16 @@ void Application::toggle_imgui_layer()
 
 void Application::run()
 {
-    DLOG("application",1) << WCC(0,153,153) << "--- Application started ---" << std::endl;
+    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application started ---" << std::endl;
 
     // Display layer stack composition
-    DLOG("application",1) << WCC(204,0,204) << "Layer stack composition:" << std::endl;
-    DLOG("application",1) << WCC(204,0,204) << layer_stack_ << std::endl;
+    KLOG("application",1) << kb::WCC(204,0,204) << "Layer stack composition:" << std::endl;
+    KLOG("application",1) << kb::WCC(204,0,204) << layer_stack_ << std::endl;
 
     // Profiling options
     W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
 
-    nanoClock frame_clock;
+    kb::nanoClock frame_clock;
     frame_clock.restart();
 
 	std::chrono::nanoseconds frame_d(16666666);
@@ -369,12 +369,12 @@ void Application::run()
     // Save all client configuration files
     for(auto&& cfg_file: s_storage.configuration_files)
     {
-        DLOGN("application") << "Saving config file:" << std::endl;
-        DLOGI << WCC('p') << cfg_file << std::endl;
+        KLOGN("application") << "Saving config file:" << std::endl;
+        KLOGI << kb::WCC('p') << cfg_file << std::endl;
         cfg::save(cfg_file);
     }
 
-    DLOG("application",1) << WCC(0,153,153) << "--- Application stopped ---" << std::endl;
+    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application stopped ---" << std::endl;
 }
 
 bool Application::on_window_close_event(const WindowCloseEvent&)

@@ -4,7 +4,7 @@
 #include "render/renderer_3d.h"
 #include "render/renderer.h"
 #include "render/common_geometry.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include "entity/component/PBR_material.h"
 #include "entity/component/bounding_box.h"
@@ -135,7 +135,7 @@ void Scene::add_entity(EntityID entity)
 {
 	entities.push_back(entity);
 
-	DLOG("application",1) << "[Scene] Added entity: " << uint64_t(entity) << std::endl;
+	KLOG("application",1) << "[Scene] Added entity: " << uint64_t(entity) << std::endl;
 }
 
 } // namespace rtest

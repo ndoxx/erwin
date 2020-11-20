@@ -1,6 +1,6 @@
 #include "asset_registry.h"
 #include "core/core.h"
-#include "debug/logger.h"
+#include <kibble/logger/logger.h>
 
 #include <unordered_map>
 #include <chrono>
@@ -45,13 +45,13 @@ void load(const fs::path& registry_file_path)
 {
 	if(!fs::exists(registry_file_path))
 	{
-		DLOG("fudge",1) << "No asset registry file at the moment." << std::endl;
-		DLOGI << "A registry file will be created." << std::endl;
+		KLOG("fudge",1) << "No asset registry file at the moment." << std::endl;
+		KLOGI << "A registry file will be created." << std::endl;
 		return;
 	}
 
-	DLOG("fudge",1) << "Loading asset registry:" << std::endl;
-	DLOGI << WCC('p') << registry_file_path << std::endl;
+	KLOG("fudge",1) << "Loading asset registry:" << std::endl;
+	KLOGI << kb::WCC('p') << registry_file_path << std::endl;
 
     std::ifstream ifs(registry_file_path, std::ios::binary);
 	
@@ -59,9 +59,9 @@ void load(const fs::path& registry_file_path)
     ifs.read(reinterpret_cast<char*>(&header), sizeof(FARHeader));
 
     // Sanity check
-    W_ASSERT(header.magic == FAR_MAGIC, "Invalid FAR file: magic number mismatch.");
-    W_ASSERT(header.version_major == FAR_VERSION_MAJOR, "Invalid FAR file: version (major) mismatch.");
-    W_ASSERT(header.version_minor == FAR_VERSION_MINOR, "Invalid FAR file: version (minor) mismatch.");
+    K_ASSERT(header.magic == FAR_MAGIC, "Invalid FAR file: magic number mismatch.");
+    K_ASSERT(header.version_major == FAR_VERSION_MAJOR, "Invalid FAR file: version (major) mismatch.");
+    K_ASSERT(header.version_minor == FAR_VERSION_MINOR, "Invalid FAR file: version (minor) mismatch.");
 
     for(size_t ii=0; ii<header.num_entries; ++ii)
     {
@@ -75,8 +75,8 @@ void load(const fs::path& registry_file_path)
 
 void save(const fs::path& registry_file_path)
 {
-	DLOG("fudge",1) << "Saving asset registry:" << std::endl;
-	DLOGI << WCC('p') << registry_file_path << std::endl;
+	KLOG("fudge",1) << "Saving asset registry:" << std::endl;
+	KLOGI << kb::WCC('p') << registry_file_path << std::endl;
 
 	FARHeader header;
 	header.magic = FAR_MAGIC;
