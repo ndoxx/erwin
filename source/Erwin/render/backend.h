@@ -5,11 +5,11 @@
 #include <memory>
 
 #include "core/core.h"
-#include "memory/memory.hpp"
 #include "render/buffer_layout.h"
 #include "render/handles.h"
 #include "render/render_state.h"
 #include "render/texture_common.h"
+#include <kibble/memory/memory.inc>
 
 namespace erwin
 {

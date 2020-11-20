@@ -14,8 +14,8 @@
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
-#include <kibble/string/string.h>
 #include "widget/dialog_open.h"
+#include <kibble/string/string.h>
 
 #include <optional>
 
@@ -246,8 +246,8 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
         auto& scene = SceneManager::get("material_editor_scene"_h);
         auto& current_material = get_current_material(scene);
         current_material.name = dirpath.stem().string();
-        KLOG("editor", 1) << "Selected \"" << kb::WCC('n') << current_material.name << kb::WCC(0) << "\" as a material name."
-                          << std::endl;
+        KLOG("editor", 1) << "Selected \"" << kb::WCC('n') << current_material.name << kb::WCC(0)
+                          << "\" as a material name." << std::endl;
     }
 }
 
@@ -328,7 +328,7 @@ static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::
     KLOGI << kb::WCC('p') << path << std::endl;
 }
 
-void MaterialAuthoringWidget::on_update(const erwin::GameClock&)
+void MaterialAuthoringWidget::on_update(const GameClock&)
 {
     // * Run export tasks when they are ready
     for(auto it = tom_export_tasks_.begin(); it != tom_export_tasks_.end();)

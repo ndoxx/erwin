@@ -70,8 +70,4 @@ namespace erwin
 	}
 
 	using hash_t = kb::hash_t;
-	[[maybe_unused]] static constexpr hash_t H_(const char* str) { return kb::H_(str); }
-	[[maybe_unused]] static constexpr hash_t operator"" _h(const char* internstr, size_t) { return H_(internstr); }
-	[[maybe_unused]] static inline hash_t HCOMBINE_(hash_t first, hash_t second) { return kb::HCOMBINE_(first, second); }
-
 } // namespace erwin

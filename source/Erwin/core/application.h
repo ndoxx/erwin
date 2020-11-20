@@ -1,14 +1,14 @@
 #pragma once
 
-#include <memory>
 #include <filesystem>
 #include <functional>
+#include <memory>
 
 #include "core/core.h"
-#include "core/window.h"
-#include "core/layer_stack.h"
 #include "core/game_clock.h"
-#include "memory/heap_area.h"
+#include "core/layer_stack.h"
+#include "core/window.h"
+#include <kibble/memory/heap_area.h>
 
 namespace fs = std::filesystem;
 
@@ -20,55 +20,55 @@ struct WindowCloseEvent;
 class W_API Application
 {
 public:
-	Application();
-	virtual ~Application() = default;
+    Application();
+    virtual ~Application() = default;
 
-	virtual void on_client_init() { }
-	virtual void on_load() { }
-	virtual void on_unload() { }
-	virtual void on_imgui_render() { }
+    virtual void on_client_init() {}
+    virtual void on_load() {}
+    virtual void on_unload() {}
+    virtual void on_imgui_render() {}
 
-	size_t push_layer(Layer* layer, bool enabled=true);
-	size_t push_overlay(Layer* layer, bool enabled=true);
+    size_t push_layer(Layer* layer, bool enabled = true);
+    size_t push_overlay(Layer* layer, bool enabled = true);
 
-	inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
-	void toggle_imgui_layer();
+    inline void set_layer_enabled(size_t index, bool value) { layer_stack_.set_layer_enabled(index, value); }
+    void toggle_imgui_layer();
 
-	// Add an XML configuration file to be parsed at the end of init()
-	void add_configuration(const WPath& filepath);
-	void add_configuration(const WPath& user_path, const WPath& default_path);
+    // Add an XML configuration file to be parsed at the end of init()
+    void add_configuration(const WPath& filepath);
+    void add_configuration(const WPath& user_path, const WPath& default_path);
 
-	bool init();
-	void run();
-	void shutdown();
+    bool init();
+    void run();
+    void shutdown();
 
-	void enable_vsync(bool value=true);
+    void enable_vsync(bool value = true);
 
-	static memory::HeapArea& get_client_area();
-	static const memory::HeapArea& get_system_area();
-	static const memory::HeapArea& get_render_area();
+    static kb::memory::HeapArea& get_client_area();
+    static const kb::memory::HeapArea& get_system_area();
+    static const kb::memory::HeapArea& get_render_area();
 
-	static inline Application& get_instance() { return *pinstance_; }
-	inline const Window& get_window() { return *window_; }
-	inline GameClock& get_clock() { return game_clock_; }
+    static inline Application& get_instance() { return *pinstance_; }
+    inline const Window& get_window() { return *window_; }
+    inline GameClock& get_clock() { return game_clock_; }
 
-	bool on_window_close_event(const WindowCloseEvent& e);
+    bool on_window_close_event(const WindowCloseEvent& e);
 
-	inline void set_on_imgui_newframe_callback(std::function<void(void)> callback) { on_imgui_new_frame_ = callback; }
+    inline void set_on_imgui_newframe_callback(std::function<void(void)> callback) { on_imgui_new_frame_ = callback; }
 
 protected:
-	bool vsync_enabled_;
+    bool vsync_enabled_;
 
 private:
-	static Application* pinstance_;
-	WScope<Window> window_;
-	bool is_running_;
-	bool minimized_;
+    static Application* pinstance_;
+    WScope<Window> window_;
+    bool is_running_;
+    bool minimized_;
 
-	LayerStack layer_stack_;
-	GameClock game_clock_;
+    LayerStack layer_stack_;
+    GameClock game_clock_;
 
-	std::function<void(void)> on_imgui_new_frame_ = [](){};
+    std::function<void(void)> on_imgui_new_frame_ = []() {};
 };
 
 // Defined in the client

@@ -193,7 +193,7 @@ void Scene::save_xml(const WPath& file_path)
     KLOGI << "done." << std::endl;
 }
 
-void Scene::load_xml(const erwin::WPath& file_path)
+void Scene::load_xml(const WPath& file_path)
 {
     KLOGN("scene") << "Loading scene: " << std::endl;
     KLOGI << kb::WCC('p') << file_path << std::endl;
@@ -344,7 +344,7 @@ void Scene::mark_for_removal(EntityID entity, uint32_t reflected_component)
 
 void Scene::mark_for_removal(EntityID entity) { removed_entities_.push(entity); }
 
-void Scene::set_named(erwin::EntityID ent, erwin::hash_t hname)
+void Scene::set_named(EntityID ent, hash_t hname)
 {
     K_ASSERT(registry.valid(ent), "[Scene] Invalid entity.");
     named_entities_.insert({hname, ent});

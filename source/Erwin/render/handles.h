@@ -3,6 +3,8 @@
 #include "core/handle.h"
 #include "render/renderer_config.h"
 
+using namespace kb;
+
 namespace erwin
 {
 

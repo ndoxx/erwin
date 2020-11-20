@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <kibble/hash/hashstr.h>
 #include "render/handles.h"
 
 namespace erwin

@@ -3,7 +3,7 @@
 #include "widget/widget.h"
 
 #ifdef W_DEBUG
-namespace erwin::memory::debug
+namespace kb::memory::debug
 {
 	struct AreaItem;
 }
@@ -20,7 +20,7 @@ public:
 	void refresh();
 
 protected:
-	void register_area_description(const std::string& name, const std::vector<erwin::memory::debug::AreaItem>& items);
+	void register_area_description(const std::string& name, const std::vector<kb::memory::debug::AreaItem>& items);
 	virtual void on_imgui_render() override;
 
 private:
