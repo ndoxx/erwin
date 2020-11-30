@@ -2,7 +2,6 @@
 #include <kibble/string/string.h>
 #include "core/registry.h"
 #include <kibble/logger/logger.h>
-#include "debug/net_sink.h"
 #include <kibble/logger/dispatcher.h>
 #include <kibble/logger/sink.h>
 #include "filesystem/xml_file.h"
@@ -68,7 +67,7 @@ static void init_logger(rapidxml::xml_node<>* node)
 				success     &= xml::parse_attribute(sink, "port", port);
 				if(success)
 				{
-					auto net_sink = std::make_unique<NetSink>();
+					auto net_sink = std::make_unique<kb::klog::NetSink>();
 					if(net_sink->connect(host, uint16_t(port)))
 						p_sink = std::move(net_sink);
 				}
