@@ -1,5 +1,5 @@
 #include "editor_app.h"
-#include <kibble/logger/logger_thread.h>
+#include <kibble/logger/dispatcher.h>
 #include "entity/component/editor_tags.h"
 #include "entity/component/tags.h"
 #include "imgui/font_awesome.h"

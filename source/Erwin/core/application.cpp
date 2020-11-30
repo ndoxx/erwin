@@ -17,7 +17,7 @@
 #include "level/scene.h"
 #include "entity/init.h"
 #include <kibble/logger/logger.h>
-#include <kibble/logger/logger_thread.h>
+#include <kibble/logger/dispatcher.h>
 
 #include <iostream>
 
@@ -97,12 +97,7 @@ bool Application::init()
         // Initialize config
         cfg::load("syscfg://erwin.xml"_wp);
 
-        KLOGGER(set_single_threaded(cfg::get<bool>("erwin.logger.single_threaded"_h, true)));
         KLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
-
-        // Spawn logger thread
-        KLOGGER(spawn());
-        KLOGGER(sync());
 
         // Log basic info
         KLOGN("config") << "[Paths]" << std::endl;
@@ -250,7 +245,6 @@ void Application::shutdown()
     {
         W_PROFILE_SCOPE("Low level systems shutdown")
         Input::shutdown();
-        KLOGGER(kill());
     } 
 }
 
@@ -360,7 +354,6 @@ void Application::run()
 
         {
             W_PROFILE_SCOPE("Logger flush")
-            KLOGGER(flush());
         }
 
         frame_d = frame_clock.restart();

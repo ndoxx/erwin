@@ -3,8 +3,8 @@
 #include "core/registry.h"
 #include <kibble/logger/logger.h>
 #include "debug/net_sink.h"
-#include <kibble/logger/logger_thread.h>
-#include <kibble/logger/logger_sink.h>
+#include <kibble/logger/dispatcher.h>
+#include <kibble/logger/sink.h>
 #include "filesystem/xml_file.h"
 
 #include <unordered_map>

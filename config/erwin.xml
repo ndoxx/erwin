@@ -23,7 +23,6 @@
 		<Sink name="NetSink"        type="NetSink"     channels="all"   host="localhost" port="31337"/>
 
 		<bool name="backtrace_on_error" value="false"/>
-		<bool name="single_threaded"    value="true"/>
 	</logger>
 
 	<profiling>

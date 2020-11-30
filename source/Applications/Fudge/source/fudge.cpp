@@ -14,8 +14,8 @@
 #include "texture_packer.h"
 #include "shader_packer.h"
 #include <kibble/logger/logger.h>
-#include <kibble/logger/logger_sink.h>
-#include <kibble/logger/logger_thread.h>
+#include <kibble/logger/sink.h>
+#include <kibble/logger/dispatcher.h>
 #include "filesystem/xml_file.h"
 #include "render/shader_lang.h"
 
