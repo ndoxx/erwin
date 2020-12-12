@@ -49,7 +49,7 @@ bool ensure_user_config(const WPath& user_path, const WPath& default_path);
 // Get a text file as a string
 std::string get_file_as_string(const WPath& path);
 // Get a binary file as a vector of bytes
-std::vector<uint8_t> get_file_as_vector(const WPath& path);
+std::vector<char> get_file_as_vector(const WPath& path);
 // Get an input stream from a file
 std::shared_ptr<std::istream> get_istream(const WPath& path, uint8_t mode);
 // Get an output stream to a file
@@ -59,10 +59,10 @@ std::shared_ptr<std::ostream> get_ostream(const WPath& path, uint8_t mode);
 
 // Helpers for stream read/write pointer cast
 // Only well defined for PODs
-template <typename T, typename = std::enable_if_t<std::is_pod_v<T>>>
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
 static inline char* opaque_cast(T* in) { return static_cast<char*>(static_cast<void*>(in)); }
 
-template <typename T, typename = std::enable_if_t<std::is_pod_v<T>>>
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
 static inline const char* opaque_cast(const T* in) { return static_cast<const char*>(static_cast<void*>(in)); }
 
 } // namespace erwin

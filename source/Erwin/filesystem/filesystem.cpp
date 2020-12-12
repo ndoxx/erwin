@@ -139,6 +139,15 @@ void set_client_config_dir(const fs::path& path)
     WPath::set_application_config_directory(s_client_config_path);
 }
 
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+    using namespace std::chrono;
+    auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
+              + system_clock::now());
+    return system_clock::to_time_t(sctp);
+}
+
 bool ensure_user_config(const WPath& user_path, const WPath& default_path)
 {
     bool has_user = user_path.exists();
@@ -157,9 +166,9 @@ bool ensure_user_config(const WPath& user_path, const WPath& default_path)
     {
         // Copy default if more recent
         auto ftime_u = fs::last_write_time(user_path.absolute());
-        std::time_t cftime_u = decltype(ftime_u)::clock::to_time_t(ftime_u);
+        std::time_t cftime_u = to_time_t(ftime_u);//decltype(ftime_u)::clock::to_time_t(ftime_u);
         auto ftime_d = fs::last_write_time(default_path.absolute());
-        std::time_t cftime_d = decltype(ftime_d)::clock::to_time_t(ftime_d);
+        std::time_t cftime_d = to_time_t(ftime_d);//decltype(ftime_d)::clock::to_time_t(ftime_d);
         copy_default = (cftime_d > cftime_u);
     }
 
@@ -182,7 +191,7 @@ std::string get_file_as_string(const WPath& path)
     return std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 }
 
-std::vector<uint8_t> get_file_as_vector(const WPath& filepath)
+std::vector<char> get_file_as_vector(const WPath& filepath)
 {
     K_ASSERT(filepath.exists(), "File does not exist.");
 
@@ -197,9 +206,9 @@ std::vector<uint8_t> get_file_as_vector(const WPath& filepath)
     ifs.seekg(0, std::ios::beg);
 
     // Allocate & read
-    std::vector<uint8_t> vec;
+    std::vector<char> vec;
     vec.reserve(size_t(file_size));
-    vec.insert(vec.begin(), std::istream_iterator<uint8_t>(ifs), std::istream_iterator<uint8_t>());
+    vec.insert(vec.begin(), std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
     return vec;
 }
 

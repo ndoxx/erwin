@@ -341,9 +341,9 @@ void MaterialAuthoringWidget::on_update(const GameClock&)
             auto&& [mare_data, mare_size] = task.mare.get();
 
             // Run export task asynchronously
-            std::async(std::launch::async, &handle_tom_export, task.export_path, task.material_data, task.width,
-                       task.height, a_data, nd_data, mare_data);
-
+            auto fut = std::async(std::launch::async, &handle_tom_export, task.export_path, task.material_data,
+                                  task.width, task.height, a_data, nd_data, mare_data);
+            (void)fut;
             tom_export_tasks_.erase(it);
         }
         else
