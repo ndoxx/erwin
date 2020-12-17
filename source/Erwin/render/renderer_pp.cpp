@@ -4,8 +4,8 @@
 #include "filesystem/filesystem.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
-#include "math/convolution.h"
 #include "imgui.h"
+#include <kibble/math/convolution.h>
 
 namespace erwin
 {
@@ -83,7 +83,7 @@ static struct
 	float bloom_stage_ratios[k_bloom_stage_count];
 
 #if !BLOOM_RETAIL
-	math::SeparableGaussianKernel gk; // For bloom
+	kb::math::SeparableGaussianKernel gk; // For bloom
 #endif
 
 	uint32_t sequence = 0;
