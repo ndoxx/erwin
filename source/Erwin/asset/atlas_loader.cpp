@@ -19,7 +19,7 @@ AssetMetaData TextureAtlasLoader::build_meta_data(const WPath& file_path)
 cat::CATDescriptor TextureAtlasLoader::load_from_file(const AssetMetaData& meta_data)
 {
     KLOG("asset", 1) << "Loading CAT file:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     cat::CATDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
@@ -73,9 +73,9 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, ha
                                                                     0, descriptor.texture_blob, format, filter,
                                                                     TextureWrap::REPEAT, TF_MUST_FREE});
 
-    KLOG("texture", 1) << "Found " << kb::WCC('v') << atlas.remapping.size() << kb::WCC(0) << " sub-textures in atlas."
+    KLOG("texture", 1) << "Found " << kb::KS_VALU_ << atlas.remapping.size() << kb::KC_ << " sub-textures in atlas."
                        << std::endl;
-    KLOG("texture", 1) << "TextureHandle: " << kb::WCC('v') << int(atlas.texture.index()) << std::endl;
+    KLOG("texture", 1) << "TextureHandle: " << kb::KS_VALU_ << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }
@@ -93,7 +93,7 @@ AssetMetaData FontAtlasLoader::build_meta_data(const WPath& file_path)
 cat::CATDescriptor FontAtlasLoader::load_from_file(const AssetMetaData& meta_data)
 {
     KLOG("asset", 1) << "Loading CAT file:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     cat::CATDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
@@ -148,9 +148,9 @@ FontAtlas FontAtlasLoader::upload(const cat::CATDescriptor& descriptor, hash_t /
                                                                     // ImageFormat::R8,
                                                                     filter, TextureWrap::REPEAT, TF_MUST_FREE});
 
-    KLOG("texture", 1) << "Found " << kb::WCC('v') << atlas.remapping.size() << kb::WCC(0) << " characters in atlas."
+    KLOG("texture", 1) << "Found " << kb::KS_VALU_ << atlas.remapping.size() << kb::KC_ << " characters in atlas."
                        << std::endl;
-    KLOG("texture", 1) << "TextureHandle: " << kb::WCC('v') << int(atlas.texture.index()) << std::endl;
+    KLOG("texture", 1) << "TextureHandle: " << kb::KS_VALU_ << int(atlas.texture.index()) << std::endl;
 
     return atlas;
 }

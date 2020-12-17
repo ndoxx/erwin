@@ -143,7 +143,7 @@ FramebufferHandle FramebufferPool::create_framebuffer(hash_t name, WScope<FbCons
 	s_storage.constraints_.insert(std::make_pair(name, std::move(constraint)));
 	s_storage.flags_.insert(std::make_pair(name, flags));
 
-	KLOG("render",1) << "Submit framebuffer creation: " << kb::WCC('n') << istr::resolve(name) << ' ' << kb::WCC(0) << handle << std::endl;
+	KLOG("render",1) << "Submit framebuffer creation: " << kb::KS_NAME_ << istr::resolve(name) << ' ' << kb::KC_ << handle << std::endl;
 
 	return handle;
 }

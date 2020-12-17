@@ -634,7 +634,7 @@ void OGLShader::introspect()
 
         if(num_active)
         {
-            KLOG("shader", 1) << "[" << kb::WCC(102, 153, 0) << ogl_interface_to_string(iface) << kb::WCC(0)
+            KLOG("shader", 1) << "[" << kb::KF_(102, 153, 0) << ogl_interface_to_string(iface) << kb::KC_
                               << "] active: " << num_active << std::endl;
         }
         else
@@ -661,7 +661,7 @@ void OGLShader::introspect()
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_TYPE, 2: GL_LOCATION
                 KLOGI << "[Loc: " << prop_values[2] << "] " << ogl_attribute_type_to_string(GLenum(prop_values[1]))
-                      << " " << kb::WCC('u') << resource_name << kb::WCC(0) << std::endl;
+                      << " " << kb::KS_ATTR_ << resource_name << kb::KC_ << std::endl;
                 // For attribute layout detection
                 if(prop_values[2] != -1)
                 {
@@ -680,14 +680,14 @@ void OGLShader::introspect()
                     if(prop_values[2] == GL_SAMPLER_2D || prop_values[2] == GL_SAMPLER_CUBE)
                         texture_slots_.insert(std::make_pair(hname, current_slot_++));
                     KLOGI << "[Loc: " << prop_values[3] << "] " << ogl_uniform_type_to_string(GLenum(prop_values[2]))
-                          << " " << kb::WCC('u') << resource_name << kb::WCC(0) << std::endl;
+                          << " " << kb::KS_ATTR_ << resource_name << kb::KC_ << std::endl;
                 }
             }
             else if(iface == GL_UNIFORM_BLOCK)
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING, 2: GL_NUM_ACTIVE_VARIABLES
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
-                KLOGI << "[Binding: " << prop_values[1] << "] " << kb::WCC('n') << resource_name << std::endl;
+                KLOGI << "[Binding: " << prop_values[1] << "] " << kb::KS_NAME_ << resource_name << std::endl;
 #ifdef W_DEBUG
                 int num_active_uniforms = prop_values[2];
                 if(num_active_uniforms == 0)
@@ -718,7 +718,7 @@ void OGLShader::introspect()
                 for(auto&& elt : block_elements)
                 {
                     KLOGI << "[Offset: " << elt.offset << "] " << ogl_uniform_type_to_string(GLenum(elt.type)) << " "
-                          << kb::WCC('u') << elt.name << kb::WCC(0) << std::endl;
+                          << kb::KS_ATTR_ << elt.name << kb::KC_ << std::endl;
                 }
 #endif
             }
@@ -726,13 +726,13 @@ void OGLShader::introspect()
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BUFFER_BINDING
                 block_bindings_.insert(std::make_pair(hname, prop_values[1]));
-                KLOGI << "[Binding: " << prop_values[1] << "] " << kb::WCC('u') << resource_name << std::endl;
+                KLOGI << "[Binding: " << prop_values[1] << "] " << kb::KS_ATTR_ << resource_name << std::endl;
             }
             /*else if(iface == GL_BUFFER_VARIABLE)
             {
                 // PROPS = 0: GL_NAME_LENGTH, 1: GL_BLOCK_INDEX, 2: GL_TYPE
                 KLOGI << "[" << prop_values[1] << "] " << ogl_uniform_type_to_string(prop_values[2]) << " "
-                      << kb::WCC('u') << resource_name << kb::WCC(0) << std::endl;
+                      << kb::KS_ATTR_ << resource_name << kb::KC_ << std::endl;
             }*/
         }
     }

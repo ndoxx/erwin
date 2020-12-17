@@ -106,7 +106,7 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
     if(success)
     {
     	KLOG("fudge",1) << "Successfully compiled shaders. Now, linking." << std::endl;
-    	KLOGI << kb::WCC('p') << out_path.filename() << kb::WCC(0) << std::endl;
+    	KLOGI << kb::KS_PATH_ << out_path.filename() << kb::KC_ << std::endl;
 
 		std::stringstream cmd;
 		cmd << "spirv-link " << spvs_str << "-o " << out_path.string();
@@ -138,7 +138,7 @@ void make_shader_spirv(const fs::path& source_path, const fs::path& output_dir)
         for(auto&& stage: stages)
         {
             KLOG("fudge",1) << "Entry point for " << extension_from_type(stage.execution_model)
-                            << ": " << kb::WCC('g') << stage.entry_point << kb::WCC(0) << std::endl;
+                            << ": " << kb::KS_GOOD_ << stage.entry_point << kb::KC_ << std::endl;
         }
     }
 }

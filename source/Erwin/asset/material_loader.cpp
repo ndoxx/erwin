@@ -58,7 +58,7 @@ AssetMetaData MaterialLoader::build_meta_data(const WPath& file_path)
 tom::TOMDescriptor MaterialLoader::load_from_file(const AssetMetaData& meta_data)
 {
     KLOG("asset", 1) << "Loading TOM file:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     tom::TOMDescriptor descriptor;
     descriptor.filepath = meta_data.file_path;
@@ -82,12 +82,12 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     }
 
 #ifdef W_DEBUG
-    KLOGI << "Found " << kb::WCC('v') << tg.texture_count << kb::WCC(0) << " texture maps. TextureHandles: { ";
+    KLOGI << "Found " << kb::KS_VALU_ << tg.texture_count << kb::KC_ << " texture maps. TextureHandles: { ";
     for(size_t ii = 0; ii < tg.texture_count; ++ii)
     {
-        KLOG("texture", 1) << kb::WCC('v') << tg.textures[ii].index() << " ";
+        KLOG("texture", 1) << kb::KS_VALU_ << tg.textures[ii].index() << " ";
     }
-    KLOG("texture", 1) << kb::WCC(0) << "}" << std::endl;
+    KLOG("texture", 1) << kb::KC_ << "}" << std::endl;
 #endif
 
     K_ASSERT(descriptor.material_type == tom::MaterialType::PBR, "Material is not PBR.");

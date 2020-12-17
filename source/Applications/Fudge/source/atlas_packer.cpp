@@ -110,7 +110,7 @@ static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElem
 
         // Export
         fs::path out_atlas = output_dir / (out_name + ".cat");
-        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_atlas << std::endl;
         cat::write_cat(
         {
             out_atlas,
@@ -142,8 +142,8 @@ static void export_atlas(uint8_t* data, const std::vector<cat::CATAtlasRemapElem
         ofs.close();
 
         // Export
-        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
-        KLOGI << "export: " << kb::WCC('p') << out_remap << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_atlas << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_remap << std::endl;
         stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
     }
     
@@ -183,7 +183,7 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const Atl
     auto result_size = fudge::pack(rectangles);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    KLOG("fudge",1) << "Resultant bin size: " << kb::WCC('v') << out_w << "x" << out_h << std::endl;
+    KLOG("fudge",1) << "Resultant bin size: " << kb::KS_VALU_ << out_w << "x" << out_h << std::endl;
 
     // Update image positions
     for(int ii=0; ii<rectangles.size(); ++ii)
@@ -198,12 +198,12 @@ void make_atlas(const fs::path& input_dir, const fs::path& output_dir, const Atl
         if(out_w%4)
         {
             out_w += (4-out_w%4);
-            KLOG("fudge",1) << "Padded width to: "  << kb::WCC('v') << out_w << std::endl;
+            KLOG("fudge",1) << "Padded width to: "  << kb::KS_VALU_ << out_w << std::endl;
         }
         if(out_h%4)
         {
             out_h += (4-out_h%4);
-            KLOG("fudge",1) << "Padded height to: " << kb::WCC('v') << out_h << std::endl;
+            KLOG("fudge",1) << "Padded height to: " << kb::KS_VALU_ << out_h << std::endl;
         }
     }
 
@@ -338,7 +338,7 @@ static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemap
 
         // Export
         fs::path out_atlas = output_dir / (out_name + ".cat");
-        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_atlas << std::endl;
         cat::write_cat(
         {
             out_atlas,
@@ -371,8 +371,8 @@ static void export_font_atlas(uint8_t* data, const std::vector<cat::CATFontRemap
         ofs.close();
 
         // Export
-        KLOGI << "export: " << kb::WCC('p') << out_atlas << std::endl;
-        KLOGI << "export: " << kb::WCC('p') << out_remap << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_atlas << std::endl;
+        KLOGI << "export: " << kb::KS_PATH_ << out_remap << std::endl;
         stbi_write_png(out_atlas.string().c_str(), out_w, out_h, 4, data, out_w * 4);
     }
 
@@ -450,7 +450,7 @@ void make_font_atlas(const fs::path& input_font, const fs::path& output_dir, con
     auto result_size = fudge::pack(rectangles,1000);
     int out_w = result_size.w;
     int out_h = result_size.h;
-    KLOG("fudge",1) << "Resultant bin size: " << kb::WCC('v') << out_w << "x" << out_h << std::endl;
+    KLOG("fudge",1) << "Resultant bin size: " << kb::KS_VALU_ << out_w << "x" << out_h << std::endl;
 
     // Update character positions
     for(int ii=0; ii<rectangles.size(); ++ii)

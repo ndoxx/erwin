@@ -127,7 +127,7 @@ void XMLFile::set_value(xml_node<>* node, const char* value) { node->value(doc.a
 bool XMLFile::read()
 {
     KLOG("core", 0) << "Parsing XML file:" << std::endl;
-    KLOGI << kb::WCC('p') << filepath << std::endl;
+    KLOGI << kb::KS_PATH_ << filepath << std::endl;
 
     if(!filepath.exists())
     {

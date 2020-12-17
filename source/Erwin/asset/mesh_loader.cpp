@@ -15,7 +15,7 @@ AssetMetaData MeshLoader::build_meta_data(const WPath& file_path)
 wesh::WeshDescriptor MeshLoader::load_from_file(const AssetMetaData& meta_data)
 {
     KLOG("asset", 1) << "Loading WESH file:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     return wesh::read(meta_data.file_path);
 }

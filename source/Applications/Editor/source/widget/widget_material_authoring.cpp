@@ -184,7 +184,7 @@ void MaterialAuthoringWidget::pack_textures()
 void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs::path& filepath)
 {
     KLOG("editor", 1) << "Loading texture map: " << s_texture_map_names[size_t(tm_type)] << std::endl;
-    KLOGI << kb::WCC('p') << filepath << std::endl;
+    KLOGI << kb::KS_PATH_ << filepath << std::endl;
 
     // If texture map already assigned, delete it
     if(current_composition_->has_map(tm_type))
@@ -218,7 +218,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
     clear();
 
     KLOG("editor", 1) << "Loading texture directory:" << std::endl;
-    KLOGI << kb::WCC('p') << dirpath << std::endl;
+    KLOGI << kb::KS_PATH_ << dirpath << std::endl;
 
     bool success = false;
     // For each file in directory
@@ -246,7 +246,7 @@ void MaterialAuthoringWidget::load_directory(const fs::path& dirpath)
         auto& scene = SceneManager::get("material_editor_scene"_h);
         auto& current_material = get_current_material(scene);
         current_material.name = dirpath.stem().string();
-        KLOG("editor", 1) << "Selected \"" << kb::WCC('n') << current_material.name << kb::WCC(0)
+        KLOG("editor", 1) << "Selected \"" << kb::KS_NAME_ << current_material.name << kb::KC_
                           << "\" as a material name." << std::endl;
     }
 }
@@ -325,7 +325,7 @@ static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::
     tom_desc.release();
 
     KLOG("editor", 1) << "Exported material to:" << std::endl;
-    KLOGI << kb::WCC('p') << path << std::endl;
+    KLOGI << kb::KS_PATH_ << path << std::endl;
 }
 
 void MaterialAuthoringWidget::on_update(const GameClock&)

@@ -19,7 +19,7 @@ std::shared_ptr<chaiscript::Module> make_logger_bindings()
     module->add(fun([](const std::string& msg) { KLOGN("script") << "chai> " << msg << std::endl; }), "KLOGN");
     module->add(fun([](const std::string& msg) { KLOGW("script") << "chai> " << msg << std::endl; }), "KLOGW");
     module->add(fun([](const std::string& msg) { KLOGE("script") << "chai> " << msg << std::endl; }), "KLOGE");
-    module->add(fun([]() { KLOG("script", 1) << kb::WCC('d') << "chai> ----[BANG]----" << std::endl; }), "BANG");
+    module->add(fun([]() { KLOG("script", 1) << kb::KS_DEFL_ << "chai> ----[BANG]----" << std::endl; }), "BANG");
 
     return module;
 }

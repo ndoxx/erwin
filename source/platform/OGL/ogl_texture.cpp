@@ -239,12 +239,12 @@ void OGLTexture2D::init(const Texture2DDescriptor& descriptor)
         bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
         if(has_mipmap)
         {
-            KLOGI << "mipmap: " << kb::WCC('g') << "true" << std::endl;
+            KLOGI << "mipmap: " << kb::KS_GOOD_ << "true" << std::endl;
             KLOGI << "levels: " << mips_ << std::endl;
         }
         else
         {
-            KLOGI << "mipmap: " << kb::WCC('b') << "false" << std::endl;
+            KLOGI << "mipmap: " << kb::KS_BAD_ << "false" << std::endl;
         }
         handle_address_UV_2D(rd_handle_, descriptor.wrap);
 
@@ -331,12 +331,12 @@ void OGLCubemap::init(const CubemapDescriptor& descriptor)
         bool has_mipmap = handle_filter(rd_handle_, descriptor.filter);
         if(has_mipmap)
         {
-            KLOGI << "mipmap: " << kb::WCC('g') << "true" << std::endl;
+            KLOGI << "mipmap: " << kb::KS_GOOD_ << "true" << std::endl;
             KLOGI << "levels: " << mips_ << std::endl;
         }
         else
         {
-            KLOGI << "mipmap: " << kb::WCC('b') << "false" << std::endl;
+            KLOGI << "mipmap: " << kb::KS_BAD_ << "false" << std::endl;
         }
         handle_address_UV_3D(rd_handle_, descriptor.wrap);
 

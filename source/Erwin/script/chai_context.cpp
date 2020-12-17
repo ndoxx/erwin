@@ -147,7 +147,7 @@ static void try_load(ChaiContext::VM_ptr vm, ChaiContext::Storage& storage, cons
             }
         };
         actor.set_trait(trait);
-        KLOGI << kb::WCC('v') << name << std::endl;
+        KLOGI << kb::KS_VALU_ << name << std::endl;
     }
     catch(const chaiscript::exception::eval_error&)
     {
@@ -165,7 +165,7 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
     // Get type reflection
     const auto& reflection = reflections_.at(actor_type);
 
-    KLOGN("script") << "Instantiating actor class '" << kb::WCC('n') << reflection.name << kb::WCC(0)
+    KLOGN("script") << "Instantiating actor class '" << kb::KS_NAME_ << reflection.name << kb::KC_
                     << "' for entity [" << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
@@ -194,7 +194,7 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
     KLOG("script", 1) << "Parameter set: " << std::endl;
     for(const auto& param : reflection.parameters)
     {
-        KLOGI << istr::resolve(param.type) << ' ' << kb::WCC('n') << param.name << std::endl;
+        KLOGI << istr::resolve(param.type) << ' ' << kb::KS_NAME_ << param.name << std::endl;
         switch(param.type)
         {
         case "float"_h: {

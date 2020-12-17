@@ -19,7 +19,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
                  "Cubemap framebuffer attachment is incompatible with depth and stencil attachments.");
     }
 
-    KLOG("render", 1) << "Creating OpenGL " << kb::WCC('i') << "Framebuffer" << kb::WCC(0) << "." << std::endl;
+    KLOG("render", 1) << "Creating OpenGL " << kb::KS_INST_ << "Framebuffer" << kb::KC_ << "." << std::endl;
 
     glCreateFramebuffers(1, &rd_handle_);
     glBindFramebuffer(GL_FRAMEBUFFER, rd_handle_);
@@ -119,7 +119,7 @@ OGLFramebuffer::OGLFramebuffer(uint32_t width, uint32_t height, uint8_t flags, c
 
 OGLFramebuffer::~OGLFramebuffer()
 {
-    KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Framebuffer" << kb::WCC(0) << " (id=" << rd_handle_ << ") destroyed."
+    KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Framebuffer" << kb::KC_ << " (id=" << rd_handle_ << ") destroyed."
                       << std::endl;
     if(rd_handle_)
         glDeleteFramebuffers(1, &rd_handle_);
@@ -172,7 +172,7 @@ void OGLFramebuffer::screenshot(const std::string& filepath)
     // Cleanup
     delete[] pixels;
 
-    KLOGI << kb::WCC('p') << filepath << std::endl;
+    KLOGI << kb::KS_PATH_ << filepath << std::endl;
 }
 
 void OGLFramebuffer::blit_depth(const OGLFramebuffer& source)
@@ -258,7 +258,7 @@ void OGLFramebuffer::framebuffer_error_report()
         }
     }
     else
-        KLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << kb::WCC('g') << "complete" << kb::WCC(0) << "."
+        KLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << kb::KS_GOOD_ << "complete" << kb::KC_ << "."
                           << std::endl;
 }
 

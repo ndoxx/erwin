@@ -109,7 +109,7 @@ ShaderHandle AssetManager::load_shader(const fs::path& file_path, const std::str
 
     std::string shader_name = name.empty() ? file_path.stem().string() : name;
     ShaderHandle handle = Renderer::create_shader(fullpath, shader_name);
-    KLOG("asset", 1) << "ShaderHandle: " << kb::WCC('v') << handle << std::endl;
+    KLOG("asset", 1) << "ShaderHandle: " << kb::KS_VALU_ << handle << std::endl;
     s_storage.shader_cache.insert({hname, handle});
 
     return handle;
@@ -417,7 +417,7 @@ void AssetManager::release(ShaderHandle handle)
     erase_by_value(s_storage.shader_cache_, handle);
     Renderer::destroy(handle);
 
-    KLOG("asset",1) << "handle: " << kb::WCC('v') << handle.index << std::endl;
+    KLOG("asset",1) << "handle: " << kb::KS_VALU_ << handle.index << std::endl;
 }
 
 */

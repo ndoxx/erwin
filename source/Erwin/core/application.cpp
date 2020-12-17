@@ -58,8 +58,8 @@ void Application::add_configuration(const WPath& filepath)
     else
     {
         KLOGW("application") << "Unable to find configuration file:" << std::endl;
-        KLOGI << "client configuration directory: " << kb::WCC('p') << wfs::get_client_config_dir() << std::endl;
-        KLOGI << "file path: " << kb::WCC('p') << filepath << std::endl;
+        KLOGI << "client configuration directory: " << kb::KS_PATH_ << wfs::get_client_config_dir() << std::endl;
+        KLOGI << "file path: " << kb::KS_PATH_ << filepath << std::endl;
     }
 }
 
@@ -70,7 +70,7 @@ void Application::add_configuration(const WPath& user_path, const WPath& default
     else
     {
         KLOGW("application") << "Unable to find configuration file:" << std::endl;
-        KLOGI << "file path: " << kb::WCC('p') << user_path << std::endl;
+        KLOGI << "file path: " << kb::KS_PATH_ << user_path << std::endl;
     }
 }
 
@@ -101,9 +101,9 @@ bool Application::init()
 
         // Log basic info
         KLOGN("config") << "[Paths]" << std::endl;
-        KLOGI << "Executable path: " << kb::WCC('p') << wfs::get_self_dir() << kb::WCC(0) << std::endl;
-        KLOGI << "Root dir:        " << kb::WCC('p') << wfs::get_root_dir() << kb::WCC(0) << std::endl;
-        KLOGI << "Config dir:      " << kb::WCC('p') << wfs::get_config_dir() << kb::WCC(0) << std::endl;
+        KLOGI << "Executable path: " << kb::KS_PATH_ << wfs::get_self_dir() << kb::KC_ << std::endl;
+        KLOGI << "Root dir:        " << kb::KS_PATH_ << wfs::get_root_dir() << kb::KC_ << std::endl;
+        KLOGI << "Config dir:      " << kb::KS_PATH_ << wfs::get_config_dir() << kb::KC_ << std::endl;
 
         // Parse intern strings
         istr::init();
@@ -210,15 +210,15 @@ bool Application::init()
 
     // Show memory content
 #ifdef W_DEBUG
-    KLOG("memory",1) << kb::WCC(204,153,0) << "--- System memory area ---" << std::endl;
+    KLOG("memory",1) << kb::KF_(204,153,0) << "--- System memory area ---" << std::endl;
     s_storage.system_area.debug_show_content();
-    KLOG("memory",1) << kb::WCC(204,153,0) << "--- Render memory area ---" << std::endl;
+    KLOG("memory",1) << kb::KF_(204,153,0) << "--- Render memory area ---" << std::endl;
     s_storage.render_area.debug_show_content();
-    KLOG("memory",1) << kb::WCC(204,153,0) << "--- Client memory area ---" << std::endl;
+    KLOG("memory",1) << kb::KF_(204,153,0) << "--- Client memory area ---" << std::endl;
     s_storage.client_area.debug_show_content();
 #endif
 
-    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application base initialized ---" << std::endl;
+    KLOG("application",1) << kb::KF_(0,153,153) << "--- Application base initialized ---" << std::endl;
     return true;
 }
 
@@ -278,11 +278,11 @@ void Application::toggle_imgui_layer()
 
 void Application::run()
 {
-    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application started ---" << std::endl;
+    KLOG("application",1) << kb::KF_(0,153,153) << "--- Application started ---" << std::endl;
 
     // Display layer stack composition
-    KLOG("application",1) << kb::WCC(204,0,204) << "Layer stack composition:" << std::endl;
-    KLOG("application",1) << kb::WCC(204,0,204) << layer_stack_ << std::endl;
+    KLOG("application",1) << kb::KF_(204,0,204) << "Layer stack composition:" << std::endl;
+    KLOG("application",1) << kb::KF_(204,0,204) << layer_stack_ << std::endl;
 
     // Profiling options
     W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
@@ -363,11 +363,11 @@ void Application::run()
     for(auto&& cfg_file: s_storage.configuration_files)
     {
         KLOGN("application") << "Saving config file:" << std::endl;
-        KLOGI << kb::WCC('p') << cfg_file << std::endl;
+        KLOGI << kb::KS_PATH_ << cfg_file << std::endl;
         cfg::save(cfg_file);
     }
 
-    KLOG("application",1) << kb::WCC(0,153,153) << "--- Application stopped ---" << std::endl;
+    KLOG("application",1) << kb::KF_(0,153,153) << "--- Application stopped ---" << std::endl;
 }
 
 bool Application::on_window_close_event(const WindowCloseEvent&)

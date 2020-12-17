@@ -95,7 +95,7 @@ bool Input::save_config()
 {
     auto filepath = "usr://config/keybindings.xml"_wp;
     KLOG("config", 1) << "Saving key bindings:" << std::endl;
-    KLOGI << kb::WCC('p') << filepath << std::endl;
+    KLOGI << kb::KS_PATH_ << filepath << std::endl;
     // Direct XML output for now
     auto p_ofs = wfs::get_ostream(filepath, wfs::ascii);
     auto& ofs = *p_ofs;

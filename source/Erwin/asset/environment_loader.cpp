@@ -18,7 +18,7 @@ AssetMetaData EnvironmentLoader::build_meta_data(const WPath& file_path)
 Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_data)
 {
     KLOG("asset", 1) << "Loading environment:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     Texture2DDescriptor descriptor;
 
@@ -26,9 +26,9 @@ Texture2DDescriptor EnvironmentLoader::load_from_file(const AssetMetaData& meta_
     img::HDRDescriptor hdrfile{meta_data.file_path};
     img::read_hdr(hdrfile);
 
-    KLOGI << "Width:    " << kb::WCC('v') << hdrfile.width << std::endl;
-    KLOGI << "Height:   " << kb::WCC('v') << hdrfile.height << std::endl;
-    KLOGI << "Channels: " << kb::WCC('v') << hdrfile.channels << std::endl;
+    KLOGI << "Width:    " << kb::KS_VALU_ << hdrfile.width << std::endl;
+    KLOGI << "Height:   " << kb::KS_VALU_ << hdrfile.height << std::endl;
+    KLOGI << "Channels: " << kb::KS_VALU_ << hdrfile.channels << std::endl;
 
     if(2 * hdrfile.height != hdrfile.width)
     {

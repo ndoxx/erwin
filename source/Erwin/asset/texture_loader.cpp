@@ -19,7 +19,7 @@ Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data
                                                   std::optional<Texture2DDescriptor> options)
 {
     KLOG("asset", 1) << "Loading image file:" << std::endl;
-    KLOGI << kb::WCC('p') << meta_data.file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << meta_data.file_path << std::endl;
 
     Texture2DDescriptor descriptor;
 
@@ -32,9 +32,9 @@ Texture2DDescriptor TextureLoader::load_from_file(const AssetMetaData& meta_data
     pngfile.channels = 4;
     img::read_png(pngfile);
 
-    KLOGI << "Width:    " << kb::WCC('v') << pngfile.width << std::endl;
-    KLOGI << "Height:   " << kb::WCC('v') << pngfile.height << std::endl;
-    KLOGI << "Channels: " << kb::WCC('v') << pngfile.channels << std::endl;
+    KLOGI << "Width:    " << kb::KS_VALU_ << pngfile.width << std::endl;
+    KLOGI << "Height:   " << kb::KS_VALU_ << pngfile.height << std::endl;
+    KLOGI << "Channels: " << kb::KS_VALU_ << pngfile.channels << std::endl;
 
     descriptor.width = pngfile.width;
     descriptor.height = pngfile.height;

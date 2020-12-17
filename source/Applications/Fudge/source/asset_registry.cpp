@@ -51,7 +51,7 @@ void load(const fs::path& registry_file_path)
 	}
 
 	KLOG("fudge",1) << "Loading asset registry:" << std::endl;
-	KLOGI << kb::WCC('p') << registry_file_path << std::endl;
+	KLOGI << kb::KS_PATH_ << registry_file_path << std::endl;
 
     std::ifstream ifs(registry_file_path, std::ios::binary);
 	
@@ -76,7 +76,7 @@ void load(const fs::path& registry_file_path)
 void save(const fs::path& registry_file_path)
 {
 	KLOG("fudge",1) << "Saving asset registry:" << std::endl;
-	KLOGI << kb::WCC('p') << registry_file_path << std::endl;
+	KLOGI << kb::KS_PATH_ << registry_file_path << std::endl;
 
 	FARHeader header;
 	header.magic = FAR_MAGIC;

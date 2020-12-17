@@ -80,7 +80,7 @@ static void build_user_dir()
     }
 
     KLOGN("config") << "User directory created:" << std::endl;
-    KLOGI << kb::WCC('p') << s_user_dir << std::endl;
+    KLOGI << kb::KS_PATH_ << s_user_dir << std::endl;
 }
 
 static void check_user_dir()
@@ -156,8 +156,8 @@ bool ensure_user_config(const WPath& user_path, const WPath& default_path)
     if(!has_default && !has_user)
     {
         KLOGE("config") << "Failed to open user and default files:" << std::endl;
-        KLOGI << "User:    " << kb::WCC('p') << user_path << std::endl;
-        KLOGI << "Default: " << kb::WCC('p') << default_path << std::endl;
+        KLOGI << "User:    " << kb::KS_PATH_ << user_path << std::endl;
+        KLOGI << "Default: " << kb::KS_PATH_ << default_path << std::endl;
         return false;
     }
 
@@ -175,8 +175,8 @@ bool ensure_user_config(const WPath& user_path, const WPath& default_path)
     if(copy_default)
     {
         KLOG("config", 1) << "Copying default config:" << std::endl;
-        KLOGI << "User:    " << kb::WCC('p') << user_path << std::endl;
-        KLOGI << "Default: " << kb::WCC('p') << default_path << std::endl;
+        KLOGI << "User:    " << kb::KS_PATH_ << user_path << std::endl;
+        KLOGI << "Default: " << kb::KS_PATH_ << default_path << std::endl;
         fs::copy_file(default_path.absolute(), user_path.absolute(), fs::copy_options::overwrite_existing);
     }
 
@@ -225,12 +225,12 @@ std::shared_ptr<std::istream> get_istream(const WPath& file_path, uint8_t mode)
     if(!ifs->is_open())
     {
         KLOGE("ios") << "Unable to open input file:" << std::endl;
-        KLOGI << kb::WCC('p') << file_path << std::endl;
+        KLOGI << kb::KS_PATH_ << file_path << std::endl;
         return nullptr;
     }
 
     KLOG("ios", 0) << "Getting input stream from file:" << std::endl;
-    KLOGI << kb::WCC('p') << file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << file_path << std::endl;
 
     return ifs;
 }
@@ -248,12 +248,12 @@ std::shared_ptr<std::ostream> get_ostream(const WPath& file_path, uint8_t mode)
     if(!ofs->is_open())
     {
         KLOGE("ios") << "Unable to open output file:" << std::endl;
-        KLOGI << kb::WCC('p') << file_path << std::endl;
+        KLOGI << kb::KS_PATH_ << file_path << std::endl;
         return nullptr;
     }
 
     KLOG("ios", 0) << "Getting output stream to file:" << std::endl;
-    KLOGI << kb::WCC('p') << file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << file_path << std::endl;
 
     return ofs;
 }

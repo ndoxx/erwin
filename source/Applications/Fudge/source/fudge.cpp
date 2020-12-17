@@ -155,15 +155,15 @@ int main(int argc, char const *argv[])
     s_root_path = s_self_path.parent_path().parent_path();
     s_conf_path = s_root_path / "config";
 
-    KLOGI << "Self path: " << kb::WCC('p') << s_self_path << std::endl;
-    KLOGI << "Root path: " << kb::WCC('p') << s_root_path << std::endl;
-    KLOGI << "Conf path: " << kb::WCC('p') << s_conf_path << std::endl;
+    KLOGI << "Self path: " << kb::KS_PATH_ << s_self_path << std::endl;
+    KLOGI << "Root path: " << kb::KS_PATH_ << s_root_path << std::endl;
+    KLOGI << "Conf path: " << kb::KS_PATH_ << s_conf_path << std::endl;
 
     xml::XMLFile cfg(s_conf_path / "fudge.xml");
     if(!cfg.read())
     {
         KLOGE("fudge") << "Could not complete configuration step." << std::endl;
-        KLOGI << "Missing file: " << kb::WCC('p') << (s_conf_path / "fudge.xml") << std::endl;
+        KLOGI << "Missing file: " << kb::KS_PATH_ << (s_conf_path / "fudge.xml") << std::endl;
         KLOGI << "Exiting." << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -194,12 +194,12 @@ int main(int argc, char const *argv[])
 
                 // Iterate directory
                 KLOGN("fudge") << "Iterating unpacked atlases directory:" << std::endl;
-                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
+                KLOGI << kb::KS_PATH_ << input_path << kb::KC_ << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_cat_rebuild))
                     {
-                        KLOG("fudge",1) << "Processing directory: " << kb::WCC('p') << entry.path().stem() << std::endl;
+                        KLOG("fudge",1) << "Processing directory: " << kb::KS_PATH_ << entry.path().stem() << std::endl;
 
                         fudge::atlas::make_atlas(entry.path(), s_root_path / output_path, options);
                         KLOGR("fudge") << std::endl;
@@ -233,14 +233,14 @@ int main(int argc, char const *argv[])
                 parse_atlas_export_options(batch->first_node("export"), options);
 
                 KLOGN("fudge") << "Iterating fonts directory:" << std::endl;
-                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
+                KLOGI << kb::KS_PATH_ << input_path << kb::KC_ << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_regular_file() && 
                        !entry.path().extension().string().compare(".ttf") &&
                        (fudge::far::need_create(entry) || s_force_font_rebuild))
                     {
-                        KLOG("fudge",1) << "Processing font: " << kb::WCC('n') << entry.path().filename() << std::endl;
+                        KLOG("fudge",1) << "Processing font: " << kb::KS_NAME_ << entry.path().filename() << std::endl;
                         fudge::atlas::make_font_atlas(entry.path(), s_root_path / output_path, options, 32);
                         KLOGR("fudge") << std::endl;
                     }
@@ -281,7 +281,7 @@ int main(int argc, char const *argv[])
             }
 
             KLOGN("fudge") << "Iterating unpacked texture maps directory:" << std::endl;
-            KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
+            KLOGI << kb::KS_PATH_ << input_path << kb::KC_ << std::endl;
             for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 if(entry.is_directory() && (fudge::far::need_create(entry) || s_force_tom_rebuild))
                     fudge::texmap::make_tom(entry.path(), s_root_path / output_path);
@@ -310,7 +310,7 @@ int main(int argc, char const *argv[])
                 {
                     erwin::slang::register_include_directory(s_root_path / include_dir);
                     KLOG("fudge",1) << "Detected shader include directory:" << std::endl;
-                    KLOGI << kb::WCC('p') << include_dir << std::endl;
+                    KLOGI << kb::KS_PATH_ << include_dir << std::endl;
                 }
             }
 
@@ -325,14 +325,14 @@ int main(int argc, char const *argv[])
                 // Create temporary folder
                 fs::create_directory(s_root_path / output_path / "tmp");
                 KLOGN("fudge") << "Iterating shaders directory:" << std::endl;
-                KLOGI << kb::WCC('p') << input_path << kb::WCC(0) << std::endl;
+                KLOGI << kb::KS_PATH_ << input_path << kb::KC_ << std::endl;
                 for(auto& entry: fs::directory_iterator(s_root_path / input_path))
                 {
                     if(entry.is_regular_file() && 
                        !entry.path().extension().string().compare(".glsl") &&
                        (fudge::far::need_create(entry) || s_force_shader_rebuild))
                     {
-                        KLOG("fudge",1) << "Processing: " << kb::WCC('n') << entry.path().filename() << kb::WCC(0) << std::endl;
+                        KLOG("fudge",1) << "Processing: " << kb::KS_NAME_ << entry.path().filename() << kb::KC_ << std::endl;
                         fudge::spv::make_shader_spirv(entry.path(), s_root_path / output_path);
                         KLOGR("fudge") << std::endl;
                     }

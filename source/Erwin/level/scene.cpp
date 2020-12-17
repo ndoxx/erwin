@@ -126,7 +126,7 @@ void Scene::save()
 void Scene::save_xml(const WPath& file_path)
 {
     KLOGN("scene") << "Serializing scene: " << std::endl;
-    KLOGI << kb::WCC('p') << file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << file_path << std::endl;
 
     // * Open XML file
     xml::XMLFile scene_f(file_path);
@@ -196,7 +196,7 @@ void Scene::save_xml(const WPath& file_path)
 void Scene::load_xml(const WPath& file_path)
 {
     KLOGN("scene") << "Loading scene: " << std::endl;
-    KLOGI << kb::WCC('p') << file_path << std::endl;
+    KLOGI << kb::KS_PATH_ << file_path << std::endl;
 
     scene_file_path_ = file_path;
     
@@ -289,7 +289,7 @@ void Scene::load_xml(const WPath& file_path)
     // Register all named entities
     registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc) {
         set_named(e, H_(desc.name.c_str()));
-        KLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << kb::WCC('n') << desc.name << std::endl;
+        KLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << kb::KS_NAME_ << desc.name << std::endl;
     });
 
     // Setup hierarchy

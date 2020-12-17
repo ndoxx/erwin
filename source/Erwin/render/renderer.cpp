@@ -167,7 +167,7 @@ struct FrameDrawCallData
 void FrameDrawCallData::export_json()
 {
     KLOGN("render") << "Exporting frame draw call profile:" << std::endl;
-    KLOGI << kb::WCC('p') << json_path << std::endl;
+    KLOGI << kb::KS_PATH_ << json_path << std::endl;
 
     auto p_ofs = wfs::get_ostream(WPath(json_path), wfs::ascii);
     auto& ofs = *p_ofs;

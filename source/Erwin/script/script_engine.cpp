@@ -34,7 +34,7 @@ VMHandle ScriptEngine::create_context(Scene& scene)
     // Redirect the print function
     s_storage.vms_[handle].eval("global print = KLOG;");
 
-    KLOG("script", 1) << "Created new script context [" << kb::WCC('n') << handle << kb::WCC(0) << "]" << std::endl;
+    KLOG("script", 1) << "Created new script context [" << kb::KS_NAME_ << handle << kb::KC_ << "]" << std::endl;
     return handle;
 }
 
@@ -42,7 +42,7 @@ void ScriptEngine::destroy_context(VMHandle handle)
 {
     s_storage.vms_[handle] = {};
     s_storage.vm_handle_pool_.release(handle);
-    KLOG("script", 1) << "Destroyed script context [" << kb::WCC('n') << handle << kb::WCC(0) << "]" << std::endl;
+    KLOG("script", 1) << "Destroyed script context [" << kb::KS_NAME_ << handle << kb::KC_ << "]" << std::endl;
 }
 
 ChaiContext& ScriptEngine::get_context(VMHandle handle) { return s_storage.vms_.at(handle); }

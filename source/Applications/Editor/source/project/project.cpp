@@ -32,24 +32,24 @@ bool load_project(const WPath& filepath)
     s_current_project.project_file = filepath;
     s_current_project.root_folder = WPath(filepath.absolute().parent_path());
 
-    KLOG("editor", 0) << "Name: " << kb::WCC('n') << s_current_project.registry.get("project.project_name"_h, std::string())
+    KLOG("editor", 0) << "Name: " << kb::KS_NAME_ << s_current_project.registry.get("project.project_name"_h, std::string())
                       << std::endl;
     KLOG("editor", 0) << "Import paths:" << std::endl;
-    KLOGI << "Atlas:    " << kb::WCC('p') << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
-    KLOGI << "HDR:      " << kb::WCC('p') << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
-    KLOGI << "Material: " << kb::WCC('p') << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
-    KLOGI << "Font:     " << kb::WCC('p') << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
-    KLOGI << "Mesh:     " << kb::WCC('p') << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
-    KLOGI << "Script:   " << kb::WCC('p') << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
-    KLOGI << "Scene:    " << kb::WCC('p') << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
+    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
+    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
+    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
+    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
+    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
+    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
+    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
     KLOG("editor", 0) << "Export paths:" << std::endl;
-    KLOGI << "Atlas:    " << kb::WCC('p') << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
-    KLOGI << "HDR:      " << kb::WCC('p') << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
-    KLOGI << "Material: " << kb::WCC('p') << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
-    KLOGI << "Font:     " << kb::WCC('p') << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
-    KLOGI << "Mesh:     " << kb::WCC('p') << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
-    KLOGI << "Script:   " << kb::WCC('p') << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
-    KLOGI << "Scene:    " << kb::WCC('p') << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
+    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
+    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
+    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
+    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
+    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
+    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
+    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
 
     // Save as last project for future auto load
     cfg::set("settings.project.last_project"_h, filepath);

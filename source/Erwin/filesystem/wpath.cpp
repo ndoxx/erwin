@@ -124,7 +124,7 @@ fs::path WPath::operator/(const std::string& rhs)
 
 std::ostream& operator<<(std::ostream& stream, const WPath& rhs)
 {
-    stream << kb::WCC('p') << "\"" << rhs.universal_ << "\"" << kb::WCC(0);
+    stream << kb::KS_PATH_ << "\"" << rhs.universal_ << "\"" << kb::KC_;
     return stream;
 }
 

@@ -271,7 +271,7 @@ void RTPeekWidget::on_imgui_render()
     {
         std::string filename = props.name + ".png";
         KLOG("editor", 1) << "Saving framebuffer texture as image: " << std::endl;
-        KLOGI << kb::WCC('p') << filename << std::endl;
+        KLOGI << kb::KS_PATH_ << filename << std::endl;
         Renderer::framebuffer_screenshot(fb, filename);
         s_storage.save_image_ = false;
     }

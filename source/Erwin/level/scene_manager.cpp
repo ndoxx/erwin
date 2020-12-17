@@ -20,7 +20,7 @@ void SceneManager::add_scene(hash_t name, std::unique_ptr<Scene> scene)
 {
 	K_ASSERT_FMT(s_storage.scenes.find(name) == s_storage.scenes.end(), "Cannot add a new scene at this name, name \"%s\" is already in use.", istr::resolve(name).c_str());
 
-	KLOGN("application") << "Adding new scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Adding new scene: " << kb::KS_NAME_ << istr::resolve(name) << std::endl;
 	s_storage.scenes[name] = std::move(scene);
 }
 
@@ -29,7 +29,7 @@ void SceneManager::unload_scene(hash_t name)
 	auto it = s_storage.scenes.find(name);
 	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 	
-	KLOGN("application") << "Unloading scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Unloading scene: " << kb::KS_NAME_ << istr::resolve(name) << std::endl;
 	it->second->unload();
 }
 
@@ -62,7 +62,7 @@ void SceneManager::remove_scene(hash_t name)
 	auto it = s_storage.scenes.find(name);
 	K_ASSERT_FMT(it != s_storage.scenes.end(), "Cannot find scene at this name: \"%s\".", istr::resolve(name).c_str());
 	
-	KLOGN("application") << "Removing scene: " << kb::WCC('n') << istr::resolve(name) << std::endl;
+	KLOGN("application") << "Removing scene: " << kb::KS_NAME_ << istr::resolve(name) << std::endl;
 	it->second->unload();
 	s_storage.scenes.erase(it);
 }

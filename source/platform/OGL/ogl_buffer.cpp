@@ -163,7 +163,7 @@ void OGLBuffer::release_base()
 {
     if(initialized_)
     {
-        KLOG("render", 1) << "Destroying OpenGL " << kb::WCC('i') << "Buffer " << kb::WCC(0) << " id=" << rd_handle_
+        KLOG("render", 1) << "Destroying OpenGL " << kb::KS_INST_ << "Buffer " << kb::KC_ << " id=" << rd_handle_
                           << std::endl;
         // Unbind and delete
         glBindBuffer(target_, 0);
@@ -187,7 +187,7 @@ void OGLVertexBuffer::init(float* vertex_data, uint32_t count, const BufferLayou
         uint32_t size = uint32_t(count_) * layout_.get_stride();
         init_base(GL_ARRAY_BUFFER, vertex_data, size, mode);
 
-        KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Vertex Buffer" << kb::WCC(0) << " created. id=" << rd_handle_
+        KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Vertex Buffer" << kb::KC_ << " created. id=" << rd_handle_
                           << std::endl;
         KLOGI << "Vertex count:  " << count_ << std::endl;
         KLOGI << "Size:          " << size << "B" << std::endl;
@@ -215,7 +215,7 @@ void OGLIndexBuffer::init(uint32_t* index_data, uint32_t count, DrawPrimitive pr
         uint32_t size = uint32_t(count_) * sizeof(uint32_t);
         init_base(GL_ELEMENT_ARRAY_BUFFER, index_data, size, mode);
 
-        KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Index Buffer" << kb::WCC(0) << " created. id=" << rd_handle_
+        KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Index Buffer" << kb::KC_ << " created. id=" << rd_handle_
                           << std::endl;
         KLOGI << "Index count:   " << count_ << std::endl;
         KLOGI << "Size:          " << count_ * sizeof(float) << "B" << std::endl;
@@ -237,7 +237,7 @@ void OGLUniformBuffer::init(const std::string& name, void* data, uint32_t struct
         name_ = name;
         struct_size_ = struct_size;
         init_base(GL_UNIFORM_BUFFER, data, struct_size_, mode);
-        KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Uniform Buffer" << kb::WCC(0) << " created. id=" << rd_handle_
+        KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Uniform Buffer" << kb::KC_ << " created. id=" << rd_handle_
                           << std::endl;
         KLOGI << "Total size:    " << struct_size_ << "B" << std::endl;
         KLOGI << "Name:          " << name << std::endl;
@@ -259,7 +259,7 @@ void OGLShaderStorageBuffer::init(const std::string& name, void* data, uint32_t 
         size_ = size;
         init_base(GL_SHADER_STORAGE_BUFFER, data, size_, mode);
 
-        KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Shader Storage Buffer" << kb::WCC(0) << " created. id=" << rd_handle_
+        KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Shader Storage Buffer" << kb::KC_ << " created. id=" << rd_handle_
                           << std::endl;
         KLOGI << "Size: " << size_ << "B" << std::endl;
     }
@@ -275,7 +275,7 @@ void OGLVertexArray::init()
     {
         unique_id_ = id::unique_id();
         glCreateVertexArrays(1, &rd_handle_);
-        KLOG("render", 1) << "OpenGL " << kb::WCC('i') << "Vertex Array" << kb::WCC(0) << " created. id=" << rd_handle_
+        KLOG("render", 1) << "OpenGL " << kb::KS_INST_ << "Vertex Array" << kb::KC_ << " created. id=" << rd_handle_
                           << std::endl;
         initialized_ = true;
     }
@@ -285,7 +285,7 @@ void OGLVertexArray::release()
 {
     if(initialized_)
     {
-        KLOG("render", 1) << "Destroying OpenGL " << kb::WCC('i') << "Vertex Array" << kb::WCC(0) << " id=" << rd_handle_
+        KLOG("render", 1) << "Destroying OpenGL " << kb::KS_INST_ << "Vertex Array" << kb::KC_ << " id=" << rd_handle_
                           << std::endl;
         glDeleteVertexArrays(1, &rd_handle_);
         // release VBO/IBO

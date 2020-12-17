@@ -79,7 +79,7 @@ static TextureFilter parse_filter(const std::string& min_filter_str, const std::
     	default:
     	{
     		KLOGW("fudge") << "Unrecognized magnification filter: " << mag_filter_str << std::endl;
-    		KLOGI << "Defaulting to: " << kb::WCC('d') << "NEAREST" << std::endl;
+    		KLOGI << "Defaulting to: " << kb::KS_DEFL_ << "NEAREST" << std::endl;
     		mag_filter = TextureFilter::MAG_NEAREST;
     	}
     }
@@ -95,7 +95,7 @@ static TextureFilter parse_filter(const std::string& min_filter_str, const std::
     	default:
     	{
     		KLOGW("fudge") << "Unrecognized minification filter: " << min_filter_str << std::endl;
-    		KLOGI << "Defaulting to: " << kb::WCC('d') << "NEAREST" << std::endl;
+    		KLOGI << "Defaulting to: " << kb::KS_DEFL_ << "NEAREST" << std::endl;
     		min_filter = TextureFilter::MIN_NEAREST;
     	}
 	}
@@ -137,7 +137,7 @@ static bool handle_groups(std::map<hash_t, TexmapData>& in_tex_maps, uint32_t wi
 	{
 		if(spec.qualify(in_tex_maps))
 		{
-        	KLOG("fudge",1) << "Qualifies for grouping under layout: " << kb::WCC('n') << spec.texmap_spec.name << std::endl;
+        	KLOG("fudge",1) << "Qualifies for grouping under layout: " << kb::KS_NAME_ << spec.texmap_spec.name << std::endl;
             TexmapData tmap
             {
             	spec.texmap_spec.name,
@@ -247,7 +247,7 @@ bool configure(const fs::path& filepath)
 
         xml::parse_attribute(tmap_node, "srgb", spec.srgb);
 
-        KLOG("fudge",1) << "Texture map: " << kb::WCC('n') << spec.name << std::endl;
+        KLOG("fudge",1) << "Texture map: " << kb::KS_NAME_ << spec.name << std::endl;
         KLOGI << "channels:    " << spec.channels << std::endl;
         KLOGI << "compression: " << compression_str << std::endl;
 
@@ -300,7 +300,7 @@ bool configure(const fs::path& filepath)
 	    	continue;
 	    }
 
-        KLOG("fudge",1) << "Group: " << kb::WCC('n') << spec.texmap_spec.name << std::endl;
+        KLOG("fudge",1) << "Group: " << kb::KS_NAME_ << spec.texmap_spec.name << std::endl;
         KLOGI << "channels:    " << spec.texmap_spec.channels << std::endl;
         KLOGI << "compression: " << compression_str << std::endl;
 
@@ -337,7 +337,7 @@ bool configure(const fs::path& filepath)
 
 void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 {
-    KLOGN("fudge") << "Processing directory: " << kb::WCC('p') << input_dir.stem() << std::endl;
+    KLOGN("fudge") << "Processing directory: " << kb::KS_PATH_ << input_dir.stem() << std::endl;
 
     std::map<hash_t, TexmapData> texture_maps;
 
@@ -349,7 +349,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     {
         if(entry.is_regular_file())
         {
-            KLOG("fudge",1) << "Reading: " << kb::WCC('p') << entry.path().filename() << std::endl;
+            KLOG("fudge",1) << "Reading: " << kb::KS_PATH_ << entry.path().filename() << std::endl;
 
             TexmapData tmap;
             tmap.name = entry.path().stem().string();
@@ -460,7 +460,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
     }
     else
     {
-    	KLOG("fudge",1) << "Detected material layout: " << kb::WCC('n') << layout->name << std::endl;
+    	KLOG("fudge",1) << "Detected material layout: " << kb::KS_NAME_ << layout->name << std::endl;
     	for(auto&& hslot: layout->slots)
     		ordered_tmap.push_back(std::make_pair(hslot, &texture_maps[hslot]));
 
@@ -492,7 +492,7 @@ void make_tom(const fs::path& input_dir, const fs::path& output_dir)
 		tom_desc.texture_maps.push_back(tm_desc);
 	}
 
-	KLOG("fudge",1) << "Exporting: " << kb::WCC('p') << out_file_name << std::endl;
+	KLOG("fudge",1) << "Exporting: " << kb::KS_PATH_ << out_file_name << std::endl;
 	tom::write_tom(tom_desc);
 
     // Cleanup

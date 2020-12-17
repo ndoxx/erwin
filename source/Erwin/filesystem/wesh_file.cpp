@@ -40,10 +40,10 @@ WeshDescriptor read(const WPath& path)
     K_ASSERT(header.version_minor == WESH_VERSION_MINOR, "Invalid WESH file: version (minor) mismatch.");
 
     KLOG("asset", 0) << "WESH Header:" << std::endl;
-    KLOGI << "Version:   " << kb::WCC('v') << int(header.version_major) << "." << int(header.version_minor) << std::endl;
-    KLOGI << "Vtx size:  " << kb::WCC('v') << header.vertex_size << std::endl;
-    KLOGI << "Vtx count: " << kb::WCC('v') << header.vertex_count << std::endl;
-    KLOGI << "Idx count: " << kb::WCC('v') << header.index_count << std::endl;
+    KLOGI << "Version:   " << kb::KS_VALU_ << int(header.version_major) << "." << int(header.version_minor) << std::endl;
+    KLOGI << "Vtx size:  " << kb::KS_VALU_ << header.vertex_size << std::endl;
+    KLOGI << "Vtx count: " << kb::KS_VALU_ << header.vertex_count << std::endl;
+    KLOGI << "Idx count: " << kb::KS_VALU_ << header.index_count << std::endl;
 
     WeshDescriptor descriptor;
     // Read mesh extent

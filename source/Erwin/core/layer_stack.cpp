@@ -27,7 +27,7 @@ size_t LayerStack::push_layer(Layer* layer)
     size_t index = overlay_pos_ - 1;
     update_layer_ids();
 
-    KLOG("application", 1) << "Pushed layer \"" << kb::WCC('n') << layer->get_name() << kb::WCC(0) << "\" at index " << index
+    KLOG("application", 1) << "Pushed layer \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index " << index
                            << std::endl;
     KLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
 
@@ -42,7 +42,7 @@ size_t LayerStack::push_overlay(Layer* layer)
     size_t index = layers_.size() - 1;
     update_layer_ids();
 
-    KLOG("application", 1) << "Pushed overlay \"" << kb::WCC('n') << layer->get_name() << kb::WCC(0) << "\" at index " << index
+    KLOG("application", 1) << "Pushed overlay \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index " << index
                            << std::endl;
 
     return index;
@@ -54,7 +54,7 @@ void LayerStack::pop_layer(size_t index)
     {
         Layer* layer = layers_.at(index);
         layer->on_detach();
-        KLOG("application", 1) << "Popped layer \"" << kb::WCC('n') << layer->get_name() << kb::WCC(0) << "\" at index "
+        KLOG("application", 1) << "Popped layer \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index "
                                << index << std::endl;
 
         delete layer;
@@ -73,7 +73,7 @@ void LayerStack::pop_overlay(size_t index)
     {
         Layer* layer = layers_.at(index);
         layer->on_detach();
-        KLOG("application", 1) << "Popped overlay \"" << kb::WCC('n') << layer->get_name() << kb::WCC(0) << "\" at index "
+        KLOG("application", 1) << "Popped overlay \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index "
                                << index << std::endl;
 
         delete layer;
