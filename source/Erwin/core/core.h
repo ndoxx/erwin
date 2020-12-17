@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include <kibble/hash/hashstr.h>
+#include <kibble/hash/hash.h>
 #include <kibble/assert/assert.h>
 
 // Export JSON instrumentation profiles compatible with chrome://tracing

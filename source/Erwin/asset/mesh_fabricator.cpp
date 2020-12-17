@@ -363,7 +363,7 @@ void TriangleMeshFabricator::smooth_normals(SmoothFuncType func)
     for(size_t ii=0; ii<vertex_count; ++ii)
     {
         // Compute position hash
-        size_t pos_hash = wh::vec3_hash()(positions[ii]);
+        size_t pos_hash = kb::kh::vec3_hash<glm::vec3>()(positions[ii]);
 
         // Check that we haven't already traversed the corresponding position class,
         // and if so, continue
@@ -401,7 +401,7 @@ void TriangleMeshFabricator::smooth_tangents(SmoothFuncType func)
     for(size_t ii=0; ii<vertex_count; ++ii)
     {
         // Compute position hash
-        size_t pos_hash = wh::vec3_hash()(positions[ii]);
+        size_t pos_hash = kb::kh::vec3_hash<glm::vec3>()(positions[ii]);
 
         // Check that we haven't already traversed the corresponding position class,
         // and if so, continue

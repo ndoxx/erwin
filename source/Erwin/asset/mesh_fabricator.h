@@ -6,8 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <kibble/hash/hash.h>
 #include "asset/bounding.h"
-#include "utils/hash.h"
 #include "glm/glm.hpp"
 
 namespace erwin
@@ -92,7 +92,7 @@ public:
 class TriangleMeshFabricator
 {
 public:
-    using VertexHashMap = std::unordered_multimap<glm::vec3, size_t, wh::vec3_hash>;
+    using VertexHashMap = std::unordered_multimap<glm::vec3, size_t, kb::kh::vec3_hash<glm::vec3>>;
     using TriangleMap = std::multimap<size_t, size_t>;
     using TriangleRange = std::pair<TriangleMap::iterator, TriangleMap::iterator>;
     using Edge = std::pair<size_t, size_t>;
@@ -100,7 +100,7 @@ public:
 
     VertexHashMap vertex_hash_map; // For seams detection and fixing
     TriangleMap triangle_classes;
-    std::unordered_map<Edge, size_t, wh::pair_hash> lookup;
+    std::unordered_map<Edge, size_t, kb::kh::pair_hash> lookup;
     glm::vec3 positions[k_max_vertices];
     glm::vec3 normals[k_max_vertices];
     glm::vec3 tangents[k_max_vertices];
