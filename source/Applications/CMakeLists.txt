@@ -1,4 +1,3 @@
-subdirs(InternString)
 subdirs(Fudge)
 subdirs(Editor)
 subdirs(RTest)
