@@ -5,8 +5,8 @@
 #include "core/clock.hpp"
 #include "core/config.h"
 #include <kibble/logger/logger.h>
+#include <kibble/math/color.h>
 #include "filesystem/filesystem.h"
-#include "math/color.h"
 #include "memory/arena.h"
 #include "memory/handle_pool.h"
 #include "render/backend.h"
@@ -1135,7 +1135,7 @@ void Renderer::clear(uint64_t key, FramebufferHandle target, uint32_t flags, con
 {
     K_ASSERT_FMT(target.is_valid(), "Invalid FramebufferHandle: %hu", target.index());
 
-    uint32_t color = color::pack(clear_color);
+    kb::math::argb32_t color = kb::math::pack_ARGB(clear_color);
 
     DrawCommandWriter cw(DrawCommand::Clear);
     cw.write(&target);

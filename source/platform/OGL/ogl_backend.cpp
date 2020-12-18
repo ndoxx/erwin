@@ -3,7 +3,6 @@
 
 #include "core/core.h"
 #include "glad/glad.h"
-#include "math/color.h"
 #include "platform/OGL/ogl_backend.h"
 #include "platform/OGL/ogl_buffer.h"
 #include "platform/OGL/ogl_framebuffer.h"
@@ -13,6 +12,7 @@
 #include "render/commands.h"
 #include "render/renderer_config.h"
 #include "utils/promise_storage.hpp"
+#include <kibble/math/color.h>
 
 namespace erwin
 {
@@ -1209,12 +1209,12 @@ void clear(memory::LinearBuffer<>& buf)
 
     FramebufferHandle target;
     uint32_t flags;
-    uint32_t clear_color;
+    kb::math::argb32_t clear_color;
     buf.read(&target);
     buf.read(&flags);
     buf.read(&clear_color);
 
-    glm::vec4 color = color::unpack(clear_color);
+    auto color = kb::math::ColorRGBA(clear_color);
 
     gfx::backend->set_clear_color(color.r, color.g, color.b, color.a);
     if(target == s_storage.default_framebuffer_ && flags != ClearFlags::CLEAR_NONE)
