@@ -31,7 +31,7 @@ void ErwinEditor::on_client_init()
     WFS().alias_directory(root / "source/Applications/Editor/assets", "res");
     WFS().alias_directory(root / "source/Applications/Editor/config", "cfg");
     add_configuration("cfg://client.xml");
-    add_configuration("usr://config/settings.xml", "cfg://default_settings.xml");
+    add_configuration("usr://settings.xml", "cfg://default_settings.xml");
 }
 
 void ErwinEditor::on_load()
@@ -108,6 +108,8 @@ void ErwinEditor::on_load()
     const auto& last_project_file = cfg::get("settings.project.last_project"_h);
     if(auto_load && !last_project_file.empty() && WFS().exists(last_project_file))
     {
+        KLOGN("editor") << "Opening last project:" << std::endl;
+        KLOGI << KS_PATH_ << last_project_file << std::endl;
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));

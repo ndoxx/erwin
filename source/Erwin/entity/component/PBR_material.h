@@ -31,7 +31,7 @@ struct ComponentPBRMaterial
 
 	ComponentPBRMaterial()
 	{
-		material.shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");
+		material.shader = AssetManager::load_shader("sysres://shaders/deferred_PBR.glsl");
 		material.ubo    = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
 		material.data_size = sizeof(MaterialData);
 	}

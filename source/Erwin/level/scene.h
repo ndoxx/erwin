@@ -3,6 +3,7 @@
 #include <map>
 #include <queue>
 
+#include "core/intern_string.h"
 #include "asset/environment.h"
 #include "entity/reflection.h"
 
@@ -388,7 +389,12 @@ public:
      *
      * @return     Handle to the named entity.
      */
-    inline EntityID get_named(hash_t hname) const { return named_entities_.at(hname); }
+    inline EntityID get_named(hash_t hname) const
+    {
+        auto findit = named_entities_.find(hname);
+        K_ASSERT_FMT(findit != named_entities_.end(), "Unknown named entity: %s", istr::resolve(hname).c_str());
+        return findit->second;
+    }
     
     /**
      * @brief      Check if a named entity is registered to this name.

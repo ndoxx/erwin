@@ -43,35 +43,42 @@ Application::Application(const ApplicationParameters& params)
     K_ASSERT(!Application::pinstance_, "Application already exists!");
     Application::pinstance_ = this;
     KLOGGER_START();
+    KLOGGER(create_channel("ios", 1));
     // Initialize file system
-    auto root_dir = filesystem_.get_self_directory().parent_path().parent_path();
-    if(!filesystem_.setup_settings_directory(params.vendor, params.name, "usr"))
+    filesystem_ = new kb::kfs::FileSystem();
+    auto root_dir = filesystem_->get_self_directory().parent_path();
+    if(!filesystem_->setup_settings_directory(params.vendor, params.name, "usr"))
     {
         KLOGE("application") << "Cannot setup application settings directory." << std::endl;
     }
-    if(!filesystem_.alias_directory(root_dir, "root"))
+    if(!filesystem_->alias_directory(root_dir, "root"))
     {
         KLOGE("application") << "Cannot alias root directory." << std::endl;
     }
-    if(!filesystem_.alias_directory(root_dir / "config", "syscfg"))
+    if(!filesystem_->alias_directory(root_dir / "config", "syscfg"))
     {
         KLOGE("application") << "Cannot alias config directory." << std::endl;
     }
-    if(!filesystem_.alias_directory(root_dir / "source/Erwin/assets", "sysres"))
+    if(!filesystem_->alias_directory(root_dir / "source/Erwin/assets", "sysres"))
     {
         KLOGE("application") << "Cannot alias system resources directory." << std::endl;
     }
     slang::register_include_directory("sysres://shaders");
 }
 
+Application::~Application()
+{
+    delete filesystem_;
+}
+
 void Application::add_configuration(const std::string& filepath)
 {
-    if(filesystem_.exists(filepath))
+    if(filesystem_->exists(filepath))
         s_storage.configuration_files.push_back(filepath);
     else
     {
         KLOGW("application") << "Unable to find configuration file:" << std::endl;
-        KLOGI << "client configuration directory: " << kb::KS_PATH_ << filesystem_.get_settings_directory()
+        KLOGI << "client configuration directory: " << kb::KS_PATH_ << filesystem_->get_settings_directory()
               << std::endl;
         KLOGI << "file path: " << kb::KS_PATH_ << filepath << std::endl;
     }
@@ -90,8 +97,8 @@ void Application::add_configuration(const std::string& user_path, const std::str
 
 bool Application::mirror_settings(const std::string& user_path, const std::string& default_path)
 {
-    bool has_user = filesystem_.exists(user_path);
-    bool has_default = filesystem_.exists(default_path);
+    bool has_user = filesystem_->exists(user_path);
+    bool has_default = filesystem_->exists(default_path);
 
     if(!has_default && !has_user)
     {
@@ -104,14 +111,14 @@ bool Application::mirror_settings(const std::string& user_path, const std::strin
     bool copy_default = (has_default && !has_user);
     // Copy default if more recent
     if(has_default && has_user)
-        copy_default = filesystem_.is_older(user_path, default_path);
+        copy_default = filesystem_->is_older(user_path, default_path);
 
     if(copy_default)
     {
         KLOG("config", 1) << "Copying default config:" << std::endl;
         KLOGI << "User:    " << kb::KS_PATH_ << user_path << std::endl;
         KLOGI << "Default: " << kb::KS_PATH_ << default_path << std::endl;
-        fs::copy_file(filesystem_.regular_path(default_path), filesystem_.regular_path(user_path),
+        fs::copy_file(filesystem_->regular_path(default_path), filesystem_->regular_path(user_path),
                       fs::copy_options::overwrite_existing);
     }
 
@@ -136,10 +143,10 @@ bool Application::init()
 
         // Log basic info
         KLOGN("config") << "[Paths]" << std::endl;
-        KLOGI << "Executable path:   " << kb::KS_PATH_ << filesystem_.get_self_directory() << kb::KC_ << std::endl;
-        KLOGI << "System config dir: " << kb::KS_PATH_ << filesystem_.get_aliased_directory("syscfg"_h) << kb::KC_
+        KLOGI << "Executable path:   " << kb::KS_PATH_ << filesystem_->get_self_directory() << kb::KC_ << std::endl;
+        KLOGI << "System config dir: " << kb::KS_PATH_ << filesystem_->get_aliased_directory("syscfg"_h) << kb::KC_
               << std::endl;
-        KLOGI << "User settings dir: " << kb::KS_PATH_ << filesystem_.get_aliased_directory("settings"_h) << kb::KC_
+        KLOGI << "User settings dir: " << kb::KS_PATH_ << filesystem_->get_aliased_directory("usr"_h) << kb::KC_
               << std::endl;
 
         // Parse intern strings

@@ -27,7 +27,7 @@ class W_API Application
 {
 public:
     Application(const ApplicationParameters& params);
-    virtual ~Application() = default;
+    virtual ~Application();
 
     virtual void on_client_init() {}
     virtual void on_load() {}
@@ -57,7 +57,7 @@ public:
     static inline Application& get_instance() { return *pinstance_; }
     inline const Window& get_window() { return *window_; }
     inline GameClock& get_clock() { return game_clock_; }
-    inline kb::kfs::FileSystem& get_filesystem() { return filesystem_; }
+    inline kb::kfs::FileSystem& get_filesystem() { return *filesystem_; }
 
     bool on_window_close_event(const WindowCloseEvent& e);
 
@@ -76,7 +76,7 @@ private:
 
     LayerStack layer_stack_;
     GameClock game_clock_;
-    kb::kfs::FileSystem filesystem_;
+    kb::kfs::FileSystem* filesystem_;
 
     std::function<void(void)> on_imgui_new_frame_ = []() {};
 };

@@ -144,7 +144,7 @@ void GizmoOverlay::draw_gizmo(const RenderSurface& rs)
 {
     // * Manipulation
     auto& scene = scn::current();
-    if(current_operation_ == Operation::Disabled || scene.is_runtime())
+    if(!scene.is_loaded() || current_operation_ == Operation::Disabled || scene.is_runtime())
         return;
 
     ImGuizmo::SetDrawlist();

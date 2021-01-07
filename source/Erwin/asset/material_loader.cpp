@@ -96,7 +96,7 @@ ComponentPBRMaterial MaterialLoader::upload(const tom::TOMDescriptor& descriptor
     K_ASSERT(descriptor.material_data_size == sizeof(ComponentPBRMaterial::MaterialData),
              "Invalid material data size.");
 
-    ShaderHandle shader = AssetManager::load_shader("shaders/deferred_PBR.glsl");
+    ShaderHandle shader = AssetManager::load_shader("sysres://shaders/deferred_PBR.glsl");
     UniformBufferHandle ubo = AssetManager::create_material_data_buffer<ComponentPBRMaterial>();
 
     std::string name = WFS().regular_path(descriptor.filepath).stem();
