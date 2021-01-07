@@ -40,7 +40,7 @@ hash_t ChaiContext::use(const std::string& script_path)
 {
     try
     {
-        vm->use(script_path);
+        vm->use(WFS().regular_path(script_path));
 
         // If opened for the first time, reflect actor class
         hash_t hname = H_(script_path);
@@ -229,7 +229,7 @@ void ChaiContext::remove_actor(ActorHandle idx)
 
 void ChaiContext::setup_component(ComponentScript& cscript, EntityID e)
 {
-    hash_t actor_type = use(cscript.file_path);
+    hash_t actor_type = use(WFS().regular_path(cscript.file_path));
     cscript.actor_index = instantiate(actor_type, e);
     cscript.entry_point = get_reflection(actor_type).name;
     cscript.script_context = handle_;
