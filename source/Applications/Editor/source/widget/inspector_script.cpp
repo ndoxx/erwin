@@ -1,3 +1,4 @@
+#include "core/application.h"
 #include "entity/component/script.h"
 #include "entity/reflection.h"
 #include "imgui.h"
@@ -16,11 +17,10 @@ template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e
     {
         if(ImGui::Button("Load"))
             editor::dialog::show_open("ChooseScriptDlgKey", "Choose script file", ".chai",
-                                      editor::project::asset_dir(editor::DK::SCRIPT).absolute());
+                                      WFS().regular_path(editor::project::asset_dir(editor::DK::SCRIPT)));
 
-        editor::dialog::on_open("ChooseScriptDlgKey", [&cmp,&scene,e](const fs::path& filepath)
-        {
-            cmp = ComponentScript(std::string("res", filepath));
+        editor::dialog::on_open("ChooseScriptDlgKey", [&cmp, &scene, e](const fs::path& filepath) {
+            cmp = ComponentScript(WFS().make_universal(filepath, "res"_h));
             auto ctx_handle = scene.get_script_context();
             auto& ctx = ScriptEngine::get_context(ctx_handle);
             ctx.setup_component(cmp, e);
@@ -29,7 +29,7 @@ template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e
 
     if(!cmp.file_path.empty())
     {
-        ImGui::TextColored({0.1f, 0.5f, 1.f, 1.f}, "%s", cmp.file_path.universal().c_str());
+        ImGui::TextColored({0.1f, 0.5f, 1.f, 1.f}, "%s", cmp.file_path.c_str());
         ImGui::Text("entry point: %s", cmp.entry_point.c_str());
 
         // Parameters

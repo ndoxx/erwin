@@ -1,6 +1,7 @@
 #include "widget/widget_material_authoring.h"
 #include "asset/asset_manager.h"
 #include "asset/texture.h"
+#include "core/application.h"
 #include "entity/component/PBR_material.h"
 #include "filesystem/tom_file.h"
 #include "imgui.h"
@@ -113,8 +114,7 @@ MaterialAuthoringWidget::MaterialAuthoringWidget() : Widget("Material authoring"
     current_composition_ = std::make_unique<MaterialComposition>();
 
     checkerboard_tex_ = AssetManager::create_debug_texture("checkerboard"_h, 64);
-    PBR_packing_shader_ =
-        Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/PBR_packing.glsl", "PBR_packing");
+    PBR_packing_shader_ = Renderer::create_shader("sysres://shaders/PBR_packing.glsl", "PBR_packing");
     packing_ubo_ =
         Renderer::create_uniform_buffer("parameters", nullptr, sizeof(PBRPackingData), UsagePattern::Dynamic);
     Renderer::shader_attach_uniform_buffer(PBR_packing_shader_, packing_ubo_);
@@ -193,7 +193,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
     auto& scene = SceneManager::get("material_editor_scene"_h);
     const auto& freetex = AssetManager::load<FreeTexture>(scene.get_asset_registry(), fp);
     current_composition_->set_map(tm_type, freetex.handle);
-    current_composition_->texture_names[uint32_t(tm_type)] = fp.resource_id();
+    current_composition_->texture_names[uint32_t(tm_type)] = H_(fp);
     current_composition_->width = freetex.width;
     current_composition_->height = freetex.height;
 }
@@ -367,7 +367,7 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::PushStyleColor(ImGuiCol_Button, imgui_rgb(102, 153, 255));
     if(ImGui::Button("Load directory", btn_span_size))
         dialog::show_open_directory("ChooseDirectoryDlgKey", "Choose Directory",
-                                    project::asset_dir(DK::WORK_MATERIAL).absolute());
+                                    WFS().regular_path(editor::project::asset_dir(editor::DK::WORK_MATERIAL)));
 
     ImGui::PopStyleColor(1);
 
@@ -395,7 +395,8 @@ void MaterialAuthoringWidget::on_imgui_render()
     {
         // Current material must have been applied
         if(current_material.material.texture_group.texture_count > 0)
-            dialog::show_open("ExportTomDlgKey", "Export", ".tom", project::asset_dir(DK::MATERIAL).absolute(),
+            dialog::show_open("ExportTomDlgKey", "Export", ".tom",
+                              WFS().regular_path(editor::project::asset_dir(editor::DK::MATERIAL)),
                               current_material.name + ".tom");
     }
     ImGui::PopStyleColor(1);
@@ -448,7 +449,8 @@ void MaterialAuthoringWidget::on_imgui_render()
     ImGui::Columns(1);
 
     if(show_file_open_dialog)
-        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png", project::asset_dir(DK::WORK_MATERIAL).absolute());
+        dialog::show_open("ChoosePngDlgKey", "Choose File", ".png",
+                          WFS().regular_path(editor::project::asset_dir(editor::DK::WORK_MATERIAL)));
 
     dialog::on_open("ChoosePngDlgKey", [&](const fs::path& filepath) {
         load_texture_map(TextureMapType(selected_tm), filepath);

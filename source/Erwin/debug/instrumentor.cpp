@@ -4,9 +4,6 @@
 #include <fstream>
 #include <thread>
 
-namespace erwin
-{
-
 struct InstrumentorStorage
 {
     InstrumentationSession* current_session = nullptr;
@@ -19,13 +16,10 @@ void Instrumentor::begin_session(const std::string& name, const std::string& fil
 {
     storage.out_stream.open(filepath);
     write_header();
-    storage.current_session = new InstrumentationSession{ name, true };
+    storage.current_session = new InstrumentationSession{name, true};
 }
 
-void Instrumentor::set_session_enabled(bool value)
-{
-    storage.current_session->enabled = value;
-}
+void Instrumentor::set_session_enabled(bool value) { storage.current_session->enabled = value; }
 
 void Instrumentor::end_session()
 {
@@ -39,20 +33,18 @@ void Instrumentor::end_session()
 void Instrumentor::write_profile(const ProfileResult& result)
 {
     if(storage.profile_count++ > 0)
-    	storage.out_stream << ",";
+        storage.out_stream << ",";
 
     std::string name = result.name;
     std::replace(name.begin(), name.end(), '"', '\'');
 
     storage.out_stream << "{"
                        << "\"cat\":\"function\","
-                       << "\"dur\":" << (result.end - result.start) << ','
-                       << "\"name\":\"" << name << "\","
+                       << "\"dur\":" << (result.end - result.start) << ',' << "\"name\":\"" << name << "\","
                        << "\"ph\":\"X\","
                        << "\"pid\":0,"
                        << "\"tid\":" << result.thread_id << ","
-                       << "\"ts\":" << result.start
-                       << "}";
+                       << "\"ts\":" << result.start << "}";
 
     storage.out_stream.flush();
 }
@@ -69,17 +61,14 @@ void Instrumentor::write_footer()
     storage.out_stream.flush();
 }
 
-
-InstrumentationTimer::InstrumentationTimer(const char* name):
-name_(name),
-start_timepoint_(std::chrono::high_resolution_clock::now()),
-stopped_(false)
+InstrumentationTimer::InstrumentationTimer(const char* name)
+    : name_(name), start_timepoint_(std::chrono::high_resolution_clock::now()), stopped_(false)
 {}
 
 InstrumentationTimer::~InstrumentationTimer()
 {
     if(!stopped_)
-    	stop();
+        stop();
 }
 
 void InstrumentationTimer::stop()
@@ -91,13 +80,12 @@ void InstrumentationTimer::stop()
 
     auto end_timepoint = std::chrono::high_resolution_clock::now();
 
-    long long start = std::chrono::time_point_cast<std::chrono::microseconds>(start_timepoint_).time_since_epoch().count();
+    long long start =
+        std::chrono::time_point_cast<std::chrono::microseconds>(start_timepoint_).time_since_epoch().count();
     long long end = std::chrono::time_point_cast<std::chrono::microseconds>(end_timepoint).time_since_epoch().count();
 
     size_t thread_id = std::hash<std::thread::id>{}(std::this_thread::get_id());
-    Instrumentor::write_profile({ name_, start, end, thread_id });
+    Instrumentor::write_profile({name_, start, end, thread_id});
 
     stopped_ = true;
 }
-
-} // namespace erwin

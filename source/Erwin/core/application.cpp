@@ -45,7 +45,7 @@ Application::Application(const ApplicationParameters& params)
     KLOGGER_START();
     // Initialize file system
     auto root_dir = filesystem_.get_self_directory().parent_path().parent_path();
-    if(!filesystem_.setup_settings_directory(params.vendor, params.name, "settings"))
+    if(!filesystem_.setup_settings_directory(params.vendor, params.name, "usr"))
     {
         KLOGE("application") << "Cannot setup application settings directory." << std::endl;
     }

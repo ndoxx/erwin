@@ -28,6 +28,8 @@ if (ENABLE_LOGGING)
 	add_definitions(-DLOGGING_ENABLED=1)
 endif()
 
+add_definitions(-DW_PROFILE)
+add_definitions(-DW_PROFILE_RENDER)
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	add_definitions(-DW_DEBUG)
 	add_definitions(-DK_DEBUG)

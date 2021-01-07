@@ -1,7 +1,8 @@
 #include "project/project.h"
+#include "core/application.h"
 #include "core/config.h"
-#include <kibble/logger/logger.h>
 #include "filesystem/xml_file.h"
+#include <kibble/logger/logger.h>
 #include <kibble/string/string.h>
 
 using namespace erwin;
@@ -18,9 +19,9 @@ bool load_project(const std::string& filepath)
     KLOGN("editor") << "Loading project." << std::endl;
 
     // Detect and set assets directory
-    fs::path res_dir = filepath.absolute().parent_path() / "assets";
+    fs::path res_dir = WFS().regular_path(filepath).parent_path() / "assets";
     K_ASSERT(fs::exists(res_dir), "Cannot find 'assets' folder near project file.");
-    std::string::set_resource_directory(res_dir);
+    WFS().alias_directory(res_dir, "res");
 
     // Read file and parse
     xml::XMLFile project_f(filepath);
@@ -29,26 +30,40 @@ bool load_project(const std::string& filepath)
 
     s_current_project.registry.deserialize(project_f, "project");
     s_current_project.project_file = filepath;
-    s_current_project.root_folder = std::string(filepath.absolute().parent_path());
+    s_current_project.root_folder = std::string(WFS().regular_path(filepath).parent_path());
 
-    KLOG("editor", 0) << "Name: " << kb::KS_NAME_ << s_current_project.registry.get("project.project_name"_h, std::string())
-                      << std::endl;
+    KLOG("editor", 0) << "Name: " << kb::KS_NAME_
+                      << s_current_project.registry.get("project.project_name"_h, std::string()) << std::endl;
     KLOG("editor", 0) << "Import paths:" << std::endl;
-    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.atlas"_h) << std::endl;
-    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.hdr"_h) << std::endl;
-    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.material"_h) << std::endl;
-    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.font"_h) << std::endl;
-    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.mesh"_h) << std::endl;
-    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.script"_h) << std::endl;
-    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.scene"_h) << std::endl;
+    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.atlas"_h)
+          << std::endl;
+    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.hdr"_h)
+          << std::endl;
+    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.material"_h)
+          << std::endl;
+    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.font"_h)
+          << std::endl;
+    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.mesh"_h)
+          << std::endl;
+    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.script"_h)
+          << std::endl;
+    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.import.scene"_h)
+          << std::endl;
     KLOG("editor", 0) << "Export paths:" << std::endl;
-    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.atlas"_h) << std::endl;
-    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.hdr"_h) << std::endl;
-    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.material"_h) << std::endl;
-    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.font"_h) << std::endl;
-    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.mesh"_h) << std::endl;
-    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.script"_h) << std::endl;
-    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.scene"_h) << std::endl;
+    KLOGI << "Atlas:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.atlas"_h)
+          << std::endl;
+    KLOGI << "HDR:      " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.hdr"_h)
+          << std::endl;
+    KLOGI << "Material: " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.material"_h)
+          << std::endl;
+    KLOGI << "Font:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.font"_h)
+          << std::endl;
+    KLOGI << "Mesh:     " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.mesh"_h)
+          << std::endl;
+    KLOGI << "Script:   " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.script"_h)
+          << std::endl;
+    KLOGI << "Scene:    " << kb::KS_PATH_ << s_current_project.registry.get("project.content.export.scene"_h)
+          << std::endl;
 
     // Save as last project for future auto load
     cfg::set("settings.project.last_project"_h, filepath);
@@ -71,10 +86,7 @@ bool save_project()
     return true;
 }
 
-bool is_loaded()
-{
-    return s_current_project.loaded;
-}
+bool is_loaded() { return s_current_project.loaded; }
 
 void close_project()
 {

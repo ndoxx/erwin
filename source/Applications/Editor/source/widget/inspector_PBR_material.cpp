@@ -1,32 +1,33 @@
+#include "asset/asset_manager.h"
+#include "core/application.h"
 #include "entity/component/PBR_material.h"
 #include "entity/reflection.h"
-#include "asset/asset_manager.h"
-#include "project/project.h"
-#include "widget/dialog_open.h"
-#include "level/scene.h"
+#include "imgui.h"
 #include "imgui/font_awesome.h"
 #include "imgui/imgui_utils.h"
-#include "imgui.h"
+#include "level/scene.h"
+#include "project/project.h"
+#include "widget/dialog_open.h"
 
 namespace erwin
 {
 
-template <>
-void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, Scene& scene)
+template <> void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, Scene& scene)
 {
     // Load material from file
     if(!scene.is_runtime())
     {
         size_t asset_registry = scene.get_asset_registry();
         if(ImGui::Button("Load"))
-            editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom", editor::project::asset_dir(editor::DK::MATERIAL).absolute());
+            editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom",
+                                      WFS().regular_path(editor::project::asset_dir(editor::DK::MATERIAL)));
 
-        editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
-        {
-            cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, std::string("res", filepath)); // // Copy material
+        editor::dialog::on_open("ChooseTomDlgKey", [&cmp, asset_registry](const fs::path& filepath) {
+            cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry,
+                                                           WFS().make_universal(filepath, "res"_h)); // Copy material
         });
     }
-    
+
     // ImGui::TextUnformatted(cmp.name.c_str()); // Name unused atm
 
     // Parameters override
