@@ -1,12 +1,10 @@
 #include "input/input.h"
+#include "core/application.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
-#include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
-#include <kibble/string/string.h>
 #include <kibble/logger/logger.h>
-
-
+#include <kibble/string/string.h>
 
 namespace erwin
 {
@@ -77,10 +75,10 @@ bool Input::load_config()
 {
     KLOGN("config") << "Loading keybindings." << std::endl;
 
-    auto user_filepath = "usr://config/keybindings.xml"_wp;
-    WPath default_filepath(wfs::get_root_dir() / s_default_keybindings_path);
+    auto user_filepath = "usr://keybindings.xml";
+    std::string default_filepath(WFS().get_aliased_directory("root"_h) / s_default_keybindings_path);
 
-    if(!wfs::ensure_user_config(user_filepath, default_filepath))
+    if(!APP().mirror_settings(user_filepath, default_filepath))
         return false;
 
     // Read file and parse
@@ -93,12 +91,11 @@ bool Input::load_config()
 
 bool Input::save_config()
 {
-    auto filepath = "usr://config/keybindings.xml"_wp;
+    auto filepath = "usr://keybindings.xml";
     KLOG("config", 1) << "Saving key bindings:" << std::endl;
     KLOGI << kb::KS_PATH_ << filepath << std::endl;
     // Direct XML output for now
-    auto p_ofs = wfs::get_ostream(filepath, wfs::ascii);
-    auto& ofs = *p_ofs;
+    std::ofstream ofs(WFS().regular_path(filepath), std::ios::binary);
     ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
     ofs << "<Keymap>" << std::endl;
 

@@ -3,11 +3,8 @@
 // Adapted from https://gist.github.com/TheCherno/31f135eea6ee729ab5f26a6908eb3a5e
 // Basic instrumentation profiler by Cherno
 
-#include <string>
 #include <chrono>
-
-namespace erwin
-{
+#include <string>
 
 struct ProfileResult
 {
@@ -47,5 +44,3 @@ private:
     std::chrono::time_point<std::chrono::high_resolution_clock> start_timepoint_;
     bool stopped_;
 };
-
-} // namespace erwin

@@ -5,7 +5,7 @@
 
 #include "core/core.h"
 #include "core/intern_string.h"
-#include "filesystem/filesystem.h"
+#include "core/application.h"
 #include "filesystem/spv_file.h"
 #include "platform/OGL/ogl_buffer.h"
 #include "platform/OGL/ogl_shader.h"
@@ -328,17 +328,17 @@ static void program_error_report(GLuint ProgramID)
     free(log);
 }
 
-bool OGLShader::init(const std::string& name, const WPath& filepath)
+bool OGLShader::init(const std::string& name, const std::string& filepath)
 {
-    if(filepath.check_extension(".glsl"_h))
+    if(WFS().check_extension(filepath, ".glsl"))
         return init_glsl(name, filepath);
-    else if(filepath.check_extension(".spv"_h))
+    else if(WFS().check_extension(filepath, ".spv"))
         return init_spirv(name, filepath);
     return false;
 }
 
 // Initialize shader from packed GLSL source
-bool OGLShader::init_glsl(const std::string& name, const WPath& glsl_file)
+bool OGLShader::init_glsl(const std::string& name, const std::string& glsl_file)
 {
     W_PROFILE_FUNCTION()
 
@@ -346,7 +346,7 @@ bool OGLShader::init_glsl(const std::string& name, const WPath& glsl_file)
     filepath_ = glsl_file;
 
     std::vector<std::pair<slang::ExecutionModel, std::string>> sources;
-    slang::pre_process_GLSL(glsl_file.absolute(), sources);
+    slang::pre_process_GLSL(glsl_file, sources);
     bool success = build(sources);
     if(success)
         introspect();
@@ -355,13 +355,13 @@ bool OGLShader::init_glsl(const std::string& name, const WPath& glsl_file)
         // Load default shader
         KLOGW("shader") << "Loading default red shader as a fallback." << std::endl;
         sources.clear();
-        slang::pre_process_GLSL(wfs::get_system_asset_dir() / "shaders/red_shader.glsl", sources);
+        slang::pre_process_GLSL("sysres://shaders/red_shader.glsl", sources);
         introspect();
     }
     return success;
 }
 // Initialize shader from SPIR-V file
-bool OGLShader::init_spirv(const std::string& name, const WPath& spv_file)
+bool OGLShader::init_spirv(const std::string& name, const std::string& spv_file)
 {
     W_PROFILE_FUNCTION()
 
@@ -505,7 +505,7 @@ bool OGLShader::build(const std::vector<std::pair<slang::ExecutionModel, std::st
     return false;
 }
 
-bool OGLShader::build_spirv(const WPath& filepath)
+bool OGLShader::build_spirv(const std::string& filepath)
 {
     W_PROFILE_FUNCTION()
 
@@ -513,7 +513,7 @@ bool OGLShader::build_spirv(const WPath& filepath)
     std::vector<uint32_t> shader_ids;
 
     auto stages = spv::parse_stages(filepath);
-    auto spirv = wfs::get_file_as_vector(filepath);
+    auto spirv = WFS().get_file_as_vector<char>(filepath);
 
     for(auto&& stage : stages)
     {

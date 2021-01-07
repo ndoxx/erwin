@@ -1,5 +1,6 @@
 #include "asset/atlas_loader.h"
 #include "core/core.h"
+#include "core/application.h"
 #include "render/renderer.h"
 #include <kibble/logger/logger.h>
 
@@ -8,10 +9,10 @@
 namespace erwin
 {
 
-AssetMetaData TextureAtlasLoader::build_meta_data(const WPath& file_path)
+AssetMetaData TextureAtlasLoader::build_meta_data(const std::string& file_path)
 {
-    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    K_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
+    K_ASSERT(WFS().exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS().check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS().extension(file_path).c_str());
 
     return {file_path, AssetMetaData::AssetType::TextureAtlasCAT};
 }
@@ -82,10 +83,10 @@ TextureAtlas TextureAtlasLoader::upload(const cat::CATDescriptor& descriptor, ha
 
 void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(resource.texture); }
 
-AssetMetaData FontAtlasLoader::build_meta_data(const WPath& file_path)
+AssetMetaData FontAtlasLoader::build_meta_data(const std::string& file_path)
 {
-    K_ASSERT_FMT(file_path.exists(), "File does not exist: %s", file_path.c_str());
-    K_ASSERT(file_path.check_extension(".cat"_h), "Invalid input file.");
+    K_ASSERT(WFS().exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS().check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS().extension(file_path).c_str());
 
     return {file_path, AssetMetaData::AssetType::FontAtlasCAT};
 }

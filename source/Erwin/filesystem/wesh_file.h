@@ -6,7 +6,7 @@
 
 #include <vector>
 #include "asset/bounding.h"
-#include "filesystem/wpath.h"
+
 
 namespace erwin
 {
@@ -21,7 +21,7 @@ struct WeshDescriptor
 };
 
 
-WeshDescriptor read(const WPath& path);
+WeshDescriptor read(const std::string& path);
 
 
 } // namespace wesh

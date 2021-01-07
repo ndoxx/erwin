@@ -1,5 +1,4 @@
 #include "editor_app.h"
-#include <kibble/logger/dispatcher.h>
 #include "entity/component/editor_tags.h"
 #include "entity/component/tags.h"
 #include "imgui/font_awesome.h"
@@ -14,6 +13,7 @@
 #include "widget/dialog_open.h"
 #include "widget/widget_console.h"
 #include "widget/widget_keybindings.h"
+#include <kibble/logger/dispatcher.h>
 
 #include <fstream>
 
@@ -23,12 +23,15 @@ static void set_gui_behavior()
     io.ConfigWindowsMoveFromTitleBarOnly = true;
 }
 
+ErwinEditor::ErwinEditor() : Application({"erwin", "editor"}) {}
+
 void ErwinEditor::on_client_init()
 {
-    wfs::set_asset_dir("source/Applications/Editor/assets");
-    wfs::set_client_config_dir("source/Applications/Editor/config");
-    add_configuration("cfg://client.xml"_wp);
-    add_configuration("usr://config/settings.xml"_wp, "cfg://default_settings.xml"_wp);
+    auto root = WFS().get_aliased_directory("root"_h);
+    WFS().alias_directory(root / "source/Applications/Editor/assets", "res");
+    WFS().alias_directory(root / "source/Applications/Editor/config", "cfg");
+    add_configuration("cfg://client.xml");
+    add_configuration("usr://settings.xml", "cfg://default_settings.xml");
 }
 
 void ErwinEditor::on_load()
@@ -45,7 +48,7 @@ void ErwinEditor::on_load()
     // Merge icon font
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontDefault();
-    auto icon_font_path = wfs::get_asset_dir() / "fonts" / FONT_ICON_FILE_NAME_FA;
+    auto icon_font_path = WFS().regular_path("res://fonts") / FONT_ICON_FILE_NAME_FA;
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;
@@ -103,8 +106,10 @@ void ErwinEditor::on_load()
     // Project settings
     bool auto_load = cfg::get("settings.project.auto_load"_h, true);
     const auto& last_project_file = cfg::get("settings.project.last_project"_h);
-    if(auto_load && !last_project_file.empty() && last_project_file.exists())
+    if(auto_load && !last_project_file.empty() && WFS().exists(last_project_file))
     {
+        KLOGN("editor") << "Opening last project:" << std::endl;
+        KLOGI << KS_PATH_ << last_project_file << std::endl;
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
@@ -155,11 +160,11 @@ void ErwinEditor::on_imgui_render()
             {
                 project::save_project();
                 auto& scene = scn::current();
-                if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                if(!scene.get_file_location().empty() && WFS().exists(scene.get_file_location()))
                     scene.save();
                 else
                     dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                      project::asset_dir(DK::SCENE).absolute());
+                                      project::asset_dir(DK::SCENE));
             }
 
             if(ImGui::MenuItem("Close project", nullptr, nullptr))
@@ -249,7 +254,7 @@ void ErwinEditor::on_imgui_render()
 
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
-        project::load_project(WPath(filepath));
+        project::load_project(std::string(filepath));
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
@@ -257,7 +262,7 @@ void ErwinEditor::on_imgui_render()
 
     dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {
         auto& scene = scn::current();
-        scene.save_xml(WPath(filepath));
+        scene.save_xml(std::string(filepath));
     });
 
     if(enable_docking_)

@@ -7,7 +7,7 @@
 #include "render/shader_lang.h"
 #include "platform/OGL/ogl_buffer.h"
 #include "platform/OGL/ogl_texture.h"
-#include "filesystem/wpath.h"
+
 
 #include "glm/glm.hpp"
 
@@ -20,11 +20,11 @@ public:
 	OGLShader() = default;
 	~OGLShader() = default;
 
-	bool init(const std::string& name, const WPath& filepath);
+	bool init(const std::string& name, const std::string& filepath);
 	// Initialize shader from packed GLSL source
-	bool init_glsl(const std::string& name, const WPath& glsl_file);
+	bool init_glsl(const std::string& name, const std::string& glsl_file);
 	// Initialize shader from SPIR-V file
-	bool init_spirv(const std::string& name, const WPath& spv_file);
+	bool init_spirv(const std::string& name, const std::string& spv_file);
 
 	void bind() const;
 	void unbind() const;
@@ -56,7 +56,7 @@ private:
 	// Build the shader program from sources
 	bool build(const std::vector<std::pair<slang::ExecutionModel, std::string>>& sources);
 	// Build the shader program from SPIR-V binary
-	bool build_spirv(const WPath& filepath);
+	bool build_spirv(const std::string& filepath);
 	// Link the program
 	bool link(const std::vector<uint32_t>& shader_ids);
 	// Helper function to construct the uniform location, texture slot and binding point registries
@@ -78,7 +78,7 @@ private:
     std::map<hash_t, uint32_t> texture_slots_;    // [uniform hname, slot]
     std::map<hash_t, uint32_t> block_bindings_;   // [block hname, binding point]
     std::map<W_ID, ResourceBinding> bound_buffers_;
-    WPath filepath_;
+    std::string filepath_;
 };
 
 template <> bool OGLShader::send_uniform<bool>(hash_t name, const bool& value) const;

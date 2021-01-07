@@ -1,12 +1,10 @@
 #include "render/shader_lang.h"
-#include "filesystem/filesystem.h"
-#include <kibble/string/string.h>
+#include "core/application.h"
 #include <algorithm>
 #include <kibble/logger/logger.h>
+#include <kibble/string/string.h>
 #include <regex>
 #include <vector>
-
-
 
 namespace erwin
 {
@@ -18,13 +16,13 @@ static struct
     std::vector<fs::path> include_dirs;
 } s_storage;
 
-void register_include_directory(const fs::path& dir_path)
+void register_include_directory(const std::string& dir_path)
 {
-    if(fs::exists(dir_path))
+    if(WFS().exists(dir_path))
     {
         KLOG("shader", 1) << "Shader include directory registered:" << std::endl;
         KLOGI << kb::KS_PATH_ << dir_path << std::endl;
-        s_storage.include_dirs.push_back(dir_path);
+        s_storage.include_dirs.push_back(WFS().regular_path(dir_path));
     }
     else
     {
@@ -57,17 +55,17 @@ static std::string handle_includes(const fs::path& base_dir, const std::string& 
         // KLOG("shader", 1) << "including: " << kb::KS_PATH_ << filename << kb::KC_ << std::endl;
         fs::path inc_path = find_include(base_dir, filename);
         K_ASSERT_FMT(inc_path.string().size() != 0, "Could not find include file: %s", filename.c_str());
-        return "\n" + wfs::get_file_as_string(WPath(inc_path)) + "\n";
+        return "\n" + WFS().get_file_as_string(inc_path) + "\n";
     });
 }
 
-void pre_process_GLSL(const fs::path& filepath, std::vector<std::pair<ExecutionModel, std::string>>& sources)
+void pre_process_GLSL(const std::string& filepath, std::vector<std::pair<ExecutionModel, std::string>>& sources)
 {
     KLOG("shader", 1) << "Pre-processing source: " << std::endl;
-    KLOGI << kb::KS_PATH_ << filepath.filename() << std::endl;
+    KLOGI << kb::KS_PATH_ << WFS().regular_path(filepath).filename() << std::endl;
 
-    std::string full_source(wfs::get_file_as_string(WPath(filepath)));
-    fs::path base_directory = filepath.parent_path();
+    std::string full_source(WFS().get_file_as_string(filepath));
+    fs::path base_directory = WFS().regular_path(filepath).parent_path();
 
     // Look for #type directives to segment shader code
     static const std::string type_token = "#type";

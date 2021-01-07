@@ -1,19 +1,20 @@
 #include "level/scene.h"
 #include "asset/asset_manager.h"
-#include <kibble/logger/logger.h>
+#include "core/application.h"
 #include "entity/reflection.h"
 #include "imgui/font_awesome.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
 #include "script/script_engine.h"
+#include <kibble/logger/logger.h>
 
 #include "entity/component/description.h"
 #include "entity/component/hierarchy.h"
 #include "entity/component/mesh.h"
+#include "entity/component/script.h"
 #include "entity/component/tags.h"
 #include "entity/component/transform.h"
-#include "entity/component/script.h"
 #include "filesystem/xml_file.h"
 
 #include <queue>
@@ -119,11 +120,11 @@ void Scene::cleanup()
 void Scene::save()
 {
     K_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set.");
-    K_ASSERT(scene_file_path_.check_extension(".scn"_h), "Only .scn XML files supported for now.");
+    K_ASSERT(WFS().check_extension(scene_file_path_, ".scn"), "Only .scn XML files supported for now.");
     save_xml(scene_file_path_);
 }
 
-void Scene::save_xml(const WPath& file_path)
+void Scene::save_xml(const std::string& file_path)
 {
     KLOGN("scene") << "Serializing scene: " << std::endl;
     KLOGI << kb::KS_PATH_ << file_path << std::endl;
@@ -140,7 +141,7 @@ void Scene::save_xml(const WPath& file_path)
         auto* anode = scene_f.add_node(assets_node, "Asset");
         scene_f.add_attribute(anode, "id", std::to_string(hname).c_str());
         scene_f.add_attribute(anode, "type", std::to_string(size_t(meta.type)).c_str());
-        scene_f.add_attribute(anode, "path", meta.file_path.universal().c_str());
+        scene_f.add_attribute(anode, "path", meta.file_path.c_str());
     }
 
     // * Write environment
@@ -154,18 +155,16 @@ void Scene::save_xml(const WPath& file_path)
     // First, get entities in hierarchy order
     // This avoids scene file reordering after each consecutive save, and potential bugs
     std::vector<EntityID> entities;
-    registry.view<NamedEntityTag>(entt::exclude<ComponentHierarchy>).each([&entities](auto e)
-    {
+    registry.view<NamedEntityTag>(entt::exclude<ComponentHierarchy>).each([&entities](auto e) {
         entities.push_back(e);
     });
-    depth_first(get_named("root"_h), [&entities](EntityID e, const auto&, size_t)
-    {
+    depth_first(get_named("root"_h), [&entities](EntityID e, const auto&, size_t) {
         entities.push_back(e);
         return false;
-    });      
+    });
 
     // Visit each entity, for each component invoke serialization method
-    for(auto e: entities)
+    for(auto e : entities)
     {
         if(registry.has<NonSerializableTag>(e))
             continue;
@@ -193,13 +192,13 @@ void Scene::save_xml(const WPath& file_path)
     KLOGI << "done." << std::endl;
 }
 
-void Scene::load_xml(const WPath& file_path)
+void Scene::load_xml(const std::string& file_path)
 {
     KLOGN("scene") << "Loading scene: " << std::endl;
     KLOGI << kb::KS_PATH_ << file_path << std::endl;
 
     scene_file_path_ = file_path;
-    
+
     if(!runtime_)
         asset_registry_ = AssetManager::create_asset_registry();
 
@@ -229,7 +228,8 @@ void Scene::load_xml(const WPath& file_path)
         xml::parse_attribute(asset_node, "type", sz_asset_type);
         std::string asset_univ_path;
         xml::parse_attribute(asset_node, "path", asset_univ_path);
-        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type), WPath(asset_univ_path));
+        AssetManager::load_resource_async(asset_registry_, AssetMetaData::AssetType(sz_asset_type),
+                                          std::string(asset_univ_path));
     }
 
     // Load environment
@@ -289,7 +289,8 @@ void Scene::load_xml(const WPath& file_path)
     // Register all named entities
     registry.view<ComponentDescription, NamedEntityTag>().each([this](auto e, const auto& desc) {
         set_named(e, H_(desc.name.c_str()));
-        KLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << kb::KS_NAME_ << desc.name << std::endl;
+        KLOG("scene", 1) << "Registered named entity [" << size_t(e) << "] as " << kb::KS_NAME_ << desc.name
+                         << std::endl;
     });
 
     // Setup hierarchy
@@ -310,7 +311,7 @@ void Scene::create_asset_registry()
     asset_registry_ = AssetManager::create_asset_registry();
 }
 
-void Scene::load_hdr_environment(const WPath& hdr_file)
+void Scene::load_hdr_environment(const std::string& hdr_file)
 {
     hash_t future_env = AssetManager::load_async<Environment>(asset_registry_, hdr_file);
     AssetManager::on_ready<Environment>(future_env, [this](const Environment& env) {

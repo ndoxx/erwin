@@ -133,15 +133,15 @@ void SceneViewWidget::on_imgui_render()
                 if(ImGui::BeginMenu("Load"))
                 {
                     // List all available scenes for current project
-                    auto scene_dir = project::asset_dir(DK::SCENE);
-                    for(auto& entry : fs::directory_iterator(scene_dir.absolute()))
+                    auto scene_dir = WFS().regular_path(editor::project::asset_dir(editor::DK::SCENE));
+                    for(auto& entry : fs::directory_iterator(scene_dir))
                     {
                         if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
                         {
                             if(ImGui::MenuItem(entry.path().filename().c_str()))
                             {
                                 scene.unload();
-                                scene.load_xml(WPath(entry.path()));
+                                scene.load_xml(std::string(entry.path()));
                             }
                         }
                     }
@@ -152,7 +152,7 @@ void SceneViewWidget::on_imgui_render()
                 bool save_as_needed = false;
                 if(ImGui::MenuItem("Save"))
                 {
-                    if(!scene.get_file_location().empty() && scene.get_file_location().exists())
+                    if(!scene.get_file_location().empty() && WFS().exists(scene.get_file_location()))
                         scene.save();
                     else
                         save_as_needed = true;
@@ -161,7 +161,7 @@ void SceneViewWidget::on_imgui_render()
                 if(ImGui::MenuItem("Save as") || save_as_needed)
                 {
                     dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                      project::asset_dir(DK::SCENE).absolute());
+                                      WFS().regular_path(editor::project::asset_dir(editor::DK::SCENE)));
                 }
 
                 ImGui::EndMenu();
@@ -251,7 +251,7 @@ void SceneViewWidget::on_imgui_render()
         gizmo_overlay_->imgui_render();
     }
 
-    dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(WPath(filepath)); });
+    dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(std::string(filepath)); });
 
     // * Show game render in window
     // Retrieve the native framebuffer texture handle

@@ -1,4 +1,5 @@
 #include "asset/texture_loader.h"
+#include "core/application.h"
 #include "filesystem/image_file.h"
 #include "render/renderer.h"
 #include "utils/future.hpp"
@@ -6,12 +7,12 @@
 namespace erwin
 {
 
-AssetMetaData TextureLoader::build_meta_data(const WPath& file_path)
+AssetMetaData TextureLoader::build_meta_data(const std::string& file_path)
 {
     // Sanity check
-    K_ASSERT(file_path.exists(), "File does not exist.");
-    K_ASSERT_FMT(file_path.check_extension(".png"_h), "Incompatible file type: %s", file_path.c_str());
-
+    K_ASSERT(WFS().exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS().check_extension(file_path, ".png"), "Incompatible file type: %s",
+                 WFS().extension(file_path).c_str());
     return {file_path, AssetMetaData::AssetType::ImageFilePNG};
 }
 

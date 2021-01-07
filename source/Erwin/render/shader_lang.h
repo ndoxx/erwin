@@ -60,10 +60,10 @@ enum class ExecutionModel: uint32_t
 }
 
 // Register a path to an include directory
-extern void register_include_directory(const fs::path& dir_path);
+void register_include_directory(const std::string& dir_path);
 // Split up a GLSL source into multiple source strings, one for each execution model,
 // also handle includes
-extern void pre_process_GLSL(const fs::path& filepath, std::vector<std::pair<ExecutionModel, std::string>>& sources);
+void pre_process_GLSL(const std::string& filepath, std::vector<std::pair<ExecutionModel, std::string>>& sources);
 
 
 } // namespace slang

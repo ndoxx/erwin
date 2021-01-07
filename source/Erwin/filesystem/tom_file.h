@@ -1,14 +1,14 @@
 #pragma once
 
 /*
-	Texture & Operation Maps file
+    Texture & Operation Maps file
 */
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "core/core.h"
-#include "filesystem/wpath.h"
+
 #include "render/texture_common.h"
 
 namespace erwin
@@ -16,34 +16,34 @@ namespace erwin
 namespace tom
 {
 
-enum class LosslessCompression: uint8_t
+enum class LosslessCompression : uint8_t
 {
-	None = 0,
-	Deflate
+    None = 0,
+    Deflate
 };
 
-enum class MaterialType: uint8_t
+enum class MaterialType : uint8_t
 {
-	NONE = 0,
-	PBR
+    NONE = 0,
+    PBR
 };
 
 struct TextureMapDescriptor
 {
-	TextureFilter filter;
-	uint8_t channels;
-	bool srgb;
-	TextureCompression compression;
-	uint32_t size;
-	uint8_t* data;
-	hash_t name;
+    TextureFilter filter;
+    uint8_t channels;
+    bool srgb;
+    TextureCompression compression;
+    uint32_t size;
+    uint8_t* data;
+    hash_t name;
 
     void release();
 };
 
 struct TOMDescriptor
 {
-    WPath filepath;
+    std::string filepath;
     uint16_t width;
     uint16_t height;
     LosslessCompression compression;

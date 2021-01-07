@@ -6,9 +6,6 @@
 #include <kibble/hash/hash.h>
 #include <kibble/assert/assert.h>
 
-// Export JSON instrumentation profiles compatible with chrome://tracing
-#define W_PROFILE
-
 #ifdef _WIN32
 	#ifdef W_BUILD_LIB
 		#define W_API __declspec(dllexport)
@@ -24,10 +21,10 @@
 // Instrumentation timer
 #ifdef W_PROFILE
 	#include "debug/instrumentor.h"
-	#define W_PROFILE_BEGIN_SESSION(name, filepath) erwin::Instrumentor::begin_session( name , filepath )
-	#define W_PROFILE_END_SESSION(name) erwin::Instrumentor::end_session()
-	#define W_PROFILE_ENABLE_SESSION(value) erwin::Instrumentor::set_session_enabled( value )
-	#define W_PROFILE_SCOPE(name) erwin::InstrumentationTimer timer##__LINE__( name );
+	#define W_PROFILE_BEGIN_SESSION(name, filepath) Instrumentor::begin_session( name , filepath )
+	#define W_PROFILE_END_SESSION(name) Instrumentor::end_session()
+	#define W_PROFILE_ENABLE_SESSION(value) Instrumentor::set_session_enabled( value )
+	#define W_PROFILE_SCOPE(name) InstrumentationTimer timer##__LINE__( name );
 	#define W_PROFILE_FUNCTION() W_PROFILE_SCOPE( __PRETTY_FUNCTION__ )
 #else
 	#define W_PROFILE_BEGIN_SESSION(name, filepath)
