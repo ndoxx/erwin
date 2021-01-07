@@ -126,7 +126,7 @@ void InspectorWidget::environment_tab()
 
             editor::dialog::on_open("ChooseHDRDlgKey", [&scene](const fs::path& filepath)
             {
-                scene.load_hdr_environment(WPath("res", filepath));
+                scene.load_hdr_environment(std::string("res", filepath));
             });
         }
 

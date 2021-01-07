@@ -1,7 +1,6 @@
 #include "project/project.h"
 #include "core/config.h"
 #include <kibble/logger/logger.h>
-#include "filesystem/filesystem.h"
 #include "filesystem/xml_file.h"
 #include <kibble/string/string.h>
 
@@ -14,14 +13,14 @@ namespace project
 
 static ProjectSettings s_current_project;
 
-bool load_project(const WPath& filepath)
+bool load_project(const std::string& filepath)
 {
     KLOGN("editor") << "Loading project." << std::endl;
 
     // Detect and set assets directory
     fs::path res_dir = filepath.absolute().parent_path() / "assets";
     K_ASSERT(fs::exists(res_dir), "Cannot find 'assets' folder near project file.");
-    WPath::set_resource_directory(res_dir);
+    std::string::set_resource_directory(res_dir);
 
     // Read file and parse
     xml::XMLFile project_f(filepath);
@@ -30,7 +29,7 @@ bool load_project(const WPath& filepath)
 
     s_current_project.registry.deserialize(project_f, "project");
     s_current_project.project_file = filepath;
-    s_current_project.root_folder = WPath(filepath.absolute().parent_path());
+    s_current_project.root_folder = std::string(filepath.absolute().parent_path());
 
     KLOG("editor", 0) << "Name: " << kb::KS_NAME_ << s_current_project.registry.get("project.project_name"_h, std::string())
                       << std::endl;
@@ -89,9 +88,9 @@ void close_project()
 
 const ProjectSettings& get_project_settings() { return s_current_project; }
 
-WPath asset_dir(DK dir_key)
+std::string asset_dir(DK dir_key)
 {
-    WPath dirpath;
+    std::string dirpath;
     switch(dir_key)
     {
     case DK::ATLAS:

@@ -163,7 +163,7 @@ public:
 	{
 		wfs::set_asset_dir("source/Applications/FractalExplorer/assets");
 		wfs::set_client_config_dir("source/Applications/FractalExplorer/config");
-	    add_configuration("cfg://client.xml"_wp);
+	    add_configuration("cfg://client.xml");
 	}
 
 	virtual void on_load() override

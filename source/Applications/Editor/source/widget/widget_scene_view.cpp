@@ -141,7 +141,7 @@ void SceneViewWidget::on_imgui_render()
                             if(ImGui::MenuItem(entry.path().filename().c_str()))
                             {
                                 scene.unload();
-                                scene.load_xml(WPath(entry.path()));
+                                scene.load_xml(std::string(entry.path()));
                             }
                         }
                     }
@@ -251,7 +251,7 @@ void SceneViewWidget::on_imgui_render()
         gizmo_overlay_->imgui_render();
     }
 
-    dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(WPath(filepath)); });
+    dialog::on_open("ScnSaveAsDlgKey", [&scene](const fs::path& filepath) { scene.save_xml(std::string(filepath)); });
 
     // * Show game render in window
     // Retrieve the native framebuffer texture handle

@@ -1,7 +1,6 @@
 #include "render/renderer_pp.h"
 #include "render/common_geometry.h"
 #include "render/renderer.h"
-#include "filesystem/filesystem.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
 #include "imgui.h"
@@ -125,12 +124,10 @@ void PostProcessingRenderer::init()
 #endif
 
 	// Create shaders
-	// s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.spv", "passthrough");
-	s_storage.passthrough_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/passthrough.glsl", "passthrough");
-	// s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.spv", "post_processing");
-	s_storage.pp_shader          = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc.glsl", "post_processing");
-	s_storage.lighten_shader     = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/post_proc_lighten.glsl", "post_proc_lighten");
-	s_storage.bloom_blur_shader  = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/bloom_blur.glsl", "bloom_blur");
+	s_storage.passthrough_shader = Renderer::create_shader("sysres://shaders/passthrough.glsl", "passthrough");
+	s_storage.pp_shader          = Renderer::create_shader("sysres://shaders/post_proc.glsl", "post_processing");
+	s_storage.lighten_shader     = Renderer::create_shader("sysres://shaders/post_proc_lighten.glsl", "post_proc_lighten");
+	s_storage.bloom_blur_shader  = Renderer::create_shader("sysres://shaders/bloom_blur.glsl", "bloom_blur");
 	
 	s_storage.pp_ubo   = Renderer::create_uniform_buffer("post_proc_layout", nullptr, sizeof(PostProcessingData), UsagePattern::Dynamic);
 	s_storage.blur_ubo = Renderer::create_uniform_buffer("blur_data", nullptr, sizeof(BlurUBOData), UsagePattern::Dynamic);

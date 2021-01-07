@@ -1,5 +1,5 @@
 #include "filesystem/spv_file.h"
-#include "filesystem/filesystem.h"
+#include "core/application.h"
 #include <kibble/logger/logger.h>
 
 #include <cstring>
@@ -10,14 +10,27 @@ namespace erwin
 namespace spv
 {
 
+// Helpers for stream read/write pointer cast
+// Only well defined for PODs
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
+static inline char* opaque_cast(T* in)
+{
+    return reinterpret_cast<char*>(in);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
+static inline const char* opaque_cast(const T* in)
+{
+    return reinterpret_cast<const char*>(in);
+}
+
 #define SPV_MAGIC 0x07230203
 
-
-std::vector<ShaderStageDescriptor> parse_stages(const WPath& path)
+std::vector<ShaderStageDescriptor> parse_stages(const std::string& path)
 {
     std::string entrypointname[6];
 
-    auto ifs = wfs::get_istream(path, wfs::binary);
+    auto ifs = WFS().get_input_stream(path);
 
     // Parse SPIR-V data
     uint32_t magic = 0;
@@ -39,14 +52,14 @@ std::vector<ShaderStageDescriptor> parse_stages(const WPath& path)
         long pos = ifs->tellg();
         uint32_t bytes;
         ifs->read(opaque_cast(&bytes), sizeof(uint32_t));
-        uint16_t opcode = uint16_t(bytes & 0x0000FFFF); // Take low word
+        uint16_t opcode = uint16_t(bytes & 0x0000FFFF);         // Take low word
         uint16_t wcount = uint16_t((bytes & 0xFFFF0000) >> 16); // Take high word
 
         if(opcode == 15) // OpEntryPoint
         {
             uint32_t execution_model;
             ifs->read(opaque_cast(&execution_model), sizeof(uint32_t));
-            // Vertex = 0, TessellationControl = 1, TessellationEvaluation = 2, 
+            // Vertex = 0, TessellationControl = 1, TessellationEvaluation = 2,
             // Geometry = 3, Fragment = 4, GLCompute = 5,
             if(execution_model < 6)
             {
@@ -58,15 +71,17 @@ std::vector<ShaderStageDescriptor> parse_stages(const WPath& path)
                 while(true)
                 {
                     ifs->read(&c, 1);
-                    if(c == '\0') break;
+                    if(c == '\0')
+                        break;
                     desc.entry_point += c;
                 }
                 descs.push_back(desc);
             }
         }
 
-        ifs->seekg(pos + long(wcount*sizeof(uint32_t)));
-        if(!(*ifs)) break;
+        ifs->seekg(pos + long(wcount * sizeof(uint32_t)));
+        if(!(*ifs))
+            break;
     }
 
     return descs;

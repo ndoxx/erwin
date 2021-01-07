@@ -1,7 +1,7 @@
 #include "core/registry.h"
-#include "filesystem/filesystem.h"
-#include <kibble/string/string.h>
+#include "core/application.h"
 #include <kibble/logger/logger.h>
+#include <kibble/string/string.h>
 
 namespace erwin
 {
@@ -11,10 +11,10 @@ void Registry::deserialize(const xml::XMLFile& xml, const std::string& root_name
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem();
+        root = WFS().regular_path(xml.filepath).stem();
 
     if(xml.root)
-        parse_properties(xml.root, root, xml.filepath.absolute().parent_path());
+        parse_properties(xml.root, root, WFS().regular_path(xml.filepath).parent_path());
 }
 
 // Recursive parser
@@ -125,7 +125,7 @@ hash_t Registry::parse_xml_property(void* node, const std::string& name_chain, c
         if(!xml::parse_attribute(xnode, "value", value))
             return 0;
 
-        paths_[full_name_hash] = WPath(value);
+        strings_[full_name_hash] = std::string(value);
         break;
     }
     case "size"_h: {
@@ -145,10 +145,10 @@ void Registry::serialize(xml::XMLFile& xml, const std::string& root_name)
     // Use file name as root name if no root name specified
     std::string root = root_name;
     if(root.empty())
-        root = xml.filepath.stem();
+        root = WFS().regular_path(xml.filepath).stem();
 
     if(xml.root)
-        serialize_properties(&xml.doc, xml.root, root, xml.filepath.absolute().parent_path());
+        serialize_properties(&xml.doc, xml.root, root, WFS().regular_path(xml.filepath).parent_path());
 }
 
 void Registry::serialize_properties(void* pdoc, void* node, const std::string& name_chain, const fs::path& parent_dir)
@@ -187,7 +187,6 @@ void Registry::clear()
     vec2s_.clear();
     vec3s_.clear();
     vec4s_.clear();
-    paths_.clear();
 }
 
 void Registry::write_xml_property(void* pdoc, void* node, const std::string& name_chain, const fs::path& /*parent_dir*/)
@@ -256,11 +255,11 @@ void Registry::write_xml_property(void* pdoc, void* node, const std::string& nam
         break;
     }
     case "path"_h: {
-        auto it = paths_.find(full_name_hash);
-        if(it != paths_.end())
+        auto it = strings_.find(full_name_hash);
+        if(it != strings_.end())
         {
             if(!it->second.empty())
-                xml::set_attribute(doc, xnode, "value", it->second.universal());
+                xml::set_attribute(doc, xnode, "value", it->second);
         }
         break;
     }
@@ -327,11 +326,11 @@ template <> const glm::vec4& Registry::get(hash_t hname, const glm::vec4& def) c
     return (it != vec4s_.end()) ? it->second : def;
 }
 
-static WPath empty_path;
-const WPath& Registry::get(hash_t hname) const
+static std::string empty_path;
+const std::string& Registry::get(hash_t hname) const
 {
-    auto it = paths_.find(hname);
-    return (it != paths_.end()) ? it->second : empty_path;
+    auto it = strings_.find(hname);
+    return (it != strings_.end()) ? it->second : empty_path;
 }
 
 bool Registry::is(hash_t name) const
@@ -389,15 +388,6 @@ template <> bool Registry::set(hash_t hname, const std::string& val)
 {
     auto it = strings_.find(hname);
     if(it == strings_.end())
-        return false;
-    it->second = val;
-    return true;
-}
-
-template <> bool Registry::set(hash_t hname, const WPath& val)
-{
-    auto it = paths_.find(hname);
-    if(it == paths_.end())
         return false;
     it->second = val;
     return true;

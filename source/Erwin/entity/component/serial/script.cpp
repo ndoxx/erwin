@@ -1,4 +1,5 @@
 #include "entity/component/serial/script.h"
+#include "core/application.h"
 #include "level/scene.h"
 #include "script/script_engine.h"
 
@@ -8,7 +9,7 @@ namespace erwin
 template <>
 void serialize_xml<ComponentScript>(const ComponentScript& cmp, xml::XMLFile& file, rapidxml::xml_node<>* cmp_node)
 {
-    file.add_node(cmp_node, "path", cmp.file_path.universal().c_str());
+    file.add_node(cmp_node, "path", cmp.file_path.c_str());
 
     // Save actor parameters
     auto& ctx = ScriptEngine::get_context(cmp.script_context);
@@ -58,8 +59,8 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
     std::string universal_path;
     xml::parse_node(cmp_node, "path", universal_path);
 
-    WPath script_path(universal_path);
-    if(script_path.exists() && !script_path.empty())
+    std::string script_path(universal_path);
+    if(WFS().exists(script_path) && !script_path.empty())
     {
         auto& cscript = scene.add_component<ComponentScript>(e, script_path);
         auto ctx_handle = scene.get_script_context();

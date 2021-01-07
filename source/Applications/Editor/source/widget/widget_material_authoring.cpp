@@ -2,7 +2,6 @@
 #include "asset/asset_manager.h"
 #include "asset/texture.h"
 #include "entity/component/PBR_material.h"
-#include "filesystem/filesystem.h"
 #include "filesystem/tom_file.h"
 #include "imgui.h"
 #include "imgui/color.h"
@@ -190,7 +189,7 @@ void MaterialAuthoringWidget::load_texture_map(TextureMapType tm_type, const fs:
     if(current_composition_->has_map(tm_type))
         clear_texture_map(tm_type);
 
-    WPath fp(filepath);
+    std::string fp(filepath);
     auto& scene = SceneManager::get("material_editor_scene"_h);
     const auto& freetex = AssetManager::load<FreeTexture>(scene.get_asset_registry(), fp);
     current_composition_->set_map(tm_type, freetex.handle);
@@ -283,7 +282,7 @@ void MaterialAuthoringWidget::export_TOM(const fs::path& tom_path)
 static void handle_tom_export(const fs::path& path, const ComponentPBRMaterial::MaterialData& material_data,
                               size_t width, size_t height, uint8_t* albedo, uint8_t* normal_depth, uint8_t* mare)
 {
-    tom::TOMDescriptor tom_desc{WPath(path), uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
+    tom::TOMDescriptor tom_desc{std::string(path), uint16_t(width), uint16_t(height), tom::LosslessCompression::Deflate,
                                 TextureWrap::REPEAT};
 
     // Copy material data

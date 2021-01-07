@@ -5,7 +5,7 @@
 
 #include "asset/environment.h"
 #include "entity/reflection.h"
-#include "filesystem/wpath.h"
+
 #include "script/common.h"
 
 namespace erwin
@@ -33,14 +33,14 @@ public:
      *
      * @param[in]  file_path  Path to a valid .scn XML format file.
      */
-    void load_xml(const WPath& file_path);
+    void load_xml(const std::string& file_path);
     
     /**
      * @brief      Save current scene to a .scn XML format file.
      *
      * @param[in]  file_path  The file path.
      */
-    void save_xml(const WPath& file_path);
+    void save_xml(const std::string& file_path);
     
     // Save scene to the file it was loaded from (if any)
     
@@ -75,7 +75,7 @@ public:
      *
      * @return     The file location.
      */
-    inline const WPath& get_file_location() const { return scene_file_path_; }
+    inline const std::string& get_file_location() const { return scene_file_path_; }
     
     /**
      * @brief      Check if scene is loaded.
@@ -103,7 +103,7 @@ public:
      *
      * @param[in]  hdr_file  Path to a valid HDR image file.
      */
-    void load_hdr_environment(const WPath& hdr_file);
+    void load_hdr_environment(const std::string& hdr_file);
     
     /**
      * @brief      Gets the environment.
@@ -500,7 +500,7 @@ private:
     bool loaded_ = false;
     bool runtime_ = false;
 
-    WPath scene_file_path_;
+    std::string scene_file_path_;
 };
 
 } // namespace erwin

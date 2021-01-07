@@ -1,15 +1,27 @@
 #include "filesystem/wesh_file.h"
-#include "core/core.h"
-#include "filesystem/filesystem.h"
+#include "core/application.h"
 #include <kibble/logger/logger.h>
 
 namespace fs = std::filesystem;
-
 
 namespace erwin
 {
 namespace wesh
 {
+
+// Helpers for stream read/write pointer cast
+// Only well defined for PODs
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
+static inline char* opaque_cast(T* in)
+{
+    return reinterpret_cast<char*>(in);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_standard_layout_v<T> && std::is_trivial_v<T>>>
+static inline const char* opaque_cast(const T* in)
+{
+    return reinterpret_cast<const char*>(in);
+}
 
 //#pragma pack(push,1)
 struct WESHHeader
@@ -27,9 +39,9 @@ struct WESHHeader
 #define WESH_VERSION_MAJOR 0
 #define WESH_VERSION_MINOR 3
 
-WeshDescriptor read(const WPath& path)
+WeshDescriptor read(const std::string& path)
 {
-    auto ifs = wfs::get_istream(path, wfs::binary);
+    auto ifs = WFS().get_input_stream(path);
 
     // Read header & sanity check
     WESHHeader header;
@@ -40,7 +52,8 @@ WeshDescriptor read(const WPath& path)
     K_ASSERT(header.version_minor == WESH_VERSION_MINOR, "Invalid WESH file: version (minor) mismatch.");
 
     KLOG("asset", 0) << "WESH Header:" << std::endl;
-    KLOGI << "Version:   " << kb::KS_VALU_ << int(header.version_major) << "." << int(header.version_minor) << std::endl;
+    KLOGI << "Version:   " << kb::KS_VALU_ << int(header.version_major) << "." << int(header.version_minor)
+          << std::endl;
     KLOGI << "Vtx size:  " << kb::KS_VALU_ << header.vertex_size << std::endl;
     KLOGI << "Vtx count: " << kb::KS_VALU_ << header.vertex_count << std::endl;
     KLOGI << "Idx count: " << kb::KS_VALU_ << header.index_count << std::endl;

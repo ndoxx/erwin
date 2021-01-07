@@ -12,8 +12,8 @@ namespace theme
 
 struct ThemeEntry
 {
-	std::string name;
-	fs::path path;
+    std::string name;
+    std::string path;
 };
 
 extern void init();

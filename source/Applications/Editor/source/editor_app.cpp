@@ -27,8 +27,8 @@ void ErwinEditor::on_client_init()
 {
     wfs::set_asset_dir("source/Applications/Editor/assets");
     wfs::set_client_config_dir("source/Applications/Editor/config");
-    add_configuration("cfg://client.xml"_wp);
-    add_configuration("usr://config/settings.xml"_wp, "cfg://default_settings.xml"_wp);
+    add_configuration("cfg://client.xml");
+    add_configuration("usr://config/settings.xml", "cfg://default_settings.xml");
 }
 
 void ErwinEditor::on_load()
@@ -249,7 +249,7 @@ void ErwinEditor::on_imgui_render()
 
     // Dialogs
     dialog::on_open("ChooseFileDlgKey", [](const fs::path& filepath) {
-        project::load_project(WPath(filepath));
+        project::load_project(std::string(filepath));
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
         scn::current().load_xml(ps.registry.get("project.scene.start"_h));
@@ -257,7 +257,7 @@ void ErwinEditor::on_imgui_render()
 
     dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {
         auto& scene = scn::current();
-        scene.save_xml(WPath(filepath));
+        scene.save_xml(std::string(filepath));
     });
 
     if(enable_docking_)

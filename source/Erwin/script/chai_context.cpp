@@ -1,6 +1,6 @@
 #include "core/intern_string.h"
+#include "core/application.h"
 #include "entity/component/serial/script.h"
-#include "filesystem/filesystem.h"
 #include "script/script_engine.h"
 #include <chaiscript/chaiscript.hpp>
 #include <cstdlib>
@@ -36,18 +36,19 @@ void ChaiContext::init(VMHandle handle)
 
 void ChaiContext::add_bindings(std::shared_ptr<chaiscript::Module> module) { vm->add(module); }
 
-hash_t ChaiContext::use(const WPath& script_path)
+hash_t ChaiContext::use(const std::string& script_path)
 {
     try
     {
-        vm->use(script_path.string());
+        vm->use(script_path);
 
         // If opened for the first time, reflect actor class
-        auto findit = used_files_.find(script_path.resource_id());
+        hash_t hname = H_(script_path);
+        auto findit = used_files_.find(hname);
         if(findit == used_files_.end())
         {
             hash_t type = reflect(script_path);
-            used_files_.insert({script_path.resource_id(), type});
+            used_files_.insert({hname, type});
             return type;
         }
         else
@@ -82,9 +83,9 @@ static std::tuple<float, float, float> make_range(const std::string& str_list)
 
 static const std::regex actor_rx("#pragma\\s*actor\\s*(.+)");
 static const std::regex param_rx("#pragma\\s*param<(.+?),(.+?)>\\s*var (.+?);");
-hash_t ChaiContext::reflect(const WPath& script_path)
+hash_t ChaiContext::reflect(const std::string& script_path)
 {
-    auto src = wfs::get_file_as_string(script_path);
+    auto src = WFS().get_file_as_string(script_path);
 
     ActorReflection reflection;
     hash_t hname;
@@ -165,8 +166,8 @@ ActorHandle ChaiContext::instantiate(hash_t actor_type, EntityID e)
     // Get type reflection
     const auto& reflection = reflections_.at(actor_type);
 
-    KLOGN("script") << "Instantiating actor class '" << kb::KS_NAME_ << reflection.name << kb::KC_
-                    << "' for entity [" << size_t(e) << "]" << std::endl;
+    KLOGN("script") << "Instantiating actor class '" << kb::KS_NAME_ << reflection.name << kb::KC_ << "' for entity ["
+                    << size_t(e) << "]" << std::endl;
 
     // Instantiate script object
     auto instance_handle = storage_->actor_handle_pool_.acquire();

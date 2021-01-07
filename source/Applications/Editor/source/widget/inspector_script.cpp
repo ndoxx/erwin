@@ -20,7 +20,7 @@ template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e
 
         editor::dialog::on_open("ChooseScriptDlgKey", [&cmp,&scene,e](const fs::path& filepath)
         {
-            cmp = ComponentScript(WPath("res", filepath));
+            cmp = ComponentScript(std::string("res", filepath));
             auto ctx_handle = scene.get_script_context();
             auto& ctx = ScriptEngine::get_context(ctx_handle);
             ctx.setup_component(cmp, e);

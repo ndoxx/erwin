@@ -1,16 +1,16 @@
 #include "render/renderer.h"
 
 #include <map>
+#include <fstream>
 
 #include "core/clock.hpp"
 #include "core/config.h"
-#include <kibble/logger/logger.h>
-#include <kibble/math/color.h>
-#include "filesystem/filesystem.h"
 #include "memory/arena.h"
 #include "memory/handle_pool.h"
 #include "render/backend.h"
 #include "render/query_timer.h"
+#include <kibble/logger/logger.h>
+#include <kibble/math/color.h>
 
 namespace erwin
 {
@@ -169,8 +169,7 @@ void FrameDrawCallData::export_json()
     KLOGN("render") << "Exporting frame draw call profile:" << std::endl;
     KLOGI << kb::KS_PATH_ << json_path << std::endl;
 
-    auto p_ofs = wfs::get_ostream(WPath(json_path), wfs::ascii);
-    auto& ofs = *p_ofs;
+    std::ofstream ofs(json_path);
 
     ofs << "{"
         << "\"draw_calls\":[" << std::endl;

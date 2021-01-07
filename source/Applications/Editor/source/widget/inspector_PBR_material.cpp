@@ -1,7 +1,6 @@
 #include "entity/component/PBR_material.h"
 #include "entity/reflection.h"
 #include "asset/asset_manager.h"
-#include "filesystem/filesystem.h"
 #include "project/project.h"
 #include "widget/dialog_open.h"
 #include "level/scene.h"
@@ -24,7 +23,7 @@ void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, EntityID, Sc
 
         editor::dialog::on_open("ChooseTomDlgKey", [&cmp,asset_registry](const fs::path& filepath)
         {
-            cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, WPath("res", filepath)); // // Copy material
+            cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry, std::string("res", filepath)); // // Copy material
         });
     }
     

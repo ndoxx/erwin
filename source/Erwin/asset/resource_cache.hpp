@@ -8,7 +8,7 @@
 
 #include "asset/loader_common.h"
 #include "core/core.h"
-#include "filesystem/wpath.h"
+
 #include "filesystem/image_file.h"
 #include "filesystem/tom_file.h"
 #include "utils/future.hpp"
@@ -27,12 +27,12 @@ public:
     using DataDescriptor = typename LoaderT::DataDescriptor;
 
     template <typename... ArgsT>
-    std::pair<const ManagedResource&, const AssetMetaData&> load(const WPath& file_path, ArgsT&&... args)
+    std::pair<const ManagedResource&, const AssetMetaData&> load(const std::string& file_path, ArgsT&&... args)
     {
         W_PROFILE_FUNCTION()
 
         // Check cache first
-        hash_t hname = file_path.resource_id();
+        hash_t hname = H_(file_path);
         auto findit = managed_resources_.find(hname);
         if(findit == managed_resources_.end())
         {
@@ -48,7 +48,7 @@ public:
             return {findit->second, meta_data_[hname]};
     }
 
-    std::pair<hash_t, const AssetMetaData&> load_async(const WPath& file_path);
+    std::pair<hash_t, const AssetMetaData&> load_async(const std::string& file_path);
 
     void on_ready(hash_t hname, std::function<void(const ManagedResource&)> then);
     void release(hash_t hname);
@@ -84,12 +84,12 @@ private:
 };
 
 template <typename LoaderT>
-std::pair<hash_t, const AssetMetaData&> ResourceCache<LoaderT>::load_async(const WPath& file_path)
+std::pair<hash_t, const AssetMetaData&> ResourceCache<LoaderT>::load_async(const std::string& file_path)
 {
     W_PROFILE_FUNCTION()
 
     // Check cache first
-    hash_t hname = file_path.resource_id();
+    hash_t hname = H_(file_path);
     if(meta_data_.find(hname) == meta_data_.end())
     {
         auto&& [token, fut] = promises_.future_operation();
@@ -158,7 +158,7 @@ template <typename LoaderT> void ResourceCache<LoaderT>::sync_work()
         {
             auto&& descriptor = task.future_desc.get();
 
-            hash_t hname = task.meta_data.file_path.resource_id();
+            hash_t hname = H_(task.meta_data.file_path);
             managed_resources_[hname] = std::move(LoaderT::upload(descriptor, hname));
             upload_tasks_.erase(it);
 

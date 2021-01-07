@@ -23,7 +23,7 @@ void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, Scene& scene)
 
         editor::dialog::on_open("ChooseWeshDlgKey", [&cmp,&scene,e,asset_registry](const fs::path& filepath)
         {
-            cmp.mesh = AssetManager::load<Mesh>(asset_registry, WPath("res", filepath));
+            cmp.mesh = AssetManager::load<Mesh>(asset_registry, std::string("res", filepath));
             scene.try_add_component<DirtyOBBTag>(e);
         });
     

@@ -1,5 +1,5 @@
 #include "filesystem/xml_file.h"
-#include "filesystem/filesystem.h"
+#include "core/application.h"
 #include "rapidxml/rapidxml_print.hpp"
 #include <kibble/logger/logger.h>
 
@@ -129,14 +129,14 @@ bool XMLFile::read()
     KLOG("core", 0) << "Parsing XML file:" << std::endl;
     KLOGI << kb::KS_PATH_ << filepath << std::endl;
 
-    if(!filepath.exists())
+    if(!WFS().exists(filepath))
     {
         KLOGE("core") << "File does not exist." << std::endl;
         return false;
     }
 
     // Read the xml file into buffer
-    buffer = wfs::get_file_as_string(filepath);
+    buffer = WFS().get_file_as_string(filepath);
 
     // Parse the buffer using the xml file parsing library into doc
     try
@@ -168,8 +168,8 @@ bool XMLFile::read()
 
 void XMLFile::write()
 {
-    auto ofs = wfs::get_ostream(filepath, wfs::ascii);
-    (*ofs) << doc;
+    std::ofstream ofs(WFS().regular_path(filepath), std::ios::binary);
+    ofs << doc;
 }
 
 template <>

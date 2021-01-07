@@ -1,5 +1,4 @@
 #include "shader_packer.h"
-#include "filesystem/filesystem.h"
 #include "filesystem/spv_file.h"
 #include "core/core.h"
 #include <kibble/string/string.h>

@@ -2,7 +2,7 @@
 
 #include "core/core.h"
 #include "entity/reflection.h"
-#include "filesystem/wpath.h"
+
 #include "script/common.h"
 #include <functional>
 #include <map>
@@ -122,7 +122,7 @@ struct ChaiContext
 
     void init(VMHandle handle);
     void add_bindings(std::shared_ptr<chaiscript::Module> module);
-    hash_t use(const WPath& script_path);
+    hash_t use(const std::string& script_path);
     void eval(const std::string& command);
     ActorHandle instantiate(hash_t actor_type, EntityID e);
     void remove_actor(ActorHandle idx);
@@ -137,7 +137,7 @@ struct ChaiContext
     struct Storage;
 
 private:
-    hash_t reflect(const WPath& script_path);
+    hash_t reflect(const std::string& script_path);
 
 private:
     std::shared_ptr<Storage> storage_ = nullptr;
