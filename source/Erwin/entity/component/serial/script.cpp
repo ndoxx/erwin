@@ -60,7 +60,7 @@ template <> void deserialize_xml<ComponentScript>(rapidxml::xml_node<>* cmp_node
     xml::parse_node(cmp_node, "path", universal_path);
 
     std::string script_path(universal_path);
-    if(WFS().exists(script_path) && !script_path.empty())
+    if(WFS_.exists(script_path) && !script_path.empty())
     {
         auto& cscript = scene.add_component<ComponentScript>(e, script_path);
         auto ctx_handle = scene.get_script_context();

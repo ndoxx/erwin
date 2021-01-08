@@ -100,7 +100,7 @@ ShaderHandle AssetManager::load_shader(const std::string& file_path, const std::
 
     KLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
 
-    std::string shader_name = name.empty() ? WFS().regular_path(file_path).stem().string() : name;
+    std::string shader_name = name.empty() ? WFS_.regular_path(file_path).stem().string() : name;
     ShaderHandle handle = Renderer::create_shader(file_path, shader_name);
     KLOG("asset", 1) << "ShaderHandle: " << kb::KS_VALU_ << handle << std::endl;
     s_storage.shader_cache.insert({hname, handle});

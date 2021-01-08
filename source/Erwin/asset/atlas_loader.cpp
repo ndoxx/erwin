@@ -11,8 +11,8 @@ namespace erwin
 
 AssetMetaData TextureAtlasLoader::build_meta_data(const std::string& file_path)
 {
-    K_ASSERT(WFS().exists(file_path), "File does not exist.");
-    K_ASSERT_FMT(WFS().check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS().extension(file_path).c_str());
+    K_ASSERT(WFS_.exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS_.check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS_.extension(file_path).c_str());
 
     return {file_path, AssetMetaData::AssetType::TextureAtlasCAT};
 }
@@ -85,8 +85,8 @@ void TextureAtlasLoader::destroy(TextureAtlas& resource) { Renderer::destroy(res
 
 AssetMetaData FontAtlasLoader::build_meta_data(const std::string& file_path)
 {
-    K_ASSERT(WFS().exists(file_path), "File does not exist.");
-    K_ASSERT_FMT(WFS().check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS().extension(file_path).c_str());
+    K_ASSERT(WFS_.exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS_.check_extension(file_path, ".cat"), "Incompatible file type: %s", WFS_.extension(file_path).c_str());
 
     return {file_path, AssetMetaData::AssetType::FontAtlasCAT};
 }

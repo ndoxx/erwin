@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/registry.h"
+#include <kibble/config/config.h>
 
 namespace editor
 {
@@ -31,12 +31,12 @@ struct ProjectSettings
 {
     std::string project_file;
     std::string root_folder;
-    erwin::Registry registry;
+    kb::cfg::Settings registry;
     bool loaded = false;
 };
 
-bool load_project(const std::string& filepath);
-bool save_project();
+void load_project(const std::string& filepath);
+void save_project();
 bool is_loaded();
 void close_project();
 const ProjectSettings& get_project_settings();

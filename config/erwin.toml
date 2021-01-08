@@ -1,0 +1,97 @@
+[logger]
+backtrace_on_error = false
+	[[logger.channels]]
+		name = "application"
+		verbosity = 3
+	[[logger.channels]]
+		name = "editor"
+		verbosity = 3
+	[[logger.channels]]
+		name = "event"
+		verbosity = 1
+	[[logger.channels]]
+		name = "asset"
+		verbosity = 1
+	[[logger.channels]]
+		name = "memory"
+		verbosity = 1
+	[[logger.channels]]
+		name = "thread"
+		verbosity = 1
+	[[logger.channels]]
+		name = "entity"
+		verbosity = 1
+	[[logger.channels]]
+		name = "scene"
+		verbosity = 3
+	[[logger.channels]]
+		name = "script"
+		verbosity = 3
+	[[logger.channels]]
+		name = "render"
+		verbosity = 1
+	[[logger.channels]]
+		name = "shader"
+		verbosity = 1
+	[[logger.channels]]
+		name = "texture"
+		verbosity = 1
+	[[logger.channels]]
+		name = "util"
+		verbosity = 1
+	[[logger.channels]]
+		name = "config"
+		verbosity = 1
+	[[logger.channels]]
+		name = "ios"
+		verbosity = 1
+
+	[[logger.sinks]]
+		name = "ConsoleSink"
+		type = "ConsoleSink"
+		channels = "all"
+	[[logger.sinks]]
+		name = "MainFileSink"
+		type = "LogFileSink"
+		channels = "all"
+		destination = "erwin.log"
+	[[logger.sinks]]
+		name = "EventFileSink"
+		type = "LogFileSink"
+		channels = "event"
+		destination = "events.log"
+	[[logger.sinks]]
+		name = "NetSink"
+		type = "NetSink"
+		channels = "all"
+		host = "localhost"
+		port = "31337"
+
+[profiling]
+	runtime_session_enabled = false
+
+[renderer]
+	backend = "OpenGL"
+	max_2d_batch_count = 8192
+	enable_cubemap_seamless = true
+
+[memory]
+	renderer_area_size = 32
+	system_area_size = 1
+	[memory.renderer]
+		queue_buffer_size = 1
+		pre_buffer_size = 1
+		post_buffer_size = 1
+		auxiliary_arena_size = 20
+
+[events]
+	[events.track]
+		WindowCloseEvent = true
+		WindowResizeEvent = true
+		WindowMovedEvent = true
+		FramebufferResizeEvent = true
+		KeyboardEvent = false
+		KeyTypedEvent = false
+		MouseButtonEvent = true
+		MouseMovedEvent = false
+		MouseScrollEvent = false

@@ -129,14 +129,14 @@ bool XMLFile::read()
     KLOG("core", 0) << "Parsing XML file:" << std::endl;
     KLOGI << kb::KS_PATH_ << filepath << std::endl;
 
-    if(!WFS().exists(filepath))
+    if(!WFS_.exists(filepath))
     {
         KLOGE("core") << "File does not exist." << std::endl;
         return false;
     }
 
     // Read the xml file into buffer
-    buffer = WFS().get_file_as_string(filepath);
+    buffer = WFS_.get_file_as_string(filepath);
 
     // Parse the buffer using the xml file parsing library into doc
     try
@@ -168,7 +168,7 @@ bool XMLFile::read()
 
 void XMLFile::write()
 {
-    std::ofstream ofs(WFS().regular_path(filepath), std::ios::binary);
+    std::ofstream ofs(WFS_.regular_path(filepath), std::ios::binary);
     ofs << doc;
 }
 

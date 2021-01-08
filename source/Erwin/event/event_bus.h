@@ -19,11 +19,10 @@
 #include <numeric>
 #include <queue>
 
-#include "core/config.h"
-#include "core/core.h"
 #include <kibble/logger/logger.h>
 #include "event/delegate.h"
 #include "event/event.h"
+#include "core/application.h"
 
 namespace erwin
 {
@@ -221,7 +220,7 @@ public:
     template <typename EventT> static inline void configure_event_tracking()
     {
         std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
-        track_event<EventT>(cfg::get<bool>(H_(config_key_str.c_str()), false));
+        track_event<EventT>(CFG_.get<bool>(H_(config_key_str.c_str()), false));
     }
 
     // Log an event

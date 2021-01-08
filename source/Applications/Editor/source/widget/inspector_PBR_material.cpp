@@ -20,11 +20,11 @@ template <> void inspector_GUI<ComponentPBRMaterial>(ComponentPBRMaterial& cmp, 
         size_t asset_registry = scene.get_asset_registry();
         if(ImGui::Button("Load"))
             editor::dialog::show_open("ChooseTomDlgKey", "Choose material file", ".tom",
-                                      WFS().regular_path(editor::project::asset_dir(editor::DK::MATERIAL)));
+                                      WFS_.regular_path(editor::project::asset_dir(editor::DK::MATERIAL)));
 
         editor::dialog::on_open("ChooseTomDlgKey", [&cmp, asset_registry](const fs::path& filepath) {
             cmp = AssetManager::load<ComponentPBRMaterial>(asset_registry,
-                                                           WFS().make_universal(filepath, "res"_h)); // Copy material
+                                                           WFS_.make_universal(filepath, "res"_h)); // Copy material
         });
     }
 

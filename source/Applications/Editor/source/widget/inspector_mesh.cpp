@@ -20,10 +20,10 @@ template <> void inspector_GUI<ComponentMesh>(ComponentMesh& cmp, EntityID e, Sc
         size_t asset_registry = scene.get_asset_registry();
         if(ImGui::Button("Load"))
             editor::dialog::show_open("ChooseWeshDlgKey", "Choose mesh file", ".wesh",
-                                      WFS().regular_path(editor::project::asset_dir(editor::DK::MESH)));
+                                      WFS_.regular_path(editor::project::asset_dir(editor::DK::MESH)));
 
         editor::dialog::on_open("ChooseWeshDlgKey", [&cmp, &scene, e, asset_registry](const fs::path& filepath) {
-            cmp.mesh = AssetManager::load<Mesh>(asset_registry, WFS().make_universal(filepath, "res"_h));
+            cmp.mesh = AssetManager::load<Mesh>(asset_registry, WFS_.make_universal(filepath, "res"_h));
             scene.try_add_component<DirtyOBBTag>(e);
         });
 

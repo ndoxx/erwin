@@ -73,7 +73,7 @@ void TOMDescriptor::release()
 
 void read_tom(TOMDescriptor& desc)
 {
-    auto ifs = WFS().get_input_stream(desc.filepath);
+    auto ifs = WFS_.get_input_stream(desc.filepath);
 
     // Read header & sanity check
     TOMHeader header;
@@ -202,7 +202,7 @@ void write_tom(TOMDescriptor& desc)
     header.material_data_size = desc.material_data_size;
     header.material_type = uint8_t(desc.material_type);
 
-    std::ofstream ofs(WFS().regular_path(desc.filepath), std::ios::binary);
+    std::ofstream ofs(WFS_.regular_path(desc.filepath), std::ios::binary);
 
     // Compress blob if required
     if(desc.compression == LosslessCompression::Deflate)

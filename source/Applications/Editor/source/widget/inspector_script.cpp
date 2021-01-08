@@ -17,10 +17,10 @@ template <> void inspector_GUI<ComponentScript>(ComponentScript& cmp, EntityID e
     {
         if(ImGui::Button("Load"))
             editor::dialog::show_open("ChooseScriptDlgKey", "Choose script file", ".chai",
-                                      WFS().regular_path(editor::project::asset_dir(editor::DK::SCRIPT)));
+                                      WFS_.regular_path(editor::project::asset_dir(editor::DK::SCRIPT)));
 
         editor::dialog::on_open("ChooseScriptDlgKey", [&cmp, &scene, e](const fs::path& filepath) {
-            cmp = ComponentScript(WFS().make_universal(filepath, "res"_h));
+            cmp = ComponentScript(WFS_.make_universal(filepath, "res"_h));
             auto ctx_handle = scene.get_script_context();
             auto& ctx = ScriptEngine::get_context(ctx_handle);
             ctx.setup_component(cmp, e);

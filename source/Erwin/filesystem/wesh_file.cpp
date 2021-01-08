@@ -41,7 +41,7 @@ struct WESHHeader
 
 WeshDescriptor read(const std::string& path)
 {
-    auto ifs = WFS().get_input_stream(path);
+    auto ifs = WFS_.get_input_stream(path);
 
     // Read header & sanity check
     WESHHeader header;

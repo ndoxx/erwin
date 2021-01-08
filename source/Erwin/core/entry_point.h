@@ -4,6 +4,7 @@
 // and define a create_application() function that returns a derived instance.
 // The lib handles the definition of main() here.
 #include "core/application.h"
+#include <kibble/logger/dispatcher.h>
 
 namespace erwin
 {
@@ -12,6 +13,8 @@ namespace erwin
 
 int main(int /*argc*/, char** /*argv*/)
 {
+    KLOGGER_START();
+	
 	W_PROFILE_BEGIN_SESSION("startup", "wprofile-startup.json");
 	auto app = erwin::create_application();
 	if(!app->init())

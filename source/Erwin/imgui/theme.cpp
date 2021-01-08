@@ -99,7 +99,7 @@ static void parse_property(rapidxml::xml_node<>* prop_node, void* destination)
 void init()
 {
     // Iterate themes directory
-    auto theme_dir = WFS().regular_path("sysres://themes");
+    auto theme_dir = WFS_.regular_path("sysres://themes");
     for(auto& entry : fs::directory_iterator(theme_dir))
     {
         if(!entry.is_regular_file())

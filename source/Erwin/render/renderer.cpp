@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "core/clock.hpp"
-#include "core/config.h"
+#include "core/application.h"
 #include "memory/arena.h"
 #include "memory/handle_pool.h"
 #include "render/backend.h"
@@ -104,7 +104,7 @@ RenderQueue::~RenderQueue() {}
 void RenderQueue::init(memory::HeapArea& area)
 {
     clear_color_ = {0.f, 0.f, 0.f, 0.f};
-    command_buffer_.init(area, cfg::get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
+    command_buffer_.init(area, CFG_.get<size_t>("erwin.memory.renderer.queue_buffer"_h, 512_kB), "RenderQueue");
     current_view_id_ = 0;
 }
 
@@ -219,10 +219,10 @@ static struct RendererStorage
     inline void init(memory::HeapArea* area)
     {
         renderer_memory_ = area;
-        pre_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre");
-        post_buffer_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB),
+        pre_buffer_.init(*renderer_memory_, CFG_.get<size_t>("erwin.memory.renderer.pre_buffer"_h, 512_kB), "CB-Pre");
+        post_buffer_.init(*renderer_memory_, CFG_.get<size_t>("erwin.memory.renderer.post_buffer"_h, 512_kB),
                           "CB-Post");
-        auxiliary_arena_.init(*renderer_memory_, cfg::get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB),
+        auxiliary_arena_.init(*renderer_memory_, CFG_.get<size_t>("erwin.memory.renderer.auxiliary_arena"_h, 2_MB),
                               "Auxiliary");
         handle_arena_.init(*renderer_memory_, k_render_handle_alloc_size, "RenderHandles");
         queue_.init(*renderer_memory_);
@@ -401,7 +401,7 @@ void Renderer::init(memory::HeapArea& area)
     s_storage.init(&area);
 
     // Detect backend string in configuration, default to OpenGL
-    hash_t hbackend = cfg::get_hash_lower("erwin.renderer.backend"_h, "OpenGL");
+    hash_t hbackend = CFG_.get_hash_lower("erwin.renderer.backend"_h, "OpenGL");
     switch(hbackend)
     {
     case "opengl"_h:
@@ -409,7 +409,7 @@ void Renderer::init(memory::HeapArea& area)
         break;
     default: {
         KLOGF("render") << "Non recognized renderer backend string: "
-                        << cfg::get<std::string>("erwin.renderer.backend"_h, "OpenGL") << std::endl;
+                        << CFG_.get<std::string>("erwin.renderer.backend"_h, "OpenGL") << std::endl;
         fatal();
     }
     }
@@ -446,7 +446,7 @@ void Renderer::init(memory::HeapArea& area)
     s_storage.initialized_ = true;
 
     // Renderer configuration
-    gfx::backend->set_seamless_cubemaps_enabled(cfg::get<bool>("erwin.renderer.enable_cubemap_seamless"_h, false));
+    gfx::backend->set_seamless_cubemaps_enabled(CFG_.get<bool>("erwin.renderer.enable_cubemap_seamless"_h, false));
 
     KLOGI << "done" << std::endl;
 }

@@ -76,9 +76,9 @@ bool Input::load_config()
     KLOGN("config") << "Loading keybindings." << std::endl;
 
     auto user_filepath = "usr://keybindings.xml";
-    std::string default_filepath(WFS().get_aliased_directory("root"_h) / s_default_keybindings_path);
+    std::string default_filepath(WFS_.get_aliased_directory("root"_h) / s_default_keybindings_path);
 
-    if(!APP().mirror_settings(user_filepath, default_filepath))
+    if(!APP_.mirror_settings(user_filepath, default_filepath))
         return false;
 
     // Read file and parse
@@ -95,7 +95,7 @@ bool Input::save_config()
     KLOG("config", 1) << "Saving key bindings:" << std::endl;
     KLOGI << kb::KS_PATH_ << filepath << std::endl;
     // Direct XML output for now
-    std::ofstream ofs(WFS().regular_path(filepath), std::ios::binary);
+    std::ofstream ofs(WFS_.regular_path(filepath), std::ios::binary);
     ofs << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
     ofs << "<Keymap>" << std::endl;
 

@@ -2,7 +2,7 @@
 
 #include "asset/asset_manager.h"
 #include "asset/texture_atlas.h"
-#include "core/config.h"
+#include "core/application.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/vec_swizzle.hpp"
 #include "math/transform.h"
@@ -98,7 +98,7 @@ void Renderer2D::init()
     FramebufferLayout layout{{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}};
     FramebufferPool::create_framebuffer("SpriteBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT, layout);
 
-    s_storage.max_batch_count = cfg::get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
+    s_storage.max_batch_count = CFG_.get<uint32_t>("erwin.renderer.max_2d_batch_count"_h, 8192);
 
     s_storage.batch_2d_shader = Renderer::create_shader("sysres://shaders/instance_shader.glsl", "instance_shader");
     // s_storage.batch_2d_shader = Renderer::create_shader(wfs::get_system_asset_dir() / "shaders/instance_shader.spv",
