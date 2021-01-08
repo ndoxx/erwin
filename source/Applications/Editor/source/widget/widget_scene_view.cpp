@@ -2,7 +2,6 @@
 #include "asset/bounding.h"
 #include "asset/material.h"
 #include "core/application.h"
-#include "core/config.h"
 #include "entity/component/bounding_box.h"
 #include "entity/component/transform.h"
 #include "entity/reflection.h"
@@ -35,7 +34,7 @@ static constexpr float k_overlay_dist = 10.f;
 SceneViewWidget::SceneViewWidget() : Widget("Scene", true), render_surface_{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}
 {
     flags_ |= ImGuiWindowFlags_MenuBar;
-    enable_runtime_profiling_ = cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
+    enable_runtime_profiling_ = CFG_.get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     runtime_ = false;
     paused_ = false;
@@ -133,7 +132,7 @@ void SceneViewWidget::on_imgui_render()
                 if(ImGui::BeginMenu("Load"))
                 {
                     // List all available scenes for current project
-                    auto scene_dir = WFS().regular_path(editor::project::asset_dir(editor::DK::SCENE));
+                    auto scene_dir = WFS_.regular_path(editor::project::asset_dir(editor::DK::SCENE));
                     for(auto& entry : fs::directory_iterator(scene_dir))
                     {
                         if(entry.is_regular_file() && !entry.path().extension().string().compare(".scn"))
@@ -152,7 +151,7 @@ void SceneViewWidget::on_imgui_render()
                 bool save_as_needed = false;
                 if(ImGui::MenuItem("Save"))
                 {
-                    if(!scene.get_file_location().empty() && WFS().exists(scene.get_file_location()))
+                    if(!scene.get_file_location().empty() && WFS_.exists(scene.get_file_location()))
                         scene.save();
                     else
                         save_as_needed = true;
@@ -161,7 +160,7 @@ void SceneViewWidget::on_imgui_render()
                 if(ImGui::MenuItem("Save as") || save_as_needed)
                 {
                     dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
-                                      WFS().regular_path(editor::project::asset_dir(editor::DK::SCENE)));
+                                      WFS_.regular_path(editor::project::asset_dir(editor::DK::SCENE)));
                 }
 
                 ImGui::EndMenu();
@@ -289,7 +288,7 @@ void SceneViewWidget::runtime_stop()
     Application::get_instance().get_clock().pause(paused_);
 
     // Copy values of script parameters that may have been modified during runtime back to main scene
-    if(cfg::get("settings.scripting.transport_runtime_parameters"_h, true))
+    if(CFG_.get("settings.scripting.transport_runtime_parameters"_h, true))
     {
         auto target_context = SceneManager::get("main_scene"_h).get_script_context();
         auto source_context = SceneManager::get("runtime"_h).get_script_context();

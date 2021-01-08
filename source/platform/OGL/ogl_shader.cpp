@@ -330,9 +330,9 @@ static void program_error_report(GLuint ProgramID)
 
 bool OGLShader::init(const std::string& name, const std::string& filepath)
 {
-    if(WFS().check_extension(filepath, ".glsl"))
+    if(WFS_.check_extension(filepath, ".glsl"))
         return init_glsl(name, filepath);
-    else if(WFS().check_extension(filepath, ".spv"))
+    else if(WFS_.check_extension(filepath, ".spv"))
         return init_spirv(name, filepath);
     return false;
 }
@@ -513,7 +513,7 @@ bool OGLShader::build_spirv(const std::string& filepath)
     std::vector<uint32_t> shader_ids;
 
     auto stages = spv::parse_stages(filepath);
-    auto spirv = WFS().get_file_as_vector<char>(filepath);
+    auto spirv = WFS_.get_file_as_vector<char>(filepath);
 
     for(auto&& stage : stages)
     {

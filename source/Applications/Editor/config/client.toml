@@ -1,0 +1,11 @@
+[memory]
+area_size = 32
+
+[window]
+fullscreen = false
+height = 1280
+host = false
+title = 'Erwin Editor'
+topmost = true
+vsync = true
+width = 1920

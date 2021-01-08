@@ -123,10 +123,10 @@ void InspectorWidget::environment_tab()
             // Load environment from HDR equirectangular texture file
             if(ImGui::Button("Load"))
                 editor::dialog::show_open("ChooseHDRDlgKey", "Choose HDR file", ".hdr",
-                                          WFS().regular_path(editor::project::asset_dir(editor::DK::HDR)));
+                                          WFS_.regular_path(editor::project::asset_dir(editor::DK::HDR)));
 
             editor::dialog::on_open("ChooseHDRDlgKey", [&scene](const fs::path& filepath) {
-                scene.load_hdr_environment(WFS().make_universal(filepath, "res"_h));
+                scene.load_hdr_environment(WFS_.make_universal(filepath, "res"_h));
             });
         }
 

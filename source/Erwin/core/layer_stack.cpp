@@ -1,7 +1,6 @@
 #include "core/layer_stack.h"
+#include "core/layer.h"
 #include <kibble/logger/logger.h>
-
-
 
 namespace erwin
 {
@@ -27,8 +26,8 @@ size_t LayerStack::push_layer(Layer* layer)
     size_t index = overlay_pos_ - 1;
     update_layer_ids();
 
-    KLOG("application", 1) << "Pushed layer \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index " << index
-                           << std::endl;
+    KLOG("application", 1) << "Pushed layer \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index "
+                           << index << std::endl;
     KLOGI << "Overlay position is at: " << overlay_pos_ << std::endl;
 
     return index;
@@ -42,8 +41,8 @@ size_t LayerStack::push_overlay(Layer* layer)
     size_t index = layers_.size() - 1;
     update_layer_ids();
 
-    KLOG("application", 1) << "Pushed overlay \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index " << index
-                           << std::endl;
+    KLOG("application", 1) << "Pushed overlay \"" << kb::KS_NAME_ << layer->get_name() << kb::KC_ << "\" at index "
+                           << index << std::endl;
 
     return index;
 }

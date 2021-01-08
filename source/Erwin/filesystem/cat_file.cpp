@@ -48,7 +48,7 @@ struct CATHeader
 
 void read_cat(CATDescriptor& desc)
 {
-    auto ifs = WFS().get_input_stream(desc.filepath);
+    auto ifs = WFS_.get_input_stream(desc.filepath);
 
     // Read header & sanity check
     CATHeader header;
@@ -106,7 +106,7 @@ void write_cat(const CATDescriptor& desc)
     header.lossless_compression = uint16_t(desc.lossless_compression);
     header.remapping_type = uint16_t(desc.remapping_type);
 
-    std::ofstream ofs(WFS().regular_path(desc.filepath), std::ios::binary);
+    std::ofstream ofs(WFS_.regular_path(desc.filepath), std::ios::binary);
 
     if(desc.lossless_compression == LosslessCompression::Deflate)
     {

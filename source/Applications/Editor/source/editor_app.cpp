@@ -27,11 +27,11 @@ ErwinEditor::ErwinEditor() : Application({"erwin", "editor"}) {}
 
 void ErwinEditor::on_client_init()
 {
-    auto root = WFS().get_aliased_directory("root"_h);
-    WFS().alias_directory(root / "source/Applications/Editor/assets", "res");
-    WFS().alias_directory(root / "source/Applications/Editor/config", "cfg");
-    add_configuration("cfg://client.xml");
-    add_configuration("usr://settings.xml", "cfg://default_settings.xml");
+    auto root = WFS_.get_aliased_directory("root"_h);
+    WFS_.alias_directory(root / "source/Applications/Editor/assets", "res");
+    WFS_.alias_directory(root / "source/Applications/Editor/config", "cfg");
+    add_configuration("cfg://client.toml");
+    add_configuration("usr://settings.toml", "cfg://default_settings.toml");
 }
 
 void ErwinEditor::on_load()
@@ -48,7 +48,7 @@ void ErwinEditor::on_load()
     // Merge icon font
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontDefault();
-    auto icon_font_path = WFS().regular_path("res://fonts") / FONT_ICON_FILE_NAME_FA;
+    auto icon_font_path = WFS_.regular_path("res://fonts") / FONT_ICON_FILE_NAME_FA;
     static ImWchar ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     ImFontConfig config;
     config.MergeMode = true;
@@ -104,15 +104,17 @@ void ErwinEditor::on_load()
     });
 
     // Project settings
-    bool auto_load = cfg::get("settings.project.auto_load"_h, true);
-    const auto& last_project_file = cfg::get("settings.project.last_project"_h);
-    if(auto_load && !last_project_file.empty() && WFS().exists(last_project_file))
+    bool auto_load = CFG_.get<bool>("settings.project.auto_load"_h, true);
+    auto last_project_file = CFG_.get<std::string>("settings.project.last_project"_h, "");
+    if(auto_load && !last_project_file.empty() && WFS_.exists(last_project_file))
     {
         KLOGN("editor") << "Opening last project:" << std::endl;
         KLOGI << KS_PATH_ << last_project_file << std::endl;
         project::load_project(last_project_file);
         const auto& ps = project::get_project_settings();
-        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
+        auto start_scene = ps.registry.get<std::string>("project.scene.start"_h, "");
+        if(!start_scene.empty())
+            scn::current().load_xml(start_scene);
     }
 
     KLOGN("editor") << "Erwin Editor is ready." << std::endl;
@@ -160,7 +162,7 @@ void ErwinEditor::on_imgui_render()
             {
                 project::save_project();
                 auto& scene = scn::current();
-                if(!scene.get_file_location().empty() && WFS().exists(scene.get_file_location()))
+                if(!scene.get_file_location().empty() && WFS_.exists(scene.get_file_location()))
                     scene.save();
                 else
                     dialog::show_open("ScnSaveAsDlgKey", "Save scene as", ".scn",
@@ -257,7 +259,9 @@ void ErwinEditor::on_imgui_render()
         project::load_project(std::string(filepath));
         SceneManager::make_current("main_scene"_h);
         const auto& ps = project::get_project_settings();
-        scn::current().load_xml(ps.registry.get("project.scene.start"_h));
+        auto scene_path = ps.registry.get<std::string>("project.scene.start"_h, "");
+        if(!scene_path.empty())
+            scn::current().load_xml(scene_path);
     });
 
     dialog::on_open("ScnSaveAsDlgKey", [](const fs::path& filepath) {

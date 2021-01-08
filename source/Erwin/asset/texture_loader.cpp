@@ -10,9 +10,9 @@ namespace erwin
 AssetMetaData TextureLoader::build_meta_data(const std::string& file_path)
 {
     // Sanity check
-    K_ASSERT(WFS().exists(file_path), "File does not exist.");
-    K_ASSERT_FMT(WFS().check_extension(file_path, ".png"), "Incompatible file type: %s",
-                 WFS().extension(file_path).c_str());
+    K_ASSERT(WFS_.exists(file_path), "File does not exist.");
+    K_ASSERT_FMT(WFS_.check_extension(file_path, ".png"), "Incompatible file type: %s",
+                 WFS_.extension(file_path).c_str());
     return {file_path, AssetMetaData::AssetType::ImageFilePNG};
 }
 

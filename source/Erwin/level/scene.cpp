@@ -120,7 +120,7 @@ void Scene::cleanup()
 void Scene::save()
 {
     K_ASSERT(!scene_file_path_.empty(), "Cannot 'save', no output file has been set.");
-    K_ASSERT(WFS().check_extension(scene_file_path_, ".scn"), "Only .scn XML files supported for now.");
+    K_ASSERT(WFS_.check_extension(scene_file_path_, ".scn"), "Only .scn XML files supported for now.");
     save_xml(scene_file_path_);
 }
 

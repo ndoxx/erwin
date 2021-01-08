@@ -29,7 +29,7 @@ static void parse(std::istream& stream)
 void init()
 {
     KLOGN("util") << "[InternStringLocator] Retrieving intern string table." << std::endl;
-    auto ifs = WFS().get_input_stream("syscfg://intern.txt");
+    auto ifs = WFS_.get_input_stream("syscfg://intern.txt");
     parse(*ifs);
 }
 

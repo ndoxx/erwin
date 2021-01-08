@@ -1,0 +1,6 @@
+[project]
+	last_project = ""
+	auto_load = true
+
+[scripting]
+	transport_runtime_parameters = true

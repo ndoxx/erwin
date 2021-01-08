@@ -30,7 +30,7 @@ std::vector<ShaderStageDescriptor> parse_stages(const std::string& path)
 {
     std::string entrypointname[6];
 
-    auto ifs = WFS().get_input_stream(path);
+    auto ifs = WFS_.get_input_stream(path);
 
     // Parse SPIR-V data
     uint32_t magic = 0;

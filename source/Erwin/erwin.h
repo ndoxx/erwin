@@ -9,7 +9,6 @@
 #include "core/application.h"
 #include "core/core.h"
 #include "core/layer.h"
-#include "core/config.h"
 #include "input/camera_2d_controller.h"
 #include "input/input.h"
 #include "event/event_bus.h"

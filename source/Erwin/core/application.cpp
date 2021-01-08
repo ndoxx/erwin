@@ -1,7 +1,6 @@
 #include "core/application.h"
 #include "asset/asset_manager.h"
 #include "core/clock.hpp"
-#include "core/config.h"
 #include "core/intern_string.h"
 #include "entity/init.h"
 #include "event/window_events.h"
@@ -18,6 +17,7 @@
 #include "render/shader_lang.h"
 #include <kibble/logger/dispatcher.h>
 #include <kibble/logger/logger.h>
+#include <kibble/logger/sink.h>
 
 #include <iostream>
 
@@ -42,43 +42,35 @@ Application::Application(const ApplicationParameters& params)
     // Create application singleton
     K_ASSERT(!Application::pinstance_, "Application already exists!");
     Application::pinstance_ = this;
-    KLOGGER_START();
     KLOGGER(create_channel("ios", 1));
     // Initialize file system
-    filesystem_ = new kb::kfs::FileSystem();
-    auto root_dir = filesystem_->get_self_directory().parent_path();
-    if(!filesystem_->setup_settings_directory(params.vendor, params.name, "usr"))
+    auto root_dir = filesystem_.get_self_directory().parent_path();
+    if(!filesystem_.setup_settings_directory(params.vendor, params.name, "usr"))
     {
-        KLOGE("application") << "Cannot setup application settings directory." << std::endl;
+        KLOGE("core") << "Cannot setup application settings directory." << std::endl;
     }
-    if(!filesystem_->alias_directory(root_dir, "root"))
+    if(!filesystem_.alias_directory(root_dir, "root"))
     {
-        KLOGE("application") << "Cannot alias root directory." << std::endl;
+        KLOGE("core") << "Cannot alias root directory." << std::endl;
     }
-    if(!filesystem_->alias_directory(root_dir / "config", "syscfg"))
+    if(!filesystem_.alias_directory(root_dir / "config", "syscfg"))
     {
-        KLOGE("application") << "Cannot alias config directory." << std::endl;
+        KLOGE("core") << "Cannot alias config directory." << std::endl;
     }
-    if(!filesystem_->alias_directory(root_dir / "source/Erwin/assets", "sysres"))
+    if(!filesystem_.alias_directory(root_dir / "source/Erwin/assets", "sysres"))
     {
-        KLOGE("application") << "Cannot alias system resources directory." << std::endl;
+        KLOGE("core") << "Cannot alias system resources directory." << std::endl;
     }
-    slang::register_include_directory("sysres://shaders");
-}
-
-Application::~Application()
-{
-    delete filesystem_;
 }
 
 void Application::add_configuration(const std::string& filepath)
 {
-    if(filesystem_->exists(filepath))
+    if(filesystem_.exists(filepath))
         s_storage.configuration_files.push_back(filepath);
     else
     {
         KLOGW("application") << "Unable to find configuration file:" << std::endl;
-        KLOGI << "client configuration directory: " << kb::KS_PATH_ << filesystem_->get_settings_directory()
+        KLOGI << "client configuration directory: " << kb::KS_PATH_ << filesystem_.get_settings_directory()
               << std::endl;
         KLOGI << "file path: " << kb::KS_PATH_ << filepath << std::endl;
     }
@@ -97,8 +89,8 @@ void Application::add_configuration(const std::string& user_path, const std::str
 
 bool Application::mirror_settings(const std::string& user_path, const std::string& default_path)
 {
-    bool has_user = filesystem_->exists(user_path);
-    bool has_default = filesystem_->exists(default_path);
+    bool has_user = filesystem_.exists(user_path);
+    bool has_default = filesystem_.exists(default_path);
 
     if(!has_default && !has_user)
     {
@@ -111,14 +103,14 @@ bool Application::mirror_settings(const std::string& user_path, const std::strin
     bool copy_default = (has_default && !has_user);
     // Copy default if more recent
     if(has_default && has_user)
-        copy_default = filesystem_->is_older(user_path, default_path);
+        copy_default = filesystem_.is_older(user_path, default_path);
 
     if(copy_default)
     {
         KLOG("config", 1) << "Copying default config:" << std::endl;
         KLOGI << "User:    " << kb::KS_PATH_ << user_path << std::endl;
         KLOGI << "Default: " << kb::KS_PATH_ << default_path << std::endl;
-        fs::copy_file(filesystem_->regular_path(default_path), filesystem_->regular_path(user_path),
+        fs::copy_file(filesystem_.regular_path(default_path), filesystem_.regular_path(user_path),
                       fs::copy_options::overwrite_existing);
     }
 
@@ -131,22 +123,81 @@ const memory::HeapArea& Application::get_system_area() { return s_storage.system
 
 const memory::HeapArea& Application::get_render_area() { return s_storage.render_area; }
 
+void Application::init_logger()
+{
+    for(size_t ii = 0; ii < settings_.get_array_size("erwin.logger.channels"_h); ++ii)
+    {
+        std::string channel_name = settings_.get<std::string>(su::h_concat("erwin.logger.channels[", ii, "].name"), "");
+        size_t verbosity = settings_.get<size_t>(su::h_concat("erwin.logger.channels[", ii, "].verbosity"), 0);
+        KLOGGER(create_channel(channel_name, uint8_t(verbosity)));
+    }
+    for(size_t ii = 0; ii < settings_.get_array_size("erwin.logger.sinks"_h); ++ii)
+    {
+        std::string sink_type = settings_.get<std::string>(su::h_concat("erwin.logger.sinks[", ii, "].type"), "");
+        std::string sink_name = settings_.get<std::string>(su::h_concat("erwin.logger.sinks[", ii, "].name"), "");
+        std::string attachments = settings_.get<std::string>(su::h_concat("erwin.logger.sinks[", ii, "].channels"), "");
+        ;
+        hash_t htype = H_(sink_type);
+        std::unique_ptr<kb::klog::Sink> p_sink = nullptr;
+        switch(htype)
+        {
+        case "ConsoleSink"_h: {
+            p_sink = std::make_unique<kb::klog::ConsoleSink>();
+            break;
+        }
+        case "LogFileSink"_h: {
+            std::string dest_file =
+                settings_.get<std::string>(su::h_concat("erwin.logger.sinks[", ii, "].destination"), "");
+            if(!dest_file.empty())
+                p_sink = std::make_unique<kb::klog::LogFileSink>(dest_file);
+            break;
+        }
+        case "NetSink"_h: {
+            std::string host =
+                settings_.get<std::string>(su::h_concat("erwin.logger.sinks[", ii, "].host"), "localhost");
+            uint32_t port = settings_.get<uint32_t>(su::h_concat("erwin.logger.sinks[", ii, "].port"), 31337);
+            auto net_sink = std::make_unique<kb::klog::NetSink>();
+            if(net_sink->connect(host, uint16_t(port)))
+                p_sink = std::move(net_sink);
+        }
+        }
+        if(p_sink)
+        {
+            bool attach_all = !attachments.compare("all");
+            if(attach_all)
+            {
+                KLOGGER(attach_all(sink_name, std::move(p_sink)));
+            }
+            else
+            {
+                std::vector<hash_t> chan_hnames;
+                kb::su::tokenize(attachments, ',',
+                                 [&](const std::string& chan_name) { chan_hnames.push_back(H_(chan_name.c_str())); });
+                if(!chan_hnames.empty())
+                {
+                    KLOGGER(attach(sink_name, std::move(p_sink), chan_hnames));
+                }
+            }
+        }
+    }
+    KLOGGER(set_backtrace_on_error(settings_.get<bool>("erwin.logger.backtrace_on_error"_h, true)));
+}
+
 bool Application::init()
 {
     {
         W_PROFILE_SCOPE("Application config")
 
         // Initialize config
-        cfg::load("syscfg://erwin.xml");
-
-        KLOGGER(set_backtrace_on_error(cfg::get<bool>("erwin.logger.backtrace_on_error"_h, true)));
+        settings_.load_toml(filesystem_.regular_path("syscfg://erwin.toml"));
+        init_logger();
 
         // Log basic info
         KLOGN("config") << "[Paths]" << std::endl;
-        KLOGI << "Executable path:   " << kb::KS_PATH_ << filesystem_->get_self_directory() << kb::KC_ << std::endl;
-        KLOGI << "System config dir: " << kb::KS_PATH_ << filesystem_->get_aliased_directory("syscfg"_h) << kb::KC_
+        KLOGI << "Executable path:   " << kb::KS_PATH_ << filesystem_.get_self_directory() << kb::KC_ << std::endl;
+        KLOGI << "System config dir: " << kb::KS_PATH_ << filesystem_.get_aliased_directory("syscfg"_h) << kb::KC_
               << std::endl;
-        KLOGI << "User settings dir: " << kb::KS_PATH_ << filesystem_->get_aliased_directory("usr"_h) << kb::KC_
+        KLOGI << "User settings dir: " << kb::KS_PATH_ << filesystem_.get_aliased_directory("usr"_h) << kb::KC_
               << std::endl;
 
         // Parse intern strings
@@ -158,7 +209,7 @@ bool Application::init()
     {
         W_PROFILE_SCOPE("System memory init")
         KLOGN("application") << "Initializing system memory" << std::endl;
-        size_t system_mem_size = cfg::get<size_t>("erwin.memory.system_area"_h, 10_MB);
+        size_t system_mem_size = settings_.get<size_t>("erwin.memory.system_area"_h, 10_MB);
         if(!s_storage.system_area.init(system_mem_size))
         {
             KLOGF("application") << "Cannot allocate system memory." << std::endl;
@@ -170,7 +221,7 @@ bool Application::init()
     {
         W_PROFILE_SCOPE("Renderer memory init")
         KLOGN("application") << "Initializing renderer memory" << std::endl;
-        size_t renderer_mem_size = cfg::get<size_t>("erwin.memory.renderer_area"_h, 20_MB);
+        size_t renderer_mem_size = settings_.get<size_t>("erwin.memory.renderer_area"_h, 20_MB);
         if(!s_storage.render_area.init(renderer_mem_size))
         {
             KLOGF("application") << "Cannot allocate renderer memory." << std::endl;
@@ -184,14 +235,14 @@ bool Application::init()
         KLOGN("config") << "Parsing client configuration" << std::endl;
         on_client_init();
         for(auto&& cfg_file : s_storage.configuration_files)
-            cfg::load(cfg_file);
+            settings_.load_toml(filesystem_.regular_path(cfg_file));
     }
 
     // Initialize client memory
     {
         W_PROFILE_SCOPE("Client memory init")
         KLOGN("application") << "Initializing client memory" << std::endl;
-        size_t client_mem_size = cfg::get<size_t>("client.memory.area"_h, 1_MB);
+        size_t client_mem_size = settings_.get<size_t>("client.memory.area"_h, 1_MB);
         if(!s_storage.client_area.init(client_mem_size))
         {
             KLOGF("application") << "Cannot allocate client memory." << std::endl;
@@ -205,16 +256,18 @@ bool Application::init()
         entity::init_components();
     }
 
+    slang::register_include_directory("sysres://shaders");
+
     // Create window
     {
         W_PROFILE_SCOPE("Window creation")
-        WindowProps props{cfg::get<std::string>("client.display.title"_h, "ErwinEngine"),
-                          cfg::get<uint32_t>("client.display.width"_h, 1280),
-                          cfg::get<uint32_t>("client.display.height"_h, 1024),
-                          cfg::get<bool>("client.display.full"_h, false),
-                          cfg::get<bool>("client.display.topmost"_h, false),
-                          cfg::get<bool>("client.display.vsync"_h, true),
-                          cfg::get<bool>("client.display.host"_h, true)};
+        WindowProps props{settings_.get<std::string>("client.display.title"_h, "ErwinEngine"),
+                          settings_.get<uint32_t>("client.display.width"_h, 1280),
+                          settings_.get<uint32_t>("client.display.height"_h, 1024),
+                          settings_.get<bool>("client.display.full"_h, false),
+                          settings_.get<bool>("client.display.topmost"_h, false),
+                          settings_.get<bool>("client.display.vsync"_h, true),
+                          settings_.get<bool>("client.display.host"_h, true)};
 #ifdef W_DEBUG
         props.title += " [DEBUG]";
 #endif
@@ -326,7 +379,7 @@ void Application::run()
     KLOG("application", 1) << kb::KF_(204, 0, 204) << layer_stack_ << std::endl;
 
     // Profiling options
-    W_PROFILE_ENABLE_SESSION(cfg::get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
+    W_PROFILE_ENABLE_SESSION(settings_.get<bool>("erwin.profiling.runtime_session_enabled"_h, false));
 
     kb::nanoClock frame_clock;
     frame_clock.restart();
@@ -403,7 +456,7 @@ void Application::run()
     {
         KLOGN("application") << "Saving config file:" << std::endl;
         KLOGI << kb::KS_PATH_ << cfg_file << std::endl;
-        cfg::save(cfg_file);
+        settings_.save_toml(filesystem_.regular_path(cfg_file));
     }
 
     KLOG("application", 1) << kb::KF_(0, 153, 153) << "--- Application stopped ---" << std::endl;
