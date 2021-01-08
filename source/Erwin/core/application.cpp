@@ -129,7 +129,17 @@ void Application::init_logger()
     {
         std::string channel_name = settings_.get<std::string>(su::h_concat("erwin.logger.channels[", ii, "].name"), "");
         size_t verbosity = settings_.get<size_t>(su::h_concat("erwin.logger.channels[", ii, "].verbosity"), 0);
-        KLOGGER(create_channel(channel_name, uint8_t(verbosity)));
+        hash_t hchan = H_(channel_name);
+        bool has_channel = false;
+        KLOGGER(has_channel(hchan, has_channel));
+        if(!has_channel)
+        {
+            KLOGGER(create_channel(channel_name, uint8_t(verbosity)));
+        }
+        else
+        {
+            KLOGGER(set_channel_verbosity(hchan, uint8_t(verbosity)));
+        }
     }
     for(size_t ii = 0; ii < settings_.get_array_size("erwin.logger.sinks"_h); ++ii)
     {
