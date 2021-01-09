@@ -31,15 +31,16 @@ static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 43.f;
 static constexpr float k_overlay_dist = 10.f;
 
-SceneViewWidget::SceneViewWidget() : Widget("Scene", true), render_surface_{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}
+SceneViewWidget::SceneViewWidget(erwin::EventBus& event_bus)
+    : Widget("Scene", true, event_bus), render_surface_{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}
 {
     flags_ |= ImGuiWindowFlags_MenuBar;
     enable_runtime_profiling_ = CFG_.get<bool>("erwin.profiling.runtime_session_enabled"_h, false);
     track_next_frame_draw_calls_ = false;
     runtime_ = false;
     paused_ = false;
-    stats_overlay_ = new RenderStatsOverlay();
-    gizmo_overlay_ = new GizmoOverlay();
+    stats_overlay_ = new RenderStatsOverlay(event_bus_);
+    gizmo_overlay_ = new GizmoOverlay(event_bus_);
 }
 
 SceneViewWidget::~SceneViewWidget()
@@ -71,8 +72,8 @@ void SceneViewWidget::on_resize(uint32_t width, uint32_t height)
     render_surface_.w = rw;
     render_surface_.h = rh;
 
-    EventBus::enqueue(WindowResizeEvent(int(width), int(height)));
-    EventBus::enqueue(FramebufferResizeEvent(int(rw), int(rh)));
+    event_bus_.enqueue(WindowResizeEvent(int(width), int(height)));
+    event_bus_.enqueue(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
 void SceneViewWidget::on_move(int32_t x, int32_t y)
@@ -84,7 +85,7 @@ void SceneViewWidget::on_move(int32_t x, int32_t y)
     render_surface_.x1 = render_surface_.x0 + rw;
     render_surface_.y1 = render_surface_.y0 + rh;
 
-    EventBus::enqueue(WindowMovedEvent(x, y));
+    event_bus_.enqueue(WindowMovedEvent(x, y));
 }
 
 bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
@@ -99,7 +100,7 @@ bool SceneViewWidget::on_mouse_event(const erwin::MouseButtonEvent& event)
         glm::vec2 coords = {(event.x - render_surface_.x0) / render_surface_.w,
                             1.f - (event.y - render_surface_.y0) / render_surface_.h};
 
-        EventBus::enqueue(RaySceneQueryEvent(coords));
+        event_bus_.enqueue(RaySceneQueryEvent(coords));
 
         return true;
     }

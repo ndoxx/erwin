@@ -1,6 +1,5 @@
 #pragma once
 
-#include "erwin.h"
 #include "layer/gui_layer.h"
 #include "system/bounding_box_system.h"
 #include "system/selection_system.h"
@@ -17,7 +16,7 @@ class SceneViewWidget;
 class SceneEditorLayer : public GuiLayer
 {
 public:
-    SceneEditorLayer();
+    SceneEditorLayer(erwin::Application&);
     
     void setup_editor_entities(erwin::Scene& scene);
 

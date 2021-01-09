@@ -1,11 +1,12 @@
 #include "widget/widget.h"
+#include "event/event_bus.h"
 #include <kibble/logger/logger.h>
 #include "imgui.h"
 
 namespace editor
 {
 
-Widget::Widget(const std::string& name, bool open):
+Widget::Widget(const std::string& name, bool open, erwin::EventBus& event_bus):
 open_(open),
 name_(name),
 dbg_profile_name_("imgui_render: " + name_),
@@ -16,7 +17,8 @@ x_pos_(0),
 y_pos_(0),
 has_focus_(false),
 is_hovered_(false),
-was_open_(open)
+was_open_(open),
+event_bus_(event_bus)
 {
     
 }

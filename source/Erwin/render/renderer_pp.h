@@ -6,6 +6,7 @@
 namespace erwin
 {
 
+class EventBus;
 // Post-processing renderer front-end
 class PostProcessingRenderer
 {
@@ -28,7 +29,7 @@ private:
 	friend class Application;
 	
 	// Initialize renderer
-	static void init();
+	static void init(EventBus&);
 	// Destroy renderer
 	static void shutdown();
 };

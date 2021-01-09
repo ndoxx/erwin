@@ -1,7 +1,15 @@
 #include "layer/layer_scene_view.h"
+#include "entity/component/PBR_material.h"
+#include "entity/component/dirlight_material.h"
+#include "entity/component/light.h"
+#include "entity/component/mesh.h"
+#include "entity/component/transform.h"
 #include "imgui/font_awesome.h"
+#include "input/input.h"
 #include "level/scene_manager.h"
 #include "project/project.h"
+#include "render/common_geometry.h"
+#include "render/renderer_3d.h"
 #include "script/script_engine.h"
 
 #include <bitset>
@@ -13,7 +21,7 @@ using namespace erwin;
 namespace editor
 {
 
-SceneViewLayer::SceneViewLayer() : Layer("SceneViewLayer") {}
+SceneViewLayer::SceneViewLayer(erwin::Application& application) : Layer(application, "SceneViewLayer") {}
 
 void SceneViewLayer::on_imgui_render() {}
 
@@ -52,10 +60,7 @@ void SceneViewLayer::on_update(GameClock& clock)
         {
             float dt = clock.get_scaled_frame_duration();
             auto& ctx = ScriptEngine::get_context(scene.get_script_context());
-            ctx.traverse_actors([dt](auto& actor)
-            {
-                actor.update(dt);
-            });
+            ctx.traverse_actors([dt](auto& actor) { actor.update(dt); });
         }
 
         transform_system_.update(clock, scene);

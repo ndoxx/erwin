@@ -14,7 +14,7 @@ namespace erwin
 class ImGuiLayer: public Layer
 {
 public:
-	ImGuiLayer();
+	ImGuiLayer(Application&);
 	~ImGuiLayer() = default;
 
 	virtual void on_attach() override;

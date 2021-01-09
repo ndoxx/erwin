@@ -37,7 +37,7 @@ static struct ApplicationStorage
 } s_storage;
 
 Application::Application(const ApplicationParameters& params)
-    : vsync_enabled_(false), parameters_(params), is_running_(true), minimized_(false)
+    : parameters_(params), event_bus_(settings_)
 {
     // Create application singleton
     K_ASSERT(!Application::pinstance_, "Application already exists!");
@@ -281,30 +281,30 @@ bool Application::init()
 #ifdef W_DEBUG
         props.title += " [DEBUG]";
 #endif
-        window_ = Window::create(props);
+        window_ = Window::create(event_bus_, props);
         vsync_enabled_ = props.vsync;
     }
 
     {
         W_PROFILE_SCOPE("Renderer startup")
-        FramebufferPool::init(window_->get_width(), window_->get_height());
+        FramebufferPool::init(window_->get_width(), window_->get_height(), event_bus_ /*TMP*/);
         Renderer::init(s_storage.render_area);
         AssetManager::create_asset_registry(); // Create engine asset registry (index 0)
         CommonGeometry::init();
         Renderer2D::init();
         Renderer3D::init();
-        PostProcessingRenderer::init();
+        PostProcessingRenderer::init(event_bus_);
     }
 
     {
         W_PROFILE_SCOPE("ImGui overlay creation")
         // Generate ImGui overlay
-        IMGUI_LAYER = new ImGuiLayer();
+        IMGUI_LAYER = new ImGuiLayer(*this);
         IMGUI_LAYER->on_attach();
     }
 
     // React to window close events (and shutdown application)
-    EventBus::subscribe(this, &Application::on_window_close_event);
+    event_bus_.subscribe(this, &Application::on_window_close_event);
 
     {
         W_PROFILE_SCOPE("Application load")
@@ -400,10 +400,10 @@ void Application::run()
         // --- EVENT PHASE ---
         game_clock_.update(frame_d);
 
-        EventBus::enqueue(BeginFrameEvent());
+        event_bus_.enqueue(BeginFrameEvent());
 
         // Dispatch queued events
-        EventBus::dispatch();
+        event_bus_.dispatch();
 
         // --- UPDATE PHASE ---
         // For each layer, update

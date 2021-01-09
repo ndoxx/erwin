@@ -1,8 +1,8 @@
 #pragma once
 
-#include "erwin.h"
-#include "input/freefly_camera_system.h"
+#include "core/layer.h"
 #include "entity/system/transform_hierarchy_system.h"
+#include "input/freefly_camera_system.h"
 
 namespace erwin
 {
@@ -15,11 +15,9 @@ namespace editor
 class SceneViewLayer : public erwin::Layer
 {
 public:
-    friend class Editor;
-
-    SceneViewLayer();
+    SceneViewLayer(erwin::Application& application);
     ~SceneViewLayer() = default;
-    
+
     virtual void on_imgui_render() override;
 
     void setup_camera(erwin::Scene& scene);

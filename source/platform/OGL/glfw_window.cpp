@@ -11,8 +11,6 @@
 #include "../Erwin/event/event_bus.h"
 #include "../Erwin/event/window_events.h"
 
-
-
 namespace erwin
 {
 /*
@@ -66,7 +64,7 @@ void APIENTRY glDebugOutput(GLenum source,
 */
 static uint8_t s_glfw_num_windows = 0;
 
-WScope<Window> Window::create(const WindowProps& props) { return make_scope<GLFWWindow>(props); }
+WScope<Window> Window::create(EventBus& event_bus, const WindowProps& props) { return make_scope<GLFWWindow>(props, event_bus); }
 
 static void GLFW_error_callback(int error, const char* description)
 {
@@ -76,13 +74,73 @@ static void GLFW_error_callback(int error, const char* description)
 struct GLFWWindow::GLFWWindowDataImpl
 {
     GLFWwindow* window;
+    EventBus& event_bus_;
     bool vsync;
     int width;
     int height;
     std::string title;
+
+    GLFWWindowDataImpl(EventBus& event_bus) : event_bus_(event_bus) {}
+
+    inline void on_close() const { event_bus_.enqueue(WindowCloseEvent()); }
+    inline void on_window_resize(int w, int h)
+    {
+        width = w;
+        height = h;
+        event_bus_.enqueue(WindowResizeEvent(width, height));
+    }
+    inline void on_framebuffer_resize(int w, int h) const { event_bus_.enqueue(FramebufferResizeEvent(w, h)); }
+    inline void on_keyboard(int key, int /*scancode*/, int action, int mods) const
+    {
+        keymap::WKEY wkey = keymap::GLFW_KEY_to_WKEY(uint16_t(key));
+        switch(action)
+        {
+        case GLFW_PRESS: {
+            event_bus_.enqueue(KeyboardEvent(wkey, uint8_t(mods), true, false));
+            break;
+        }
+        case GLFW_RELEASE: {
+            event_bus_.enqueue(KeyboardEvent(wkey, uint8_t(mods), false, false));
+            break;
+        }
+        case GLFW_REPEAT: {
+            event_bus_.enqueue(KeyboardEvent(wkey, uint8_t(mods), true, true));
+            break;
+        }
+        }
+    }
+    inline void on_key_typed(unsigned int codepoint) const { event_bus_.enqueue(KeyTypedEvent(codepoint)); }
+    inline void on_mouse_button(int button, int action, int mods) const
+    {
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+
+        keymap::WMOUSE wbutton = keymap::GLFW_MB_to_WMOUSE(uint16_t(button));
+
+        switch(action)
+        {
+        case GLFW_PRESS: {
+            event_bus_.enqueue(MouseButtonEvent(wbutton, uint8_t(mods), true, float(x), float(y)));
+            break;
+        }
+        case GLFW_RELEASE: {
+            event_bus_.enqueue(MouseButtonEvent(wbutton, uint8_t(mods), false, float(x), float(y)));
+            break;
+        }
+        }
+    }
+    inline void on_mouse_move(double x, double y) const { event_bus_.enqueue(MouseMovedEvent(float(x), float(y))); }
+    inline void on_mouse_scroll(double x_offset, double y_offset) const
+    {
+        event_bus_.enqueue(MouseScrollEvent(float(x_offset), float(y_offset)));
+    }
 };
 
-GLFWWindow::GLFWWindow(const WindowProps& props) : data_(std::make_unique<GLFWWindowDataImpl>()) { init(props); }
+GLFWWindow::GLFWWindow(const WindowProps& props, EventBus& event_bus)
+    : data_(std::make_unique<GLFWWindowDataImpl>(event_bus))
+{
+    init(props);
+}
 
 GLFWWindow::~GLFWWindow() { cleanup(); }
 
@@ -179,7 +237,10 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
     glfwSetErrorCallback(GLFW_error_callback);
 
     // Window close event
-    glfwSetWindowCloseCallback(data_->window, [](GLFWwindow*) { EventBus::enqueue(WindowCloseEvent()); });
+    glfwSetWindowCloseCallback(data_->window, [](auto window) {
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_close();
+    });
 
     // If we render to a GUI window for example, we rather react to the GUI window resize events.
     // So the following callbacks are not set if window is not host.
@@ -187,69 +248,45 @@ void GLFWWindow::set_event_callbacks(const WindowProps& props)
     {
         // Window resize event
         glfwSetWindowSizeCallback(data_->window, [](GLFWwindow* window, int width, int height) {
-            auto* data = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
-            data->width = width;
-            data->height = height;
-            EventBus::enqueue(WindowResizeEvent(width, height));
+            auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+            pw->on_window_resize(width, height);
         });
 
         // On window resize, framebuffer needs resizing and glViewport must be called with the new size
-        glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow*, int width, int height) {
-            EventBus::enqueue(FramebufferResizeEvent(width, height));
+        glfwSetFramebufferSizeCallback(data_->window, [](GLFWwindow* window, int width, int height) {
+            auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+            pw->on_framebuffer_resize(width, height);
         });
     }
 
     // Keyboard event
-    glfwSetKeyCallback(data_->window, [](GLFWwindow*, int key, int /*scancode*/, int action, int mods) {
-        keymap::WKEY wkey = keymap::GLFW_KEY_to_WKEY(uint16_t(key));
-        switch(action)
-        {
-        case GLFW_PRESS: {
-            EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), true, false));
-            break;
-        }
-        case GLFW_RELEASE: {
-            EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), false, false));
-            break;
-        }
-        case GLFW_REPEAT: {
-            EventBus::enqueue(KeyboardEvent(wkey, uint8_t(mods), true, true));
-            break;
-        }
-        }
+    glfwSetKeyCallback(data_->window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_keyboard(key, scancode, action, mods);
     });
 
     // Key typed event
-    glfwSetCharCallback(data_->window,
-                        [](GLFWwindow*, unsigned int codepoint) { EventBus::enqueue(KeyTypedEvent(codepoint)); });
+    glfwSetCharCallback(data_->window, [](GLFWwindow* window, unsigned int codepoint) {
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_key_typed(codepoint);
+    });
 
     // Mouse event
     glfwSetMouseButtonCallback(data_->window, [](GLFWwindow* window, int button, int action, int mods) {
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-
-        keymap::WMOUSE wbutton = keymap::GLFW_MB_to_WMOUSE(uint16_t(button));
-
-        switch(action)
-        {
-        case GLFW_PRESS: {
-            EventBus::enqueue(MouseButtonEvent(wbutton, uint8_t(mods), true, float(x), float(y)));
-            break;
-        }
-        case GLFW_RELEASE: {
-            EventBus::enqueue(MouseButtonEvent(wbutton, uint8_t(mods), false, float(x), float(y)));
-            break;
-        }
-        }
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_mouse_button(button, action, mods);
     });
 
     // Cursor moving event
-    glfwSetCursorPosCallback(
-        data_->window, [](GLFWwindow*, double x, double y) { EventBus::enqueue(MouseMovedEvent(float(x), float(y))); });
+    glfwSetCursorPosCallback(data_->window, [](GLFWwindow* window, double x, double y) {
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_mouse_move(x, y);
+    });
 
     // Mouse scroll event
-    glfwSetScrollCallback(data_->window, [](GLFWwindow*, double x_offset, double y_offset) {
-        EventBus::enqueue(MouseScrollEvent(float(x_offset), float(y_offset)));
+    glfwSetScrollCallback(data_->window, [](GLFWwindow* window, double x_offset, double y_offset) {
+        auto* pw = static_cast<GLFWWindowDataImpl*>(glfwGetWindowUserPointer(window));
+        pw->on_mouse_scroll(x_offset, y_offset);
     });
 }
 

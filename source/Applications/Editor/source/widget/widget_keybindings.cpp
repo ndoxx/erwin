@@ -1,20 +1,19 @@
 #include "widget/widget_keybindings.h"
-#include "input/input.h"
 #include "event/event_bus.h"
 #include "imgui.h"
+#include "input/input.h"
 
 using namespace erwin;
 
 namespace editor
 {
 
-KeybindingsWidget::KeybindingsWidget():
-Widget("Key bindings", false)
+KeybindingsWidget::KeybindingsWidget(erwin::EventBus& event_bus) : Widget("Key bindings", false, event_bus)
 {
     flags_ = ImGuiWindowFlags_NoDocking;
     selection_ = 0;
 
-    EventBus::subscribe(this, &KeybindingsWidget::on_keyboard_event);
+    event_bus_.subscribe(this, &KeybindingsWidget::on_keyboard_event);
 }
 
 bool KeybindingsWidget::on_keyboard_event(const erwin::KeyboardEvent& event)
@@ -39,8 +38,8 @@ void KeybindingsWidget::on_imgui_render()
 {
     uint32_t action_count = uint32_t(Input::get_action_count());
 
-    ImGui::Columns(2, "Keys");  // 3-ways, no border
-    for(uint32_t ii=1; ii<action_count; ++ii)
+    ImGui::Columns(2, "Keys"); // 3-ways, no border
+    for(uint32_t ii = 1; ii < action_count; ++ii)
     {
         const auto& action = Input::get_action(ii);
 
@@ -50,7 +49,8 @@ void KeybindingsWidget::on_imgui_render()
 
         ImGui::TextUnformatted(action.description.c_str());
         ImGui::NextColumn();
-        if(ImGui::Selectable(is_selected ? "<press a key>" : key_comb.c_str(), is_selected, ImGuiSelectableFlags_AllowDoubleClick))
+        if(ImGui::Selectable(is_selected ? "<press a key>" : key_comb.c_str(), is_selected,
+                             ImGuiSelectableFlags_AllowDoubleClick))
         {
             if(ImGui::IsMouseDoubleClicked(0))
             {
@@ -76,6 +76,5 @@ void KeybindingsWidget::on_imgui_render()
         open_ = false;
     }
 }
-
 
 } // namespace editor

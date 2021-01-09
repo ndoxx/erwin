@@ -54,22 +54,22 @@ void ErwinEditor::on_load()
     config.MergeMode = true;
     io.Fonts->AddFontFromFileTTF(icon_font_path.c_str(), 16.0f, &config, ranges);
 
-    console_ = new editor::ConsoleWidget();
+    console_ = new editor::ConsoleWidget(get_event_bus());
     KLOGGER(attach("cw_sink", std::make_unique<editor::ConsoleWidgetSink>(console_),
                    {"editor"_h, "application"_h, "entity"_h, "scene"_h, "script"_h}));
-    keybindings_widget_ = new editor::KeybindingsWidget();
+    keybindings_widget_ = new editor::KeybindingsWidget(get_event_bus());
 
     KLOGN("editor") << "Loading Erwin Editor." << std::endl;
 
-    scene_view_layer_ = new SceneViewLayer();
-    scene_editor_layer_ = new editor::SceneEditorLayer();
-    auto* material_editor_layer = new editor::MaterialEditorLayer();
+    scene_view_layer_ = new editor::SceneViewLayer(*this);
+    scene_editor_layer_ = new editor::SceneEditorLayer(*this);
+    auto* material_editor_layer = new editor::MaterialEditorLayer(*this);
     push_layer(scene_view_layer_);
     push_overlay(scene_editor_layer_);
     push_overlay(material_editor_layer, false);
-    push_overlay(new editor::PostProcessingLayer());
+    push_overlay(new editor::PostProcessingLayer(*this));
 
-    EventBus::subscribe(this, &ErwinEditor::on_keyboard_event);
+    get_event_bus().subscribe(this, &ErwinEditor::on_keyboard_event);
 
     create_state(EditorStateIdx::SCENE_EDITION, {"Scene edition", {scene_view_layer_}, scene_editor_layer_});
     create_state(EditorStateIdx::MATERIAL_AUTHORING, {"Material authoring", {}, material_editor_layer});
@@ -134,7 +134,7 @@ bool ErwinEditor::on_keyboard_event(const KeyboardEvent& e)
     // Terminate on Ctrl+ESCAPE
     if(Input::match_action(ACTION_EDITOR_QUIT, e))
     {
-        EventBus::enqueue(WindowCloseEvent());
+        get_event_bus().enqueue(WindowCloseEvent());
         return true;
     }
 
@@ -279,7 +279,7 @@ void ErwinEditor::on_imgui_render()
 
     if(exit_required_)
     {
-        EventBus::enqueue(WindowCloseEvent());
+        get_event_bus().enqueue(WindowCloseEvent());
     }
 }
 

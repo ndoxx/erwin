@@ -11,7 +11,7 @@ class MaterialAuthoringWidget;
 class MaterialEditorLayer : public GuiLayer
 {
 public:
-    MaterialEditorLayer();
+    MaterialEditorLayer(erwin::Application&);
 
     virtual void on_imgui_render() override;
     

@@ -47,7 +47,6 @@ target_include_directories(erwin
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ctti/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/entt/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/chaiscript/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/kibble/source"
         # "${INC_EASTL}"
     )
 

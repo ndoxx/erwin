@@ -12,8 +12,8 @@ namespace erwin
 {
 
 
-ImGuiLayer::ImGuiLayer():
-Layer("ImGuiLayer")
+ImGuiLayer::ImGuiLayer(Application& application):
+Layer(application, "ImGuiLayer")
 {
 	
 }

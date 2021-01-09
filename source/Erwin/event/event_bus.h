@@ -13,16 +13,16 @@
 // [ ] Event pooling if deemed necessary
 
 #pragma once
-#include <vector>
 #include <map>
 #include <memory>
 #include <numeric>
 #include <queue>
+#include <vector>
 
-#include <kibble/logger/logger.h>
 #include "event/delegate.h"
 #include "event/event.h"
-#include "core/application.h"
+#include <kibble/config/config.h>
+#include <kibble/logger/logger.h>
 
 namespace erwin
 {
@@ -135,8 +135,10 @@ private:
 class EventBus
 {
 public:
+    EventBus(const kb::cfg::Settings& settings) : settings_(settings) {}
+
     // Subscribe a free function to a particular event type
-    template <typename EventT> static void subscribe(bool (*freeFunction)(const EventT&), uint32_t priority = 0u)
+    template <typename EventT> void subscribe(bool (*freeFunction)(const EventT&), uint32_t priority = 0u)
     {
         auto* q_base_ptr = get_or_create<EventT>().get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
@@ -145,7 +147,7 @@ public:
 
     // Subscribe a member function to a particular event type
     template <typename ClassT, typename EventT>
-    static void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint32_t priority = 0u)
+    void subscribe(ClassT* instance, bool (ClassT::*memberFunction)(const EventT&), uint32_t priority = 0u)
     {
         auto* q_base_ptr = get_or_create<EventT>().get();
         auto* q_ptr = static_cast<EventQueue<EventT>*>(q_base_ptr);
@@ -153,9 +155,9 @@ public:
     }
 
     // Fire an event and have it handled immediately
-    template <typename EventT> static void fire(const EventT& event)
+    template <typename EventT> void fire(const EventT& event)
     {
-        try_get<EventT>([&event](auto* q_ptr) {
+        try_get<EventT>([&event, this](auto* q_ptr) {
 #ifdef W_DEBUG
             log_event(event);
 #endif
@@ -164,9 +166,9 @@ public:
     }
 
     // Enqueue an event for deferred handling (during the dispatch() call)
-    template <typename EventT> static void enqueue(const EventT& event)
+    template <typename EventT> void enqueue(const EventT& event)
     {
-        try_get<EventT>([&event](auto* q_ptr) {
+        try_get<EventT>([&event, this](auto* q_ptr) {
 #ifdef W_DEBUG
             log_event(event);
 #endif
@@ -174,9 +176,9 @@ public:
         });
     }
 
-    template <typename EventT> static void enqueue(EventT&& event)
+    template <typename EventT> void enqueue(EventT&& event)
     {
-        try_get<EventT>([&event](auto* q_ptr) {
+        try_get<EventT>([&event, this](auto* q_ptr) {
 #ifdef W_DEBUG
             log_event(event);
 #endif
@@ -185,46 +187,25 @@ public:
     }
 
     // Handle all queued events
-    static inline void dispatch()
-    {
-        // An event once handled can cause another event to be enqueued, so
-        // we iterate till all events have been processed
-        while(!empty())
-            for(auto&& [id, queue] : event_queues_)
-                queue->process();
-    }
-
+    void dispatch();
     // Check if all queues are empty
-    static inline bool empty()
-    {
-        for(auto&& [id, queue] : event_queues_)
-            if(!queue->empty())
-                return false;
-
-        return true;
-    }
-
+    bool empty();
     // Get the number of unprocessed events
-    static inline size_t get_unprocessed_count()
-    {
-        return std::accumulate(event_queues_.begin(), event_queues_.end(), 0u, [](size_t accumulator, auto&& entry) {
-            return accumulator + (entry.second ? entry.second->size() : 0u);
-        });
-    }
+    size_t get_unprocessed_count();
 
 #ifdef W_DEBUG
     // Enable event tracking for a particular type of events
-    template <typename EventT> static inline void track_event(bool value = true) { event_filter_[EventT::ID] = value; }
+    template <typename EventT> inline void track_event(bool value = true) { event_filter_[EventT::ID] = value; }
 
     // Lookup config and enable/disable event tracking for this particular event type
-    template <typename EventT> static inline void configure_event_tracking()
+    template <typename EventT> inline void configure_event_tracking()
     {
         std::string config_key_str = "erwin.events.track." + std::string(EventT::NAME);
-        track_event<EventT>(CFG_.get<bool>(H_(config_key_str.c_str()), false));
+        track_event<EventT>(settings_.get<bool>(H_(config_key_str.c_str()), false));
     }
 
     // Log an event
-    template <typename EventT> static inline void log_event(const EventT& event)
+    template <typename EventT> inline void log_event(const EventT& event)
     {
         if(event_filter_[EventT::ID])
         {
@@ -236,12 +217,12 @@ public:
 
 #ifdef W_TEST
     // Clear all subscribers. Only enabled for unit testing.
-    static inline void reset() { event_queues_.clear(); }
+    inline void reset() { event_queues_.clear(); }
 #endif
 
 private:
     // Helper function to get a particular event queue if it exists or create a new one if not
-    template <typename EventT> static auto& get_or_create()
+    template <typename EventT> auto& get_or_create()
     {
         auto& queue = event_queues_[EventT::ID];
         if(queue == nullptr)
@@ -255,7 +236,7 @@ private:
     }
 
     // Helper function to access a queue only if it exists
-    template <typename EventT> static inline void try_get(std::function<void(EventQueue<EventT>*)> visit)
+    template <typename EventT> void try_get(std::function<void(EventQueue<EventT>*)> visit)
     {
         auto findit = event_queues_.find(EventT::ID);
         if(findit != event_queues_.end())
@@ -268,10 +249,11 @@ private:
 
 private:
     using EventQueues = std::map<EventID, std::unique_ptr<AbstractEventQueue>>;
-    static EventQueues event_queues_;
+    EventQueues event_queues_;
 #ifdef W_DEBUG
-    static std::map<EventID, bool> event_filter_; // Controls which tracked events are sent to the logger
+    std::map<EventID, bool> event_filter_; // Controls which tracked events are sent to the logger
 #endif
+    [[maybe_unused]] const kb::cfg::Settings& settings_;
 };
 
 } // namespace erwin

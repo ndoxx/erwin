@@ -109,7 +109,8 @@ inline auto& get_current_material(Scene& scene)
     return scene.get_component<ComponentPBRMaterial>(e_obj);
 }
 
-MaterialAuthoringWidget::MaterialAuthoringWidget() : Widget("Material authoring", true)
+MaterialAuthoringWidget::MaterialAuthoringWidget(erwin::EventBus& event_bus)
+    : Widget("Material authoring", true, event_bus)
 {
     current_composition_ = std::make_unique<MaterialComposition>();
 

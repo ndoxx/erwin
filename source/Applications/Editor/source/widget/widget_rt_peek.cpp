@@ -65,14 +65,13 @@ static struct
     PeekData peek_data_;
 } s_storage;
 
-RTPeekWidget::RTPeekWidget() : Widget("Framebuffers", true)
+RTPeekWidget::RTPeekWidget(erwin::EventBus& event_bus) : Widget("Framebuffers", true, event_bus)
 {
     // Create resources
     FramebufferLayout layout{{"albedo"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE}};
     FramebufferPool::create_framebuffer("fb_texture_view"_h, make_scope<FbRatioConstraint>(), FB_NONE, layout);
 
-    s_storage.peek_shader_ =
-        Renderer::create_shader("sysres://shaders/texture_peek.glsl", "texture_peek");
+    s_storage.peek_shader_ = Renderer::create_shader("sysres://shaders/texture_peek.glsl", "texture_peek");
     // "texture_peek");
     s_storage.pass_ubo_ =
         Renderer::create_uniform_buffer("peek_layout", nullptr, sizeof(PeekData), UsagePattern::Dynamic);

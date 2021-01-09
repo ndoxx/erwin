@@ -8,13 +8,14 @@ using namespace erwin;
 namespace editor
 {
 
-MaterialEditorLayer::MaterialEditorLayer() : GuiLayer("MaterialEditorLayer") {}
+MaterialEditorLayer::MaterialEditorLayer(erwin::Application& application) : GuiLayer(application, "MaterialEditorLayer")
+{}
 
 void MaterialEditorLayer::on_attach()
 {
     // Build UI
-    material_view_widget_ = new MaterialViewWidget();
-    material_authoring_widget_ = new MaterialAuthoringWidget();
+    material_view_widget_ = new MaterialViewWidget(application_.get_event_bus());
+    material_authoring_widget_ = new MaterialAuthoringWidget(application_.get_event_bus());
     add_widget(material_view_widget_);
     add_widget(material_authoring_widget_);
 }

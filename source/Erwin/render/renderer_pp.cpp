@@ -88,7 +88,7 @@ static struct
 	uint32_t sequence = 0;
 } s_storage;
 
-void PostProcessingRenderer::init()
+void PostProcessingRenderer::init(EventBus& event_bus)
 {
     W_PROFILE_FUNCTION()
 
@@ -136,7 +136,7 @@ void PostProcessingRenderer::init()
 	Renderer::shader_attach_uniform_buffer(s_storage.bloom_blur_shader, s_storage.blur_ubo);
 
 	// Reset sequence on new frame
-	EventBus::subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
+	event_bus.subscribe<BeginFrameEvent>([](const BeginFrameEvent&) -> bool
 	{
 		s_storage.sequence = 0;
 		return false;

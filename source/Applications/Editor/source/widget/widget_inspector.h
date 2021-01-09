@@ -4,27 +4,27 @@
 
 namespace erwin
 {
-	class Scene;
+class Scene;
 }
 
 namespace erwin
 {
-	class EntityManager;
+class EntityManager;
 }
 
 namespace editor
 {
 
-class InspectorWidget: public Widget
+class InspectorWidget : public Widget
 {
 public:
-	InspectorWidget();
-	virtual ~InspectorWidget() = default;
+    InspectorWidget(erwin::EventBus&);
+    virtual ~InspectorWidget() = default;
 
 protected:
-	virtual void on_imgui_render() override;
-	void entity_tab();
-	void environment_tab();
+    virtual void on_imgui_render() override;
+    void entity_tab();
+    void environment_tab();
 };
 
 } // namespace editor

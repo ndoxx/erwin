@@ -1,8 +1,8 @@
 #include "widget/widget_scene_hierarchy.h"
 #include "entity/component/description.h"
+#include "entity/component/editor_tags.h"
 #include "entity/component/hierarchy.h"
 #include "entity/component/tags.h"
-#include "entity/component/editor_tags.h"
 #include "entity/reflection.h"
 #include "imgui.h"
 #include "imgui/font_awesome.h"
@@ -19,13 +19,13 @@ struct SceneHierarchyWidget::SetHierarchyCommand
     EntityID target = k_invalid_entity_id;
 };
 
-SceneHierarchyWidget::SceneHierarchyWidget() : Widget("Hierarchy", true) {}
+SceneHierarchyWidget::SceneHierarchyWidget(erwin::EventBus& event_bus) : Widget("Hierarchy", true, event_bus) {}
 
 static void entity_context_menu(Scene& scene, EntityID e)
 {
     if(scene.is_runtime())
         return;
-    
+
     ImGui::PushID(int(ImGui::GetID(reinterpret_cast<void*>(intptr_t(e)))));
     if(ImGui::BeginPopupContextItem("Entity context menu"))
     {

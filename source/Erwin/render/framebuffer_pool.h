@@ -79,6 +79,7 @@ private:
 	float height_mul_;
 };
 
+class EventBus;
 class FramebufferPool
 {
 public:
@@ -105,7 +106,7 @@ private:
 	friend class Application;
 
 	// Initialize pool with default framebuffer dimensions
-	static void init(uint32_t initial_width, uint32_t initial_height);
+	static void init(uint32_t initial_width, uint32_t initial_height, EventBus& event_bus /*TMP*/);
 	// Destroy all framebuffers stored in this pool
 	static void shutdown();
 };

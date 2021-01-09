@@ -4,25 +4,25 @@
 
 namespace erwin
 {
-	class Scene;
+class Scene;
 }
 
 namespace editor
 {
 
-class SceneHierarchyWidget: public Widget
+class SceneHierarchyWidget : public Widget
 {
 public:
-	SceneHierarchyWidget();
-	virtual ~SceneHierarchyWidget() = default;
+    SceneHierarchyWidget(erwin::EventBus&);
+    virtual ~SceneHierarchyWidget() = default;
 
 protected:
-	virtual void on_imgui_render() override;
+    virtual void on_imgui_render() override;
 
 private:
-	struct SetHierarchyCommand;
-	float indent_space_ = 8.f;
-	std::vector<SetHierarchyCommand> set_hierarchy_commands_;
+    struct SetHierarchyCommand;
+    float indent_space_ = 8.f;
+    std::vector<SetHierarchyCommand> set_hierarchy_commands_;
 };
 
 } // namespace editor

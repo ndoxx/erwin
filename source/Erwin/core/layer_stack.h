@@ -7,6 +7,7 @@ namespace erwin
 {
 
 class Layer;
+class EventBus;
 class LayerStack
 {
 public:
@@ -14,16 +15,11 @@ public:
 
     size_t push_layer(Layer* layer);
     size_t push_overlay(Layer* layer);
-
     void pop_layer(size_t index);
     void pop_overlay(size_t index);
-
     void commit();
-
     void clear();
-
     void set_layer_enabled(size_t index, bool value);
-
     friend std::ostream& operator<<(std::ostream& stream, const LayerStack& rhs);
 
     inline std::size_t size() const { return layers_.size(); }

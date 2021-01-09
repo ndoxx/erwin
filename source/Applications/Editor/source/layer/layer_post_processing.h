@@ -1,6 +1,6 @@
 #pragma once
 
-#include "erwin.h"
+#include "core/layer.h"
 
 namespace editor
 {
@@ -8,7 +8,7 @@ namespace editor
 class PostProcessingLayer : public erwin::Layer
 {
 public:
-    PostProcessingLayer();
+    PostProcessingLayer(erwin::Application&);
     
     virtual void on_imgui_render() override;
 

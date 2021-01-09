@@ -16,7 +16,7 @@ using namespace erwin;
 namespace editor
 {
 
-InspectorWidget::InspectorWidget() : Widget("Inspector", true) {}
+InspectorWidget::InspectorWidget(erwin::EventBus& event_bus) : Widget("Inspector", true, event_bus) {}
 
 void InspectorWidget::entity_tab()
 {

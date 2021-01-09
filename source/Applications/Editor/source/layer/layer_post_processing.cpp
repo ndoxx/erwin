@@ -1,13 +1,16 @@
 #include "layer/layer_post_processing.h"
 #include "level/scene_manager.h"
+#include "render/renderer.h"
+#include "render/renderer_pp.h"
+#include "render/framebuffer_pool.h"
 
 using namespace erwin;
 
 namespace editor
 {
 
-PostProcessingLayer::PostProcessingLayer():
-Layer("PostProcessing")
+PostProcessingLayer::PostProcessingLayer(erwin::Application& application):
+Layer(application, "PostProcessing")
 {
 
 }

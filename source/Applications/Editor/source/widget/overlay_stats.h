@@ -5,16 +5,16 @@
 namespace editor
 {
 
-class RenderStatsOverlay: public Widget
+class RenderStatsOverlay : public Widget
 {
 public:
-	RenderStatsOverlay();
-	virtual ~RenderStatsOverlay() = default;
+    RenderStatsOverlay(erwin::EventBus&);
+    virtual ~RenderStatsOverlay() = default;
 
-	virtual void on_update(const erwin::GameClock& clock) override;
+    virtual void on_update(const erwin::GameClock& clock) override;
 
 protected:
-	virtual void on_imgui_render() override;
+    virtual void on_imgui_render() override;
 };
 
 } // namespace editor

@@ -14,7 +14,7 @@ struct RenderSurface;
 class GizmoOverlay : public Widget
 {
 public:
-    GizmoOverlay();
+    GizmoOverlay(erwin::EventBus&);
     virtual ~GizmoOverlay() = default;
 
     void setup_editor_entities(erwin::Scene& scene);

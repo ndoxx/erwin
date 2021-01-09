@@ -1,7 +1,7 @@
 #include "layer/layer_scene_editor.h"
+#include "entity/component/editor_tags.h"
 #include "input/input.h"
 #include "level/scene_manager.h"
-#include "entity/component/editor_tags.h"
 #include "widget/widget_hex_dump.h"
 #include "widget/widget_inspector.h"
 #include "widget/widget_rt_peek.h"
@@ -13,7 +13,7 @@ using namespace erwin;
 namespace editor
 {
 
-SceneEditorLayer::SceneEditorLayer() : GuiLayer("SceneEditorLayer") {}
+SceneEditorLayer::SceneEditorLayer(erwin::Application& application) : GuiLayer(application, "SceneEditorLayer") {}
 
 void SceneEditorLayer::on_attach()
 {
@@ -22,18 +22,18 @@ void SceneEditorLayer::on_attach()
     // Build UI
 #ifdef W_DEBUG
     HexDumpWidget* hex_widget;
-    add_widget(hex_widget = new HexDumpWidget());
+    add_widget(hex_widget = new HexDumpWidget(application_.get_event_bus()));
     hex_widget->refresh();
 #endif
 
-    scene_view_widget_ = new SceneViewWidget();
+    scene_view_widget_ = new SceneViewWidget(application_.get_event_bus());
     add_widget(scene_view_widget_);
-    add_widget(new SceneHierarchyWidget());
-    add_widget(new InspectorWidget());
+    add_widget(new SceneHierarchyWidget(application_.get_event_bus()));
+    add_widget(new InspectorWidget(application_.get_event_bus()));
 
     // Register main render targets in peek widget
     RTPeekWidget* peek_widget;
-    add_widget(peek_widget = new RTPeekWidget());
+    add_widget(peek_widget = new RTPeekWidget(application_.get_event_bus()));
     peek_widget->register_framebuffer("GBuffer");
     peek_widget->register_framebuffer("SpriteBuffer");
     peek_widget->register_framebuffer("BloomCombine");
@@ -56,10 +56,7 @@ void SceneEditorLayer::on_detach()
         delete widget;
 }
 
-void SceneEditorLayer::setup_editor_entities(erwin::Scene& scene)
-{
-    scene_view_widget_->setup_editor_entities(scene);
-}
+void SceneEditorLayer::setup_editor_entities(erwin::Scene& scene) { scene_view_widget_->setup_editor_entities(scene); }
 
 void SceneEditorLayer::on_update(GameClock& clock)
 {
@@ -116,7 +113,7 @@ bool SceneEditorLayer::on_mouse_scroll_event(const MouseScrollEvent&)
         if(io.WantCaptureMouse)
             return true;
     }
-    
+
     return false;
 }
 

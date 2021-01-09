@@ -6,12 +6,12 @@
 #include "entity/component/transform.h"
 #include "event/event_bus.h"
 #include "event/window_events.h"
+#include "level/scene_manager.h"
 #include "render/common_geometry.h"
 #include "render/framebuffer_pool.h"
 #include "render/handles.h"
 #include "render/renderer.h"
 #include "render/renderer_3d.h"
-#include "level/scene_manager.h"
 
 #include "imgui.h"
 
@@ -24,8 +24,8 @@ static constexpr float k_border = 4.f;
 static constexpr float k_start_x = 4.f;
 static constexpr float k_start_y = 50.f;
 
-MaterialViewWidget::MaterialViewWidget()
-    : Widget("Material view", true), render_surface_{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}, current_index_(0)
+MaterialViewWidget::MaterialViewWidget(erwin::EventBus& event_bus)
+    : Widget("Material view", true, event_bus), render_surface_{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}, current_index_(0)
 {
     // flags_ |= ImGuiWindowFlags_MenuBar;
     // Create scene with a sphere in the middle
@@ -87,8 +87,8 @@ void MaterialViewWidget::on_resize(uint32_t width, uint32_t height)
     render_surface_.w = rw;
     render_surface_.h = rh;
 
-    EventBus::enqueue(WindowResizeEvent(int(width), int(height)));
-    EventBus::enqueue(FramebufferResizeEvent(int(rw), int(rh)));
+    event_bus_.enqueue(WindowResizeEvent(int(width), int(height)));
+    event_bus_.enqueue(FramebufferResizeEvent(int(rw), int(rh)));
 }
 
 void MaterialViewWidget::on_move(int32_t x, int32_t y)
@@ -100,7 +100,7 @@ void MaterialViewWidget::on_move(int32_t x, int32_t y)
     render_surface_.x1 = render_surface_.x0 + rw;
     render_surface_.y1 = render_surface_.y0 + rh;
 
-    EventBus::enqueue(WindowMovedEvent(x, y));
+    event_bus_.enqueue(WindowMovedEvent(x, y));
 }
 
 void MaterialViewWidget::on_layer_render()

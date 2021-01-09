@@ -24,7 +24,7 @@ static struct
     size_t current_block_;
 } s_storage;
 
-HexDumpWidget::HexDumpWidget() : Widget("Hex dump", false) {}
+HexDumpWidget::HexDumpWidget(erwin::EventBus& event_bus) : Widget("Hex dump", false, event_bus) {}
 
 void HexDumpWidget::refresh()
 {

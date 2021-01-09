@@ -19,6 +19,7 @@ struct WindowProps
 	bool host           = true;
 };
 
+class EventBus;
 // Abstract class for window handling
 class W_API Window
 {
@@ -34,8 +35,7 @@ public:
 
 	inline const GFXContext& get_context() const { return *context_; }
 
-	static WScope<Window> create(const WindowProps& props = WindowProps());
-
+	static WScope<Window> create(EventBus& event_bus, const WindowProps& props = WindowProps());
 protected:
 	GFXContext* context_ = nullptr;
 };

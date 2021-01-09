@@ -27,8 +27,8 @@ static constexpr std::array<ImGuizmo::OPERATION, 3> k_ops = {ImGuizmo::TRANSLATE
                                                              ImGuizmo::ROTATE};
 static constexpr std::array<ImGuizmo::MODE, 2> k_modes = {ImGuizmo::LOCAL, ImGuizmo::WORLD};
 
-GizmoOverlay::GizmoOverlay()
-    : Widget("Manipulator", true), current_mode_(RefFrame::World), current_operation_(Operation::Translate),
+GizmoOverlay::GizmoOverlay(erwin::EventBus& event_bus)
+    : Widget("Manipulator", true, event_bus), current_mode_(RefFrame::World), current_operation_(Operation::Translate),
       use_snap_(true), show_grid_(false), grid_size_(8), snap_(0.5f), grid_model_(1.f)
 {
     flags_ = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -80,9 +80,8 @@ void GizmoOverlay::on_update(const GameClock&)
 
     auto& scene = scn::current();
 
-    scene.view<ComponentTransform3D, ComponentGizmo, GizmoDirtyTag>().each([](auto, auto& transform, auto& gizmo) {
-        gizmo.model_matrix = transform.global.get_model_matrix();
-    });
+    scene.view<ComponentTransform3D, ComponentGizmo, GizmoDirtyTag>().each(
+        [](auto, auto& transform, auto& gizmo) { gizmo.model_matrix = transform.global.get_model_matrix(); });
     scene.clear<GizmoDirtyTag>();
 
     scene.view<ComponentTransform3D, ComponentGizmo, GizmoUpdateTag>().each([this](auto, auto& transform, auto& gizmo) {
@@ -166,7 +165,8 @@ void GizmoOverlay::draw_gizmo(const RenderSurface& rs)
 
     // TODO: Grid should use depth test, maybe configure a callback in ImGui draw list to change this state?
     if(show_grid_)
-        ImGuizmo::DrawGrid(&ccamera.view_matrix[0][0], &ccamera.projection_matrix[0][0], &grid_model_[0][0], float(grid_size_));
+        ImGuizmo::DrawGrid(&ccamera.view_matrix[0][0], &ccamera.projection_matrix[0][0], &grid_model_[0][0],
+                           float(grid_size_));
 
     /*{
         float vmw = 100.f;

@@ -8,6 +8,7 @@
 #include "core/game_clock.h"
 #include "core/layer_stack.h"
 #include "core/window.h"
+#include "event/event_bus.h"
 #include <kibble/memory/heap_area.h>
 #include <kibble/filesystem/filesystem.h>
 #include <kibble/config/config.h>
@@ -58,6 +59,7 @@ public:
     static inline Application& get_instance() { return *pinstance_; }
     inline const Window& get_window() { return *window_; }
     inline GameClock& get_clock() { return game_clock_; }
+    inline EventBus& get_event_bus() { return event_bus_; }
     inline kb::kfs::FileSystem& get_filesystem() { return filesystem_; }
     inline kb::cfg::Settings& get_settings() { return settings_; }
 
@@ -70,20 +72,20 @@ private:
     void init_logger();
 
 protected:
-    bool vsync_enabled_;
+    bool vsync_enabled_ = false;
 
 private:
-    static Application* pinstance_;
+    bool is_running_ = true;
+    bool minimized_ = false;
     ApplicationParameters parameters_;
-    WScope<Window> window_;
-    bool is_running_;
-    bool minimized_;
-
+    kb::cfg::Settings settings_;
+    EventBus event_bus_;
     LayerStack layer_stack_;
     GameClock game_clock_;
     kb::kfs::FileSystem filesystem_;
-    kb::cfg::Settings settings_;
+    WScope<Window> window_;
 
+    static Application* pinstance_;
     std::function<void(void)> on_imgui_new_frame_ = []() {};
 };
 

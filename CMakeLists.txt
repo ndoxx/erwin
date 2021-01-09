@@ -37,16 +37,10 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	add_definitions(-DLOGGING_ENABLED=1)
 endif()
 
-option(SIMPLE_ANSI "Use ANSI3 colors in console" OFF)
-if (SIMPLE_ANSI)
-	add_definitions(-DLOGGING_ANSI_3=1)
-endif()
-
-
 # I can't link EASTL statically in liberwin (I tried hard building it with -fPIC but
 # it does not seem to work). As a result, for now, each client applications
 # MUST link against EASTL
-add_library(eastl STATIC IMPORTED)
+# add_library(eastl STATIC IMPORTED)
 
 
 subdirs(source)

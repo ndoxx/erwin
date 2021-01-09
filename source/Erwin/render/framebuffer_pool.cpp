@@ -39,12 +39,12 @@ static bool on_framebuffer_resize_event(const FramebufferResizeEvent& event)
 	return false;
 }
 
-void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height)
+void FramebufferPool::init(uint32_t initial_width, uint32_t initial_height, EventBus& event_bus /*TMP*/)
 {
 	s_storage.current_width_  = initial_width;
 	s_storage.current_height_ = initial_height;
 
-	EventBus::subscribe(&on_framebuffer_resize_event);
+	event_bus.subscribe(&on_framebuffer_resize_event);
 	KLOGN("render") << "Framebuffer pool created." << std::endl;
 }
 

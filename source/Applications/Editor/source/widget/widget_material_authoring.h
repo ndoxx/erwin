@@ -16,7 +16,7 @@ namespace editor
 class MaterialAuthoringWidget : public Widget
 {
 public:
-    MaterialAuthoringWidget();
+    MaterialAuthoringWidget(erwin::EventBus&);
     virtual ~MaterialAuthoringWidget();
     virtual void on_update(const erwin::GameClock& clock) override;
 

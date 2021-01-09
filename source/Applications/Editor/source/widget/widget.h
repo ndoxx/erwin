@@ -4,13 +4,18 @@
 #include "event/window_events.h"
 #include "core/game_clock.h"
 
+namespace erwin
+{
+class EventBus;
+}
+
 namespace editor
 {
 
 class Widget
 {
 public:
-	Widget(const std::string& name, bool open);
+	Widget(const std::string& name, bool open, erwin::EventBus& event_bus);
 	virtual ~Widget() = default;
 
 	virtual void on_update(const erwin::GameClock&) { }
@@ -52,6 +57,7 @@ protected:
 	bool has_focus_;
 	bool is_hovered_;
 	bool was_open_;
+	erwin::EventBus& event_bus_;
 };
 
 
