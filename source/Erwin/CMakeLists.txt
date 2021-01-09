@@ -18,7 +18,7 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/render/stb_build.cpp" P
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/core/z_wrapper.cpp" PROPERTIES COMPILE_FLAGS -w)
 
 if(DEFINED W_DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --export-dynamic")
 endif()
 
 add_library(erwin SHARED)
@@ -61,20 +61,6 @@ set_target_properties(erwin
     )
 target_compile_definitions(erwin PRIVATE W_BUILD_LIB=1)
 target_compile_definitions(erwin PUBLIC CHAISCRIPT_NO_THREADS)
-
-# GLAD
-add_library(glad
-    STATIC
-        ${CMAKE_SOURCE_DIR}/source/vendor/glad/src/glad.c
-    )
-target_include_directories(glad PRIVATE "${CMAKE_SOURCE_DIR}/source/vendor/glad/include")
-set_target_properties(glad
-    PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
-        POSITION_INDEPENDENT_CODE ON
-    )
-target_link_libraries(glad GL)
 
 # GLFW library as a static import
 add_library(glfw STATIC IMPORTED)

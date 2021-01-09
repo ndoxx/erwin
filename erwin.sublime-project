@@ -15,6 +15,10 @@
 			"binary_file_patterns": ["*.spv"],
 			"folder_exclude_patterns": ["textures"]
 		},
+        {
+            "name": "Graphics",
+            "path": "source/Graphics"
+        },
 		{
 			"name": "Platform",
 			"path": "source/platform"
