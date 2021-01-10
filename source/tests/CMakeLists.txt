@@ -131,3 +131,7 @@ target_link_libraries(nuclear
                       # eastl
                       )
 cotire(nuclear)
+
+
+# -------- GRAPHICS LIB TESTS -------- #
+subdirs(Graphics)
