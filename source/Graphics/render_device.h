@@ -1,15 +1,10 @@
 #pragma once
 
 #include <memory>
+#include "common.h"
 
 namespace gfx
 {
-
-enum class DeviceAPI
-{
-	OpenGL,
-	Vulkan
-};
 
 class Window;
 class RenderDevice

@@ -10,13 +10,12 @@ namespace gfx
 class GLFWWindow : public Window
 {
 public:
-	GLFWWindow(const WindowProps& props);
+	GLFWWindow(DeviceAPI api, const WindowProps& props);
 	virtual ~GLFWWindow();
 
     void set_title(const std::string& value) override;
     void set_vsync(bool value) override;
     void* get_native() const override;
-    void swap_buffers() const override;
     void poll_events() const override;
     void make_current() const override;
 

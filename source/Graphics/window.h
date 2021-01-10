@@ -5,6 +5,8 @@
 #include <functional>
 #include <memory>
 
+#include "common.h"
+
 namespace gfx
 {
 
@@ -40,8 +42,6 @@ public:
     virtual void set_vsync(bool value) = 0;
     // Return native window pointer
     virtual void* get_native() const = 0;
-    // Swap buffers for image presentation
-    virtual void swap_buffers() const = 0;
     // Poll window events. Call after buffer swap during update.
     virtual void poll_events() const = 0;
     // Make context current
@@ -69,7 +69,7 @@ public:
 
     // Factory method to construct a concrete window type
     // Only one implementation exists at compile-time (ensured by the build system)
-	static std::unique_ptr<Window> create(const WindowProps& props = {});
+	static std::unique_ptr<Window> create(DeviceAPI api, const WindowProps& props = {});
 
 protected:
     WindowProps props_;

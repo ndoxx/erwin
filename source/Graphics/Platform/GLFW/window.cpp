@@ -7,9 +7,7 @@ namespace gfx
 
 uint8_t GLFWWindow::s_num_windows = 0;
 
-std::unique_ptr<Window> Window::create(const WindowProps& props) { return std::make_unique<GLFWWindow>(props); }
-
-GLFWWindow::GLFWWindow(const WindowProps& props) : Window(props)
+GLFWWindow::GLFWWindow(DeviceAPI api, const WindowProps& props) : Window(props)
 {
     // Initialize GLFW if not already initialized
     if(s_num_windows == 0)
@@ -34,6 +32,8 @@ GLFWWindow::GLFWWindow(const WindowProps& props) : Window(props)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    if(api == DeviceAPI::Vulkan)
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // Open a window
     if(props_.full_screen)
@@ -90,8 +90,6 @@ void GLFWWindow::set_vsync(bool value)
 }
 
 void* GLFWWindow::get_native() const { return static_cast<void*>(handle_); }
-
-void GLFWWindow::swap_buffers() const { glfwSwapBuffers(handle_); }
 
 void GLFWWindow::poll_events() const { glfwPollEvents(); }
 

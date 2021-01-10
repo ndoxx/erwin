@@ -15,6 +15,11 @@ target_include_directories(erwin_graphics
     SYSTEM PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glad/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/glfw/include"
+        "$ENV{VULKAN_SDK}/include"
+    )
+target_link_directories(erwin_graphics
+    PUBLIC
+        "$ENV{VULKAN_SDK}/lib"
     )
 set_target_properties(erwin_graphics
     PROPERTIES
@@ -55,6 +60,7 @@ target_link_libraries(erwin_graphics
         m
         X11
         glad
+        vulkan
         glfw
         kibble
     )
