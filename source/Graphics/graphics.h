@@ -42,6 +42,9 @@
 
 /* -------- HIGH LEVEL API -------- */
 
+// Engine factory
+#include "engine_factory.h"
+
 // Renderer
 // Combines previous low-level components
 // Provides functions for frequently used pass configurations and drawing commands

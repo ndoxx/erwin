@@ -7,7 +7,7 @@ namespace gfx
 
 uint8_t GLFWWindow::s_num_windows = 0;
 
-GLFWWindow::GLFWWindow(DeviceAPI api, const WindowProps& props) : Window(props)
+GLFWWindow::GLFWWindow(const WindowProps& props) : Window(props)
 {
     // Initialize GLFW if not already initialized
     if(s_num_windows == 0)
@@ -32,7 +32,9 @@ GLFWWindow::GLFWWindow(DeviceAPI api, const WindowProps& props) : Window(props)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    if(api == DeviceAPI::Vulkan)
+    glfwWindowHint(GLFW_RESIZABLE, props.resizable ? GLFW_TRUE : GLFW_FALSE);
+
+    if(props.api == DeviceAPI::Vulkan)
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // Open a window

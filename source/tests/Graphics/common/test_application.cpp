@@ -11,22 +11,26 @@ GfxTestApplication::GfxTestApplication(const std::string& window_title, uint32_t
 bool GfxTestApplication::init(DeviceAPI api)
 {
     KLOGGER(create_channel("render", 3));
+    KLOGGER(create_channel("vulkan", 1));
     KLOGGER(attach_all("ConsoleSink", std::make_unique<kb::klog::ConsoleSink>()));
 
-    WindowProps props;
-    props.title = window_title_;
-    props.width = window_width_;
-    props.height = window_height_;
-    props.full_screen = false;
-    props.always_on_top = false;
-    props.vsync = true;
-    props.host = true;
+    // TMP
+    std::unique_ptr<DeviceContext> pctx = nullptr;
 
-    window_ = Window::create(api, props);
+    EngineCreateInfo info;
+    info.window_props.title = window_title_;
+    info.window_props.width = window_width_;
+    info.window_props.height = window_height_;
+    info.window_props.full_screen = false;
+    info.window_props.always_on_top = false;
+    info.window_props.vsync = true;
+    info.window_props.host = true;
+    info.window_props.resizable = true;
+    info.window_props.api = api;
+
+    std::tie(window_, render_device_, swap_chain_, pctx) = EngineFactory::create(api, info);
+
     window_->set_window_close_callback([this]() { is_running_ = false; });
-
-    render_device_ = RenderDevice::create(api, *window_);
-    swap_chain_ = SwapChain::create(api, *window_, *render_device_);
 
     return true;
 }
@@ -41,7 +45,13 @@ void GfxTestApplication::run()
     }
 }
 
-void GfxTestApplication::shutdown() {}
+void GfxTestApplication::shutdown()
+{
+    // Explicitly destroy engine components
+    delete swap_chain_.release();
+    delete render_device_.release();
+    delete window_.release();
+}
 
 // ENTRY POINT
 extern GfxTestApplication* create_application();

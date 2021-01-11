@@ -19,6 +19,8 @@ struct WindowProps
     bool always_on_top = false;
     bool vsync = true;
     bool host = true;
+    bool resizable = true;
+    DeviceAPI api;
 };
 
 // Abstract class for window handling
@@ -66,10 +68,6 @@ public:
     virtual void set_mouse_button_callback(MouseButtonCallback cb) = 0;
     virtual void set_mouse_move_callback(MouseMoveCallback cb) = 0;
     virtual void set_mouse_scroll_callback(MouseScrollCallback cb) = 0;
-
-    // Factory method to construct a concrete window type
-    // Only one implementation exists at compile-time (ensured by the build system)
-	static std::unique_ptr<Window> create(DeviceAPI api, const WindowProps& props = {});
 
 protected:
     WindowProps props_;

@@ -10,7 +10,7 @@ namespace gfx
 class GLFWWindow : public Window
 {
 public:
-	GLFWWindow(DeviceAPI api, const WindowProps& props);
+	GLFWWindow(const WindowProps& props);
 	virtual ~GLFWWindow();
 
     void set_title(const std::string& value) override;
