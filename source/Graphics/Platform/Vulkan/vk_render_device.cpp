@@ -174,4 +174,30 @@ void VKRenderDevice::create_logical_device(const vk::SurfaceKHR& surface)
     present_queue_ = device_->getQueue(indices.present_family.value(), 0);
 }
 
+vk::ImageView VKRenderDevice::create_image_view(const vk::Image& image, const vk::Format& format,
+                                                const vk::ImageAspectFlags& aspect_flags, uint32_t mip_levels) const
+{
+    KLOG("render", 0) << "[VK] Creating image view: " << std::endl;
+    KLOGI << "Mips: " << KS_VALU_ << mip_levels << std::endl;
+
+    vk::ImageSubresourceRange subresource_range_info{
+        aspect_flags, // Flags
+        0,            // Base mip level
+        mip_levels,   // Mip level count
+        0,            // Base array layer
+        1             // Layer count
+    };
+
+    vk::ImageViewCreateInfo create_info{
+        vk::ImageViewCreateFlags(), // Flags
+        image,                      // Image
+        vk::ImageViewType::e2D,     // View type
+        format,                     // Format
+        vk::ComponentMapping(),     // Components (swizzle identity by default)
+        subresource_range_info      // Subresource range
+    };
+
+    return device_->createImageView(create_info);
+}
+
 } // namespace gfx

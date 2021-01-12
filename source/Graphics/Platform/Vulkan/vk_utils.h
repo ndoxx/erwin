@@ -23,17 +23,20 @@ struct SwapChainSupportDetails
     std::vector<vk::PresentModeKHR> present_modes;
 };
 
+// Get a list of extensions required by GLFW, plus additionally the debug extension
 std::vector<const char*> get_required_extensions();
+// Check that our instance supports a list of required extensions
 bool check_required_extensions(const std::vector<const char*>& required);
+// Check support for a list of validation layers
 bool check_validation_layer_support(const std::vector<const char*>& required);
+// Create a debug messenger creation structure and hook it to the Kibble logger
 vk::DebugUtilsMessengerCreateInfoEXT make_debug_messenger_create_info();
+// Rate a physical device given its properties and whether it supports swapchain and various extensions
 int rate_device_suitability(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface,
                             const std::vector<const char*>& extensions);
-bool check_device_extensions_support(const vk::PhysicalDevice& device, const std::vector<const char*>& extensions);
+// Find indices of queue families in a physical device
 QueueFamilyIndices find_queue_families(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
+// Get a structure representing swapchain support for a physical device
 SwapChainSupportDetails query_swapchain_support(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
-vk::SurfaceFormatKHR choose_swap_surface_format(const std::vector<vk::SurfaceFormatKHR>& available_formats);
-vk::PresentModeKHR choose_swap_present_mode(const std::vector<vk::PresentModeKHR>& available_present_modes);
-vk::Extent2D choose_swap_extent(uint32_t width, uint32_t height, const vk::SurfaceCapabilitiesKHR& capabilities);
 
 } // namespace gfx

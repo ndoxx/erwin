@@ -169,6 +169,16 @@ vk::DebugUtilsMessengerCreateInfoEXT make_debug_messenger_create_info()
         debug_callback, nullptr);
 }
 
+bool check_device_extensions_support(const vk::PhysicalDevice& device, const std::vector<const char*>& extensions)
+{
+    std::set<std::string> required(extensions.begin(), extensions.end());
+
+    for(const auto& extension : device.enumerateDeviceExtensionProperties())
+        required.erase(extension.extensionName);
+
+    return required.empty();
+}
+
 int rate_device_suitability(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface,
                             const std::vector<const char*>& extensions)
 {
@@ -206,16 +216,6 @@ int rate_device_suitability(const vk::PhysicalDevice& device, const vk::SurfaceK
     return score;
 }
 
-bool check_device_extensions_support(const vk::PhysicalDevice& device, const std::vector<const char*>& extensions)
-{
-    std::set<std::string> required(extensions.begin(), extensions.end());
-
-    for(const auto& extension : device.enumerateDeviceExtensionProperties())
-        required.erase(extension.extensionName);
-
-    return required.empty();
-}
-
 QueueFamilyIndices find_queue_families(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface)
 {
     QueueFamilyIndices indices;
@@ -251,50 +251,6 @@ SwapChainSupportDetails query_swapchain_support(const vk::PhysicalDevice& device
     details.present_modes = device.getSurfacePresentModesKHR(surface);
 
     return details;
-}
-
-vk::SurfaceFormatKHR choose_swap_surface_format(const std::vector<vk::SurfaceFormatKHR>& available_formats)
-{
-    if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
-        return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
-
-    for(const auto& available_format : available_formats)
-    {
-        if(available_format.format == vk::Format::eB8G8R8A8Unorm &&
-           available_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
-            return available_format;
-    }
-
-    return available_formats[0];
-}
-
-vk::PresentModeKHR choose_swap_present_mode(const std::vector<vk::PresentModeKHR>& available_present_modes)
-{
-    vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
-
-    for(const auto& available_present_mode : available_present_modes)
-    {
-        // Select triple buffering if available
-        if(available_present_mode == vk::PresentModeKHR::eMailbox)
-            return available_present_mode;
-        else if(available_present_mode == vk::PresentModeKHR::eImmediate)
-            best_mode = available_present_mode;
-    }
-
-    return best_mode;
-}
-
-vk::Extent2D choose_swap_extent(uint32_t width, uint32_t height, const vk::SurfaceCapabilitiesKHR& capabilities)
-{
-    if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-        return capabilities.currentExtent;
-    else
-    {
-        vk::Extent2D actual_extent = {width, height};
-        std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-        return actual_extent;
-    }
 }
 
 } // namespace gfx

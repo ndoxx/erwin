@@ -5,11 +5,25 @@
 #include "Platform/Vulkan/vk_render_device.h"
 #include "Platform/Vulkan/vk_utils.h"
 #include <kibble/logger/logger.h>
+#include <stack>
+#include <map>
 #include "GLFW/glfw3.h"
 // clang-format on
 
+using namespace kb;
+
 namespace gfx
 {
+
+// clang-format off
+const std::map<vk::PresentModeKHR, std::string> s_str_present_modes = 
+{
+    {vk::PresentModeKHR::eImmediate,   "Immediate"},
+    {vk::PresentModeKHR::eFifoRelaxed, "FifoRelaxed"},
+    {vk::PresentModeKHR::eFifo,        "Fifo"},
+    {vk::PresentModeKHR::eMailbox,     "Mailbox"},
+};
+// clang-format on
 
 VKSwapchain::VKSwapchain(const VKRenderDevice& rd) : render_device_(rd) {}
 
@@ -54,11 +68,11 @@ void VKSwapchain::create_surface(const Window& window)
 void VKSwapchain::create(uint32_t width, uint32_t height)
 {
     KLOGN("render") << "[VK] Creating swapchain." << std::endl;
-    create_swapchain(width, height);
-    create_swapchain_image_views();
+    build_swapchain(width, height);
+    build_swapchain_image_views();
 }
 
-void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
+void VKSwapchain::build_swapchain(uint32_t width, uint32_t height)
 {
     KLOG("render", 1) << "[VK] Creating swapchain instance." << std::endl;
 
@@ -68,6 +82,10 @@ void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
     auto surface_format = choose_swap_surface_format(swapchain_support.formats);
     auto present_mode = choose_swap_present_mode(swapchain_support.present_modes);
     auto extent = choose_swap_extent(width, height, swapchain_support.capabilities);
+
+    // Log
+    KLOGI << "Present mode: " << KS_VALU_ << s_str_present_modes.at(present_mode) << std::endl;
+    KLOGI << "Extent:       " << KS_VALU_ << extent.width << 'x' << extent.height << std::endl;
 
     uint32_t desired_image_count = swapchain_support.capabilities.minImageCount + 1;
     if(swapchain_support.capabilities.maxImageCount > 0 &&
@@ -83,17 +101,22 @@ void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
     // can't be sure
     auto indices = find_queue_families(render_device_.get_physical_device(), surface_);
     uint32_t queue_family_indices[] = {indices.graphics_family.value(), indices.present_family.value()};
+    KLOGI << "PQueue:       " << KS_VALU_;
     if(indices.graphics_family != indices.present_family)
     {
+        // If the device has a discrete presentation queue, images are allowed to be shared
+        // between the graphics and presentation queues.
         create_info.imageSharingMode = vk::SharingMode::eConcurrent;
         create_info.queueFamilyIndexCount = 2;
         create_info.pQueueFamilyIndices = queue_family_indices;
+        KLOGI << "discrete" << std::endl;
     }
     else
     {
         create_info.imageSharingMode = vk::SharingMode::eExclusive;
         create_info.queueFamilyIndexCount = 0;     // Optional
         create_info.pQueueFamilyIndices = nullptr; // Optional
+        KLOGI << "non-discrete" << std::endl;
     }
 
     // Support for image transform in the swap chain
@@ -117,10 +140,10 @@ void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
         throw std::runtime_error("Failed to create swapchain!");
     }
 
-    // If an existing sawp chain is re-created, destroy the old swap chain
-    // This also cleans up all the presentable images
+    // If an existing swap chain is re-created, destroy the old swap chain and image views.
     if(old_swapchain)
     {
+        KLOG("render", 0) << "[VK] Destroying old swapchain." << std::endl;
         for(size_t ii = 0; ii < swapchain_images_.size(); ++ii)
             render_device_.get_logical_device().destroyImageView(swapchain_images_[ii].view);
         render_device_.get_logical_device().destroySwapchainKHR(old_swapchain);
@@ -130,41 +153,83 @@ void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
     swapchain_extent_ = extent;
 }
 
-void VKSwapchain::create_swapchain_image_views()
+void VKSwapchain::build_swapchain_image_views()
 {
     KLOG("render", 1) << "[VK] Creating swapchain image views." << std::endl;
-
     // Retrieve swap chain image handles
     auto swapchain_images = render_device_.get_logical_device().getSwapchainImagesKHR(swapchain_);
+    swapchain_images_.resize(swapchain_images.size());
+    KLOGI << "Image count:  " << KS_VALU_ << swapchain_images_.size() << std::endl;
 
     // Create image views for each swap chain image
-    vk::ImageViewCreateInfo view_create_info = {};
-    view_create_info.viewType = vk::ImageViewType::e2D;
-    view_create_info.format = swapchain_format_.format;
-    view_create_info.components.r = vk::ComponentSwizzle::eIdentity;
-    view_create_info.components.g = vk::ComponentSwizzle::eIdentity;
-    view_create_info.components.b = vk::ComponentSwizzle::eIdentity;
-    view_create_info.components.a = vk::ComponentSwizzle::eIdentity;
-    view_create_info.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-    view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = 1;
-    view_create_info.subresourceRange.baseArrayLayer = 0;
-    view_create_info.subresourceRange.layerCount = 1;
-
-    swapchain_images_.resize(swapchain_images_.size());
+    // clang-format off
     for(size_t ii = 0; ii < swapchain_images_.size(); ++ii)
     {
         swapchain_images_[ii].image = swapchain_images[ii];
-        view_create_info.image = swapchain_images_[ii].image;
 
         try
         {
-            swapchain_images_[ii].view = render_device_.get_logical_device().createImageView(view_create_info);
+            swapchain_images_[ii].view = render_device_.create_image_view(swapchain_images_[ii].image, 
+                                                                          swapchain_format_.format, 
+                                                                          vk::ImageAspectFlagBits::eColor, 
+                                                                          1 /* mip levels */);
         }
         catch(vk::SystemError err)
         {
             throw std::runtime_error("Failed to create image views!");
         }
+    }
+    // clang-format on
+}
+
+vk::SurfaceFormatKHR VKSwapchain::choose_swap_surface_format(const std::vector<vk::SurfaceFormatKHR>& available_formats)
+{
+    if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
+        return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
+
+    for(const auto& available_format : available_formats)
+    {
+        if(available_format.format == vk::Format::eB8G8R8A8Unorm &&
+           available_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
+            return available_format;
+    }
+
+    return available_formats[0];
+}
+
+vk::PresentModeKHR VKSwapchain::choose_swap_present_mode(const std::vector<vk::PresentModeKHR>& available)
+{
+    // Present modes are stacked, the favorite one (mailbox) is on top
+    std::stack<vk::PresentModeKHR> preferences;
+    preferences.push(vk::PresentModeKHR::eImmediate);
+    preferences.push(vk::PresentModeKHR::eFifoRelaxed);
+    preferences.push(vk::PresentModeKHR::eFifo);
+    preferences.push(vk::PresentModeKHR::eMailbox);
+
+    // Pop the stack till we find a present mode that is available
+    while(!preferences.empty())
+    {
+        vk::PresentModeKHR mode{preferences.top()};
+        if(std::find(available.begin(), available.end(), mode) != available.end())
+            return mode;
+
+        preferences.pop();
+    }
+
+    throw std::runtime_error("No compatible presentation mode found.");
+}
+
+vk::Extent2D VKSwapchain::choose_swap_extent(uint32_t width, uint32_t height,
+                                             const vk::SurfaceCapabilitiesKHR& capabilities)
+{
+    if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+        return capabilities.currentExtent;
+    else
+    {
+        vk::Extent2D actual_extent = {width, height};
+        std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+        return actual_extent;
     }
 }
 

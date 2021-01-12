@@ -16,12 +16,20 @@ public:
     inline const vk::PhysicalDevice& get_physical_device() const { return physical_device_; }
     inline const vk::Device& get_logical_device() const { return *device_; }
 
+    // Create an image view from an image, its format, flags and mipmap levels
+    vk::ImageView create_image_view(const vk::Image& image, const vk::Format& format,
+                                    const vk::ImageAspectFlags& aspect_flags, uint32_t mip_levels) const;
+
     friend class EngineFactory;
 
 private:
+	// Create a Vulkan instance
     void create_instance(const std::string& app_name);
+    // Create a debug messenger wired up to the Kibble logger
     void setup_debug_messenger();
+    // Pick the best physical device available
     void select_physical_device(const vk::SurfaceKHR& surface);
+    // Create a logical device
     void create_logical_device(const vk::SurfaceKHR& surface);
 
 private:
