@@ -19,8 +19,7 @@ EngineFactory::EngineComponents EngineFactory::create<DeviceAPI::Vulkan>(const E
     p_swap_chain->create_surface(*p_window);
     p_render_device->select_physical_device(p_swap_chain->get_surface());
     p_render_device->create_logical_device(p_swap_chain->get_surface());
-    p_swap_chain->create_swap_chain(*p_window);
-    p_swap_chain->create_swap_chain_image_views();
+    p_swap_chain->create(p_window->get_width(), p_window->get_height());
 
     return {std::move(p_window), std::move(p_render_device), std::move(p_swap_chain), nullptr};
 }

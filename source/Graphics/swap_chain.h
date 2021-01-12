@@ -6,8 +6,6 @@
 namespace gfx
 {
 
-class Window;
-class RenderDevice;
 class SwapChain
 {
 public:

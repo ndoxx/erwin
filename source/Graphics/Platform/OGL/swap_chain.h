@@ -6,6 +6,7 @@
 namespace gfx
 {
 
+class Window;
 class OGLSwapChain : public SwapChain
 {
 public:
