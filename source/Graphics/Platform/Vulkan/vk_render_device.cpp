@@ -1,10 +1,12 @@
-#include "Platform/Vulkan/render_device.h"
+// clang-format off
 #include "../../window.h"
-#include "utils.h"
+#include "Platform/Vulkan/vk_render_device.h"
+#include "Platform/Vulkan/vk_utils.h"
 #include <kibble/logger/logger.h>
 #include <map>
 #include <set>
 #include <string>
+// clang-format on
 
 using namespace kb;
 

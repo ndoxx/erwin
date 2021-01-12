@@ -37,7 +37,7 @@
 
 // Swap chain
 // Show the final rendered image on screen
-#include "swap_chain.h"
+#include "swapchain.h"
 
 
 /* -------- HIGH LEVEL API -------- */

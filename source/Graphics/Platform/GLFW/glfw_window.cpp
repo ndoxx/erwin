@@ -1,4 +1,4 @@
-#include "Platform/GLFW/window.h"
+#include "Platform/GLFW/glfw_window.h"
 #include "GLFW/glfw3.h"
 #include <kibble/logger/logger.h>
 

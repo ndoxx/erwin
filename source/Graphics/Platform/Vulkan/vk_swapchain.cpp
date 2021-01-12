@@ -1,21 +1,23 @@
-#include "Platform/Vulkan/swap_chain.h"
+// clang-format off
 #include "../../window.h"
-#include "GLFW/glfw3.h"
-#include "Platform/GLFW/window.h"
-#include "Platform/Vulkan/render_device.h"
-#include "utils.h"
+#include "Platform/GLFW/glfw_window.h"
+#include "Platform/Vulkan/vk_swapchain.h"
+#include "Platform/Vulkan/vk_render_device.h"
+#include "Platform/Vulkan/vk_utils.h"
 #include <kibble/logger/logger.h>
+#include "GLFW/glfw3.h"
+// clang-format on
 
 namespace gfx
 {
 
-VKSwapChain::VKSwapChain(const VKRenderDevice& rd) : render_device_(rd) {}
+VKSwapchain::VKSwapchain(const VKRenderDevice& rd) : render_device_(rd) {}
 
-VKSwapChain::~VKSwapChain()
+VKSwapchain::~VKSwapchain()
 {
     KLOGN("render") << "[VK] Destroying swap chain." << std::endl;
 
-    for(auto& image : swap_chain_images_)
+    for(auto& image : swapchain_images_)
     {
         if(image.fence)
         {
@@ -33,14 +35,14 @@ VKSwapChain::~VKSwapChain()
         render_device_.get_logical_device().destroyImageView(image.view);
     }
 
-    swap_chain_images_.clear();
-    render_device_.get_logical_device().destroySwapchainKHR(swap_chain_);
+    swapchain_images_.clear();
+    render_device_.get_logical_device().destroySwapchainKHR(swapchain_);
     render_device_.get_instance().destroySurfaceKHR(surface_);
 }
 
-void VKSwapChain::present() {}
+void VKSwapchain::present() {}
 
-void VKSwapChain::create_surface(const Window& window)
+void VKSwapchain::create_surface(const Window& window)
 {
     KLOGN("render") << "[VK] Creating window surface." << std::endl;
     auto* pw = static_cast<GLFWwindow*>(window.get_native());
@@ -49,28 +51,28 @@ void VKSwapChain::create_surface(const Window& window)
         throw std::runtime_error("Failed to create window surface!");
 }
 
-void VKSwapChain::create(uint32_t width, uint32_t height)
+void VKSwapchain::create(uint32_t width, uint32_t height)
 {
-    KLOGN("render") << "[VK] Creating swap chain." << std::endl;
-    create_swap_chain(width, height);
-    create_swap_chain_image_views();
+    KLOGN("render") << "[VK] Creating swapchain." << std::endl;
+    create_swapchain(width, height);
+    create_swapchain_image_views();
 }
 
-void VKSwapChain::create_swap_chain(uint32_t width, uint32_t height)
+void VKSwapchain::create_swapchain(uint32_t width, uint32_t height)
 {
-    KLOG("render", 1) << "[VK] Creating swap chain instance." << std::endl;
+    KLOG("render", 1) << "[VK] Creating swapchain instance." << std::endl;
 
-    vk::SwapchainKHR old_swap_chain = swap_chain_;
+    vk::SwapchainKHR old_swapchain = swapchain_;
 
-    auto swap_chain_support = query_swap_chain_support(render_device_.get_physical_device(), surface_);
-    auto surface_format = choose_swap_surface_format(swap_chain_support.formats);
-    auto present_mode = choose_swap_present_mode(swap_chain_support.present_modes);
-    auto extent = choose_swap_extent(width, height, swap_chain_support.capabilities);
+    auto swapchain_support = query_swapchain_support(render_device_.get_physical_device(), surface_);
+    auto surface_format = choose_swap_surface_format(swapchain_support.formats);
+    auto present_mode = choose_swap_present_mode(swapchain_support.present_modes);
+    auto extent = choose_swap_extent(width, height, swapchain_support.capabilities);
 
-    uint32_t desired_image_count = swap_chain_support.capabilities.minImageCount + 1;
-    if(swap_chain_support.capabilities.maxImageCount > 0 &&
-       desired_image_count > swap_chain_support.capabilities.maxImageCount)
-        desired_image_count = swap_chain_support.capabilities.maxImageCount;
+    uint32_t desired_image_count = swapchain_support.capabilities.minImageCount + 1;
+    if(swapchain_support.capabilities.maxImageCount > 0 &&
+       desired_image_count > swapchain_support.capabilities.maxImageCount)
+        desired_image_count = swapchain_support.capabilities.maxImageCount;
 
     vk::SwapchainCreateInfoKHR create_info(vk::SwapchainCreateFlagsKHR(), surface_, desired_image_count,
                                            surface_format.format, surface_format.colorSpace, extent,
@@ -95,50 +97,50 @@ void VKSwapChain::create_swap_chain(uint32_t width, uint32_t height)
     }
 
     // Support for image transform in the swap chain
-    if(swap_chain_support.capabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
+    if(swapchain_support.capabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
         create_info.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
     else
-        create_info.preTransform = swap_chain_support.capabilities.currentTransform;
+        create_info.preTransform = swapchain_support.capabilities.currentTransform;
 
     create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
     create_info.presentMode = present_mode;
     create_info.clipped = VK_TRUE;
-    create_info.oldSwapchain = old_swap_chain;
+    create_info.oldSwapchain = old_swapchain;
     create_info.imageColorSpace = surface_format.colorSpace;
 
     try
     {
-        swap_chain_ = render_device_.get_logical_device().createSwapchainKHR(create_info);
+        swapchain_ = render_device_.get_logical_device().createSwapchainKHR(create_info);
     }
     catch(vk::SystemError err)
     {
-        throw std::runtime_error("Failed to create swap chain!");
+        throw std::runtime_error("Failed to create swapchain!");
     }
 
     // If an existing sawp chain is re-created, destroy the old swap chain
     // This also cleans up all the presentable images
-    if(old_swap_chain)
+    if(old_swapchain)
     {
-        for(size_t ii = 0; ii < swap_chain_images_.size(); ++ii)
-            render_device_.get_logical_device().destroyImageView(swap_chain_images_[ii].view);
-        render_device_.get_logical_device().destroySwapchainKHR(old_swap_chain);
+        for(size_t ii = 0; ii < swapchain_images_.size(); ++ii)
+            render_device_.get_logical_device().destroyImageView(swapchain_images_[ii].view);
+        render_device_.get_logical_device().destroySwapchainKHR(old_swapchain);
     }
 
-    swap_chain_format_ = surface_format;
-    swap_chain_extent_ = extent;
+    swapchain_format_ = surface_format;
+    swapchain_extent_ = extent;
 }
 
-void VKSwapChain::create_swap_chain_image_views()
+void VKSwapchain::create_swapchain_image_views()
 {
-    KLOG("render", 1) << "[VK] Creating swap chain image views." << std::endl;
+    KLOG("render", 1) << "[VK] Creating swapchain image views." << std::endl;
 
     // Retrieve swap chain image handles
-    auto swap_chain_images = render_device_.get_logical_device().getSwapchainImagesKHR(swap_chain_);
+    auto swapchain_images = render_device_.get_logical_device().getSwapchainImagesKHR(swapchain_);
 
     // Create image views for each swap chain image
     vk::ImageViewCreateInfo view_create_info = {};
     view_create_info.viewType = vk::ImageViewType::e2D;
-    view_create_info.format = swap_chain_format_.format;
+    view_create_info.format = swapchain_format_.format;
     view_create_info.components.r = vk::ComponentSwizzle::eIdentity;
     view_create_info.components.g = vk::ComponentSwizzle::eIdentity;
     view_create_info.components.b = vk::ComponentSwizzle::eIdentity;
@@ -149,15 +151,15 @@ void VKSwapChain::create_swap_chain_image_views()
     view_create_info.subresourceRange.baseArrayLayer = 0;
     view_create_info.subresourceRange.layerCount = 1;
 
-    swap_chain_images_.resize(swap_chain_images_.size());
-    for(size_t ii = 0; ii < swap_chain_images_.size(); ++ii)
+    swapchain_images_.resize(swapchain_images_.size());
+    for(size_t ii = 0; ii < swapchain_images_.size(); ++ii)
     {
-        swap_chain_images_[ii].image = swap_chain_images[ii];
-        view_create_info.image = swap_chain_images_[ii].image;
+        swapchain_images_[ii].image = swapchain_images[ii];
+        view_create_info.image = swapchain_images_[ii].image;
 
         try
         {
-            swap_chain_images_[ii].view = render_device_.get_logical_device().createImageView(view_create_info);
+            swapchain_images_[ii].view = render_device_.get_logical_device().createImageView(view_create_info);
         }
         catch(vk::SystemError err)
         {

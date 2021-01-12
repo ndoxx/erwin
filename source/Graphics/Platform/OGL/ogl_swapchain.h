@@ -1,17 +1,17 @@
 #pragma once
 
 #include <memory>
-#include "../../swap_chain.h"
+#include "../../swapchain.h"
 
 namespace gfx
 {
 
 class Window;
-class OGLSwapChain : public SwapChain
+class OGLSwapchain : public Swapchain
 {
 public:
-	OGLSwapChain(const Window& window);
-	~OGLSwapChain() = default;
+	OGLSwapchain(const Window& window);
+	~OGLSwapchain() = default;
 
 	void present() override;
 

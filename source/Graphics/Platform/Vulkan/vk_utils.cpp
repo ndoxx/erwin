@@ -1,8 +1,10 @@
-#include "Platform/Vulkan/utils.h"
+// clang-format off
 #include "GLFW/glfw3.h"
-#include <cstring>
 #include <kibble/logger/logger.h>
+#include <cstring>
 #include <set>
+#include "Platform/Vulkan/vk_utils.h"
+// clang-format on
 
 using namespace kb;
 
@@ -175,7 +177,7 @@ int rate_device_suitability(const vk::PhysicalDevice& device, const vk::SurfaceK
         return 0;
 
     // Check swap chain compatibility with surface
-    auto swap_chain_support_details = query_swap_chain_support(device, surface);
+    auto swap_chain_support_details = query_swapchain_support(device, surface);
     bool swap_chain_adequate =
         !swap_chain_support_details.formats.empty() && !swap_chain_support_details.present_modes.empty();
     if(!swap_chain_adequate)
@@ -238,7 +240,7 @@ QueueFamilyIndices find_queue_families(const vk::PhysicalDevice& device, const v
     return indices;
 }
 
-SwapChainSupportDetails query_swap_chain_support(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface)
+SwapChainSupportDetails query_swapchain_support(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface)
 {
     SwapChainSupportDetails details;
     // Query basic surface capabilities
@@ -289,12 +291,8 @@ vk::Extent2D choose_swap_extent(uint32_t width, uint32_t height, const vk::Surfa
     else
     {
         vk::Extent2D actual_extent = {width, height};
-
-        actual_extent.width = std::max(capabilities.minImageExtent.width,
-                                       std::min(capabilities.maxImageExtent.width, actual_extent.width));
-        actual_extent.height = std::max(capabilities.minImageExtent.height,
-                                        std::min(capabilities.maxImageExtent.height, actual_extent.height));
-
+        std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
         return actual_extent;
     }
 }

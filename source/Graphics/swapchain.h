@@ -6,10 +6,10 @@
 namespace gfx
 {
 
-class SwapChain
+class Swapchain
 {
 public:
-	virtual ~SwapChain() = default;
+	virtual ~Swapchain() = default;
 	virtual void present() = 0;
 };
 

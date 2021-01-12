@@ -28,7 +28,7 @@ bool GfxTestApplication::init(DeviceAPI api)
     info.window_props.resizable = true;
     info.window_props.api = api;
 
-    std::tie(window_, render_device_, swap_chain_, pctx) = EngineFactory::create(api, info);
+    std::tie(window_, render_device_, swapchain_, pctx) = EngineFactory::create(api, info);
 
     window_->set_window_close_callback([this]() { is_running_ = false; });
 
@@ -40,7 +40,7 @@ void GfxTestApplication::run()
     while(is_running_)
     {
         update();
-        swap_chain_->present();
+        swapchain_->present();
         window_->poll_events();
     }
 }
@@ -48,7 +48,7 @@ void GfxTestApplication::run()
 void GfxTestApplication::shutdown()
 {
     // Explicitly destroy engine components
-    delete swap_chain_.release();
+    delete swapchain_.release();
     delete render_device_.release();
     delete window_.release();
 }

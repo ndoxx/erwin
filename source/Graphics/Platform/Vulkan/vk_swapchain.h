@@ -1,6 +1,13 @@
 #pragma once
 
-#include "../../swap_chain.h"
+/*
+ * The Vulkan swap chain abstracts an array of presentable images associated
+ * to the window surface.
+ * The VKSwapchain class wraps a Vulkan swap chain together with the surface
+ * and images, plus additional extent and format properties.
+ */
+
+#include "../../swapchain.h"
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -16,13 +23,13 @@ struct SwapchainImage
 
 class Window;
 class VKRenderDevice;
-class VKSwapChain : public SwapChain
+class VKSwapchain : public Swapchain
 {
 public:
     friend class EngineFactory;
 
-    VKSwapChain(const VKRenderDevice& rd);
-    ~VKSwapChain();
+    VKSwapchain(const VKRenderDevice& rd);
+    ~VKSwapchain();
 
     void present() override;
     inline const vk::SurfaceKHR& get_surface() const { return surface_; }
@@ -34,16 +41,15 @@ private:
     void create(uint32_t width, uint32_t height);
 
     // Helper methods called sequentially during create()
-    void create_swap_chain(uint32_t width, uint32_t height);
-    void create_swap_chain_image_views();
+    void create_swapchain(uint32_t width, uint32_t height);
+    void create_swapchain_image_views();
 
 private:
-    vk::SwapchainKHR swap_chain_;
-    vk::SurfaceFormatKHR swap_chain_format_;
-    vk::Extent2D swap_chain_extent_;
+    vk::SwapchainKHR swapchain_;
+    vk::SurfaceFormatKHR swapchain_format_;
+    vk::Extent2D swapchain_extent_;
     vk::SurfaceKHR surface_;
-    std::vector<SwapchainImage> swap_chain_images_;
-    std::vector<vk::Framebuffer> swap_chain_framebuffers_;
+    std::vector<SwapchainImage> swapchain_images_;
     const VKRenderDevice& render_device_;
 };
 

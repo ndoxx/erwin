@@ -1,7 +1,6 @@
 #include "engine_factory.h"
-
 #include "Platform/OGL/ogl_engine_factory.h"
-#include "Platform/Vulkan/vulkan_engine_factory.h"
+#include "Platform/Vulkan/vk_engine_factory.h"
 
 namespace gfx
 {
@@ -17,5 +16,4 @@ EngineFactory::EngineComponents EngineFactory::create(DeviceAPI api, const Engin
     }
 }
 
-
-}
+} // namespace gfx

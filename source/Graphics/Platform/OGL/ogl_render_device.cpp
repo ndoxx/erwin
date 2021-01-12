@@ -1,8 +1,10 @@
-#include "Platform/OGL/render_device.h"
+// clang-format off
+#include "Platform/OGL/ogl_render_device.h"
 #include "../../window.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include <kibble/logger/logger.h>
+// clang-format on
 
 namespace gfx
 {
