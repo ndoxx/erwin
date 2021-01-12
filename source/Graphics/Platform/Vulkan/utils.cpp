@@ -81,12 +81,9 @@ std::vector<const char*> get_required_extensions()
 
 bool check_required_extensions(const std::vector<const char*>& required)
 {
-    uint32_t extension_count = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
-    std::vector<VkExtensionProperties> extensions(extension_count);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
+    auto extensions = vk::enumerateInstanceExtensionProperties();
 
-    KLOG("render", 0) << "Enumerated " << extension_count << " extensions: " << std::endl;
+    KLOG("render", 0) << "Enumerated " << extensions.size() << " extensions: " << std::endl;
     for(const auto& extension : extensions)
     {
         KLOGI << extension.extensionName << std::endl;
@@ -123,30 +120,29 @@ bool check_required_extensions(const std::vector<const char*>& required)
 
 bool check_validation_layer_support(const std::vector<const char*>& required)
 {
-    uint32_t layer_count;
-    vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-    std::vector<VkLayerProperties> available(layer_count);
-    vkEnumerateInstanceLayerProperties(&layer_count, available.data());
+    auto available_layers = vk::enumerateInstanceLayerProperties();
 
-    KLOG("render", 0) << "Enumerated " << layer_count << " instance layers:" << std::endl;
-    for(uint32_t ii = 0; ii < layer_count; ++ii)
+    KLOG("render", 0) << "Enumerated " << available_layers.size() << " instance layers:" << std::endl;
+    for(const auto& props : available_layers)
     {
-        KLOGI << available[ii].layerName << std::endl;
+        KLOGI << props.layerName << std::endl;
     }
 
     for(const char* layer_name : required)
     {
         KLOG("render", 1) << "Require: " << layer_name << " -> ";
-        bool found = false;
-        for(const auto& layer_props : available)
+
+        bool layer_found = false;
+        for(const auto& layer_properties : available_layers)
         {
-            if(strcmp(layer_name, layer_props.layerName) == 0)
+            if(strcmp(layer_name, layer_properties.layerName) == 0)
             {
-                found = true;
+                layer_found = true;
                 break;
             }
         }
-        if(found)
+
+        if(layer_found)
         {
             KLOG("render", 1) << KS_GOOD_ << "found" << std::endl;
         }
@@ -156,24 +152,22 @@ bool check_validation_layer_support(const std::vector<const char*>& required)
             return false;
         }
     }
+
     return true;
 }
 
-void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info)
+vk::DebugUtilsMessengerCreateInfoEXT make_debug_messenger_create_info()
 {
-    create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    create_info.pfnUserCallback = debug_callback;
-    create_info.pUserData = nullptr;
+    return vk::DebugUtilsMessengerCreateInfoEXT(
+        vk::DebugUtilsMessengerCreateFlagsEXT(),
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+        debug_callback, nullptr);
 }
 
-int rate_device_suitability(const VkPhysicalDevice& device, const VkSurfaceKHR& surface,
+int rate_device_suitability(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface,
                             const std::vector<const char*>& extensions)
 {
     // Check support for device extensions
@@ -192,19 +186,17 @@ int rate_device_suitability(const VkPhysicalDevice& device, const VkSurfaceKHR& 
     if(!indices.is_complete())
         return 0;
 
-    VkPhysicalDeviceFeatures device_features;
-    vkGetPhysicalDeviceFeatures(device, &device_features);
+    auto device_features = device.getFeatures();
 
     // Application can't function without geometry shaders
     if(!device_features.geometryShader)
         return 0;
 
     int score = 0;
-    VkPhysicalDeviceProperties device_properties;
-    vkGetPhysicalDeviceProperties(device, &device_properties);
+    auto device_properties = device.getProperties();
 
     // Discrete GPUs have a significant performance advantage
-    if(device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+    if(device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
         score += 1000;
     // Maximum possible size of textures affects graphics quality
     score += device_properties.limits.maxImageDimension2D;
@@ -212,116 +204,97 @@ int rate_device_suitability(const VkPhysicalDevice& device, const VkSurfaceKHR& 
     return score;
 }
 
-bool check_device_extensions_support(const VkPhysicalDevice& device, const std::vector<const char*>& extensions)
+bool check_device_extensions_support(const vk::PhysicalDevice& device, const std::vector<const char*>& extensions)
 {
-    uint32_t extension_count;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
-    std::vector<VkExtensionProperties> available_extensions(extension_count);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
-
     std::set<std::string> required(extensions.begin(), extensions.end());
-    for(const auto& extension : available_extensions)
-    {
-        required.erase(extension.extensionName);
-        if(required.empty())
-            return true;
-    }
 
-    return false;
+    for(const auto& extension : device.enumerateDeviceExtensionProperties())
+        required.erase(extension.extensionName);
+
+    return required.empty();
 }
 
-QueueFamilyIndices find_queue_families(const VkPhysicalDevice& device, const VkSurfaceKHR& surface)
+QueueFamilyIndices find_queue_families(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface)
 {
     QueueFamilyIndices indices;
 
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
-    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+    auto queue_families = device.getQueueFamilyProperties();
 
     uint32_t ii = 0;
     for(const auto& queue_family : queue_families)
     {
-        if(queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if(queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
             indices.graphics_family = ii;
 
-        VkBool32 present_support = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, ii, surface, &present_support);
-        if(present_support)
+        if(queue_family.queueCount > 0 && device.getSurfaceSupportKHR(ii, surface))
             indices.present_family = ii;
 
         if(indices.is_complete())
             break;
+
         ++ii;
     }
 
-    // Assign index to queue families that could be found
     return indices;
 }
 
-SwapChainSupportDetails query_swap_chain_support(const VkPhysicalDevice& device, const VkSurfaceKHR& surface)
+SwapChainSupportDetails query_swap_chain_support(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface)
 {
     SwapChainSupportDetails details;
-
     // Query basic surface capabilities
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
+    details.capabilities = device.getSurfaceCapabilitiesKHR(surface);
     // Query supported surface formats
-    uint32_t format_count;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
-    if(format_count != 0)
-    {
-        details.formats.resize(format_count);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats.data());
-    }
-
+    details.formats = device.getSurfaceFormatsKHR(surface);
     // Query supported presentation modes
-    uint32_t present_mode_count;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
-    if(present_mode_count != 0)
-    {
-        details.present_modes.resize(present_mode_count);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes.data());
-    }
+    details.present_modes = device.getSurfacePresentModesKHR(surface);
 
     return details;
 }
 
-VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats)
+vk::SurfaceFormatKHR choose_swap_surface_format(const std::vector<vk::SurfaceFormatKHR>& available_formats)
 {
-    for(const auto& format : available_formats)
+    if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
+        return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
+
+    for(const auto& available_format : available_formats)
     {
-        if(format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-        {
-            return format;
-        }
+        if(available_format.format == vk::Format::eB8G8R8A8Unorm &&
+           available_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
+            return available_format;
     }
+
     return available_formats[0];
 }
 
-VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes)
+vk::PresentModeKHR choose_swap_present_mode(const std::vector<vk::PresentModeKHR>& available_present_modes)
 {
-    // Select triple buffering if available
-    for(const auto& mode : available_present_modes)
-        if(mode == VK_PRESENT_MODE_MAILBOX_KHR)
-            return mode;
+    vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
 
-    return VK_PRESENT_MODE_FIFO_KHR;
+    for(const auto& available_present_mode : available_present_modes)
+    {
+        // Select triple buffering if available
+        if(available_present_mode == vk::PresentModeKHR::eMailbox)
+            return available_present_mode;
+        else if(available_present_mode == vk::PresentModeKHR::eImmediate)
+            best_mode = available_present_mode;
+    }
+
+    return best_mode;
 }
 
-VkExtent2D choose_swap_extent(uint32_t width, uint32_t height, const VkSurfaceCapabilitiesKHR& capabilities)
+vk::Extent2D choose_swap_extent(uint32_t width, uint32_t height, const vk::SurfaceCapabilitiesKHR& capabilities)
 {
     if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-    {
         return capabilities.currentExtent;
-    }
     else
     {
-        VkExtent2D actual_extent = {width, height};
+        vk::Extent2D actual_extent = {width, height};
+
         actual_extent.width = std::max(capabilities.minImageExtent.width,
                                        std::min(capabilities.maxImageExtent.width, actual_extent.width));
         actual_extent.height = std::max(capabilities.minImageExtent.height,
                                         std::min(capabilities.maxImageExtent.height, actual_extent.height));
+
         return actual_extent;
     }
 }

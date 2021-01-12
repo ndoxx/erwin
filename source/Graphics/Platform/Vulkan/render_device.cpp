@@ -1,5 +1,6 @@
 #include "Platform/Vulkan/render_device.h"
 #include "../../window.h"
+#include "utils.h"
 #include <kibble/logger/logger.h>
 #include <map>
 #include <set>
@@ -16,14 +17,13 @@ static constexpr bool k_vulkan_enable_validation_layers = true;
 static constexpr bool k_vulkan_enable_validation_layers = false;
 #endif
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
-                                      const VkAllocationCallbacks* p_allocator,
-                                      VkDebugUtilsMessengerEXT* p_debug_messenger)
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback)
 {
     auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
     if(func != nullptr)
-        return func(instance, p_create_info, p_allocator, p_debug_messenger);
+        return func(instance, pCreateInfo, pAllocator, pCallback);
     else
         return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
@@ -39,14 +39,10 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 VKRenderDevice::~VKRenderDevice()
 {
-    vkDestroyDevice(device_, nullptr);
-    // [BUG] Destroying the debug messenger causes a segfault (Invalid read of size 8
-    // @terminator_DestroyDebugUtilsMessengerEXT)
-    /*
+    KLOGN("render") << "[VK] Destroying render device." << std::endl;
+
     if constexpr(k_vulkan_enable_validation_layers)
-        DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
-    */
-    vkDestroyInstance(instance_, nullptr);
+        DestroyDebugUtilsMessengerEXT(*instance_, debug_messenger_, nullptr);
 }
 
 void VKRenderDevice::create_instance(const std::string& app_name)
@@ -54,13 +50,8 @@ void VKRenderDevice::create_instance(const std::string& app_name)
     KLOGN("render") << "[VK] Creating instance." << std::endl;
 
     // * Application info
-    VkApplicationInfo app_info{};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = app_name.c_str();
-    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "Erwin Engine";
-    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_0;
+    auto app_info = vk::ApplicationInfo(app_name.c_str(), VK_MAKE_VERSION(1, 0, 0), "Erwin Engine",
+                                        VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
 
     // * Handle extensions
     auto extensions = get_required_extensions();
@@ -68,11 +59,10 @@ void VKRenderDevice::create_instance(const std::string& app_name)
         throw std::runtime_error("Missing required extension!");
 
     // * Instance creation
-    VkInstanceCreateInfo create_info{};
-    VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    create_info.pApplicationInfo = &app_info;
-    // Validation layer for debug purposes
+    auto create_info = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &app_info, 0, nullptr, // enabled layers
+                                              uint32_t(extensions.size()),                      // enabled extensions
+                                              extensions.data());
+
     if constexpr(k_vulkan_enable_validation_layers)
     {
         validation_layers_ = {"VK_LAYER_KHRONOS_validation"};
@@ -81,94 +71,82 @@ void VKRenderDevice::create_instance(const std::string& app_name)
 
         create_info.enabledLayerCount = uint32_t(validation_layers_.size());
         create_info.ppEnabledLayerNames = validation_layers_.data();
-
-        // For instance creation / destruction validation
-        populate_debug_messenger_create_info(debug_create_info);
-        create_info.pNext = &debug_create_info;
     }
-    else
-        create_info.enabledLayerCount = 0;
 
-    create_info.enabledExtensionCount = uint32_t(extensions.size());
-    create_info.ppEnabledExtensionNames = extensions.data();
-
-    if(vkCreateInstance(&create_info, nullptr, &instance_) != VK_SUCCESS)
+    try
+    {
+        instance_ = vk::createInstanceUnique(create_info, nullptr);
+    }
+    catch(vk::SystemError err)
+    {
         throw std::runtime_error("Failed to create instance!");
+    }
 }
 
 void VKRenderDevice::setup_debug_messenger()
 {
-    if constexpr(k_vulkan_enable_validation_layers)
-        return;
+    auto debug_create_info = make_debug_messenger_create_info();
 
-    KLOGN("render") << "[VK] Setting up debug messenger." << std::endl;
-
-    VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
-    populate_debug_messenger_create_info(debug_create_info);
-
-    if(CreateDebugUtilsMessengerEXT(instance_, &debug_create_info, nullptr, &debug_messenger_) != VK_SUCCESS)
-        throw std::runtime_error("Failed to set up debug messenger!");
+    // NOTE: Vulkan-hpp has methods for this, but they trigger linking errors...
+    // instance->createDebugUtilsMessengerEXT(debug_create_info);
+    // instance->createDebugUtilsMessengerEXTUnique(debug_create_info);
+    if(CreateDebugUtilsMessengerEXT(*instance_,
+                                    reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debug_create_info), nullptr,
+                                    &debug_messenger_) != VK_SUCCESS)
+        throw std::runtime_error("failed to set up debug callback!");
 }
 
-void VKRenderDevice::select_physical_device(const VkSurfaceKHR& surface)
+void VKRenderDevice::select_physical_device(const vk::SurfaceKHR& surface)
 {
     KLOGN("render") << "[VK] Picking physical device." << std::endl;
 
-    uint32_t device_count = 0;
-    vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
-    if(device_count == 0)
+    // Enumerate all available physical devices
+    auto devices = instance_->enumeratePhysicalDevices();
+    if(devices.size() == 0)
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
-    std::vector<VkPhysicalDevice> devices(device_count);
+    // Rate devices by suitability and select the best one
     device_extensions_ = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     std::multimap<int, VkPhysicalDevice> candidates;
-
-    vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
     for(const auto& device : devices)
     {
         int score = rate_device_suitability(device, surface, device_extensions_);
         candidates.insert(std::make_pair(score, device));
     }
-
     if(candidates.rbegin()->first > 0)
         physical_device_ = candidates.rbegin()->second;
     else
         throw std::runtime_error("Failed to find a suitable GPU!");
 
-    VkPhysicalDeviceProperties device_properties;
-    vkGetPhysicalDeviceProperties(physical_device_, &device_properties);
+    auto device_properties = physical_device_.getProperties();
 
     KLOG("render", 1) << "[VK] Selected " << KS_NAME_ << device_properties.deviceName << KC_ << " as a physical device."
                       << std::endl;
 }
 
-void VKRenderDevice::create_logical_device(const VkSurfaceKHR& surface)
+void VKRenderDevice::create_logical_device(const vk::SurfaceKHR& surface)
 {
     KLOGN("render") << "[VK] Creating logical device." << std::endl;
+    QueueFamilyIndices indices = find_queue_families(physical_device_, surface);
+
+    std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
+    std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
 
     // Specify queues to be created
     float queue_priority = 1.0f;
-    QueueFamilyIndices indices = find_queue_families(physical_device_, surface);
-
-    std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-    std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
     for(uint32_t queue_family : unique_queue_families)
     {
-        VkDeviceQueueCreateInfo queue_create_info{};
-        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info.queueFamilyIndex = queue_family;
-        queue_create_info.queueCount = 1;
-        queue_create_info.pQueuePriorities = &queue_priority;
-        queue_create_infos.push_back(queue_create_info);
+        queue_create_infos.push_back({vk::DeviceQueueCreateFlags(), queue_family,
+                                      1, // queueCount
+                                      &queue_priority});
     }
+
     // Specify features to use
-    VkPhysicalDeviceFeatures device_features{};
+    auto device_features = vk::PhysicalDeviceFeatures();
 
     // Create logical device
-    VkDeviceCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    create_info.queueCreateInfoCount = uint32_t(queue_create_infos.size());
-    create_info.pQueueCreateInfos = queue_create_infos.data();
+    auto create_info =
+        vk::DeviceCreateInfo(vk::DeviceCreateFlags(), uint32_t(queue_create_infos.size()), queue_create_infos.data());
     create_info.pEnabledFeatures = &device_features;
     create_info.enabledExtensionCount = uint32_t(device_extensions_.size());
     create_info.ppEnabledExtensionNames = device_extensions_.data();
@@ -179,15 +157,19 @@ void VKRenderDevice::create_logical_device(const VkSurfaceKHR& surface)
         create_info.enabledLayerCount = uint32_t(validation_layers_.size());
         create_info.ppEnabledLayerNames = validation_layers_.data();
     }
-    else
-        create_info.enabledLayerCount = 0;
 
-    if(vkCreateDevice(physical_device_, &create_info, nullptr, &device_) != VK_SUCCESS)
+    try
+    {
+        device_ = physical_device_.createDeviceUnique(create_info);
+    }
+    catch(vk::SystemError err)
+    {
         throw std::runtime_error("Failed to create logical device!");
+    }
 
     // Retrieve queue handles
-    vkGetDeviceQueue(device_, indices.graphics_family.value(), 0, &graphics_queue_);
-    vkGetDeviceQueue(device_, indices.present_family.value(), 0, &present_queue_);
+    graphics_queue_ = device_->getQueue(indices.graphics_family.value(), 0);
+    present_queue_ = device_->getQueue(indices.present_family.value(), 0);
 }
 
 } // namespace gfx

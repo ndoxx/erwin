@@ -2,7 +2,7 @@
 
 #include "../../swap_chain.h"
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace gfx
 {
@@ -14,7 +14,7 @@ public:
     ~VKSwapChain();
 
     void present() override;
-    inline const VkSurfaceKHR& get_surface() const { return surface_; }
+    inline const vk::SurfaceKHR& get_surface() const { return surface_; }
 
     friend class EngineFactory;
 
@@ -24,13 +24,13 @@ private:
     void create_swap_chain_image_views();
 
 private:
-    VkSwapchainKHR swap_chain_;
-    VkFormat swap_chain_image_format_;
-    VkExtent2D swap_chain_extent_;
-    VkSurfaceKHR surface_;
-    std::vector<VkImage> swap_chain_images_;
-    std::vector<VkImageView> swap_chain_image_views_;
-    std::vector<VkFramebuffer> swap_chain_framebuffers_;
+    vk::SwapchainKHR swap_chain_;
+    vk::Format swap_chain_image_format_;
+    vk::Extent2D swap_chain_extent_;
+    vk::SurfaceKHR surface_;
+    std::vector<vk::Image> swap_chain_images_;
+    std::vector<vk::ImageView> swap_chain_image_views_;
+    std::vector<vk::Framebuffer> swap_chain_framebuffers_;
     const RenderDevice& render_device_;
 };
 
