@@ -12,6 +12,8 @@ namespace gfx
 template <>
 EngineFactory::EngineComponents EngineFactory::create<DeviceAPI::OpenGL>(const EngineCreateInfo& create_info)
 {
+	log_create_info(create_info);
+	
     auto p_window = std::make_unique<GLFWWindow>(create_info.window_props);
     auto p_render_device = std::make_unique<OGLRenderDevice>(*p_window);
     auto p_swapchain = std::make_unique<OGLSwapchain>(*p_window);

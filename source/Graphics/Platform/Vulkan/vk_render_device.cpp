@@ -1,11 +1,13 @@
 // clang-format off
 #include "../../window.h"
+#include "../../engine_factory.h"
 #include "Platform/Vulkan/vk_render_device.h"
 #include "Platform/Vulkan/vk_utils.h"
 #include <kibble/logger/logger.h>
 #include <map>
 #include <set>
 #include <string>
+#include <stack>
 // clang-format on
 
 using namespace kb;
@@ -47,13 +49,20 @@ VKRenderDevice::~VKRenderDevice()
         DestroyDebugUtilsMessengerEXT(*instance_, debug_messenger_, nullptr);
 }
 
-void VKRenderDevice::create_instance(const std::string& app_name)
+inline auto vk_version(const Version& ver) { return VK_MAKE_VERSION(int(ver.major), int(ver.minor), int(ver.build)); }
+
+void VKRenderDevice::create_instance(const EngineCreateInfo& eci)
 {
     KLOGN("render") << "[VK] Creating instance." << std::endl;
 
     // * Application info
-    auto app_info = vk::ApplicationInfo(app_name.c_str(), VK_MAKE_VERSION(1, 0, 0), "Erwin Engine",
-                                        VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
+    // clang-format off
+    auto app_info = vk::ApplicationInfo(eci.application_descriptor.name.c_str(), 
+                                        vk_version(eci.application_descriptor.version),
+                                        eci.engine_descriptor.name.c_str(), 
+                                        vk_version(eci.engine_descriptor.version), 
+                                        VK_API_VERSION_1_2);
+    // clang-format on
 
     // * Handle extensions
     auto extensions = get_required_extensions();
@@ -170,9 +179,49 @@ void VKRenderDevice::create_logical_device(const vk::SurfaceKHR& surface)
     }
 
     // Retrieve queue handles
-    graphics_queue_ = device_->getQueue(indices.graphics_family.value(), 0);
-    present_queue_ = device_->getQueue(indices.present_family.value(), 0);
+    graphics_queue_index_ = indices.graphics_family.value();
+    present_queue_index_ = indices.present_family.value();
+    graphics_queue_ = device_->getQueue(graphics_queue_index_, 0);
+    present_queue_ = device_->getQueue(present_queue_index_, 0);
 }
+
+vk::SampleCountFlagBits VKRenderDevice::get_sample_count(uint32_t max_sample_count) const
+{
+    auto properties = physical_device_.getProperties();
+    auto supported = properties.limits.framebufferColorSampleCounts;
+
+    // Stack up sample counts while they stay lower than the max sample count
+    std::stack<vk::SampleCountFlagBits> preference;
+    for(uint32_t ii = 0; ii < 6; ++ii)
+    {
+        uint32_t p2 = 1 << ii; // Powers of 2 go from 1 to 64
+        if(p2 <= max_sample_count)
+            preference.push(vk::SampleCountFlagBits(p2));
+    }
+
+    // Return the best available sample count
+    while(!preference.empty())
+    {
+        auto sample_count = preference.top();
+        if(supported & sample_count)
+            return sample_count;
+
+        preference.pop();
+    }
+
+    throw std::runtime_error("Multi sampling not supported.");
+}
+
+vk::Format VKRenderDevice::get_depth_format() const
+{
+    auto format_properties = physical_device_.getFormatProperties(vk::Format::eD32Sfloat);
+
+    if(format_properties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+        return vk::Format::eD32Sfloat;
+
+    throw std::runtime_error("32 bit signed depth stencil format not supported.");
+}
+
 
 vk::ImageView VKRenderDevice::create_image_view(const vk::Image& image, const vk::Format& format,
                                                 const vk::ImageAspectFlags& aspect_flags, uint32_t mip_levels) const

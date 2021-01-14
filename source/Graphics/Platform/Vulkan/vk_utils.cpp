@@ -22,50 +22,29 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
                                                      const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
                                                      void* /*p_user_data*/)
 {
-    uint8_t dlog_severity = 0;
-    klog::MsgType dlog_msg_type = klog::MsgType::NORMAL;
+    uint8_t log_sev = 0;
+    klog::MsgType log_type = klog::MsgType::NORMAL;
+
+    // clang-format off
     switch(severity)
     {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        dlog_severity = 0;
-        dlog_msg_type = klog::MsgType::NORMAL;
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        dlog_severity = 1;
-        dlog_msg_type = klog::MsgType::NORMAL;
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        dlog_severity = 2;
-        dlog_msg_type = klog::MsgType::WARNING;
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        dlog_severity = 3;
-        dlog_msg_type = klog::MsgType::ERROR;
-        break;
-    default:
-        dlog_severity = 0;
-        dlog_msg_type = klog::MsgType::NORMAL;
-        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: log_sev = 0; log_type = klog::MsgType::NORMAL;  break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    log_sev = 1; log_type = klog::MsgType::NORMAL;  break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: log_sev = 2; log_type = klog::MsgType::WARNING; break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   log_sev = 3; log_type = klog::MsgType::ERROR;   break;
+    default:                                              log_sev = 0; log_type = klog::MsgType::NORMAL;  break;
     }
     char flavor = 'U';
     switch(message_type)
     {
-    case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
-        flavor = 'G';
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
-        flavor = 'V';
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
-        flavor = 'P';
-        break;
-    default:
-        flavor = 'U';
-        break;
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:     flavor = 'G'; break;
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:  flavor = 'V'; break;
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT: flavor = 'P'; break;
+    default:                                              flavor = 'U'; break;
     }
+    // clang-format on
 
-    klog::get_log("vulkan"_h, dlog_msg_type, dlog_severity)
-        << "[" << flavor << "] " << p_callback_data->pMessage << std::endl;
+    klog::get_log("vulkan"_h, log_type, log_sev) << '[' << flavor << "] " << p_callback_data->pMessage << std::endl;
 
     return VK_FALSE;
 }
@@ -160,13 +139,11 @@ bool check_validation_layer_support(const std::vector<const char*>& required)
 
 vk::DebugUtilsMessengerCreateInfoEXT make_debug_messenger_create_info()
 {
+    using DUMSFB = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+    using DUMTFB = vk::DebugUtilsMessageTypeFlagBitsEXT;
     return vk::DebugUtilsMessengerCreateInfoEXT(
-        vk::DebugUtilsMessengerCreateFlagsEXT(),
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-            vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-        debug_callback, nullptr);
+        vk::DebugUtilsMessengerCreateFlagsEXT(), DUMSFB::eVerbose | DUMSFB::eWarning | DUMSFB::eError,
+        DUMTFB::eGeneral | DUMTFB::eValidation | DUMTFB::ePerformance, debug_callback, nullptr);
 }
 
 bool check_device_extensions_support(const vk::PhysicalDevice& device, const std::vector<const char*>& extensions)

@@ -31,9 +31,9 @@
 // Create all graphics objects
 #include "render_device.h"
 
-// Device context
+// Render context
 // Register render commands
-#include "device_context.h"
+#include "render_context.h"
 
 // Swap chain
 // Show the final rendered image on screen

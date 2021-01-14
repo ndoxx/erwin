@@ -20,6 +20,7 @@ protected:
     std::unique_ptr<Window> window_;
     std::unique_ptr<RenderDevice> render_device_;
     std::unique_ptr<Swapchain> swapchain_;
+    std::unique_ptr<RenderContext> render_context_;
     bool is_running_ = true;
     uint32_t window_width_;
     uint32_t window_height_;

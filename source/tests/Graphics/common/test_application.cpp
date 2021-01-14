@@ -14,10 +14,11 @@ bool GfxTestApplication::init(DeviceAPI api)
     KLOGGER(create_channel("vulkan", 1));
     KLOGGER(attach_all("ConsoleSink", std::make_unique<kb::klog::ConsoleSink>()));
 
-    // TMP
-    std::unique_ptr<DeviceContext> pctx = nullptr;
-
     EngineCreateInfo info;
+    info.application_descriptor.name = window_title_;
+    info.application_descriptor.version = {0,1,0};
+    info.engine_descriptor.name = "ErwinEngine";
+    info.engine_descriptor.version = {0,1,0};
     info.window_props.title = window_title_;
     info.window_props.width = window_width_;
     info.window_props.height = window_height_;
@@ -27,10 +28,13 @@ bool GfxTestApplication::init(DeviceAPI api)
     info.window_props.host = true;
     info.window_props.resizable = true;
     info.window_props.api = api;
+    info.renderer_config.max_sample_count = 1;
 
-    std::tie(window_, render_device_, swapchain_, pctx) = EngineFactory::create(api, info);
+    std::tie(window_, render_device_, swapchain_, render_context_) = EngineFactory::create(api, info);
 
     window_->set_window_close_callback([this]() { is_running_ = false; });
+
+    KLOGG("render") << "Renderer is ready." << std::endl;
 
     return true;
 }
@@ -48,6 +52,7 @@ void GfxTestApplication::run()
 void GfxTestApplication::shutdown()
 {
     // Explicitly destroy engine components
+    delete render_context_.release();
     delete swapchain_.release();
     delete render_device_.release();
     delete window_.release();

@@ -30,7 +30,9 @@ public:
     ~VKSwapchain();
 
     void present() override;
-    inline const vk::SurfaceKHR& get_surface() const { return surface_; }
+    inline const auto& get_surface() const { return surface_; }
+    inline auto get_image_count() const { return swapchain_images_.size(); }
+    inline auto get_color_format() const { return swapchain_format_.format; }
 
     // Create a window surface from a Window instance
     void create_surface(const Window& window);
