@@ -4,7 +4,9 @@
 #include "asset/material.h"
 #include "asset/mesh.h"
 #include "asset/texture.h"
+#include "entity/component/PBR_material.h"
 #include "entity/component/camera.h"
+#include "entity/component/dirlight_material.h"
 #include "entity/component/light.h"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -77,12 +79,16 @@ struct PrefilterEnvmapData
 static struct
 {
     // Resources
+    ShaderHandle opaque_PBR_shader;
+    ShaderHandle forward_sun_shader;
     ShaderHandle line_shader;
     ShaderHandle dirlight_shader;
     ShaderHandle skybox_shader;
     ShaderHandle equirectangular_to_cubemap_shader;
     ShaderHandle diffuse_irradiance_shader;
     ShaderHandle prefilter_env_map_shader;
+    UniformBufferHandle opaque_PBR_material_ubo;
+    UniformBufferHandle sun_material_ubo;
     UniformBufferHandle line_ubo;
     UniformBufferHandle frame_ubo;
     UniformBufferHandle transform_ubo;
@@ -93,8 +99,6 @@ static struct
 
     FrameData frame_data;
     Environment environment;
-
-    std::set<uint32_t> registered_shaders;
 
     // State
     uint64_t pass_state;
@@ -107,34 +111,41 @@ void Renderer3D::init()
 
     // Init resources
     // TODO: use universal paths
+    s_storage.opaque_PBR_shader = Renderer::create_shader("sysres://shaders/deferred_PBR.glsl", "lines");
+    s_storage.forward_sun_shader = Renderer::create_shader("sysres://shaders/forward_sun.glsl", "lines");
     s_storage.line_shader = Renderer::create_shader("sysres://shaders/line_shader.glsl", "lines");
-    s_storage.dirlight_shader =
-        Renderer::create_shader("sysres://shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
+    s_storage.dirlight_shader = Renderer::create_shader("sysres://shaders/deferred_PBR_lighting.glsl", "deferred_PBR_lighting");
     s_storage.skybox_shader = Renderer::create_shader("sysres://shaders/skybox.glsl", "skybox");
-    s_storage.equirectangular_to_cubemap_shader =
-        Renderer::create_shader("sysres://shaders/equirectangular_to_cubemap.glsl", "ER2C");
-    s_storage.diffuse_irradiance_shader =
-        Renderer::create_shader("sysres://shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
-    s_storage.prefilter_env_map_shader =
-        Renderer::create_shader("sysres://shaders/prefilter_env_map.glsl", "prefilter_env_map");
-    s_storage.line_ubo =
-        Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
-    s_storage.frame_ubo =
-        Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
-    s_storage.transform_ubo =
-        Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
-    s_storage.equirectangular_conversion_ubo = Renderer::create_uniform_buffer(
-        "parameters", nullptr, sizeof(EquirectangularConversionData), UsagePattern::Dynamic);
+    s_storage.equirectangular_to_cubemap_shader = Renderer::create_shader("sysres://shaders/equirectangular_to_cubemap.glsl", "ER2C");
+    s_storage.diffuse_irradiance_shader = Renderer::create_shader("sysres://shaders/diffuse_irradiance.glsl", "diffuse_irradiance");
+    s_storage.prefilter_env_map_shader = Renderer::create_shader("sysres://shaders/prefilter_env_map.glsl", "prefilter_env_map");
+
+    s_storage.opaque_PBR_material_ubo =
+        Renderer::create_uniform_buffer("material_data", nullptr, sizeof(ComponentPBRMaterial::MaterialData), UsagePattern::Dynamic);
+    s_storage.sun_material_ubo = Renderer::create_uniform_buffer(
+        "material_data", nullptr, sizeof(ComponentDirectionalLightMaterial::MaterialData), UsagePattern::Dynamic);
+    s_storage.line_ubo = Renderer::create_uniform_buffer("line_data", nullptr, sizeof(LineInstanceData), UsagePattern::Dynamic);
+    s_storage.frame_ubo = Renderer::create_uniform_buffer("frame_data", nullptr, sizeof(FrameData), UsagePattern::Dynamic);
+    s_storage.transform_ubo = Renderer::create_uniform_buffer("transform_data", nullptr, sizeof(TransformData), UsagePattern::Dynamic);
+    s_storage.equirectangular_conversion_ubo =
+        Renderer::create_uniform_buffer("parameters", nullptr, sizeof(EquirectangularConversionData), UsagePattern::Dynamic);
     s_storage.diffuse_irradiance_ubo =
         Renderer::create_uniform_buffer("parameters", nullptr, sizeof(DiffuseIrradianceData), UsagePattern::Dynamic);
     s_storage.prefilter_env_map_ubo =
         Renderer::create_uniform_buffer("parameters", nullptr, sizeof(PrefilterEnvmapData), UsagePattern::Dynamic);
 
+    Renderer::shader_attach_uniform_buffer(s_storage.opaque_PBR_shader, s_storage.opaque_PBR_material_ubo);
+    Renderer::shader_attach_uniform_buffer(s_storage.opaque_PBR_shader, s_storage.frame_ubo);
+    Renderer::shader_attach_uniform_buffer(s_storage.opaque_PBR_shader, s_storage.transform_ubo);
+
+    Renderer::shader_attach_uniform_buffer(s_storage.forward_sun_shader, s_storage.sun_material_ubo);
+    Renderer::shader_attach_uniform_buffer(s_storage.forward_sun_shader, s_storage.frame_ubo);
+    Renderer::shader_attach_uniform_buffer(s_storage.forward_sun_shader, s_storage.transform_ubo);
+
     Renderer::shader_attach_uniform_buffer(s_storage.dirlight_shader, s_storage.transform_ubo);
     Renderer::shader_attach_uniform_buffer(s_storage.line_shader, s_storage.line_ubo);
     Renderer::shader_attach_uniform_buffer(s_storage.skybox_shader, s_storage.frame_ubo);
-    Renderer::shader_attach_uniform_buffer(s_storage.equirectangular_to_cubemap_shader,
-                                           s_storage.equirectangular_conversion_ubo);
+    Renderer::shader_attach_uniform_buffer(s_storage.equirectangular_to_cubemap_shader, s_storage.equirectangular_conversion_ubo);
     Renderer::shader_attach_uniform_buffer(s_storage.diffuse_irradiance_shader, s_storage.diffuse_irradiance_ubo);
     Renderer::shader_attach_uniform_buffer(s_storage.prefilter_env_map_shader, s_storage.prefilter_env_map_ubo);
 
@@ -143,8 +154,8 @@ void Renderer3D::init()
     brdf_lut_desc.image_format = ImageFormat::RGBA8;
     brdf_lut_desc.wrap = TextureWrap::CLAMP_TO_EDGE;
     brdf_lut_desc.filter = MIN_LINEAR | MAG_LINEAR;
-    const auto& freetex = AssetManager::load<FreeTexture, Texture2DDescriptor>(
-        0, "sysres://textures/ibl_brdf_integration.png", brdf_lut_desc);
+    const auto& freetex =
+        AssetManager::load<FreeTexture, Texture2DDescriptor>(0, "sysres://textures/ibl_brdf_integration.png", brdf_lut_desc);
     s_storage.BRDF_integration_map = freetex.handle;
 }
 
@@ -207,10 +218,7 @@ void Renderer3D::update_light(const ComponentDirectionalLight& dir_light)
     }
 }
 
-void Renderer3D::update_frame_data()
-{
-    Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData));
-}
+void Renderer3D::update_frame_data() { Renderer::update_uniform_buffer(s_storage.frame_ubo, &s_storage.frame_data, sizeof(FrameData)); }
 
 void Renderer3D::set_environment(const Environment& environment) { s_storage.environment = environment; }
 
@@ -218,17 +226,6 @@ void Renderer3D::enable_IBL(bool value) { s_storage.environment.IBL_enabled = va
 
 void Renderer3D::set_IBL_ambient_strength(float value) { s_storage.environment.ambient_strength = value; }
 
-void Renderer3D::register_shader(ShaderHandle shader)
-{
-    // Check if already registered
-    if(s_storage.registered_shaders.find(shader.index()) != s_storage.registered_shaders.end())
-        return;
-
-    Renderer::shader_attach_uniform_buffer(shader, s_storage.frame_ubo);
-    Renderer::shader_attach_uniform_buffer(shader, s_storage.transform_ubo);
-
-    s_storage.registered_shaders.insert(shader.index());
-}
 /*
 bool Renderer3D::is_compatible(VertexBufferLayoutHandle layout, const Material& material)
 {
@@ -273,9 +270,8 @@ CubemapHandle Renderer3D::generate_cubemap_hdr(TextureHandle hdr_tex, uint32_t s
     VertexArrayHandle quad = CommonGeometry::get_mesh("quad"_h).VAO;
     DrawCall dc(DrawCall::Indexed, state_flags, s_storage.equirectangular_to_cubemap_shader, quad);
     dc.set_texture(hdr_tex);
-    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo,
-                                                      static_cast<void*>(&data), sizeof(EquirectangularConversionData),
-                                                      DataOwnership::Copy));
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.equirectangular_conversion_ubo, static_cast<void*>(&data),
+                                                      sizeof(EquirectangularConversionData), DataOwnership::Copy));
 
     Renderer::submit(key.encode(), dc);
     Renderer::generate_mipmaps(cubemap);
@@ -332,8 +328,8 @@ CubemapHandle Renderer3D::generate_prefiltered_map(CubemapHandle env_map, uint32
     constexpr uint8_t max_mips = 5;
 
     // Create an ad-hoc framebuffer to render to a cubemap
-    FramebufferLayout layout{{"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR_MIPMAP_LINEAR | MAG_LINEAR,
-                              TextureWrap::CLAMP_TO_EDGE, max_mips - 1}};
+    FramebufferLayout layout{
+        {"cubemap"_h, ImageFormat::RGB16F, MIN_LINEAR_MIPMAP_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE, max_mips - 1}};
     FramebufferHandle fb = Renderer::create_framebuffer(pfm_size, pfm_size, FB_CUBEMAP_ATTACHMENT, layout);
     CubemapHandle pfm = Renderer::get_framebuffer_cubemap(fb);
 
@@ -468,8 +464,8 @@ void Renderer3D::begin_line_pass(bool enable_depth_test)
 
 void Renderer3D::end_line_pass() {}
 
-void Renderer3D::draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, const Material& material,
-                           const void* material_data)
+void Renderer3D::draw_mesh_PBR_opaque(const Mesh& mesh, const glm::mat4& model_matrix, const TextureGroup& texture_group,
+                                      const void* material_data)
 {
     // Compute matrices
     TransformData transform_data;
@@ -481,16 +477,38 @@ void Renderer3D::draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, cons
     glm::vec4 clip = glm::column(transform_data.mvp, 3);
     float depth = clip.z / clip.w;
     SortKey key;
-    key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, material.shader);
+    key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, s_storage.opaque_PBR_shader);
 
-    DrawCall dc(DrawCall::Indexed, s_storage.pass_state, material.shader, mesh.VAO);
-    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data),
-                                                      sizeof(TransformData), DataOwnership::Copy));
-    if(!material.ubo.is_null() && material_data)
-        dc.add_dependency(
-            Renderer::update_uniform_buffer(material.ubo, material_data, material.data_size, DataOwnership::Copy));
-    for(uint32_t ii = 0; ii < material.texture_group.texture_count; ++ii)
-        dc.set_texture(material.texture_group.textures[ii], ii);
+    DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.opaque_PBR_shader, mesh.VAO);
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData),
+                                                      DataOwnership::Copy));
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.opaque_PBR_material_ubo, material_data,
+                                                      sizeof(ComponentPBRMaterial::MaterialData), DataOwnership::Copy));
+    for(uint32_t ii = 0; ii < texture_group.texture_count; ++ii)
+        dc.set_texture(texture_group.textures[ii], ii);
+
+    Renderer::submit(key.encode(), dc);
+}
+
+void Renderer3D::draw_quad_billboard_forward(const glm::mat4& model_matrix, const void* material_data)
+{
+    // Compute matrices
+    TransformData transform_data;
+    transform_data.m = model_matrix;
+    transform_data.mv = s_storage.frame_data.view_matrix * transform_data.m;
+    transform_data.mvp = s_storage.frame_data.view_projection_matrix * transform_data.m;
+
+    // Compute clip depth for the sorting key
+    glm::vec4 clip = glm::column(transform_data.mvp, 3);
+    float depth = clip.z / clip.w;
+    SortKey key;
+    key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, s_storage.forward_sun_shader);
+
+    DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.forward_sun_shader, CommonGeometry::get_mesh("quad"_h).VAO);
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.transform_ubo, static_cast<void*>(&transform_data), sizeof(TransformData),
+                                                      DataOwnership::Copy));
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.sun_material_ubo, material_data,
+                                                      sizeof(ComponentDirectionalLightMaterial::MaterialData), DataOwnership::Copy));
 
     Renderer::submit(key.encode(), dc);
 }
@@ -511,8 +529,8 @@ void Renderer3D::draw_cube(const glm::mat4& model_matrix, glm::vec3 color)
     key.set_depth(depth, s_storage.layer_id, s_storage.pass_state, s_storage.line_shader);
 
     DrawCall dc(DrawCall::Indexed, s_storage.pass_state, s_storage.line_shader, VAO);
-    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, static_cast<void*>(&instance_data),
-                                                      sizeof(LineInstanceData), DataOwnership::Copy));
+    dc.add_dependency(Renderer::update_uniform_buffer(s_storage.line_ubo, static_cast<void*>(&instance_data), sizeof(LineInstanceData),
+                                                      DataOwnership::Copy));
     Renderer::submit(key.encode(), dc);
 }
 
@@ -533,7 +551,8 @@ void Renderer3D::draw_skybox(CubemapHandle cubemap)
     auto state_flags = state.encode();
 
     SortKey key;
-    key.set_sequence(0, Renderer::next_layer_id(), s_storage.skybox_shader);
+    auto layer_id = Renderer::next_layer_id();
+    key.set_sequence(0, layer_id, s_storage.skybox_shader);
 
     DrawCall dc(DrawCall::Indexed, state_flags, s_storage.skybox_shader, cube);
     dc.set_cubemap(cubemap, 0);

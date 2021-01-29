@@ -7,7 +7,7 @@
 namespace erwin
 {
 
-struct Material;
+struct TextureGroup;
 struct Mesh;
 struct ComponentCamera3D;
 struct Transform3D;
@@ -28,8 +28,6 @@ public:
 	static void enable_IBL(bool value);
 	// Set IBL ambient strength
 	static void set_IBL_ambient_strength(float value);
-	// Register a shader for use with this system
-	static void register_shader(ShaderHandle shader);
 	// Check if a vertex layout is compatible with the attribute layout of the shader inside specified material
 	//static bool is_compatible(VertexBufferLayoutHandle layout, const Material& material);
 
@@ -57,7 +55,9 @@ public:
 	static void end_line_pass();
 
 	// Draw a textured mesh
-	static void draw_mesh(const Mesh& mesh, const glm::mat4& model_matrix, const Material& material, const void* material_data=nullptr);
+	// TMP
+	static void draw_mesh_PBR_opaque(const Mesh& mesh, const glm::mat4& model_matrix, const TextureGroup& texture_group, const void* material_data=nullptr);
+	static void draw_quad_billboard_forward(const glm::mat4& model_matrix, const void* material_data=nullptr);
 	// Render a cubemap as a skybox (whole pass)
 	static void draw_skybox(CubemapHandle cubemap);
 	// Draw a debug cube

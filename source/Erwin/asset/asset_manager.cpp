@@ -53,8 +53,6 @@ static struct
     kb::SparsePool<size_t, k_max_asset_registries> registry_handle_pool;
     std::array<AssetRegistry, k_max_asset_registries> registry;
 
-    std::map<hash_t, ShaderHandle> shader_cache;
-    std::map<uint64_t, UniformBufferHandle> ubo_cache;
     std::map<hash_t, TextureHandle> special_textures_cache_;
 
 } s_storage;
@@ -74,38 +72,6 @@ template <typename ManagerT> static void release_if_not_shared(size_t reg, hash_
 
     if(!shared)
         manager.release(handle);
-}
-
-UniformBufferHandle AssetManager::create_material_data_buffer(uint64_t component_id, uint32_t size)
-{
-    W_PROFILE_FUNCTION()
-
-    auto it = s_storage.ubo_cache.find(component_id);
-    if(it != s_storage.ubo_cache.end())
-        return it->second;
-
-    auto handle = Renderer::create_uniform_buffer("material_data", nullptr, size, UsagePattern::Dynamic);
-    s_storage.ubo_cache.insert({component_id, handle});
-    return handle;
-}
-
-ShaderHandle AssetManager::load_shader(const std::string& file_path, const std::string& name)
-{
-    W_PROFILE_FUNCTION()
-
-    hash_t hname = H_(file_path.c_str());
-    auto it = s_storage.shader_cache.find(hname);
-    if(it != s_storage.shader_cache.end())
-        return it->second;
-
-    KLOGN("asset") << "[AssetManager] Creating new shader:" << std::endl;
-
-    std::string shader_name = name.empty() ? WFS_.regular_path(file_path).stem().string() : name;
-    ShaderHandle handle = Renderer::create_shader(file_path, shader_name);
-    KLOG("asset", 1) << "ShaderHandle: " << kb::KS_VALU_ << handle << std::endl;
-    s_storage.shader_cache.insert({hname, handle});
-
-    return handle;
 }
 
 TextureHandle AssetManager::create_debug_texture(hash_t type, uint32_t size_px)
@@ -411,32 +377,5 @@ void AssetManager::release_registry(size_t reg)
     s_storage.registry[reg].clear();
     s_storage.registry_handle_pool.release(reg);
 }
-
-/*
-
-template <typename KeyT, typename HandleT>
-static void erase_by_value(std::map<KeyT, HandleT>& cache, HandleT handle)
-{
-    auto it = cache.begin();
-    for(; it!=cache.end(); ++it)
-        if(it->second == handle)
-            break;
-    cache.erase(it);
-}
-
-void AssetManager::release(ShaderHandle handle)
-{
-    W_PROFILE_FUNCTION()
-
-    K_ASSERT_FMT(handle.is_valid(), "ShaderHandle of index %hu is invalid.", handle.index);
-    KLOGN("asset") << "[AssetManager] Releasing shader:" << std::endl;
-
-    erase_by_value(s_storage.shader_cache_, handle);
-    Renderer::destroy(handle);
-
-    KLOG("asset",1) << "handle: " << kb::KS_VALU_ << handle.index << std::endl;
-}
-
-*/
 
 } // namespace erwin
