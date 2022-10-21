@@ -110,6 +110,30 @@ void Renderer3D::init()
     W_PROFILE_FUNCTION()
 
     // Init resources
+
+    {
+        FramebufferLayout layout{
+            // RGB: Albedo, A: Scaled emissivity
+            {"albedo"_h, ImageFormat::RGBA16F, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+            // RG: Compressed normal, BA: ?
+            {"normal"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+            // R: Metallic, G: AO, B: Roughness, A: ?
+            {"mar"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
+        };
+        FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT,
+                                            layout);
+    }
+    {
+        FramebufferLayout layout{
+            // RGBA: HDR color
+            {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
+            // RGB: Glow color, A: Glow intensity
+            {"glow"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
+        };
+        FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(), FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT,
+                                            layout);
+    }
+
     // TODO: use universal paths
     s_storage.opaque_PBR_shader = Renderer::create_shader("sysres://shaders/deferred_PBR.glsl", "lines");
     s_storage.forward_sun_shader = Renderer::create_shader("sysres://shaders/forward_sun.glsl", "lines");
@@ -168,12 +192,16 @@ void Renderer3D::shutdown()
     Renderer::destroy(s_storage.transform_ubo);
     Renderer::destroy(s_storage.frame_ubo);
     Renderer::destroy(s_storage.line_ubo);
+    Renderer::destroy(s_storage.opaque_PBR_material_ubo);
+    Renderer::destroy(s_storage.sun_material_ubo);
     Renderer::destroy(s_storage.equirectangular_to_cubemap_shader);
     Renderer::destroy(s_storage.diffuse_irradiance_shader);
     Renderer::destroy(s_storage.prefilter_env_map_shader);
     Renderer::destroy(s_storage.skybox_shader);
     Renderer::destroy(s_storage.dirlight_shader);
     Renderer::destroy(s_storage.line_shader);
+    Renderer::destroy(s_storage.forward_sun_shader);
+    Renderer::destroy(s_storage.opaque_PBR_shader);
 }
 
 void Renderer3D::update_camera(const ComponentCamera3D& camera, const Transform3D& transform)

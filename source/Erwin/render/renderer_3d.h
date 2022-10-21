@@ -4,6 +4,15 @@
 #include "render/handles.h"
 #include "glm/glm.hpp"
 
+/*
+ * REFACTOR:
+ * 		Organize code into multiple RenderPass derived objects and get rid of this class entirely
+ * 		[X] Remove Material's reference to shader and UBO, render passes know about this state
+ * 		[ ] Global data like frame UBO data and environment become shared state between render passes
+ * 		[ ] Fix the view ID (temporarily) and get rid of Renderer::next_layer_id()
+ * 			[ ] View ID and sequence number fields will be filled automatically on pass creation
+ */
+
 namespace erwin
 {
 
