@@ -1,11 +1,10 @@
 #include "entity/component/serial/PBR_material.h"
+#include "asset/asset_manager.h"
 #include "level/scene.h"
 
 namespace erwin
 {
-template <>
-void serialize_xml<ComponentPBRMaterial>(const ComponentPBRMaterial& cmp, xml::XMLFile& file,
-                                         rapidxml::xml_node<>* cmp_node)
+template <> void serialize_xml<ComponentPBRMaterial>(const ComponentPBRMaterial& cmp, xml::XMLFile& file, rapidxml::xml_node<>* cmp_node)
 {
     if(cmp.override)
     {
@@ -24,16 +23,15 @@ void serialize_xml<ComponentPBRMaterial>(const ComponentPBRMaterial& cmp, xml::X
     // file.add_node(cmp_node, "name", cmp.name.c_str()); // Name unused atm
 }
 
-template <>
-void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
+template <> void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, Scene& scene, EntityID e)
 {
     size_t resource_id = 0;
     bool override = false;
     xml::parse_attribute(cmp_node, "id", resource_id);
-	xml::parse_attribute(cmp_node, "override", override);
-	ComponentPBRMaterial::MaterialData md;
-	if(override)
-	{
+    xml::parse_attribute(cmp_node, "override", override);
+    ComponentPBRMaterial::MaterialData md;
+    if(override)
+    {
         xml::parse_node(cmp_node, "tint", md.tint);
         xml::parse_node(cmp_node, "flags", md.flags);
         xml::parse_node(cmp_node, "emissivity", md.emissive_scale);
@@ -42,20 +40,17 @@ void deserialize_xml<ComponentPBRMaterial>(rapidxml::xml_node<>* cmp_node, Scene
         xml::parse_node(cmp_node, "u_albedo", md.uniform_albedo);
         xml::parse_node(cmp_node, "u_metal", md.uniform_metallic);
         xml::parse_node(cmp_node, "u_rough", md.uniform_roughness);
-	}
+    }
 
     AssetManager::on_ready<ComponentPBRMaterial>(resource_id,
-                                                 [&scene, e = e, md = md, override = override](const ComponentPBRMaterial& mat)
-	{
-		auto& cmp_mat = scene.add_component<ComponentPBRMaterial>(e, mat);
-	    if(override)
-	    {
-			cmp_mat.material_data = md;
-			cmp_mat.override = true;
-	    }
-	});
-
-
+                                                 [&scene, e = e, md = md, override = override](const ComponentPBRMaterial& mat) {
+                                                     auto& cmp_mat = scene.add_component<ComponentPBRMaterial>(e, mat);
+                                                     if(override)
+                                                     {
+                                                         cmp_mat.material_data = md;
+                                                         cmp_mat.override = true;
+                                                     }
+                                                 });
 }
 
 } // namespace erwin

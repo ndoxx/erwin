@@ -38,9 +38,6 @@ struct Material
 {
 	hash_t archetype;
 	TextureGroup texture_group;
-	ShaderHandle shader;
-	UniformBufferHandle ubo;
-	uint32_t data_size = 0;
 	hash_t resource_id;
 };
 

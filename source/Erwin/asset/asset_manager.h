@@ -35,36 +35,6 @@ public:
     //   extracted from file path
 
     /**
-     * @brief      Load synchronously a GLSL/SPV shader by file path.
-     *
-     * @param[in]  file_path  Relative file path. Shader is first looked for in
-     *                        the system assets folder then in user assets.
-     * @param[in]  name       The name that will be used to refer to the shader
-     *                        later on.
-     *
-     * @return     Renderer shader handle
-     */
-    static ShaderHandle load_shader(const std::string& file_path, const std::string& name = "");
-
-    /**
-     * @brief      Create (or get) a UBO to be associated to a material data
-     *             type.
-     *
-     *             UBO for a given type will be created once and cached for the
-     *             lifetime of the application.
-     *
-     * @tparam     ComponentT  Concrete material component type holding a
-     *                         MaterialData structure used as an UBO layout.
-     *
-     * @return     Handle to the newly created uniform buffer.
-     */
-    template <typename ComponentT> static inline UniformBufferHandle create_material_data_buffer()
-    {
-        using MaterialData = typename ComponentT::MaterialData;
-        return create_material_data_buffer(ctti::type_id<ComponentT>().hash(), sizeof(MaterialData));
-    }
-
-    /**
      * @brief      Proceduraly generate a special "pattern" texture for the editor
      *             and debug purposes.
      *
@@ -212,9 +182,6 @@ public:
      * @param[in]  reg   Handle to the asset register to be freed.
      */
     static void release_registry(size_t reg);
-
-private:
-    static UniformBufferHandle create_material_data_buffer(uint64_t id, uint32_t size);
 };
 
 // Specializations

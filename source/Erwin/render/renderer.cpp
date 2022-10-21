@@ -418,31 +418,6 @@ void Renderer::init(memory::HeapArea& area)
 
     KLOGI << "done" << std::endl;
 
-    KLOGN("render") << "[Renderer] Creating main render targets." << std::endl;
-    // Create main render targets
-    {
-        FramebufferLayout layout{
-            // RGB: Albedo, A: Scaled emissivity
-            {"albedo"_h, ImageFormat::RGBA16F, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-            // RG: Compressed normal, BA: ?
-            {"normal"_h, ImageFormat::RGBA16_SNORM, MIN_NEAREST | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-            // R: Metallic, G: AO, B: Roughness, A: ?
-            {"mar"_h, ImageFormat::RGBA8, MIN_NEAREST | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
-        };
-        FramebufferPool::create_framebuffer("GBuffer"_h, make_scope<FbRatioConstraint>(),
-                                            FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT, layout);
-    }
-    {
-        FramebufferLayout layout{
-            // RGBA: HDR color
-            {"albedo"_h, ImageFormat::RGBA16F, MIN_LINEAR | MAG_NEAREST, TextureWrap::CLAMP_TO_EDGE},
-            // RGB: Glow color, A: Glow intensity
-            {"glow"_h, ImageFormat::RGBA8, MIN_LINEAR | MAG_LINEAR, TextureWrap::CLAMP_TO_EDGE},
-        };
-        FramebufferPool::create_framebuffer("LBuffer"_h, make_scope<FbRatioConstraint>(),
-                                            FB_DEPTH_ATTACHMENT | FB_STENCIL_ATTACHMENT, layout);
-    }
-
     s_storage.initialized_ = true;
 
     // Renderer configuration

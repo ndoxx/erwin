@@ -258,7 +258,7 @@ void OGLFramebuffer::framebuffer_error_report()
         }
     }
     else
-        KLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << kb::KS_GOOD_ << "complete" << kb::KC_ << "."
+        KLOG("render", 1) << "Framebuffer [" << rd_handle_ << "] creation " << kb::KS_POS_ << "complete" << kb::KC_ << "."
                           << std::endl;
 }
 

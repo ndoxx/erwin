@@ -109,7 +109,7 @@ void MaterialViewWidget::on_layer_render()
     Renderer3D::begin_deferred_pass();
     scene.view<ComponentTransform3D, ComponentMesh, ComponentPBRMaterial>().each(
         [](auto, const auto& trans, const auto& mesh, const auto& mat) {
-            Renderer3D::draw_mesh(mesh.mesh, trans.local.get_model_matrix(), mat.material, &mat.material_data);
+            Renderer3D::draw_mesh_PBR_opaque(mesh.mesh, trans.local.get_model_matrix(), mat.material.texture_group, &mat.material_data);
         });
     Renderer3D::end_deferred_pass();
 

@@ -97,8 +97,8 @@ void SceneViewLayer::on_render()
             const ComponentTransform3D& ctransform = view.get<ComponentTransform3D>(e);
             const ComponentPBRMaterial& cmaterial = view.get<ComponentPBRMaterial>(e);
             const ComponentMesh& cmesh = view.get<ComponentMesh>(e);
-            Renderer3D::draw_mesh(cmesh.mesh, ctransform.global.get_model_matrix(), cmaterial.material,
-                                  &cmaterial.material_data);
+            Renderer3D::draw_mesh_PBR_opaque(cmesh.mesh, ctransform.global.get_model_matrix(), cmaterial.material.texture_group,
+                                             &cmaterial.material_data);
         }
         Renderer3D::end_deferred_pass();
     }
@@ -118,8 +118,7 @@ void SceneViewLayer::on_render()
             renderable.material_data.color = glm::vec4(dirlight.color, 1.f);
             renderable.material_data.brightness = dirlight.brightness;
 
-            Renderer3D::draw_mesh(CommonGeometry::get_mesh("quad"_h), glm::mat4(1.f), renderable.material,
-                                  &renderable.material_data);
+            Renderer3D::draw_quad_billboard_forward(glm::mat4(1.f), &renderable.material_data);
         }
         Renderer3D::end_forward_pass();
     }
